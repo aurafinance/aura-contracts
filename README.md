@@ -22,8 +22,18 @@ variable. Follow the example in `.env.example`. If you don't already have a mnem
 
 Then, proceed with installing dependencies:
 
+### Submodule
+
 ```sh
-yarn install
+$ git submodule init
+$ git submodule update
+```
+
+
+### Install
+
+```sh
+$ yarn install
 ```
 
 ### Compile
