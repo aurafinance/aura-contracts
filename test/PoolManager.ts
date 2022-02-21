@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import deployContracts from "../scripts/deployBooster";
+import deployBooster from "../scripts/deployBooster";
 import deployMocks, { DeployMocksResult } from "../scripts/deployMocks";
 import { Booster, PoolManagerV3 } from "types";
 
@@ -15,7 +15,7 @@ describe("PoolManagerV3", () => {
 
         mocks = await deployMocks(accounts[0]);
 
-        const contracts = await deployContracts(accounts[0], {
+        const contracts = await deployBooster(accounts[0], {
             crv: mocks.crv.address,
             crvMinter: mocks.crv.address,
             votingEscrow: mocks.votingEscrow.address,
@@ -35,7 +35,7 @@ describe("PoolManagerV3", () => {
         const tx = await poolManager["addPool(address)"](gauge.address);
         await tx.wait();
 
-        const lptoken = await gauge.lptoken();
+        const lptoken = await gauge.lp_token();
         const pool = await booster.poolInfo("0");
         expect(pool.lptoken).to.equal(lptoken);
     });
