@@ -1,4 +1,4 @@
-import { Signer } from "ethers";
+import { ethers, Signer } from "ethers";
 
 import {
     MockERC20__factory,
@@ -50,7 +50,7 @@ export default async function deployMocks(signer: Signer): Promise<DeployMocksRe
         "mockLPToken",
         18,
         deployerAddress,
-        0,
+        ethers.utils.parseEther("10000000"),
     ]);
 
     const feeDistro = await deployContract<MockFeeDistro>(new MockFeeDistro__factory(deployer), "MockFeeDistro", [
