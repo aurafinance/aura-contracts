@@ -3,7 +3,6 @@ import { expect } from "chai";
 import deployBooster from "../scripts/deployBooster";
 import deployMocks, { DeployMocksResult } from "../scripts/deployMocks";
 import { Booster, PoolManagerV3 } from "types";
-import { Signers } from "./types";
 import { Signer } from "ethers";
 
 type Pool = {
