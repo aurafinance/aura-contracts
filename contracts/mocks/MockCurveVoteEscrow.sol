@@ -30,6 +30,7 @@ contract MockCurveVoteEscrow {
 
     function increase_amount(uint256 amount) external {
         lockAmounts[msg.sender] += amount;
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
     }
 
     function increase_unlock_time(uint256 time) external {
@@ -39,6 +40,6 @@ contract MockCurveVoteEscrow {
     function withdraw() external {
         require(lockTimes[msg.sender] < block.timestamp, "!unlocked");
         uint256 amount = IERC20(token).balanceOf(msg.sender);
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(token).transferFrom(address(this), msg.sender, amount);
     }
 }

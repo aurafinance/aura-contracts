@@ -22,10 +22,12 @@ contract MockCurveGauge is ERC20 {
 
     function deposit(uint256 amount) external {
         _mint(msg.sender, amount);
+        IERC20(lp_token).transferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(uint256 amount) external {
         _burn(msg.sender, amount);
+        IERC20(lp_token).transferFrom(address(this), msg.sender, amount);
     }
 
     function claim_rewards() external {
