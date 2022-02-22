@@ -102,7 +102,7 @@ describe("Booster", () => {
     it("@method Booster.earmarkRewards", async () => {
         await increaseTime(60 * 60 * 24);
 
-        let tx = await booster.earmarkRewards("0");
+        const tx = await booster.earmarkRewards("0");
         await tx.wait();
 
         const rate = await mocks.crvMinter.rate();
@@ -129,7 +129,7 @@ describe("Booster", () => {
         await increaseTime(60 * 60 * 24);
 
         const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
-        let tx = await crvRewards["getReward(address,bool)"](aliceAddress, claimExtras);
+        const tx = await crvRewards["getReward(address,bool)"](aliceAddress, claimExtras);
         await tx.wait();
 
         const crvBalance = await mocks.crv.balanceOf(aliceAddress);
