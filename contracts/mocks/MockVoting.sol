@@ -47,4 +47,8 @@ contract MockVoting {
     function vote_for_gauge_weights(address gauge, uint256 weight) external {
         gaugeWeights[gauge] += weight;
     }
+
+    function get_gauge_weight(address gauge) external view returns (uint256) {
+        return gaugeWeights[gauge];
+    }
 }

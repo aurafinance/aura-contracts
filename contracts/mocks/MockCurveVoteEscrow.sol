@@ -29,16 +29,24 @@ contract MockCurveVoteEscrow {
     }
 
     function increase_amount(uint256 amount) external {
+        require(lockAmounts[msg.sender] > 0, "Must have a lock");
+        require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
         lockAmounts[msg.sender] += amount;
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
     }
 
     function increase_unlock_time(uint256 time) external {
-        lockTimes[msg.sender] += time;
+        require(lockAmounts[msg.sender] > 0, "Must have a lock");
+        require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
+        require(time > lockTimes[msg.sender], "Future time must be greater");
+        lockTimes[msg.sender] = time;
     }
 
     function withdraw() external {
         require(lockTimes[msg.sender] < block.timestamp, "!unlocked");
+        lockAmounts[msg.sender] = 0;
+        lockTimes[msg.sender] = 0;
         uint256 amount = IERC20(token).balanceOf(msg.sender);
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        IERC20(token).transferFrom(address(this), msg.sender, amount);
     }
 }

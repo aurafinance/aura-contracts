@@ -1,3 +1,4 @@
+import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
 
 import {
@@ -15,12 +16,15 @@ import {
     MockFeeDistro__factory,
     MockCurveGauge,
     MockCurveGauge__factory,
+    MockCurveMinter__factory,
+    MockCurveMinter,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 
 export interface DeployMocksResult {
     lptoken: MockERC20;
     crv: MockERC20;
+    crvMinter: MockCurveMinter;
     voting: MockVoting;
     votingEscrow: MockCurveVoteEscrow;
     registry: MockRegistry;
@@ -42,20 +46,40 @@ export default async function deployMocks(signer: Signer): Promise<DeployMocksRe
         "mockCrv",
         18,
         deployerAddress,
-        0,
+        10000000,
     ]);
 
-    const lptoken = await deployContract<MockERC20>(new MockERC20__factory(deployer), "MockCRV", [
+    const crvMinter = await deployContract<MockCurveMinter>(new MockCurveMinter__factory(deployer), "MockCurveMinter", [
+        crv.address,
+        simpleToExactAmount(1, 18),
+    ]);
+
+    let tx = await crv.transfer(crvMinter.address, simpleToExactAmount(1, 22));
+    await tx.wait();
+
+    const lptoken = await deployContract<MockERC20>(new MockERC20__factory(deployer), "MockLPToken", [
         "mockLPToken",
         "mockLPToken",
         18,
         deployerAddress,
-        0,
+        10000000,
+    ]);
+
+    const feeToken = await deployContract<MockERC20>(new MockERC20__factory(deployer), "FeeToken", [
+        "Fee Token",
+        "feeToken",
+        18,
+        deployerAddress,
+        10000000,
     ]);
 
     const feeDistro = await deployContract<MockFeeDistro>(new MockFeeDistro__factory(deployer), "MockFeeDistro", [
-        crv.address,
+        feeToken.address,
+        simpleToExactAmount(1),
     ]);
+
+    tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
+    await tx.wait();
 
     const smartWalletChecker = await deployContract<MockWalletChecker>(
         new MockWalletChecker__factory(deployer),
@@ -73,15 +97,15 @@ export default async function deployMocks(signer: Signer): Promise<DeployMocksRe
 
     const registry = await deployContract<MockRegistry>(new MockRegistry__factory(deployer), "MockRegistry", []);
 
-    const tx = await registry.setAddress("0", feeDistro.address);
+    tx = await registry.setAddress("0", feeDistro.address);
     await tx.wait();
 
     const gauge = await deployContract<MockCurveGauge>(new MockCurveGauge__factory(deployer), "MockCurveGauge", [
         "TestGauge",
-        "TestGauge",
+        "tstGauge",
         lptoken.address,
         [],
     ]);
 
-    return { lptoken, crv, voting, votingEscrow, registry, smartWalletChecker, feeDistro, gauge };
+    return { lptoken, crv, crvMinter, voting, votingEscrow, registry, smartWalletChecker, feeDistro, gauge };
 }
