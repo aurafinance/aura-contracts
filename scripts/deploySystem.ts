@@ -1,3 +1,5 @@
+import { BoosterOwner__factory } from "./../types/generated/factories/BoosterOwner__factory";
+import { BoosterOwner } from "./../types/generated/BoosterOwner";
 import { BigNumber as BN, Signer } from "ethers";
 import {
     ClaimZap__factory,
@@ -30,6 +32,10 @@ import {
     ArbitratorVault,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
+    PoolManagerProxy__factory,
+    PoolManagerProxy,
+    PoolManagerSecondaryProxy__factory,
+    PoolManagerSecondaryProxy,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import * as distroList from "../tasks/deploy/convex-distro.json";
@@ -113,6 +119,14 @@ interface SystemDeployed extends Phase3Deployed {
  * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
 
+async function deployLiveSystem(signer: Signer, naming: NamingConfig): Promise<SystemDeployed> {
+    const phase1 = await deployPhase1(signer, curveSystem, true);
+    const phase2 = await deployPhase2(signer, phase1, naming, true);
+    const phase3 = await deployPhase3(signer, phase2, naming, curveSystem, true);
+    const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
+    return phase4;
+}
+
 async function deploySystem(
     signer: Signer,
     naming: NamingConfig,
@@ -128,6 +142,10 @@ async function deploySystem(
 
 async function deployPhase1(signer: Signer, extSystem: ExtSystemConfig, debug = false): Promise<Phase1Deployed> {
     const deployer = signer;
+
+    // -----------------------------
+    // 1. VoterProxy
+    // -----------------------------
 
     const voterProxy = await deployContract<CurveVoterProxy>(
         new CurveVoterProxy__factory(deployer),
@@ -147,6 +165,10 @@ async function deployPhase2(
     debug = false,
 ): Promise<Phase2Deployed> {
     const deployer = signer;
+
+    // -----------------------------
+    // 2. CVX token & lockdrop
+    // -----------------------------
 
     const cvx = await deployContract<ConvexToken>(
         new ConvexToken__factory(deployer),
@@ -173,10 +195,14 @@ async function deployPhase3(
     const { voterProxy, cvx } = deployment;
 
     // -----------------------------
-    // 1. Deployments
+    // 3. Core system:
+    //     - booster
+    //     - factories (reward, token, proxy, stash)
+    //     - cvxCrv (cvxCrv, crvDepositor)
+    //     - pool management (poolManager + 2x proxies)
+    //     - vlCVX + ((stkCVX && stakerProxy) || fix) // TODO - deploy this & setRewardContracts on boosted
     // -----------------------------
 
-    // TODO - deploy boosterowner
     const booster = await deployContract<Booster>(
         new Booster__factory(deployer),
         "Booster",
@@ -264,14 +290,43 @@ async function deployPhase3(
         debug,
     );
 
-    // TODO - deploy pool manager proxies
+    const poolManagerProxy = await deployContract<PoolManagerProxy>(
+        new PoolManagerProxy__factory(deployer),
+        "PoolManagerProxy",
+        [booster.address, deployerAddress], // TODO - should be multisig
+        {},
+        debug,
+    );
+
+    const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
+        new PoolManagerSecondaryProxy__factory(deployer),
+        "PoolManagerProxy",
+        [gaugeController, poolManagerProxy.address, booster.address, deployerAddress], // TODO - should be multisig
+        {},
+        debug,
+    );
+
     const poolManager = await deployContract<PoolManagerV3>(
         new PoolManagerV3__factory(deployer),
         "PoolManagerV3",
         [
-            booster.address,
+            poolManagerSecondaryProxy.address,
             gaugeController,
-            deployerAddress, // TODO - set as multisig?
+            deployerAddress, // TODO - should be multisig
+        ],
+        {},
+        debug,
+    );
+
+    const boosterOwner = await deployContract<BoosterOwner>(
+        new BoosterOwner__factory(deployer),
+        "BoosterOwner",
+        [
+            deployerAddress, // TODO - deployerAddress should be multisig
+            poolManagerSecondaryProxy.address,
+            booster.address,
+            stashFactory.address,
+            ZERO_ADDRESS, // TODO - rescuestash needed
         ],
         {},
         debug,
@@ -284,12 +339,6 @@ async function deployPhase3(
         {},
         debug,
     );
-
-    // TODO - chef, claimzap, escrow, dropFactory, pools, etc
-
-    // -----------------------------
-    // 2. Setup
-    // -----------------------------
 
     let tx = await voterProxy.setOperator(booster.address);
     await tx.wait();
@@ -310,8 +359,13 @@ async function deployPhase3(
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxRewards.address);
     await tx.wait();
 
-    tx = await booster.setPoolManager(poolManager.address);
+    tx = await booster.setPoolManager(poolManagerProxy.address);
     await tx.wait();
+    tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
+    await tx.wait();
+    tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
+    await tx.wait();
+
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await tx.wait();
     tx = await booster.setFeeInfo();
@@ -319,6 +373,20 @@ async function deployPhase3(
 
     tx = await booster.setArbitrator(arbitratorVault.address);
     await tx.wait();
+
+    tx = await booster.setOwner(boosterOwner.address);
+    await tx.wait();
+
+    // TODO - 3.1
+    // -----------------------------
+    // 3.1. Token liquidity:
+    //     - vesting (team, treasury, etc)
+    //     - bPool creation: cvx/eth & cvxCrv/crv https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
+    //     - lockdrop: use liquidity & init streams
+    //     - 2% emission for cvxCrv deposits
+    //     - chef (or other) & cvxCRV/CRV incentives
+    //     - airdrop factory & Airdrop(s)
+    // -----------------------------
 
     return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
 }
@@ -333,6 +401,12 @@ async function deployPhase4(
 
     const { token } = config;
     const { cvx, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor } = deployment;
+
+    // -----------------------------
+    // 4. Pool creation etc
+    //     - Claimzap
+    //     - All initial gauges // TODO - add gauges
+    // -----------------------------
 
     const claimZap = await deployContract<ClaimZap>(
         new ClaimZap__factory(deployer),
@@ -354,6 +428,7 @@ async function deployPhase4(
 }
 
 export {
+    deployLiveSystem,
     deploySystem,
     ExtSystemConfig,
     NamingConfig,
