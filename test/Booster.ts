@@ -2,8 +2,9 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
-import { Booster, PoolManagerV3, ERC20__factory } from "../types/generated";
+import { Booster, PoolManagerV3, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
 import { Signer } from "ethers";
+import { increaseTime } from "../test-utils/time";
 
 type Pool = {
     lptoken: string;
@@ -14,14 +15,18 @@ type Pool = {
     shutdown: boolean;
 };
 
-describe("PoolManagerV3", () => {
+describe("Booster", () => {
     let accounts: Signer[];
     let booster: Booster;
     let poolManager: PoolManagerV3;
     let mocks: DeployMocksResult;
     let pool: Pool;
+
     let deployer: Signer;
     let deployerAddress: string;
+
+    let alice: Signer;
+    let aliceAddress: string;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -58,12 +63,12 @@ describe("PoolManagerV3", () => {
         const crvBalance = await mocks.crv.balanceOf(deployerAddress);
         tx = await mocks.crv.transfer(mocks.crvMinter.address, crvBalance);
         await tx.wait();
+
+        alice = accounts[1];
+        aliceAddress = await alice.getAddress();
     });
 
-    it("@method deposit", async () => {
-        const alice = accounts[1];
-        const aliceAddress = await alice.getAddress();
-
+    it("@method Booster.deposit", async () => {
         const stake = false;
         const amount = ethers.utils.parseEther("10");
         let tx = await mocks.lptoken.connect(alice).approve(booster.address, amount);
@@ -78,13 +83,30 @@ describe("PoolManagerV3", () => {
         expect(balance.toString()).to.equal(amount.toString());
     });
 
-    it("@method earmarkRewards", async () => {
+    it("@method BaseRewardPool.stake", async () => {
+        const depositToken = ERC20__factory.connect(pool.token, alice);
+        const balance = await depositToken.balanceOf(aliceAddress);
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
+
+        let tx = await depositToken.approve(crvRewards.address, balance);
+        await tx.wait();
+
+        tx = await crvRewards.stake(balance);
+        await tx.wait();
+
+        const stakedBalance = await crvRewards.balanceOf(aliceAddress);
+
+        expect(stakedBalance.toString()).to.equal(balance.toString());
+    });
+
+    it("@method Booster.earmarkRewards", async () => {
+        await increaseTime(60 * 60 * 24);
+
         let tx = await booster.earmarkRewards("0");
         await tx.wait();
 
         const rate = await mocks.crvMinter.rate();
 
-        const pool = await booster.poolInfo("0");
         const stakerRewards = await booster.stakerRewards();
         const lockRewards = await booster.lockRewards();
 
@@ -99,5 +121,23 @@ describe("PoolManagerV3", () => {
             .add(lockRewardsBalance);
 
         expect(totalCrvBalance.toString()).to.equal(rate.toString());
+    });
+
+    it("@method BaseRewardPool.getReward", async () => {
+        const claimExtras = false;
+
+        await increaseTime(60 * 60 * 24);
+
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
+        let tx = await crvRewards["getReward(address,bool)"](aliceAddress, claimExtras);
+        await tx.wait();
+
+        const crvBalance = await mocks.crv.balanceOf(aliceAddress);
+
+        const balance = await crvRewards.balanceOf(aliceAddress);
+        const rewardPerToken = await crvRewards.rewardPerToken();
+        const expectedRewards = rewardPerToken.mul(balance).div((1e18).toString());
+
+        expect(expectedRewards.toString()).to.equal(crvBalance.toString());
     });
 });
