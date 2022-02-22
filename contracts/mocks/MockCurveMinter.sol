@@ -3,17 +3,21 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 
+interface IMinter {
+    function mint(address) external;
+}
+
 // @dev - Must be funded by transferring crv to this contract post deployment, as opposed to minting directly
-contract MockFeeDistro {
-    IERC20 public token;
+contract MockCurveMinter is IMinter {
+    IERC20 public immutable crv;
     uint256 public rate;
 
-    constructor(address _token, uint256 _rate) {
-        token = IERC20(_token);
+    constructor(address _crv, uint256 _rate) {
+        crv = IERC20(_crv);
         rate = _rate;
     }
 
-    function claim() external {
-        token.transfer(msg.sender, rate);
+    function mint(address) external {
+        crv.transfer(msg.sender, rate);
     }
 }
