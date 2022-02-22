@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
-import { Booster, PoolManagerV3 } from "types";
+import { Booster, PoolManagerV3, ERC20__factory } from "../types/generated";
 import { Signer } from "ethers";
 
 type Pool = {
@@ -14,26 +14,25 @@ type Pool = {
     shutdown: boolean;
 };
 
-const erc20ContractName = "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol:IERC20";
-
 describe("PoolManagerV3", () => {
     let accounts: Signer[];
     let booster: Booster;
     let poolManager: PoolManagerV3;
     let mocks: DeployMocksResult;
     let pool: Pool;
+    let deployer: Signer;
 
     before(async () => {
         accounts = await ethers.getSigners();
 
-        const deployer = accounts[0];
+        deployer = accounts[0];
         const deployerAddress = await deployer.getAddress();
 
-        mocks = await deployMocks(accounts[0]);
+        mocks = await deployMocks(deployer);
 
-        const phase1 = await deployPhase1(accounts[0], mocks.addresses);
-        const phase2 = await deployPhase2(accounts[0], phase1, mocks.namingConfig);
-        const contracts = await deployPhase3(accounts[0], phase2, mocks.namingConfig, mocks.addresses);
+        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase2 = await deployPhase2(deployer, phase1, mocks.namingConfig);
+        const contracts = await deployPhase3(deployer, phase2, mocks.namingConfig, mocks.addresses);
 
         booster = contracts.booster;
         poolManager = contracts.poolManager;
@@ -67,7 +66,7 @@ describe("PoolManagerV3", () => {
         tx = await booster.connect(alice).deposit("0", amount, stake);
         await tx.wait();
 
-        const depositToken = await ethers.getContractAt(erc20ContractName, pool.token);
+        const depositToken = ERC20__factory.connect(pool.token, deployer);
         const balance = await depositToken.balanceOf(aliceAddress);
 
         expect(balance.toString()).to.equal(amount.toString());
