@@ -21,12 +21,13 @@ describe("PoolManagerV3", () => {
     let mocks: DeployMocksResult;
     let pool: Pool;
     let deployer: Signer;
+    let deployerAddress: string;
 
     before(async () => {
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
-        const deployerAddress = await deployer.getAddress();
+        deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(deployer);
 
@@ -39,7 +40,7 @@ describe("PoolManagerV3", () => {
 
         // add mock gauge to the booster
         const gauge = mocks.gauge;
-        const tx = await poolManager["addPool(address)"](gauge.address);
+        let tx = await poolManager["addPool(address)"](gauge.address);
         await tx.wait();
 
         pool = await booster.poolInfo("0");
@@ -52,6 +53,11 @@ describe("PoolManagerV3", () => {
             const tx = await mocks.lptoken.transfer(accountAddress, share);
             await tx.wait();
         }
+
+        // transfer CRV to mock minter
+        const crvBalance = await mocks.crv.balanceOf(deployerAddress);
+        tx = await mocks.crv.transfer(mocks.crvMinter.address, crvBalance);
+        await tx.wait();
     });
 
     it("@method deposit", async () => {
@@ -70,5 +76,28 @@ describe("PoolManagerV3", () => {
         const balance = await depositToken.balanceOf(aliceAddress);
 
         expect(balance.toString()).to.equal(amount.toString());
+    });
+
+    it("@method earmarkRewards", async () => {
+        let tx = await booster.earmarkRewards("0");
+        await tx.wait();
+
+        const rate = await mocks.crvMinter.rate();
+
+        const pool = await booster.poolInfo("0");
+        const stakerRewards = await booster.stakerRewards();
+        const lockRewards = await booster.lockRewards();
+
+        const rewardPoolBalance = await mocks.crv.balanceOf(pool.crvRewards);
+        const deployerBalance = await mocks.crv.balanceOf(deployerAddress);
+        const stakerRewardsBalance = await mocks.crv.balanceOf(stakerRewards);
+        const lockRewardsBalance = await mocks.crv.balanceOf(lockRewards);
+
+        const totalCrvBalance = rewardPoolBalance
+            .add(deployerBalance)
+            .add(stakerRewardsBalance)
+            .add(lockRewardsBalance);
+
+        expect(totalCrvBalance.toString()).to.equal(rate.toString());
     });
 });
