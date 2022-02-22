@@ -44,42 +44,48 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
     // 1. Deployments
     // -----------------------------
 
-    const crv = await deployContract<MockERC20>(new MockERC20__factory(deployer), "MockCRV", [
-        "mockCrv",
-        "mockCrv",
-        18,
-        deployerAddress,
-        10000000,
-    ]);
+    const crv = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockCRV",
+        ["mockCrv", "mockCrv", 18, deployerAddress, 10000000],
+        {},
+        false,
+    );
 
-    const crvMinter = await deployContract<MockCurveMinter>(new MockCurveMinter__factory(deployer), "MockCurveMinter", [
-        crv.address,
-        simpleToExactAmount(1, 18),
-    ]);
+    const crvMinter = await deployContract<MockCurveMinter>(
+        new MockCurveMinter__factory(deployer),
+        "MockCurveMinter",
+        [crv.address, simpleToExactAmount(1, 18)],
+        {},
+        false,
+    );
 
     let tx = await crv.transfer(crvMinter.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
-    const lptoken = await deployContract<MockERC20>(new MockERC20__factory(deployer), "MockLPToken", [
-        "mockLPToken",
-        "mockLPToken",
-        18,
-        deployerAddress,
-        10000000,
-    ]);
+    const lptoken = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockLPToken",
+        ["mockLPToken", "mockLPToken", 18, deployerAddress, 10000000],
+        {},
+        false,
+    );
 
-    const feeToken = await deployContract<MockERC20>(new MockERC20__factory(deployer), "FeeToken", [
-        "Fee Token",
-        "feeToken",
-        18,
-        deployerAddress,
-        10000000,
-    ]);
+    const feeToken = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "FeeToken",
+        ["Fee Token", "feeToken", 18, deployerAddress, 10000000],
+        {},
+        false,
+    );
 
-    const feeDistro = await deployContract<MockFeeDistro>(new MockFeeDistro__factory(deployer), "MockFeeDistro", [
-        feeToken.address,
-        simpleToExactAmount(1),
-    ]);
+    const feeDistro = await deployContract<MockFeeDistro>(
+        new MockFeeDistro__factory(deployer),
+        "MockFeeDistro",
+        [feeToken.address, simpleToExactAmount(1)],
+        {},
+        false,
+    );
 
     tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
@@ -88,27 +94,38 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         new MockWalletChecker__factory(deployer),
         "mockWalletChecker",
         [],
+        {},
+        false,
     );
 
     const votingEscrow = await deployContract<MockCurveVoteEscrow>(
         new MockCurveVoteEscrow__factory(deployer),
         "MockCurveVoteEscrow",
         [smartWalletChecker.address, crv.address],
+        {},
+        false,
     );
 
-    const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", []);
+    const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", [], {}, false);
 
-    const registry = await deployContract<MockRegistry>(new MockRegistry__factory(deployer), "MockRegistry", []);
+    const registry = await deployContract<MockRegistry>(
+        new MockRegistry__factory(deployer),
+        "MockRegistry",
+        [],
+        {},
+        false,
+    );
 
     tx = await registry.setAddress("0", feeDistro.address);
     await tx.wait();
 
-    const gauge = await deployContract<MockCurveGauge>(new MockCurveGauge__factory(deployer), "MockCurveGauge", [
-        "TestGauge",
-        "tstGauge",
-        lptoken.address,
-        [],
-    ]);
+    const gauge = await deployContract<MockCurveGauge>(
+        new MockCurveGauge__factory(deployer),
+        "MockCurveGauge",
+        ["TestGauge", "tstGauge", lptoken.address, []],
+        {},
+        false,
+    );
 
     return {
         lptoken,

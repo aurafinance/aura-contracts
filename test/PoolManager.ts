@@ -33,7 +33,11 @@ describe("PoolManagerV3", () => {
         expect(pool.lptoken).to.equal(lptoken);
     });
 
-    it("@method shutdownPool", () => {
-        // TODO:
+    it("@method shutdownPool", async () => {
+        const tx = await poolManager.shutdownPool(0);
+        await tx.wait();
+
+        const pool = await booster.poolInfo(0);
+        expect(pool.shutdown).to.equal(true);
     });
 });
