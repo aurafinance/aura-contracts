@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import deployContracts from "../scripts/deployBooster";
-import deployMocks, { DeployMocksResult } from "../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
+import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
 import { Booster, PoolManagerV3 } from "types";
 
 describe("PoolManagerV3", () => {
@@ -15,16 +15,9 @@ describe("PoolManagerV3", () => {
 
         mocks = await deployMocks(accounts[0]);
 
-        const contracts = await deployContracts(accounts[0], {
-            crv: mocks.crv.address,
-            crvMinter: mocks.crv.address,
-            votingEscrow: mocks.votingEscrow.address,
-            gaugeController: mocks.voting.address,
-            crvRegistry: mocks.registry.address,
-            voteOwnership: mocks.voting.address,
-            voteParameter: mocks.voting.address,
-            feeDistro: mocks.feeDistro.address,
-        });
+        const phase1 = await deployPhase1(accounts[0], mocks.addresses);
+        const phase2 = await deployPhase2(accounts[0], phase1, mocks.namingConfig);
+        const contracts = await deployPhase3(accounts[0], phase2, mocks.namingConfig, mocks.addresses);
 
         booster = contracts.booster;
         poolManager = contracts.poolManager;
@@ -35,8 +28,8 @@ describe("PoolManagerV3", () => {
         const tx = await poolManager["addPool(address)"](gauge.address);
         await tx.wait();
 
-        const lptoken = await gauge.lptoken();
-        const pool = await booster.poolInfo("0");
+        const lptoken = await gauge.lp_token();
+        const pool = await booster.poolInfo(0);
         expect(pool.lptoken).to.equal(lptoken);
     });
 

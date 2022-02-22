@@ -20,8 +20,9 @@ import {
     MockCurveMinter,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
+import { ExtSystemConfig, NamingConfig } from "./deploySystem";
 
-export interface DeployMocksResult {
+interface DeployMocksResult {
     lptoken: MockERC20;
     crv: MockERC20;
     crvMinter: MockCurveMinter;
@@ -31,9 +32,11 @@ export interface DeployMocksResult {
     smartWalletChecker: MockWalletChecker;
     feeDistro: MockFeeDistro;
     gauge: MockCurveGauge;
+    addresses: ExtSystemConfig;
+    namingConfig: NamingConfig;
 }
 
-export default async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
+async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
@@ -107,5 +110,34 @@ export default async function deployMocks(signer: Signer): Promise<DeployMocksRe
         [],
     ]);
 
-    return { lptoken, crv, crvMinter, voting, votingEscrow, registry, smartWalletChecker, feeDistro, gauge };
+    return {
+        lptoken,
+        crv,
+        crvMinter,
+        voting,
+        votingEscrow,
+        registry,
+        smartWalletChecker,
+        feeDistro,
+        gauge,
+        addresses: {
+            token: crv.address,
+            minter: crvMinter.address,
+            votingEscrow: votingEscrow.address,
+            gaugeController: voting.address,
+            registry: registry.address,
+            registryID: 0,
+            voteOwnership: voting.address,
+            voteParameter: voting.address,
+        },
+        namingConfig: {
+            cvxName: "Convex Finance",
+            cvxSymbol: "CVX",
+            cvxCrvName: "Convex CRV",
+            cvxCrvSymbol: "cvxCRV",
+            tokenFactoryNamePostfix: " Convex Deposit",
+        },
+    };
 }
+
+export { deployMocks, DeployMocksResult };

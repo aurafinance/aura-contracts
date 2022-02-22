@@ -1,5 +1,7 @@
 import { BigNumber as BN, Signer } from "ethers";
 import {
+    ClaimZap__factory,
+    ClaimZap,
     Booster__factory,
     Booster,
     CurveVoterProxy__factory,
@@ -31,8 +33,9 @@ import {
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import * as distroList from "../tasks/deploy/convex-distro.json";
-import { ZERO_ADDRESS } from "test-utils";
+import { ZERO_ADDRESS } from "../test-utils";
 
+// TODO - add this as args
 const premineIncetives = BN.from(distroList.lpincentives)
     .add(BN.from(distroList.vecrv))
     .add(BN.from(distroList.teamcvxLpSeed));
@@ -74,56 +77,94 @@ const curveSystem: ExtSystemConfig = {
     voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
 };
 
-interface DeployBoosterResult {
+interface Phase1Deployed {
+    voterProxy: CurveVoterProxy;
+}
+
+interface Phase2Deployed extends Phase1Deployed {
+    cvx: ConvexToken;
+}
+
+interface Phase3Deployed extends Phase2Deployed {
     booster: Booster;
+    cvxCrv: CvxCrvToken;
+    cvxCrvRewards: BaseRewardPool;
+    cvxRewards: CvxRewardPool;
+    crvDepositor: CrvDepositor;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
+}
+
+interface SystemDeployed extends Phase3Deployed {
+    claimZap: ClaimZap;
 }
 
 /**
  * FLOW
  * Phase 1: Voter Proxy, get whitelisted on Curve system
- * Phase 2: cvx, booster, factories, cvxCrv, crvDepositor, poolManager, vesting, vlCVX + stakerProxy or fix
- * Phase 2.x: cvx/eth & cvxCRV/CRV pools
- * Phase 2.x: 2% emission for cvxCrv deposits
- * Phase 2.x: chef (or other) & cvxCRV/CRV incentives
- * Phase 2.x: Lockdrop & liquidity provision
- * Phase 2.x: Airdrop(s)
- * Phase 3: Pools, claimzap & farming
- * Phase 4: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
+ * Phase 2: cvx & lockdrop
+ * Phase 3: booster, factories, cvxCrv, crvDepositor, poolManager, vesting, vlCVX + stakerProxy or fix
+ * Phase 3.x: Liquidity provision post lockdrop
+ * Phase 3.x: cvx/eth & cvxCRV/CRV pools
+ * Phase 3.x: 2% emission for cvxCrv deposits
+ * Phase 3.x: chef (or other) & cvxCRV/CRV incentives
+ * Phase 3.x: Airdrop(s)
+ * Phase 4: Pools, claimzap & farming
+ * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
 
-export default async function deployBooster(
+async function deploySystem(signer: Signer, naming: NamingConfig, extSystem: ExtSystemConfig): Promise<SystemDeployed> {
+    const phase1 = await deployPhase1(signer, extSystem);
+    const phase2 = await deployPhase2(signer, phase1, naming);
+    const phase3 = await deployPhase3(signer, phase2, naming, extSystem);
+    const phase4 = await deployPhase4(signer, phase3, extSystem);
+    return phase4;
+}
+
+async function deployPhase1(signer: Signer, extSystem: ExtSystemConfig): Promise<Phase1Deployed> {
+    const deployer = signer;
+
+    const voterProxy = await deployContract<CurveVoterProxy>(
+        new CurveVoterProxy__factory(deployer),
+        "CurveVoterProxy",
+        [extSystem.minter, extSystem.token, extSystem.votingEscrow, extSystem.gaugeController],
+    );
+
+    return { voterProxy };
+}
+
+async function deployPhase2(signer: Signer, deployment: Phase1Deployed, naming: NamingConfig): Promise<Phase2Deployed> {
+    const deployer = signer;
+
+    const cvx = await deployContract<ConvexToken>(new ConvexToken__factory(deployer), "ConvexToken", [
+        deployment.voterProxy.address,
+        naming.cvxName,
+        naming.cvxSymbol,
+    ]);
+
+    return { ...deployment, cvx };
+}
+
+async function deployPhase3(
     signer: Signer,
+    deployment: Phase2Deployed,
     naming: NamingConfig,
-    config?: ExtSystemConfig,
-): Promise<DeployBoosterResult> {
+    config: ExtSystemConfig,
+): Promise<Phase3Deployed> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
-    const { token, minter, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
+    const { token, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
+    const { voterProxy, cvx } = deployment;
 
     // -----------------------------
     // 1. Deployments
     // -----------------------------
 
-    // TODO - move this to phase 1
-    const voterProxy = await deployContract<CurveVoterProxy>(
-        new CurveVoterProxy__factory(deployer),
-        "CurveVoterProxy",
-        [minter, token, votingEscrow, gaugeController],
-    );
-
-    const convexToken = await deployContract<ConvexToken>(new ConvexToken__factory(deployer), "ConvexToken", [
-        voterProxy.address,
-        naming.cvxName,
-        naming.cvxSymbol,
-    ]);
-
     // TODO - deploy boosterowner
     const booster = await deployContract<Booster>(new Booster__factory(deployer), "Booster", [
         voterProxy.address,
-        convexToken.address,
+        cvx.address,
         token,
         registry,
         registryID,
@@ -174,7 +215,7 @@ export default async function deployBooster(
     );
 
     const cvxRewards = await deployContract<CvxRewardPool>(new CvxRewardPool__factory(deployer), "CvxRewardPool", [
-        convexToken.address,
+        cvx.address,
         token,
         crvDepositor.address,
         cvxCrvRewards.address,
@@ -205,7 +246,7 @@ export default async function deployBooster(
     let tx = await voterProxy.setOperator(booster.address);
     await tx.wait();
 
-    tx = await convexToken.mint(deployerAddress, premine.toString());
+    tx = await cvx.mint(deployerAddress, premine.toString());
     await tx.wait();
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
@@ -231,5 +272,42 @@ export default async function deployBooster(
     tx = await booster.setArbitrator(arbitratorVault.address);
     await tx.wait();
 
-    return { booster, voterProxy, poolManager };
+    return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
 }
+
+async function deployPhase4(
+    signer: Signer,
+    deployment: Phase3Deployed,
+    config: ExtSystemConfig,
+): Promise<SystemDeployed> {
+    const deployer = signer;
+
+    const { token } = config;
+    const { cvx, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor } = deployment;
+
+    const claimZap = await deployContract<ClaimZap>(new ClaimZap__factory(deployer), "ClaimZap", [
+        token,
+        cvx.address,
+        cvxCrv.address,
+        crvDepositor.address,
+        cvxCrvRewards.address,
+        cvxRewards.address,
+        ZERO_ADDRESS, // TODO - this needs to be changed, used for trading cvx for cvxCRV
+    ]);
+
+    return { ...deployment, claimZap };
+}
+
+export {
+    deploySystem,
+    ExtSystemConfig,
+    NamingConfig,
+    deployPhase1,
+    Phase1Deployed,
+    deployPhase2,
+    Phase2Deployed,
+    deployPhase3,
+    Phase3Deployed,
+    deployPhase4,
+    SystemDeployed,
+};
