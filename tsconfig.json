@@ -28,5 +28,5 @@
         "./tasks.config.ts",
         "./tasks-fork.config.ts"
     ],
-    "include": ["tasks/**/*", "test/**/*", "types/**/*", "test-utils/**/*"]
+    "include": ["tasks/**/*", "test/**/*", "types/**/*", "test-utils/**/*", "scripts/**/*"]
 }
