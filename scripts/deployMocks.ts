@@ -1,5 +1,5 @@
 import { simpleToExactAmount } from "./../test-utils/math";
-import { ethers, Signer } from "ethers";
+import { Signer } from "ethers";
 
 import {
     MockERC20__factory,
