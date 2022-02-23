@@ -2,9 +2,10 @@
 pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import "./MockWalletChecker.sol";
 
-contract MockCurveVoteEscrow {
+contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
     address public smart_wallet_checker;
 
     address public token;
@@ -26,6 +27,8 @@ contract MockCurveVoteEscrow {
 
         lockAmounts[msg.sender] = amount;
         lockTimes[msg.sender] = unlockTime;
+
+        _mint(msg.sender, amount);
     }
 
     function increase_amount(uint256 amount) external {
@@ -33,6 +36,7 @@ contract MockCurveVoteEscrow {
         require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
         lockAmounts[msg.sender] += amount;
         IERC20(token).transferFrom(msg.sender, address(this), amount);
+        _mint(msg.sender, amount);
     }
 
     function increase_unlock_time(uint256 time) external {
@@ -46,7 +50,8 @@ contract MockCurveVoteEscrow {
         require(lockTimes[msg.sender] < block.timestamp, "!unlocked");
         lockAmounts[msg.sender] = 0;
         lockTimes[msg.sender] = 0;
-        uint256 amount = IERC20(token).balanceOf(msg.sender);
+        uint256 amount = balanceOf(msg.sender);
         IERC20(token).transferFrom(address(this), msg.sender, amount);
+        _burn(msg.sender, amount);
     }
 }
