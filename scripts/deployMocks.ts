@@ -146,7 +146,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         false,
     );
 
-    tx = await registry.setAddress("0", feeDistro.address);
+    tx = await registry.setAddress(0, feeDistro.address);
     await tx.wait();
 
     const gauge = await deployContract<MockCurveGauge>(

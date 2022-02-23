@@ -52,7 +52,7 @@ describe("Booster", () => {
 
         booster = contracts.booster;
 
-        pool = await booster.poolInfo("0");
+        pool = await booster.poolInfo(0);
 
         // transfer LP tokens to accounts
         const balance = await mocks.lptoken.balanceOf(deployerAddress);
@@ -73,7 +73,7 @@ describe("Booster", () => {
         let tx = await mocks.lptoken.connect(alice).approve(booster.address, amount);
         await tx.wait();
 
-        tx = await booster.connect(alice).deposit("0", amount, stake);
+        tx = await booster.connect(alice).deposit(0, amount, stake);
         await tx.wait();
 
         const depositToken = ERC20__factory.connect(pool.token, deployer);
@@ -101,7 +101,7 @@ describe("Booster", () => {
     it("@method Booster.earmarkRewards", async () => {
         await increaseTime(60 * 60 * 24);
 
-        const tx = await booster.earmarkRewards("0");
+        const tx = await booster.earmarkRewards(0);
         await tx.wait();
 
         const rate = await mocks.crvMinter.rate();
