@@ -1,4 +1,4 @@
-import { ZERO_ADDRESS } from "./../test-utils/constants";
+import { ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
 import {
@@ -41,7 +41,7 @@ function getMockDistro(): DistroList {
     return {
         miningRewards: simpleToExactAmount(50, 24),
         lpIncentives: simpleToExactAmount(25, 24),
-        airdrops: [{ merkleRoot: "0x", amount: simpleToExactAmount(2, 24) }],
+        airdrops: [{ merkleRoot: ZERO_KEY, amount: simpleToExactAmount(2, 24) }],
         vesting: [
             { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(10, 24) },
             { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(3.286, 24) },
@@ -180,6 +180,10 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: [gauge.address],
+            // TODO - update these addresses with mocks
+            balancerVault: ZERO_ADDRESS,
+            balancerWeightedPoolFactory: ZERO_ADDRESS,
+            weth: ZERO_ADDRESS,
         },
         namingConfig: {
             cvxName: "Convex Finance",

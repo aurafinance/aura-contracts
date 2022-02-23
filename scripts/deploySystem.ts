@@ -571,6 +571,9 @@ async function deployPhase3(
     const dropFactory = await deployContract<MerkleAirdropFactory>(
         new MerkleAirdropFactory__factory(deployer),
         "MerkleAirdropFactory",
+        [],
+        {},
+        debug,
     );
     const dropCount = distroList.airdrops.length;
     for (let i = 0; i < dropCount; i++) {
