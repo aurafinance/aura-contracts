@@ -1,3 +1,4 @@
+import { ZERO_ADDRESS } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
 
@@ -20,7 +21,7 @@ import {
     MockCurveMinter,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { ExtSystemConfig, NamingConfig } from "./deploySystem";
+import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
 
 interface DeployMocksResult {
     lptoken: MockERC20;
@@ -34,6 +35,35 @@ interface DeployMocksResult {
     gauge: MockCurveGauge;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
+}
+
+/** @dev Recreates the Convex distribution list */
+async function getMockDistro(): Promise<DistroList> {
+    return {
+        miningRewards: simpleToExactAmount(50, 24),
+        lpIncentives: simpleToExactAmount(25, 24),
+        airdrops: [{ merkleRoot: "0x", amount: simpleToExactAmount(2, 24) }],
+        vesting: [
+            { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(10, 24) },
+            { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(3.286, 24) },
+        ],
+        treasury: { address: "0x1389388d01708118b497f59521f6943Be2541bb7", amount: simpleToExactAmount(9.7, 24) },
+        partnerTreasury: { address: ZERO_ADDRESS, amount: simpleToExactAmount(0) },
+        lpSeed: simpleToExactAmount(0.014, 24),
+    };
+}
+
+/** @dev Simply fetches the addresses of the given signers to act as respective multisigs */
+async function getMockMultisigs(
+    vestingSigner: Signer,
+    treasurySigner: Signer,
+    daoSigner: Signer,
+): Promise<MultisigConfig> {
+    return {
+        vestingMultisig: await vestingSigner.getAddress(),
+        treasuryMultisig: await treasurySigner.getAddress(),
+        daoMultisig: await daoSigner.getAddress(),
+    };
 }
 
 async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
@@ -160,4 +190,4 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
     };
 }
 
-export { deployMocks, DeployMocksResult };
+export { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs };

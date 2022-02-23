@@ -1,3 +1,4 @@
+import { simpleToExactAmount } from "./../test-utils/math";
 import { BoosterOwner__factory } from "./../types/generated/factories/BoosterOwner__factory";
 import { BoosterOwner } from "./../types/generated/BoosterOwner";
 import { BigNumber as BN, Signer } from "ethers";
@@ -36,21 +37,31 @@ import {
     PoolManagerProxy,
     PoolManagerSecondaryProxy__factory,
     PoolManagerSecondaryProxy,
+    VestedEscrow,
+    VestedEscrow__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import * as distroList from "../tasks/deploy/convex-distro.json";
 import { ZERO_ADDRESS } from "../test-utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-// TODO - add this as args
-const premineIncetives = BN.from(distroList.lpincentives)
-    .add(BN.from(distroList.vecrv))
-    .add(BN.from(distroList.teamcvxLpSeed));
-const vestedAmounts = distroList.vested.team.amounts.concat(
-    distroList.vested.investor.amounts,
-    distroList.vested.treasury.amounts,
-);
-const totalVested = vestedAmounts.reduce((p, c) => p.add(c), BN.from(0));
-const premine = premineIncetives.add(totalVested);
+interface AirdropData {
+    merkleRoot: string;
+    amount: BN;
+}
+
+interface VestData {
+    address: string;
+    amount: BN;
+}
+interface DistroList {
+    miningRewards: BN;
+    lpIncentives: BN;
+    airdrops: AirdropData[];
+    vesting: VestData[];
+    treasury: VestData;
+    partnerTreasury: VestData;
+    lpSeed: BN;
+}
 
 interface ExtSystemConfig {
     token: string;
@@ -69,6 +80,12 @@ interface NamingConfig {
     cvxCrvName: string;
     cvxCrvSymbol: string;
     tokenFactoryNamePostfix: string;
+}
+
+interface MultisigConfig {
+    vestingMultisig: string;
+    treasuryMultisig: string;
+    daoMultisig: string;
 }
 
 /* eslint-disable-next-line */
@@ -119,23 +136,32 @@ interface SystemDeployed extends Phase3Deployed {
  * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
 
-async function deployLiveSystem(signer: Signer, naming: NamingConfig): Promise<SystemDeployed> {
+async function deployLiveSystem(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    distroList: DistroList,
+    multisigs: MultisigConfig,
+    naming: NamingConfig,
+): Promise<SystemDeployed> {
     const phase1 = await deployPhase1(signer, curveSystem, true);
-    const phase2 = await deployPhase2(signer, phase1, naming, true);
-    const phase3 = await deployPhase3(signer, phase2, naming, curveSystem, true);
+    const phase2 = await deployPhase2(signer, phase1, multisigs, naming, true);
+    const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, curveSystem, true);
     const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
     return phase4;
 }
 
 async function deploySystem(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    distroList: DistroList,
+    multisigs: MultisigConfig,
     naming: NamingConfig,
     extSystem: ExtSystemConfig,
     debug = false,
 ): Promise<SystemDeployed> {
     const phase1 = await deployPhase1(signer, extSystem, debug);
-    const phase2 = await deployPhase2(signer, phase1, naming, debug);
-    const phase3 = await deployPhase3(signer, phase2, naming, extSystem, debug);
+    const phase2 = await deployPhase2(signer, phase1, multisigs, naming, debug);
+    const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, extSystem, debug);
     const phase4 = await deployPhase4(signer, phase3, extSystem, debug);
     return phase4;
 }
@@ -161,6 +187,7 @@ async function deployPhase1(signer: Signer, extSystem: ExtSystemConfig, debug = 
 async function deployPhase2(
     signer: Signer,
     deployment: Phase1Deployed,
+    multisigs: MultisigConfig,
     naming: NamingConfig,
     debug = false,
 ): Promise<Phase2Deployed> {
@@ -178,21 +205,41 @@ async function deployPhase2(
         debug,
     );
 
+    // TODO - deploy lockdrop here
+
     return { ...deployment, cvx };
 }
 
 async function deployPhase3(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
     deployment: Phase2Deployed,
+    distroList: DistroList,
+    multisigs: MultisigConfig,
     naming: NamingConfig,
     config: ExtSystemConfig,
     debug = false,
 ): Promise<Phase3Deployed> {
+    const { ethers } = hre;
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
     const { token, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
     const { voterProxy, cvx } = deployment;
+
+    const premineIncetives = distroList.lpIncentives
+        .add(distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0)))
+        .add(distroList.lpSeed);
+    const totalVested = distroList.vesting
+        .reduce((p, c) => p.add(c.amount), BN.from(0))
+        .add(distroList.treasury.amount)
+        .add(distroList.partnerTreasury.amount);
+    const premine = premineIncetives.add(totalVested);
+    const checksum = premine.add(distroList.miningRewards);
+    console.log(checksum.toString());
+    if (!checksum.eq(simpleToExactAmount(100, 24))) {
+        throw console.error();
+    }
 
     // -----------------------------
     // 3. Core system:
@@ -200,7 +247,7 @@ async function deployPhase3(
     //     - factories (reward, token, proxy, stash)
     //     - cvxCrv (cvxCrv, crvDepositor)
     //     - pool management (poolManager + 2x proxies)
-    //     - vlCVX + ((stkCVX && stakerProxy) || fix) // TODO - deploy this & setRewardContracts on boosted
+    //     - vlCVX + ((stkCVX && stakerProxy) || fix) // TODO - deploy this & setRewardContracts on booster
     // -----------------------------
 
     const booster = await deployContract<Booster>(
@@ -284,7 +331,7 @@ async function deployPhase3(
             cvxCrvRewards.address,
             cvxCrv.address,
             booster.address,
-            deployerAddress,
+            multisigs.daoMultisig,
         ],
         {},
         debug,
@@ -293,7 +340,7 @@ async function deployPhase3(
     const poolManagerProxy = await deployContract<PoolManagerProxy>(
         new PoolManagerProxy__factory(deployer),
         "PoolManagerProxy",
-        [booster.address, deployerAddress], // TODO - should be multisig
+        [booster.address, multisigs.daoMultisig],
         {},
         debug,
     );
@@ -301,7 +348,7 @@ async function deployPhase3(
     const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
         new PoolManagerSecondaryProxy__factory(deployer),
         "PoolManagerProxy",
-        [gaugeController, poolManagerProxy.address, booster.address, deployerAddress], // TODO - should be multisig
+        [gaugeController, poolManagerProxy.address, booster.address, multisigs.daoMultisig],
         {},
         debug,
     );
@@ -309,11 +356,7 @@ async function deployPhase3(
     const poolManager = await deployContract<PoolManagerV3>(
         new PoolManagerV3__factory(deployer),
         "PoolManagerV3",
-        [
-            poolManagerSecondaryProxy.address,
-            gaugeController,
-            deployerAddress, // TODO - should be multisig
-        ],
+        [poolManagerSecondaryProxy.address, gaugeController, multisigs.daoMultisig],
         {},
         debug,
     );
@@ -322,11 +365,11 @@ async function deployPhase3(
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
         [
-            deployerAddress, // TODO - deployerAddress should be multisig
+            multisigs.daoMultisig,
             poolManagerSecondaryProxy.address,
             booster.address,
             stashFactory.address,
-            ZERO_ADDRESS, // TODO - rescuestash needed
+            ZERO_ADDRESS, // TODO - rescuestash or substitute needed
         ],
         {},
         debug,
@@ -377,16 +420,51 @@ async function deployPhase3(
     tx = await booster.setOwner(boosterOwner.address);
     await tx.wait();
 
-    // TODO - 3.1
     // -----------------------------
     // 3.1. Token liquidity:
     //     - vesting (team, treasury, etc)
+    //     TODO - add this
     //     - bPool creation: cvx/eth & cvxCrv/crv https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
+    //     TODO - add this
     //     - lockdrop: use liquidity & init streams
+    //     TODO - add this
     //     - 2% emission for cvxCrv deposits
+    //     TODO - add this
     //     - chef (or other) & cvxCRV/CRV incentives
+    //     TODO - add this
     //     - airdrop factory & Airdrop(s)
     // -----------------------------
+
+    const currentTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
+    const rewardsStart = currentTime + 3600;
+    const rewardsEnd = rewardsStart + 2 * 364 * 86400;
+
+    const vestedEscrow = await deployContract<VestedEscrow>(
+        new VestedEscrow__factory(deployer),
+        "VestedEscrow",
+        [
+            cvx.address,
+            rewardsStart,
+            rewardsEnd,
+            cvxRewards.address, // TODO - convert to vlCVX
+            multisigs.vestingMultisig,
+        ],
+        {},
+        debug,
+    );
+
+    tx = await cvx.approve(vestedEscrow.address, totalVested);
+    await tx.wait();
+    tx = await vestedEscrow.addTokens(totalVested);
+    await tx.wait();
+    const vestingAddr = distroList.vesting.map(m => m.address).concat([distroList.treasury.address]);
+    const vestingAmounts = distroList.vesting.map(m => m.amount).concat([distroList.treasury.amount]);
+    if (distroList.partnerTreasury.amount.gt(BN.from(0))) {
+        vestingAddr.push(distroList.partnerTreasury.address);
+        vestingAmounts.push(distroList.partnerTreasury.amount);
+    }
+    tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
+    await tx.wait();
 
     return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
 }
@@ -430,6 +508,8 @@ async function deployPhase4(
 export {
     deployLiveSystem,
     deploySystem,
+    DistroList,
+    MultisigConfig,
     ExtSystemConfig,
     NamingConfig,
     deployPhase1,

@@ -1,7 +1,7 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
+import { deployMocks, DeployMocksResult, getMockMultisigs, getMockDistro } from "../scripts/deployMocks";
 import { Booster, PoolManagerV3 } from "types";
 
 describe("PoolManagerV3", () => {
@@ -14,10 +14,20 @@ describe("PoolManagerV3", () => {
         const accounts = await ethers.getSigners();
 
         mocks = await deployMocks(accounts[0]);
+        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        const distro = await getMockDistro();
 
         const phase1 = await deployPhase1(accounts[0], mocks.addresses);
-        const phase2 = await deployPhase2(accounts[0], phase1, mocks.namingConfig);
-        const contracts = await deployPhase3(accounts[0], phase2, mocks.namingConfig, mocks.addresses);
+        const phase2 = await deployPhase2(accounts[0], phase1, multisigs, mocks.namingConfig);
+        const contracts = await deployPhase3(
+            hre,
+            accounts[0],
+            phase2,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+        );
 
         booster = contracts.booster;
         poolManager = contracts.poolManager;
