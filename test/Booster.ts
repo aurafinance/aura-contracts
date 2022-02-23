@@ -101,6 +101,8 @@ describe("Booster", () => {
     it("@method Booster.earmarkRewards", async () => {
         await increaseTime(60 * 60 * 24);
 
+        const deployerBalanceBefore = await mocks.crv.balanceOf(deployerAddress);
+
         const tx = await booster.earmarkRewards(0);
         await tx.wait();
 
@@ -109,13 +111,15 @@ describe("Booster", () => {
         const stakerRewards = await booster.stakerRewards();
         const lockRewards = await booster.lockRewards();
 
+        const deployerBalanceAfter = await mocks.crv.balanceOf(deployerAddress);
+        const deployerBalanceDelta = deployerBalanceAfter.sub(deployerBalanceBefore);
+
         const rewardPoolBalance = await mocks.crv.balanceOf(pool.crvRewards);
-        const deployerBalance = await mocks.crv.balanceOf(deployerAddress);
         const stakerRewardsBalance = await mocks.crv.balanceOf(stakerRewards);
         const lockRewardsBalance = await mocks.crv.balanceOf(lockRewards);
 
         const totalCrvBalance = rewardPoolBalance
-            .add(deployerBalance)
+            .add(deployerBalanceDelta)
             .add(stakerRewardsBalance)
             .add(lockRewardsBalance);
 
