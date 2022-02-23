@@ -127,6 +127,9 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         false,
     );
 
+    tx = await voting.vote_for_gauge_weights(gauge.address, 1);
+    await tx.wait();
+
     return {
         lptoken,
         crv,
