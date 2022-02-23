@@ -35,7 +35,7 @@ describe("Booster", () => {
 
         mocks = await deployMocks(deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
-        const distro = await getMockDistro();
+        const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
         const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);

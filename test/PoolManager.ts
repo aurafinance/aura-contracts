@@ -15,7 +15,7 @@ describe("PoolManagerV3", () => {
 
         mocks = await deployMocks(accounts[0]);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
-        const distro = await getMockDistro();
+        const distro = getMockDistro();
 
         const phase1 = await deployPhase1(accounts[0], mocks.addresses);
         const phase2 = await deployPhase2(accounts[0], phase1, multisigs, mocks.namingConfig);

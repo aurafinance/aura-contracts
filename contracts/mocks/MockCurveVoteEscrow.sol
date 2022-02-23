@@ -18,6 +18,10 @@ contract MockCurveVoteEscrow {
         token = _token;
     }
 
+    function balanceOf(address usr) external view returns (uint256) {
+        return lockAmounts[usr];
+    }
+
     function create_lock(uint256 amount, uint256 unlockTime) external {
         require(MockWalletChecker(smart_wallet_checker).check(msg.sender), "!contracts");
         require(lockAmounts[msg.sender] == 0, "Withdraw old tokens first");
@@ -44,9 +48,8 @@ contract MockCurveVoteEscrow {
 
     function withdraw() external {
         require(lockTimes[msg.sender] < block.timestamp, "!unlocked");
+        IERC20(token).transfer(msg.sender, lockAmounts[msg.sender]);
         lockAmounts[msg.sender] = 0;
         lockTimes[msg.sender] = 0;
-        uint256 amount = IERC20(token).balanceOf(msg.sender);
-        IERC20(token).transferFrom(address(this), msg.sender, amount);
     }
 }

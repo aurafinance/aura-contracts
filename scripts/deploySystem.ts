@@ -1,5 +1,9 @@
 import { BigNumber as BN, Signer } from "ethers";
 import {
+    IWalletChecker__factory,
+    ICurveVoteEscrow__factory,
+    MockWalletChecker__factory,
+    MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
     BoosterOwner,
     ClaimZap__factory,
@@ -38,9 +42,12 @@ import {
     PoolManagerSecondaryProxy,
     VestedEscrow,
     VestedEscrow__factory,
+    MockERC20__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, simpleToExactAmount } from "../test-utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
+import { simpleToExactAmount } from "../test-utils/math";
+import { impersonateAccount } from "../test-utils/fork";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface AirdropData {
@@ -64,6 +71,7 @@ interface DistroList {
 
 interface ExtSystemConfig {
     token: string;
+    tokenWhale: string;
     minter: string;
     votingEscrow: string;
     gaugeController: string;
@@ -91,6 +99,7 @@ interface MultisigConfig {
 /* eslint-disable-next-line */
 const curveSystem: ExtSystemConfig = {
     token: "0xD533a949740bb3306d119CC777fa900bA034cd52",
+    tokenWhale: "0x7a16fF8270133F063aAb6C9977183D9e72835428",
     minter: "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0",
     votingEscrow: "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2",
     gaugeController: "0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB",
@@ -137,21 +146,35 @@ interface SystemDeployed extends Phase3Deployed {
  * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
 
-async function deployLiveSystem(
+async function deployForkSystem(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     distroList: DistroList,
     multisigs: MultisigConfig,
     naming: NamingConfig,
 ): Promise<SystemDeployed> {
-    const phase1 = await deployPhase1(signer, curveSystem, true);
+    const phase1 = await deployPhase1(signer, curveSystem, false, true);
+
+    // Whitelist the VoterProxy in the Curve system & send it some CRV
+    const ve = ICurveVoteEscrow__factory.connect(curveSystem.votingEscrow, signer);
+    const walletChecker = IWalletChecker__factory.connect(await ve.smart_wallet_checker(), signer);
+    const owner = await walletChecker.dao();
+    const ownerSigner = await impersonateAccount(owner);
+    let tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
+    await tx.wait();
+
+    const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
+    const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
+    tx = await crv.transfer(phase1.voterProxy.address, simpleToExactAmount(1));
+    await tx.wait();
+
     const phase2 = await deployPhase2(signer, phase1, multisigs, naming, true);
     const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, curveSystem, true);
     const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
     return phase4;
 }
 
-async function deploySystem(
+async function deployLocalSystem(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     distroList: DistroList,
@@ -167,7 +190,12 @@ async function deploySystem(
     return phase4;
 }
 
-async function deployPhase1(signer: Signer, extSystem: ExtSystemConfig, debug = false): Promise<Phase1Deployed> {
+async function deployPhase1(
+    signer: Signer,
+    extSystem: ExtSystemConfig,
+    approveWalletLocal = true,
+    debug = false,
+): Promise<Phase1Deployed> {
     const deployer = signer;
 
     // -----------------------------
@@ -181,6 +209,15 @@ async function deployPhase1(signer: Signer, extSystem: ExtSystemConfig, debug = 
         {},
         debug,
     );
+
+    if (approveWalletLocal) {
+        const ve = MockCurveVoteEscrow__factory.connect(extSystem.votingEscrow, deployer);
+        const walletChecker = MockWalletChecker__factory.connect(await ve.smart_wallet_checker(), deployer);
+        await walletChecker.approveWallet(voterProxy.address);
+
+        const crv = MockERC20__factory.connect(extSystem.token, deployer);
+        await crv.transfer(voterProxy.address, simpleToExactAmount(1));
+    }
 
     return { voterProxy };
 }
@@ -399,6 +436,8 @@ async function deployPhase3(
     await tx.wait();
     tx = await voterProxy.setDepositor(crvDepositor.address);
     await tx.wait();
+    tx = await crvDepositor.initialLock();
+    await tx.wait();
     tx = await booster.setTreasury(crvDepositor.address);
     await tx.wait();
 
@@ -521,8 +560,8 @@ async function deployPhase4(
 }
 
 export {
-    deployLiveSystem,
-    deploySystem,
+    deployForkSystem,
+    deployLocalSystem,
     DistroList,
     MultisigConfig,
     ExtSystemConfig,

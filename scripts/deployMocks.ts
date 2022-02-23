@@ -1,7 +1,6 @@
 import { ZERO_ADDRESS } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
-
 import {
     MockERC20__factory,
     MockERC20,
@@ -38,7 +37,7 @@ interface DeployMocksResult {
 }
 
 /** @dev Recreates the Convex distribution list */
-async function getMockDistro(): Promise<DistroList> {
+function getMockDistro(): DistroList {
     return {
         miningRewards: simpleToExactAmount(50, 24),
         lpIncentives: simpleToExactAmount(25, 24),
@@ -172,6 +171,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         gauge,
         addresses: {
             token: crv.address,
+            tokenWhale: deployerAddress,
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
             gaugeController: voting.address,
