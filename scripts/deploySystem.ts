@@ -43,6 +43,12 @@ import {
     VestedEscrow,
     VestedEscrow__factory,
     MockERC20__factory,
+    MerkleAirdropFactory,
+    MerkleAirdropFactory__factory,
+    MerkleAirdrop__factory,
+    IWeightedPoolFactory__factory,
+    IBalancerPool__factory,
+    IBalancerVault__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -80,6 +86,9 @@ interface ExtSystemConfig {
     voteOwnership?: string;
     voteParameter?: string;
     gauges?: string[];
+    balancerVault: string;
+    balancerWeightedPoolFactory: string;
+    weth: string;
 }
 
 interface NamingConfig {
@@ -108,6 +117,9 @@ const curveSystem: ExtSystemConfig = {
     voteOwnership: "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
     voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
     gauges: ["0xBC89cd85491d81C6AD2954E6d0362Ee29fCa8F53"],
+    balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    balancerWeightedPoolFactory: "0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9",
+    weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
 };
 
 interface Phase1Deployed {
@@ -472,17 +484,15 @@ async function deployPhase3(
     // -----------------------------
     // 3.1. Token liquidity:
     //     - vesting (team, treasury, etc)
-    //     TODO - add this
-    //     - bPool creation: cvx/eth & cvxCrv/crv https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
-    //     TODO - add this
+    //     - bPool creation: cvx/eth & cvxCrv/crv
     //     - lockdrop: use liquidity & init streams
-    //     TODO - add this
     //     - 2% emission for cvxCrv deposits
-    //     TODO - add this (await convexToken.transfer(chef.address, distroList.lpincentives);)
     //     - chef (or other) & cvxCRV/CRV incentives
-    //     TODO - add this
     //     - airdrop factory & Airdrop(s)
-    //     TODO - ensure deployer has 0 cvx left
+    // -----------------------------
+
+    // -----------------------------
+    // 3.1.1 Vesting
     // -----------------------------
 
     const currentTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
@@ -516,25 +526,72 @@ async function deployPhase3(
     tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
     await tx.wait();
 
-    // MERKLE DROP
-    // const dropFactory = await deployContract<MerkleAirdropFactory>(
-    //     new MerkleAirdropFactory__factory(deployer),
-    //     "MerkleAirdropFactory",
-    // );
-    // TODO - Ensure owner of MerkleDrop is valid (multisig?)
-    // tx = await dropFactory.CreateMerkleAirdrop();
-    // const txReceipt = await tx.wait();
-    // const merkleDropAddr = txReceipt.events[0].args[0];
-    // console.log("factory return: " + merkleDropAddr);
+    // TODO - add this
+    // -----------------------------
+    // 3.1.2 Liquidity pool creation
+    // https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
+    // -----------------------------
 
-    // const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
-    // addContract("system", "airdrop", airdrop.address);
-    // tx = await airdrop.setRewardToken(convexToken.address);
-    // await tx.wait();
-    // tx = await convexToken.transfer(airdrop.address, distroList.vecrv);
-    // await tx.wait();
-    // tx = await airdrop.setRoot(merkleRoot);
-    // await tx.wait();
+    // let poolTokens = [cvx.address, config.weth].sort((a, b) => (a > b ? 1 : 0));
+    // console.log(poolTokens);
+    // let poolName = `${await cvx.symbol()}-WETH 50/50 Pool`;
+    // let poolSymbol = `50${await cvx.symbol()}-50WETH`;
+    // let poolSwapFee = simpleToExactAmount(5, 15);
+    // let poolWeights = [simpleToExactAmount(5, 17), simpleToExactAmount(5, 17)];
+    // const weightedPoolFactory = IWeightedPoolFactory__factory.connect(config.balancerWeightedPoolFactory, deployer);
+    // tx = await weightedPoolFactory.create(poolName, poolSymbol, poolTokens, poolWeights, poolSwapFee, ZERO_ADDRESS);
+    // let receipt = await tx.wait();
+    // const events = receipt.events.filter(e => e.event === "PoolCreated");
+    // const poolAddress = events[0].args.pool;
+
+    // let pool = await IBalancerPool__factory.connect(poolAddress, deployer);
+    // let poolId = await pool.getPoolId();
+    // const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
+    // let initialPoolBalances =
+
+    // TODO - add this
+    // -----------------------------
+    // 3.1.3 Lockdrop closing & liquidity allocation
+    // -----------------------------
+
+    // TODO - add this
+    // -----------------------------
+    // 3.1.4 2% Emission for cvxCRV deposits
+    // -----------------------------
+
+    // TODO - add this (await convexToken.transfer(chef.address, distroList.lpincentives);)
+    // -----------------------------
+    // 3.1.5 Chef & cvxCRV long term incentives
+    // -----------------------------
+
+    // -----------------------------
+    // 3.1.6 Merkle drops
+    // -----------------------------
+
+    const dropFactory = await deployContract<MerkleAirdropFactory>(
+        new MerkleAirdropFactory__factory(deployer),
+        "MerkleAirdropFactory",
+    );
+    const dropCount = distroList.airdrops.length;
+    for (let i = 0; i < dropCount; i++) {
+        const { merkleRoot, amount } = distroList.airdrops[i];
+        tx = await dropFactory.CreateMerkleAirdrop();
+        const txReceipt = await tx.wait();
+        const merkleDropAddr = txReceipt.events[0].args[0];
+
+        const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
+        tx = await airdrop.setRewardToken(cvx.address);
+        await tx.wait();
+        tx = await cvx.transfer(airdrop.address, amount);
+        await tx.wait();
+        tx = await airdrop.setRoot(merkleRoot);
+        await tx.wait();
+        tx = await airdrop.setOwner(multisigs.daoMultisig);
+        await tx.wait();
+    }
+
+    // TODO - ensure deployer has 0 cvx left
+    // TODO - add all contracts to output
 
     return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
 }
