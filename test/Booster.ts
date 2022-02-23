@@ -1,8 +1,8 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, PoolManagerV3, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
+import { Booster, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
 
@@ -18,7 +18,6 @@ type Pool = {
 describe("Booster", () => {
     let accounts: Signer[];
     let booster: Booster;
-    let poolManager: PoolManagerV3;
     let mocks: DeployMocksResult;
     let pool: Pool;
 
@@ -40,7 +39,7 @@ describe("Booster", () => {
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
         const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const contracts = await deployPhase3(
+        const phase3 = await deployPhase3(
             hre,
             deployer,
             phase2,
@@ -49,14 +48,9 @@ describe("Booster", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
+        const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         booster = contracts.booster;
-        poolManager = contracts.poolManager;
-
-        // add mock gauge to the booster
-        const gauge = mocks.gauge;
-        let tx = await poolManager["addPool(address)"](gauge.address);
-        await tx.wait();
 
         pool = await booster.poolInfo("0");
 
@@ -68,11 +62,6 @@ describe("Booster", () => {
             const tx = await mocks.lptoken.transfer(accountAddress, share);
             await tx.wait();
         }
-
-        // transfer CRV to mock minter
-        const crvBalance = await mocks.crv.balanceOf(deployerAddress);
-        tx = await mocks.crv.transfer(mocks.crvMinter.address, crvBalance);
-        await tx.wait();
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();

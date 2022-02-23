@@ -1,8 +1,7 @@
-import { simpleToExactAmount } from "./../test-utils/math";
-import { BoosterOwner__factory } from "./../types/generated/factories/BoosterOwner__factory";
-import { BoosterOwner } from "./../types/generated/BoosterOwner";
 import { BigNumber as BN, Signer } from "ethers";
 import {
+    BoosterOwner__factory,
+    BoosterOwner,
     ClaimZap__factory,
     ClaimZap,
     Booster__factory,
@@ -41,7 +40,7 @@ import {
     VestedEscrow__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS } from "../test-utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS, simpleToExactAmount } from "../test-utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface AirdropData {
@@ -72,6 +71,7 @@ interface ExtSystemConfig {
     registryID: number;
     voteOwnership?: string;
     voteParameter?: string;
+    gauges?: string[];
 }
 
 interface NamingConfig {
@@ -98,6 +98,7 @@ const curveSystem: ExtSystemConfig = {
     registryID: 4,
     voteOwnership: "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
     voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
+    gauges: ["0xBC89cd85491d81C6AD2954E6d0362Ee29fCa8F53"],
 };
 
 interface Phase1Deployed {
@@ -236,8 +237,8 @@ async function deployPhase3(
         .add(distroList.partnerTreasury.amount);
     const premine = premineIncetives.add(totalVested);
     const checksum = premine.add(distroList.miningRewards);
-    console.log(checksum.toString());
     if (!checksum.eq(simpleToExactAmount(100, 24))) {
+        console.log(checksum.toString());
         throw console.error();
     }
 
@@ -247,7 +248,9 @@ async function deployPhase3(
     //     - factories (reward, token, proxy, stash)
     //     - cvxCrv (cvxCrv, crvDepositor)
     //     - pool management (poolManager + 2x proxies)
-    //     - vlCVX + ((stkCVX && stakerProxy) || fix) // TODO - deploy this & setRewardContracts on booster
+    //     TODO - write/deploy this & setRewardContracts on booster
+    //     TODO - ensure all places using vlCVX (i.e. vesting & lockdrop) are updated
+    //     - vlCVX + ((stkCVX && stakerProxy) || fix)
     // -----------------------------
 
     const booster = await deployContract<Booster>(
@@ -477,14 +480,16 @@ async function deployPhase4(
 ): Promise<SystemDeployed> {
     const deployer = signer;
 
-    const { token } = config;
-    const { cvx, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor } = deployment;
+    const { token, gauges } = config;
+    const { cvx, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager } = deployment;
 
     // -----------------------------
     // 4. Pool creation etc
     //     - Claimzap
-    //     - All initial gauges // TODO - add gauges
+    //     - All initial gauges
     // -----------------------------
+
+    // TODO - add "init" flag to PoolManager in order to allow for pool creation
 
     const claimZap = await deployContract<ClaimZap>(
         new ClaimZap__factory(deployer),
@@ -496,11 +501,21 @@ async function deployPhase4(
             crvDepositor.address,
             cvxCrvRewards.address,
             cvxRewards.address,
-            ZERO_ADDRESS, // TODO - this needs to be changed, used for trading cvx for cvxCRV
+            DEAD_ADDRESS, // TODO - this needs to be changed, used for trading cvx for cvxCRV
+            DEAD_ADDRESS, // TODO - add vlCVX
         ],
         {},
         debug,
     );
+
+    let tx = await claimZap.setApprovals();
+    await tx.wait();
+
+    const gaugeLength = gauges.length;
+    for (let i = 0; i < gaugeLength; i++) {
+        tx = await poolManager["addPool(address)"](gauges[i]);
+        await tx.wait();
+    }
 
     return { ...deployment, claimZap };
 }

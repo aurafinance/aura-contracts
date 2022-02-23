@@ -179,6 +179,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
             registryID: 0,
             voteOwnership: voting.address,
             voteParameter: voting.address,
+            gauges: [gauge.address],
         },
         namingConfig: {
             cvxName: "Convex Finance",
