@@ -155,7 +155,7 @@ async function deployForkSystem(
 ): Promise<SystemDeployed> {
     const phase1 = await deployPhase1(signer, curveSystem, false, true);
 
-    // Whitelist the VoterProxy in the Curve system & send it some CRV
+    // Whitelist the VoterProxy in the Curve system
     const ve = ICurveVoteEscrow__factory.connect(curveSystem.votingEscrow, signer);
     const walletChecker = IWalletChecker__factory.connect(await ve.smart_wallet_checker(), signer);
     const owner = await walletChecker.dao();
@@ -163,6 +163,7 @@ async function deployForkSystem(
     let tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
     await tx.wait();
 
+    // Send VoterProxy some CRV for initial lock
     const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
     const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
     tx = await crv.transfer(phase1.voterProxy.address, simpleToExactAmount(1));
@@ -434,10 +435,13 @@ async function deployPhase3(
 
     tx = await cvxCrv.setOperator(crvDepositor.address);
     await tx.wait();
+
     tx = await voterProxy.setDepositor(crvDepositor.address);
     await tx.wait();
+
     tx = await crvDepositor.initialLock();
     await tx.wait();
+
     tx = await booster.setTreasury(crvDepositor.address);
     await tx.wait();
 
@@ -446,13 +450,16 @@ async function deployPhase3(
 
     tx = await booster.setPoolManager(poolManagerProxy.address);
     await tx.wait();
+
     tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
     await tx.wait();
+
     tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
     await tx.wait();
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await tx.wait();
+
     tx = await booster.setFeeInfo();
     await tx.wait();
 
@@ -471,10 +478,11 @@ async function deployPhase3(
     //     - lockdrop: use liquidity & init streams
     //     TODO - add this
     //     - 2% emission for cvxCrv deposits
-    //     TODO - add this
+    //     TODO - add this (await convexToken.transfer(chef.address, distroList.lpincentives);)
     //     - chef (or other) & cvxCRV/CRV incentives
     //     TODO - add this
     //     - airdrop factory & Airdrop(s)
+    //     TODO - ensure deployer has 0 cvx left
     // -----------------------------
 
     const currentTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
@@ -507,6 +515,26 @@ async function deployPhase3(
     }
     tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
     await tx.wait();
+
+    // MERKLE DROP
+    // const dropFactory = await deployContract<MerkleAirdropFactory>(
+    //     new MerkleAirdropFactory__factory(deployer),
+    //     "MerkleAirdropFactory",
+    // );
+    // TODO - Ensure owner of MerkleDrop is valid (multisig?)
+    // tx = await dropFactory.CreateMerkleAirdrop();
+    // const txReceipt = await tx.wait();
+    // const merkleDropAddr = txReceipt.events[0].args[0];
+    // console.log("factory return: " + merkleDropAddr);
+
+    // const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
+    // addContract("system", "airdrop", airdrop.address);
+    // tx = await airdrop.setRewardToken(convexToken.address);
+    // await tx.wait();
+    // tx = await convexToken.transfer(airdrop.address, distroList.vecrv);
+    // await tx.wait();
+    // tx = await airdrop.setRoot(merkleRoot);
+    // await tx.wait();
 
     return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
 }
