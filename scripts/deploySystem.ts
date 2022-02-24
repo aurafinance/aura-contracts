@@ -454,6 +454,9 @@ async function deployPhase3(
     tx = await crvDepositor.initialLock();
     await tx.wait();
 
+    tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
+    await tx.wait();
+
     tx = await booster.setTreasury(crvDepositor.address);
     await tx.wait();
 
