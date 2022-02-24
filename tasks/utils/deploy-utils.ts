@@ -6,22 +6,28 @@ export const deployContract = async <T extends Contract>(
     contractName = "Contract",
     constructorArgs: Array<unknown> = [],
     overrides: Overrides = {},
+    debug = true,
 ): Promise<T> => {
     const contract = (await contractFactory.deploy(...constructorArgs, overrides)) as T;
-    console.log(
-        `Deploying ${contractName} contract with hash ${contract.deployTransaction.hash} from ${
-            contract.deployTransaction.from
-        } with gas price ${contract.deployTransaction.gasPrice?.toNumber() || 0 / 1e9} Gwei`,
-    );
+    if (debug) {
+        console.log(
+            `Deploying ${contractName} contract with hash ${contract.deployTransaction.hash} from ${
+                contract.deployTransaction.from
+            } with gas price ${contract.deployTransaction.gasPrice?.toNumber() || 0 / 1e9} Gwei`,
+        );
+    }
     const receipt = await contract.deployTransaction.wait();
     const txCost = receipt.gasUsed.mul(contract.deployTransaction.gasPrice || 0);
     const abiEncodedConstructorArgs = contract.interface.encodeDeploy(constructorArgs);
-    console.log(
-        `Deployed ${contractName} to ${contract.address} in block ${receipt.blockNumber}, using ${
-            receipt.gasUsed
-        } gas costing ${formatUnits(txCost)} ETH`,
-    );
-    console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
+
+    if (debug) {
+        console.log(
+            `Deployed ${contractName} to ${contract.address} in block ${receipt.blockNumber}, using ${
+                receipt.gasUsed
+            } gas costing ${formatUnits(txCost)} ETH`,
+        );
+        console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
+    }
     return contract;
 };
 
