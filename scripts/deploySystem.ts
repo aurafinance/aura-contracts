@@ -481,6 +481,12 @@ async function deployPhase3(
     tx = await booster.setArbitrator(arbitratorVault.address);
     await tx.wait();
 
+    tx = await booster.setVoteDelegate(multisigs.daoMultisig);
+    await tx.wait();
+
+    tx = await booster.setFeeManager(multisigs.daoMultisig);
+    await tx.wait();
+
     tx = await booster.setOwner(boosterOwner.address);
     await tx.wait();
 
