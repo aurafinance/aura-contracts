@@ -19,15 +19,29 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
         token = _token;
     }
 
+    function transfer(
+        address, /* recipient */
+        uint256 /* amount */
+    ) public virtual override returns (bool) {
+        revert("Not transferrable");
+    }
+
+    function transferFrom(
+        address, /* sender */
+        address, /* recipient */
+        uint256 /* amount */
+    ) public virtual override returns (bool) {
+        revert("Not transferrable");
+    }
+
     function create_lock(uint256 amount, uint256 unlockTime) external {
         require(MockWalletChecker(smart_wallet_checker).check(msg.sender), "!contracts");
         require(lockAmounts[msg.sender] == 0, "Withdraw old tokens first");
 
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-
         lockAmounts[msg.sender] = amount;
         lockTimes[msg.sender] = unlockTime;
 
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, amount);
     }
 
@@ -35,6 +49,7 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
         require(lockAmounts[msg.sender] > 0, "Must have a lock");
         require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
         lockAmounts[msg.sender] += amount;
+
         IERC20(token).transferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, amount);
     }
@@ -48,10 +63,13 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
 
     function withdraw() external {
         require(lockTimes[msg.sender] < block.timestamp, "!unlocked");
+
+        uint256 amount = balanceOf(msg.sender);
+
         lockAmounts[msg.sender] = 0;
         lockTimes[msg.sender] = 0;
-        uint256 amount = balanceOf(msg.sender);
-        IERC20(token).transferFrom(address(this), msg.sender, amount);
+
+        IERC20(token).transfer(msg.sender, amount);
         _burn(msg.sender, amount);
     }
 }

@@ -1,8 +1,8 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
-import { Booster, PoolManagerV3, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { Booster, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
 
@@ -18,7 +18,6 @@ type Pool = {
 describe("Booster", () => {
     let accounts: Signer[];
     let booster: Booster;
-    let poolManager: PoolManagerV3;
     let mocks: DeployMocksResult;
     let pool: Pool;
 
@@ -35,20 +34,25 @@ describe("Booster", () => {
         deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(deployer);
+        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, mocks.namingConfig);
-        const contracts = await deployPhase3(deployer, phase2, mocks.namingConfig, mocks.addresses);
+        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
+        const phase3 = await deployPhase3(
+            hre,
+            deployer,
+            phase2,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+        );
+        const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         booster = contracts.booster;
-        poolManager = contracts.poolManager;
 
-        // add mock gauge to the booster
-        const gauge = mocks.gauge;
-        let tx = await poolManager["addPool(address)"](gauge.address);
-        await tx.wait();
-
-        pool = await booster.poolInfo("0");
+        pool = await booster.poolInfo(0);
 
         // transfer LP tokens to accounts
         const balance = await mocks.lptoken.balanceOf(deployerAddress);
@@ -58,11 +62,6 @@ describe("Booster", () => {
             const tx = await mocks.lptoken.transfer(accountAddress, share);
             await tx.wait();
         }
-
-        // transfer CRV to mock minter
-        const crvBalance = await mocks.crv.balanceOf(deployerAddress);
-        tx = await mocks.crv.transfer(mocks.crvMinter.address, crvBalance);
-        await tx.wait();
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
@@ -74,7 +73,7 @@ describe("Booster", () => {
         let tx = await mocks.lptoken.connect(alice).approve(booster.address, amount);
         await tx.wait();
 
-        tx = await booster.connect(alice).deposit("0", amount, stake);
+        tx = await booster.connect(alice).deposit(0, amount, stake);
         await tx.wait();
 
         const depositToken = ERC20__factory.connect(pool.token, deployer);
@@ -102,7 +101,9 @@ describe("Booster", () => {
     it("@method Booster.earmarkRewards", async () => {
         await increaseTime(60 * 60 * 24);
 
-        const tx = await booster.earmarkRewards("0");
+        const deployerBalanceBefore = await mocks.crv.balanceOf(deployerAddress);
+
+        const tx = await booster.earmarkRewards(0);
         await tx.wait();
 
         const rate = await mocks.crvMinter.rate();
@@ -110,13 +111,15 @@ describe("Booster", () => {
         const stakerRewards = await booster.stakerRewards();
         const lockRewards = await booster.lockRewards();
 
+        const deployerBalanceAfter = await mocks.crv.balanceOf(deployerAddress);
+        const deployerBalanceDelta = deployerBalanceAfter.sub(deployerBalanceBefore);
+
         const rewardPoolBalance = await mocks.crv.balanceOf(pool.crvRewards);
-        const deployerBalance = await mocks.crv.balanceOf(deployerAddress);
         const stakerRewardsBalance = await mocks.crv.balanceOf(stakerRewards);
         const lockRewardsBalance = await mocks.crv.balanceOf(lockRewards);
 
         const totalCrvBalance = rewardPoolBalance
-            .add(deployerBalance)
+            .add(deployerBalanceDelta)
             .add(stakerRewardsBalance)
             .add(lockRewardsBalance);
 

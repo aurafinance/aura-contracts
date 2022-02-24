@@ -1,16 +1,15 @@
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
 import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult } from "../scripts/deployMocks";
-import { CrvDepositor, CurveVoterProxy, CvxCrvToken } from "../types/generated";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { CrvDepositor, CvxCrvToken } from "../types/generated";
 
 describe("CrvDepositor", () => {
     let accounts: Signer[];
     let mocks: DeployMocksResult;
     let crvDepositor: CrvDepositor;
     let cvxCrv: CvxCrvToken;
-    let voterProxy: CurveVoterProxy;
     let deployer: Signer;
     let deployerAddress: string;
     let alice: Signer;
@@ -23,30 +22,32 @@ describe("CrvDepositor", () => {
         deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(deployer);
+        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, mocks.namingConfig);
-        const contracts = await deployPhase3(deployer, phase2, mocks.namingConfig, mocks.addresses);
+        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
+        const contracts = await deployPhase3(
+            hre,
+            deployer,
+            phase2,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+        );
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
 
         crvDepositor = contracts.crvDepositor.connect(alice);
         cvxCrv = contracts.cvxCrv.connect(alice);
-        voterProxy = contracts.voterProxy.connect(alice);
 
         const crvBalance = await mocks.crv.balanceOf(deployerAddress);
 
-        const calls = [
-            await mocks.crv.transfer(aliceAddress, crvBalance.mul(90).div(100)),
-            await mocks.crv.transfer(voterProxy.address, crvBalance.mul(10).div(100)),
-            await mocks.smartWalletChecker.setAddress(voterProxy.address, true),
-        ];
+        const calls = [await mocks.crv.transfer(aliceAddress, crvBalance.mul(90).div(100))];
 
         await Promise.all(calls.map(tx => tx.wait()));
-
-        const tx = await crvDepositor.connect(deployer).initialLock();
-        await tx.wait();
     });
 
     it("@method CrvDepositor.deposit", async () => {

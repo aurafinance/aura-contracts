@@ -7104,7 +7104,7 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=ff3036&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=a0c436&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
     "@truffle/hdwallet-provider": ^1.2.6
@@ -7113,7 +7113,7 @@ __metadata:
     jsonfile: ^6.1.0
     openzeppelin-test-helpers: ^0.5.1
     truffle: 5.4.31
-  checksum: c29b342f8bae6163856b763b90473dc98d240a1f8424520dc80a9293b2bd34b342c86209ae2de6ae573f613e7e505577a3ee26a78df93ca6d685719c4c37504b
+  checksum: 733183286a8c8cf1f24dd868bc98e9fb23a405c7641a7652287e3554443804d41eb552331c159c5fa702e6b49c0af1db1f1a3b9c1fb100b4933acbb89c42dab4
   languageName: node
   linkType: hard
 
