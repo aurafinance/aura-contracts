@@ -21,7 +21,7 @@ export const getSigner = async (hre: HardhatRuntime = {}, useCache = true, key?:
     }
 
     // If connecting to a forked chain
-    if (process.env.FORK) {
+    if (["tasks-fork.config.ts"].includes(hre?.hardhatArguments.config)) {
         const chain = getChain(hre);
         // If IMPERSONATE environment variable has been set
         if (process.env.IMPERSONATE) {

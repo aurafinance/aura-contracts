@@ -309,6 +309,16 @@ task("deploy:Convex").setAction(async function (taskArguments: TaskArguments, hr
     tx = await airdrop.setRoot(merkleRoot);
     await tx.wait();
 
+    // *************************************
+    // *************************************
+    // *************************************
+    //
+    // ALL TX's DOWN TO HERE HAVE BEEN ADDED
+    //
+    // *************************************
+    // *************************************
+    // *************************************
+
     // 2.2. CVX SUSHI POOLS
     // TODO - change to balancer
     const sushiRouter = IUniswapV2Router01__factory.connect(sushiswapRouter, deployer);
