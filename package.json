@@ -23,6 +23,8 @@
         "typechain": "yarn hardhat typechain"
     },
     "dependencies": {
+        "@ethersproject/hash": "^5.5.0",
+        "@snapshot-labs/snapshot.js": "^0.3.53",
         "convex-platform": "file:convex-platform/contracts"
     },
     "devDependencies": {
