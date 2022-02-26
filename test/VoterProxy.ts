@@ -2,10 +2,11 @@ import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { CurveVoterProxy } from "../types/generated";
+import { CurveVoterProxy, MockVoteStorage, MockVoteStorage__factory } from "../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
+import { deployContract } from "../tasks/utils";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -70,6 +71,36 @@ describe("VoterProxy", () => {
             await voterProxy.connect(deployer).setVote(hash);
             const isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
+        });
+    });
+
+    describe("generate message hash from vote", () => {
+        let mockVoteStorage: MockVoteStorage;
+
+        before(async () => {
+            mockVoteStorage = await deployContract<MockVoteStorage>(
+                new MockVoteStorage__factory(deployer),
+                "MockVoteStorage",
+                [],
+                {},
+                false,
+            );
+        });
+
+        it("generates a valid hash", async () => {
+            const tx = await mockVoteStorage.setProposal(
+                data.payload.choice,
+                data.timestamp,
+                data.version,
+                data.payload.proposal,
+                data.space,
+                data.type,
+            );
+
+            await tx.wait();
+            const hashResult = await mockVoteStorage.hash(data.payload.proposal);
+
+            expect(hash).to.equal(hashResult);
         });
     });
 });
