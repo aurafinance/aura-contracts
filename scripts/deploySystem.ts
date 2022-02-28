@@ -132,12 +132,14 @@ interface Phase2Deployed extends Phase1Deployed {
 
 interface Phase3Deployed extends Phase2Deployed {
     booster: Booster;
+    boosterOwner: BoosterOwner;
     cvxCrv: CvxCrvToken;
     cvxCrvRewards: BaseRewardPool;
     cvxRewards: CvxRewardPool;
     crvDepositor: CrvDepositor;
     poolManager: PoolManagerV3;
-    voterProxy: CurveVoterProxy;
+    vestedEscrow: VestedEscrow;
+    dropFactory: MerkleAirdropFactory;
 }
 
 interface SystemDeployed extends Phase3Deployed {
@@ -605,7 +607,18 @@ async function deployPhase3(
     // TODO - ensure deployer has 0 cvx left
     // TODO - add all contracts to output
 
-    return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
+    return {
+        ...deployment,
+        booster,
+        boosterOwner,
+        cvxCrv,
+        cvxRewards,
+        cvxCrvRewards,
+        crvDepositor,
+        poolManager,
+        vestedEscrow,
+        dropFactory,
+    };
 }
 
 async function deployPhase4(
