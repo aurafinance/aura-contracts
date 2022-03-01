@@ -14,32 +14,10 @@ interface IStakingProxy {
     function withdraw(uint256 _amount) external;
 
     function stake() external;
-
-    function distribute() external;
 }
 
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
-
-    function stake(uint256) external;
-
-    function withdraw(uint256 amount, bool claim) external;
-
-    function withdrawAndUnwrap(uint256 amount, bool claim) external;
-
-    function earned(address account) external view returns (uint256);
-
-    function getReward() external;
-
-    function getReward(address _account, bool _claimExtras) external;
-
-    function extraRewardsLength() external view returns (uint256);
-
-    function extraRewards(uint256 _pid) external view returns (address);
-
-    function rewardToken() external view returns (address);
-
-    function balanceOf(address _account) external view returns (uint256);
 }
 
 /**
@@ -63,7 +41,6 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     /* ========== STATE VARIABLES ========== */
 
     struct Reward {
-        bool useBoost;
         uint40 periodFinish;
         uint208 rewardRate;
         uint40 lastUpdateTime;
@@ -71,12 +48,10 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     }
     struct Balances {
         uint112 locked;
-        uint112 boosted;
         uint32 nextUnlockIndex;
     }
     struct LockedBalance {
         uint112 amount;
-        uint112 boosted;
         uint32 unlockTime;
     }
     struct EarnedData {
@@ -118,15 +93,10 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     mapping(address => Balances) public balances;
     mapping(address => LockedBalance[]) public userLocks;
 
-    //boost
-    address public boostPayment;
-    uint256 public maximumBoostPayment = 0;
-    uint256 public boostRate = 10000;
-    uint256 public nextMaximumBoostPayment = 0;
-    uint256 public nextBoostRate = 10000;
     uint256 public constant denominator = 10000;
 
     //staking
+    // TODO - investigate min/max stake effect on cachin
     uint256 public minimumStake = 10000;
     uint256 public maximumStake = 10000;
     address public stakingProxy;
@@ -162,7 +132,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
         address _cvxCrv,
         address _boostPayment,
         address _cvxCrvStaking
-    ) public Ownable() {
+    ) Ownable() {
         _name = _nameArg;
         _symbol = _symbolArg;
         _decimals = 18;
@@ -265,10 +235,10 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     //set approvals for staking cvx and cvxcrv
     function setApprovals() external {
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, 0);
-        IERC20(cvxCrv).safeApprove(cvxcrvStaking, uint256(-1));
+        IERC20(cvxCrv).safeApprove(cvxcrvStaking, type(uint256).max);
 
         IERC20(stakingToken).safeApprove(stakingProxy, 0);
-        IERC20(stakingToken).safeApprove(stakingProxy, uint256(-1));
+        IERC20(stakingToken).safeApprove(stakingProxy, type(uint256).max);
     }
 
     /* ========== VIEWS ========== */
@@ -764,11 +734,16 @@ contract CvxLocker is ReentrancyGuard, Ownable {
         if (total == 0) return;
 
         //current staked ratio
+        // e.g. ratio = 7e18 * 10000 / 10e18 = 7000
         uint256 ratio = staked.mul(denominator).div(total);
         //mean will be where we reset to if unbalanced
+        // e.g. mean = (10000 + 10000) / 2 = 10000
         uint256 mean = maximumStake.add(minimumStake).div(2);
+        // e.g. max = 10000 + 500 = 10500
         uint256 max = maximumStake.add(_offset);
+        // e.g. max = min(10000, 9500) = 9500
         uint256 min = AuraMath.min(minimumStake, minimumStake - _offset);
+        // e.g. 7000 > 10500 = false
         if (ratio > max) {
             //remove
             uint256 remove = staked.sub(total.mul(mean).div(denominator));
