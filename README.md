@@ -29,7 +29,6 @@ $ git submodule init
 $ git submodule update
 ```
 
-
 ### Install
 
 ```sh
@@ -140,7 +139,7 @@ export NODE_URL=<LOCAL_NODE_URL>
 yarn task curveTokens --account <YOUR_ADDRESS> --network forking
 ```
 
-Once you stake or lock CVX you may want to progress timestamps to check rewards stuff
+Once you stake or lock CVX you may want to progress timestamps to check rewards stuff.
 
 ```
 export NODE_URL=<LOCAL_NODE_URL>
