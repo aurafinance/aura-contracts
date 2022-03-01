@@ -453,6 +453,9 @@ async function deployPhase3(
     tx = await voterProxy.setDepositor(crvDepositor.address);
     await tx.wait();
 
+    tx = await voterProxy.setOwner(multisigs.daoMultisig);
+    await tx.wait();
+
     tx = await crvDepositor.initialLock();
     await tx.wait();
 
