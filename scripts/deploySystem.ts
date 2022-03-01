@@ -53,6 +53,10 @@ import {
     CvxLocker__factory,
     CvxStakingProxy,
     CvxStakingProxy__factory,
+    AuraLocker,
+    AuraLocker__factory,
+    AuraStakingProxy,
+    AuraStakingProxy__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -145,8 +149,8 @@ interface Phase3Deployed extends Phase2Deployed {
     crvDepositor: CrvDepositor;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
-    cvxLocker: CvxLocker;
-    cvxStakingProxy: CvxStakingProxy;
+    cvxLocker: AuraLocker;
+    cvxStakingProxy: AuraStakingProxy;
     vestedEscrow: VestedEscrow;
     dropFactory: MerkleAirdropFactory;
 }
@@ -448,26 +452,18 @@ async function deployPhase3(
     );
 
     // TODO: boostPayment is set to ZERO_ADDRESS?
-    const cvxLocker = await deployContract<CvxLocker>(
-        new CvxLocker__factory(deployer),
-        "CvxLocker",
+    const cvxLocker = await deployContract<AuraLocker>(
+        new AuraLocker__factory(deployer),
+        "AuraLocker",
         [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, ZERO_ADDRESS, cvxCrvRewards.address],
         {},
         debug,
     );
 
-    const cvxStakingProxy = await deployContract<CvxStakingProxy>(
-        new CvxStakingProxy__factory(deployer),
-        "CvxStakingProxy",
-        [
-            cvxLocker.address,
-            config.token,
-            cvx.address,
-            cvxCrv.address,
-            cvxRewards.address,
-            cvxCrvRewards.address,
-            crvDepositor.address,
-        ],
+    const cvxStakingProxy = await deployContract<AuraStakingProxy>(
+        new AuraStakingProxy__factory(deployer),
+        "AuraStakingProxy",
+        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, cvxCrvRewards.address, crvDepositor.address],
         {},
         debug,
     );
@@ -518,7 +514,7 @@ async function deployPhase3(
     tx = await booster.setTreasury(cvxStakingProxy.address);
     await tx.wait();
 
-    tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxRewards.address);
+    tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
     await tx.wait();
 
     tx = await booster.setPoolManager(poolManagerProxy.address);

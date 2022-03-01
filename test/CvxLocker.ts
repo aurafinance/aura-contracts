@@ -3,14 +3,13 @@ import { BigNumberish, Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, ConvexToken, CvxCrvToken, CvxLocker, CvxRewardPool, CvxStakingProxy } from "../types/generated";
+import { AuraStakingProxy, Booster, ConvexToken, CvxCrvToken, CvxLocker } from "../types/generated";
 import { increaseTime } from "../test-utils";
 
 describe("CvxLocker", () => {
     let accounts: Signer[];
     let cvxLocker: CvxLocker;
-    let cvxRewards: CvxRewardPool;
-    let cvxStakingProxy: CvxStakingProxy;
+    let cvxStakingProxy: AuraStakingProxy;
     let booster: Booster;
     let cvx: ConvexToken;
     let cvxCrv: CvxCrvToken;
@@ -50,7 +49,6 @@ describe("CvxLocker", () => {
         booster = contracts.booster;
         cvxLocker = contracts.cvxLocker;
         cvxStakingProxy = contracts.cvxStakingProxy;
-        cvxRewards = contracts.cvxRewards;
         cvx = contracts.cvx;
         cvxCrv = contracts.cvxCrv;
 
@@ -75,7 +73,7 @@ describe("CvxLocker", () => {
         const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
         const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp.toString());
 
-        const stakedCvx = await cvxRewards.balanceOf(cvxStakingProxy.address);
+        const stakedCvx = await cvx.balanceOf(cvxStakingProxy.address);
         expect(stakedCvx.toString()).to.equal(aliceInitialCvxBalance.toString());
 
         const balanceAfter = await cvx.balanceOf(aliceAddress);
@@ -100,11 +98,8 @@ describe("CvxLocker", () => {
 
         const incentive = await booster.stakerIncentive();
         const rate = await mocks.crvMinter.rate();
-        const stakingCrvBalance = await mocks.crv.balanceOf(cvxRewards.address);
+        const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
         expect(stakingCrvBalance.toString()).to.equal(rate.mul(incentive).div(10000).toString());
-
-        const rewardPerToken = await cvxRewards.rewardPerToken();
-        expect(rewardPerToken.gt("0")).to.equal(true);
 
         const tx = await cvxStakingProxy.distribute();
         await tx.wait();
