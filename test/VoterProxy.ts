@@ -7,7 +7,6 @@ import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
-import { MultisigConfig } from "../scripts/deploySystem";
 
 const eip1271MagicValue = "0x1626ba7e";
 
