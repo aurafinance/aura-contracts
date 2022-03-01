@@ -49,6 +49,10 @@ import {
     IWeightedPoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
+    CvxLocker,
+    CvxLocker__factory,
+    CvxStakingProxy,
+    CvxStakingProxy__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -94,6 +98,8 @@ interface ExtSystemConfig {
 interface NamingConfig {
     cvxName: string;
     cvxSymbol: string;
+    vlCvxName: string;
+    vlCvxSymbol: string;
     cvxCrvName: string;
     cvxCrvSymbol: string;
     tokenFactoryNamePostfix: string;
@@ -138,6 +144,8 @@ interface Phase3Deployed extends Phase2Deployed {
     crvDepositor: CrvDepositor;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
+    cvxLocker: CvxLocker;
+    cvxStakingProxy: CvxStakingProxy;
 }
 
 interface SystemDeployed extends Phase3Deployed {
@@ -436,7 +444,47 @@ async function deployPhase3(
         debug,
     );
 
-    let tx = await voterProxy.setOperator(booster.address);
+    // TODO: boostPayment is set to ZERO_ADDRESS?
+    const cvxLocker = await deployContract<CvxLocker>(
+        new CvxLocker__factory(deployer),
+        "CvxLocker",
+        [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, ZERO_ADDRESS, cvxCrvRewards.address],
+        {},
+        debug,
+    );
+
+    const cvxStakingProxy = await deployContract<CvxStakingProxy>(
+        new CvxStakingProxy__factory(deployer),
+        "CvxStakingProxy",
+        [
+            cvxLocker.address,
+            config.token,
+            cvx.address,
+            cvxCrv.address,
+            cvxRewards.address,
+            cvxCrvRewards.address,
+            crvDepositor.address,
+        ],
+        {},
+        debug,
+    );
+
+    let tx = await cvxLocker.setStakingContract(cvxStakingProxy.address);
+    await tx.wait();
+
+    tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address, false);
+    await tx.wait();
+
+    tx = await cvxLocker.setApprovals();
+    await tx.wait();
+
+    tx = await cvxStakingProxy.setApprovals();
+    await tx.wait();
+
+    // TODO: we can potentially remove this as it's always just staking everything
+    // TODO: cvxLocker.setStakeLimits
+
+    tx = await voterProxy.setOperator(booster.address);
     await tx.wait();
 
     tx = await cvx.mint(deployerAddress, premine.toString());
@@ -457,7 +505,11 @@ async function deployPhase3(
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
     await tx.wait();
 
-    tx = await booster.setTreasury(crvDepositor.address);
+    // TODO: should this be the staking proxy (vlCVX) considering vlCVX is
+    // already getting all the rewards that single staking would get
+    // Booster.platformFee is set to 0 currently so this doesn't get anything any
+    // maybe we just remove this?
+    tx = await booster.setTreasury(cvxStakingProxy.address);
     await tx.wait();
 
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxRewards.address);
@@ -605,7 +657,17 @@ async function deployPhase3(
     // TODO - ensure deployer has 0 cvx left
     // TODO - add all contracts to output
 
-    return { ...deployment, booster, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager };
+    return {
+        ...deployment,
+        booster,
+        cvxCrv,
+        cvxRewards,
+        cvxCrvRewards,
+        crvDepositor,
+        poolManager,
+        cvxLocker,
+        cvxStakingProxy,
+    };
 }
 
 async function deployPhase4(

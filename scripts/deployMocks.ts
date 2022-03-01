@@ -188,6 +188,8 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         namingConfig: {
             cvxName: "Convex Finance",
             cvxSymbol: "CVX",
+            vlCvxName: "Vote Locked CVX",
+            vlCvxSymbol: "vlCVX",
             cvxCrvName: "Convex CRV",
             cvxCrvSymbol: "cvxCRV",
             tokenFactoryNamePostfix: " Convex Deposit",
