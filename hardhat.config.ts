@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
         forking: {
             url: process.env.NODE_URL || "",
         },
+        rinkeby: { url: process.env.NODE_URL || "", gasPrice: 1000000000 },
     },
     paths: {
         artifacts: "./artifacts",

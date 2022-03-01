@@ -138,6 +138,7 @@ interface Phase2Deployed extends Phase1Deployed {
 
 interface Phase3Deployed extends Phase2Deployed {
     booster: Booster;
+    boosterOwner: BoosterOwner;
     cvxCrv: CvxCrvToken;
     cvxCrvRewards: BaseRewardPool;
     cvxRewards: CvxRewardPool;
@@ -146,6 +147,8 @@ interface Phase3Deployed extends Phase2Deployed {
     voterProxy: CurveVoterProxy;
     cvxLocker: CvxLocker;
     cvxStakingProxy: CvxStakingProxy;
+    vestedEscrow: VestedEscrow;
+    dropFactory: MerkleAirdropFactory;
 }
 
 interface SystemDeployed extends Phase3Deployed {
@@ -499,6 +502,9 @@ async function deployPhase3(
     tx = await voterProxy.setDepositor(crvDepositor.address);
     await tx.wait();
 
+    tx = await voterProxy.setOwner(multisigs.daoMultisig);
+    await tx.wait();
+
     tx = await crvDepositor.initialLock();
     await tx.wait();
 
@@ -660,6 +666,7 @@ async function deployPhase3(
     return {
         ...deployment,
         booster,
+        boosterOwner,
         cvxCrv,
         cvxRewards,
         cvxCrvRewards,
@@ -667,6 +674,8 @@ async function deployPhase3(
         poolManager,
         cvxLocker,
         cvxStakingProxy,
+        vestedEscrow,
+        dropFactory,
     };
 }
 
