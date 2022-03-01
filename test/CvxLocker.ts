@@ -17,7 +17,6 @@ describe("CvxLocker", () => {
     let mocks: DeployMocksResult;
 
     let deployer: Signer;
-    let deployerAddress: string;
 
     let alice: Signer;
     let aliceAddress: string;
@@ -27,7 +26,6 @@ describe("CvxLocker", () => {
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
-        deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
