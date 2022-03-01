@@ -42,10 +42,17 @@ interface IRewardStaking {
     function balanceOf(address _account) external view returns (uint256);
 }
 
-// CVX Locking contract for https://www.convexfinance.com/
-// CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
-// Based on EPS Staking contract for http://ellipsis.finance/
-// Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
+/**
+ * @title   ConvexToken
+ * @author  ConvexFinance
+ * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available at each epoch
+ *          (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes to depositors.
+ * @dev     NOTE - must call `setStakingContract` to init.
+ *          CVX Locking contract for https://www.convexfinance.com/
+ *          CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
+ *          Based on EPS Staking contract for http://ellipsis.finance/
+ *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
+ */
 contract CvxLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
@@ -82,8 +89,8 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     }
 
     //token constants
-    IERC20 public constant stakingToken = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B); //cvx
-    address public constant cvxCrv = address(0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
+    IERC20 public immutable stakingToken;
+    address public immutable cvxCrv;
 
     //rewards
     address[] public rewardTokens;
@@ -112,7 +119,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     mapping(address => LockedBalance[]) public userLocks;
 
     //boost
-    address public boostPayment = address(0x1389388d01708118b497f59521f6943Be2541bb7);
+    address public boostPayment;
     uint256 public maximumBoostPayment = 0;
     uint256 public boostRate = 10000;
     uint256 public nextMaximumBoostPayment = 0;
@@ -123,7 +130,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     uint256 public minimumStake = 10000;
     uint256 public maximumStake = 10000;
     address public stakingProxy;
-    address public constant cvxcrvStaking = address(0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
+    address public immutable cvxcrvStaking;
     uint256 public constant stakeOffsetOnLock = 500; //allow broader range for staking when depositing
 
     //management
@@ -140,10 +147,30 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor() public Ownable() {
-        _name = "Vote Locked Convex Token";
-        _symbol = "vlCVX";
+    /**
+     * @param _nameArg          Token name, simples
+     * @param _symbolArg        Token symbol
+     * @param _stakingToken     CVX (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B)
+     * @param _cvxCrv           cvxCRV (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7)
+     * @param _boostPayment     something something boost? (currently the treasury)
+     * @param _cvxCrvStaking    cvsCRV rewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e)
+     */
+    constructor(
+        string memory _nameArg,
+        string memory _symbolArg,
+        address _stakingToken,
+        address _cvxCrv,
+        address _boostPayment,
+        address _cvxCrvStaking
+    ) public Ownable() {
+        _name = _nameArg;
+        _symbol = _symbolArg;
         _decimals = 18;
+
+        stakingToken = IERC20(_stakingToken);
+        cvxCrv = _cvxCrv;
+        boostPayment = _boostPayment;
+        cvxcrvStaking = _cvxCrvStaking;
 
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
         epochs.push(Epoch({ supply: 0, date: uint32(currentEpoch) }));
@@ -238,10 +265,10 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     //set approvals for staking cvx and cvxcrv
     function setApprovals() external {
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, 0);
-        IERC20(cvxCrv).safeApprove(cvxcrvStaking, type(uint256).max);
+        IERC20(cvxCrv).safeApprove(cvxcrvStaking, uint256(-1));
 
         IERC20(stakingToken).safeApprove(stakingProxy, 0);
-        IERC20(stakingToken).safeApprove(stakingProxy, type(uint256).max);
+        IERC20(stakingToken).safeApprove(stakingProxy, uint256(-1));
     }
 
     /* ========== VIEWS ========== */
