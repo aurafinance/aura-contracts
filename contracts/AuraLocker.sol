@@ -41,8 +41,9 @@ interface IRewardStaking {
 /**
  * @title   ConvexToken
  * @author  ConvexFinance
- * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available at each epoch (1 week).
- *          Also receives cvxCrv from `CvxStakingProxy` and redistributes to depositors.
+ * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available
+ *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
+ *          to depositors
  * @dev     NOTE - must call `setStakingContract` to init.
  *          CVX Locking contract for https://www.convexfinance.com/
  *          CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
