@@ -2,11 +2,12 @@ import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { CurveVoterProxy, MockVoteStorage, MockVoteStorage__factory } from "../types/generated";
+import { Booster, CurveVoterProxy, MockVoteStorage, MockVoteStorage__factory } from "../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
+import { MultisigConfig } from "../scripts/deploySystem";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -29,9 +30,11 @@ const invalidHash = hashMessage(JSON.stringify({ ...data, version: "faux" }));
 describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
+    let booster: Booster;
     let mocks: DeployMocksResult;
 
     let deployer: Signer;
+    let daoMultisig: Signer;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -40,6 +43,7 @@ describe("VoterProxy", () => {
 
         mocks = await deployMocks(deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
@@ -56,19 +60,20 @@ describe("VoterProxy", () => {
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         voterProxy = contracts.voterProxy;
+        booster = contracts.booster;
     });
 
     describe("validates vote hash from Snapshot Hub", async () => {
         it("with a valid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await voterProxy.connect(deployer).setVote(hash);
+            await booster.connect(daoMultisig).setVote(hash, true);
             const isValid = await voterProxy.isValidSignature(hash, sig);
             expect(isValid).to.equal(eip1271MagicValue);
         });
 
         it("with an invalid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await voterProxy.connect(deployer).setVote(hash);
+            await booster.connect(daoMultisig).setVote(hash, true);
             const isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
         });
