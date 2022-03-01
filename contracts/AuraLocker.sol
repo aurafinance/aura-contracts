@@ -46,7 +46,7 @@ interface IRewardStaking {
 // CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
 // Based on EPS Staking contract for http://ellipsis.finance/
 // Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
-contract CvxLocker is ReentrancyGuard, Ownable {
+contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
     using AuraMath112 for uint112;
