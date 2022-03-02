@@ -445,13 +445,13 @@ async function deployPhase3(
         debug,
     );
 
-    let tx = await cvxLocker.setStakingContract(cvxStakingProxy.address);
-    await tx.wait();
-
-    tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
+    let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
+    await tx.wait();
+
+    tx = await cvxLocker.transferOwnership(multisigs.daoMultisig);
     await tx.wait();
 
     tx = await cvxStakingProxy.setApprovals();

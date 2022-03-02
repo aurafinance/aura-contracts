@@ -12,17 +12,21 @@ interface IRewardStaking {
     function stakeFor(address, uint256) external;
 }
 
+// TODO:
+//  - Optimise core storage
+//  - Add queueNewRewards
+//  - Core fns
+//    - Vote delegation
+//    - historic balance lookup (balanceOfAt)
+//  - Optimise for lock kicking etc
+
 /**
  * @title   AuraLocker
  * @author  ConvexFinance
  * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
- *          to depositors
- * @dev     NOTE - must call `setStakingContract` to init.
- *          CVX Locking contract for https://www.convexfinance.com/
- *          CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
- *          Based on EPS Staking contract for http://ellipsis.finance/
- *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
+ *          to depositors.
+ * @dev
  */
 contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
@@ -31,8 +35,18 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath32 for uint32;
     using SafeERC20 for IERC20;
 
-    /* ========== STATE VARIABLES ========== */
+    /* ==========     STRUCTS     ========== */
 
+    // struct Data {
+    //     /// Timestamp for current period finish
+    //     uint32 periodFinish;
+    //     /// Last time any user took action
+    //     uint32 lastUpdateTime;
+    //     /// RewardRate for the rest of the period
+    //     uint96 rewardRate;
+    //     /// Ever increasing rewardPerToken rate, based on % of total supply
+    //     uint96 rewardPerTokenStored;
+    // }
     struct Reward {
         uint40 periodFinish;
         uint208 rewardRate;
@@ -47,6 +61,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint112 amount;
         uint32 unlockTime;
     }
+    struct UserData {
+        uint128 rewardPerTokenPaid;
+        uint128 rewards;
+    }
     struct EarnedData {
         address token;
         uint256 amount;
@@ -56,65 +74,70 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint32 date; //epoch start date
     }
 
-    //token constants
+    /* ========== STATE VARIABLES ========== */
+
+    // Tokens
     IERC20 public immutable stakingToken;
     address public immutable cvxCrv;
 
-    //rewards
+    // Rewards
     address[] public rewardTokens;
+    // TODO - optimise (pack struct tighter)
     mapping(address => Reward) public rewardData;
-
-    // Duration that rewards are streamed over
+    //     Duration that rewards are streamed over
     uint256 public constant rewardsDuration = 86400 * 7;
-
-    // Duration of lock/earned penalty period
+    //     Duration of lock/earned penalty period
     uint256 public constant lockDuration = rewardsDuration * 17;
-
-    // reward token -> distributor -> is approved to add rewards
+    //     Reward token -> distributor -> is approved to add rewards
     mapping(address => mapping(address => bool)) public rewardDistributors;
+    //     User -> reward token -> amount
+    // TODO - optimise (pack struct tighter)
+    mapping(address => mapping(address => UserData)) public userData;
 
-    // user -> reward token -> amount
-    mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
-    mapping(address => mapping(address => uint256)) public rewards;
-
-    //supplies and epochs
+    // Supplies and historic supply
     uint256 public lockedSupply;
     Epoch[] public epochs;
 
-    //mappings for balance data
+    // Mappings for balance data
     mapping(address => Balances) public balances;
     mapping(address => LockedBalance[]) public userLocks;
 
     uint256 public constant denominator = 10000;
 
-    //staking
-    // TODO - investigate min/max stake effect on cachin
-    uint256 public minimumStake = 10000;
-    uint256 public maximumStake = 10000;
-    address public stakingProxy;
+    // Staking cvxCrv
     address public immutable cvxcrvStaking;
-    uint256 public constant stakeOffsetOnLock = 500; //allow broader range for staking when depositing
 
-    //management
+    // Management
     uint256 public kickRewardPerEpoch = 100;
     uint256 public kickRewardEpochDelay = 4;
 
-    //shutdown
+    // Shutdown
     bool public isShutdown = false;
 
-    //erc20-like interface
+    // Erc20-like interface
     string private _name;
     string private _symbol;
     uint8 private immutable _decimals;
 
-    /* ========== CONSTRUCTOR ========== */
+    /* ========== EVENTS ========== */
+
+    event RewardAdded(address indexed _token, uint256 _reward);
+    event Staked(address indexed _user, uint256 _paidAmount, uint256 _lockedAmount);
+    event Withdrawn(address indexed _user, uint256 _amount, bool _relocked);
+    event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
+    event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
+    event Recovered(address _token, uint256 _amount);
+
+    /***************************************
+                    CONSTRUCTOR
+    ****************************************/
 
     /**
      * @param _nameArg          Token name, simples
      * @param _symbolArg        Token symbol
      * @param _stakingToken     CVX (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B)
      * @param _cvxCrv           cvxCRV (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7)
-     * @param _cvxCrvStaking    cvsCRV rewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e)
+     * @param _cvxCrvStaking    cvxCRV rewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e)
      */
     constructor(
         string memory _nameArg,
@@ -135,19 +158,32 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         epochs.push(Epoch({ supply: 0, date: uint32(currentEpoch) }));
     }
 
-    function decimals() public view returns (uint8) {
-        return _decimals;
+    /***************************************
+                    MODIFIER
+    ****************************************/
+
+    modifier updateReward(address _account) {
+        {
+            Balances storage userBalance = balances[_account];
+            for (uint256 i = 0; i < rewardTokens.length; i++) {
+                address token = rewardTokens[i];
+                uint256 newRewardPerToken = _rewardPerToken(token);
+                rewardData[token].rewardPerTokenStored = newRewardPerToken.to208();
+                rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to40();
+                if (_account != address(0)) {
+                    userData[_account][token] = UserData({
+                        rewardPerTokenPaid: newRewardPerToken.to112(),
+                        rewards: _earned(_account, token, userBalance.locked).to112()
+                    });
+                }
+            }
+        }
+        _;
     }
 
-    function name() public view returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-
-    /* ========== ADMIN CONFIGURATION ========== */
+    /***************************************
+                    ADMIN
+    ****************************************/
 
     // Add a new reward token to be distributed to stakers
     function addReward(address _rewardsToken, address _distributor) public onlyOwner {
@@ -169,13 +205,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         rewardDistributors[_rewardsToken][_distributor] = _approved;
     }
 
-    //Set the staking contract for the underlying cvx. only allow change if nothing is currently staked
-    function setStakingContract(address _staking) external onlyOwner {
-        require(stakingProxy == address(0) || (minimumStake == 0 && maximumStake == 0), "!assign");
-
-        stakingProxy = _staking;
-    }
-
     //set kick incentive
     function setKickIncentive(uint256 _rate, uint256 _delay) external onlyOwner {
         require(_rate <= 500, "over max rate"); //max 5% per epoch
@@ -189,77 +218,25 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         isShutdown = true;
     }
 
-    //set approvals for staking cvx and cvxcrv
+    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
+    function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
+        require(_tokenAddress != address(stakingToken), "Cannot withdraw staking token");
+        require(rewardData[_tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
+        IERC20(_tokenAddress).safeTransfer(owner(), _tokenAmount);
+        emit Recovered(_tokenAddress, _tokenAmount);
+    }
+
+    // Set approvals for staking cvx and cvxcrv
     function setApprovals() external {
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, 0);
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, type(uint256).max);
-
-        IERC20(stakingToken).safeApprove(stakingProxy, 0);
-        IERC20(stakingToken).safeApprove(stakingProxy, type(uint256).max);
     }
 
-    /* ========== VIEWS ========== */
+    /***************************************
+                VIEWS - BALANCES
+    ****************************************/
 
-    function _rewardPerToken(address _rewardsToken) internal view returns (uint256) {
-        if (lockedSupply == 0) {
-            return rewardData[_rewardsToken].rewardPerTokenStored;
-        }
-        return
-            uint256(rewardData[_rewardsToken].rewardPerTokenStored).add(
-                _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish)
-                    .sub(rewardData[_rewardsToken].lastUpdateTime)
-                    .mul(rewardData[_rewardsToken].rewardRate)
-                    .mul(1e18)
-                    .div(lockedSupply)
-            );
-    }
-
-    function _earned(
-        address _user,
-        address _rewardsToken,
-        uint256 _balance
-    ) internal view returns (uint256) {
-        return
-            _balance
-                .mul(_rewardPerToken(_rewardsToken).sub(userRewardPerTokenPaid[_user][_rewardsToken]))
-                .div(1e18)
-                .add(rewards[_user][_rewardsToken]);
-    }
-
-    function _lastTimeRewardApplicable(uint256 _finishTime) internal view returns (uint256) {
-        return AuraMath.min(block.timestamp, _finishTime);
-    }
-
-    function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
-        return _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish);
-    }
-
-    function rewardPerToken(address _rewardsToken) external view returns (uint256) {
-        return _rewardPerToken(_rewardsToken);
-    }
-
-    function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
-        return uint256(rewardData[_rewardsToken].rewardRate).mul(rewardsDuration);
-    }
-
-    // Address and claimable amount of all reward tokens for the given account
-    function claimableRewards(address _account) external view returns (EarnedData[] memory userRewards) {
-        userRewards = new EarnedData[](rewardTokens.length);
-        Balances storage userBalance = balances[_account];
-        for (uint256 i = 0; i < userRewards.length; i++) {
-            address token = rewardTokens[i];
-            userRewards[i].token = token;
-            userRewards[i].amount = _earned(_account, token, userBalance.locked);
-        }
-        return userRewards;
-    }
-
-    // total token balance of an account, including unlocked but not withdrawn tokens
-    function lockedBalanceOf(address _user) external view returns (uint256 amount) {
-        return balances[_user].locked;
-    }
-
-    //balance of an account which only includes properly locked tokens as of the most recent eligible epoch
+    // Balance of an account which only includes properly locked tokens as of the most recent eligible epoch
     function balanceOf(address _user) external view returns (uint256 amount) {
         LockedBalance[] storage locks = userLocks[_user];
         Balances storage userBalance = balances[_user];
@@ -288,7 +265,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return amount;
     }
 
-    //balance of an account which only includes properly locked tokens at the given epoch
+    // Balance of an account which only includes properly locked tokens at the given epoch
     function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
         LockedBalance[] storage locks = userLocks[_user];
 
@@ -317,77 +294,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         }
 
         return amount;
-    }
-
-    //supply of all properly locked balances at most recent eligible epoch
-    function totalSupply() external view returns (uint256 supply) {
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 cutoffEpoch = currentEpoch.sub(lockDuration);
-        uint256 epochindex = epochs.length;
-
-        //do not include current epoch's supply
-        if (uint256(epochs[epochindex - 1].date) == currentEpoch) {
-            epochindex--;
-        }
-
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = epochindex - 1; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
-            if (uint256(e.date) <= cutoffEpoch) {
-                break;
-            }
-            supply = supply.add(e.supply);
-        }
-
-        return supply;
-    }
-
-    //supply of all properly locked balances at the given epoch
-    function totalSupplyAtEpoch(uint256 _epoch) external view returns (uint256 supply) {
-        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
-        uint256 cutoffEpoch = epochStart.sub(lockDuration);
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-
-        //do not include current epoch's supply
-        if (uint256(epochs[_epoch].date) == currentEpoch) {
-            _epoch--;
-        }
-
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = _epoch; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
-            if (uint256(e.date) <= cutoffEpoch) {
-                break;
-            }
-            supply = supply.add(epochs[i].supply);
-        }
-
-        return supply;
-    }
-
-    //find an epoch index based on timestamp
-    function findEpochId(uint256 _time) external view returns (uint256 epoch) {
-        uint256 max = epochs.length - 1;
-        uint256 min = 0;
-
-        //convert to start point
-        _time = _time.div(rewardsDuration).mul(rewardsDuration);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (min >= max) break;
-
-            uint256 mid = (min + max + 1) / 2;
-            uint256 midEpochBlock = epochs[mid].date;
-            if (midEpochBlock == _time) {
-                //found
-                return mid;
-            } else if (midEpochBlock < _time) {
-                min = mid;
-            } else {
-                max = mid - 1;
-            }
-        }
-        return min;
     }
 
     // Information on a user's locked balances
@@ -420,33 +326,152 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return (userBalance.locked, unlockable, locked, lockData);
     }
 
-    //number of epochs
+    // Supply of all properly locked balances at most recent eligible epoch
+    function totalSupply() external view returns (uint256 supply) {
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 cutoffEpoch = currentEpoch.sub(lockDuration);
+        uint256 epochindex = epochs.length;
+
+        //do not include current epoch's supply
+        if (uint256(epochs[epochindex - 1].date) == currentEpoch) {
+            epochindex--;
+        }
+
+        //traverse inversely to make more current queries more gas efficient
+        for (uint256 i = epochindex - 1; i + 1 != 0; i--) {
+            Epoch storage e = epochs[i];
+            if (uint256(e.date) <= cutoffEpoch) {
+                break;
+            }
+            supply = supply.add(e.supply);
+        }
+
+        return supply;
+    }
+
+    // Supply of all properly locked balances at the given epoch
+    function totalSupplyAtEpoch(uint256 _epoch) external view returns (uint256 supply) {
+        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
+        uint256 cutoffEpoch = epochStart.sub(lockDuration);
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+
+        //do not include current epoch's supply
+        if (uint256(epochs[_epoch].date) == currentEpoch) {
+            _epoch--;
+        }
+
+        //traverse inversely to make more current queries more gas efficient
+        for (uint256 i = _epoch; i + 1 != 0; i--) {
+            Epoch storage e = epochs[i];
+            if (uint256(e.date) <= cutoffEpoch) {
+                break;
+            }
+            supply = supply.add(epochs[i].supply);
+        }
+
+        return supply;
+    }
+
+    // Find an epoch index based on timestamp
+    function findEpochId(uint256 _time) external view returns (uint256 epoch) {
+        uint256 max = epochs.length - 1;
+        uint256 min = 0;
+
+        //convert to start point
+        _time = _time.div(rewardsDuration).mul(rewardsDuration);
+
+        for (uint256 i = 0; i < 128; i++) {
+            if (min >= max) break;
+
+            uint256 mid = (min + max + 1) / 2;
+            uint256 midEpochBlock = epochs[mid].date;
+            if (midEpochBlock == _time) {
+                //found
+                return mid;
+            } else if (midEpochBlock < _time) {
+                min = mid;
+            } else {
+                max = mid - 1;
+            }
+        }
+        return min;
+    }
+
+    /***************************************
+                VIEWS - GENERAL
+    ****************************************/
+
+    // Number of epochs
     function epochCount() external view returns (uint256) {
         return epochs.length;
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
-
-    function checkpointEpoch() external {
-        _checkpointEpoch();
+    function decimals() public view returns (uint8) {
+        return _decimals;
     }
 
-    //insert a new epoch if needed. fill in any gaps
-    function _checkpointEpoch() internal {
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 epochindex = epochs.length;
+    function name() public view returns (string memory) {
+        return _name;
+    }
 
-        //first epoch add in constructor, no need to check 0 length
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
 
-        //check to add
-        if (epochs[epochindex - 1].date < currentEpoch) {
-            //fill any epoch gaps
-            while (epochs[epochs.length - 1].date != currentEpoch) {
-                uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
-                epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
-            }
+    /***************************************
+                VIEWS - REWARDS
+    ****************************************/
+
+    // Address and claimable amount of all reward tokens for the given account
+    function claimableRewards(address _account) external view returns (EarnedData[] memory userRewards) {
+        userRewards = new EarnedData[](rewardTokens.length);
+        Balances storage userBalance = balances[_account];
+        for (uint256 i = 0; i < userRewards.length; i++) {
+            address token = rewardTokens[i];
+            userRewards[i].token = token;
+            userRewards[i].amount = _earned(_account, token, userBalance.locked);
         }
+        return userRewards;
     }
+
+    function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
+        return _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish);
+    }
+
+    function rewardPerToken(address _rewardsToken) external view returns (uint256) {
+        return _rewardPerToken(_rewardsToken);
+    }
+
+    function _earned(
+        address _user,
+        address _rewardsToken,
+        uint256 _balance
+    ) internal view returns (uint256) {
+        UserData memory data = userData[_user][_rewardsToken];
+        return _balance.mul(_rewardPerToken(_rewardsToken).sub(data.rewardPerTokenPaid)).div(1e18).add(data.rewards);
+    }
+
+    function _lastTimeRewardApplicable(uint256 _finishTime) internal view returns (uint256) {
+        return AuraMath.min(block.timestamp, _finishTime);
+    }
+
+    function _rewardPerToken(address _rewardsToken) internal view returns (uint256) {
+        if (lockedSupply == 0) {
+            return rewardData[_rewardsToken].rewardPerTokenStored;
+        }
+        return
+            uint256(rewardData[_rewardsToken].rewardPerTokenStored).add(
+                _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish)
+                    .sub(rewardData[_rewardsToken].lastUpdateTime)
+                    .mul(rewardData[_rewardsToken].rewardRate)
+                    .mul(1e18)
+                    .div(lockedSupply)
+            );
+    }
+
+    /***************************************
+                    ACTIONS
+    ****************************************/
 
     // Locked tokens cannot be withdrawn for lockDuration and are eligible to receive stakingReward rewards
     function lock(address _account, uint256 _amount) external nonReentrant updateReward(_account) {
@@ -490,6 +515,64 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         e.supply = e.supply.add(lockAmount);
 
         emit Staked(_account, lockAmount, lockAmount);
+    }
+
+    // claim all pending rewards
+    function getReward(address _account) external {
+        getReward(_account, false);
+    }
+
+    // Claim all pending rewards
+    function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
+        for (uint256 i; i < rewardTokens.length; i++) {
+            address _rewardsToken = rewardTokens[i];
+            uint256 reward = userData[_account][_rewardsToken].rewards;
+            if (reward > 0) {
+                userData[_account][_rewardsToken].rewards = 0;
+                if (_rewardsToken == cvxCrv && _stake) {
+                    IRewardStaking(cvxcrvStaking).stakeFor(_account, reward);
+                } else {
+                    IERC20(_rewardsToken).safeTransfer(_account, reward);
+                }
+                emit RewardPaid(_account, _rewardsToken, reward);
+            }
+        }
+    }
+
+    function checkpointEpoch() external {
+        _checkpointEpoch();
+    }
+
+    //insert a new epoch if needed. fill in any gaps
+    function _checkpointEpoch() internal {
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 epochindex = epochs.length;
+
+        //first epoch add in constructor, no need to check 0 length
+
+        //check to add
+        if (epochs[epochindex - 1].date < currentEpoch) {
+            //fill any epoch gaps
+            while (epochs[epochs.length - 1].date != currentEpoch) {
+                uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
+                epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
+            }
+        }
+    }
+
+    // Withdraw/relock all currently locked tokens where the unlock time has passed
+    function processExpiredLocks(bool _relock, address _withdrawTo) external nonReentrant {
+        _processExpiredLocks(msg.sender, _relock, _withdrawTo, msg.sender, 0);
+    }
+
+    // Withdraw/relock all currently locked tokens where the unlock time has passed
+    function processExpiredLocks(bool _relock) external nonReentrant {
+        _processExpiredLocks(msg.sender, _relock, msg.sender, msg.sender, 0);
+    }
+
+    function kickExpiredLocks(address _account) external nonReentrant {
+        //allow kick after grace period of 'kickRewardEpochDelay'
+        _processExpiredLocks(_account, false, _account, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed
@@ -560,15 +643,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //send process incentive
         if (reward > 0) {
-            //if theres a reward(kicked), it will always be a withdraw only
-            //preallocate enough cvx from stake contract to pay for both reward and withdraw
-            allocateCVXForTransfer(uint256(locked));
-
             //reduce return amount by the kick reward
             locked = locked.sub(reward.to112());
 
             //transfer reward
-            transferCVX(_rewardAddress, reward);
+            stakingToken.safeTransfer(_rewardAddress, reward);
 
             emit KickReward(_rewardAddress, _account, reward);
         }
@@ -577,80 +656,13 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         if (_relock) {
             _lock(_withdrawTo, locked);
         } else {
-            transferCVX(_withdrawTo, locked);
+            stakingToken.safeTransfer(_withdrawTo, locked);
         }
     }
 
-    // Withdraw/relock all currently locked tokens where the unlock time has passed
-    function processExpiredLocks(bool _relock, address _withdrawTo) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, _withdrawTo, msg.sender, 0);
-    }
-
-    // Withdraw/relock all currently locked tokens where the unlock time has passed
-    function processExpiredLocks(bool _relock) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, msg.sender, msg.sender, 0);
-    }
-
-    function kickExpiredLocks(address _account) external nonReentrant {
-        //allow kick after grace period of 'kickRewardEpochDelay'
-        _processExpiredLocks(_account, false, _account, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
-    }
-
-    //pull required amount of cvx from staking for an upcoming transfer
-    function allocateCVXForTransfer(uint256 _amount) internal {
-        // TODO - not needed
-        // uint256 balance = stakingToken.balanceOf(address(this));
-        // if (_amount > balance) {
-        //     IStakingProxy(stakingProxy).withdraw(_amount.sub(balance));
-        // }
-    }
-
-    //transfer helper: pull enough from staking, transfer, updating staking ratio
-    function transferCVX(address _account, uint256 _amount) internal {
-        //allocate enough cvx from staking for the transfer
-        allocateCVXForTransfer(_amount);
-        //transfer
-        stakingToken.safeTransfer(_account, _amount);
-    }
-
-    // Claim all pending rewards
-    function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
-        for (uint256 i; i < rewardTokens.length; i++) {
-            address _rewardsToken = rewardTokens[i];
-            uint256 reward = rewards[_account][_rewardsToken];
-            if (reward > 0) {
-                rewards[_account][_rewardsToken] = 0;
-                if (_rewardsToken == cvxCrv && _stake) {
-                    IRewardStaking(cvxcrvStaking).stakeFor(_account, reward);
-                } else {
-                    IERC20(_rewardsToken).safeTransfer(_account, reward);
-                }
-                emit RewardPaid(_account, _rewardsToken, reward);
-            }
-        }
-    }
-
-    // claim all pending rewards
-    function getReward(address _account) external {
-        getReward(_account, false);
-    }
-
-    /* ========== RESTRICTED FUNCTIONS ========== */
-
-    function _notifyReward(address _rewardsToken, uint256 _reward) internal {
-        Reward storage rdata = rewardData[_rewardsToken];
-
-        if (block.timestamp >= rdata.periodFinish) {
-            rdata.rewardRate = _reward.div(rewardsDuration).to208();
-        } else {
-            uint256 remaining = uint256(rdata.periodFinish).sub(block.timestamp);
-            uint256 leftover = remaining.mul(rdata.rewardRate);
-            rdata.rewardRate = _reward.add(leftover).div(rewardsDuration).to208();
-        }
-
-        rdata.lastUpdateTime = block.timestamp.to40();
-        rdata.periodFinish = block.timestamp.add(rewardsDuration).to40();
-    }
+    /***************************************
+                REWARD FUNDING
+    ****************************************/
 
     // TODO - actually queue here
     function queueNewRewards(uint256 _rewards) external {
@@ -666,7 +678,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         emit RewardAdded(cvxCrv, _rewards);
     }
 
-    function notifyRewardAmount(address _rewardsToken, uint256 _reward) external updateReward(address(0)) {
+    function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
         require(rewardDistributors[_rewardsToken][msg.sender]);
         require(_reward > 0, "No reward");
 
@@ -679,38 +691,18 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         emit RewardAdded(_rewardsToken, _reward);
     }
 
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
-        require(_tokenAddress != address(stakingToken), "Cannot withdraw staking token");
-        require(rewardData[_tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
-        IERC20(_tokenAddress).safeTransfer(owner(), _tokenAmount);
-        emit Recovered(_tokenAddress, _tokenAmount);
-    }
+    function _notifyReward(address _rewardsToken, uint256 _reward) internal updateReward(address(0)) {
+        Reward storage rdata = rewardData[_rewardsToken];
 
-    /* ========== MODIFIERS ========== */
-
-    modifier updateReward(address _account) {
-        {
-            //stack too deep
-            Balances storage userBalance = balances[_account];
-            for (uint256 i = 0; i < rewardTokens.length; i++) {
-                address token = rewardTokens[i];
-                rewardData[token].rewardPerTokenStored = _rewardPerToken(token).to208();
-                rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to40();
-                if (_account != address(0)) {
-                    rewards[_account][token] = _earned(_account, token, userBalance.locked);
-                    userRewardPerTokenPaid[_account][token] = rewardData[token].rewardPerTokenStored;
-                }
-            }
+        if (block.timestamp >= rdata.periodFinish) {
+            rdata.rewardRate = _reward.div(rewardsDuration).to208();
+        } else {
+            uint256 remaining = uint256(rdata.periodFinish).sub(block.timestamp);
+            uint256 leftover = remaining.mul(rdata.rewardRate);
+            rdata.rewardRate = _reward.add(leftover).div(rewardsDuration).to208();
         }
-        _;
-    }
 
-    /* ========== EVENTS ========== */
-    event RewardAdded(address indexed _token, uint256 _reward);
-    event Staked(address indexed _user, uint256 _paidAmount, uint256 _lockedAmount);
-    event Withdrawn(address indexed _user, uint256 _amount, bool _relocked);
-    event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
-    event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
-    event Recovered(address _token, uint256 _amount);
+        rdata.lastUpdateTime = block.timestamp.to40();
+        rdata.periodFinish = block.timestamp.add(rewardsDuration).to40();
+    }
 }
