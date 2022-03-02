@@ -14,10 +14,9 @@ interface IRewardStaking {
 
 // TODO:
 //  - Add queueNewRewards
-//  - Core fns
-//    - Vote delegation
-//    - historic balance lookup (balanceOfAt)
 //  - Optimise for lock kicking etc
+//  - Add events for everything
+//  - Tests! Tests! Tests!
 
 /**
  * @title   AuraLocker
@@ -92,6 +91,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     mapping(address => Balances) public balances;
     mapping(address => LockedBalance[]) public userLocks;
 
+    // Voting
+    //     Stored delegations
+    mapping(address => address) private _delegates;
+    //     Delegatee balances (user -> unlock timestamp -> amount)
+    mapping(address => mapping(uint256 => uint256)) public delegateeBalances;
+
     // Config
     //     Tokens
     IERC20 public immutable stakingToken;
@@ -113,12 +118,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     /* ========== EVENTS ========== */
 
-    event RewardAdded(address indexed _token, uint256 _reward);
+    event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
+    event DelegateVotesChanged(address indexed delegate, uint256 previousBalance, uint256 newBalance);
+
+    event Recovered(address _token, uint256 _amount);
+    event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
     event Staked(address indexed _user, uint256 _paidAmount, uint256 _lockedAmount);
     event Withdrawn(address indexed _user, uint256 _amount, bool _relocked);
     event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
-    event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
-    event Recovered(address _token, uint256 _amount);
+    event RewardAdded(address indexed _token, uint256 _reward);
 
     /***************************************
                     CONSTRUCTOR
@@ -263,6 +271,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         } else {
             LockedBalance storage userL = userLocks[_account][idx - 1];
             userL.amount = userL.amount.add(lockAmount);
+        }
+
+        if (delegates(msg.sender) != address(0)) {
+            delegateeBalances[delegates(msg.sender)][unlockTime] += lockAmount;
         }
 
         //update epoch supply, epoch checkpointed above so safe to add to latest
@@ -416,6 +428,82 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     /***************************************
+            DELEGATION & VOTE BALANCE
+    ****************************************/
+
+    /**
+     * @dev Delegate votes from the sender to `delegatee`.
+     */
+    function delegate(address delegatee) public virtual {
+        // Step 1: Get lock data
+        LockedBalance[] storage locks = userLocks[msg.sender];
+        uint256 len = locks.length;
+        require(len > 0, "Nothing to delegate");
+        require(delegatee != address(0), "Must delegate to someone");
+
+        // Step 2: Update delegatee storage
+        address currentDelegate = delegates(msg.sender);
+        _delegates[msg.sender] = delegatee;
+
+        emit DelegateChanged(msg.sender, currentDelegate, delegatee);
+
+        // Step 3: Move balances around
+        //         Relevant locks = those unlocking within the next 16 epochs
+        //         Delegate for the upcoming epoch
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        // Step 3.2: Add all relevant locks to new
+        uint256 i = len - 1;
+        while (locks[i].unlockTime > currentEpoch) {
+            LockedBalance memory currentLock = locks[i];
+            // Step 3.1: Remove all relevant locks from old
+            if (currentDelegate != address(0)) {
+                delegateeBalances[currentDelegate][currentLock.unlockTime] -= currentLock.amount;
+            }
+            delegateeBalances[delegatee][currentLock.unlockTime] += currentLock.amount;
+            if (i > 0) {
+                i--;
+            } else {
+                break;
+            }
+        }
+    }
+
+    /**
+     * @dev Get the address `account` is currently delegating to.
+     */
+    function delegates(address account) public view virtual returns (address) {
+        return _delegates[account];
+    }
+
+    /**
+     * @dev Gets the current votes balance for `account`
+     */
+    function getVotes(address account) public view returns (uint256) {
+        return getPastVotes(account, block.timestamp);
+    }
+
+    /**
+     * @dev Retrieve the number of votes for `account` at the end of `blockNumber`.
+     */
+    function getPastVotes(address account, uint256 timestamp) public view returns (uint256 votes) {
+        require(timestamp <= block.timestamp, "ERC20Votes: block not yet mined");
+        uint256 baseEpoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
+        for (uint256 i = 1; i < 17; i++) {
+            uint256 epochTime = baseEpoch.add(rewardsDuration.mul(i));
+            votes += delegateeBalances[account][epochTime];
+        }
+    }
+
+    /**
+     * @dev Retrieve the `totalSupply` at the end of `timestamp`. Note, this value is the sum of all balances.
+     * It is but NOT the sum of all the delegated votes!
+     */
+    function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
+        require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
+        return totalSupplyAtEpoch(findEpochId(timestamp));
+    }
+
+    /***************************************
                 VIEWS - BALANCES
     ****************************************/
 
@@ -533,7 +621,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Supply of all properly locked balances at the given epoch
-    function totalSupplyAtEpoch(uint256 _epoch) external view returns (uint256 supply) {
+    function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
         uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
@@ -556,7 +644,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Find an epoch index based on timestamp
-    function findEpochId(uint256 _time) external view returns (uint256 epoch) {
+    function findEpochId(uint256 _time) public view returns (uint256 epoch) {
         uint256 max = epochs.length - 1;
         uint256 min = 0;
 
