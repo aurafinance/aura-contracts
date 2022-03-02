@@ -12,12 +12,6 @@ interface IRewardStaking {
     function stakeFor(address, uint256) external;
 }
 
-// TODO:
-//  - Add queueNewRewards
-//  - Optimise for lock kicking etc
-//  - Add events for everything
-//  - Tests! Tests! Tests!
-
 /**
  * @title   AuraLocker
  * @author  ConvexFinance
@@ -71,6 +65,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Rewards
     address[] public rewardTokens;
+    uint256 public queuedCvxCrvRewards = 0;
+    uint256 public constant newRewardRatio = 830;
     //     Core reward data
     mapping(address => RewardData) public rewardData;
     //     Reward token -> distributor -> is approved to add rewards
@@ -744,21 +740,37 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                 REWARD FUNDING
     ****************************************/
 
-    // TODO - actually queue here
     function queueNewRewards(uint256 _rewards) external {
-        require(rewardDistributors[cvxCrv][msg.sender]);
+        require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
 
-        _notifyReward(cvxCrv, _rewards);
+        RewardData storage rdata = rewardData[cvxCrv];
 
-        // handle the transfer of reward tokens via `transferFrom` to reduce the number
-        // of transactions required and ensure correctness of the _reward amount
         IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), _rewards);
 
-        emit RewardAdded(cvxCrv, _rewards);
+        _rewards = _rewards.add(queuedCvxCrvRewards);
+
+        if (block.timestamp >= rdata.periodFinish) {
+            _notifyReward(cvxCrv, _rewards);
+            queuedCvxCrvRewards = 0;
+            return;
+        }
+
+        //et = now - (finish-duration)
+        uint256 elapsedTime = block.timestamp.sub(rdata.periodFinish.sub(rewardsDuration.to32()));
+        //current at now: rewardRate * elapsedTime
+        uint256 currentAtNow = rdata.rewardRate * elapsedTime;
+        uint256 queuedRatio = currentAtNow.mul(1000).div(_rewards);
+        if (queuedRatio < newRewardRatio) {
+            _notifyReward(cvxCrv, _rewards);
+            queuedCvxCrvRewards = 0;
+        } else {
+            queuedCvxCrvRewards = _rewards;
+        }
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
+        require(_rewardsToken != cvxCrv, "Use queueNewRewards");
         require(rewardDistributors[_rewardsToken][msg.sender]);
         require(_reward > 0, "No reward");
 

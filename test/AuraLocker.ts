@@ -6,6 +6,11 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import { AuraStakingProxy, Booster, ConvexToken, CvxCrvToken, AuraLocker } from "../types/generated";
 import { increaseTime, ZERO_ADDRESS } from "../test-utils";
 
+// TODO:
+//  - queueNewRewards testing
+//  - delegation (all cases: normal, post lock, pre lock, to 0, etc)
+//  - other core fns
+
 describe("AuraLocker", () => {
     let accounts: Signer[];
     let auraLocker: AuraLocker;
