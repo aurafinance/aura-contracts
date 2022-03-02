@@ -62,6 +62,6 @@ describe("CrvDepositor", () => {
         await tx.wait();
 
         const cvxCrvBalance = await cvxCrv.balanceOf(aliceAddress);
-        expect(cvxCrvBalance.toString()).to.equal(crvBalance.toString());
+        expect(cvxCrvBalance).to.equal(crvBalance);
     });
 });
