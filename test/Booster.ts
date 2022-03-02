@@ -5,6 +5,7 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import { Booster, ERC20__factory, BaseRewardPool__factory } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
+import { simpleToExactAmount } from "../test-utils/math";
 
 type Pool = {
     lptoken: string;
@@ -139,7 +140,7 @@ describe("Booster", () => {
 
         const balance = await crvRewards.balanceOf(aliceAddress);
         const rewardPerToken = await crvRewards.rewardPerToken();
-        const expectedRewards = rewardPerToken.mul(balance).div(1e18);
+        const expectedRewards = rewardPerToken.mul(balance).div(simpleToExactAmount(1));
 
         expect(expectedRewards).to.equal(crvBalance);
     });
