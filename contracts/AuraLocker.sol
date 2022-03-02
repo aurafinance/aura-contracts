@@ -13,7 +13,6 @@ interface IRewardStaking {
 }
 
 // TODO:
-//  - Optimise core storage
 //  - Add queueNewRewards
 //  - Core fns
 //    - Vote delegation
@@ -37,29 +36,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     /* ==========     STRUCTS     ========== */
 
-    // struct Data {
-    //     /// Timestamp for current period finish
-    //     uint32 periodFinish;
-    //     /// Last time any user took action
-    //     uint32 lastUpdateTime;
-    //     /// RewardRate for the rest of the period
-    //     uint96 rewardRate;
-    //     /// Ever increasing rewardPerToken rate, based on % of total supply
-    //     uint96 rewardPerTokenStored;
-    // }
-    struct Reward {
-        uint40 periodFinish;
-        uint208 rewardRate;
-        uint40 lastUpdateTime;
-        uint208 rewardPerTokenStored;
-    }
-    struct Balances {
-        uint112 locked;
-        uint32 nextUnlockIndex;
-    }
-    struct LockedBalance {
-        uint112 amount;
-        uint32 unlockTime;
+    struct RewardData {
+        /// Timestamp for current period finish
+        uint32 periodFinish;
+        /// Last time any user took action
+        uint32 lastUpdateTime;
+        /// RewardRate for the rest of the period
+        uint96 rewardRate;
+        /// Ever increasing rewardPerToken rate, based on % of total supply
+        uint96 rewardPerTokenStored;
     }
     struct UserData {
         uint128 rewardPerTokenPaid;
@@ -69,6 +54,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address token;
         uint256 amount;
     }
+
+    struct Balances {
+        uint112 locked;
+        uint32 nextUnlockIndex;
+    }
+    struct LockedBalance {
+        uint112 amount;
+        uint32 unlockTime;
+    }
     struct Epoch {
         uint224 supply;
         uint32 date; //epoch start date
@@ -76,45 +70,43 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Tokens
-    IERC20 public immutable stakingToken;
-    address public immutable cvxCrv;
-
     // Rewards
     address[] public rewardTokens;
-    // TODO - optimise (pack struct tighter)
-    mapping(address => Reward) public rewardData;
+    //     Core reward data
+    mapping(address => RewardData) public rewardData;
+    //     Reward token -> distributor -> is approved to add rewards
+    mapping(address => mapping(address => bool)) public rewardDistributors;
+    //     User -> reward token -> amount
+    mapping(address => mapping(address => UserData)) public userData;
     //     Duration that rewards are streamed over
     uint256 public constant rewardsDuration = 86400 * 7;
     //     Duration of lock/earned penalty period
     uint256 public constant lockDuration = rewardsDuration * 17;
-    //     Reward token -> distributor -> is approved to add rewards
-    mapping(address => mapping(address => bool)) public rewardDistributors;
-    //     User -> reward token -> amount
-    // TODO - optimise (pack struct tighter)
-    mapping(address => mapping(address => UserData)) public userData;
 
-    // Supplies and historic supply
-    uint256 public lockedSupply;
+    // Balances
+    //     Supplies and historic supply
+    uint256 public lockedSupply; // TODO: could rely on stakingToken.balanceOf(this) instead to save 1 SSTORE
+    //     Epochs contains only the tokens that were locked at that epoch, not a cumulative supply
     Epoch[] public epochs;
-
-    // Mappings for balance data
+    //     Mappings for balance data
     mapping(address => Balances) public balances;
     mapping(address => LockedBalance[]) public userLocks;
 
+    // Config
+    //     Tokens
+    IERC20 public immutable stakingToken;
+    address public immutable cvxCrv;
+    //     Denom for calcs
     uint256 public constant denominator = 10000;
-
-    // Staking cvxCrv
+    //     Staking cvxCrv
     address public immutable cvxcrvStaking;
-
-    // Management
+    //     Incentives
     uint256 public kickRewardPerEpoch = 100;
     uint256 public kickRewardEpochDelay = 4;
-
-    // Shutdown
+    //     Shutdown
     bool public isShutdown = false;
 
-    // Erc20-like interface
+    // Basic token data
     string private _name;
     string private _symbol;
     uint8 private immutable _decimals;
@@ -168,8 +160,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             for (uint256 i = 0; i < rewardTokens.length; i++) {
                 address token = rewardTokens[i];
                 uint256 newRewardPerToken = _rewardPerToken(token);
-                rewardData[token].rewardPerTokenStored = newRewardPerToken.to208();
-                rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to40();
+                rewardData[token].rewardPerTokenStored = newRewardPerToken.to96();
+                rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to32();
                 if (_account != address(0)) {
                     userData[_account][token] = UserData({
                         rewardPerTokenPaid: newRewardPerToken.to112(),
@@ -190,8 +182,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(rewardData[_rewardsToken].lastUpdateTime == 0);
         require(_rewardsToken != address(stakingToken));
         rewardTokens.push(_rewardsToken);
-        rewardData[_rewardsToken].lastUpdateTime = uint40(block.timestamp);
-        rewardData[_rewardsToken].periodFinish = uint40(block.timestamp);
+        rewardData[_rewardsToken].lastUpdateTime = uint32(block.timestamp);
+        rewardData[_rewardsToken].periodFinish = uint32(block.timestamp);
         rewardDistributors[_rewardsToken][_distributor] = true;
     }
 
@@ -230,6 +222,197 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     function setApprovals() external {
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, 0);
         IERC20(cvxCrv).safeApprove(cvxcrvStaking, type(uint256).max);
+    }
+
+    /***************************************
+                    ACTIONS
+    ****************************************/
+
+    // Locked tokens cannot be withdrawn for lockDuration and are eligible to receive stakingReward rewards
+    function lock(address _account, uint256 _amount) external nonReentrant updateReward(_account) {
+        //pull tokens
+        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+
+        //lock
+        _lock(_account, _amount);
+    }
+
+    //lock tokens
+    function _lock(address _account, uint256 _amount) internal {
+        require(_amount > 0, "Cannot stake 0");
+        require(!isShutdown, "shutdown");
+
+        Balances storage bal = balances[_account];
+
+        //must try check pointing epoch first
+        _checkpointEpoch();
+
+        //add user balances
+        uint112 lockAmount = _amount.to112();
+        bal.locked = bal.locked.add(lockAmount);
+
+        //add to total supplies
+        lockedSupply = lockedSupply.add(_amount);
+
+        //add user lock records or add to current
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 unlockTime = currentEpoch.add(lockDuration);
+        uint256 idx = userLocks[_account].length;
+        if (idx == 0 || userLocks[_account][idx - 1].unlockTime < unlockTime) {
+            userLocks[_account].push(LockedBalance({ amount: lockAmount, unlockTime: uint32(unlockTime) }));
+        } else {
+            LockedBalance storage userL = userLocks[_account][idx - 1];
+            userL.amount = userL.amount.add(lockAmount);
+        }
+
+        //update epoch supply, epoch checkpointed above so safe to add to latest
+        Epoch storage e = epochs[epochs.length - 1];
+        e.supply = e.supply.add(lockAmount);
+
+        emit Staked(_account, lockAmount, lockAmount);
+    }
+
+    // claim all pending rewards
+    function getReward(address _account) external {
+        getReward(_account, false);
+    }
+
+    // Claim all pending rewards
+    function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
+        for (uint256 i; i < rewardTokens.length; i++) {
+            address _rewardsToken = rewardTokens[i];
+            uint256 reward = userData[_account][_rewardsToken].rewards;
+            if (reward > 0) {
+                userData[_account][_rewardsToken].rewards = 0;
+                if (_rewardsToken == cvxCrv && _stake) {
+                    IRewardStaking(cvxcrvStaking).stakeFor(_account, reward);
+                } else {
+                    IERC20(_rewardsToken).safeTransfer(_account, reward);
+                }
+                emit RewardPaid(_account, _rewardsToken, reward);
+            }
+        }
+    }
+
+    function checkpointEpoch() external {
+        _checkpointEpoch();
+    }
+
+    //insert a new epoch if needed. fill in any gaps
+    function _checkpointEpoch() internal {
+        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 epochindex = epochs.length;
+
+        //first epoch add in constructor, no need to check 0 length
+
+        //check to add
+        if (epochs[epochindex - 1].date < currentEpoch) {
+            //fill any epoch gaps
+            while (epochs[epochs.length - 1].date != currentEpoch) {
+                uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
+                epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
+            }
+        }
+    }
+
+    // Withdraw/relock all currently locked tokens where the unlock time has passed
+    function processExpiredLocks(bool _relock, address _withdrawTo) external nonReentrant {
+        _processExpiredLocks(msg.sender, _relock, _withdrawTo, msg.sender, 0);
+    }
+
+    // Withdraw/relock all currently locked tokens where the unlock time has passed
+    function processExpiredLocks(bool _relock) external nonReentrant {
+        _processExpiredLocks(msg.sender, _relock, msg.sender, msg.sender, 0);
+    }
+
+    function kickExpiredLocks(address _account) external nonReentrant {
+        //allow kick after grace period of 'kickRewardEpochDelay'
+        _processExpiredLocks(_account, false, _account, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
+    }
+
+    // Withdraw all currently locked tokens where the unlock time has passed
+    // TODO - fix this code complexity linting error by splitting out
+    // solhint-disable-next-line code-complexity
+    function _processExpiredLocks(
+        address _account,
+        bool _relock,
+        address _withdrawTo,
+        address _rewardAddress,
+        uint256 _checkDelay
+    ) internal updateReward(_account) {
+        LockedBalance[] storage locks = userLocks[_account];
+        Balances storage userBalance = balances[_account];
+        uint112 locked;
+        uint256 length = locks.length;
+        uint256 reward = 0;
+
+        if (isShutdown || locks[length - 1].unlockTime <= block.timestamp.sub(_checkDelay)) {
+            //if time is beyond last lock, can just bundle everything together
+            locked = userBalance.locked;
+
+            //dont delete, just set next index
+            userBalance.nextUnlockIndex = length.to32();
+
+            //check for kick reward
+            //this wont have the exact reward rate that you would get if looped through
+            //but this section is supposed to be for quick and easy low gas processing of all locks
+            //we'll assume that if the reward was good enough someone would have processed at an earlier epoch
+            if (_checkDelay > 0) {
+                uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
+                uint256 epochsover = currentEpoch.sub(uint256(locks[length - 1].unlockTime)).div(rewardsDuration);
+                uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
+                reward = uint256(locks[length - 1].amount).mul(rRate).div(denominator);
+            }
+        } else {
+            //use a processed index(nextUnlockIndex) to not loop as much
+            //deleting does not change array length
+            uint32 nextUnlockIndex = userBalance.nextUnlockIndex;
+            for (uint256 i = nextUnlockIndex; i < length; i++) {
+                //unlock time must be less or equal to time
+                if (locks[i].unlockTime > block.timestamp.sub(_checkDelay)) break;
+
+                //add to cumulative amounts
+                locked = locked.add(locks[i].amount);
+
+                //check for kick reward
+                //each epoch over due increases reward
+                if (_checkDelay > 0) {
+                    uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
+                    uint256 epochsover = currentEpoch.sub(uint256(locks[i].unlockTime)).div(rewardsDuration);
+                    uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
+                    reward = reward.add(uint256(locks[i].amount).mul(rRate).div(denominator));
+                }
+                //set next unlock index
+                nextUnlockIndex++;
+            }
+            //update next unlock index
+            userBalance.nextUnlockIndex = nextUnlockIndex;
+        }
+        require(locked > 0, "no exp locks");
+
+        //update user balances and total supplies
+        userBalance.locked = userBalance.locked.sub(locked);
+        lockedSupply = lockedSupply.sub(locked);
+
+        emit Withdrawn(_account, locked, _relock);
+
+        //send process incentive
+        if (reward > 0) {
+            //reduce return amount by the kick reward
+            locked = locked.sub(reward.to112());
+
+            //transfer reward
+            stakingToken.safeTransfer(_rewardAddress, reward);
+
+            emit KickReward(_rewardAddress, _account, reward);
+        }
+
+        //relock or return to user
+        if (_relock) {
+            _lock(_withdrawTo, locked);
+        } else {
+            stakingToken.safeTransfer(_withdrawTo, locked);
+        }
     }
 
     /***************************************
@@ -470,197 +653,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     /***************************************
-                    ACTIONS
-    ****************************************/
-
-    // Locked tokens cannot be withdrawn for lockDuration and are eligible to receive stakingReward rewards
-    function lock(address _account, uint256 _amount) external nonReentrant updateReward(_account) {
-        //pull tokens
-        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
-
-        //lock
-        _lock(_account, _amount);
-    }
-
-    //lock tokens
-    function _lock(address _account, uint256 _amount) internal {
-        require(_amount > 0, "Cannot stake 0");
-        require(!isShutdown, "shutdown");
-
-        Balances storage bal = balances[_account];
-
-        //must try check pointing epoch first
-        _checkpointEpoch();
-
-        //add user balances
-        uint112 lockAmount = _amount.to112();
-        bal.locked = bal.locked.add(lockAmount);
-
-        //add to total supplies
-        lockedSupply = lockedSupply.add(_amount);
-
-        //add user lock records or add to current
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 unlockTime = currentEpoch.add(lockDuration);
-        uint256 idx = userLocks[_account].length;
-        if (idx == 0 || userLocks[_account][idx - 1].unlockTime < unlockTime) {
-            userLocks[_account].push(LockedBalance({ amount: lockAmount, unlockTime: uint32(unlockTime) }));
-        } else {
-            LockedBalance storage userL = userLocks[_account][idx - 1];
-            userL.amount = userL.amount.add(lockAmount);
-        }
-
-        //update epoch supply, epoch checkpointed above so safe to add to latest
-        Epoch storage e = epochs[epochs.length - 1];
-        e.supply = e.supply.add(lockAmount);
-
-        emit Staked(_account, lockAmount, lockAmount);
-    }
-
-    // claim all pending rewards
-    function getReward(address _account) external {
-        getReward(_account, false);
-    }
-
-    // Claim all pending rewards
-    function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
-        for (uint256 i; i < rewardTokens.length; i++) {
-            address _rewardsToken = rewardTokens[i];
-            uint256 reward = userData[_account][_rewardsToken].rewards;
-            if (reward > 0) {
-                userData[_account][_rewardsToken].rewards = 0;
-                if (_rewardsToken == cvxCrv && _stake) {
-                    IRewardStaking(cvxcrvStaking).stakeFor(_account, reward);
-                } else {
-                    IERC20(_rewardsToken).safeTransfer(_account, reward);
-                }
-                emit RewardPaid(_account, _rewardsToken, reward);
-            }
-        }
-    }
-
-    function checkpointEpoch() external {
-        _checkpointEpoch();
-    }
-
-    //insert a new epoch if needed. fill in any gaps
-    function _checkpointEpoch() internal {
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 epochindex = epochs.length;
-
-        //first epoch add in constructor, no need to check 0 length
-
-        //check to add
-        if (epochs[epochindex - 1].date < currentEpoch) {
-            //fill any epoch gaps
-            while (epochs[epochs.length - 1].date != currentEpoch) {
-                uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
-                epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
-            }
-        }
-    }
-
-    // Withdraw/relock all currently locked tokens where the unlock time has passed
-    function processExpiredLocks(bool _relock, address _withdrawTo) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, _withdrawTo, msg.sender, 0);
-    }
-
-    // Withdraw/relock all currently locked tokens where the unlock time has passed
-    function processExpiredLocks(bool _relock) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, msg.sender, msg.sender, 0);
-    }
-
-    function kickExpiredLocks(address _account) external nonReentrant {
-        //allow kick after grace period of 'kickRewardEpochDelay'
-        _processExpiredLocks(_account, false, _account, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
-    }
-
-    // Withdraw all currently locked tokens where the unlock time has passed
-    // TODO - fix this code complexity linting error by splitting out
-    // solhint-disable-next-line code-complexity
-    function _processExpiredLocks(
-        address _account,
-        bool _relock,
-        address _withdrawTo,
-        address _rewardAddress,
-        uint256 _checkDelay
-    ) internal updateReward(_account) {
-        LockedBalance[] storage locks = userLocks[_account];
-        Balances storage userBalance = balances[_account];
-        uint112 locked;
-        uint256 length = locks.length;
-        uint256 reward = 0;
-
-        if (isShutdown || locks[length - 1].unlockTime <= block.timestamp.sub(_checkDelay)) {
-            //if time is beyond last lock, can just bundle everything together
-            locked = userBalance.locked;
-
-            //dont delete, just set next index
-            userBalance.nextUnlockIndex = length.to32();
-
-            //check for kick reward
-            //this wont have the exact reward rate that you would get if looped through
-            //but this section is supposed to be for quick and easy low gas processing of all locks
-            //we'll assume that if the reward was good enough someone would have processed at an earlier epoch
-            if (_checkDelay > 0) {
-                uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
-                uint256 epochsover = currentEpoch.sub(uint256(locks[length - 1].unlockTime)).div(rewardsDuration);
-                uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
-                reward = uint256(locks[length - 1].amount).mul(rRate).div(denominator);
-            }
-        } else {
-            //use a processed index(nextUnlockIndex) to not loop as much
-            //deleting does not change array length
-            uint32 nextUnlockIndex = userBalance.nextUnlockIndex;
-            for (uint256 i = nextUnlockIndex; i < length; i++) {
-                //unlock time must be less or equal to time
-                if (locks[i].unlockTime > block.timestamp.sub(_checkDelay)) break;
-
-                //add to cumulative amounts
-                locked = locked.add(locks[i].amount);
-
-                //check for kick reward
-                //each epoch over due increases reward
-                if (_checkDelay > 0) {
-                    uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
-                    uint256 epochsover = currentEpoch.sub(uint256(locks[i].unlockTime)).div(rewardsDuration);
-                    uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
-                    reward = reward.add(uint256(locks[i].amount).mul(rRate).div(denominator));
-                }
-                //set next unlock index
-                nextUnlockIndex++;
-            }
-            //update next unlock index
-            userBalance.nextUnlockIndex = nextUnlockIndex;
-        }
-        require(locked > 0, "no exp locks");
-
-        //update user balances and total supplies
-        userBalance.locked = userBalance.locked.sub(locked);
-        lockedSupply = lockedSupply.sub(locked);
-
-        emit Withdrawn(_account, locked, _relock);
-
-        //send process incentive
-        if (reward > 0) {
-            //reduce return amount by the kick reward
-            locked = locked.sub(reward.to112());
-
-            //transfer reward
-            stakingToken.safeTransfer(_rewardAddress, reward);
-
-            emit KickReward(_rewardAddress, _account, reward);
-        }
-
-        //relock or return to user
-        if (_relock) {
-            _lock(_withdrawTo, locked);
-        } else {
-            stakingToken.safeTransfer(_withdrawTo, locked);
-        }
-    }
-
-    /***************************************
                 REWARD FUNDING
     ****************************************/
 
@@ -692,17 +684,17 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     function _notifyReward(address _rewardsToken, uint256 _reward) internal updateReward(address(0)) {
-        Reward storage rdata = rewardData[_rewardsToken];
+        RewardData storage rdata = rewardData[_rewardsToken];
 
         if (block.timestamp >= rdata.periodFinish) {
-            rdata.rewardRate = _reward.div(rewardsDuration).to208();
+            rdata.rewardRate = _reward.div(rewardsDuration).to96();
         } else {
             uint256 remaining = uint256(rdata.periodFinish).sub(block.timestamp);
             uint256 leftover = remaining.mul(rdata.rewardRate);
-            rdata.rewardRate = _reward.add(leftover).div(rewardsDuration).to208();
+            rdata.rewardRate = _reward.add(leftover).div(rewardsDuration).to96();
         }
 
-        rdata.lastUpdateTime = block.timestamp.to40();
-        rdata.periodFinish = block.timestamp.add(rewardsDuration).to40();
+        rdata.lastUpdateTime = block.timestamp.to32();
+        rdata.periodFinish = block.timestamp.add(rewardsDuration).to32();
     }
 }

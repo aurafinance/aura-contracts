@@ -52,6 +52,11 @@ library AuraMath {
         c = uint112(a);
     }
 
+    function to96(uint256 a) internal pure returns (uint96 c) {
+        require(a <= type(uint96).max, "AuraMath: uint96 Overflow");
+        c = uint96(a);
+    }
+
     function to64(uint256 a) internal pure returns (uint64 c) {
         require(a <= type(uint64).max, "AuraMath: uint64 Overflow");
         c = uint64(a);

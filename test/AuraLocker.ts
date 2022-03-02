@@ -110,7 +110,7 @@ describe("AuraLocker", () => {
     });
 
     it("checkpoint CVX locker epoch", async () => {
-        await increaseTime(60 * 60 * 24 * 120);
+        await increaseTime(60 * 60 * 24 * 15);
 
         const tx = await auraLocker.checkpointEpoch();
         await tx.wait();
@@ -120,6 +120,7 @@ describe("AuraLocker", () => {
     });
 
     it("get rewards from CVX locker", async () => {
+        await increaseTime(60 * 60 * 24 * 100);
         const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
 
         const tx = await auraLocker["getReward(address)"](aliceAddress);
