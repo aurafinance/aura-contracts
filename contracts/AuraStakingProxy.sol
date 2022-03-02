@@ -6,17 +6,9 @@ import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
 
-interface IConvexRewards {
-    function withdraw(uint256 _amount, bool _claim) external;
-
-    function balanceOf(address _account) external view returns (uint256);
-
-    function getReward(bool _stake) external;
-
-    function stakeAll() external;
-}
-
 interface ICvxLocker {
+    function queueNewRewards(uint256 _rewards) external;
+
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
 }
 
@@ -126,13 +118,6 @@ contract AuraStakingProxy {
         IERC20(_token).safeTransfer(_to, bal);
     }
 
-    function withdraw(uint256 _amount) external {
-        require(msg.sender == rewards, "!auth");
-
-        //withdraw cvx
-        IERC20(cvx).safeTransfer(msg.sender, _amount);
-    }
-
     /**
      * @dev Collects cvxCRV rewards from cvxRewardPool, converts any CRV deposited directly from
      *      the booster, and then applies the rewards to the cvxLocker, rewarding the caller in the process.
@@ -156,7 +141,7 @@ contract AuraStakingProxy {
             IERC20(cvxCrv).safeTransfer(msg.sender, incentiveAmount);
 
             //update rewards
-            ICvxLocker(rewards).notifyRewardAmount(cvxCrv, cvxCrvBal);
+            ICvxLocker(rewards).queueNewRewards(cvxCrvBal);
 
             emit RewardsDistributed(cvxCrv, cvxCrvBal);
         }
