@@ -58,7 +58,7 @@ describe("Booster", () => {
         const balance = await mocks.lptoken.balanceOf(deployerAddress);
         for (const account of accounts) {
             const accountAddress = await account.getAddress();
-            const share = balance.div(accounts.length.toString());
+            const share = balance.div(accounts.length);
             const tx = await mocks.lptoken.transfer(accountAddress, share);
             await tx.wait();
         }
@@ -79,7 +79,7 @@ describe("Booster", () => {
         const depositToken = ERC20__factory.connect(pool.token, deployer);
         const balance = await depositToken.balanceOf(aliceAddress);
 
-        expect(balance.toString()).to.equal(amount.toString());
+        expect(balance).to.equal(amount);
     });
 
     it("@method BaseRewardPool.stake", async () => {
@@ -95,7 +95,7 @@ describe("Booster", () => {
 
         const stakedBalance = await crvRewards.balanceOf(aliceAddress);
 
-        expect(stakedBalance.toString()).to.equal(balance.toString());
+        expect(stakedBalance).to.equal(balance);
     });
 
     it("@method Booster.earmarkRewards", async () => {
@@ -123,7 +123,7 @@ describe("Booster", () => {
             .add(stakerRewardsBalance)
             .add(lockRewardsBalance);
 
-        expect(totalCrvBalance.toString()).to.equal(rate.toString());
+        expect(totalCrvBalance).to.equal(rate);
     });
 
     it("@method BaseRewardPool.getReward", async () => {
@@ -139,8 +139,8 @@ describe("Booster", () => {
 
         const balance = await crvRewards.balanceOf(aliceAddress);
         const rewardPerToken = await crvRewards.rewardPerToken();
-        const expectedRewards = rewardPerToken.mul(balance).div((1e18).toString());
+        const expectedRewards = rewardPerToken.mul(balance).div(1e18);
 
-        expect(expectedRewards.toString()).to.equal(crvBalance.toString());
+        expect(expectedRewards).to.equal(crvBalance);
     });
 });

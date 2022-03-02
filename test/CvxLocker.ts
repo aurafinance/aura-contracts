@@ -71,25 +71,23 @@ describe("CvxLocker", () => {
         tx = await cvxLocker.connect(alice).lock(aliceAddress, aliceInitialCvxBalance, 0);
         const lockResp = await tx.wait();
         const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
-        const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp.toString());
+        const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp);
 
         const stakedCvx = await cvx.balanceOf(cvxLocker.address);
-        expect(stakedCvx.toString()).to.equal(aliceInitialCvxBalance.toString());
+        expect(stakedCvx).to.equal(aliceInitialCvxBalance);
 
         const balanceAfter = await cvx.balanceOf(aliceAddress);
-        expect(balanceAfter.toString()).to.equal("0");
+        expect(balanceAfter).to.equal("0");
 
         const lock = await cvxLocker.userLocks(aliceAddress, "0");
 
-        expect(lock.amount.toString()).to.equal(aliceInitialCvxBalance.toString());
-        expect(lock.boosted.toString()).to.equal(aliceInitialCvxBalance.toString());
+        expect(lock.amount).to.equal(aliceInitialCvxBalance);
+        expect(lock.boosted).to.equal(aliceInitialCvxBalance);
 
         const lockDuration = await cvxLocker.lockDuration();
         const rewardsDuration = await cvxLocker.rewardsDuration();
 
-        expect(lock.unlockTime.toString()).to.equal(
-            lockDuration.add(lockTimestamp.div(rewardsDuration).mul(rewardsDuration)).toString(),
-        );
+        expect(lock.unlockTime).to.equal(lockDuration.add(lockTimestamp.div(rewardsDuration).mul(rewardsDuration)));
     });
 
     it("distribute rewards from the booster", async () => {
@@ -99,7 +97,7 @@ describe("CvxLocker", () => {
         const incentive = await booster.stakerIncentive();
         const rate = await mocks.crvMinter.rate();
         const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
-        expect(stakingCrvBalance.toString()).to.equal(rate.mul(incentive).div(10000).toString());
+        expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
         const tx = await cvxStakingProxy.distribute();
         await tx.wait();
@@ -117,7 +115,7 @@ describe("CvxLocker", () => {
         await tx.wait();
 
         const vlCVXBalance = await cvxLocker.balanceAtEpochOf("0", aliceAddress);
-        expect(vlCVXBalance.toString()).to.equal(aliceInitialCvxBalance.toString());
+        expect(vlCVXBalance).to.equal(aliceInitialCvxBalance);
     });
 
     it("get rewards from CVX locker", async () => {
@@ -136,6 +134,6 @@ describe("CvxLocker", () => {
         await tx.wait();
 
         const balance = await cvx.balanceOf(aliceAddress);
-        expect(balance.toString()).to.equal(aliceInitialCvxBalance.toString());
+        expect(balance).to.equal(aliceInitialCvxBalance);
     });
 });
