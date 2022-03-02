@@ -30,8 +30,6 @@ import {
     PoolManagerV3,
     BaseRewardPool__factory,
     BaseRewardPool,
-    CvxRewardPool__factory,
-    CvxRewardPool,
     ArbitratorVault__factory,
     ArbitratorVault,
     ExtraRewardStashV3,
@@ -49,10 +47,10 @@ import {
     IWeightedPoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
-    CvxLocker,
-    CvxLocker__factory,
-    CvxStakingProxy,
-    CvxStakingProxy__factory,
+    AuraLocker,
+    AuraLocker__factory,
+    AuraStakingProxy,
+    AuraStakingProxy__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -141,12 +139,11 @@ interface Phase3Deployed extends Phase2Deployed {
     boosterOwner: BoosterOwner;
     cvxCrv: CvxCrvToken;
     cvxCrvRewards: BaseRewardPool;
-    cvxRewards: CvxRewardPool;
     crvDepositor: CrvDepositor;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
-    cvxLocker: CvxLocker;
-    cvxStakingProxy: CvxStakingProxy;
+    cvxLocker: AuraLocker;
+    cvxStakingProxy: AuraStakingProxy;
     vestedEscrow: VestedEscrow;
     dropFactory: MerkleAirdropFactory;
 }
@@ -385,22 +382,6 @@ async function deployPhase3(
         debug,
     );
 
-    const cvxRewards = await deployContract<CvxRewardPool>(
-        new CvxRewardPool__factory(deployer),
-        "CvxRewardPool",
-        [
-            cvx.address,
-            token,
-            crvDepositor.address,
-            cvxCrvRewards.address,
-            cvxCrv.address,
-            booster.address,
-            multisigs.daoMultisig,
-        ],
-        {},
-        debug,
-    );
-
     const poolManagerProxy = await deployContract<PoolManagerProxy>(
         new PoolManagerProxy__factory(deployer),
         "PoolManagerProxy",
@@ -448,26 +429,18 @@ async function deployPhase3(
     );
 
     // TODO: boostPayment is set to ZERO_ADDRESS?
-    const cvxLocker = await deployContract<CvxLocker>(
-        new CvxLocker__factory(deployer),
-        "CvxLocker",
+    const cvxLocker = await deployContract<AuraLocker>(
+        new AuraLocker__factory(deployer),
+        "AuraLocker",
         [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, ZERO_ADDRESS, cvxCrvRewards.address],
         {},
         debug,
     );
 
-    const cvxStakingProxy = await deployContract<CvxStakingProxy>(
-        new CvxStakingProxy__factory(deployer),
-        "CvxStakingProxy",
-        [
-            cvxLocker.address,
-            config.token,
-            cvx.address,
-            cvxCrv.address,
-            cvxRewards.address,
-            cvxCrvRewards.address,
-            crvDepositor.address,
-        ],
+    const cvxStakingProxy = await deployContract<AuraStakingProxy>(
+        new AuraStakingProxy__factory(deployer),
+        "AuraStakingProxy",
+        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, cvxCrvRewards.address, crvDepositor.address],
         {},
         debug,
     );
@@ -518,7 +491,7 @@ async function deployPhase3(
     tx = await booster.setTreasury(cvxStakingProxy.address);
     await tx.wait();
 
-    tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxRewards.address);
+    tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
     await tx.wait();
 
     tx = await booster.setPoolManager(poolManagerProxy.address);
@@ -573,7 +546,7 @@ async function deployPhase3(
             cvx.address,
             rewardsStart,
             rewardsEnd,
-            cvxRewards.address, // TODO - convert to vlCVX
+            cvxLocker.address, // TODO - convert to vlCVX
             multisigs.vestingMultisig,
         ],
         {},
@@ -668,7 +641,6 @@ async function deployPhase3(
         booster,
         boosterOwner,
         cvxCrv,
-        cvxRewards,
         cvxCrvRewards,
         crvDepositor,
         poolManager,
@@ -688,7 +660,7 @@ async function deployPhase4(
     const deployer = signer;
 
     const { token, gauges } = config;
-    const { cvx, cvxCrv, cvxRewards, cvxCrvRewards, crvDepositor, poolManager } = deployment;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, crvDepositor, poolManager } = deployment;
 
     // -----------------------------
     // 4. Pool creation etc
@@ -707,9 +679,9 @@ async function deployPhase4(
             cvxCrv.address,
             crvDepositor.address,
             cvxCrvRewards.address,
-            cvxRewards.address,
+            cvxLocker.address, // TODO - deprecate or ensure this is vlCVX
             DEAD_ADDRESS, // TODO - this needs to be changed, used for trading cvx for cvxCRV
-            DEAD_ADDRESS, // TODO - add vlCVX
+            cvxLocker.address,
         ],
         {},
         debug,
