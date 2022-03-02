@@ -8,34 +8,8 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
 
-interface IStakingProxy {
-    function withdraw(uint256 _amount) external;
-
-    function distribute() external;
-}
-
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
-
-    function stake(uint256) external;
-
-    function withdraw(uint256 amount, bool claim) external;
-
-    function withdrawAndUnwrap(uint256 amount, bool claim) external;
-
-    function earned(address account) external view returns (uint256);
-
-    function getReward() external;
-
-    function getReward(address _account, bool _claimExtras) external;
-
-    function extraRewardsLength() external view returns (uint256);
-
-    function extraRewards(uint256 _pid) external view returns (address);
-
-    function rewardToken() external view returns (address);
-
-    function balanceOf(address _account) external view returns (uint256);
 }
 
 /**
@@ -252,10 +226,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     //shutdown the contract. unstake all tokens. release all locks
     function shutdown() external onlyOwner {
-        if (stakingProxy != address(0)) {
-            uint256 stakeBalance = stakingToken.balanceOf(address(this));
-            IStakingProxy(stakingProxy).withdraw(stakeBalance);
-        }
+        // TODO - remove
+        // if (stakingProxy != address(0)) {
+        //     uint256 stakeBalance = stakingToken.balanceOf(address(this));
+        // IStakingProxy(stakingProxy).withdraw(stakeBalance);
+        // }
         isShutdown = true;
     }
 
@@ -726,10 +701,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     //pull required amount of cvx from staking for an upcoming transfer
     function allocateCVXForTransfer(uint256 _amount) internal {
-        uint256 balance = stakingToken.balanceOf(address(this));
-        if (_amount > balance) {
-            IStakingProxy(stakingProxy).withdraw(_amount.sub(balance));
-        }
+        // TODO - not needed
+        // uint256 balance = stakingToken.balanceOf(address(this));
+        // if (_amount > balance) {
+        //     IStakingProxy(stakingProxy).withdraw(_amount.sub(balance));
+        // }
     }
 
     //transfer helper: pull enough from staking, transfer, updating staking ratio
@@ -766,15 +742,16 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 mean = maximumStake.add(minimumStake).div(2);
         uint256 max = maximumStake.add(_offset);
         uint256 min = AuraMath.min(minimumStake, minimumStake - _offset);
-        if (ratio > max) {
-            //remove
-            uint256 remove = staked.sub(total.mul(mean).div(denominator));
-            IStakingProxy(stakingProxy).withdraw(remove);
-        } else if (ratio < min) {
-            //add
-            uint256 increase = total.mul(mean).div(denominator).sub(staked);
-            stakingToken.safeTransfer(stakingProxy, increase);
-        }
+        // TODO - not needed
+        // if (ratio > max) {
+        //     //remove
+        //     uint256 remove = staked.sub(total.mul(mean).div(denominator));
+        //     IStakingProxy(stakingProxy).withdraw(remove);
+        // } else if (ratio < min) {
+        //     //add
+        //     uint256 increase = total.mul(mean).div(denominator).sub(staked);
+        //     stakingToken.safeTransfer(stakingProxy, increase);
+        // }
     }
 
     // Claim all pending rewards
@@ -814,6 +791,25 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         rdata.lastUpdateTime = block.timestamp.to40();
         rdata.periodFinish = block.timestamp.add(rewardsDuration).to40();
+    }
+
+    // TODO - actually queue here
+    function queueNewRewards(uint256 _rewards) external {
+        require(rewardDistributors[cvxCrv][msg.sender]);
+        require(_rewards > 0, "No reward");
+
+        _notifyReward(cvxCrv, _rewards);
+
+        // handle the transfer of reward tokens via `transferFrom` to reduce the number
+        // of transactions required and ensure correctness of the _reward amount
+        IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), _rewards);
+
+        emit RewardAdded(cvxCrv, _rewards);
+
+        if (cvxCrv == cvxCrv) {
+            //update staking ratio if main reward
+            updateStakeRatio(0);
+        }
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external updateReward(address(0)) {

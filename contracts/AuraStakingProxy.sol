@@ -139,6 +139,7 @@ contract AuraStakingProxy {
      */
     function distribute() external {
         //convert crv to cvxCrv
+        // TODO - support 80/20
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
             ICrvDepositor(crvDeposit).deposit(crvBal, true);

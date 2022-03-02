@@ -73,7 +73,7 @@ describe("CvxLocker", () => {
         const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
         const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp.toString());
 
-        const stakedCvx = await cvx.balanceOf(cvxStakingProxy.address);
+        const stakedCvx = await cvx.balanceOf(cvxLocker.address);
         expect(stakedCvx.toString()).to.equal(aliceInitialCvxBalance.toString());
 
         const balanceAfter = await cvx.balanceOf(aliceAddress);
