@@ -1,10 +1,10 @@
 import hre, { ethers } from "hardhat";
-import { BigNumberish, Signer } from "ethers";
+import { Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraStakingProxy, Booster, ConvexToken, CvxCrvToken, AuraLocker } from "../types/generated";
-import { getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 
 // TODO:
 //  - queueNewRewards testing
@@ -23,8 +23,8 @@ describe("AuraLocker", () => {
     let deployer: Signer;
 
     let alice: Signer;
+    let aliceInitialBalance: BN;
     let aliceAddress: string;
-    let aliceInitialCvxBalance: BigNumberish;
     let bob: Signer;
     let bobAddress: string;
 
@@ -57,13 +57,12 @@ describe("AuraLocker", () => {
         cvx = contracts.cvx;
         cvxCrv = contracts.cvxCrv;
 
-        let tx = await cvx.transfer(aliceAddress, simpleToExactAmount(100));
+        aliceInitialBalance = simpleToExactAmount(200);
+        let tx = await cvx.transfer(aliceAddress, simpleToExactAmount(200));
         await tx.wait();
 
         tx = await cvx.transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
-
-        aliceInitialCvxBalance = await cvx.balanceOf(aliceAddress);
     };
 
     before(async () => {
@@ -80,23 +79,23 @@ describe("AuraLocker", () => {
     }
 
     it("lock CVX", async () => {
-        let tx = await cvx.connect(alice).approve(auraLocker.address, aliceInitialCvxBalance);
+        let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
         await tx.wait();
 
-        tx = await auraLocker.connect(alice).lock(aliceAddress, aliceInitialCvxBalance);
+        tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
         const lockResp = await tx.wait();
         const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
         const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp);
 
         const stakedCvx = await cvx.balanceOf(auraLocker.address);
-        expect(stakedCvx).to.equal(aliceInitialCvxBalance);
+        expect(stakedCvx).to.equal(simpleToExactAmount(100));
 
         const balanceAfter = await cvx.balanceOf(aliceAddress);
-        expect(balanceAfter).to.equal(0);
+        expect(balanceAfter).to.equal(aliceInitialBalance.sub(simpleToExactAmount(100)));
 
         const lock = await auraLocker.userLocks(aliceAddress, 0);
 
-        expect(lock.amount).to.equal(aliceInitialCvxBalance);
+        expect(lock.amount).to.equal(simpleToExactAmount(100));
 
         const lockDuration = await auraLocker.lockDuration();
         const rewardsDuration = await auraLocker.rewardsDuration();
@@ -152,7 +151,7 @@ describe("AuraLocker", () => {
         await tx.wait();
 
         const vlCVXBalance = await auraLocker.balanceAtEpochOf("0", aliceAddress);
-        expect(vlCVXBalance).to.equal(aliceInitialCvxBalance);
+        expect(vlCVXBalance).to.equal(simpleToExactAmount(100));
     });
 
     it("get rewards from CVX locker", async () => {
@@ -172,36 +171,37 @@ describe("AuraLocker", () => {
         await tx.wait();
 
         const balance = await cvx.balanceOf(aliceAddress);
-        expect(balance).to.equal(aliceInitialCvxBalance);
+        expect(balance).to.equal(aliceInitialBalance);
     });
 
     context("checking delegation timelines", () => {
-        let delegate0, delegate1;
+        let delegate0, delegate1, delegate2;
 
-        /*
-         *  0   1   2       8        16   18    <-- Weeks
-         * alice           Bob                  <-- Locking
+        /*                                **
+         *  0   1   2   3   8   9 ... 16  17  18 <-- Weeks
+         * alice    alice    bob                 <-- Locking
          *    ^
-         * +alice ^                             <-- delegate 0
-         *      +alice       +bob               <-- delegate 1
-         *                                      <-- delegate 2
+         * +alice ^           ^                  <-- delegate 0
+         *      +alice      +bob        ^        <-- delegate 1
+         *                            +alice     <-- delegate 2
          *
-         * delegate0 has balance of 100 from 0-2
-         * delegate1 has balance of 100 from 3-9 & 200 from 9-16 & 100 from 17
+         * delegate0 has balance of 100 in 1
+         * delegate1 has balance of 100 from 2, 200 from 3-8, 300 from 9-16 & 100 from 17
+         * delegate2 has balance of 100 from 17
          */
         before(async () => {
             await setup();
             delegate0 = await accounts[2].getAddress();
             delegate1 = await accounts[3].getAddress();
-            // delegate2 = accounts[4].getAddress();
+            delegate2 = await accounts[4].getAddress();
 
-            let tx = await cvx.connect(alice).approve(auraLocker.address, aliceInitialCvxBalance);
+            let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await tx.wait();
-            tx = await auraLocker.connect(alice).lock(aliceAddress, aliceInitialCvxBalance);
+            tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
             await tx.wait();
 
             const lock = await auraLocker.userLocks(aliceAddress, 0);
-            expect(lock.amount).to.equal(aliceInitialCvxBalance);
+            expect(lock.amount).to.equal(simpleToExactAmount(100));
         });
         it("has no delegation at the start", async () => {
             const delegate = await auraLocker.delegates(aliceAddress);
@@ -215,6 +215,7 @@ describe("AuraLocker", () => {
         it("fails when bob tries to delegate with no locks", async () => {
             await expect(auraLocker.connect(bob).delegate(delegate0)).to.be.revertedWith("Nothing to delegate");
         });
+        // t = 0.5 -> 1.5
         it("delegates to 0", async () => {
             const tx = await auraLocker.connect(alice).delegate(delegate0);
             await tx.wait();
@@ -238,6 +239,7 @@ describe("AuraLocker", () => {
                 "Must delegate to someone",
             );
         });
+        // t = 1.5 -> 2.5
         it("changes delegation to delegate1", async () => {
             const tx = await auraLocker.connect(alice).delegate(delegate1);
             await tx.wait();
@@ -268,6 +270,74 @@ describe("AuraLocker", () => {
             expect(delegate1Votes).eq(simpleToExactAmount(100));
             expect(delegate1Historic).eq(0);
             expect(delegate1Now).eq(simpleToExactAmount(100));
+        });
+
+        // t = 2.5 -> 8.5
+        it("deposits more for alice", async () => {
+            let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            await tx.wait();
+            tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            await tx.wait();
+
+            const week2point5 = await getTimestamp();
+
+            await increaseTime(ONE_WEEK);
+
+            const week3point5 = await getTimestamp();
+
+            const delegate1Historic = await auraLocker.getPastVotes(delegate1, week2point5);
+            const delegate1Now = await auraLocker.getPastVotes(delegate1, week3point5);
+
+            expect(delegate1Historic).eq(simpleToExactAmount(100));
+            expect(delegate1Now).eq(simpleToExactAmount(200));
+
+            await increaseTime(ONE_WEEK.mul(5));
+        });
+        // t = 8.5 -> 16.5
+        it("deposits for bob and delegates", async () => {
+            let tx = await cvx.connect(bob).approve(auraLocker.address, simpleToExactAmount(100));
+            await tx.wait();
+            tx = await auraLocker.connect(bob).lock(bobAddress, simpleToExactAmount(100));
+            await tx.wait();
+            tx = await auraLocker.connect(bob).delegate(delegate1);
+            await tx.wait();
+
+            const week8point5 = await getTimestamp();
+
+            await increaseTime(ONE_WEEK);
+
+            const week9point5 = await getTimestamp();
+
+            const delegate1Historic = await auraLocker.getPastVotes(delegate1, week8point5);
+            const delegate1Now = await auraLocker.getPastVotes(delegate1, week9point5);
+
+            expect(delegate1Historic).eq(simpleToExactAmount(200));
+            expect(delegate1Now).eq(simpleToExactAmount(300));
+
+            await increaseTime(ONE_WEEK.mul(7));
+        });
+
+        // t = 16.5 -> 17.5
+        it("delegates alice to 2 and omits upcoming release", async () => {
+            const tx = await auraLocker.connect(alice).delegate(delegate2);
+            await tx.wait();
+
+            const week16point5 = await getTimestamp();
+
+            await increaseTime(ONE_WEEK);
+
+            const week17point5 = await getTimestamp();
+
+            const delegate1Historic = await auraLocker.getPastVotes(delegate1, week16point5);
+            const delegate1Now = await auraLocker.getPastVotes(delegate1, week17point5);
+            const delegate2Historic = await auraLocker.getPastVotes(delegate2, week16point5);
+            const delegate2Now = await auraLocker.getPastVotes(delegate2, week17point5);
+
+            expect(delegate1Historic).eq(simpleToExactAmount(300));
+            expect(delegate1Now).eq(simpleToExactAmount(100));
+
+            expect(delegate2Historic).eq(simpleToExactAmount(0));
+            expect(delegate2Now).eq(simpleToExactAmount(100));
         });
     });
 });
