@@ -60,6 +60,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint224 supply;
         uint32 date; //epoch start date
     }
+    struct DelegateeCheckpoint {
+        uint224 votes;
+        uint32 epochStart;
+    }
 
     /* ========== STATE VARIABLES ========== */
 
@@ -90,8 +94,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     // Voting
     //     Stored delegations
     mapping(address => address) private _delegates;
+    //     Checkpointed votes
+    mapping(address => DelegateeCheckpoint[]) private _checkpointedVotes;
     //     Delegatee balances (user -> unlock timestamp -> amount)
-    mapping(address => mapping(uint256 => uint256)) public delegateeBalances;
+    mapping(address => mapping(uint256 => uint256)) public delegateeUnlocks;
 
     // Config
     //     Tokens
@@ -269,9 +275,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             userL.amount = userL.amount.add(lockAmount);
         }
 
-        if (delegates(msg.sender) != address(0)) {
-            delegateeBalances[delegates(msg.sender)][unlockTime] += lockAmount;
-        }
+        // TODO - fix this delegation
+        // if (delegates(msg.sender) != address(0)) {
+        //     delegateeBalances[delegates(msg.sender)][unlockTime] += lockAmount;
+        // }
 
         //update epoch supply, epoch checkpointed above so safe to add to latest
         Epoch storage e = epochs[epochs.length - 1];
@@ -428,39 +435,83 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     ****************************************/
 
     /**
-     * @dev Delegate votes from the sender to `delegatee`.
+     * @dev Delegate votes from the sender to `newDelegatee`.
      */
-    function delegate(address delegatee) public virtual {
+    function delegate(address newDelegatee) public virtual {
         // Step 1: Get lock data
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 len = locks.length;
         require(len > 0, "Nothing to delegate");
-        require(delegatee != address(0), "Must delegate to someone");
+        require(newDelegatee != address(0), "Must delegate to someone");
 
         // Step 2: Update delegatee storage
-        address currentDelegate = delegates(msg.sender);
-        _delegates[msg.sender] = delegatee;
+        address oldDelegatee = delegates(msg.sender);
+        _delegates[msg.sender] = newDelegatee;
 
-        emit DelegateChanged(msg.sender, currentDelegate, delegatee);
+        emit DelegateChanged(msg.sender, oldDelegatee, newDelegatee);
 
         // Step 3: Move balances around
-        //         Relevant locks = those unlocking within the next 16 epochs
         //         Delegate for the upcoming epoch
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        // Step 3.2: Add all relevant locks to new
+        uint256 upcomingEpoch = block.timestamp.add(rewardsDuration).div(rewardsDuration).mul(rewardsDuration);
         uint256 i = len - 1;
-        while (locks[i].unlockTime > currentEpoch) {
-            LockedBalance memory currentLock = locks[i];
-            // Step 3.1: Remove all relevant locks from old
-            if (currentDelegate != address(0)) {
-                delegateeBalances[currentDelegate][currentLock.unlockTime] -= currentLock.amount;
+        uint256 futureUnlocksSum = 0;
+        LockedBalance memory currentLock = locks[i];
+        // Step 3.1: Add future unlocks and sum balances
+        while (currentLock.unlockTime > upcomingEpoch) {
+            futureUnlocksSum += currentLock.amount;
+
+            if (oldDelegatee != address(0)) {
+                delegateeUnlocks[oldDelegatee][currentLock.unlockTime] -= currentLock.amount;
             }
-            delegateeBalances[delegatee][currentLock.unlockTime] += currentLock.amount;
+            delegateeUnlocks[newDelegatee][currentLock.unlockTime] += currentLock.amount;
+
             if (i > 0) {
                 i--;
+                currentLock = locks[i];
             } else {
                 break;
             }
+        }
+
+        // Step 3.2: Checkpoint old delegatee
+        //           Effectively loop through all unlocks between then and now and decrease
+        if (oldDelegatee != address(0)) {
+            DelegateeCheckpoint[] storage ckptOd = _checkpointedVotes[oldDelegatee];
+            DelegateeCheckpoint memory prevCkpt = ckptOd[ckptOd.length - 1];
+            uint256 nextEpoch = upcomingEpoch;
+            uint256 unlocksSincePrevCkpt = 0;
+            // Should be maximum 18 iterations
+            while (nextEpoch > prevCkpt.epochStart) {
+                unlocksSincePrevCkpt += delegateeUnlocks[oldDelegatee][nextEpoch];
+                nextEpoch -= rewardsDuration;
+            }
+            ckptOd.push(
+                DelegateeCheckpoint({
+                    votes: (prevCkpt.votes - unlocksSincePrevCkpt - futureUnlocksSum).to224(),
+                    epochStart: upcomingEpoch.to32()
+                })
+            );
+        }
+
+        // Step 3.3: Checkpoint new delegatee
+        DelegateeCheckpoint[] storage ckptNd = _checkpointedVotes[newDelegatee];
+        if (ckptNd.length > 0) {
+            DelegateeCheckpoint memory prevCkpt = ckptNd[ckptNd.length - 1];
+            uint256 nextEpoch = upcomingEpoch;
+            uint256 unlocksSincePrevCkpt = 0;
+            // Should be maximum 18 iterations
+            while (nextEpoch > prevCkpt.epochStart) {
+                unlocksSincePrevCkpt += delegateeUnlocks[newDelegatee][nextEpoch];
+                nextEpoch -= rewardsDuration;
+            }
+            ckptNd.push(
+                DelegateeCheckpoint({
+                    votes: (prevCkpt.votes - unlocksSincePrevCkpt + futureUnlocksSum).to224(),
+                    epochStart: upcomingEpoch.to32()
+                })
+            );
+        } else {
+            ckptNd.push(DelegateeCheckpoint({ votes: futureUnlocksSum.to224(), epochStart: upcomingEpoch.to32() }));
         }
     }
 
@@ -483,10 +534,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      */
     function getPastVotes(address account, uint256 timestamp) public view returns (uint256 votes) {
         require(timestamp <= block.timestamp, "ERC20Votes: block not yet mined");
-        uint256 baseEpoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
-        for (uint256 i = 1; i < 17; i++) {
-            uint256 epochTime = baseEpoch.add(rewardsDuration.mul(i));
-            votes += delegateeBalances[account][epochTime];
+        uint256 epoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
+        DelegateeCheckpoint memory ckpt = _checkpointsLookup(_checkpointedVotes[account], epoch);
+        votes = ckpt.votes;
+        while (epoch > ckpt.epochStart) {
+            votes -= delegateeUnlocks[account][epoch];
+            epoch -= rewardsDuration;
         }
     }
 
@@ -497,6 +550,39 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
         require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
         return totalSupplyAtEpoch(findEpochId(timestamp));
+    }
+
+    /**
+     * @dev Lookup a value in a list of (sorted) checkpoints.
+     */
+    function _checkpointsLookup(DelegateeCheckpoint[] storage ckpts, uint256 epochStart)
+        private
+        view
+        returns (DelegateeCheckpoint memory)
+    {
+        // We run a binary search to look for the earliest checkpoint taken after `blockNumber`.
+        //
+        // During the loop, the index of the wanted checkpoint remains in the range [low, high).
+        // With each iteration, either `low` or `high` is moved towards the middle of the range to maintain the invariant.
+        // - If the middle checkpoint is after `blockNumber`, we look in [low, mid)
+        // - If the middle checkpoint is before `blockNumber`, we look in [mid+1, high)
+        // Once we reach a single value (when low == high), we've found the right checkpoint at the index high-1, if not
+        // out of bounds (in which case we're looking too far in the past and the result is 0).
+        // Note that if the latest checkpoint available is exactly for `blockNumber`, we end up with an index that is
+        // past the end of the array, so we technically don't find a checkpoint after `blockNumber`, but it works out
+        // the same.
+        uint256 high = ckpts.length;
+        uint256 low = 0;
+        while (low < high) {
+            uint256 mid = AuraMath.average(low, high);
+            if (ckpts[mid].epochStart > epochStart) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        return high == 0 ? DelegateeCheckpoint(0, 0) : ckpts[high - 1];
     }
 
     /***************************************
