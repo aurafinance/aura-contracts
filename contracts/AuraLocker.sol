@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -8,45 +8,23 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
 
-interface IStakingProxy {
-    function getBalance() external view returns (uint256);
-
-    function withdraw(uint256 _amount) external;
-
-    function stake() external;
-
-    function distribute() external;
-}
-
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
-
-    function stake(uint256) external;
-
-    function withdraw(uint256 amount, bool claim) external;
-
-    function withdrawAndUnwrap(uint256 amount, bool claim) external;
-
-    function earned(address account) external view returns (uint256);
-
-    function getReward() external;
-
-    function getReward(address _account, bool _claimExtras) external;
-
-    function extraRewardsLength() external view returns (uint256);
-
-    function extraRewards(uint256 _pid) external view returns (address);
-
-    function rewardToken() external view returns (address);
-
-    function balanceOf(address _account) external view returns (uint256);
 }
 
-// CVX Locking contract for https://www.convexfinance.com/
-// CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
-// Based on EPS Staking contract for http://ellipsis.finance/
-// Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
-contract CvxLocker is ReentrancyGuard, Ownable {
+/**
+ * @title   ConvexToken
+ * @author  ConvexFinance
+ * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available
+ *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
+ *          to depositors
+ * @dev     NOTE - must call `setStakingContract` to init.
+ *          CVX Locking contract for https://www.convexfinance.com/
+ *          CVX locked in this contract will be entitled to voting rights for the Convex Finance platform
+ *          Based on EPS Staking contract for http://ellipsis.finance/
+ *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
+ */
+contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
     using AuraMath112 for uint112;
@@ -82,8 +60,8 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     }
 
     //token constants
-    IERC20 public constant stakingToken = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B); //cvx
-    address public constant cvxCrv = address(0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
+    IERC20 public immutable stakingToken;
+    address public immutable cvxCrv;
 
     //rewards
     address[] public rewardTokens;
@@ -112,7 +90,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     mapping(address => LockedBalance[]) public userLocks;
 
     //boost
-    address public boostPayment = address(0x1389388d01708118b497f59521f6943Be2541bb7);
+    address public boostPayment;
     uint256 public maximumBoostPayment = 0;
     uint256 public boostRate = 10000;
     uint256 public nextMaximumBoostPayment = 0;
@@ -123,7 +101,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
     uint256 public minimumStake = 10000;
     uint256 public maximumStake = 10000;
     address public stakingProxy;
-    address public constant cvxcrvStaking = address(0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
+    address public immutable cvxcrvStaking;
     uint256 public constant stakeOffsetOnLock = 500; //allow broader range for staking when depositing
 
     //management
@@ -140,10 +118,30 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor() public Ownable() {
-        _name = "Vote Locked Convex Token";
-        _symbol = "vlCVX";
+    /**
+     * @param _nameArg          Token name, simples
+     * @param _symbolArg        Token symbol
+     * @param _stakingToken     CVX (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B)
+     * @param _cvxCrv           cvxCRV (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7)
+     * @param _boostPayment     something something boost? (currently the treasury)
+     * @param _cvxCrvStaking    cvsCRV rewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e)
+     */
+    constructor(
+        string memory _nameArg,
+        string memory _symbolArg,
+        address _stakingToken,
+        address _cvxCrv,
+        address _boostPayment,
+        address _cvxCrvStaking
+    ) public Ownable() {
+        _name = _nameArg;
+        _symbol = _symbolArg;
         _decimals = 18;
+
+        stakingToken = IERC20(_stakingToken);
+        cvxCrv = _cvxCrv;
+        boostPayment = _boostPayment;
+        cvxcrvStaking = _cvxCrvStaking;
 
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
         epochs.push(Epoch({ supply: 0, date: uint32(currentEpoch) }));
@@ -228,10 +226,11 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
     //shutdown the contract. unstake all tokens. release all locks
     function shutdown() external onlyOwner {
-        if (stakingProxy != address(0)) {
-            uint256 stakeBalance = IStakingProxy(stakingProxy).getBalance();
-            IStakingProxy(stakingProxy).withdraw(stakeBalance);
-        }
+        // TODO - remove
+        // if (stakingProxy != address(0)) {
+        //     uint256 stakeBalance = stakingToken.balanceOf(address(this));
+        // IStakingProxy(stakingProxy).withdraw(stakeBalance);
+        // }
         isShutdown = true;
     }
 
@@ -358,13 +357,13 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
         //need to add up since the range could be in the middle somewhere
         //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = locks.length - 1; i + 1 != 0; i--) {
-            uint256 lockEpoch = uint256(locks[i].unlockTime).sub(lockDuration);
+        for (uint256 i = locks.length; i > 0; i--) {
+            uint256 lockEpoch = uint256(locks[i - 1].unlockTime).sub(lockDuration);
             //lock epoch must be less or equal to the epoch we're basing from.
             //also not include the current epoch
             if (lockEpoch <= epochTime && lockEpoch < currentEpoch) {
                 if (lockEpoch > cutoffEpoch) {
-                    amount = amount.add(locks[i].boosted);
+                    amount = amount.add(locks[i - 1].boosted);
                 } else {
                     //stop now as no futher checks matter
                     break;
@@ -702,10 +701,11 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
     //pull required amount of cvx from staking for an upcoming transfer
     function allocateCVXForTransfer(uint256 _amount) internal {
-        uint256 balance = stakingToken.balanceOf(address(this));
-        if (_amount > balance) {
-            IStakingProxy(stakingProxy).withdraw(_amount.sub(balance));
-        }
+        // TODO - not needed
+        // uint256 balance = stakingToken.balanceOf(address(this));
+        // if (_amount > balance) {
+        //     IStakingProxy(stakingProxy).withdraw(_amount.sub(balance));
+        // }
     }
 
     //transfer helper: pull enough from staking, transfer, updating staking ratio
@@ -731,7 +731,7 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
         //get balances
         uint256 local = stakingToken.balanceOf(address(this));
-        uint256 staked = IStakingProxy(stakingProxy).getBalance();
+        uint256 staked = stakingToken.balanceOf(address(this));
         uint256 total = local.add(staked);
 
         if (total == 0) return;
@@ -742,16 +742,16 @@ contract CvxLocker is ReentrancyGuard, Ownable {
         uint256 mean = maximumStake.add(minimumStake).div(2);
         uint256 max = maximumStake.add(_offset);
         uint256 min = AuraMath.min(minimumStake, minimumStake - _offset);
-        if (ratio > max) {
-            //remove
-            uint256 remove = staked.sub(total.mul(mean).div(denominator));
-            IStakingProxy(stakingProxy).withdraw(remove);
-        } else if (ratio < min) {
-            //add
-            uint256 increase = total.mul(mean).div(denominator).sub(staked);
-            stakingToken.safeTransfer(stakingProxy, increase);
-            IStakingProxy(stakingProxy).stake();
-        }
+        // TODO - not needed
+        // if (ratio > max) {
+        //     //remove
+        //     uint256 remove = staked.sub(total.mul(mean).div(denominator));
+        //     IStakingProxy(stakingProxy).withdraw(remove);
+        // } else if (ratio < min) {
+        //     //add
+        //     uint256 increase = total.mul(mean).div(denominator).sub(staked);
+        //     stakingToken.safeTransfer(stakingProxy, increase);
+        // }
     }
 
     // Claim all pending rewards
@@ -791,6 +791,25 @@ contract CvxLocker is ReentrancyGuard, Ownable {
 
         rdata.lastUpdateTime = block.timestamp.to40();
         rdata.periodFinish = block.timestamp.add(rewardsDuration).to40();
+    }
+
+    // TODO - actually queue here
+    function queueNewRewards(uint256 _rewards) external {
+        require(rewardDistributors[cvxCrv][msg.sender]);
+        require(_rewards > 0, "No reward");
+
+        _notifyReward(cvxCrv, _rewards);
+
+        // handle the transfer of reward tokens via `transferFrom` to reduce the number
+        // of transactions required and ensure correctness of the _reward amount
+        IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), _rewards);
+
+        emit RewardAdded(cvxCrv, _rewards);
+
+        if (cvxCrv == cvxCrv) {
+            //update staking ratio if main reward
+            updateStakeRatio(0);
+        }
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external updateReward(address(0)) {

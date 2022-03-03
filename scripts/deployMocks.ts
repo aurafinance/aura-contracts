@@ -65,7 +65,7 @@ async function getMockMultisigs(
     };
 }
 
-async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
+async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
@@ -78,7 +78,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockCRV",
         ["mockCrv", "mockCrv", 18, deployerAddress, 10000000],
         {},
-        false,
+        debug,
     );
 
     const crvMinter = await deployContract<MockCurveMinter>(
@@ -86,7 +86,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockCurveMinter",
         [crv.address, simpleToExactAmount(1, 18)],
         {},
-        false,
+        debug,
     );
 
     let tx = await crv.transfer(crvMinter.address, simpleToExactAmount(1, 22));
@@ -97,7 +97,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockLPToken",
         ["mockLPToken", "mockLPToken", 18, deployerAddress, 10000000],
         {},
-        false,
+        debug,
     );
 
     const feeToken = await deployContract<MockERC20>(
@@ -105,7 +105,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "FeeToken",
         ["Fee Token", "feeToken", 18, deployerAddress, 10000000],
         {},
-        false,
+        debug,
     );
 
     const feeDistro = await deployContract<MockFeeDistro>(
@@ -113,7 +113,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockFeeDistro",
         [feeToken.address, simpleToExactAmount(1)],
         {},
-        false,
+        debug,
     );
 
     tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
@@ -124,7 +124,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "mockWalletChecker",
         [],
         {},
-        false,
+        debug,
     );
 
     const votingEscrow = await deployContract<MockCurveVoteEscrow>(
@@ -132,7 +132,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockCurveVoteEscrow",
         [smartWalletChecker.address, crv.address],
         {},
-        false,
+        debug,
     );
 
     const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", [], {}, false);
@@ -142,7 +142,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockRegistry",
         [],
         {},
-        false,
+        debug,
     );
 
     tx = await registry.setAddress(0, feeDistro.address);
@@ -153,7 +153,7 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         "MockCurveGauge",
         ["TestGauge", "tstGauge", lptoken.address, []],
         {},
-        false,
+        debug,
     );
 
     tx = await voting.vote_for_gauge_weights(gauge.address, 1);
@@ -188,6 +188,8 @@ async function deployMocks(signer: Signer): Promise<DeployMocksResult> {
         namingConfig: {
             cvxName: "Convex Finance",
             cvxSymbol: "CVX",
+            vlCvxName: "Vote Locked CVX",
+            vlCvxSymbol: "vlCVX",
             cvxCrvName: "Convex CRV",
             cvxCrvSymbol: "cvxCRV",
             tokenFactoryNamePostfix: " Convex Deposit",
