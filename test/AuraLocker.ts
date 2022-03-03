@@ -339,5 +339,8 @@ describe("AuraLocker", () => {
             expect(delegate2Historic).eq(simpleToExactAmount(0));
             expect(delegate2Now).eq(simpleToExactAmount(100));
         });
+
+        // for example, delegate, then add a lock.. should keep the same checkpoint and update it
+        it("allows 2 multiple checkpoints in the same epoch");
     });
 });

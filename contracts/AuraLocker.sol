@@ -493,24 +493,32 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         // This would only skip on first checkpointing
         if (_account != address(0)) {
             uint256 upcomingEpoch = block.timestamp.add(rewardsDuration).div(rewardsDuration).mul(rewardsDuration);
-            DelegateeCheckpoint[] storage ckptNd = _checkpointedVotes[_account];
-            if (ckptNd.length > 0) {
-                DelegateeCheckpoint memory prevCkpt = ckptNd[ckptNd.length - 1];
-                uint256 nextEpoch = upcomingEpoch;
-                uint256 unlocksSincePrevCkpt = 0;
-                // Should be maximum 18 iterations
-                while (nextEpoch > prevCkpt.epochStart) {
-                    unlocksSincePrevCkpt += delegateeUnlocks[_account][nextEpoch];
-                    nextEpoch -= rewardsDuration;
-                }
-                ckptNd.push(
-                    DelegateeCheckpoint({
-                        votes: (prevCkpt.votes - unlocksSincePrevCkpt + _upcomingAddition - _upcomingDeduction).to224(),
+            DelegateeCheckpoint[] storage ckpts = _checkpointedVotes[_account];
+            if (ckpts.length > 0) {
+                DelegateeCheckpoint memory prevCkpt = ckpts[ckpts.length - 1];
+                if (prevCkpt.epochStart == upcomingEpoch) {
+                    ckpts[ckpts.length - 1] = DelegateeCheckpoint({
+                        votes: (prevCkpt.votes + _upcomingAddition - _upcomingDeduction).to224(),
                         epochStart: upcomingEpoch.to32()
-                    })
-                );
+                    });
+                } else {
+                    uint256 nextEpoch = upcomingEpoch;
+                    uint256 unlocksSinceLatestCkpt = 0;
+                    // Should be maximum 18 iterations
+                    while (nextEpoch > prevCkpt.epochStart) {
+                        unlocksSinceLatestCkpt += delegateeUnlocks[_account][nextEpoch];
+                        nextEpoch -= rewardsDuration;
+                    }
+                    ckpts.push(
+                        DelegateeCheckpoint({
+                            votes: (prevCkpt.votes - unlocksSinceLatestCkpt + _upcomingAddition - _upcomingDeduction)
+                                .to224(),
+                            epochStart: upcomingEpoch.to32()
+                        })
+                    );
+                }
             } else {
-                ckptNd.push(
+                ckpts.push(
                     DelegateeCheckpoint({
                         votes: (_upcomingAddition - _upcomingDeduction).to224(),
                         epochStart: upcomingEpoch.to32()
