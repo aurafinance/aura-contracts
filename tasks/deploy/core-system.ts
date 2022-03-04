@@ -17,6 +17,8 @@ task("deploy:core").setAction(async function (taskArguments: TaskArguments, hre)
     await deployForkSystem(hre, deployer, getMockDistro(), await getMockMultisigs(deployer, deployer, deployer), {
         cvxName: "Convex Finance",
         cvxSymbol: "CVX",
+        vlCvxName: "Vote Locked Convex",
+        vlCvxSymbol: "vlCVX",
         cvxCrvName: "Convex CRV",
         cvxCrvSymbol: "cvxCRV",
         tokenFactoryNamePostfix: " Convex Deposit",

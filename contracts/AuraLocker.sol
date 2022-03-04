@@ -130,6 +130,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
     event RewardAdded(address indexed _token, uint256 _reward);
 
+    event KickIncentiveSet(uint256 rate, uint256 delay);
+    event Shutdown();
+
     /***************************************
                     CONSTRUCTOR
     ****************************************/
@@ -213,11 +216,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(_delay >= 2, "min delay"); //minimum 2 epochs of grace
         kickRewardPerEpoch = _rate;
         kickRewardEpochDelay = _delay;
+
+        emit KickIncentiveSet(_rate, _delay);
     }
 
     //shutdown the contract. unstake all tokens. release all locks
     function shutdown() external onlyOwner {
         isShutdown = true;
+        emit Shutdown();
     }
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
