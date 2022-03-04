@@ -130,7 +130,7 @@ contract MockLiquidityBootstrap is ILiquidityBootstrap, Ownable {
         if (stream.total == 0) return 0;
 
         uint256 lastClaimTime = stream.lastClaim == 0 ? endTime : stream.lastClaim;
-        uint256 timeElapsed = block.timestamp - lastClaimTime;
+        uint256 timeElapsed = AuraMath.min(block.timestamp, endTime + streamLength) - lastClaimTime;
         uint256 rate = stream.total / streamLength;
         return rate * timeElapsed;
     }
