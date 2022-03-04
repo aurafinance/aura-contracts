@@ -191,6 +191,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(stakingProxy == address(0) || (minimumStake == 0 && maximumStake == 0), "!assign");
 
         stakingProxy = _staking;
+
+        emit StakingContractUpdated(_staking);
     }
 
     //set staking limits. will stake the mean of the two once either ratio is crossed
@@ -200,6 +202,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         minimumStake = _minimum;
         maximumStake = _maximum;
         updateStakeRatio(0);
+
+        emit StakeLimitsUpdated(_minimum, _maximum);
     }
 
     //set boost parameters
@@ -214,6 +218,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         nextMaximumBoostPayment = _max;
         nextBoostRate = _rate;
         boostPayment = _receivingAddress;
+
+        emit BoostUpdated(_max, _rate, _receivingAddress);
     }
 
     //set kick incentive
@@ -222,6 +228,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(_delay >= 2, "min delay"); //minimum 2 epochs of grace
         kickRewardPerEpoch = _rate;
         kickRewardEpochDelay = _delay;
+
+        emit KickIncentiveSet(_rate, _delay);
     }
 
     //shutdown the contract. unstake all tokens. release all locks
@@ -232,6 +240,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         // IStakingProxy(stakingProxy).withdraw(stakeBalance);
         // }
         isShutdown = true;
+        emit Shutdown();
     }
 
     //set approvals for staking cvx and cvxcrv
@@ -870,4 +879,10 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
     event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
     event Recovered(address _token, uint256 _amount);
+
+    event StakingContractUpdated(address newStakingContract);
+    event StakeLimitsUpdated(uint256 minimum, uint256 maximum);
+    event BoostUpdated(uint256 max, uint256 rate, address receivingAddress);
+    event KickIncentiveSet(uint256 rate, uint256 delay);
+    event Shutdown();
 }
