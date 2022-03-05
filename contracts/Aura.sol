@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
+import { SafeMath } from "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
 
-import "./Interfaces.sol";
-import "@openzeppelin/contracts-0.6/math/SafeMath.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.6/utils/Address.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/ERC20.sol";
+interface IStaker {
+    function operator() external view returns (address);
+}
 
 /**
- * @title   ConvexToken
+ * @title   AuraToken
  * @author  ConvexFinance
  * @notice  Basically an ERC20 with minting functionality operated by the "operator" of the VoterProxy (Booster).
  * @dev     The minting schedule is based on the amount of CRV earned through staking and is
- *          distirbuted along a supply curve (cliffs etc).
+ *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.
  */
-contract ConvexToken is ERC20 {
+contract AuraToken is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
