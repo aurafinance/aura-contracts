@@ -366,6 +366,7 @@ async function deployPhase3(
         debug,
     );
 
+    // TODO - ensure `token` is differentiated from 80/20 bpt
     const crvDepositor = await deployContract<CrvDepositor>(
         new CrvDepositor__factory(deployer),
         "CrvDepositor",

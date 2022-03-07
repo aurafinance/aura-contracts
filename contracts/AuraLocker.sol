@@ -121,7 +121,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /* ========== EVENTS ========== */
 
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
-    event DelegateVotesChanged(address indexed delegate, uint256 previousBalance, uint256 newBalance);
+    event DelegateCheckpointed(address indexed delegate);
 
     event Recovered(address _token, uint256 _amount);
     event RewardPaid(address indexed _user, address indexed _rewardsToken, uint256 _reward);
@@ -338,18 +338,13 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Withdraw/relock all currently locked tokens where the unlock time has passed
-    function processExpiredLocks(bool _relock, address _withdrawTo) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, _withdrawTo, msg.sender, 0);
-    }
-
-    // Withdraw/relock all currently locked tokens where the unlock time has passed
     function processExpiredLocks(bool _relock) external nonReentrant {
-        _processExpiredLocks(msg.sender, _relock, msg.sender, msg.sender, 0);
+        _processExpiredLocks(msg.sender, _relock, msg.sender, 0);
     }
 
     function kickExpiredLocks(address _account) external nonReentrant {
         //allow kick after grace period of 'kickRewardEpochDelay'
-        _processExpiredLocks(_account, false, _account, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
+        _processExpiredLocks(_account, false, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed
@@ -358,7 +353,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     function _processExpiredLocks(
         address _account,
         bool _relock,
-        address _withdrawTo,
         address _rewardAddress,
         uint256 _checkDelay
     ) internal updateReward(_account) {
@@ -434,9 +428,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //relock or return to user
         if (_relock) {
-            _lock(_withdrawTo, locked);
+            _lock(_account, locked);
         } else {
-            stakingToken.safeTransfer(_withdrawTo, locked);
+            stakingToken.safeTransfer(_account, locked);
         }
     }
 
@@ -502,11 +496,22 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             DelegateeCheckpoint[] storage ckpts = _checkpointedVotes[_account];
             if (ckpts.length > 0) {
                 DelegateeCheckpoint memory prevCkpt = ckpts[ckpts.length - 1];
+                // If there has already been a record for the upcoming epoch, no need to deduct the unlocks
                 if (prevCkpt.epochStart == upcomingEpoch) {
                     ckpts[ckpts.length - 1] = DelegateeCheckpoint({
                         votes: (prevCkpt.votes + _upcomingAddition - _upcomingDeduction).to224(),
                         epochStart: upcomingEpoch.to32()
                     });
+                }
+                // else if it has been over 16 weeks since the previous checkpoint, all locks have since expired
+                // e.g. week 1 + 17 <= 18
+                else if (prevCkpt.epochStart + lockDuration <= upcomingEpoch) {
+                    ckpts.push(
+                        DelegateeCheckpoint({
+                            votes: (_upcomingAddition - _upcomingDeduction).to224(),
+                            epochStart: upcomingEpoch.to32()
+                        })
+                    );
                 } else {
                     uint256 nextEpoch = upcomingEpoch;
                     uint256 unlocksSinceLatestCkpt = 0;
@@ -531,6 +536,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     })
                 );
             }
+            emit DelegateCheckpointed(_account);
         }
     }
 
@@ -556,6 +562,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 epoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
         DelegateeCheckpoint memory ckpt = _checkpointsLookup(_checkpointedVotes[account], epoch);
         votes = ckpt.votes;
+        if (votes == 0 || ckpt.epochStart + lockDuration <= epoch) {
+            return 0;
+        }
         while (epoch > ckpt.epochStart) {
             votes -= delegateeUnlocks[account][epoch];
             epoch -= rewardsDuration;

@@ -195,7 +195,14 @@ describe("AuraLocker", () => {
             delegate1 = await accounts[3].getAddress();
             delegate2 = await accounts[4].getAddress();
 
-            let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            // Mint some cvxCRV and add as the reward token manually
+            let tx = await booster.earmarkRewards(0);
+            await tx.wait();
+
+            tx = await cvxStakingProxy.distribute();
+            await tx.wait();
+
+            tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await tx.wait();
             tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
             await tx.wait();
@@ -206,6 +213,8 @@ describe("AuraLocker", () => {
         it("has no delegation at the start", async () => {
             const delegate = await auraLocker.delegates(aliceAddress);
             expect(delegate).eq(ZERO_ADDRESS);
+
+            expect((await auraLocker.rewardData(cvxCrv.address)).rewardRate).gt(0);
         });
         it("fails to delegate to 0", async () => {
             await expect(auraLocker.connect(alice).delegate(ZERO_ADDRESS)).to.be.revertedWith(
@@ -342,5 +351,6 @@ describe("AuraLocker", () => {
 
         // for example, delegate, then add a lock.. should keep the same checkpoint and update it
         it("allows 2 multiple checkpoints in the same epoch");
+        it("allows for checkpointing and balance lookup after 16 weeks have elapsed");
     });
 });
