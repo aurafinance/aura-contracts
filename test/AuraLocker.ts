@@ -6,11 +6,6 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import { AuraStakingProxy, Booster, ConvexToken, CvxCrvToken, AuraLocker } from "../types/generated";
 import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 
-// TODO:
-//  - queueNewRewards testing
-//  - delegation (all cases: normal, post lock, pre lock, to 0, etc)
-//  - other core fns
-
 describe("AuraLocker", () => {
     let accounts: Signer[];
     let auraLocker: AuraLocker;
@@ -72,112 +67,252 @@ describe("AuraLocker", () => {
         await setup();
     });
 
-    async function earmarkRewards() {
-        await increaseTime(60 * 60 * 24);
-        const tx = await booster.earmarkRewards(0);
-        await tx.wait();
-    }
+    // it("checks all initial config", async () => {
+    //     // expect(await )
+    // });
 
-    it("lock CVX", async () => {
-        let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
-        await tx.wait();
+    context("performing basic flow", () => {
+        before(async () => {
+            await setup();
+        });
+        it("lock CVX", async () => {
+            let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            await tx.wait();
 
-        tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
-        const lockResp = await tx.wait();
-        const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
-        const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp);
+            tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            const lockResp = await tx.wait();
+            const lockBlock = await ethers.provider.getBlock(lockResp.blockNumber);
+            const lockTimestamp = ethers.BigNumber.from(lockBlock.timestamp);
 
-        const stakedCvx = await cvx.balanceOf(auraLocker.address);
-        expect(stakedCvx).to.equal(simpleToExactAmount(100));
+            const stakedCvx = await cvx.balanceOf(auraLocker.address);
+            expect(stakedCvx).to.equal(simpleToExactAmount(100));
 
-        const balanceAfter = await cvx.balanceOf(aliceAddress);
-        expect(balanceAfter).to.equal(aliceInitialBalance.sub(simpleToExactAmount(100)));
+            const balanceAfter = await cvx.balanceOf(aliceAddress);
+            expect(balanceAfter).to.equal(aliceInitialBalance.sub(simpleToExactAmount(100)));
 
-        const lock = await auraLocker.userLocks(aliceAddress, 0);
+            const lock = await auraLocker.userLocks(aliceAddress, 0);
 
-        expect(lock.amount).to.equal(simpleToExactAmount(100));
+            expect(lock.amount).to.equal(simpleToExactAmount(100));
 
-        const lockDuration = await auraLocker.lockDuration();
-        const rewardsDuration = await auraLocker.rewardsDuration();
+            const lockDuration = await auraLocker.lockDuration();
+            const rewardsDuration = await auraLocker.rewardsDuration();
 
-        expect(lock.unlockTime).to.equal(lockDuration.add(lockTimestamp.div(rewardsDuration).mul(rewardsDuration)));
+            expect(lock.unlockTime).to.equal(lockDuration.add(lockTimestamp.div(rewardsDuration).mul(rewardsDuration)));
+        });
+
+        it("supports delegation", async () => {
+            const delegateBefore = await auraLocker.delegates(aliceAddress);
+            const balBefore = await auraLocker.balanceOf(aliceAddress);
+            const votesBefore = await auraLocker.getVotes(aliceAddress);
+            const delegatedBefore = await auraLocker.getVotes(bobAddress);
+
+            const tx = await auraLocker.connect(alice).delegate(bobAddress);
+            await tx.wait();
+
+            const delegateAfter = await auraLocker.delegates(aliceAddress);
+            const balAfter = await auraLocker.balanceOf(aliceAddress);
+            const votesAfter = await auraLocker.getVotes(aliceAddress);
+            const delegatedAfter = await auraLocker.getVotes(bobAddress);
+
+            expect(delegateBefore).eq(ZERO_ADDRESS);
+            expect(delegateAfter).eq(bobAddress);
+            expect(balAfter).eq(balBefore);
+            expect(votesBefore).eq(0);
+            expect(votesAfter).eq(0);
+            expect(delegatedBefore).eq(0);
+            expect(delegatedAfter).eq(balBefore);
+        });
+
+        it("distribute rewards from the booster", async () => {
+            await booster.earmarkRewards(0);
+            await increaseTime(60 * 60 * 24);
+
+            const incentive = await booster.stakerIncentive();
+            const rate = await mocks.crvMinter.rate();
+            const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
+            expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
+
+            const tx = await cvxStakingProxy.distribute();
+            await tx.wait();
+        });
+
+        it("can't process locks that haven't expired", async () => {
+            const resp = auraLocker.connect(alice)["processExpiredLocks(bool)"](false);
+            await expect(resp).to.revertedWith("no exp locks");
+        });
+
+        it("checkpoint CVX locker epoch", async () => {
+            await increaseTime(60 * 60 * 24 * 15);
+
+            const tx = await auraLocker.checkpointEpoch();
+            await tx.wait();
+
+            const vlCVXBalance = await auraLocker.balanceAtEpochOf(0, aliceAddress);
+            expect(vlCVXBalance).to.equal(simpleToExactAmount(100));
+        });
+
+        it("get rewards from CVX locker", async () => {
+            await increaseTime(60 * 60 * 24 * 105);
+            const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
+
+            const tx = await auraLocker["getReward(address)"](aliceAddress);
+            await tx.wait();
+            const cvxCrvAfter = await cvxCrv.balanceOf(aliceAddress);
+
+            const cvxCrvBalance = cvxCrvAfter.sub(cvxCrvBefore);
+            expect(cvxCrvBalance.gt("0")).to.equal(true);
+        });
+
+        it("process expired locks", async () => {
+            const tx = await auraLocker.connect(alice)["processExpiredLocks(bool)"](false);
+            await tx.wait();
+
+            const balance = await cvx.balanceOf(aliceAddress);
+            expect(balance).to.equal(aliceInitialBalance);
+        });
     });
 
-    it("supports delegation", async () => {
-        const delegateBefore = await auraLocker.delegates(aliceAddress);
-        const balBefore = await auraLocker.balanceOf(aliceAddress);
-        const votesBefore = await auraLocker.getVotes(aliceAddress);
-        const delegatedBefore = await auraLocker.getVotes(bobAddress);
+    context("testing edge scenarios", () => {
+        // t = 0.5, Lock, delegate to self, wait 15 weeks (1.5 weeks before lockup)
+        beforeEach(async () => {
+            await setup();
 
-        const tx = await auraLocker.connect(alice).delegate(bobAddress);
-        await tx.wait();
+            await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            await auraLocker.connect(alice).delegate(aliceAddress);
 
-        const delegateAfter = await auraLocker.delegates(aliceAddress);
-        const balAfter = await auraLocker.balanceOf(aliceAddress);
-        const votesAfter = await auraLocker.getVotes(aliceAddress);
-        const delegatedAfter = await auraLocker.getVotes(bobAddress);
+            await increaseTime(ONE_WEEK.mul(15));
+            await auraLocker.checkpointEpoch();
+        });
+        it("gives a 0 balance one lock has expired", async () => {
+            expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(100));
+            await increaseTime(ONE_WEEK.mul(2));
+            expect(await auraLocker.getVotes(aliceAddress)).eq(0);
+        });
+        // t = 15.5, Confirm lock hasn't yet expired. Then try to withdraw (fails)
+        // t = 16.5, Confirm lock hasn't yet expired. Then try to withdraw without relock (fails)
+        // t = 16.5, relock
+        it("allows locks to be processed one week before they are expired ONLY if relocking", async () => {
+            expect((await auraLocker.userLocks(aliceAddress, 0)).unlockTime).gt(await getTimestamp());
+            await expect(auraLocker.connect(alice).processExpiredLocks(true)).to.be.revertedWith("no exp locks");
+            await expect(auraLocker.connect(alice).processExpiredLocks(false)).to.be.revertedWith("no exp locks");
 
-        expect(delegateBefore).eq(ZERO_ADDRESS);
-        expect(delegateAfter).eq(bobAddress);
-        expect(balAfter).eq(balBefore);
-        expect(votesBefore).eq(0);
-        expect(votesAfter).eq(0);
-        expect(delegatedBefore).eq(0);
-        expect(delegatedAfter).eq(balBefore);
+            await increaseTime(ONE_WEEK);
+
+            expect((await auraLocker.userLocks(aliceAddress, 0)).unlockTime).gt(await getTimestamp());
+            await expect(auraLocker.connect(alice).processExpiredLocks(false)).to.be.revertedWith("no exp locks");
+
+            expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(100));
+            expect((await auraLocker.balances(aliceAddress)).locked).eq(simpleToExactAmount(100));
+
+            await auraLocker.connect(alice).processExpiredLocks(true);
+
+            const timeBefore = await getTimestamp();
+            await increaseTime(ONE_WEEK);
+
+            expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(100));
+            expect(await auraLocker.getPastVotes(aliceAddress, timeBefore)).eq(simpleToExactAmount(100));
+            expect((await auraLocker.balances(aliceAddress)).locked).eq(simpleToExactAmount(100));
+        });
+        it("allows locks to be processed after they are expired", async () => {
+            await increaseTime(ONE_WEEK);
+
+            expect((await auraLocker.userLocks(aliceAddress, 0)).unlockTime).gt(await getTimestamp());
+            await expect(auraLocker.connect(alice).processExpiredLocks(false)).to.be.revertedWith("no exp locks");
+
+            await increaseTime(ONE_WEEK);
+
+            await auraLocker.connect(alice).processExpiredLocks(false);
+
+            expect(await auraLocker.getVotes(aliceAddress)).eq(0);
+            expect((await auraLocker.balances(aliceAddress)).locked).eq(0);
+        });
+        it("allows lock to be processed with other unexpired locks following", async () => {
+            await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await increaseTime(ONE_WEEK);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await increaseTime(ONE_WEEK);
+
+            await auraLocker.connect(alice).processExpiredLocks(true);
+
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await increaseTime(ONE_WEEK);
+
+            expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(130));
+            expect((await auraLocker.balances(aliceAddress)).locked).eq(simpleToExactAmount(130));
+        });
+        it("doesn't allow processing of the same lock twice", async () => {
+            await increaseTime(ONE_WEEK);
+
+            await auraLocker.connect(alice).processExpiredLocks(true);
+
+            await increaseTime(ONE_WEEK);
+
+            await expect(auraLocker.connect(alice).processExpiredLocks(true)).to.be.revertedWith("no exp locks");
+        });
+
+        // e.g. unlockTime = 17, now = 15.5, kick > 20
+        it("kicks user after sufficient time has elapsed", async () => {
+            await increaseTime(ONE_WEEK.mul(4));
+
+            // expect (17 + 3) > now
+            expect(BN.from((await auraLocker.userLocks(aliceAddress, 0)).unlockTime).add(ONE_WEEK.mul(3))).gt(
+                await getTimestamp(),
+            );
+            await expect(auraLocker.connect(alice).kickExpiredLocks(aliceAddress)).to.be.revertedWith("no exp locks");
+
+            await increaseTime(ONE_WEEK);
+
+            await auraLocker.connect(alice).kickExpiredLocks(aliceAddress);
+        });
+
+        const oneWeekInAdvance = async (): Promise<BN> => {
+            const now = await getTimestamp();
+            return now.add(ONE_WEEK);
+        };
+        const floorToWeek = t => Math.trunc(Math.trunc(t / ONE_WEEK.toNumber()) * ONE_WEEK.toNumber());
+
+        // for example, delegate, then add a lock.. should keep the same checkpoint and update it
+        it("combines multiple delegation checkpoints in the same epoch", async () => {
+            await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+
+            const nextEpoch = await floorToWeek(await oneWeekInAdvance());
+            const checkpointCount0 = await auraLocker.numCheckpoints(aliceAddress);
+            const checkpoint0 = await auraLocker.checkpoints(aliceAddress, checkpointCount0 - 1);
+
+            expect(checkpoint0.epochStart).eq(nextEpoch);
+            expect(checkpoint0.votes).eq(simpleToExactAmount(110));
+
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+
+            const checkpointCount1 = await auraLocker.numCheckpoints(aliceAddress);
+            const checkpoint1 = await auraLocker.checkpoints(aliceAddress, checkpointCount1 - 1);
+
+            expect(checkpointCount1).eq(checkpointCount0);
+            expect(checkpoint1.epochStart).eq(nextEpoch);
+            expect(checkpoint1.votes).eq(simpleToExactAmount(130));
+
+            await auraLocker.connect(alice).delegate(bobAddress);
+
+            const checkpointCount2 = await auraLocker.numCheckpoints(aliceAddress);
+            const checkpoint2 = await auraLocker.checkpoints(aliceAddress, checkpointCount2 - 1);
+
+            expect(checkpointCount2).eq(checkpointCount0);
+            expect(checkpoint2.epochStart).eq(nextEpoch);
+            expect(checkpoint2.votes).eq(0);
+        });
+        it("allows for delegate checkpointing and balance lookup after 16 weeks have elapsed");
+        it("should allow re-delegating in the same period");
+        it("allows delegation even with 0 balance");
     });
 
-    it("distribute rewards from the booster", async () => {
-        await earmarkRewards();
-        await increaseTime(60 * 60 * 24);
-
-        const incentive = await booster.stakerIncentive();
-        const rate = await mocks.crvMinter.rate();
-        const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
-        expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
-
-        const tx = await cvxStakingProxy.distribute();
-        await tx.wait();
+    context("queueing new rewards", () => {
+        it("only allows the rewardsDistributor to queue cvxCRV rewards");
+        it("only starts distributing the rewards when the queued amount is over 83% of the remaining");
     });
-
-    it("can't process locks that haven't expired", async () => {
-        const resp = auraLocker.connect(alice)["processExpiredLocks(bool)"](false);
-        await expect(resp).to.revertedWith("no exp locks");
-    });
-
-    it("checkpoint CVX locker epoch", async () => {
-        await increaseTime(60 * 60 * 24 * 15);
-
-        const tx = await auraLocker.checkpointEpoch();
-        await tx.wait();
-
-        const vlCVXBalance = await auraLocker.balanceAtEpochOf("0", aliceAddress);
-        expect(vlCVXBalance).to.equal(simpleToExactAmount(100));
-    });
-
-    it("get rewards from CVX locker", async () => {
-        await increaseTime(60 * 60 * 24 * 105);
-        const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
-
-        const tx = await auraLocker["getReward(address)"](aliceAddress);
-        await tx.wait();
-        const cvxCrvAfter = await cvxCrv.balanceOf(aliceAddress);
-
-        const cvxCrvBalance = cvxCrvAfter.sub(cvxCrvBefore);
-        expect(cvxCrvBalance.gt("0")).to.equal(true);
-    });
-
-    it("process expired locks", async () => {
-        const tx = await auraLocker.connect(alice)["processExpiredLocks(bool)"](false);
-        await tx.wait();
-
-        const balance = await cvx.balanceOf(aliceAddress);
-        expect(balance).to.equal(aliceInitialBalance);
-    });
-
-    it("allows locks to be processed before they are expired");
-    it("allows locks to be processed after they are expired");
-    it("allows lock to be processed with unexpired locks following");
-    it("doesn't allow processing of the same lock twice");
 
     context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
@@ -353,12 +488,5 @@ describe("AuraLocker", () => {
             expect(delegate2Historic).eq(simpleToExactAmount(0));
             expect(delegate2Now).eq(simpleToExactAmount(100));
         });
-
-        // for example, delegate, then add a lock.. should keep the same checkpoint and update it
-        it("combines multiple checkpoints in the same epoch");
-        it("allows for checkpointing and balance lookup after 16 weeks have elapsed");
-        it("should allow re-delegating in the same period");
-        it("supports delegation to self");
-        it("kicks user after sufficient time has elapsed");
     });
 });

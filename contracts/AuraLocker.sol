@@ -109,7 +109,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     address public immutable cvxcrvStaking;
     //     Incentives
     uint256 public kickRewardPerEpoch = 100;
-    uint256 public kickRewardEpochDelay = 4;
+    uint256 public kickRewardEpochDelay = 3;
     //     Shutdown
     bool public isShutdown = false;
 
@@ -359,7 +359,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint112 locked;
         uint256 length = locks.length;
         uint256 reward = 0;
-        uint256 expiryTime = _checkDelay == 0 ? block.timestamp.add(rewardsDuration) : block.timestamp.sub(_checkDelay);
+        uint256 expiryTime = _checkDelay == 0 && _relock
+            ? block.timestamp.add(rewardsDuration)
+            : block.timestamp.sub(_checkDelay);
 
         // e.g. now = 16
         // if contract is shutdown OR latest lock unlock time (e.g. 17) <= now - (1)
@@ -554,6 +556,20 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      */
     function getVotes(address account) public view returns (uint256) {
         return getPastVotes(account, block.timestamp);
+    }
+
+    /**
+     * @dev Get the `pos`-th checkpoint for `account`.
+     */
+    function checkpoints(address account, uint32 pos) public view virtual returns (DelegateeCheckpoint memory) {
+        return _checkpointedVotes[account][pos];
+    }
+
+    /**
+     * @dev Get number of checkpoints for `account`.
+     */
+    function numCheckpoints(address account) public view virtual returns (uint32) {
+        return _checkpointedVotes[account].length.to32();
     }
 
     /**
