@@ -174,6 +174,9 @@ describe("AuraLocker", () => {
         expect(balance).to.equal(aliceInitialBalance);
     });
 
+    it("allows locks to be processed before they are expired");
+    it("doesn't process the same lock twice");
+
     context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
 

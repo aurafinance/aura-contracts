@@ -361,8 +361,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint112 locked;
         uint256 length = locks.length;
         uint256 reward = 0;
+        uint256 expiryTime = _checkDelay == 0 ? block.timestamp.add(rewardsDuration) : block.timestamp.sub(_checkDelay);
 
-        if (isShutdown || locks[length - 1].unlockTime <= block.timestamp.sub(_checkDelay)) {
+        // e.g. now = 16
+        // if contract is shutdown OR latest lock unlock time (e.g. 17) <= now - (1)
+        // e.g. 17 <= (16 + 1)
+        if (isShutdown || locks[length - 1].unlockTime <= expiryTime) {
             //if time is beyond last lock, can just bundle everything together
             locked = userBalance.locked;
 
@@ -385,7 +389,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             uint32 nextUnlockIndex = userBalance.nextUnlockIndex;
             for (uint256 i = nextUnlockIndex; i < length; i++) {
                 //unlock time must be less or equal to time
-                if (locks[i].unlockTime > block.timestamp.sub(_checkDelay)) break;
+                if (locks[i].unlockTime > expiryTime) break;
 
                 //add to cumulative amounts
                 locked = locked.add(locks[i].amount);
