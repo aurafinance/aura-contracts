@@ -369,7 +369,7 @@ async function deployPhase3(
     const crvDepositor = await deployContract<CrvDepositor>(
         new CrvDepositor__factory(deployer),
         "CrvDepositor",
-        [voterProxy.address, cvxCrv.address, token, votingEscrow],
+        [voterProxy.address, cvxCrv.address, token, votingEscrow, multisigs.daoMultisig],
         {},
         debug,
     );
