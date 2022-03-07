@@ -192,8 +192,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Add a new reward token to be distributed to stakers
     function addReward(address _rewardsToken, address _distributor) public onlyOwner {
-        require(rewardData[_rewardsToken].lastUpdateTime == 0);
-        require(_rewardsToken != address(stakingToken));
+        require(rewardData[_rewardsToken].lastUpdateTime == 0, "Reward already exists");
+        require(_rewardsToken != address(stakingToken), "Cannot add StakingToken as reward");
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].lastUpdateTime = uint32(block.timestamp);
         rewardData[_rewardsToken].periodFinish = uint32(block.timestamp);
@@ -206,7 +206,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address _distributor,
         bool _approved
     ) external onlyOwner {
-        require(rewardData[_rewardsToken].lastUpdateTime > 0);
+        require(rewardData[_rewardsToken].lastUpdateTime > 0, "Reward does not exist");
         rewardDistributors[_rewardsToken][_distributor] = _approved;
     }
 
@@ -284,7 +284,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address delegatee = delegates(_account);
         if (delegatee != address(0)) {
             delegateeUnlocks[delegatee][unlockTime] += lockAmount;
-            _checkpointDelegate(delegates(_account), lockAmount, 0);
+            _checkpointDelegate(delegatee, lockAmount, 0);
         }
 
         //update epoch supply, epoch checkpointed above so safe to add to latest
@@ -348,8 +348,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed
-    // TODO - fix this code complexity linting error by splitting out
-    // solhint-disable-next-line code-complexity
     function _processExpiredLocks(
         address _account,
         bool _relock,
@@ -879,7 +877,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
         require(_rewardsToken != cvxCrv, "Use queueNewRewards");
-        require(rewardDistributors[_rewardsToken][msg.sender]);
+        require(rewardDistributors[_rewardsToken][msg.sender], "Must be rewardsDistributor");
         require(_reward > 0, "No reward");
 
         _notifyReward(_rewardsToken, _reward);

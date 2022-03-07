@@ -175,7 +175,9 @@ describe("AuraLocker", () => {
     });
 
     it("allows locks to be processed before they are expired");
-    it("doesn't process the same lock twice");
+    it("allows locks to be processed after they are expired");
+    it("allows lock to be processed with unexpired locks following");
+    it("doesn't allow processing of the same lock twice");
 
     context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
@@ -353,7 +355,10 @@ describe("AuraLocker", () => {
         });
 
         // for example, delegate, then add a lock.. should keep the same checkpoint and update it
-        it("allows 2 multiple checkpoints in the same epoch");
+        it("combines multiple checkpoints in the same epoch");
         it("allows for checkpointing and balance lookup after 16 weeks have elapsed");
+        it("should allow re-delegating in the same period");
+        it("supports delegation to self");
+        it("kicks user after sufficient time has elapsed");
     });
 });
