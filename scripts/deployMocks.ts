@@ -186,8 +186,8 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             weth: ZERO_ADDRESS,
         },
         namingConfig: {
-            cvxName: "Convex Finance",
-            cvxSymbol: "CVX",
+            cvxName: "Aura Finance",
+            cvxSymbol: "AUR",
             vlCvxName: "Vote Locked CVX",
             vlCvxSymbol: "vlCVX",
             cvxCrvName: "Convex CRV",

@@ -20,8 +20,6 @@ import {
     TokenFactory,
     ProxyFactory__factory,
     ProxyFactory,
-    ConvexToken__factory,
-    ConvexToken,
     CvxCrvToken__factory,
     CvxCrvToken,
     CrvDepositor__factory,
@@ -51,6 +49,8 @@ import {
     AuraLocker__factory,
     AuraStakingProxy,
     AuraStakingProxy__factory,
+    AuraToken,
+    AuraToken__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -131,7 +131,7 @@ interface Phase1Deployed {
 }
 
 interface Phase2Deployed extends Phase1Deployed {
-    cvx: ConvexToken;
+    cvx: AuraToken;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -256,9 +256,9 @@ async function deployPhase2(
     // 2. CVX token & lockdrop
     // -----------------------------
 
-    const cvx = await deployContract<ConvexToken>(
-        new ConvexToken__factory(deployer),
-        "ConvexToken",
+    const cvx = await deployContract<AuraToken>(
+        new AuraToken__factory(deployer),
+        "AuraToken",
         [deployment.voterProxy.address, naming.cvxName, naming.cvxSymbol],
         {},
         debug,
