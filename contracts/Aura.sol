@@ -4,10 +4,8 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
-// import { SafeMath } from "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
-import "hardhat/console.sol";
-import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
+import { AuraMath } from "./AuraMath.sol";
 
 interface IStaker {
     function operator() external view returns (address);
@@ -27,13 +25,16 @@ contract AuraToken is ERC20, Ownable {
 
     address public operator;
     address public immutable vecrvProxy;
-
-    uint256 public constant maxSupply = 100 * 1000000 * 1e18; //100mil
-    uint256 public constant totalCliffs = 1000;
-    uint256 public immutable reductionPerCliff;
+    //1.62762546 Aura per BAL so emissions last 6 years when 30,719,598 BAL are minted
+    uint256 public mintRatio = 162762546 * 1e10;
+    uint256 public govMaxSupply;
+    uint256 private _govTotalSupply;
+    uint256 public constant EMISSIONS_MAX_SUPPLY = 100 * 1000000 * 1e18; //100m
 
     /* ========== EVENTS ========== */
     event OperatorChanged(address indexed previousOperator, address indexed newOperator);
+    event GovMaxSupplyChanged(uint256 previousMaxSupply, uint256 newMaxSupply);
+    event MintRatioChanged(uint256 previousMintRatio, uint256 newMintRatio);
 
     /**
      * @param _proxy        CVX VoterProxy
@@ -47,7 +48,6 @@ contract AuraToken is ERC20, Ownable {
     ) ERC20(_nameArg, _symbolArg) Ownable() {
         operator = msg.sender;
         vecrvProxy = _proxy;
-        reductionPerCliff = maxSupply.div(totalCliffs);
     }
 
     /**
@@ -58,7 +58,7 @@ contract AuraToken is ERC20, Ownable {
     }
 
     /**
-     * @dev Updates the operator.
+     * @dev Sets the operator.  Only governance can do it.
      */
     function setOperator(address _operator) external onlyOwner {
         require(_operator != address(0), "invalid operator");
@@ -66,7 +66,7 @@ contract AuraToken is ERC20, Ownable {
     }
 
     /**
-     * @dev Updates the operator.
+     * @dev Sets the operator.
      */
     function _setOperator(address _operator) internal {
         emit OperatorChanged(operator, _operator);
@@ -74,19 +74,34 @@ contract AuraToken is ERC20, Ownable {
     }
 
     /**
-     * @dev Mints CVX to a given user based on current supply and schedule.
+     * @dev Sets the governance max supply. Only governance can do it.
+     */
+    function setGovMaxSupply(uint256 _govMaxSupply) external onlyOwner {
+        emit GovMaxSupplyChanged(govMaxSupply, _govMaxSupply);
+        govMaxSupply = _govMaxSupply;
+    }
+
+    /**
+     * @dev Sets the mint ratio of AURA-BAL, with 18 decimal points.
+     */
+    function setMintRatio(uint256 _mintRatio) external onlyOwner {
+        emit MintRatioChanged(mintRatio, _mintRatio);
+        mintRatio = _mintRatio;
+    }
+
+    /**
+     * @dev Mints AURA to a given user based on the BAL supply schedule.
+     * It allos to premint an arbitrary number of tokens if total supply is 0.
+     * After initial mint, it mints 1.62762546 AURA  per BAL, so in 6 years the ramaining 50,000,000 will be emitted.
      */
     function mint(address _to, uint256 _amount) external {
-        console.log("SOL:mint _to %s _amount %s", _to, _amount);
-        // console.log("SOL:mint msg.sender %s operator %s", msg.sender, operator);
-        if (msg.sender != operator) {
+        uint256 supply = totalSupply() - _govTotalSupply;
+        // validate if the emissions max supply has been reached.
+        if (msg.sender != operator || EMISSIONS_MAX_SUPPLY <= supply) {
             //dont error just return. if a shutdown happens, rewards on old system
             //can still be claimed, just wont mint cvx
             return;
         }
-
-        uint256 supply = totalSupply();
-        console.log("SOL:mint supply %s", supply);
         if (supply == 0) {
             //premine, one time only
             _mint(_to, _amount);
@@ -95,29 +110,25 @@ contract AuraToken is ERC20, Ownable {
             return;
         }
 
-        //use current supply to gauge cliff
-        //this will cause a bit of overflow into the next cliff range
-        //but should be within reasonable levels.
-        //requires a max supply check though
-        uint256 cliff = supply.div(reductionPerCliff);
-        //mint if below total cliffs
-
-        console.log("SOL:mint cliff %s,totalCliffs %s, reductionPerCliff %s", cliff, totalCliffs, reductionPerCliff);
-        if (cliff < totalCliffs) {
-            //for reduction% take inverse of current cliff
-            uint256 reduction = totalCliffs.sub(cliff);
-            //reduce
-            _amount = _amount.mul(reduction).div(totalCliffs);
-
-            //supply cap check
-            uint256 amtTillMax = maxSupply.sub(supply);
-            if (_amount > amtTillMax) {
-                _amount = amtTillMax;
-            }
-            console.log("SOL:mint reduction %s,_amount %s, amtTillMax %s", reduction, _amount, amtTillMax);
-
-            //mint
-            _mint(_to, _amount);
+        uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(supply);
+        uint256 amount = _amount.mul(mintRatio).div(1e18);
+        //dust check
+        if (amount > amtTillMax) {
+            amount = amtTillMax;
         }
+        //supply cap check
+        if (amount > 0) {
+            _mint(_to, amount);
+        }
+    }
+
+    /**
+     * @dev Mints AURA to a given user, capped to `govMaxSupply`.
+     */
+    function governanceMint(address _to, uint256 _amount) external onlyOwner {
+        //supply cap check
+        require(_amount <= govMaxSupply.sub(_govTotalSupply), "token max supply");
+        _govTotalSupply += _amount;
+        _mint(_to, _amount);
     }
 }
