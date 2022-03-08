@@ -4,7 +4,6 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
-import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { AuraMath } from "./AuraMath.sol";
 
 interface IStaker {
@@ -13,28 +12,30 @@ interface IStaker {
 
 /**
  * @title   AuraToken
- * @author  ConvexFinance
+ * @author  Forked from ConvexFinance
  * @notice  Basically an ERC20 with minting functionality operated by the "operator" of the VoterProxy (Booster).
  * @dev     The minting schedule is based on the amount of CRV earned through staking and is
  *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.
  */
-contract AuraToken is ERC20, Ownable {
+contract AuraToken is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
     using AuraMath for uint256;
 
     address public operator;
     address public immutable vecrvProxy;
-    //1.62762546 Aura per BAL so emissions last 6 years when 30,719,598 BAL are minted
-    uint256 public mintRatio = 162762546 * 1e10;
-    uint256 public govMaxSupply;
-    uint256 private _govTotalSupply;
-    uint256 public constant EMISSIONS_MAX_SUPPLY = 100 * 1000000 * 1e18; //100m
+
+    uint256 private emissionsMinted = type(uint256).max;
+    uint256 public constant EMISSIONS_MAX_SUPPLY = 5e25; // 50m
+    uint256 public constant totalCliffs = 500;
+    uint256 public immutable reductionPerCliff;
+
+    address public minter;
 
     /* ========== EVENTS ========== */
+
+    event Initialised();
     event OperatorChanged(address indexed previousOperator, address indexed newOperator);
-    event GovMaxSupplyChanged(uint256 previousMaxSupply, uint256 newMaxSupply);
-    event MintRatioChanged(uint256 previousMintRatio, uint256 newMintRatio);
 
     /**
      * @param _proxy        CVX VoterProxy
@@ -45,90 +46,88 @@ contract AuraToken is ERC20, Ownable {
         address _proxy,
         string memory _nameArg,
         string memory _symbolArg
-    ) ERC20(_nameArg, _symbolArg) Ownable() {
+    ) ERC20(_nameArg, _symbolArg) {
         operator = msg.sender;
         vecrvProxy = _proxy;
+        reductionPerCliff = EMISSIONS_MAX_SUPPLY.div(totalCliffs);
+    }
+
+    /**
+     * @dev
+     */
+    function init(
+        address _to,
+        uint256 _amount,
+        address _minter
+    ) external {
+        require(msg.sender == operator, "Only operator");
+        require(totalSupply() == 0, "Only once");
+        require(_amount > 0, "Must mint something");
+        require(_minter != address(0), "Invalid minter");
+
+        _mint(_to, _amount);
+        updateOperator();
+        minter = _minter;
+        emissionsMinted = 0;
+
+        emit Initialised();
     }
 
     /**
      * @dev This can be called if the operator of the voterProxy somehow changes.
      */
     function updateOperator() public {
-        _setOperator(IStaker(vecrvProxy).operator());
-    }
-
-    /**
-     * @dev Sets the operator.  Only governance can do it.
-     */
-    function setOperator(address _operator) external onlyOwner {
-        require(_operator != address(0), "invalid operator");
-        _setOperator(_operator);
-    }
-
-    /**
-     * @dev Sets the operator.
-     */
-    function _setOperator(address _operator) internal {
-        emit OperatorChanged(operator, _operator);
-        operator = _operator;
-    }
-
-    /**
-     * @dev Sets the governance max supply. Only governance can do it.
-     */
-    function setGovMaxSupply(uint256 _govMaxSupply) external onlyOwner {
-        emit GovMaxSupplyChanged(govMaxSupply, _govMaxSupply);
-        govMaxSupply = _govMaxSupply;
-    }
-
-    /**
-     * @dev Sets the mint ratio of AURA-BAL, with 18 decimal points.
-     */
-    function setMintRatio(uint256 _mintRatio) external onlyOwner {
-        emit MintRatioChanged(mintRatio, _mintRatio);
-        mintRatio = _mintRatio;
+        address newOperator = IStaker(vecrvProxy).operator();
+        emit OperatorChanged(operator, newOperator);
+        operator = newOperator;
     }
 
     /**
      * @dev Mints AURA to a given user based on the BAL supply schedule.
-     * It allos to premint an arbitrary number of tokens if total supply is 0.
-     * After initial mint, it mints 1.62762546 AURA  per BAL, so in 6 years the ramaining 50,000,000 will be emitted.
      */
     function mint(address _to, uint256 _amount) external {
-        uint256 supply = totalSupply() - _govTotalSupply;
-        // validate if the emissions max supply has been reached.
-        if (msg.sender != operator || EMISSIONS_MAX_SUPPLY <= supply) {
-            //dont error just return. if a shutdown happens, rewards on old system
-            //can still be claimed, just wont mint cvx
-            return;
-        }
-        if (supply == 0) {
-            //premine, one time only
-            _mint(_to, _amount);
-            //automatically switch operators
-            updateOperator();
+        require(emissionsMinted != type(uint256).max, "Not initialised");
+
+        if (msg.sender != operator) {
+            // dont error just return. if a shutdown happens, rewards on old system
+            // can still be claimed, just wont mint cvx
             return;
         }
 
-        uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(supply);
-        uint256 amount = _amount.mul(mintRatio).div(1e18);
-        //dust check
-        if (amount > amtTillMax) {
-            amount = amtTillMax;
-        }
-        //supply cap check
-        if (amount > 0) {
-            _mint(_to, amount);
+        // e.g. reductionPerCliff = 5e25 / 500 = 1e23
+        // e.g. cliff = 1e25 / 1e23 = 100
+        uint256 cliff = emissionsMinted.div(reductionPerCliff);
+
+        // e.g. 100 < 500
+        if (cliff < totalCliffs) {
+            // e.g. (old) reduction = 500 - 100 = 400;
+            // e.g. (new) reduction = (500 - 100) * 2 + 250 = 1000;
+            // e.g. (new) reduction = (500 - 250) * 2 + 250 = 700;
+            // e.g. (new) reduction = (500 - 400) * 2 + 250 = 400;
+            // TODO - tweak the below line to give us desired emission
+            uint256 reduction = totalCliffs.sub(cliff).mul(2).add(200);
+            // e.g. (old) amount = 1e19 * 400 / 500 = 8e18;
+            // e.g. (new) amount = 1e19 * 1000 / 500 =  2e19;
+            // e.g. (new) amount = 1e19 * 700 / 500  = 14e18;
+            // e.g. (new) amount = 1e19 * 400 / 500  =  8e18;
+            uint256 amount = _amount.mul(reduction).div(totalCliffs);
+
+            // e.g. amtTillMax = 5e25 - 1e25 = 4e25
+            uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(emissionsMinted);
+            if (amount > amtTillMax) {
+                amount = amtTillMax;
+            }
+
+            emissionsMinted += amount;
+            _mint(_to, _amount);
         }
     }
 
     /**
-     * @dev Mints AURA to a given user, capped to `govMaxSupply`.
+     * @dev Allows minter to mint to a specific address
      */
-    function governanceMint(address _to, uint256 _amount) external onlyOwner {
-        //supply cap check
-        require(_amount <= govMaxSupply.sub(_govTotalSupply), "token max supply");
-        _govTotalSupply += _amount;
+    function minterMint(address _to, uint256 _amount) external {
+        require(msg.sender == minter, "Only minter");
         _mint(_to, _amount);
     }
 }

@@ -51,6 +51,8 @@ import {
     AuraStakingProxy__factory,
     AuraToken,
     AuraToken__factory,
+    AuraMinter,
+    AuraMinter__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -132,6 +134,7 @@ interface Phase1Deployed {
 
 interface Phase2Deployed extends Phase1Deployed {
     cvx: AuraToken;
+    minter: AuraMinter;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -264,9 +267,17 @@ async function deployPhase2(
         debug,
     );
 
+    const minter = await deployContract<AuraMinter>(
+        new AuraMinter__factory(deployer),
+        "AuraMinter",
+        [cvx.address, multisigs.daoMultisig],
+        {},
+        debug,
+    );
+
     // TODO - deploy lockdrop here
 
-    return { ...deployment, cvx };
+    return { ...deployment, cvx, minter };
 }
 
 async function deployPhase3(
@@ -284,7 +295,7 @@ async function deployPhase3(
     const deployerAddress = await deployer.getAddress();
 
     const { token, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
-    const { voterProxy, cvx } = deployment;
+    const { voterProxy, cvx, minter } = deployment;
 
     const premineIncetives = distroList.lpIncentives
         .add(distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0)))
@@ -463,7 +474,10 @@ async function deployPhase3(
     tx = await voterProxy.setOperator(booster.address);
     await tx.wait();
 
-    tx = await cvx.mint(deployerAddress, premine.toString());
+    tx = await cvx.init(deployerAddress, premine.toString(), minter.address);
+    await tx.wait();
+
+    tx = await cvx.updateOperator();
     await tx.wait();
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
