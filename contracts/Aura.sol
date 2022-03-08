@@ -105,17 +105,17 @@ contract AuraToken is ERC20 {
             // e.g. (old) reduction = 500 - 100 = 400;
             // e.g. (old) reduction = 500 - 250 = 250;
             // e.g. (old) reduction = 500 - 400 = 100;
-            // e.g. (new) reduction = (500 - 100) * 2 + 200 = 1000;
-            // e.g. (new) reduction = (500 - 250) * 2 + 200 = 700;
-            // e.g. (new) reduction = (500 - 400) * 2 + 200 = 400;
+            // e.g. (new) reduction = (500 - 100) * 2 + 300 = 1100;
+            // e.g. (new) reduction = (500 - 250) * 2 + 300 = 800;
+            // e.g. (new) reduction = (500 - 400) * 2 + 300 = 500;
             // TODO - tweak the below line to give us desired emission
             uint256 reduction = totalCliffs.sub(cliff).mul(2).add(300);
             // e.g. (old) amount = 1e19 * 400 / 500 = 8e18;
             // e.g. (old) amount = 1e19 * 250 / 500 = 5e18;
             // e.g. (old) amount = 1e19 * 100 / 500 = 2e18;
-            // e.g. (new) amount = 1e19 * 1000 / 500 =  2e19;
-            // e.g. (new) amount = 1e19 * 700 / 500  = 14e18;
-            // e.g. (new) amount = 1e19 * 400 / 500  =  8e18;
+            // e.g. (new) amount = 1e19 * 1000 / 500 =  22e18;
+            // e.g. (new) amount = 1e19 * 700 / 500  =  16e18;
+            // e.g. (new) amount = 1e19 * 400 / 500  =  10e18;
             uint256 amount = _amount.mul(reduction).div(totalCliffs);
 
             // e.g. amtTillMax = 5e25 - 1e25 = 4e25
