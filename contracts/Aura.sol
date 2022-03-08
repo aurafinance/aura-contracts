@@ -25,12 +25,12 @@ contract AuraToken is ERC20 {
     address public operator;
     address public immutable vecrvProxy;
 
-    uint256 private emissionsMinted = type(uint256).max;
     uint256 public constant EMISSIONS_MAX_SUPPLY = 5e25; // 50m
     uint256 public constant totalCliffs = 500;
     uint256 public immutable reductionPerCliff;
 
     address public minter;
+    uint256 private minterMinted = type(uint256).max;
 
     /* ========== EVENTS ========== */
 
@@ -68,7 +68,7 @@ contract AuraToken is ERC20 {
         _mint(_to, _amount);
         updateOperator();
         minter = _minter;
-        emissionsMinted = 0;
+        minterMinted = 0;
 
         emit Initialised();
     }
@@ -86,7 +86,7 @@ contract AuraToken is ERC20 {
      * @dev Mints AURA to a given user based on the BAL supply schedule.
      */
     function mint(address _to, uint256 _amount) external {
-        require(emissionsMinted != type(uint256).max, "Not initialised");
+        require(totalSupply() != 0, "Not initialised");
 
         if (msg.sender != operator) {
             // dont error just return. if a shutdown happens, rewards on old system
@@ -94,6 +94,8 @@ contract AuraToken is ERC20 {
             return;
         }
 
+        // e.g. emissionsMinted = 6e25 - 5e25 - 0 = 1e25;
+        uint256 emissionsMinted = totalSupply() - EMISSIONS_MAX_SUPPLY - minterMinted;
         // e.g. reductionPerCliff = 5e25 / 500 = 1e23
         // e.g. cliff = 1e25 / 1e23 = 100
         uint256 cliff = emissionsMinted.div(reductionPerCliff);
@@ -101,12 +103,16 @@ contract AuraToken is ERC20 {
         // e.g. 100 < 500
         if (cliff < totalCliffs) {
             // e.g. (old) reduction = 500 - 100 = 400;
-            // e.g. (new) reduction = (500 - 100) * 2 + 250 = 1000;
-            // e.g. (new) reduction = (500 - 250) * 2 + 250 = 700;
-            // e.g. (new) reduction = (500 - 400) * 2 + 250 = 400;
+            // e.g. (old) reduction = 500 - 250 = 250;
+            // e.g. (old) reduction = 500 - 400 = 100;
+            // e.g. (new) reduction = (500 - 100) * 2 + 200 = 1000;
+            // e.g. (new) reduction = (500 - 250) * 2 + 200 = 700;
+            // e.g. (new) reduction = (500 - 400) * 2 + 200 = 400;
             // TODO - tweak the below line to give us desired emission
-            uint256 reduction = totalCliffs.sub(cliff).mul(2).add(200);
+            uint256 reduction = totalCliffs.sub(cliff).mul(2).add(300);
             // e.g. (old) amount = 1e19 * 400 / 500 = 8e18;
+            // e.g. (old) amount = 1e19 * 250 / 500 = 5e18;
+            // e.g. (old) amount = 1e19 * 100 / 500 = 2e18;
             // e.g. (new) amount = 1e19 * 1000 / 500 =  2e19;
             // e.g. (new) amount = 1e19 * 700 / 500  = 14e18;
             // e.g. (new) amount = 1e19 * 400 / 500  =  8e18;
@@ -118,7 +124,6 @@ contract AuraToken is ERC20 {
                 amount = amtTillMax;
             }
 
-            emissionsMinted += amount;
             _mint(_to, _amount);
         }
     }
@@ -128,6 +133,7 @@ contract AuraToken is ERC20 {
      */
     function minterMint(address _to, uint256 _amount) external {
         require(msg.sender == minter, "Only minter");
+        minterMinted += _amount;
         _mint(_to, _amount);
     }
 }
