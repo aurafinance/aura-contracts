@@ -73,13 +73,9 @@ describe("AuraToken", () => {
             await expect(cvx.connect(deployer).init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
         it("called more than once", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
-        });
-        it("wrong amount of tokens", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
-        });
-        it("wrong minter address", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.connect(operatorAccount.signer).init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith(
+                "Only once",
+            );
         });
     });
 
