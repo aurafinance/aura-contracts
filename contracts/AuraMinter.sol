@@ -16,7 +16,7 @@ contract AuraMinter is Ownable {
     /// @dev Aura token
     AuraToken public aura;
     /// @dev Timestamp upon which minting will be possible
-    uint256 public immutable inflationProtectionTime;
+    uint256 public inflationProtectionTime;
 
     constructor(address _aura, address _dao) Ownable() {
         aura = AuraToken(_aura);
