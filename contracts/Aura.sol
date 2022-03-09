@@ -1,31 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
+import { AuraMath } from "./AuraMath.sol";
 
-import "./Interfaces.sol";
-import "@openzeppelin/contracts-0.6/math/SafeMath.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.6/utils/Address.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/ERC20.sol";
+interface IStaker {
+    function operator() external view returns (address);
+}
 
 /**
- * @title   ConvexToken
- * @author  ConvexFinance
+ * @title   AuraToken
+ * @author  Forked from ConvexFinance
  * @notice  Basically an ERC20 with minting functionality operated by the "operator" of the VoterProxy (Booster).
  * @dev     The minting schedule is based on the amount of CRV earned through staking and is
- *          distirbuted along a supply curve (cliffs etc).
+ *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.
  */
-contract ConvexToken is ERC20 {
+contract AuraToken is ERC20 {
     using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
+    using AuraMath for uint256;
 
     address public operator;
     address public immutable vecrvProxy;
 
-    uint256 public constant maxSupply = 100 * 1000000 * 1e18; //100mil
-    uint256 public constant totalCliffs = 1000;
+    uint256 public constant EMISSIONS_MAX_SUPPLY = 5e25; // 50m
+    uint256 public constant totalCliffs = 500;
     uint256 public immutable reductionPerCliff;
+
+    address public minter;
+    uint256 private minterMinted = type(uint256).max;
+
+    /* ========== EVENTS ========== */
+
+    event Initialised();
+    event OperatorChanged(address indexed previousOperator, address indexed newOperator);
 
     /**
      * @param _proxy        CVX VoterProxy
@@ -36,58 +46,94 @@ contract ConvexToken is ERC20 {
         address _proxy,
         string memory _nameArg,
         string memory _symbolArg
-    ) public ERC20(_nameArg, _symbolArg) {
+    ) ERC20(_nameArg, _symbolArg) {
         operator = msg.sender;
         vecrvProxy = _proxy;
-        reductionPerCliff = maxSupply.div(totalCliffs);
+        reductionPerCliff = EMISSIONS_MAX_SUPPLY.div(totalCliffs);
+    }
+
+    /**
+     * @dev Initialise and mints initial supply of tokens.
+     * @param _to        Target address to mint.
+     * @param _amount    Amount of tokens to mint.
+     * @param _minter    The minter address.
+     */
+    function init(
+        address _to,
+        uint256 _amount,
+        address _minter
+    ) external {
+        require(msg.sender == operator, "Only operator");
+        require(totalSupply() == 0, "Only once");
+        require(_amount > 0, "Must mint something");
+        require(_minter != address(0), "Invalid minter");
+
+        _mint(_to, _amount);
+        updateOperator();
+        minter = _minter;
+        minterMinted = 0;
+
+        emit Initialised();
     }
 
     /**
      * @dev This can be called if the operator of the voterProxy somehow changes.
      */
     function updateOperator() public {
-        operator = IStaker(vecrvProxy).operator();
+        address newOperator = IStaker(vecrvProxy).operator();
+        emit OperatorChanged(operator, newOperator);
+        operator = newOperator;
     }
 
     /**
-     * @dev Mints CVX to a given user based on current supply and schedule.
+     * @dev Mints AURA to a given user based on the BAL supply schedule.
      */
     function mint(address _to, uint256 _amount) external {
+        require(totalSupply() != 0, "Not initialised");
+
         if (msg.sender != operator) {
-            //dont error just return. if a shutdown happens, rewards on old system
-            //can still be claimed, just wont mint cvx
+            // dont error just return. if a shutdown happens, rewards on old system
+            // can still be claimed, just wont mint cvx
             return;
         }
 
-        uint256 supply = totalSupply();
-        if (supply == 0) {
-            //premine, one time only
-            _mint(_to, _amount);
-            //automatically switch operators
-            updateOperator();
-            return;
-        }
+        // e.g. emissionsMinted = 6e25 - 5e25 - 0 = 1e25;
+        uint256 emissionsMinted = totalSupply() - EMISSIONS_MAX_SUPPLY - minterMinted;
+        // e.g. reductionPerCliff = 5e25 / 500 = 1e23
+        // e.g. cliff = 1e25 / 1e23 = 100
+        uint256 cliff = emissionsMinted.div(reductionPerCliff);
 
-        //use current supply to gauge cliff
-        //this will cause a bit of overflow into the next cliff range
-        //but should be within reasonable levels.
-        //requires a max supply check though
-        uint256 cliff = supply.div(reductionPerCliff);
-        //mint if below total cliffs
+        // e.g. 100 < 500
         if (cliff < totalCliffs) {
-            //for reduction% take inverse of current cliff
-            uint256 reduction = totalCliffs.sub(cliff);
-            //reduce
-            _amount = _amount.mul(reduction).div(totalCliffs);
-
-            //supply cap check
-            uint256 amtTillMax = maxSupply.sub(supply);
-            if (_amount > amtTillMax) {
-                _amount = amtTillMax;
+            // e.g. (old) reduction = 500 - 100 = 400;
+            // e.g. (old) reduction = 500 - 250 = 250;
+            // e.g. (old) reduction = 500 - 400 = 100;
+            // e.g. (new) reduction = (500 - 100) * 2 + 331 = 1131;
+            // e.g. (new) reduction = (500 - 250) * 2 + 331 = 831;
+            // e.g. (new) reduction = (500 - 400) * 2 + 331 = 531;
+            uint256 reduction = totalCliffs.sub(cliff).mul(2).add(331);
+            // e.g. (old) amount = 1e19 * 400 / 500 = 8e18;
+            // e.g. (old) amount = 1e19 * 250 / 500 = 5e18;
+            // e.g. (old) amount = 1e19 * 100 / 500 = 2e18;
+            // e.g. (new) amount = 1e19 * 1331 / 500 =  26e18;
+            // e.g. (new) amount = 1e19 * 731 / 500  =  14e18;
+            // e.g. (new) amount = 1e19 * 431 / 500  =  86e17;
+            uint256 amount = _amount.mul(reduction).div(totalCliffs);
+            // e.g. amtTillMax = 5e25 - 1e25 = 4e25
+            uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(emissionsMinted);
+            if (amount > amtTillMax) {
+                amount = amtTillMax;
             }
-
-            //mint
-            _mint(_to, _amount);
+            _mint(_to, amount);
         }
+    }
+
+    /**
+     * @dev Allows minter to mint to a specific address
+     */
+    function minterMint(address _to, uint256 _amount) external {
+        require(msg.sender == minter, "Only minter");
+        minterMinted += _amount;
+        _mint(_to, _amount);
     }
 }
