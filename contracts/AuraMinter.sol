@@ -5,7 +5,7 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { AuraToken } from "./Aura.sol";
 
 /**
- * @title   AuraToken
+ * @title   AuraMinter
  * @author  Aura
  * @notice  Wraps the AuraToken minterMint function and protects from inflation until
  *          4 years have passed.
