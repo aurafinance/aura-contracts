@@ -14,9 +14,9 @@ import { AuraToken } from "./Aura.sol";
  */
 contract AuraMinter is Ownable {
     /// @dev Aura token
-    AuraToken public aura;
+    AuraToken public immutable aura;
     /// @dev Timestamp upon which minting will be possible
-    uint256 public inflationProtectionTime;
+    uint256 public immutable inflationProtectionTime;
 
     constructor(address _aura, address _dao) Ownable() {
         aura = AuraToken(_aura);
