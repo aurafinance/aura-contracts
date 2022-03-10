@@ -31,7 +31,7 @@ interface DeployMocksResult {
     registry: MockRegistry;
     smartWalletChecker: MockWalletChecker;
     feeDistro: MockFeeDistro;
-    gauge: MockCurveGauge;
+    gauges: MockCurveGauge[];
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
@@ -148,16 +148,21 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     tx = await registry.setAddress(0, feeDistro.address);
     await tx.wait();
 
-    const gauge = await deployContract<MockCurveGauge>(
-        new MockCurveGauge__factory(deployer),
-        "MockCurveGauge",
-        ["TestGauge", "tstGauge", lptoken.address, []],
-        {},
-        debug,
-    );
+    let gauges = [];
 
-    tx = await voting.vote_for_gauge_weights(gauge.address, 1);
-    await tx.wait();
+    for (let i = 0; i < 3; i++) {
+        const gauge = await deployContract<MockCurveGauge>(
+            new MockCurveGauge__factory(deployer),
+            "MockCurveGauge",
+            [`TestGauge_${i + 1}`, `tstGauge_${i + 1}`, lptoken.address, []],
+            {},
+            debug,
+        );
+
+        const tx = await voting.vote_for_gauge_weights(gauge.address, 1);
+        await tx.wait();
+        gauges.push(gauge);
+    }
 
     return {
         lptoken,
@@ -168,7 +173,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         registry,
         smartWalletChecker,
         feeDistro,
-        gauge,
+        gauges,
         addresses: {
             token: crv.address,
             tokenWhale: deployerAddress,
@@ -179,7 +184,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             registryID: 0,
             voteOwnership: voting.address,
             voteParameter: voting.address,
-            gauges: [gauge.address],
+            gauges: gauges.map(g => g.address),
             // TODO - update these addresses with mocks
             balancerVault: ZERO_ADDRESS,
             balancerWeightedPoolFactory: ZERO_ADDRESS,

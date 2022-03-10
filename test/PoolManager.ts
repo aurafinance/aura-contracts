@@ -12,12 +12,18 @@ describe("PoolManagerV3", () => {
     let mocks: DeployMocksResult;
     let accounts: Signer[];
 
+    let alice: Signer;
+    let aliceAddress: string;
+
     before(async () => {
         accounts = await ethers.getSigners();
 
         mocks = await deployMocks(accounts[0]);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
+
+        alice = accounts[5];
+        aliceAddress = await alice.getAddress();
 
         const phase1 = await deployPhase1(accounts[0], mocks.addresses);
         const phase2 = await deployPhase2(accounts[0], phase1, multisigs, mocks.namingConfig);
@@ -49,11 +55,12 @@ describe("PoolManagerV3", () => {
             );
         });
 
-        it("happy path", async () => {
-            const tx = await poolManager["addPool(address)"](mocks.gauge.address);
+        it("addPool called by operator", async () => {
+            const gauge = mocks.gauges[0];
+            const tx = await poolManager["addPool(address)"](gauge.address);
             await tx.wait();
 
-            const lptoken = await mocks.gauge.lp_token();
+            const lptoken = await gauge.lp_token();
             const pool = await booster.poolInfo(0);
             expect(pool.lptoken).to.equal(lptoken);
         });
@@ -72,7 +79,7 @@ describe("PoolManagerV3", () => {
         });
 
         it("reverts if gauge has already been added", async () => {
-            const failedTx = poolManager["addPool(address)"](mocks.gauge.address);
+            const failedTx = poolManager["addPool(address)"](mocks.gauges[0].address);
             await expect(failedTx).to.revertedWith("already registered gauge");
         });
     });
@@ -89,6 +96,33 @@ describe("PoolManagerV3", () => {
 
             const pool = await booster.poolInfo(0);
             expect(pool.shutdown).to.equal(true);
+        });
+    });
+
+    describe("@method setProtectPool", () => {
+        it("reverts if addPool is protected and caller is not operator", async () => {
+            const resp = poolManager.connect(alice)["addPool(address)"](mocks.gauges[1].address);
+            await expect(resp).to.be.revertedWith("!auth");
+        });
+
+        it("reverts if setProtectPool caller is not operator", async () => {
+            const resp = poolManager.connect(alice).setProtectPool(false);
+            await expect(resp).to.be.revertedWith("!auth");
+        });
+
+        it("setProtectPool update protectAddPool", async () => {
+            await poolManager.setProtectPool(false);
+            const newValue = await poolManager.protectAddPool();
+            expect(newValue).to.equal(false);
+        });
+
+        it("addPool can be called by anyone", async () => {
+            const gauge = mocks.gauges[1];
+            await poolManager.connect(alice)["addPool(address)"](gauge.address);
+
+            const lptoken = await gauge.lp_token();
+            const pool = await booster.poolInfo(1);
+            expect(pool.lptoken).to.equal(lptoken);
         });
     });
 });
