@@ -13,7 +13,6 @@ describe("PoolManagerV3", () => {
     let accounts: Signer[];
 
     let alice: Signer;
-    let aliceAddress: string;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -23,7 +22,6 @@ describe("PoolManagerV3", () => {
         const distro = getMockDistro();
 
         alice = accounts[5];
-        aliceAddress = await alice.getAddress();
 
         const phase1 = await deployPhase1(accounts[0], mocks.addresses);
         const phase2 = await deployPhase2(accounts[0], phase1, multisigs, mocks.namingConfig);
