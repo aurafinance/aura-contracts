@@ -29,7 +29,6 @@ $ git submodule init
 $ git submodule update
 ```
 
-
 ### Install
 
 ```sh
@@ -82,14 +81,6 @@ Generate the code coverage report:
 
 ```sh
 $ yarn coverage
-```
-
-### Report Gas
-
-See the gas usage per unit test and average gas per method call:
-
-```sh
-$ REPORT_GAS=true yarn test
 ```
 
 ### Clean
