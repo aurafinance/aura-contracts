@@ -98,6 +98,11 @@ describe("PoolManagerV3", () => {
     });
 
     describe("@method setProtectPool", () => {
+        it("protectPool defaults to true", async () => {
+            const startValue = await poolManager.protectAddPool();
+            expect(startValue).to.equal(true);
+        });
+
         it("reverts if addPool is protected and caller is not operator", async () => {
             const resp = poolManager.connect(alice)["addPool(address)"](mocks.gauges[1].address);
             await expect(resp).to.be.revertedWith("!auth");
