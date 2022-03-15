@@ -21,7 +21,7 @@ contract AuraMinter is Ownable {
     constructor(address _aura, address _dao) Ownable() {
         aura = AuraToken(_aura);
         _transferOwnership(_dao);
-        inflationProtectionTime = block.timestamp + 208 weeks;
+        inflationProtectionTime = block.timestamp + 156 weeks;
     }
 
     /**

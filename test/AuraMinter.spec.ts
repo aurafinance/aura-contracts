@@ -45,11 +45,11 @@ describe("AuraMinter", () => {
 
     it("initial configuration is correct", async () => {
         expect(await minter.aura()).to.equal(cvx.address);
-        expect(await minter.inflationProtectionTime()).to.gt((await getTimestamp()).add(ONE_WEEK.mul(207)));
-        expect(await minter.inflationProtectionTime()).to.lt((await getTimestamp()).add(ONE_WEEK.mul(209)));
+        expect(await minter.inflationProtectionTime()).to.gt((await getTimestamp()).add(ONE_WEEK.mul(155)));
+        expect(await minter.inflationProtectionTime()).to.lt((await getTimestamp()).add(ONE_WEEK.mul(157)));
         expect(await minter.owner()).to.equal(await deployer.getAddress());
     });
-    it("@method AuraMinter.mint fails if", async () => {
+    describe("@method AuraMinter.mint fails if", async () => {
         it("sender is not the dao", async () => {
             await expect(minter.connect(alice).mint(aliceAddress, simpleToExactAmount(1))).to.revertedWith(
                 "Ownable: caller is not the owner",
@@ -62,14 +62,22 @@ describe("AuraMinter", () => {
         });
     });
 
-    it("@method AuraMinter.mint mints tokens", async () => {
-        await increaseTime(ONE_WEEK.mul(208));
-        const beforeBalance = await cvx.balanceOf(aliceAddress);
-        const beforeTotalSupply = await cvx.totalSupply();
-        await minter.mint(aliceAddress, 1000);
-        const afterBalance = await cvx.balanceOf(aliceAddress);
-        const afterTotalSupply = await cvx.totalSupply();
-        expect(beforeBalance, "balance increases").to.lt(afterBalance);
-        expect(beforeTotalSupply, "total supply increases").to.lt(afterTotalSupply);
+    describe("@method AuraMinter.mint mints when", async () => {
+        it("protects inflation up to 155", async () => {
+            await increaseTime(ONE_WEEK.mul(155));
+            await expect(minter.connect(deployer).mint(aliceAddress, simpleToExactAmount(1))).to.revertedWith(
+                "Inflation protected for now",
+            );
+        });
+        it("@method AuraMinter.mint mints tokens", async () => {
+            await increaseTime(ONE_WEEK.mul(2));
+            const beforeBalance = await cvx.balanceOf(aliceAddress);
+            const beforeTotalSupply = await cvx.totalSupply();
+            await minter.mint(aliceAddress, 1000);
+            const afterBalance = await cvx.balanceOf(aliceAddress);
+            const afterTotalSupply = await cvx.totalSupply();
+            expect(beforeBalance, "balance increases").to.lt(afterBalance);
+            expect(beforeTotalSupply, "total supply increases").to.lt(afterTotalSupply);
+        });
     });
 });
