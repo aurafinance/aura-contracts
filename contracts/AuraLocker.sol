@@ -8,6 +8,8 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
 
+import "hardhat/console.sol";
+
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
 }
@@ -19,6 +21,9 @@ interface IRewardStaking {
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
  *          to depositors.
  * @dev
+ *          Based on CvxLocker contract https://github.com/convex-eth/platform/blob/main/contracts/contracts/CvxLocker.sol
+ *          Based on EPS Staking contract for http://ellipsis.finance/
+ *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
  */
 contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
@@ -29,6 +34,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     /* ==========     STRUCTS     ========== */
 
+    // TODO - REVIEW OR DATA DYPES changed
     struct RewardData {
         /// Timestamp for current period finish
         uint32 periodFinish;
@@ -39,15 +45,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         /// Ever increasing rewardPerToken rate, based on % of total supply
         uint96 rewardPerTokenStored;
     }
-    struct UserData {
-        uint128 rewardPerTokenPaid;
-        uint128 rewards;
-    }
-    struct EarnedData {
-        address token;
-        uint256 amount;
-    }
-
     struct Balances {
         uint112 locked;
         uint32 nextUnlockIndex;
@@ -55,6 +52,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     struct LockedBalance {
         uint112 amount;
         uint32 unlockTime;
+    }
+    struct UserData {
+        uint128 rewardPerTokenPaid;
+        uint128 rewards;
+    }
+    struct EarnedData {
+        address token;
+        uint256 amount;
     }
     struct Epoch {
         uint224 supply;
@@ -173,6 +178,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             for (uint256 i = 0; i < rewardTokens.length; i++) {
                 address token = rewardTokens[i];
                 uint256 newRewardPerToken = _rewardPerToken(token);
+                console.log(
+                    "sol:updateReward newRewardPerToken %s, newRewardPerToken.to96 %s",
+                    newRewardPerToken,
+                    newRewardPerToken.to96()
+                );
                 rewardData[token].rewardPerTokenStored = newRewardPerToken.to96();
                 rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to32();
                 if (_account != address(0)) {
@@ -259,6 +269,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(!isShutdown, "shutdown");
 
         Balances storage bal = balances[_account];
+        console.log("sol:_lock (_account %s _amount %s)", _account, _amount);
 
         //must try check pointing epoch first
         _checkpointEpoch();
@@ -268,21 +279,31 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         bal.locked = bal.locked.add(lockAmount);
 
         //add to total supplies
+        // lockedSupply = lockedSupply.add(lockAmount); // TODO - review differences with this.
         lockedSupply = lockedSupply.add(_amount);
 
         //add user lock records or add to current
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
         uint256 unlockTime = currentEpoch.add(lockDuration);
         uint256 idx = userLocks[_account].length;
+        console.log("sol:_lock -userlocks- idx %s, unlockTime %s", idx, unlockTime);
         if (idx == 0 || userLocks[_account][idx - 1].unlockTime < unlockTime) {
             userLocks[_account].push(LockedBalance({ amount: lockAmount, unlockTime: uint32(unlockTime) }));
+            console.log(
+                "sol:_lock -userlocks-push unlockTime %s, lockAmount %s",
+                idx == 0 ? 0 : userLocks[_account][idx - 1].unlockTime,
+                lockAmount
+            );
         } else {
             LockedBalance storage userL = userLocks[_account][idx - 1];
             userL.amount = userL.amount.add(lockAmount);
+            console.log("sol:_lock -userlocks- new amount %s", userL.amount);
         }
 
         address delegatee = delegates(_account);
         if (delegatee != address(0)) {
+            console.log("sol:_lock delegatee %s, unlockTime %s", delegatee, unlockTime);
+            // TODO - verify there is test for this.
             delegateeUnlocks[delegatee][unlockTime] += lockAmount;
             _checkpointDelegate(delegatee, lockAmount, 0);
         }
@@ -311,6 +332,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                 } else {
                     IERC20(_rewardsToken).safeTransfer(_account, reward);
                 }
+                console.log("sol:getReward _account %s, _stake %s", _account, _stake);
+                console.log("sol:getReward _rewardsToken %s, reward %s", _rewardsToken, reward);
                 emit RewardPaid(_account, _rewardsToken, reward);
             }
         }
@@ -327,12 +350,20 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //first epoch add in constructor, no need to check 0 length
 
+        console.log(
+            "sol:_checkpointEpoch() currentEpoch %s, epochindex %s, lastEpochDate %s",
+            currentEpoch,
+            epochindex,
+            epochs[epochindex - 1].date
+        );
         //check to add
         if (epochs[epochindex - 1].date < currentEpoch) {
-            //fill any epoch gaps
+            //fill any epoch gaps until the next epoch date.
             while (epochs[epochs.length - 1].date != currentEpoch) {
                 uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
+                console.log("sol:_checkpointEpoch() new epoch %s", nextEpochDate);
                 epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
+                console.log("sol:_checkpointEpoch() -fill gaps-- nextEpochDate %s, supply %s", nextEpochDate, 0);
             }
         }
     }
@@ -344,6 +375,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     function kickExpiredLocks(address _account) external nonReentrant {
         //allow kick after grace period of 'kickRewardEpochDelay'
+        console.log("sol:kickExpiredLocks() _account    %s", _account);
         _processExpiredLocks(_account, false, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
     }
 
@@ -354,6 +386,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address _rewardAddress,
         uint256 _checkDelay
     ) internal updateReward(_account) {
+        // TODO - verify the impact of removing processExpiredLocks._withdrawTo
         LockedBalance[] storage locks = userLocks[_account];
         Balances storage userBalance = balances[_account];
         uint112 locked;
@@ -362,12 +395,32 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 expiryTime = _checkDelay == 0 && _relock
             ? block.timestamp.add(rewardsDuration)
             : block.timestamp.sub(_checkDelay);
-
+        require(length > 0, "no locks");
+        console.log(
+            "sol:_processExpiredLocks() _account    %s, _relock     %s, _rewardAddress %s",
+            _account,
+            _relock,
+            _rewardAddress
+        );
+        console.log(
+            "sol:_processExpiredLocks() _checkDelay %s, expiryTime  %s, block.timestamp %s",
+            _checkDelay,
+            expiryTime,
+            block.timestamp
+        );
+        console.log(
+            "sol:_processExpiredLocks() unlockTime  %s,          unlockTime<=expiryTime %s",
+            locks[length - 1].unlockTime,
+            locks[length - 1].unlockTime <= expiryTime
+        );
+        // TODO - REVIEW block.timestamp.add(rewardsDuration) IS tested.
         // e.g. now = 16
         // if contract is shutdown OR latest lock unlock time (e.g. 17) <= now - (1)
         // e.g. 17 <= (16 + 1)
         if (isShutdown || locks[length - 1].unlockTime <= expiryTime) {
+            console.log("sol:_processExpiredLocks() - latest<=expiryTime- ");
             //if time is beyond last lock, can just bundle everything together
+            // TODO - test with a big balance.
             locked = userBalance.locked;
 
             //dont delete, just set next index
@@ -378,12 +431,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             //but this section is supposed to be for quick and easy low gas processing of all locks
             //we'll assume that if the reward was good enough someone would have processed at an earlier epoch
             if (_checkDelay > 0) {
+                console.log("sol:_processExpiredLocks() - _checkDelay- ");
                 uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
                 uint256 epochsover = currentEpoch.sub(uint256(locks[length - 1].unlockTime)).div(rewardsDuration);
                 uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
                 reward = uint256(locks[length - 1].amount).mul(rRate).div(denominator);
             }
         } else {
+            console.log("sol:_processExpiredLocks() - else - ");
             //use a processed index(nextUnlockIndex) to not loop as much
             //deleting does not change array length
             uint32 nextUnlockIndex = userBalance.nextUnlockIndex;
@@ -397,6 +452,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                 //check for kick reward
                 //each epoch over due increases reward
                 if (_checkDelay > 0) {
+                    console.log("sol:_processExpiredLocks() - else _checkDelay - ");
                     uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
                     uint256 epochsover = currentEpoch.sub(uint256(locks[i].unlockTime)).div(rewardsDuration);
                     uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
@@ -415,6 +471,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         lockedSupply = lockedSupply.sub(locked);
 
         //checkpoint the delegatee
+        // TODO - why the delegates of the msg.sender and not the account?
         _checkpointDelegate(delegates(msg.sender), 0, 0);
 
         emit Withdrawn(_account, locked, _relock);
@@ -427,6 +484,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             //transfer reward
             stakingToken.safeTransfer(_rewardAddress, reward);
 
+            console.log(
+                "sol:_processExpiredLocks() - reward - stakingToken.safeTransfer %s, locked %s",
+                reward,
+                locked
+            );
+
             emit KickReward(_rewardAddress, _account, reward);
         }
 
@@ -434,7 +497,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         if (_relock) {
             _lock(_account, locked);
         } else {
+            // TODO - verify there is test for this AND kicked reward. NOT possible but risky , add note.
             stakingToken.safeTransfer(_account, locked);
+            console.log("sol:_processExpiredLocks() - relock - stakingToken.safeTransfer %s ", locked);
         }
     }
 
@@ -475,6 +540,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             delegateeUnlocks[newDelegatee][currentLock.unlockTime] += currentLock.amount;
 
             if (i > 0) {
+                // TODO - this can be changed to the while.
                 i--;
                 currentLock = locks[i];
             } else {
@@ -496,11 +562,18 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     ) internal {
         // This would only skip on first checkpointing
         if (_account != address(0)) {
+            console.log(
+                "sol:_checkpointDelegate delegatee %s, _upcomingAddition %s, _upcomingDeduction %s",
+                _account,
+                _upcomingAddition,
+                _upcomingDeduction
+            );
             uint256 upcomingEpoch = block.timestamp.add(rewardsDuration).div(rewardsDuration).mul(rewardsDuration);
             DelegateeCheckpoint[] storage ckpts = _checkpointedVotes[_account];
             if (ckpts.length > 0) {
                 DelegateeCheckpoint memory prevCkpt = ckpts[ckpts.length - 1];
                 // If there has already been a record for the upcoming epoch, no need to deduct the unlocks
+                // TODO why there is no need?
                 if (prevCkpt.epochStart == upcomingEpoch) {
                     ckpts[ckpts.length - 1] = DelegateeCheckpoint({
                         votes: (prevCkpt.votes + _upcomingAddition - _upcomingDeduction).to224(),
@@ -533,6 +606,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     );
                 }
             } else {
+                // first checkpoint
                 ckpts.push(
                     DelegateeCheckpoint({
                         votes: (_upcomingAddition - _upcomingDeduction).to224(),
@@ -657,6 +731,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     // Balance of an account which only includes properly locked tokens at the given epoch
     function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
         LockedBalance[] storage locks = userLocks[_user];
+        uint256 len = locks.length;
+        console.log("sol:balanceAtEpochOf _epoch %s, _user %s, len %s", _epoch, _user, len);
 
         //get timestamp of given epoch index
         uint256 epochTime = epochs[_epoch].date;
@@ -740,6 +816,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Supply of all properly locked balances at the given epoch
     function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
+        // TODO - why it changed to PUBLIC
         uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
@@ -763,6 +840,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Find an epoch index based on timestamp
     function findEpochId(uint256 _time) public view returns (uint256 epoch) {
+        // TODO - why it changed to PUBLIC
         uint256 max = epochs.length - 1;
         uint256 min = 0;
 
@@ -848,6 +926,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         if (lockedSupply == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;
         }
+        console.log(
+            "sol:_rewardPerToken _rewardsToken %s rewardPerTokenStored %s",
+            _rewardsToken,
+            rewardData[_rewardsToken].rewardPerTokenStored
+        );
+
         return
             uint256(rewardData[_rewardsToken].rewardPerTokenStored).add(
                 _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish)
@@ -861,6 +945,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /***************************************
                 REWARD FUNDING
     ****************************************/
+    // TODO - why getRewardForDuration was removed.
+    // TODO - why lockedBalanceOf was removed.
 
     function queueNewRewards(uint256 _rewards) external {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
@@ -892,6 +978,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
+        // TODO why mod updateReward was removed.
         require(_rewardsToken != cvxCrv, "Use queueNewRewards");
         require(rewardDistributors[_rewardsToken][msg.sender], "Must be rewardsDistributor");
         require(_reward > 0, "No reward");
@@ -906,6 +993,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     function _notifyReward(address _rewardsToken, uint256 _reward) internal updateReward(address(0)) {
+        // TODO why mod updateReward was added.
         RewardData storage rdata = rewardData[_rewardsToken];
 
         if (block.timestamp >= rdata.periodFinish) {
