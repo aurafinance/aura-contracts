@@ -1,3 +1,4 @@
+import { AuraMinter__factory } from "./../../types/generated/factories/AuraMinter__factory";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { getSigner } from "../utils";
@@ -15,6 +16,7 @@ import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/depl
 import {
     AuraLocker__factory,
     AuraStakingProxy__factory,
+    AuraToken__factory,
     BaseRewardPool__factory,
     BoosterOwner__factory,
     Booster__factory,
@@ -72,17 +74,17 @@ task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, h
     const distro = getMockDistro();
 
     const phase1 = await deployPhase1(deployer, mocks.addresses, true, true);
-    const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig, true);
-    const phase3 = await deployPhase3(
+    const phase2 = await deployPhase2(
         hre,
         deployer,
-        phase2,
+        phase1,
         distro,
         multisigs,
         mocks.namingConfig,
         mocks.addresses,
         true,
     );
+    const phase3 = await deployPhase3(deployer, phase2, mocks.addresses, true);
     const contracts = await deployPhase4(deployer, phase3, mocks.addresses, true);
 
     logExtSystem(mocks.addresses);
@@ -110,7 +112,8 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
     };
     const cvxSys: SystemDeployed = {
         voterProxy: CurveVoterProxy__factory.connect("0xc7d3edd05d4ddd268b5701a9c3d17ab9ebd90121", deployer),
-        cvx: ConvexToken__factory.connect("0xf40dbb882fc7c04e33d949f8dcb2b1ae0b5b3d3d", deployer),
+        cvx: AuraToken__factory.connect("0xf40dbb882fc7c04e33d949f8dcb2b1ae0b5b3d3d", deployer),
+        minter: AuraMinter__factory.connect("", deployer),
         booster: Booster__factory.connect("0x0dacce714d0ddd2f78f406752f5abbaad1d20062", deployer),
         boosterOwner: BoosterOwner__factory.connect("0xff0972f691ab79240a160620481ad6c167f1669a", deployer),
         cvxCrv: CvxCrvToken__factory.connect("0x059f5c8a2f9315309bc4c8c69e58ce10e6df26fb", deployer),
@@ -119,7 +122,7 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
         poolManager: PoolManagerV3__factory.connect("0xb03854a7d81bf9f657c9d335d2ebcc89f651497f", deployer),
         cvxLocker: AuraLocker__factory.connect("0x9a5ba49a848e38f154e9f69ace6e8283f90af615", deployer),
         cvxStakingProxy: AuraStakingProxy__factory.connect("0x02a10e1c53976a618680f390a8a1f7da262e3f01", deployer),
-        vestedEscrow: VestedEscrow__factory.connect("0x34f23e3577b85102dc01e3b5af1fd92d4970019e", deployer),
+        vestedEscrows: [VestedEscrow__factory.connect("0x34f23e3577b85102dc01e3b5af1fd92d4970019e", deployer)],
         dropFactory: MerkleAirdropFactory__factory.connect("0x6a45ce07f1d6338b7d677b9d3af97a4b54d2d43b", deployer),
         claimZap: ClaimZap__factory.connect("0xf7190cd62fdc820f4c4b6dfe93fe6c6974234576", deployer),
     };

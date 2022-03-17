@@ -1,4 +1,4 @@
-import { ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
 import {
@@ -40,15 +40,36 @@ interface DeployMocksResult {
 function getMockDistro(): DistroList {
     return {
         miningRewards: simpleToExactAmount(50, 24),
-        lpIncentives: simpleToExactAmount(25, 24),
-        airdrops: [{ merkleRoot: ZERO_KEY, amount: simpleToExactAmount(2, 24) }],
-        vesting: [
-            { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(10, 24) },
-            { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(3.286, 24) },
+        lpIncentives: simpleToExactAmount(10, 24),
+        cvxCrvBootstrap: simpleToExactAmount(2, 24),
+        lbp: { bootstrap: simpleToExactAmount(2, 24), matching: simpleToExactAmount(3, 24) },
+        airdrops: [
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(0.5, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
         ],
-        treasury: { address: "0x1389388d01708118b497f59521f6943Be2541bb7", amount: simpleToExactAmount(9.7, 24) },
-        partnerTreasury: { address: ZERO_ADDRESS, amount: simpleToExactAmount(0) },
-        lpSeed: simpleToExactAmount(0.014, 24),
+        vesting: [
+            {
+                period: ONE_WEEK.mul(16),
+                recipients: [
+                    { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(0.5, 24) }, // Team vesting
+                ],
+            },
+            {
+                period: ONE_WEEK.mul(104),
+                recipients: [
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(9.5, 24) }, // Team vesting
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(2, 24) }, // Partner Treasury
+                ],
+            },
+            {
+                period: ONE_WEEK.mul(208),
+                recipients: [
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(17.5, 24) }, // Treasury
+                ],
+            },
+        ],
     };
 }
 

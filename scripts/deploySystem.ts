@@ -45,6 +45,7 @@ import {
     IWeightedPoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
+    ConvexMasterChef,
     AuraLocker,
     AuraLocker__factory,
     AuraStakingProxy,
@@ -53,9 +54,11 @@ import {
     AuraToken__factory,
     AuraMinter,
     AuraMinter__factory,
+    MockERC20,
+    ConvexMasterChef__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -65,18 +68,27 @@ interface AirdropData {
     amount: BN;
 }
 
-interface VestData {
+interface VestingRecipient {
     address: string;
     amount: BN;
+}
+
+interface VestingGroup {
+    period: BN;
+    recipients: VestingRecipient[];
+}
+
+interface LBPData {
+    bootstrap: BN;
+    matching: BN;
 }
 interface DistroList {
     miningRewards: BN;
     lpIncentives: BN;
+    cvxCrvBootstrap: BN;
+    lbp: LBPData;
     airdrops: AirdropData[];
-    vesting: VestData[];
-    treasury: VestData;
-    partnerTreasury: VestData;
-    lpSeed: BN;
+    vesting: VestingGroup[];
 }
 
 interface ExtSystemConfig {
@@ -135,9 +147,6 @@ interface Phase1Deployed {
 interface Phase2Deployed extends Phase1Deployed {
     cvx: AuraToken;
     minter: AuraMinter;
-}
-
-interface Phase3Deployed extends Phase2Deployed {
     booster: Booster;
     boosterOwner: BoosterOwner;
     cvxCrv: CvxCrvToken;
@@ -147,24 +156,26 @@ interface Phase3Deployed extends Phase2Deployed {
     voterProxy: CurveVoterProxy;
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
-    vestedEscrow: VestedEscrow;
+    vestedEscrows: VestedEscrow[];
     dropFactory: MerkleAirdropFactory;
 }
-
-interface SystemDeployed extends Phase3Deployed {
+interface SystemDeployed extends Phase2Deployed {
     claimZap: ClaimZap;
 }
 
 /**
  * FLOW
  * Phase 1: Voter Proxy, get whitelisted on Curve system
- * Phase 2: cvx & lockdrop
- * Phase 3: booster, factories, cvxCrv, crvDepositor, poolManager, vesting, vlCVX + stakerProxy or fix
- * Phase 3.x: Liquidity provision post lockdrop
- * Phase 3.x: cvx/eth & cvxCRV/CRV pools
- * Phase 3.x: 2% emission for cvxCrv deposits
- * Phase 3.x: chef (or other) & cvxCRV/CRV incentives
- * Phase 3.x: Airdrop(s)
+ * Phase 2: cvx, booster, factories, cvxCrv, crvDepositor, poolManager, vlCVX + stakerProxy
+ *           - Schedule: Vesting streams
+ *           - Schedule: 2% emission for cvxCrv staking
+ *           - Create:   cvxCRV/CRV BPT Stableswap
+ *           - Schedule: chef (or other) & cvxCRV/CRV incentives
+ *           - Schedule: Airdrop(s)
+ *           - Schedule: LBP
+ * Phase 2.1: Enable swapping and start weight decay on LBP
+ * Phase 3: Liquidity from LBP taken and used for AURA/ETH pool
+ *          Airdrops & initial farming begins like clockwork
  * Phase 4: Pools, claimzap & farming
  * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
@@ -192,8 +203,8 @@ async function deployForkSystem(
     tx = await crv.transfer(phase1.voterProxy.address, simpleToExactAmount(1));
     await tx.wait();
 
-    const phase2 = await deployPhase2(signer, phase1, multisigs, naming, true);
-    const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, curveSystem, true);
+    const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
+    const phase3 = await deployPhase3(signer, phase2, curveSystem, true);
     const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
     return phase4;
 }
@@ -208,8 +219,8 @@ async function deployLocalSystem(
     debug = false,
 ): Promise<SystemDeployed> {
     const phase1 = await deployPhase1(signer, extSystem, debug);
-    const phase2 = await deployPhase2(signer, phase1, multisigs, naming, debug);
-    const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, extSystem, debug);
+    const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, extSystem, debug);
+    const phase3 = await deployPhase3(signer, phase2, extSystem, debug);
     const phase4 = await deployPhase4(signer, phase3, extSystem, debug);
     return phase4;
 }
@@ -247,17 +258,58 @@ async function deployPhase1(
 }
 
 async function deployPhase2(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
     deployment: Phase1Deployed,
+    distroList: DistroList,
     multisigs: MultisigConfig,
     naming: NamingConfig,
+    config: ExtSystemConfig,
     debug = false,
 ): Promise<Phase2Deployed> {
+    const { ethers } = hre;
     const deployer = signer;
+    const deployerAddress = await deployer.getAddress();
+
+    const { token, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
+    const { voterProxy } = deployment;
 
     // -----------------------------
-    // 2. CVX token & lockdrop
+    // 2: cvx, booster, factories, cvxCrv, crvDepositor, poolManager, vlCVX + stakerProxy
+    //        - Schedule: Vesting streams
+    //        - Schedule: 2% emission for cvxCrv staking
+    //        - Create:   cvxCRV/CRV BPT Stableswap
+    //        - Schedule: chef (or other) & cvxCRV/CRV incentives
+    //        - Schedule: Airdrop(s)
+    //        - Schedule: LBP
     // -----------------------------
+
+    // -----------------------------
+    // 2.1 Core system:
+    //     - cvx
+    //     - booster
+    //     - factories (reward, token, proxy, stash)
+    //     - cvxCrv (cvxCrv, crvDepositor)
+    //     - pool management (poolManager + 2x proxies)
+    //     TODO - ensure all places using vlCVX (i.e. vesting & lockdrop) are updated
+    //     - vlCVX + ((stkCVX && stakerProxy) || fix)
+    // -----------------------------
+
+    const premineIncetives = distroList.lpIncentives
+        .add(distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0)))
+        .add(distroList.cvxCrvBootstrap)
+        .add(distroList.lbp.bootstrap)
+        .add(distroList.lbp.matching);
+    const totalVested = distroList.vesting.reduce(
+        (p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))),
+        BN.from(0),
+    );
+    const premine = premineIncetives.add(totalVested);
+    const checksum = premine.add(distroList.miningRewards);
+    if (!checksum.eq(simpleToExactAmount(100, 24))) {
+        console.log(checksum.toString());
+        throw console.error();
+    }
 
     const cvx = await deployContract<AuraToken>(
         new AuraToken__factory(deployer),
@@ -274,53 +326,6 @@ async function deployPhase2(
         {},
         debug,
     );
-
-    // TODO - deploy lockdrop here
-
-    return { ...deployment, cvx, minter };
-}
-
-async function deployPhase3(
-    hre: HardhatRuntimeEnvironment,
-    signer: Signer,
-    deployment: Phase2Deployed,
-    distroList: DistroList,
-    multisigs: MultisigConfig,
-    naming: NamingConfig,
-    config: ExtSystemConfig,
-    debug = false,
-): Promise<Phase3Deployed> {
-    const { ethers } = hre;
-    const deployer = signer;
-    const deployerAddress = await deployer.getAddress();
-
-    const { token, votingEscrow, gaugeController, registry, registryID, voteOwnership, voteParameter } = config;
-    const { voterProxy, cvx, minter } = deployment;
-
-    const premineIncetives = distroList.lpIncentives
-        .add(distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0)))
-        .add(distroList.lpSeed);
-    const totalVested = distroList.vesting
-        .reduce((p, c) => p.add(c.amount), BN.from(0))
-        .add(distroList.treasury.amount)
-        .add(distroList.partnerTreasury.amount);
-    const premine = premineIncetives.add(totalVested);
-    const checksum = premine.add(distroList.miningRewards);
-    if (!checksum.eq(simpleToExactAmount(100, 24))) {
-        console.log(checksum.toString());
-        throw console.error();
-    }
-
-    // -----------------------------
-    // 3. Core system:
-    //     - booster
-    //     - factories (reward, token, proxy, stash)
-    //     - cvxCrv (cvxCrv, crvDepositor)
-    //     - pool management (poolManager + 2x proxies)
-    //     TODO - write/deploy this & setRewardContracts on booster
-    //     TODO - ensure all places using vlCVX (i.e. vesting & lockdrop) are updated
-    //     - vlCVX + ((stkCVX && stakerProxy) || fix)
-    // -----------------------------
 
     const booster = await deployContract<Booster>(
         new Booster__factory(deployer),
@@ -468,16 +473,10 @@ async function deployPhase3(
     tx = await cvxStakingProxy.setApprovals();
     await tx.wait();
 
-    // TODO: we can potentially remove this as it's always just staking everything
-    // TODO: cvxLocker.setStakeLimits
-
     tx = await voterProxy.setOperator(booster.address);
     await tx.wait();
 
     tx = await cvx.init(deployerAddress, premine.toString(), minter.address);
-    await tx.wait();
-
-    tx = await cvx.updateOperator();
     await tx.wait();
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
@@ -496,13 +495,6 @@ async function deployPhase3(
     await tx.wait();
 
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
-    await tx.wait();
-
-    // TODO: should this be the staking proxy (vlCVX) considering vlCVX is
-    // already getting all the rewards that single staking would get
-    // Booster.platformFee is set to 0 currently so this doesn't get anything any
-    // maybe we just remove this?
-    tx = await booster.setTreasury(cvxStakingProxy.address);
     await tx.wait();
 
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
@@ -536,53 +528,66 @@ async function deployPhase3(
     await tx.wait();
 
     // -----------------------------
-    // 3.1. Token liquidity:
-    //     - vesting (team, treasury, etc)
-    //     - bPool creation: cvx/eth & cvxCrv/crv
-    //     - lockdrop: use liquidity & init streams
-    //     - 2% emission for cvxCrv deposits
-    //     - chef (or other) & cvxCRV/CRV incentives
-    //     - airdrop factory & Airdrop(s)
+    // 2.2. Token liquidity:
+    //     - Schedule: vesting (team, treasury, etc)
+    //     - Schedule: 2% emission for cvxCrv staking
+    //     - Create:   cvxCRV/CRV BPT Stableswap
+    //     - Schedule: chef (or other) & cvxCRV/CRV incentives
+    //     - Schedule: Airdrop(s)
+    //     - Schedule: LBP
     // -----------------------------
 
     // -----------------------------
-    // 3.1.1 Vesting
+    // 2.2.1 Schedule: vesting (team, treasury, etc)
     // -----------------------------
 
-    const currentTime = (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
-    const rewardsStart = currentTime + 3600;
-    const rewardsEnd = rewardsStart + 2 * 364 * 86400;
+    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
+    const DELAY = ONE_WEEK;
+    const rewardsStart = currentTime.add(DELAY);
+    const vestedEscrows = [];
 
-    const vestedEscrow = await deployContract<VestedEscrow>(
-        new VestedEscrow__factory(deployer),
-        "VestedEscrow",
-        [
-            cvx.address,
-            rewardsStart,
-            rewardsEnd,
-            cvxLocker.address, // TODO - convert to vlCVX
-            multisigs.vestingMultisig,
-        ],
+    for (let i = 0; i < distroList.vesting.length; i++) {
+        const vestingGroup = distroList.vesting[i];
+        const groupVestingAmount = vestingGroup.recipients.reduce((p, c, i) => p.add(c.amount), BN.from(0));
+        const rewardsEnd = rewardsStart.add(vestingGroup.period);
+
+        const vestedEscrow = await deployContract<VestedEscrow>(
+            new VestedEscrow__factory(deployer),
+            "VestedEscrow",
+            [cvx.address, rewardsStart, rewardsEnd, cvxLocker.address, multisigs.vestingMultisig],
+            {},
+            debug,
+        );
+
+        tx = await cvx.approve(vestedEscrow.address, groupVestingAmount);
+        await tx.wait();
+        tx = await vestedEscrow.addTokens(groupVestingAmount);
+        await tx.wait();
+        const vestingAddr = vestingGroup.recipients.map(m => m.address);
+        const vestingAmounts = vestingGroup.recipients.map(m => m.amount);
+        tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
+        await tx.wait();
+
+        vestedEscrows.push(vestedEscrow);
+    }
+
+    // TODO - add this new contract
+    // -----------------------------
+    // 2.2.2 Schedule: 2% emission for cvxCrv staking
+    // -----------------------------
+    const initialCvxCrvStaking = await deployContract<BaseRewardPool>(
+        new BaseRewardPool__factory(deployer),
+        "Bootstrap",
+        [0, cvxCrv.address, cvx.address, deployerAddress, rewardFactory.address],
         {},
         debug,
     );
-
-    tx = await cvx.approve(vestedEscrow.address, totalVested);
-    await tx.wait();
-    tx = await vestedEscrow.addTokens(totalVested);
-    await tx.wait();
-    const vestingAddr = distroList.vesting.map(m => m.address).concat([distroList.treasury.address]);
-    const vestingAmounts = distroList.vesting.map(m => m.amount).concat([distroList.treasury.amount]);
-    if (distroList.partnerTreasury.amount.gt(BN.from(0))) {
-        vestingAddr.push(distroList.partnerTreasury.address);
-        vestingAmounts.push(distroList.partnerTreasury.amount);
-    }
-    tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
+    tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
     await tx.wait();
 
-    // TODO - add this
+    // TODO - add this pool
     // -----------------------------
-    // 3.1.2 Liquidity pool creation
+    // 2.2.3 Create: auraBAL/BPT BPT Stableswap
     // https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
     // -----------------------------
 
@@ -602,24 +607,46 @@ async function deployPhase3(
     // let poolId = await pool.getPoolId();
     // const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
     // let initialPoolBalances =
-
-    // TODO - add this
-    // -----------------------------
-    // 3.1.3 Lockdrop closing & liquidity allocation
-    // -----------------------------
-
-    // TODO - add this
-    // -----------------------------
-    // 3.1.4 2% Emission for cvxCRV deposits
-    // -----------------------------
-
-    // TODO - add this (await convexToken.transfer(chef.address, distroList.lpincentives);)
-    // -----------------------------
-    // 3.1.5 Chef & cvxCRV long term incentives
-    // -----------------------------
+    const cvxCrvBpt = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "CvxCrvBPT",
+        ["Balancer Pool Token 50/50 CRV/CVXCRV", "50/50 CRV/CVXCRV", 18, deployerAddress, 100000],
+        {},
+        debug,
+    );
 
     // -----------------------------
-    // 3.1.6 Merkle drops
+    // 2.2.4 Schedule: chef (or other) & cvxCRV/CRV incentives
+    // -----------------------------
+    const currentBlock = await ethers.provider.getBlockNumber();
+    const chefCvx = distroList.lpIncentives;
+
+    const blocksInDay = BN.from(6500);
+    const numberOfBlocks = blocksInDay.mul(365).mul(4); // 4 years
+    const rewardPerBlock = chefCvx.div(numberOfBlocks);
+    const startBlock = blocksInDay.mul(7).add(currentBlock); //start with small delay
+    const endbonusblock = 0; // No bonus
+
+    const chef = await deployContract<ConvexMasterChef>(
+        new ConvexMasterChef__factory(deployer),
+        "Bootstrap",
+        [cvx.address, rewardPerBlock, startBlock, endbonusblock],
+        {},
+        debug,
+    );
+
+    tx = await cvx.transfer(chef.address, distroList.lpIncentives);
+    await tx.wait();
+
+    tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS, false);
+    await tx.wait();
+
+    tx = await chef.transferOwnership(multisigs.daoMultisig);
+    await tx.wait();
+
+    // TODO - add time delay & correct roots
+    // -----------------------------
+    // 2.2.5 Schedule: Airdrop(s)
     // -----------------------------
 
     const dropFactory = await deployContract<MerkleAirdropFactory>(
@@ -647,11 +674,28 @@ async function deployPhase3(
         await tx.wait();
     }
 
-    // TODO - ensure deployer has 0 cvx left
+    // -----------------------------
+    // 2.2.6 Schedule: LBP & Matching liq
+    // -----------------------------
+
+    // TODO - add LBP
+    tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.bootstrap);
+    await tx.wait();
+
+    // TODO - add matching liq
+    tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.matching);
+    await tx.wait();
+
+    const balance = await cvx.balanceOf(deployerAddress);
+    if (balance.gt(0)) {
+        throw console.error("Uh oh, deployer still has CVX to distribute: ", balance.toString());
+    }
     // TODO - add all contracts to output
 
     return {
         ...deployment,
+        cvx,
+        minter,
         booster,
         boosterOwner,
         cvxCrv,
@@ -660,14 +704,26 @@ async function deployPhase3(
         poolManager,
         cvxLocker,
         cvxStakingProxy,
-        vestedEscrow,
+        vestedEscrows,
         dropFactory,
     };
 }
 
+async function deployPhase3(
+    signer: Signer,
+    deployment: Phase2Deployed,
+    config: ExtSystemConfig,
+    debug = false,
+): Promise<Phase2Deployed> {
+    if (debug) {
+        console.log(debug);
+    }
+    return deployment;
+}
+
 async function deployPhase4(
     signer: Signer,
-    deployment: Phase3Deployed,
+    deployment: Phase2Deployed,
     config: ExtSystemConfig,
     debug = false,
 ): Promise<SystemDeployed> {
@@ -725,7 +781,6 @@ export {
     deployPhase2,
     Phase2Deployed,
     deployPhase3,
-    Phase3Deployed,
     deployPhase4,
     SystemDeployed,
 };
