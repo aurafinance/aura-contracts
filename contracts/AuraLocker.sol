@@ -133,7 +133,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address _cvxCrv,
         address _boostPayment,
         address _cvxCrvStaking
-    ) public Ownable() {
+    ) Ownable() {
         _name = _nameArg;
         _symbol = _symbolArg;
         _decimals = 18;
