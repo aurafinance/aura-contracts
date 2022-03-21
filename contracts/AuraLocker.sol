@@ -21,9 +21,6 @@ interface IRewardStaking {
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
  *          to depositors.
  * @dev
- *          Based on CvxLocker contract https://github.com/convex-eth/platform/blob/main/contracts/contracts/CvxLocker.sol
- *          Based on EPS Staking contract for http://ellipsis.finance/
- *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
  */
 contract AuraLocker is ReentrancyGuard, Ownable {
     using AuraMath for uint256;
@@ -45,14 +42,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         /// Ever increasing rewardPerToken rate, based on % of total supply
         uint96 rewardPerTokenStored;
     }
-    struct Balances {
-        uint112 locked;
-        uint32 nextUnlockIndex;
-    }
-    struct LockedBalance {
-        uint112 amount;
-        uint32 unlockTime;
-    }
     struct UserData {
         uint128 rewardPerTokenPaid;
         uint128 rewards;
@@ -60,6 +49,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     struct EarnedData {
         address token;
         uint256 amount;
+    }
+    struct Balances {
+        uint112 locked;
+        uint32 nextUnlockIndex;
+    }
+    struct LockedBalance {
+        uint112 amount;
+        uint32 unlockTime;
     }
     struct Epoch {
         uint224 supply;
@@ -285,7 +282,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         bal.locked = bal.locked.add(lockAmount);
 
         //add to total supplies
-        // lockedSupply = lockedSupply.add(lockAmount); // TODO - review differences with this.
         lockedSupply = lockedSupply.add(_amount);
 
         //add user lock records or add to current
@@ -625,7 +621,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     );
                 }
             } else {
-                // first checkpoint
                 ckpts.push(
                     DelegateeCheckpoint({
                         votes: (_upcomingAddition - _upcomingDeduction).to224(),

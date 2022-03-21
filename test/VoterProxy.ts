@@ -107,4 +107,19 @@ describe("VoterProxy", () => {
             expect(hash).to.equal(hashResult);
         });
     });
+
+    describe("when not authorised", () => {
+        it("can not call release", async () => {
+            const eoa = accounts[5];
+            const tx = voterProxy.connect(eoa).release();
+            await expect(tx).to.revertedWith("!auth");
+        });
+
+        it("can not call migrate", async () => {
+            const eoa = accounts[5];
+            const eoaAddress = await eoa.getAddress();
+            const tx = voterProxy.connect(eoa).migrate(eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+    });
 });
