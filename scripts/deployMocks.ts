@@ -1,6 +1,7 @@
 import { ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
+import { parseEther } from "ethers/lib/utils";
 import {
     MockERC20__factory,
     MockERC20,
@@ -16,6 +17,10 @@ import {
     MockCurveGauge__factory,
     MockCurveMinter__factory,
     MockCurveMinter,
+    MockBalancerPoolToken,
+    MockBalancerPoolToken__factory,
+    MockBalancerVault,
+    MockBalancerVault__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
@@ -29,7 +34,12 @@ interface DeployMocksResult {
     feeDistribution: MockFeeDistro;
     nativeTokenDistribution: MockFeeDistro;
     smartWalletChecker: MockWalletChecker;
-    gauges: MockCurveGauge[];
+    feeDistro: MockFeeDistro;
+    gauge: MockCurveGauge;
+    crvBpt: MockBalancerPoolToken;
+    balanceVault: MockBalancerVault;
+    bal: MockERC20;
+    weth: MockERC20;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
@@ -75,6 +85,14 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         new MockERC20__factory(deployer),
         "MockCRV",
         ["mockCrv", "mockCrv", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
+    const crvBpt = await deployContract<MockBalancerPoolToken>(
+        new MockBalancerPoolToken__factory(deployer),
+        "MockBalancerPoolToken",
+        [18, deployerAddress, 10000000],
         {},
         debug,
     );
@@ -139,7 +157,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     const votingEscrow = await deployContract<MockCurveVoteEscrow>(
         new MockCurveVoteEscrow__factory(deployer),
         "MockCurveVoteEscrow",
-        [smartWalletChecker.address, crv.address],
+        [smartWalletChecker.address, crvBpt.address],
         {},
         debug,
     );
@@ -162,6 +180,33 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         gauges.push(gauge);
     }
 
+    tx = await crvBpt.setPrice(parseEther("420"));
+    await tx.wait();
+
+    const balanceVault = await deployContract<MockBalancerVault>(
+        new MockBalancerVault__factory(deployer),
+        "MockBalancerVault",
+        [crvBpt.address],
+        {},
+        debug,
+    );
+
+    const bal = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockBAL",
+        ["mockBAL", "mockBAL", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
+    const weth = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockWETH",
+        ["mockWETH", "mockWETH", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
     return {
         lptoken,
         crv,
@@ -171,9 +216,15 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         smartWalletChecker,
         feeDistribution: feeDistro,
         nativeTokenDistribution: nativeFeeDistro,
-        gauges,
+        gauges,        
+        feeDistro,
+        crvBpt,
+        balanceVault,
+        bal,
+        weth,
         addresses: {
             token: crv.address,
+            tokenBpt: crvBpt.address,
             tokenWhale: deployerAddress,
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
@@ -184,9 +235,11 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
             // TODO - update these addresses with mocks
-            balancerVault: ZERO_ADDRESS,
+            balancerVault: balanceVault.address,
             balancerWeightedPoolFactory: ZERO_ADDRESS,
-            weth: ZERO_ADDRESS,
+            balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
+            balancerMinOutBps: "9975",
+            weth: weth.address,
         },
         namingConfig: {
             cvxName: "Convex Finance",

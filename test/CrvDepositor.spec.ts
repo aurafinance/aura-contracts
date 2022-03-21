@@ -49,12 +49,12 @@ describe("CrvDepositor", () => {
         cvxCrv = contracts.cvxCrv.connect(alice);
         voterProxy = contracts.voterProxy;
 
-        const tx = await mocks.crv.connect(alice).approve(crvDepositor.address, ethers.constants.MaxUint256);
+        const tx = await mocks.crvBpt.connect(alice).approve(crvDepositor.address, ethers.constants.MaxUint256);
         await tx.wait();
 
-        const crvBalance = await mocks.crv.balanceOf(deployerAddress);
+        const crvBalance = await mocks.crvBpt.balanceOf(deployerAddress);
 
-        const calls = [await mocks.crv.transfer(aliceAddress, crvBalance.mul(90).div(100))];
+        const calls = [await mocks.crvBpt.transfer(aliceAddress, crvBalance.mul(90).div(100))];
 
         await Promise.all(calls.map(tx => tx.wait()));
     });
@@ -72,7 +72,7 @@ describe("CrvDepositor", () => {
     it("deposit", async () => {
         const lock = true;
         const stakeAddress = "0x0000000000000000000000000000000000000000";
-        const crvBalance = await mocks.crv.balanceOf(aliceAddress);
+        const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
         const amount = crvBalance.mul(10).div(100);
 
         const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
@@ -120,7 +120,7 @@ describe("CrvDepositor", () => {
         it("deposit skips lock", async () => {
             const lock = true;
             const stakeAddress = "0x0000000000000000000000000000000000000000";
-            const crvBalance = await mocks.crv.balanceOf(aliceAddress);
+            const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
             const amount = crvBalance.mul(10).div(100);
 
             const beforeLockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
@@ -158,12 +158,12 @@ describe("CrvDepositor", () => {
             await increaseTimeTo(lockTime.add(1));
 
             const veBalance = await mocks.votingEscrow.balanceOf(voterProxy.address);
-            const voteProxyCrvBalance = await mocks.crv.balanceOf(voterProxy.address);
+            const voteProxyCrvBalance = await mocks.crvBpt.balanceOf(voterProxy.address);
 
-            const crvBalanceBefore = await mocks.crv.balanceOf(bobAddress);
+            const crvBalanceBefore = await mocks.crvBpt.balanceOf(bobAddress);
             const tx = await crvDepositor.connect(daoMultisig).migrate(bobAddress);
             await tx.wait();
-            const crvBalanceAfter = await mocks.crv.balanceOf(bobAddress);
+            const crvBalanceAfter = await mocks.crvBpt.balanceOf(bobAddress);
 
             const crvDelta = crvBalanceAfter.sub(crvBalanceBefore);
 
