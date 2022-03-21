@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraStakingProxy, Booster, ConvexToken, CvxCrvToken, AuraLocker } from "../types/generated";
+import { AuraStakingProxy, Booster, AuraToken, CvxCrvToken, AuraLocker } from "../types/generated";
 import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 
 describe("AuraLocker", () => {
@@ -11,7 +11,7 @@ describe("AuraLocker", () => {
     let auraLocker: AuraLocker;
     let cvxStakingProxy: AuraStakingProxy;
     let booster: Booster;
-    let cvx: ConvexToken;
+    let cvx: AuraToken;
     let cvxCrv: CvxCrvToken;
     let mocks: DeployMocksResult;
 
