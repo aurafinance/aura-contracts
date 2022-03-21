@@ -238,6 +238,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
     function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
+        console.log(
+            "sol:recoverERC20() _tokenAddress %s, _tokenAmount %s, rewardData[_tokenAddress].lastUpdateTime %s",
+            _tokenAddress,
+            _tokenAmount,
+            rewardData[_tokenAddress].lastUpdateTime
+        );
         require(_tokenAddress != address(stakingToken), "Cannot withdraw staking token");
         require(rewardData[_tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
         IERC20(_tokenAddress).safeTransfer(owner(), _tokenAmount);
@@ -471,7 +477,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         lockedSupply = lockedSupply.sub(locked);
 
         //checkpoint the delegatee
-        // TODO - why the delegates of the msg.sender and not the account?
         _checkpointDelegate(delegates(msg.sender), 0, 0);
 
         emit Withdrawn(_account, locked, _relock);
@@ -522,6 +527,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(newDelegatee != oldDelegatee, "Must choose new delegatee");
         _delegates[msg.sender] = newDelegatee;
 
+        console.log("sol:delegate oldDelegatee %s, newDelegatee %s", oldDelegatee, newDelegatee);
+
         emit DelegateChanged(msg.sender, oldDelegatee, newDelegatee);
 
         // Step 3: Move balances around
@@ -531,6 +538,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 futureUnlocksSum = 0;
         LockedBalance memory currentLock = locks[i];
         // Step 3.1: Add future unlocks and sum balances
+        console.log(
+            "sol:delegate currentLock.unlockTime  %s, upcomingEpoch %s,  greater %s, ",
+            currentLock.unlockTime,
+            upcomingEpoch,
+            currentLock.unlockTime > upcomingEpoch
+        );
         while (currentLock.unlockTime > upcomingEpoch) {
             futureUnlocksSum += currentLock.amount;
 
@@ -539,8 +552,13 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             }
             delegateeUnlocks[newDelegatee][currentLock.unlockTime] += currentLock.amount;
 
+            console.log(
+                "sol:delegate unlockTime  %s, oldDelegatee.amount  %s, newDelegatee.amount %s",
+                currentLock.unlockTime,
+                delegateeUnlocks[oldDelegatee][currentLock.unlockTime],
+                delegateeUnlocks[newDelegatee][currentLock.unlockTime]
+            );
             if (i > 0) {
-                // TODO - this can be changed to the while.
                 i--;
                 currentLock = locks[i];
             } else {
@@ -548,6 +566,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             }
         }
 
+        console.log("sol:delegate futureUnlocksSum  %s, ", futureUnlocksSum);
         // Step 3.2: Checkpoint old delegatee
         _checkpointDelegate(oldDelegatee, 0, futureUnlocksSum);
 
@@ -614,6 +633,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     })
                 );
             }
+            // TODO - ask MAHA , should we add how many votes where increased, decreased ? Thinking ahead of any dune analytics.
             emit DelegateCheckpointed(_account);
         }
     }
@@ -653,14 +673,24 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(timestamp <= block.timestamp, "ERC20Votes: block not yet mined");
         uint256 epoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
         DelegateeCheckpoint memory ckpt = _checkpointsLookup(_checkpointedVotes[account], epoch);
+
+        // console.log("sol:getPastVotes account %s, timestamp %s, epoch %s, ",account,timestamp, epoch);
+        // uint256 len = _checkpointedVotes[account].length;
+        // if (len > 0) {
+        //    DelegateeCheckpoint memory last = _checkpointedVotes[account][len - 1];
+        //    console.log("sol:getPastVotes ckpt %s, last %s, eval %s, ",ckpt.epochStart, last.epochStart, ckpt.epochStart + lockDuration <= epoch);
+        // }
+
         votes = ckpt.votes;
         if (votes == 0 || ckpt.epochStart + lockDuration <= epoch) {
             return 0;
         }
         while (epoch > ckpt.epochStart) {
+            // console.log("sol:getPastVotes ckpt %s, epoch %s, delegateeUnlocks %s",ckpt.epochStart, epoch, delegateeUnlocks[account][epoch]);
             votes -= delegateeUnlocks[account][epoch];
             epoch -= rewardsDuration;
         }
+        // console.log("sol:getPastVotes account %s, epoch %s, votes %s",account, epoch, votes);
     }
 
     /**
@@ -668,6 +698,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      * It is but NOT the sum of all the delegated votes!
      */
     function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
+        // timestamp <= block.timestamp ?
         require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
         return totalSupplyAtEpoch(findEpochId(timestamp));
     }
@@ -816,7 +847,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Supply of all properly locked balances at the given epoch
     function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
-        // TODO - why it changed to PUBLIC
         uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
@@ -840,7 +870,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Find an epoch index based on timestamp
     function findEpochId(uint256 _time) public view returns (uint256 epoch) {
-        // TODO - why it changed to PUBLIC
         uint256 max = epochs.length - 1;
         uint256 min = 0;
 
@@ -945,9 +974,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /***************************************
                 REWARD FUNDING
     ****************************************/
-    // TODO - why getRewardForDuration was removed.
-    // TODO - why lockedBalanceOf was removed.
-
     function queueNewRewards(uint256 _rewards) external {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
