@@ -3,7 +3,7 @@
     "description": "Aura Finance smart contracts",
     "version": "1.0.0",
     "scripts": {
-        "clean": "shx rm -rf ./artifacts ./cache ./coverage ./types/aura ./types/cvx ./coverage.json",
+        "clean": "shx rm -rf ./artifacts ./cache ./coverage ./types/aura ./types/cvx ./coverage.json types/generated",
         "commit": "git-cz",
         "compile": "yarn compile:cvx && yarn compile:aura",
         "compile:aura": "yarn hardhat compile --config hardhat.config.ts",
