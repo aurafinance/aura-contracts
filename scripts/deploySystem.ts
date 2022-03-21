@@ -377,6 +377,7 @@ async function deployPhase3(
         debug,
     );
 
+    // TODO - ensure `token` is differentiated from 80/20 bpt
     const crvDepositor = await deployContract<CrvDepositor>(
         new CrvDepositor__factory(deployer),
         "CrvDepositor",
@@ -443,7 +444,7 @@ async function deployPhase3(
     const cvxLocker = await deployContract<AuraLocker>(
         new AuraLocker__factory(deployer),
         "AuraLocker",
-        [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, ZERO_ADDRESS, cvxCrvRewards.address],
+        [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, cvxCrvRewards.address],
         {},
         debug,
     );
@@ -456,13 +457,13 @@ async function deployPhase3(
         debug,
     );
 
-    let tx = await cvxLocker.setStakingContract(cvxStakingProxy.address);
-    await tx.wait();
-
-    tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address, false);
+    let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
+    await tx.wait();
+
+    tx = await cvxLocker.transferOwnership(multisigs.daoMultisig);
     await tx.wait();
 
     tx = await cvxStakingProxy.setApprovals();
