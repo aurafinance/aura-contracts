@@ -548,7 +548,7 @@ async function deployPhase2(
 
     for (let i = 0; i < distroList.vesting.length; i++) {
         const vestingGroup = distroList.vesting[i];
-        const groupVestingAmount = vestingGroup.recipients.reduce((p, c, i) => p.add(c.amount), BN.from(0));
+        const groupVestingAmount = vestingGroup.recipients.reduce((p, c) => p.add(c.amount), BN.from(0));
         const rewardsEnd = rewardsStart.add(vestingGroup.period);
 
         const vestedEscrow = await deployContract<VestedEscrow>(

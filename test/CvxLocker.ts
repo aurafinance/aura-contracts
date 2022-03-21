@@ -3,12 +3,12 @@ import { BigNumberish, Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraStakingProxy, Booster, AuraToken, CvxCrvToken, CvxLocker } from "../types/generated";
+import { AuraStakingProxy, Booster, AuraToken, CvxCrvToken, AuraLocker } from "../types/generated";
 import { increaseTime } from "../test-utils";
 
 describe("CvxLocker", () => {
     let accounts: Signer[];
-    let cvxLocker: CvxLocker;
+    let cvxLocker: AuraLocker;
     let cvxStakingProxy: AuraStakingProxy;
     let booster: Booster;
     let cvx: AuraToken;
@@ -31,16 +31,16 @@ describe("CvxLocker", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(deployer, phase2, mocks.addresses);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         alice = accounts[1];

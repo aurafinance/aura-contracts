@@ -29,16 +29,16 @@ describe("CrvDepositor", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const contracts = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const contracts = await deployPhase3(deployer, phase2, mocks.addresses);
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
