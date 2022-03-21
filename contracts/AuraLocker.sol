@@ -21,7 +21,8 @@ interface IRewardStaking {
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
  *          to depositors.
  * @dev
- *          Based on CvxLocker contract https://github.com/convex-eth/platform/blob/main/contracts/contracts/CvxLocker.sol
+ *          Based on CvxLocker contract:
+ *              https://github.com/convex-eth/platform/blob/main/contracts/contracts/CvxLocker.sol
  *          Based on EPS Staking contract for http://ellipsis.finance/
  *          Based on SNX MultiRewards by iamdefinitelyahuman - https://github.com/iamdefinitelyahuman/multi-rewards
  */
@@ -651,7 +652,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     })
                 );
             }
-            // TODO - ask MAHA , should we add how many votes where increased, decreased ? Thinking ahead of any dune analytics.
+            // TODO - ask MAHA , should we add how many votes where increased, decreased ?
+            //        Thinking ahead of any dune analytics.
             emit DelegateCheckpointed(_account);
         }
     }
@@ -696,7 +698,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         // uint256 len = _checkpointedVotes[account].length;
         // if (len > 0) {
         //    DelegateeCheckpoint memory last = _checkpointedVotes[account][len - 1];
-        //    console.log("sol:getPastVotes ckpt %s, last %s, eval %s, ",ckpt.epochStart, last.epochStart, ckpt.epochStart + lockDuration <= epoch);
+        //    console.log("sol:getPastVotes ckpt %s, last %s, eval %s, ",ckpt.epochStart,
+        //                          last.epochStart, ckpt.epochStart + lockDuration <= epoch);
         // }
 
         votes = ckpt.votes;
@@ -704,7 +707,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             return 0;
         }
         while (epoch > ckpt.epochStart) {
-            // console.log("sol:getPastVotes ckpt %s, epoch %s, delegateeUnlocks %s",ckpt.epochStart, epoch, delegateeUnlocks[account][epoch]);
+            // console.log("sol:getPastVotes ckpt %s, epoch %s, delegateeUnlocks %s",
+            //                      ckpt.epochStart, epoch, delegateeUnlocks[account][epoch]);
             votes -= delegateeUnlocks[account][epoch];
             epoch -= rewardsDuration;
         }

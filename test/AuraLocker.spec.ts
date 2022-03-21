@@ -163,45 +163,45 @@ describe("AuraLocker", () => {
         // delegatee.unlocks:   ${snapshot.delegatee.unlocks.toString()}
         return snapshot;
     };
-    const logDiff = (a: SnapshotData, b: SnapshotData): SnapshotData => {
-        _.mergeWith(a, b, function (objectValue, sourceValue, key, object, source) {
-            if (!_.isEqual(objectValue, sourceValue) && Object(objectValue) !== objectValue) {
-                console.log("ts:diff\t " + key + "\t=> a: " + sourceValue + "\t b: " + objectValue);
-            }
-        });
+    // const logDiff = (a: SnapshotData, b: SnapshotData): SnapshotData => {
+    //     _.mergeWith(a, b, function (objectValue, sourceValue, key, object, source) {
+    //         if (!_.isEqual(objectValue, sourceValue) && Object(objectValue) !== objectValue) {
+    //             console.log("ts:diff\t " + key + "\t=> a: " + sourceValue + "\t b: " + objectValue);
+    //         }
+    //     });
 
-        // const diff= {};
-        // console.log(`
-        // account.rewardData.lastUpdateTime:      ${a.account.rewardData.lastUpdateTime}
-        // account.rewardData.periodFinish:        ${a.account.rewardData.periodFinish}
-        // account.rewardData.rewardPerTokenStored:${a.account.rewardData.rewardPerTokenStored.toString()}
-        // account.rewardData.rewardRate:          ${a.account.rewardData.rewardRate.toString()}
-        // account.auraLockerBal:            ${a.account.auraLockerBalance.toString()}
-        // account.balances.locked:          ${a.account.balances.locked.toString()}
-        // account.balances.nextUnlockIndex: ${a.account.balances.nextUnlockIndex}
-        // account.cvxBalance:     ${a.account.cvxBalance.toString()}
-        // account.claimableRewar: ${a.account.claimableRewards
-        //     .map(cr => `token: ${cr.token}, amount: ${cr.amount.toString()}`)
-        //     .join(",")}
-        // account.delegatee:      ${a.account.delegatee}
-        // account.locks:          ${a.account.locks
-        //     .map(l => `{ amount:${l.amount.toString()}, unlockTime:${l.unlockTime.toString()} }`)
-        //     .join(",")}
-        // account.votes:          ${a.account.votes.toString()}
-        // cvxBalance:     ${a.cvxBalance.toString()}
-        // lockedSupply:   ${a.lockedSupply.toString()}
-        // epochs:         ${a.epochs
-        //     .map(e => `{ supply:${e.supply.toString()}, date:${e.date.toString()}}`)
-        //     .join(",")}
-        // delegatee.cpVotes: ${a.delegatee.checkpointedVotes
-        //     .map(u => `{epochStart:${u.epochStart.toString()}, votes:${u.votes.toString()} }`)
-        //     .join(",")}
-        // delegatee.unlocks: ${a.delegatee.unlocks.map(u => u.toString()).join(",")}
-        // delegatee.votes:   ${a.delegatee.votes.toString()}
-        // `);
-        // delegatee.unlocks:   ${snapshot.delegatee.unlocks.toString()}
-        return a;
-    };
+    //     // const diff= {};
+    //     // console.log(`
+    //     // account.rewardData.lastUpdateTime:      ${a.account.rewardData.lastUpdateTime}
+    //     // account.rewardData.periodFinish:        ${a.account.rewardData.periodFinish}
+    //     // account.rewardData.rewardPerTokenStored:${a.account.rewardData.rewardPerTokenStored.toString()}
+    //     // account.rewardData.rewardRate:          ${a.account.rewardData.rewardRate.toString()}
+    //     // account.auraLockerBal:            ${a.account.auraLockerBalance.toString()}
+    //     // account.balances.locked:          ${a.account.balances.locked.toString()}
+    //     // account.balances.nextUnlockIndex: ${a.account.balances.nextUnlockIndex}
+    //     // account.cvxBalance:     ${a.account.cvxBalance.toString()}
+    //     // account.claimableRewar: ${a.account.claimableRewards
+    //     //     .map(cr => `token: ${cr.token}, amount: ${cr.amount.toString()}`)
+    //     //     .join(",")}
+    //     // account.delegatee:      ${a.account.delegatee}
+    //     // account.locks:          ${a.account.locks
+    //     //     .map(l => `{ amount:${l.amount.toString()}, unlockTime:${l.unlockTime.toString()} }`)
+    //     //     .join(",")}
+    //     // account.votes:          ${a.account.votes.toString()}
+    //     // cvxBalance:     ${a.cvxBalance.toString()}
+    //     // lockedSupply:   ${a.lockedSupply.toString()}
+    //     // epochs:         ${a.epochs
+    //     //     .map(e => `{ supply:${e.supply.toString()}, date:${e.date.toString()}}`)
+    //     //     .join(",")}
+    //     // delegatee.cpVotes: ${a.delegatee.checkpointedVotes
+    //     //     .map(u => `{epochStart:${u.epochStart.toString()}, votes:${u.votes.toString()} }`)
+    //     //     .join(",")}
+    //     // delegatee.unlocks: ${a.delegatee.unlocks.map(u => u.toString()).join(",")}
+    //     // delegatee.votes:   ${a.delegatee.votes.toString()}
+    //     // `);
+    //     // delegatee.unlocks:   ${snapshot.delegatee.unlocks.toString()}
+    //     return a;
+    // };
     const getEpochs = async (): Promise<Array<{ supply: BN; date: number }>> => {
         const epochs = [];
         try {
