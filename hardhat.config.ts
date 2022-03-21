@@ -55,6 +55,7 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             chainId: chainIds.hardhat,
+            allowUnlimitedContractSize: true,
         },
         mainnet: {
             url: process.env.NODE_URL || "https://main-light.eth.linkpool.io",

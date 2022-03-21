@@ -45,6 +45,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         /// Ever increasing rewardPerToken rate, based on % of total supply
         uint96 rewardPerTokenStored;
     }
+
     struct Balances {
         uint112 locked;
         uint32 nextUnlockIndex;
@@ -383,6 +384,23 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         //allow kick after grace period of 'kickRewardEpochDelay'
         console.log("sol:kickExpiredLocks() _account    %s", _account);
         _processExpiredLocks(_account, false, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
+    }
+
+    // Withdraw without checkpointing or accruing any rewards, providing system is shutdown
+    function emergencyWithdraw() external nonReentrant {
+        require(isShutdown, "Must be shutdown");
+
+        LockedBalance[] memory locks = userLocks[msg.sender];
+        Balances storage userBalance = balances[msg.sender];
+
+        uint256 amt = userBalance.locked;
+        require(amt > 0, "Nothing locked");
+
+        userBalance.locked = 0;
+        userBalance.nextUnlockIndex = locks.length.to32();
+        lockedSupply -= amt;
+
+        emit Withdrawn(msg.sender, amt, false);
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed

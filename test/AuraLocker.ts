@@ -6,7 +6,7 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import {
     AuraStakingProxy,
     Booster,
-    ConvexToken,
+    AuraToken,
     CvxCrvToken,
     AuraLocker,
     BaseRewardPool,
@@ -15,7 +15,6 @@ import {
 } from "../types/generated";
 import {
     BN,
-    sum,
     getTimestamp,
     increaseTime,
     ONE_WEEK,
@@ -85,7 +84,7 @@ describe("AuraLocker", () => {
     let cvxStakingProxy: AuraStakingProxy;
     let cvxCrvRewards: BaseRewardPool;
     let booster: Booster;
-    let cvx: ConvexToken;
+    let cvx: AuraToken;
     let cvxCrv: CvxCrvToken;
     let mocks: DeployMocksResult;
 
