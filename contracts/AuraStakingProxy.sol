@@ -13,7 +13,13 @@ interface ICvxLocker {
 }
 
 interface ICrvDepositor {
-    function deposit(uint256, bool) external;
+    function getMinOut(uint256) external view returns (uint256);
+
+    function deposit(
+        uint256,
+        uint256,
+        bool
+    ) external;
 }
 
 /**
@@ -127,7 +133,8 @@ contract AuraStakingProxy {
         // TODO - support 80/20
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
-            ICrvDepositor(crvDeposit).deposit(crvBal, true);
+            uint256 minOut = ICrvDepositor(crvDeposit).getMinOut(crvBal);
+            ICrvDepositor(crvDeposit).deposit(crvBal, minOut, true);
         }
 
         //distribute cvxcrv

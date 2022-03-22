@@ -12,14 +12,11 @@ abstract contract BalInvestor {
     address public immutable BALANCER_POOL_TOKEN;
     bytes32 public immutable BAL_ETH_POOL_ID;
 
-    uint256 public minOutBps;
-
     constructor(
         IVault _balancerVault,
         address _bal,
         address _weth,
-        bytes32 _balETHPoolId,
-        uint256 _minOutBps
+        bytes32 _balETHPoolId
     ) {
         (
             address poolAddress, /* */
@@ -32,12 +29,9 @@ abstract contract BalInvestor {
         WETH = _weth;
         BALANCER_POOL_TOKEN = poolAddress;
         BAL_ETH_POOL_ID = _balETHPoolId;
-        minOutBps = _minOutBps;
     }
 
-    function setMinOutBps(uint256 _minOutBps) external virtual;
-
-    function approveToken() external {
+    function _setApprovals() internal {
         IERC20(WETH).approve(address(BALANCER_VAULT), type(uint256).max);
         IERC20(BAL).approve(address(BALANCER_VAULT), type(uint256).max);
     }
@@ -53,20 +47,21 @@ abstract contract BalInvestor {
         return IPriceOracle(BALANCER_POOL_TOKEN).getTimeWeightedAverage(queries)[0];
     }
 
-    function _investBalToPool() internal {
-        uint256 balAmount = IERC20(BAL).balanceOf(address(this));
+    function _getMinOut(uint256 amount, uint256 minOutBps) internal view returns (uint256) {
+        // Gets the balancer time weighted average price denominated in BAL
+        uint256 bptOraclePrice = _getBptPrice();
+        uint256 minOut = (((amount * 1e18) / bptOraclePrice) * minOutBps) / 10000;
+        return minOut;
+    }
+
+    function _investBalToPool(uint256 amount, uint256 minOut) internal {
+        IERC20(BAL).transferFrom(msg.sender, address(this), amount);
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(BAL);
         assets[1] = IAsset(WETH);
         uint256[] memory maxAmountsIn = new uint256[](2);
-        maxAmountsIn[0] = balAmount;
+        maxAmountsIn[0] = amount;
         maxAmountsIn[1] = 0;
-
-        // Gets the balancer time weighted average price denominated in BAL
-        uint256 bptOraclePrice = _getBptPrice();
-        uint256 minOut = (((balAmount * 1e18) / bptOraclePrice) * minOutBps) / 10000;
-
-        uint256 bptBalanceBefore = IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
 
         BALANCER_VAULT.joinPool(
             BAL_ETH_POOL_ID,
@@ -79,10 +74,5 @@ abstract contract BalInvestor {
                 false // Don't use internal balances
             )
         );
-
-        uint256 bptBalanceAfter = IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
-        uint256 out = bptBalanceAfter - bptBalanceBefore;
-
-        require(out >= minOut, "!minOut");
     }
 }

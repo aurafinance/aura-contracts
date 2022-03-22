@@ -35,7 +35,7 @@ interface DeployMocksResult {
     nativeTokenDistribution: MockFeeDistro;
     smartWalletChecker: MockWalletChecker;
     feeDistro: MockFeeDistro;
-    gauge: MockCurveGauge;
+    gauges: MockCurveGauge[];
     crvBpt: MockBalancerPoolToken;
     balanceVault: MockBalancerVault;
     bal: MockERC20;
