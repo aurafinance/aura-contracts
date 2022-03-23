@@ -13,7 +13,7 @@ import {
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
-import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS } from "../test-utils/constants";
+import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
 
 type Pool = {
     lptoken: string;
