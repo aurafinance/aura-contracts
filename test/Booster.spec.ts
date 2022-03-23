@@ -70,13 +70,44 @@ describe("Booster", () => {
         deployerAddress = await deployer.getAddress();
     });
 
-    describe("", async () => {
+    describe("managing system revenue fees", async () => {
+        before(async () => {
+            await setup();
+        });
+        it("has the correct initial config");
+        it("allows feeManager to set the fees");
+        it("enforces bounds on each fee type");
+        it("doesn't allow just anyone to change fees");
+        it("distributes the fees to the correct places");
+    });
+
+    describe("managing fee distributors to cvxCRV", async () => {
         before(async () => {
             await setup();
         });
 
-        it("@method Booster.deposit", async () => {
-            console.log("x");
+        it("has both native token and distro in the initial config");
+        describe("setting fee info fails if", () => {
+            it("not called by owner");
+            it("distro contract already added");
+            it("system hasn't been initialised");
+            it("distro has no fee token");
+        });
+        describe("setting fee info", () => {
+            it("sets directly to cvxCrv if the reward token is crv");
+            it("creates a token rewards otherwise");
+        });
+        describe("updating fee info", () => {
+            it("fails if not owner");
+            it("fails if distro does not exist");
+            it("sets the active status on a distro");
+        });
+        describe("earmarking fees", () => {
+            it("allows for crv to be earmarked to cvxCrv rewards");
+            it("sends 100% of the rewards to the reward contract");
+            it("fails if the distro is inactive");
+            it("fails if the distro does not exist");
+            it("fails if the distro does not exist");
         });
     });
     describe("performing core functions", async () => {
