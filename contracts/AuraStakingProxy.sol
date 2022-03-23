@@ -46,7 +46,7 @@ contract AuraStakingProxy {
 
     //convex addresses
     address public immutable cvxCrvStaking;
-    address public immutable crvDeposit;
+    address public crvDepositorWrapper;
     uint256 public constant denominator = 10000;
 
     address public rewards;
@@ -73,7 +73,7 @@ contract AuraStakingProxy {
         address _cvx,
         address _cvxCrv,
         address _cvxCrvStaking,
-        address _crvDeposit
+        address _crvDepositorWrapper
     ) {
         rewards = _rewards;
         owner = msg.sender;
@@ -81,7 +81,12 @@ contract AuraStakingProxy {
         cvx = _cvx;
         cvxCrv = _cvxCrv;
         cvxCrvStaking = _cvxCrvStaking;
-        crvDeposit = _crvDeposit;
+        crvDepositorWrapper = _crvDepositorWrapper;
+    }
+
+    function setCrvDepositorWrapper(address _crvDepositorWrapper) external {
+        require(msg.sender == owner, "!auth");
+        crvDepositorWrapper = _crvDepositorWrapper;
     }
 
     function setPendingOwner(address _po) external {
@@ -109,8 +114,8 @@ contract AuraStakingProxy {
     }
 
     function setApprovals() external {
-        IERC20(crv).safeApprove(crvDeposit, 0);
-        IERC20(crv).safeApprove(crvDeposit, type(uint256).max);
+        IERC20(crv).safeApprove(crvDepositorWrapper, 0);
+        IERC20(crv).safeApprove(crvDepositorWrapper, type(uint256).max);
 
         IERC20(cvxCrv).safeApprove(rewards, 0);
         IERC20(cvxCrv).safeApprove(rewards, type(uint256).max);
@@ -133,8 +138,8 @@ contract AuraStakingProxy {
         // TODO - support 80/20
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
-            uint256 minOut = ICrvDepositor(crvDeposit).getMinOut(crvBal);
-            ICrvDepositor(crvDeposit).deposit(crvBal, minOut, true);
+            uint256 minOut = ICrvDepositor(crvDepositorWrapper).getMinOut(crvBal);
+            ICrvDepositor(crvDepositorWrapper).deposit(crvBal, minOut, true);
         }
 
         //distribute cvxcrv
