@@ -193,23 +193,12 @@ async function deployForkSystem(
 
     const phase2 = await deployPhase2(signer, phase1, multisigs, naming, true);
     const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, curveSystem, true);
-    const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
-    return phase4;
-}
 
-async function deployLocalSystem(
-    hre: HardhatRuntimeEnvironment,
-    signer: Signer,
-    distroList: DistroList,
-    multisigs: MultisigConfig,
-    naming: NamingConfig,
-    extSystem: ExtSystemConfig,
-    debug = false,
-): Promise<SystemDeployed> {
-    const phase1 = await deployPhase1(signer, extSystem, debug);
-    const phase2 = await deployPhase2(signer, phase1, multisigs, naming, debug);
-    const phase3 = await deployPhase3(hre, signer, phase2, distroList, multisigs, naming, extSystem, debug);
-    const phase4 = await deployPhase4(signer, phase3, extSystem, debug);
+    const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
+    tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
+    await tx.wait();
+
+    const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
     return phase4;
 }
 
@@ -404,7 +393,7 @@ async function deployPhase3(
     const poolManagerProxy = await deployContract<PoolManagerProxy>(
         new PoolManagerProxy__factory(deployer),
         "PoolManagerProxy",
-        [booster.address, multisigs.daoMultisig],
+        [booster.address, deployerAddress],
         {},
         debug,
     );
@@ -412,7 +401,7 @@ async function deployPhase3(
     const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
         new PoolManagerSecondaryProxy__factory(deployer),
         "PoolManagerProxy",
-        [gaugeController, poolManagerProxy.address, booster.address, multisigs.daoMultisig],
+        [gaugeController, poolManagerProxy.address, booster.address, deployerAddress],
         {},
         debug,
     );
@@ -506,13 +495,6 @@ async function deployPhase3(
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
     await tx.wait();
 
-    // TODO: should this be the staking proxy (vlCVX) considering vlCVX is
-    // already getting all the rewards that single staking would get
-    // Booster.platformFee is set to 0 currently so this doesn't get anything any
-    // maybe we just remove this?
-    tx = await booster.setTreasury(cvxStakingProxy.address);
-    await tx.wait();
-
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
     await tx.wait();
 
@@ -522,7 +504,13 @@ async function deployPhase3(
     tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
     await tx.wait();
 
+    tx = await poolManagerProxy.setOwner(multisigs.daoMultisig);
+    await tx.wait();
+
     tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
+    await tx.wait();
+
+    tx = await poolManagerSecondaryProxy.setOwner(multisigs.daoMultisig);
     await tx.wait();
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
@@ -728,7 +716,6 @@ async function deployPhase4(
 
 export {
     deployForkSystem,
-    deployLocalSystem,
     DistroList,
     MultisigConfig,
     ExtSystemConfig,

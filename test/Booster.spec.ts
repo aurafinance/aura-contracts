@@ -6,6 +6,7 @@ import { Booster, ERC20__factory, BaseRewardPool__factory } from "../types/gener
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
+import { DEAD_ADDRESS } from "../test-utils/constants";
 
 type Pool = {
     lptoken: string;
@@ -30,7 +31,7 @@ describe("Booster", () => {
 
     const setup = async () => {
         mocks = await deployMocks(deployer);
-        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        const multisigs = await getMockMultisigs(accounts[4], accounts[5], accounts[6]);
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
@@ -44,6 +45,7 @@ describe("Booster", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
+        await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         booster = contracts.booster;
@@ -74,13 +76,76 @@ describe("Booster", () => {
         before(async () => {
             await setup();
         });
-        it("has the correct initial config");
-        it("allows feeManager to set the fees");
-        it("enforces bounds on each fee type");
-        it("doesn't allow just anyone to change fees");
-        it("distributes the fees to the correct places");
-    });
+        it("has the correct initial config", async () => {
+            const lockFee = await booster.lockIncentive();
+            expect(lockFee).eq(550);
+            const stakerFee = await booster.stakerIncentive();
+            expect(stakerFee).eq(1100);
+            const callerFee = await booster.earmarkIncentive();
+            expect(callerFee).eq(50);
+            const platformFee = await booster.platformFee();
+            expect(platformFee).eq(0);
 
+            const feeManager = await booster.feeManager();
+            expect(feeManager).eq(await accounts[6].getAddress());
+        });
+        it("doesn't allow just anyone to change fees", async () => {
+            await expect(booster.connect(accounts[5]).setFees(1, 2, 3, 4)).to.be.revertedWith("!auth");
+        });
+        it("allows feeManager to set the fees", async () => {
+            const tx = await booster.connect(accounts[6]).setFees(500, 300, 25, 0);
+            await expect(tx).to.emit(booster, "FeesUpdated").withArgs(500, 300, 25, 0);
+        });
+        it("enforces 25% upper bound", async () => {
+            await expect(booster.connect(accounts[6]).setFees(1500, 1000, 50, 0)).to.be.revertedWith(">MaxFees");
+
+            const tx = await booster.connect(accounts[6]).setFees(1500, 900, 50, 0);
+            await expect(tx).to.emit(booster, "FeesUpdated").withArgs(1500, 900, 50, 0);
+        });
+        it("enforces bounds on each fee type", async () => {
+            // lockFees 300-1500
+            await expect(booster.connect(accounts[6]).setFees(200, 500, 50, 0)).to.be.revertedWith("!lockFees");
+            await expect(booster.connect(accounts[6]).setFees(1600, 500, 50, 0)).to.be.revertedWith("!lockFees");
+            // stakerFees 300-1500
+            await expect(booster.connect(accounts[6]).setFees(500, 200, 50, 0)).to.be.revertedWith("!stakerFees");
+            await expect(booster.connect(accounts[6]).setFees(500, 1600, 50, 0)).to.be.revertedWith("!stakerFees");
+            // // callerFees 10-100
+            await expect(booster.connect(accounts[6]).setFees(500, 500, 2, 0)).to.be.revertedWith("!callerFees");
+            await expect(booster.connect(accounts[6]).setFees(500, 500, 110, 0)).to.be.revertedWith("!callerFees");
+            // // platform 0-200
+            await expect(booster.connect(accounts[6]).setFees(500, 500, 50, 250)).to.be.revertedWith("!platform");
+        });
+        it("distributes the fees to the correct places", async () => {
+            await booster.connect(accounts[6]).setFees(1500, 900, 50, 50);
+
+            // bals before
+            const balsBefore = await Promise.all([
+                await mocks.crv.balanceOf((await booster.poolInfo(0)).crvRewards), // reward pool
+                await mocks.crv.balanceOf(await booster.lockRewards()), // cvxCrv
+                await mocks.crv.balanceOf(await booster.stakerRewards()), // auraStakingProxy
+                await mocks.crv.balanceOf(aliceAddress), // alice
+                await mocks.crv.balanceOf(await booster.treasury()), // platform
+            ]);
+
+            // collect the rewards
+            await booster.connect(accounts[6]).setTreasury(DEAD_ADDRESS);
+            await booster.connect(alice).earmarkRewards(0);
+
+            // bals after
+            const balsAfter = await Promise.all([
+                await mocks.crv.balanceOf((await booster.poolInfo(0)).crvRewards), // reward pool
+                await mocks.crv.balanceOf(await booster.lockRewards()), // cvxCrv
+                await mocks.crv.balanceOf(await booster.stakerRewards()), // auraStakingProxy
+                await mocks.crv.balanceOf(aliceAddress), // alice
+                await mocks.crv.balanceOf(await booster.treasury()), // platform
+            ]);
+            expect(balsAfter[0]).eq(balsBefore[0].add(simpleToExactAmount(1).div(10000).mul(7500)));
+            expect(balsAfter[1]).eq(balsBefore[1].add(simpleToExactAmount(1).div(10000).mul(1500)));
+            expect(balsAfter[2]).eq(balsBefore[2].add(simpleToExactAmount(1).div(10000).mul(900)));
+            expect(balsAfter[3]).eq(balsBefore[3].add(simpleToExactAmount(1).div(10000).mul(50)));
+            expect(balsAfter[4]).eq(balsBefore[4].add(simpleToExactAmount(1).div(10000).mul(50)));
+        });
+    });
     describe("managing fee distributors to cvxCRV", async () => {
         before(async () => {
             await setup();
