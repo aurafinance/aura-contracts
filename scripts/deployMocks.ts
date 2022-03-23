@@ -8,8 +8,6 @@ import {
     MockCurveVoteEscrow__factory,
     MockVoting,
     MockVoting__factory,
-    MockRegistry,
-    MockRegistry__factory,
     MockWalletChecker,
     MockWalletChecker__factory,
     MockFeeDistro,
@@ -28,9 +26,9 @@ interface DeployMocksResult {
     crvMinter: MockCurveMinter;
     voting: MockVoting;
     votingEscrow: MockCurveVoteEscrow;
-    registry: MockRegistry;
+    feeDistribution: MockFeeDistro;
+    nativeTokenDistribution: MockFeeDistro;
     smartWalletChecker: MockWalletChecker;
-    feeDistro: MockFeeDistro;
     gauges: MockCurveGauge[];
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
@@ -140,6 +138,17 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
+    const nativeFeeDistro = await deployContract<MockFeeDistro>(
+        new MockFeeDistro__factory(deployer),
+        "MockFeeDistro",
+        [crv.address, simpleToExactAmount(1)],
+        {},
+        debug,
+    );
+
+    tx = await crv.transfer(nativeFeeDistro.address, simpleToExactAmount(1, 22));
+    await tx.wait();
+
     const smartWalletChecker = await deployContract<MockWalletChecker>(
         new MockWalletChecker__factory(deployer),
         "mockWalletChecker",
@@ -157,17 +166,6 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", [], {}, false);
-
-    const registry = await deployContract<MockRegistry>(
-        new MockRegistry__factory(deployer),
-        "MockRegistry",
-        [],
-        {},
-        debug,
-    );
-
-    tx = await registry.setAddress(0, feeDistro.address);
-    await tx.wait();
 
     const gauges = [];
 
@@ -191,18 +189,18 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         crvMinter,
         voting,
         votingEscrow,
-        registry,
         smartWalletChecker,
-        feeDistro,
+        feeDistribution: feeDistro,
+        nativeTokenDistribution: nativeFeeDistro,
         gauges,
         addresses: {
             token: crv.address,
             tokenWhale: deployerAddress,
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
+            feeDistribution: feeDistro.address,
+            nativeTokenDistribution: nativeFeeDistro.address,
             gaugeController: voting.address,
-            registry: registry.address,
-            registryID: 0,
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
