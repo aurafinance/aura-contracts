@@ -56,6 +56,7 @@ describe("VoterProxy", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
+        await phase3.poolManager.setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         voterProxy = contracts.voterProxy;
