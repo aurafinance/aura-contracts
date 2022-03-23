@@ -45,7 +45,7 @@ describe("TestBalEth", () => {
         testEthBal = await deployContract<TestEthBal>(
             new TestEthBal__factory(signer),
             "testEthBal",
-            [vault, bal, weth, poolId, "9950"],
+            [vault, bal, weth, poolId],
             {},
             debug,
         );
@@ -53,11 +53,8 @@ describe("TestBalEth", () => {
 
     describe("join BAL:ETH 80/20 pool with BAL", () => {
         it("transfer BAL to contract", async () => {
-            const tx = await balToken.transfer(testEthBal.address, amount);
+            const tx = await balToken.approve(testEthBal.address, amount);
             await tx.wait();
-
-            const balanceAfter = await balToken.balanceOf(testEthBal.address);
-            expect(balanceAfter).eq(amount);
         });
 
         it("add BAL to pool", async () => {
@@ -69,14 +66,11 @@ describe("TestBalEth", () => {
             let tx = await testEthBal.approveToken();
             await tx.wait();
 
-            tx = await testEthBal.addBalToPool();
+            tx = await testEthBal.addBalToPool(amount.toString());
             await tx.wait();
 
             const bptBalanceAfter = await bpt.balanceOf(testEthBal.address);
             const bptBalanceDelta = bptBalanceAfter.sub(bptBalanceBefore);
-
-            const balanceAfter = await balToken.balanceOf(testEthBal.address);
-            expect(balanceAfter).eq(ZERO);
 
             const bptPrice = await testEthBal.getBptPrice();
 
