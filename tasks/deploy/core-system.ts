@@ -14,7 +14,9 @@ import {
 import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     AuraLocker__factory,
+    AuraMinter__factory,
     AuraStakingProxy__factory,
+    AuraToken__factory,
     BaseRewardPool__factory,
     BoosterOwner__factory,
     Booster__factory,
@@ -94,34 +96,39 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
     console.log(await deployer.getAddress());
 
     const sys: ExtSystemConfig = {
-        token: "0xDBC620A2465F3b4084F5964CEb73F5BDB3568225",
+        token: "0x65c29b54d701DeF26000aA85193915B0c5dB9822",
         tokenWhale: "0xbE126Fd179822c5Cb72b0e6E584a6F7afeb9eaBE",
-        minter: "0x563789F6580139c501Fde8D58bD25c47121e0609",
-        votingEscrow: "0x80bbF4Fa9D938f0eE69AE2802Af384F8fBdB24bd",
-        gaugeController: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        registry: "0x11D56fA64bD6B87aCe54049cD1Fb3bF25b080Ff8",
+        minter: "0x44d7eb6e0fF0863f16AbC3a9fDa8D49Dab879e40",
+        votingEscrow: "0x0e0837C8DA3C1931831Cc9aC2c19265AAa16cF97",
+        gaugeController: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
+        registry: "0x14fD7fDE65A173e41F398CffAD29e9D815F11137",
         registryID: 0,
-        voteOwnership: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        voteParameter: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        gauges: ["0x66F5899292d0d9aaE320f2Ae5CFFB1B9c0A69E1f"],
+        voteOwnership: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
+        voteParameter: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
+        gauges: [
+            "0x877B96Bf9ee1a365872A269482BF213910994Ac6",
+            "0x156c44B88FBA5B65083758e7D1634c9fD27F0a31",
+            "0x65964D0d66B9b5dbd0d548a5064a1d4601A0a168",
+        ],
         balancerVault: "0x0000000000000000000000000000000000000000",
         balancerWeightedPoolFactory: "0x0000000000000000000000000000000000000000",
         weth: "0x0000000000000000000000000000000000000000",
     };
     const cvxSys: SystemDeployed = {
-        voterProxy: CurveVoterProxy__factory.connect("0xc7d3edd05d4ddd268b5701a9c3d17ab9ebd90121", deployer),
-        cvx: ConvexToken__factory.connect("0xf40dbb882fc7c04e33d949f8dcb2b1ae0b5b3d3d", deployer),
-        booster: Booster__factory.connect("0x0dacce714d0ddd2f78f406752f5abbaad1d20062", deployer),
-        boosterOwner: BoosterOwner__factory.connect("0xff0972f691ab79240a160620481ad6c167f1669a", deployer),
-        cvxCrv: CvxCrvToken__factory.connect("0x059f5c8a2f9315309bc4c8c69e58ce10e6df26fb", deployer),
-        cvxCrvRewards: BaseRewardPool__factory.connect("0xcb2de6561093e663dcc4c622227f3465df800127", deployer),
-        crvDepositor: CrvDepositor__factory.connect("0x314d35451e18417c6f5128a0ec6be5dc675546d8", deployer),
-        poolManager: PoolManagerV3__factory.connect("0xb03854a7d81bf9f657c9d335d2ebcc89f651497f", deployer),
-        cvxLocker: AuraLocker__factory.connect("0x9a5ba49a848e38f154e9f69ace6e8283f90af615", deployer),
-        cvxStakingProxy: AuraStakingProxy__factory.connect("0x02a10e1c53976a618680f390a8a1f7da262e3f01", deployer),
-        vestedEscrow: VestedEscrow__factory.connect("0x34f23e3577b85102dc01e3b5af1fd92d4970019e", deployer),
-        dropFactory: MerkleAirdropFactory__factory.connect("0x6a45ce07f1d6338b7d677b9d3af97a4b54d2d43b", deployer),
-        claimZap: ClaimZap__factory.connect("0xf7190cd62fdc820f4c4b6dfe93fe6c6974234576", deployer),
+        voterProxy: CurveVoterProxy__factory.connect("0xF5940797f21BdEDDD2E2A884DcD7c688c1bAd13a", deployer),
+        cvx: AuraToken__factory.connect("0xE6Adf2BFE209586c2b623e564194B73B14Bf2866", deployer),
+        minter: AuraMinter__factory.connect("0xBeb1Dc260DA7C79264359d43A88901B080F9A30b", deployer),
+        booster: Booster__factory.connect("0xF3BA38823F5bf8C315c747861539eE27081357Cb", deployer),
+        boosterOwner: BoosterOwner__factory.connect("0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6", deployer),
+        cvxCrv: CvxCrvToken__factory.connect("0x0422a859FeCF2576e2201209AE02eFff916AfCF4", deployer),
+        cvxCrvRewards: BaseRewardPool__factory.connect("0x2c9e3F6953B7e7675Eb448ED85666Ece4A109389", deployer),
+        crvDepositor: CrvDepositor__factory.connect("0x9044439962dedD4dF5e032ADD45e16Eb609f72B7", deployer),
+        poolManager: PoolManagerV3__factory.connect("0xF5713ba15e6B2397D86C519BF5DA83F8955f4640", deployer),
+        cvxLocker: AuraLocker__factory.connect("0x2E05Cef94C259b6092E14f631Eb20094f7DDDC63", deployer),
+        cvxStakingProxy: AuraStakingProxy__factory.connect("0x1DAB1cC828cfb71C379D6EE18468b02DEAe9Aa5E", deployer),
+        vestedEscrow: VestedEscrow__factory.connect("0x12ee383Bb370D2603E2E7bCE3597aE71cBECde2f", deployer),
+        dropFactory: MerkleAirdropFactory__factory.connect("0x2d53Feee8A4a94b2FA4C72551db96BEadC3f383C", deployer),
+        claimZap: ClaimZap__factory.connect("0x779688dC607607bF84FCb4B09C4474E2F2A23696", deployer),
     };
 
     const poolInfo = await cvxSys.booster.poolInfo(0);
@@ -136,7 +143,7 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
     tx = await cvxSys.cvx.approve(cvxSys.cvxLocker.address, simpleToExactAmount(100));
     await tx.wait();
 
-    tx = await cvxSys.cvxLocker.lock(await deployer.getAddress(), simpleToExactAmount(100), 0);
+    tx = await cvxSys.cvxLocker.lock(await deployer.getAddress(), simpleToExactAmount(100));
     await tx.wait();
 
     tx = await cvxSys.booster.earmarkRewards(0);
