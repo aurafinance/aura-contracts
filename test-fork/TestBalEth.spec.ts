@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { TestEthBal, TestEthBal__factory, ERC20__factory, ERC20 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { impersonateAccount, ZERO, fullScale } from "../test-utils";
+import { impersonateAccount, fullScale } from "../test-utils";
 import { Signer } from "ethers";
 
 const debug = false;
