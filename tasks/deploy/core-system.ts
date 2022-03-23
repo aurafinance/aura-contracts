@@ -101,8 +101,8 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
         minter: "0x44d7eb6e0fF0863f16AbC3a9fDa8D49Dab879e40",
         votingEscrow: "0x0e0837C8DA3C1931831Cc9aC2c19265AAa16cF97",
         gaugeController: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
-        registry: "0x14fD7fDE65A173e41F398CffAD29e9D815F11137",
-        registryID: 0,
+        feeDistribution: "",
+        nativeTokenDistribution: "",
         voteOwnership: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
         voteParameter: "0xbce229725bc29e88f351e20176f7ad003CB7bbf7",
         gauges: [
