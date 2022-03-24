@@ -88,7 +88,7 @@ describe("AuraLocker", () => {
                 const oldKeeper = await contracts.cvxStakingProxy.keeper();
                 const proposedKeeper = await accounts[2].getAddress();
                 expect(oldKeeper).not.eq(proposedKeeper);
-                await contracts.cvxStakingProxy.connect(accounts[2]).setKeeper(proposedKeeper);
+                await contracts.cvxStakingProxy.connect(accounts[0]).setKeeper(proposedKeeper);
                 const newKeeper = await contracts.cvxStakingProxy.keeper();
                 expect(newKeeper).eq(proposedKeeper);
             });
