@@ -150,6 +150,7 @@ interface Phase3Deployed extends Phase2Deployed {
     cvxCrv: CvxCrvToken;
     cvxCrvRewards: BaseRewardPool;
     crvDepositor: CrvDepositor;
+    crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
     cvxLocker: AuraLocker;
@@ -465,15 +466,7 @@ async function deployPhase3(
     const cvxStakingProxy = await deployContract<AuraStakingProxy>(
         new AuraStakingProxy__factory(deployer),
         "AuraStakingProxy",
-        [
-            cvxLocker.address,
-            config.token,
-            cvx.address,
-            cvxCrv.address,
-            cvxCrvRewards.address,
-            crvDepositorWrapper.address,
-            9980,
-        ],
+        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, 9980],
         {},
         debug,
     );
@@ -686,6 +679,7 @@ async function deployPhase3(
         cvxCrv,
         cvxCrvRewards,
         crvDepositor,
+        crvDepositorWrapper,
         poolManager,
         cvxLocker,
         cvxStakingProxy,

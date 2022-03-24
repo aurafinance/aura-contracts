@@ -46,7 +46,6 @@ contract AuraStakingProxy {
     address public immutable cvxCrv;
 
     //convex addresses
-    address public immutable cvxCrvStaking;
     address public crvDepositorWrapper;
     uint256 public outputBps;
     uint256 public constant denominator = 10000;
@@ -66,7 +65,6 @@ contract AuraStakingProxy {
      * @param _crv           CRV token
      * @param _cvx           CVX token
      * @param _cvxCrv        cvxCRV token
-     * @param _cvxCrvStaking BaseRewardPool for cvxCRV staking
      * @param _crvDepositorWrapper    Wrapper that converts CRV to CRVBPT and deposits
      * @param _outputBps     Configurable output bps where 100% == 10000
      */
@@ -75,7 +73,6 @@ contract AuraStakingProxy {
         address _crv,
         address _cvx,
         address _cvxCrv,
-        address _cvxCrvStaking,
         address _crvDepositorWrapper,
         uint256 _outputBps
     ) {
@@ -84,13 +81,14 @@ contract AuraStakingProxy {
         crv = _crv;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
-        cvxCrvStaking = _cvxCrvStaking;
         crvDepositorWrapper = _crvDepositorWrapper;
         outputBps = _outputBps;
     }
 
     function setCrvDepositorWrapper(address _crvDepositorWrapper, uint256 _outputBps) external {
         require(msg.sender == owner, "!auth");
+        require(_outputBps > 9000 && _outputBps < 10000, "Invalid output bps");
+
         crvDepositorWrapper = _crvDepositorWrapper;
         outputBps = _outputBps;
     }
