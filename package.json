@@ -20,7 +20,8 @@
         "prepublishOnly": "pinst --disable",
         "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
         "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
-        "test": "yarn hardhat test",
+        "test": "hardhat test",
+        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
         "typechain": "yarn hardhat typechain"
     },
     "dependencies": {
