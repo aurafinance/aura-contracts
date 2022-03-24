@@ -40,14 +40,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         /// Ever increasing rewardPerToken rate, based on % of total supply
         uint96 rewardPerTokenStored;
     }
-    struct UserData {
-        uint128 rewardPerTokenPaid;
-        uint128 rewards;
-    }
-    struct EarnedData {
-        address token;
-        uint256 amount;
-    }
     struct Balances {
         uint112 locked;
         uint32 nextUnlockIndex;
@@ -55,6 +47,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     struct LockedBalance {
         uint112 amount;
         uint32 unlockTime;
+    }
+    struct UserData {
+        uint128 rewardPerTokenPaid;
+        uint128 rewards;
+    }
+    struct EarnedData {
+        address token;
+        uint256 amount;
     }
     struct Epoch {
         uint224 supply;
@@ -173,7 +173,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             for (uint256 i = 0; i < rewardTokens.length; i++) {
                 address token = rewardTokens[i];
                 uint256 newRewardPerToken = _rewardPerToken(token);
-
                 rewardData[token].rewardPerTokenStored = newRewardPerToken.to96();
                 rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to32();
                 if (_account != address(0)) {
@@ -544,7 +543,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
                     })
                 );
             }
-            // TODO - ask MAHA , should we add how many votes where increased, decreased ? Thinking ahead of any dune analytics.
             emit DelegateCheckpointed(_account);
         }
     }
