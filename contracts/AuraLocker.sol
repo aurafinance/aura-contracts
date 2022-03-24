@@ -29,7 +29,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     /* ==========     STRUCTS     ========== */
 
-    // TODO - REVIEW OR DATA DYPES changed
     struct RewardData {
         /// Timestamp for current period finish
         uint32 periodFinish;
@@ -40,14 +39,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         /// Ever increasing rewardPerToken rate, based on % of total supply
         uint96 rewardPerTokenStored;
     }
-    struct Balances {
-        uint112 locked;
-        uint32 nextUnlockIndex;
-    }
-    struct LockedBalance {
-        uint112 amount;
-        uint32 unlockTime;
-    }
     struct UserData {
         uint128 rewardPerTokenPaid;
         uint128 rewards;
@@ -55,6 +46,14 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     struct EarnedData {
         address token;
         uint256 amount;
+    }
+    struct Balances {
+        uint112 locked;
+        uint32 nextUnlockIndex;
+    }
+    struct LockedBalance {
+        uint112 amount;
+        uint32 unlockTime;
     }
     struct Epoch {
         uint224 supply;
@@ -283,7 +282,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         address delegatee = delegates(_account);
         if (delegatee != address(0)) {
-            // TODO - verify there is test for this.
             delegateeUnlocks[delegatee][unlockTime] += lockAmount;
             _checkpointDelegate(delegatee, lockAmount, 0);
         }
@@ -347,6 +345,23 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         _processExpiredLocks(_account, false, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
     }
 
+    // Withdraw without checkpointing or accruing any rewards, providing system is shutdown
+    function emergencyWithdraw() external nonReentrant {
+        require(isShutdown, "Must be shutdown");
+
+        LockedBalance[] memory locks = userLocks[msg.sender];
+        Balances storage userBalance = balances[msg.sender];
+
+        uint256 amt = userBalance.locked;
+        require(amt > 0, "Nothing locked");
+
+        userBalance.locked = 0;
+        userBalance.nextUnlockIndex = locks.length.to32();
+        lockedSupply -= amt;
+
+        emit Withdrawn(msg.sender, amt, false);
+    }
+
     // Withdraw all currently locked tokens where the unlock time has passed
     function _processExpiredLocks(
         address _account,
@@ -354,7 +369,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address _rewardAddress,
         uint256 _checkDelay
     ) internal updateReward(_account) {
-        // TODO - verify the impact of removing processExpiredLocks._withdrawTo
         LockedBalance[] storage locks = userLocks[_account];
         Balances storage userBalance = balances[_account];
         uint112 locked;
@@ -370,7 +384,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         // e.g. 17 <= (16 + 1)
         if (isShutdown || locks[length - 1].unlockTime <= expiryTime) {
             //if time is beyond last lock, can just bundle everything together
-            // TODO - test with a big balance.
             locked = userBalance.locked;
 
             //dont delete, just set next index
@@ -503,7 +516,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             if (ckpts.length > 0) {
                 DelegateeCheckpoint memory prevCkpt = ckpts[ckpts.length - 1];
                 // If there has already been a record for the upcoming epoch, no need to deduct the unlocks
-                // TODO why there is no need?
                 if (prevCkpt.epochStart == upcomingEpoch) {
                     ckpts[ckpts.length - 1] = DelegateeCheckpoint({
                         votes: (prevCkpt.votes + _upcomingAddition - _upcomingDeduction).to224(),
@@ -582,7 +594,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         require(timestamp <= block.timestamp, "ERC20Votes: block not yet mined");
         uint256 epoch = timestamp.div(rewardsDuration).mul(rewardsDuration);
         DelegateeCheckpoint memory ckpt = _checkpointsLookup(_checkpointedVotes[account], epoch);
-
         votes = ckpt.votes;
         if (votes == 0 || ckpt.epochStart + lockDuration <= epoch) {
             return 0;
@@ -598,7 +609,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      * It is but NOT the sum of all the delegated votes!
      */
     function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
-        // timestamp <= block.timestamp ?
         require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
         return totalSupplyAtEpoch(findEpochId(timestamp));
     }
@@ -734,7 +744,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         //traverse inversely to make more current queries more gas efficient
         for (uint256 i = epochindex - 1; i + 1 != 0; i--) {
             Epoch storage e = epochs[i];
-            // TODO all test were failing here.
             if (uint256(e.date) <= cutoffEpoch || i == 0) {
                 break;
             }
@@ -896,7 +905,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
-        // TODO why mod updateReward was removed.
         require(_rewardsToken != cvxCrv, "Use queueNewRewards");
         require(rewardDistributors[_rewardsToken][msg.sender], "Must be rewardsDistributor");
         require(_reward > 0, "No reward");
