@@ -28,6 +28,7 @@
         "convex-platform": "file:convex-platform/contracts"
     },
     "devDependencies": {
+        "@balancer-labs/balancer-js": "^1.0.1",
         "@codechecks/client": "^0.1.12",
         "@commitlint/cli": "^14.1.0",
         "@commitlint/config-conventional": "^14.1.0",

@@ -1,5 +1,6 @@
-import { BigNumber as BN, Signer } from "ethers";
+import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
+    IInvestmentPoolFactory__factory,
     IWalletChecker__factory,
     ICurveVoteEscrow__factory,
     MockWalletChecker__factory,
@@ -58,12 +59,15 @@ import {
     ConvexMasterChef__factory,
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
+    MerkleAirdrop,
 } from "../types/generated";
-import { deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
+import { AssetHelpers } from "@balancer-labs/balancer-js";
+import { Chain, deployContract } from "../tasks/utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { getChain } from "../tasks/utils/networkAddressFactory";
 
 interface AirdropData {
     merkleRoot: string;
@@ -81,7 +85,8 @@ interface VestingGroup {
 }
 
 interface LBPData {
-    bootstrap: BN;
+    tknAmount: BN;
+    wethAmount: BN;
     matching: BN;
 }
 interface DistroList {
@@ -92,7 +97,11 @@ interface DistroList {
     airdrops: AirdropData[];
     vesting: VestingGroup[];
 }
-
+interface BalancerPoolFactories {
+    weightedPool2Tokens: string;
+    stablePool: string;
+    investmentPool: string;
+}
 interface ExtSystemConfig {
     token: string;
     tokenBpt: string;
@@ -106,7 +115,7 @@ interface ExtSystemConfig {
     voteParameter?: string;
     gauges?: string[];
     balancerVault: string;
-    balancerWeightedPoolFactory: string;
+    balancerPoolFactories: BalancerPoolFactories;
     balancerPoolId: string;
     balancerMinOutBps: string;
     weth: string;
@@ -143,10 +152,21 @@ const curveSystem: ExtSystemConfig = {
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
     balancerMinOutBps: "9975",
-    balancerWeightedPoolFactory: "0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9",
+    balancerPoolFactories: {
+        weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
+        stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
+        investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
+    },
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
 };
 
+interface BPTData {
+    tokens: string[];
+    name: string;
+    symbol: string;
+    swapFee: BN;
+    weights: BN[];
+}
 interface Phase1Deployed {
     voterProxy: CurveVoterProxy;
 }
@@ -166,9 +186,25 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxStakingProxy: AuraStakingProxy;
     vestedEscrows: VestedEscrow[];
     dropFactory: MerkleAirdropFactory;
+    drops: MerkleAirdrop[];
 }
 interface SystemDeployed extends Phase2Deployed {
     claimZap: ClaimZap;
+}
+
+async function waitForTx(tx: ContractTransaction, debug = false): Promise<ContractReceipt> {
+    const receipt = await tx.wait();
+    if (debug) {
+        console.log(`\nTRANSACTION: ${receipt.transactionHash}`);
+        console.log(`to:: ${tx.to}`);
+        console.log(`txData:: ${tx.data}`);
+    }
+    return receipt;
+}
+
+function getPoolAddress(utils, receipt: ContractReceipt): string {
+    const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
+    return utils.hexStripZeros(event.topics[1]);
 }
 
 /**
@@ -203,20 +239,20 @@ async function deployForkSystem(
     const owner = await walletChecker.dao();
     const ownerSigner = await impersonateAccount(owner);
     let tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
-    await tx.wait();
+    await waitForTx(tx, true);
 
     // Send VoterProxy some CRV for initial lock
     const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
     const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
     tx = await crv.transfer(phase1.voterProxy.address, simpleToExactAmount(1));
-    await tx.wait();
+    await waitForTx(tx, true);
 
     const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
     const phase3 = await deployPhase3(signer, phase2, curveSystem, true);
 
     const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
     tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
-    await tx.wait();
+    await waitForTx(tx, true);
 
     const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
     return phase4;
@@ -265,8 +301,10 @@ async function deployPhase2(
     debug = false,
 ): Promise<Phase2Deployed> {
     const { ethers } = hre;
+    const chain = getChain(hre);
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
+    const balHelper = new AssetHelpers(config.weth);
 
     const {
         token,
@@ -304,7 +342,7 @@ async function deployPhase2(
     const premineIncetives = distroList.lpIncentives
         .add(distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0)))
         .add(distroList.cvxCrvBootstrap)
-        .add(distroList.lbp.bootstrap)
+        .add(distroList.lbp.tknAmount)
         .add(distroList.lbp.matching);
     const totalVested = distroList.vesting.reduce(
         (p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))),
@@ -473,86 +511,85 @@ async function deployPhase2(
         {},
         debug,
     );
-
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await cvxLocker.setApprovals();
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await crvDepositorWrapper.setApprovals();
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await cvxLocker.transferOwnership(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await cvxStakingProxy.setApprovals();
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await voterProxy.setOperator(booster.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await cvx.init(deployerAddress, premine.toString(), minter.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await cvxCrv.setOperator(crvDepositor.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await voterProxy.setDepositor(crvDepositor.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await voterProxy.setOwner(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await crvDepositor.initialLock();
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setPoolManager(poolManagerProxy.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await poolManagerProxy.setOwner(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await poolManagerSecondaryProxy.setOwner(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
-    if (nativeTokenDistribution != ZERO_ADDRESS) {
+    if (!!nativeTokenDistribution && nativeTokenDistribution != ZERO_ADDRESS) {
         tx = await booster.setFeeInfo(nativeTokenDistribution);
-        await tx.wait();
+        await waitForTx(tx, debug);
     }
 
     tx = await booster.setFeeInfo(feeDistribution);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setArbitrator(arbitratorVault.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setVoteDelegate(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setFeeManager(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await booster.setOwner(boosterOwner.address);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     // -----------------------------
     // 2.2. Token liquidity:
@@ -587,18 +624,17 @@ async function deployPhase2(
         );
 
         tx = await cvx.approve(vestedEscrow.address, groupVestingAmount);
-        await tx.wait();
+        await waitForTx(tx, debug);
         tx = await vestedEscrow.addTokens(groupVestingAmount);
-        await tx.wait();
+        await waitForTx(tx, debug);
         const vestingAddr = vestingGroup.recipients.map(m => m.address);
         const vestingAmounts = vestingGroup.recipients.map(m => m.amount);
         tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
-        await tx.wait();
+        await waitForTx(tx, debug);
 
         vestedEscrows.push(vestedEscrow);
     }
 
-    // TODO - add this new contract
     // -----------------------------
     // 2.2.2 Schedule: 2% emission for cvxCrv staking
     // -----------------------------
@@ -610,7 +646,18 @@ async function deployPhase2(
         debug,
     );
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
-    await tx.wait();
+    await waitForTx(tx, debug);
+
+    // TODO: Pool config
+    //  auraBAL/BPT - StablePoolFactory.sol
+    //              - mainnet: 0xc66Ba2B6595D3613CCab350C886aCE23866EDe24
+    //              - kovan: 0x751dfDAcE1AD995fF13c927f6f761C6604532c79
+    //  AURA LBP - InvestmentPoolFactory.sol
+    //              - mainnet: 0x48767F9F868a4A7b86A90736632F6E44C2df7fa9
+    //              - kovan: 0xb08E16cFc07C684dAA2f93C70323BAdb2A6CBFd2
+    //  AURA/ETH - WeightedPool2TokensFactory.sol
+    //              - mainnet: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
+    //              - kovan: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
 
     // TODO - add this pool
     // -----------------------------
@@ -626,7 +673,7 @@ async function deployPhase2(
     // let poolWeights = [simpleToExactAmount(5, 17), simpleToExactAmount(5, 17)];
     // const weightedPoolFactory = IWeightedPoolFactory__factory.connect(config.balancerWeightedPoolFactory, deployer);
     // tx = await weightedPoolFactory.create(poolName, poolSymbol, poolTokens, poolWeights, poolSwapFee, ZERO_ADDRESS);
-    // let receipt = await tx.wait();
+    // let receipt = await waitForTx(tx, debug);
     // const events = receipt.events.filter(e => e.event === "PoolCreated");
     // const poolAddress = events[0].args.pool;
 
@@ -663,13 +710,13 @@ async function deployPhase2(
     );
 
     tx = await cvx.transfer(chef.address, distroList.lpIncentives);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS, false);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     tx = await chef.transferOwnership(multisigs.daoMultisig);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     // TODO - add time delay & correct roots
     // -----------------------------
@@ -684,34 +731,94 @@ async function deployPhase2(
         debug,
     );
     const dropCount = distroList.airdrops.length;
+    const drops: MerkleAirdrop[] = [];
     for (let i = 0; i < dropCount; i++) {
         const { merkleRoot, amount } = distroList.airdrops[i];
         tx = await dropFactory.CreateMerkleAirdrop();
-        const txReceipt = await tx.wait();
+        const txReceipt = await waitForTx(tx, debug);
         const merkleDropAddr = txReceipt.events[0].args[0];
-
         const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
+        drops.push(airdrop);
         tx = await airdrop.setRewardToken(cvx.address);
-        await tx.wait();
+        await waitForTx(tx, debug);
         tx = await cvx.transfer(airdrop.address, amount);
-        await tx.wait();
+        await waitForTx(tx, debug);
         tx = await airdrop.setRoot(merkleRoot);
-        await tx.wait();
+        await waitForTx(tx, debug);
         tx = await airdrop.setOwner(multisigs.daoMultisig);
-        await tx.wait();
+        await waitForTx(tx, debug);
     }
 
     // -----------------------------
     // 2.2.6 Schedule: LBP & Matching liq
     // -----------------------------
 
-    // TODO - add LBP
-    tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.bootstrap);
-    await tx.wait();
+    // If Mainnet or Kovan, create LBP
+    if (chain == Chain.mainnet || chain == Chain.rinkeby) {
+        const { tknAmount, wethAmount } = distroList.lbp;
+        const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
+            [cvx.address, config.weth],
+            [simpleToExactAmount(99, 16), simpleToExactAmount(1, 16)],
+            [tknAmount, wethAmount],
+        );
+        const poolData: BPTData = {
+            tokens: poolTokens,
+            name: `Balancer ${await cvx.symbol()} WETH LBP`,
+            symbol: `B-${await cvx.symbol()}-WETH-LBP`,
+            swapFee: simpleToExactAmount(2, 16),
+            weights: weights as BN[],
+        };
+        console.log(poolData.tokens);
+
+        const poolFactory = IInvestmentPoolFactory__factory.connect(
+            config.balancerPoolFactories.investmentPool,
+            deployer,
+        );
+        tx = await poolFactory.create(
+            poolData.name,
+            poolData.symbol,
+            poolData.tokens,
+            poolData.weights,
+            poolData.swapFee,
+            multisigs.treasuryMultisig,
+            false,
+            0,
+        );
+        const receipt = await waitForTx(tx, debug);
+        const poolAddress = getPoolAddress(ethers.utils, receipt);
+
+        const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
+        const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
+
+        tx = await MockERC20__factory.connect(config.weth, deployer).approve(config.balancerVault, wethAmount);
+        await waitForTx(tx, debug);
+        tx = await cvx.approve(config.balancerVault, tknAmount);
+        await waitForTx(tx, debug);
+
+        const joinPoolRequest = {
+            assets: poolTokens,
+            maxAmountsIn: initialBalances as BN[],
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256", "uint256[]"], [0, initialBalances as BN[]]),
+            fromInternalBalance: false,
+        };
+
+        tx = await balancerVault.joinPool(poolId, deployerAddress, deployerAddress, joinPoolRequest);
+        await waitForTx(tx, debug);
+    }
+    // Else just make a fake one to move tokens
+    else {
+        tx = await cvx.transfer(multisigs.treasuryMultisig, distroList.lbp.tknAmount);
+        await waitForTx(tx, debug);
+        tx = await MockERC20__factory.connect(config.weth, deployer).transfer(
+            multisigs.treasuryMultisig,
+            distroList.lbp.wethAmount,
+        );
+        await waitForTx(tx, debug);
+    }
 
     // TODO - add matching liq
     tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.matching);
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     const balance = await cvx.balanceOf(deployerAddress);
     if (balance.gt(0)) {
@@ -734,6 +841,7 @@ async function deployPhase2(
         cvxStakingProxy,
         vestedEscrows,
         dropFactory,
+        drops,
     };
 }
 
@@ -746,6 +854,7 @@ async function deployPhase3(
     if (debug) {
         console.log(debug);
     }
+    // TODO - phase 3 pull LBP tokens from treasuryDAO
     return deployment;
 }
 
@@ -786,12 +895,12 @@ async function deployPhase4(
     );
 
     let tx = await claimZap.setApprovals();
-    await tx.wait();
+    await waitForTx(tx, debug);
 
     const gaugeLength = gauges.length;
     for (let i = 0; i < gaugeLength; i++) {
         tx = await poolManager["addPool(address)"](gauges[i]);
-        await tx.wait();
+        await waitForTx(tx, debug);
     }
 
     return { ...deployment, claimZap };

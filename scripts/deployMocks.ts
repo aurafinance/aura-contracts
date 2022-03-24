@@ -49,7 +49,11 @@ function getMockDistro(): DistroList {
         miningRewards: simpleToExactAmount(50, 24),
         lpIncentives: simpleToExactAmount(10, 24),
         cvxCrvBootstrap: simpleToExactAmount(2, 24),
-        lbp: { bootstrap: simpleToExactAmount(2, 24), matching: simpleToExactAmount(3, 24) },
+        lbp: {
+            tknAmount: simpleToExactAmount(2, 24),
+            wethAmount: simpleToExactAmount(10),
+            matching: simpleToExactAmount(3, 24),
+        },
         airdrops: [
             { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
             { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(0.5, 24) },
@@ -253,10 +257,13 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
-            // TODO - update these addresses with mocks
             balancerVault: balancerVault.address,
-            balancerWeightedPoolFactory: ZERO_ADDRESS,
-            balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
+            balancerPoolFactories: {
+                weightedPool2Tokens: ZERO_ADDRESS,
+                stablePool: ZERO_ADDRESS,
+                investmentPool: ZERO_ADDRESS,
+            },
+            balancerPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",
             weth: weth.address,
         },

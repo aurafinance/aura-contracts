@@ -39,7 +39,10 @@ export const getChain = (hre: HardhatRuntime = {}): Chain => {
     if (hre?.network?.name === "rinkeby") {
         return Chain.rinkeby;
     }
-    return Chain.mainnet;
+    if (hre?.network?.name === "kovan") {
+        return Chain.kovan;
+    }
+    return Chain.local;
 };
 
 export const getNetworkAddress = (contractName: ContractNames, hre: HardhatRuntime = {}): string | undefined => {

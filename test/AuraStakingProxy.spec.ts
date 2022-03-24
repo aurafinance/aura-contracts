@@ -3,9 +3,9 @@ import { Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 
-describe("AuraLocker", () => {
+describe("AuraStakingProxy", () => {
     let accounts: Signer[];
     let contracts: SystemDeployed;
     let mocks: DeployMocksResult;
@@ -41,10 +41,16 @@ describe("AuraLocker", () => {
         bob = accounts[2];
         bobAddress = await bob.getAddress();
 
-        let tx = await contracts.cvx.transfer(aliceAddress, simpleToExactAmount(200));
+        const operatorAccount = await impersonateAccount(contracts.booster.address);
+        let tx = await contracts.cvx
+            .connect(operatorAccount.signer)
+            .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
         await tx.wait();
 
-        tx = await contracts.cvx.transfer(bobAddress, simpleToExactAmount(100));
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        await tx.wait();
+
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
     };
 
