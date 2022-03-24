@@ -20,8 +20,11 @@ contract MockBalInvestor is BalInvestor {
         return _getBptPrice();
     }
 
-    function addBalToPool(uint256 amount) external {
-        uint256 minOut = _getMinOut(amount, 9975);
-        _investBalToPool(amount, minOut);
+    function getMinOut(uint256 _amount, uint256 _outputBps) public view returns (uint256) {
+        return _getMinOut(_amount, _outputBps);
+    }
+
+    function addBalToPool(uint256 amount, uint256 _minOut) external {
+        _investBalToPool(amount, _minOut);
     }
 }

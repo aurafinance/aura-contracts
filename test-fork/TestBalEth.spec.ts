@@ -1,3 +1,4 @@
+import { simpleToExactAmount } from "./../test-utils/math";
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";
@@ -43,7 +44,7 @@ describe("TestBalEth", () => {
         balToken = ERC20__factory.connect(bal, signer);
 
         testEthBal = await deployContract<MockBalInvestor>(
-            new MockBalInvestor(signer),
+            new MockBalInvestor__factory(signer),
             "testEthBal",
             [vault, bal, weth, poolId],
             {},
@@ -66,7 +67,8 @@ describe("TestBalEth", () => {
             let tx = await testEthBal.approveToken();
             await tx.wait();
 
-            tx = await testEthBal.addBalToPool(amount.toString());
+            const minOut = await testEthBal.getMinOut(amount, 9980);
+            tx = await testEthBal.addBalToPool(amount.toString(), minOut);
             await tx.wait();
 
             const bptBalanceAfter = await bpt.balanceOf(testEthBal.address);
@@ -77,6 +79,28 @@ describe("TestBalEth", () => {
             const bptBalValue = bptPrice.mul(bptBalanceDelta).div(fullScale);
             const minAmount = amount.mul("9950").div("10000");
             expect(bptBalValue).gt(minAmount);
+        });
+
+        it("fails if incorrect minout passed", async () => {
+            const tx = await balToken.approve(testEthBal.address, amount);
+            await tx.wait();
+
+            let minOut = await testEthBal.getMinOut(amount, 10005);
+
+            await expect(testEthBal.addBalToPool(amount.toString(), minOut)).to.be.revertedWith("BAL#208");
+
+            minOut = await testEthBal.getMinOut(amount, 9980);
+
+            await testEthBal.addBalToPool(amount.toString(), minOut);
+        });
+
+        it("fails if slippage not met (large deposit)", async () => {
+            const tx = await balToken.approve(testEthBal.address, simpleToExactAmount(1, 24));
+            await tx.wait();
+
+            const minOut = await testEthBal.getMinOut(simpleToExactAmount(1, 24), 9980);
+
+            await expect(testEthBal.addBalToPool(simpleToExactAmount(1, 24), minOut)).to.be.revertedWith("BAL#208");
         });
     });
 });

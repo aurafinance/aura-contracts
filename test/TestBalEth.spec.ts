@@ -52,7 +52,8 @@ describe("TestBalEth", () => {
             let tx = await testEthBal.approveToken();
             await tx.wait();
 
-            tx = await testEthBal.addBalToPool(amount.toString());
+            const minOut = await testEthBal.getMinOut(amount, 9980);
+            tx = await testEthBal.addBalToPool(amount, minOut);
             await tx.wait();
 
             const bptBalanceAfter = await bpt.balanceOf(testEthBal.address);
