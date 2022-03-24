@@ -360,6 +360,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         lockedSupply -= amt;
 
         emit Withdrawn(msg.sender, amt, false);
+
+        stakingToken.safeTransfer(msg.sender, amt);
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed

@@ -1112,7 +1112,6 @@ describe("AuraLocker", () => {
         });
         it("recover ERC20 with wrong token address", async () => {
             //  await setup();
-            console.log("stakingToken", await auraLocker.stakingToken(), cvx.address, cvxCrv.address);
             await expect(auraLocker.recoverERC20(cvx.address, ZERO)).revertedWith("Cannot withdraw staking token");
         });
         it("recover ERC20 cannot withdraw reward", async () => {
@@ -1121,6 +1120,9 @@ describe("AuraLocker", () => {
             await expect(auraLocker.recoverERC20(cvxCrvRewards.address, ZERO)).revertedWith(
                 "Cannot withdraw reward token",
             );
+        });
+        it("emergency withdraw is call and it is not shutdown", async () => {
+            await expect(auraLocker.emergencyWithdraw()).revertedWith("Must be shutdown");
         });
     });
     context("admin", () => {
@@ -1208,6 +1210,34 @@ describe("AuraLocker", () => {
                 dataBefore.lockedSupply.sub(dataBefore.account.balances.locked),
             );
             expect(balance).to.equal(aliceInitialBalance);
+            await expect(tx)
+                .emit(auraLocker, "Withdrawn")
+                .withArgs(aliceAddress, dataBefore.account.balances.locked, relock);
+        });
+        it("emergencyWithdraw  when user has no locks", async () => {
+            // Given that the aura locker is shutdown
+            await auraLocker.connect(deployer).shutdown();
+            expect(await auraLocker.isShutdown()).to.eq(true);
+            // It fails if the user has no locks
+            await expect(auraLocker.connect(alice).emergencyWithdraw()).revertedWith("Nothing locked");
+        });
+        it("emergencyWithdraw  when user has locks", async () => {
+            const cvxAmount = simpleToExactAmount(100);
+            const relock = false;
+            await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
+            let tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
+            // Given that the aura locker is shutdown
+            await auraLocker.connect(deployer).shutdown();
+            expect(await auraLocker.isShutdown()).to.eq(true);
+            // Then it should be able to withdraw in an emergency
+            const dataBefore = await getSnapShot(aliceAddress);
+            tx = await auraLocker.connect(alice).emergencyWithdraw();
+            const balance = await cvx.balanceOf(aliceAddress);
+
+            expect(await auraLocker.lockedSupply(), "lockedSupply decreases").to.equal(
+                dataBefore.lockedSupply.sub(dataBefore.account.balances.locked),
+            );
+            expect(balance, "balance").to.equal(aliceInitialBalance);
             await expect(tx)
                 .emit(auraLocker, "Withdrawn")
                 .withArgs(aliceAddress, dataBefore.account.balances.locked, relock);
