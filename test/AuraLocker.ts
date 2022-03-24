@@ -1,33 +1,32 @@
-import hre, { ethers } from "hardhat";
-import { Signer, ContractTransaction } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
+import { ContractTransaction, Signer } from "ethers";
+import hre, { ethers } from "hardhat";
+import { Account } from "types";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import {
-    AuraStakingProxy,
-    Booster,
-    CvxCrvToken,
-    AuraLocker,
-    BaseRewardPool,
-    MockERC20,
-    MockERC20__factory,
-    AuraToken,
-} from "../types/generated";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
+import { deployContract } from "../tasks/utils";
 import {
     BN,
-    sum,
     getTimestamp,
     increaseTime,
-    ONE_WEEK,
     ONE_DAY,
+    ONE_WEEK,
     simpleToExactAmount,
     ZERO,
     ZERO_ADDRESS,
-    DEAD_ADDRESS,
 } from "../test-utils";
-import _ from "lodash";
-import { deployContract } from "../tasks/utils";
-
+import { impersonateAccount } from "../test-utils/fork";
+import {
+    AuraLocker,
+    AuraStakingProxy,
+    AuraToken,
+    BaseRewardPool,
+    Booster,
+    CrvDepositor,
+    CvxCrvToken,
+    MockERC20,
+    MockERC20__factory,
+} from "../types/generated";
 interface UserLock {
     amount: BN;
     unlockTime: number;
@@ -40,12 +39,6 @@ interface SnapshotData {
         claimableRewards: Array<{ token: string; amount: BN }>;
         delegatee: string;
         locks: UserLock[];
-        rewardData: {
-            periodFinish: number;
-            lastUpdateTime: number;
-            rewardRate: BN;
-            rewardPerTokenStored: BN;
-        };
         votes: BN;
     };
     delegatee: {
@@ -65,10 +58,10 @@ interface SnapshotData {
 // - [x] @AuraLocker.recoverERC20
 // - [ ] @AuraLocker.getReward when _rewardsToken == cvxCrv && _stake
 // - [ ] @AuraLocker._processExpiredLocks  when if (_checkDelay > 0)
-// - [ ] @AuraLocker.getPastTotalSupply
+// - [x] @AuraLocker.getPastTotalSupply
 // - [ ] @AuraLocker.balanceOf when locks[i].unlockTime <= block.timestamp
 // - [x] @AuraLocker.lockedBalances
-// - [ ] @AuraLocker.totalSupply
+// - [x] @AuraLocker.totalSupply
 // - [x] @AuraLocker.totalSupplyAtEpoch
 // - [x] @AuraLocker.findEpochId
 // - [x] @AuraLocker.epochCount
@@ -87,6 +80,7 @@ describe("AuraLocker", () => {
     let booster: Booster;
     let cvx: AuraToken;
     let cvxCrv: CvxCrvToken;
+    let crvDepositor: CrvDepositor;
     let mocks: DeployMocksResult;
 
     let deployer: Signer;
@@ -98,15 +92,14 @@ describe("AuraLocker", () => {
     let bobAddress: string;
 
     const boosterPoolId = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const logSnapShot = (data: SnapshotData, phase: string): SnapshotData => data;
     const getSnapShot = async (accountAddress: string, phase: string = "before"): Promise<SnapshotData> => {
-        const rewardData = await auraLocker.rewardData(cvxCrv.address);
+        // const rewardData = await auraLocker.rewardData(cvxCrv.address);
         // const userData = await auraLocker.userData(accountAddress);
         const delegateeAddress = await auraLocker.delegates(accountAddress);
         const locks = await getUserLocks(accountAddress, delegateeAddress);
         const checkpointedVotes = await getCheckpointedVotes(delegateeAddress);
-
-        // const delegateeLocks = await getDelegateeLocks(delegateeAddress);
-        // await auraLocker.delegateeUnlocks(delegateeAddress,lastEpoch.index),
         return logSnapShot(
             {
                 account: {
@@ -114,7 +107,7 @@ describe("AuraLocker", () => {
                     auraLockerBalance: await auraLocker.balanceOf(accountAddress),
                     cvxBalance: await cvx.balanceOf(accountAddress),
                     delegatee: delegateeAddress,
-                    rewardData,
+                    // rewardData,
                     claimableRewards: await auraLocker.claimableRewards(accountAddress),
                     votes: await auraLocker.getVotes(accountAddress),
                     locks: locks.userLocks,
@@ -130,78 +123,6 @@ describe("AuraLocker", () => {
             },
             phase,
         );
-    };
-    const logSnapShot = (snapshot: SnapshotData, phase?: string): SnapshotData => {
-        console.log(`==========================${phase}=================================`);
-        console.log(`
-        account.rewardData.lastUpdateTime:      ${snapshot.account.rewardData.lastUpdateTime}
-        account.rewardData.periodFinish:        ${snapshot.account.rewardData.periodFinish}
-        account.rewardData.rewardPerTokenStored:${snapshot.account.rewardData.rewardPerTokenStored.toString()}
-        account.rewardData.rewardRate:          ${snapshot.account.rewardData.rewardRate.toString()}
-        account.auraLockerBal:            ${snapshot.account.auraLockerBalance.toString()}
-        account.balances.locked:          ${snapshot.account.balances.locked.toString()}
-        account.balances.nextUnlockIndex: ${snapshot.account.balances.nextUnlockIndex}
-        account.cvxBalance:     ${snapshot.account.cvxBalance.toString()}
-        account.claimableRewar: ${snapshot.account.claimableRewards
-            .map(cr => `token: ${cr.token}, amount: ${cr.amount.toString()}`)
-            .join(",")}
-        account.delegatee:      ${snapshot.account.delegatee}
-        account.locks:          ${snapshot.account.locks
-            .map(l => `{ amount:${l.amount.toString()}, unlockTime:${l.unlockTime.toString()} }`)
-            .join(",")}
-        account.votes:          ${snapshot.account.votes.toString()}
-        cvxBalance:     ${snapshot.cvxBalance.toString()}
-        lockedSupply:   ${snapshot.lockedSupply.toString()}
-        epochs:         ${snapshot.epochs
-            .map(e => `{ supply:${e.supply.toString()}, date:${e.date.toString()}}`)
-            .join(",")}
-        delegatee.cpVotes: ${snapshot.delegatee.checkpointedVotes
-            .map(u => `{epochStart:${u.epochStart.toString()}, votes:${u.votes.toString()} }`)
-            .join(",")}
-        delegatee.unlocks: ${snapshot.delegatee.unlocks.map(u => u.toString()).join(",")}
-        delegatee.votes:   ${snapshot.delegatee.votes.toString()}
-        `);
-        // delegatee.unlocks:   ${snapshot.delegatee.unlocks.toString()}
-        return snapshot;
-    };
-    const logDiff = (a: SnapshotData, b: SnapshotData): SnapshotData => {
-        _.mergeWith(a, b, function (objectValue, sourceValue, key, object, source) {
-            if (!_.isEqual(objectValue, sourceValue) && Object(objectValue) !== objectValue) {
-                console.log("ts:diff\t " + key + "\t=> a: " + sourceValue + "\t b: " + objectValue);
-            }
-        });
-
-        // const diff= {};
-        // console.log(`
-        // account.rewardData.lastUpdateTime:      ${a.account.rewardData.lastUpdateTime}
-        // account.rewardData.periodFinish:        ${a.account.rewardData.periodFinish}
-        // account.rewardData.rewardPerTokenStored:${a.account.rewardData.rewardPerTokenStored.toString()}
-        // account.rewardData.rewardRate:          ${a.account.rewardData.rewardRate.toString()}
-        // account.auraLockerBal:            ${a.account.auraLockerBalance.toString()}
-        // account.balances.locked:          ${a.account.balances.locked.toString()}
-        // account.balances.nextUnlockIndex: ${a.account.balances.nextUnlockIndex}
-        // account.cvxBalance:     ${a.account.cvxBalance.toString()}
-        // account.claimableRewar: ${a.account.claimableRewards
-        //     .map(cr => `token: ${cr.token}, amount: ${cr.amount.toString()}`)
-        //     .join(",")}
-        // account.delegatee:      ${a.account.delegatee}
-        // account.locks:          ${a.account.locks
-        //     .map(l => `{ amount:${l.amount.toString()}, unlockTime:${l.unlockTime.toString()} }`)
-        //     .join(",")}
-        // account.votes:          ${a.account.votes.toString()}
-        // cvxBalance:     ${a.cvxBalance.toString()}
-        // lockedSupply:   ${a.lockedSupply.toString()}
-        // epochs:         ${a.epochs
-        //     .map(e => `{ supply:${e.supply.toString()}, date:${e.date.toString()}}`)
-        //     .join(",")}
-        // delegatee.cpVotes: ${a.delegatee.checkpointedVotes
-        //     .map(u => `{epochStart:${u.epochStart.toString()}, votes:${u.votes.toString()} }`)
-        //     .join(",")}
-        // delegatee.unlocks: ${a.delegatee.unlocks.map(u => u.toString()).join(",")}
-        // delegatee.votes:   ${a.delegatee.votes.toString()}
-        // `);
-        // delegatee.unlocks:   ${snapshot.delegatee.unlocks.toString()}
-        return a;
     };
     const getEpochs = async (): Promise<Array<{ supply: BN; date: number }>> => {
         const epochs = [];
@@ -247,18 +168,6 @@ describe("AuraLocker", () => {
         }
         return checkpointedVotes;
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getDelegateeLocks = async (userAddress: string): Promise<Array<BN>> => {
-        // :Promise<{ {supply: BN, date: number}, index:number }>
-        // let epoch:{supply: BigNumber, date: number};
-        const unlocks: Array<BN> = [];
-        try {
-            for (let i = 0; i < 128; i++) unlocks.push(await auraLocker.delegateeUnlocks(userAddress, i));
-        } catch (error) {
-            // do nothing
-        }
-        return unlocks;
-    };
     const getCurrentEpoch = async (timeStamp?: BN) => {
         if (!timeStamp) {
             timeStamp = await getTimestamp();
@@ -272,16 +181,6 @@ describe("AuraLocker", () => {
         dataBefore: SnapshotData,
         dataAfter: SnapshotData,
     ) => {
-        // const expectedUserLocks = dataBefore.account.locks.map(l => l.amount)[dataBefore.account.locks.length-1];
-        // const expectedUserLocks = dataBefore.account.locks.map(l => l.amount).reduce(sum,BN.from(0));
-        // const expectedDelgateeUnlocks = expectedUserLocks;
-        // const expectedDelgateeVotes = expectedUserLocks;
-        // const expectedDelgateeUnlocks = dataBefore.delegatee.unlocks.reduce(sum,BN.from(0)).add(expectedUserLocks);
-        // const expectedDelgateeVotes = dataBefore.delegatee.checkpointedVotes.map(c=>c.votes).reduce(sum,BN.from(0)).add(expectedUserLocks);
-        // const expectedDelgateeUnlocks = dataBefore.delegatee.unlocks[dataBefore.delegatee.unlocks.length-1].add(expectedUserLocks);
-        // const expectedDelgateeVotes = dataBefore.delegatee.checkpointedVotes.map(c=>c.votes).reduce(sum,BN.from(0)).add(expectedUserLocks);
-        // expect(dataAfter.delegatee.unlocks.reduce(sum,BN.from(0)), "delegatee unlocks increased").eq(expectedDelgateeUnlocks);
-        // expect(dataAfter.delegatee.checkpointedVotes.map(c=>c.votes).reduce(sum,BN.from(0)), "delegatee checkpoints votes increased").eq(expectedDelgateeVotes);
         await expect(tx).emit(auraLocker, "DelegateCheckpointed").withArgs(dataAfter.account.delegatee);
     };
 
@@ -305,7 +204,6 @@ describe("AuraLocker", () => {
         );
 
         const currentEpoch = await getCurrentEpoch();
-        // const lock = await auraLocker.userLocks(aliceAddress, 0);
         const lock = dataAfter.account.locks[dataAfter.account.locks.length - 1];
         const lockDuration = await auraLocker.lockDuration();
         const unlockTime = lockDuration.add(currentEpoch);
@@ -348,6 +246,7 @@ describe("AuraLocker", () => {
         cvxCrvRewards = contracts.cvxCrvRewards;
         cvx = contracts.cvx;
         cvxCrv = contracts.cvxCrv;
+        crvDepositor = contracts.crvDepositor;
 
         aliceInitialBalance = simpleToExactAmount(200);
         let tx = await cvx.transfer(aliceAddress, simpleToExactAmount(200));
@@ -375,8 +274,8 @@ describe("AuraLocker", () => {
         expect(await auraLocker.epochCount(), "AuraLocker epoch counts").to.equal(1);
         expect(await auraLocker.queuedCvxCrvRewards(), "AuraLocker lockDuration").to.equal(0);
         expect(await auraLocker.rewardPerToken(cvxCrv.address), "AuraLocker rewardPerToken").to.equal(0);
+        expect(await auraLocker.lastTimeRewardApplicable(cvxCrv.address), "cvxCrv lastTimeRewardApplicable").to.gt(0);
         // expect(await auraLocker.rewardTokens(0),"AuraLocker lockDuration").to.equal( 86400 * 7 * 17);
-
         // constants
         expect(await auraLocker.newRewardRatio(), "AuraLocker newRewardRatio").to.equal(830);
         expect(await auraLocker.rewardsDuration(), "AuraLocker rewardsDuration").to.equal(86400 * 7);
@@ -397,14 +296,6 @@ describe("AuraLocker", () => {
             let tx = await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
             await tx.wait();
             const dataBefore = await getSnapShot(aliceAddress);
-            // - [] Verify updateReward
-            // - [] Verify _checkpointEpoch
-            // epochs[0] , no changes
-            // - [x] Verify Balances[user].
-            // - [x] Verify LockedBalance[user].
-            // - [x] Verify delegate - lock amount
-            // - [] Verify delegate - _checkpointDelegate
-            // - [x] Verify epoch.supply
             tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
 
             await expect(tx).emit(auraLocker, "Staked").withArgs(aliceAddress, cvxAmount, cvxAmount);
@@ -502,8 +393,6 @@ describe("AuraLocker", () => {
 
             const rewardsDuration = await auraLocker.rewardsDuration();
             const newEpochs = ONE_DAY.mul(15).div(rewardsDuration).add(0);
-            // TODO - at midnight, the epochs are 0 plus instead of 1 plus
-            // TODO - ASK  maha if the last epoch should be added.
             expect(dataAfter.epochs.length, "new epochs added").to.equal(newEpochs.add(dataBefore.epochs.length));
 
             const vlCVXBalance = await auraLocker.balanceAtEpochOf(0, aliceAddress);
@@ -519,11 +408,9 @@ describe("AuraLocker", () => {
             const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
             const dataBefore = await getSnapShot(aliceAddress);
 
-            // const lastTimeRewardApplicable = await auraLocker.lastTimeRewardApplicable(cvxCrv.address);
             expect(await auraLocker.rewardPerToken(cvxCrv.address), "rewardPerToken").to.equal(
                 dataBefore.account.claimableRewards[0].amount.div(100),
             );
-            // expect(await auraLocker.lastTimeRewardApplicable(cvxCrv.address), "lastTimeRewardApplicable").to.equal(await getTimestamp());
 
             const tx = await auraLocker["getReward(address)"](aliceAddress);
             const dataAfter = await getSnapShot(aliceAddress);
@@ -574,8 +461,10 @@ describe("AuraLocker", () => {
             await auraLocker.checkpointEpoch();
             dataBefore = await getSnapShot(aliceAddress, "beforeEach");
         });
+
         it("gives a 0 balance one lock has expired", async () => {
             // it gets votes (past votes of current epoch)
+            // let totalSupply  = await auraLocker.totalSupply();
             expect(await auraLocker.getVotes(aliceAddress)).eq(dataBefore.delegatee.unlocks[0]);
             await increaseTime(ONE_WEEK.mul(2));
             expect(await auraLocker.getVotes(aliceAddress)).eq(0);
@@ -628,20 +517,27 @@ describe("AuraLocker", () => {
         });
         it("allows lock to be processed with other unexpired locks following", async () => {
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            // Lock 10 more cvx
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+
+            expect(await auraLocker.totalSupply(), "totalSupply").to.eq(0);
+
             await increaseTime(ONE_WEEK);
+            // Lock 10 more cvx
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
             await increaseTime(ONE_WEEK);
 
             const beforeCvxBalance = await cvx.balanceOf(aliceAddress);
             await auraLocker.connect(alice).processExpiredLocks(true);
             expect(await cvx.balanceOf(aliceAddress), "relock - cvx balance does not change").eq(beforeCvxBalance);
-
+            expect(await auraLocker.totalSupply()).eq(simpleToExactAmount(20));
+            // Lock 10 more cvx
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
             await increaseTime(ONE_WEEK);
 
             expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(130));
             expect((await auraLocker.balances(aliceAddress)).locked).eq(simpleToExactAmount(130));
+            expect(await auraLocker.totalSupply()).eq(simpleToExactAmount(130));
         });
         it("doesn't allow processing of the same lock twice", async () => {
             await increaseTime(ONE_WEEK);
@@ -667,7 +563,6 @@ describe("AuraLocker", () => {
             );
 
             await expect(auraLocker.connect(alice).kickExpiredLocks(aliceAddress)).to.be.revertedWith("no exp locks");
-            // TODO - sol:_processExpiredLocks() - else -
 
             await increaseTime(ONE_WEEK);
 
@@ -792,15 +687,6 @@ describe("AuraLocker", () => {
                 initialData.account.balances.locked.add(simpleToExactAmount(40)),
             );
 
-            // Verify it move past locks, as checkpoint is before next epoch, the `getPastVotes` does not return yet the votes.
-            // TODO : ask maha if this is really the correct behavior.
-            // ```
-            // AuraLocker.getPastVotes(address account, uint256 timestamp) constant returns (uint256 votes)
-            // if (votes == 0 || ckpt.epochStart + lockDuration <= epoch) {
-            //     return 0;
-            // }
-            // ```
-
             const pastVotesAlice1 = await auraLocker.getVotes(aliceAddress);
             const pastVotesBob1 = await auraLocker.getVotes(bobAddress);
 
@@ -912,11 +798,90 @@ describe("AuraLocker", () => {
     });
 
     context("queueing new rewards", () => {
-        it.skip("only allows the rewardsDistributor to queue cvxCRV rewards");
-        it.skip("only starts distributing the rewards when the queued amount is over 83% of the remaining");
+        // let dataBefore: SnapshotData;
+        let cvxStakingProxyAccount: Account;
+        // t = 0.5, Lock, delegate to self, wait 15 weeks (1.5 weeks before lockup)
+        beforeEach(async () => {
+            await setup();
+            cvxStakingProxyAccount = await impersonateAccount(cvxStakingProxy.address);
+            // Given that cvxStakingProxyAccount holds cvxCrv
+            const crvDepositorAccount = await impersonateAccount(crvDepositor.address);
+            const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
+            await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
+            await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
+            // const cvxCrvBalanceSP  = await cvxCrv.balanceOf(cvxStakingProxyAccount.address);
+            // const cvxCrvBalanceAL  = await cvxCrv.balanceOf(auraLocker.address);
+            // const cvxCrvBalanceBO  = await cvxCrv.balanceOf(booster.address);
+            // const cvxCrvBalanceDP  = await cvxCrv.balanceOf(await deployer.getAddress());
+            // const cvxCrvBalanceAC  = await cvxCrv.balanceOf(await accounts[0].getAddress());
+
+            // Given that alice locks cvx and delegates to herself
+            // await cvxCrv.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            // await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            // await mockToken.connect(deployer).approve(auraLocker.address, simpleToExactAmount(100));
+            // await mockToken.connect(deployer).transfer(auraLocker.address, simpleToExactAmount(10));
+
+            // await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            // await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            // await auraLocker.connect(alice).delegate(aliceAddress);
+
+            // await increaseTime(ONE_WEEK.mul(15));
+            // await auraLocker.checkpointEpoch();
+            // dataBefore = await getSnapShot(aliceAddress, "beforeEach");
+        });
+        it("fails if the sender is not rewardsDistributor", async () => {
+            // Only the rewardsDistributor can queue cvxCRV rewards
+            await expect(auraLocker.queueNewRewards(simpleToExactAmount(100))).revertedWith("!authorized");
+        });
+        it("fails if the amount of rewards is 0", async () => {
+            // Only the rewardsDistributor can queue cvxCRV rewards
+            await expect(
+                auraLocker.connect(cvxStakingProxyAccount.signer).queueNewRewards(simpleToExactAmount(0)),
+            ).revertedWith("No reward");
+        });
+        it("distribute rewards from the booster", async () => {
+            await booster.earmarkRewards(boosterPoolId);
+            await increaseTime(ONE_DAY);
+
+            const incentive = await booster.stakerIncentive();
+            const rate = await mocks.crvMinter.rate();
+            const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
+            expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
+
+            const tx = await cvxStakingProxy.distribute();
+            await tx.wait();
+        });
+        it("only starts distributing the rewards when the queued amount is over 83% of the remaining");
+        it("queues rewards when cvxCrv period is finished", async () => {
+            // AuraStakingProxy.distribute()
+            const rewards = simpleToExactAmount(100);
+            const rewardData = await auraLocker.rewardData(cvxCrv.address);
+            const timeStamp = await getTimestamp();
+            //     console.log(`
+            //    rewardData.lastUpdateTime:      ${rewardData.lastUpdateTime}
+            //    rewardData.periodFinish:        ${rewardData.periodFinish}
+            //    rewardData.rewardPerTokenStored:${rewardData.rewardPerTokenStored.toString()}
+            //    rewardData.rewardRate:          ${rewardData.rewardRate.toString()}
+            //    `);
+
+            expect(timeStamp, "reward period finish").to.gt(rewardData.periodFinish);
+
+            const tx = await auraLocker.connect(cvxStakingProxyAccount.signer).queueNewRewards(rewards);
+
+            // Verifies queuedCvxCrvRewards is 0
+            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish.
+        });
+        it("queues rewards when cvxCrv period is not finished and queuedRatio is lt new reward ratio", async () => {
+            // Verifies queuedCvxCrvRewards is 0
+            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish.
+        });
+        it("queues rewards when cvxCrv period is not finished and queuedRatio is lt new reward ratio", async () => {
+            // Verifies queuedCvxCrvRewards is _rewards
+            // No notification
+        });
     });
 
-    context.skip("checking delegation timelines", () => {
+    context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
 
         /*                                **
@@ -1237,15 +1202,12 @@ describe("AuraLocker", () => {
             tx = await auraLocker.connect(alice).processExpiredLocks(relock);
             //  auraLocker.balanceOf() will fail, with Arithmetic error. TODO ask MAHA
 
-            // const dataAfter = await getSnapShot(aliceAddress);
             const balance = await cvx.balanceOf(aliceAddress);
 
-            // expect(dataAfter.account.balances.locked, "user cvx balances locked decreases").to.equal(0);
             expect(await auraLocker.lockedSupply(), "lockedSupply decreases").to.equal(
                 dataBefore.lockedSupply.sub(dataBefore.account.balances.locked),
             );
             expect(balance).to.equal(aliceInitialBalance);
-            // await verifyCheckpointDelegate(tx, dataBefore, dataAfter);
             await expect(tx)
                 .emit(auraLocker, "Withdrawn")
                 .withArgs(aliceAddress, dataBefore.account.balances.locked, relock);
