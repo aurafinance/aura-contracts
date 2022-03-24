@@ -1,6 +1,6 @@
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { TestEthBal, TestEthBal__factory, ERC20__factory, ERC20 } from "../types/generated";
+import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { impersonateAccount, fullScale } from "../test-utils";
 import { Signer } from "ethers";
@@ -12,7 +12,7 @@ const ALCHEMY_API_KEY = process.env.NODE_URL;
 const BALWhale = "0xff052381092420b7f24cc97fded9c0c17b2cbbb9";
 
 describe("TestBalEth", () => {
-    let testEthBal: TestEthBal;
+    let testEthBal: MockBalInvestor;
     let balToken: ERC20;
     let signer: Signer;
 
@@ -42,8 +42,8 @@ describe("TestBalEth", () => {
 
         balToken = ERC20__factory.connect(bal, signer);
 
-        testEthBal = await deployContract<TestEthBal>(
-            new TestEthBal__factory(signer),
+        testEthBal = await deployContract<MockBalInvestor>(
+            new MockBalInvestor(signer),
             "testEthBal",
             [vault, bal, weth, poolId],
             {},

@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { TestEthBal, TestEthBal__factory, ERC20__factory, ERC20 } from "../types/generated";
+import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { fullScale } from "../test-utils";
 import { Signer } from "ethers";
@@ -9,7 +9,7 @@ import { deployMocks } from "../scripts/deployMocks";
 const debug = false;
 
 describe("TestBalEth", () => {
-    let testEthBal: TestEthBal;
+    let testEthBal: MockBalInvestor;
     let balToken: ERC20;
     let signer: Signer;
 
@@ -22,14 +22,14 @@ describe("TestBalEth", () => {
         const mocks = await deployMocks(signer, debug);
 
         const poolId = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014";
-        const vault = mocks.balanceVault.address;
+        const vault = mocks.balancerVault.address;
         const weth = mocks.weth.address;
         const bal = mocks.bal.address;
 
         balToken = ERC20__factory.connect(bal, signer);
 
-        testEthBal = await deployContract<TestEthBal>(
-            new TestEthBal__factory(signer),
+        testEthBal = await deployContract<MockBalInvestor>(
+            new MockBalInvestor__factory(signer),
             "testEthBal",
             [vault, bal, weth, poolId],
             {},

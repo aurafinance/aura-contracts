@@ -34,10 +34,9 @@ interface DeployMocksResult {
     feeDistribution: MockFeeDistro;
     nativeTokenDistribution: MockFeeDistro;
     smartWalletChecker: MockWalletChecker;
-    feeDistro: MockFeeDistro;
     gauges: MockCurveGauge[];
     crvBpt: MockBalancerPoolToken;
-    balanceVault: MockBalancerVault;
+    balancerVault: MockBalancerVault;
     bal: MockERC20;
     weth: MockERC20;
     addresses: ExtSystemConfig;
@@ -92,7 +91,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     const crvBpt = await deployContract<MockBalancerPoolToken>(
         new MockBalancerPoolToken__factory(deployer),
         "MockBalancerPoolToken",
-        [18, deployerAddress, 10000000],
+        [18, deployerAddress, 100],
         {},
         debug,
     );
@@ -180,10 +179,10 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         gauges.push(gauge);
     }
 
-    tx = await crvBpt.setPrice(parseEther("420"));
+    tx = await crvBpt.setPrice(parseEther("240"));
     await tx.wait();
 
-    const balanceVault = await deployContract<MockBalancerVault>(
+    const balancerVault = await deployContract<MockBalancerVault>(
         new MockBalancerVault__factory(deployer),
         "MockBalancerVault",
         [crvBpt.address],
@@ -216,10 +215,9 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         smartWalletChecker,
         feeDistribution: feeDistro,
         nativeTokenDistribution: nativeFeeDistro,
-        gauges,        
-        feeDistro,
+        gauges,
         crvBpt,
-        balanceVault,
+        balancerVault,
         bal,
         weth,
         addresses: {
@@ -235,7 +233,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
             // TODO - update these addresses with mocks
-            balancerVault: balanceVault.address,
+            balancerVault: balancerVault.address,
             balancerWeightedPoolFactory: ZERO_ADDRESS,
             balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
             balancerMinOutBps: "9975",

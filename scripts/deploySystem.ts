@@ -472,6 +472,7 @@ async function deployPhase3(
             cvxCrv.address,
             cvxCrvRewards.address,
             crvDepositorWrapper.address,
+            9980,
         ],
         {},
         debug,

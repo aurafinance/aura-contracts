@@ -32,17 +32,24 @@ contract CrvDepositorWrapper is BalInvestor {
         IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max);
     }
 
-    function getMinOut(uint256 _amount) public view returns (uint256) {
-        return _getMinOut(_amount, 9975);
+    /**
+     * @dev Gets minimum output based on BPT oracle price
+     * @param _amount Units of BAL to deposit
+     * @param _outputBps Multiplier where 100% == 10000, 99.5% == 9950 and 98% == 9800
+     * @return minOut Units of BPT to expect as output
+     */
+    function getMinOut(uint256 _amount, uint256 _outputBps) public view returns (uint256) {
+        return _getMinOut(_amount, _outputBps);
     }
 
     function deposit(
         uint256 _amount,
         uint256 _minOut,
-        bool _lock
+        bool _lock,
+        address _stakeAddress
     ) public {
         _investBalToPool(_amount, _minOut);
         uint256 bptBalance = IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
-        ICrvDepositor(crvDeposit).depositFor(msg.sender, bptBalance, _lock, address(0));
+        ICrvDepositor(crvDeposit).depositFor(msg.sender, bptBalance, _lock, _stakeAddress);
     }
 }

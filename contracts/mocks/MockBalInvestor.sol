@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "../BalInvestor.sol";
 
-contract TestEthBal is BalInvestor {
+contract MockBalInvestor is BalInvestor {
     constructor(
         IVault _balancerVault,
         address _bal,

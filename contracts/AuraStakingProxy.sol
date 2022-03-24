@@ -13,12 +13,13 @@ interface ICvxLocker {
 }
 
 interface ICrvDepositor {
-    function getMinOut(uint256) external view returns (uint256);
+    function getMinOut(uint256, uint256) external view returns (uint256);
 
     function deposit(
         uint256,
         uint256,
-        bool
+        bool,
+        address _stakeAddress
     ) external;
 }
 
@@ -47,6 +48,7 @@ contract AuraStakingProxy {
     //convex addresses
     address public immutable cvxCrvStaking;
     address public crvDepositorWrapper;
+    uint256 public outputBps;
     uint256 public constant denominator = 10000;
 
     address public rewards;
@@ -66,6 +68,7 @@ contract AuraStakingProxy {
      * @param _cvxCrv        cvxCRV token
      * @param _cvxCrvStaking BaseRewardPool for cvxCRV staking
      * @param _crvDepositorWrapper    Wrapper that converts CRV to CRVBPT and deposits
+     * @param _outputBps     Configurable output bps where 100% == 10000
      */
     constructor(
         address _rewards,
@@ -73,7 +76,8 @@ contract AuraStakingProxy {
         address _cvx,
         address _cvxCrv,
         address _cvxCrvStaking,
-        address _crvDepositorWrapper
+        address _crvDepositorWrapper,
+        uint256 _outputBps
     ) {
         rewards = _rewards;
         owner = msg.sender;
@@ -82,11 +86,13 @@ contract AuraStakingProxy {
         cvxCrv = _cvxCrv;
         cvxCrvStaking = _cvxCrvStaking;
         crvDepositorWrapper = _crvDepositorWrapper;
+        outputBps = _outputBps;
     }
 
-    function setCrvDepositorWrapper(address _crvDepositorWrapper) external {
+    function setCrvDepositorWrapper(address _crvDepositorWrapper, uint256 _outputBps) external {
         require(msg.sender == owner, "!auth");
         crvDepositorWrapper = _crvDepositorWrapper;
+        outputBps = _outputBps;
     }
 
     function setPendingOwner(address _po) external {
@@ -137,8 +143,8 @@ contract AuraStakingProxy {
         //convert crv to cvxCrv
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
-            uint256 minOut = ICrvDepositor(crvDepositorWrapper).getMinOut(crvBal);
-            ICrvDepositor(crvDepositorWrapper).deposit(crvBal, minOut, true);
+            uint256 minOut = ICrvDepositor(crvDepositorWrapper).getMinOut(crvBal, outputBps);
+            ICrvDepositor(crvDepositorWrapper).deposit(crvBal, minOut, true, address(0));
         }
 
         //distribute cvxcrv
