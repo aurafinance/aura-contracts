@@ -59,43 +59,53 @@ describe("CrvDepositor", () => {
         await Promise.all(calls.map(tx => tx.wait()));
     });
 
-    it("locks up for a year initially", async () => {
-        const cvxCrvsupply = await cvxCrv.totalSupply();
-        expect(cvxCrvsupply).eq(0);
+    describe("basic flow of locking", () => {
+        it("locks up for a year initially", async () => {
+            const cvxCrvsupply = await cvxCrv.totalSupply();
+            expect(cvxCrvsupply).eq(0);
 
-        const unlockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
-        const now = await getTimestamp();
-        expect(unlockTime).gt(now.add(ONE_WEEK.mul(51)));
-        expect(unlockTime).lt(now.add(ONE_WEEK.mul(53)));
+            const unlockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
+            const now = await getTimestamp();
+            expect(unlockTime).gt(now.add(ONE_WEEK.mul(51)));
+            expect(unlockTime).lt(now.add(ONE_WEEK.mul(53)));
+        });
+
+        it("deposit", async () => {
+            const lock = true;
+            const stakeAddress = "0x0000000000000000000000000000000000000000";
+            const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
+            const amount = crvBalance.mul(10).div(100);
+
+            const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
+            await tx.wait();
+
+            const cvxCrvBalance = await cvxCrv.balanceOf(aliceAddress);
+            expect(cvxCrvBalance).to.equal(amount);
+        });
+
+        it("increases lock to a year again", async () => {
+            const unlockTimeBefore = await mocks.votingEscrow.lockTimes(voterProxy.address);
+
+            await increaseTime(ONE_WEEK.mul(2));
+
+            const tx = await crvDepositor["deposit(uint256,bool,address)"](simpleToExactAmount(1), true, ZERO_ADDRESS);
+            await tx.wait();
+
+            const unlockTimeAfter = await mocks.votingEscrow.lockTimes(voterProxy.address);
+            expect(unlockTimeAfter).gt(unlockTimeBefore);
+
+            const after = await getTimestamp();
+            expect(unlockTimeAfter).gt(after.add(ONE_WEEK.mul(51)));
+            expect(unlockTimeAfter).lt(after.add(ONE_WEEK.mul(53)));
+        });
     });
 
-    it("deposit", async () => {
-        const lock = true;
-        const stakeAddress = "0x0000000000000000000000000000000000000000";
-        const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
-        const amount = crvBalance.mul(10).div(100);
-
-        const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
-        await tx.wait();
-
-        const cvxCrvBalance = await cvxCrv.balanceOf(aliceAddress);
-        expect(cvxCrvBalance).to.equal(amount);
+    describe("depositing via wrapper", () => {
+        it("allows the sender to deposit crv, wrap to crvBpt and deposit");
+        it("stakes on behalf of user");
     });
-
-    it("increases lock to a year again", async () => {
-        const unlockTimeBefore = await mocks.votingEscrow.lockTimes(voterProxy.address);
-
-        await increaseTime(ONE_WEEK.mul(2));
-
-        const tx = await crvDepositor["deposit(uint256,bool,address)"](simpleToExactAmount(1), true, ZERO_ADDRESS);
-        await tx.wait();
-
-        const unlockTimeAfter = await mocks.votingEscrow.lockTimes(voterProxy.address);
-        expect(unlockTimeAfter).gt(unlockTimeBefore);
-
-        const after = await getTimestamp();
-        expect(unlockTimeAfter).gt(after.add(ONE_WEEK.mul(51)));
-        expect(unlockTimeAfter).lt(after.add(ONE_WEEK.mul(53)));
+    describe("calling depositFor", () => {
+        it("allows deposits on behalf of another user");
     });
 
     describe("system cool down", () => {

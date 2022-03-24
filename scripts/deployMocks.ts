@@ -179,7 +179,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         gauges.push(gauge);
     }
 
-    tx = await crvBpt.setPrice(parseEther("240"));
+    tx = await crvBpt.setPrice(parseEther("2.40"));
     await tx.wait();
 
     const balancerVault = await deployContract<MockBalancerVault>(

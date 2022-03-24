@@ -133,8 +133,12 @@ describe("AuraLocker", () => {
             const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
             expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
+            const balBefore = await cvxCrv.balanceOf(auraLocker.address);
             const tx = await cvxStakingProxy.distribute();
             await tx.wait();
+
+            const balAfter = await cvxCrv.balanceOf(auraLocker.address);
+            expect(balAfter).gt(balBefore.add(stakingCrvBalance.div(3)));
         });
 
         it("can't process locks that haven't expired", async () => {
