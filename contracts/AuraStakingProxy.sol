@@ -45,7 +45,7 @@ contract AuraStakingProxy {
     address public immutable cvx;
     address public immutable cvxCrv;
 
-    //convex addresses
+    address public keeper;
     address public crvDepositorWrapper;
     uint256 public outputBps;
     uint256 public constant denominator = 10000;
@@ -93,6 +93,11 @@ contract AuraStakingProxy {
         outputBps = _outputBps;
     }
 
+    function setKeeper(address _keeper) external {
+        require(msg.sender == owner, "!auth");
+        keeper = _keeper;
+    }
+
     function setPendingOwner(address _po) external {
         require(msg.sender == owner, "!auth");
         pendingOwner = _po;
@@ -138,6 +143,11 @@ contract AuraStakingProxy {
      *      the booster, and then applies the rewards to the cvxLocker, rewarding the caller in the process.
      */
     function distribute() external {
+        // If keeper enabled, require
+        if (keeper != address(0)) {
+            require(msg.sender == keeper, "!auth");
+        }
+
         //convert crv to cvxCrv
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {

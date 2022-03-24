@@ -70,6 +70,11 @@ describe("AuraLocker", () => {
     describe("admin fns", () => {
         describe("when called by EOA", () => {
             it("fails to set crvDepositorWrapper");
+            it("fails to set the keeper", async () => {
+                await expect(contracts.cvxStakingProxy.connect(accounts[2]).setKeeper(ZERO_ADDRESS)).to.be.revertedWith(
+                    "!auth",
+                );
+            });
             it("fails to set pending owner");
             it("fails to apply pending owner");
             it("fails to set call incentive");
@@ -79,6 +84,14 @@ describe("AuraLocker", () => {
         describe("when called by owner", () => {
             it("fails to set crvDepositorWrapper if output bps out of range");
             it("sets crvDepositorWrapper");
+            it("sets keeper", async () => {
+                const oldKeeper = await contracts.cvxStakingProxy.keeper();
+                const proposedKeeper = await accounts[2].getAddress();
+                expect(oldKeeper).not.eq(proposedKeeper);
+                await contracts.cvxStakingProxy.connect(accounts[2]).setKeeper(proposedKeeper);
+                const newKeeper = await contracts.cvxStakingProxy.keeper();
+                expect(newKeeper).eq(proposedKeeper);
+            });
             it("sets pending owner");
             it("applies pending owner");
             it("switches owner back");
@@ -88,6 +101,16 @@ describe("AuraLocker", () => {
     });
 
     describe("distributing rewards", () => {
+        it("fails to distribute if caller is not the keeper", async () => {
+            const keeper = await accounts[1].getAddress();
+            await contracts.cvxStakingProxy.setKeeper(keeper);
+            await expect(contracts.cvxStakingProxy.connect(accounts[0]).distribute()).to.be.revertedWith("!auth");
+            await contracts.cvxStakingProxy.connect(accounts[1]).distribute();
+        });
+        it("allows anyone to distribute if the keeper is 0", async () => {
+            await contracts.cvxStakingProxy.setKeeper(ZERO_ADDRESS);
+            await contracts.cvxStakingProxy.connect(accounts[0]).distribute();
+        });
         it("deposits CRV into crvBPT via crvDepositorWrapper");
         it("fails to convert to crvBPT if the outputBps is too high");
         it("distribute rewards from the booster", async () => {
