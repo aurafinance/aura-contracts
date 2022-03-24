@@ -4279,10 +4279,10 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=c094cc&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=034d5a&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
-  checksum: ab9ef46c0e4761e21cde9bde1de52628a7c7dfe5bf1b4dfe5e83104d91a53c3e40ae8c4fcdcff35f85327c76b404d9b0992a7e63c7f04f7ae63ec30b607e3013
+  checksum: 280807967674c4b90b87a399d260f44eade0e606f979985467d55fac379928cd93808ab09144382c28d69cfb48c2275b78f97a6201874638b7c8e162e801704e
   languageName: node
   linkType: hard
 
@@ -14165,9 +14165,9 @@ __metadata:
   linkType: hard
 
 "undici@npm:^4.14.1":
-  version: 4.16.0
-  resolution: "undici@npm:4.16.0"
-  checksum: 5e88c2b3381085e25ed1d1a308610ac7ee985f478ac705af7a8e03213536e10f73ef8dd8d85e6ed38948d1883fa0ae935e04357c317b0f5d3d3c0211d0c8c393
+  version: 4.15.1
+  resolution: "undici@npm:4.15.1"
+  checksum: 13b264d4966de105e211e1ca9433e2d8be5fcfe85e4cafea6b97c4685df3364bc8bc9e9b27796ce400e8a1e45e92a65b1453fcb499557e4f5c013af18f194852
   languageName: node
   linkType: hard
 

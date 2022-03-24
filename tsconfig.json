@@ -20,6 +20,16 @@
         "rootDir": "."
     },
     "exclude": ["node_modules"],
+    "include": [
+        "tasks/**/*",
+        "./test/*",
+        "./test/**/*",
+        "./test-fork/*",
+        "./test-fork/**/*",
+        "types/**/*",
+        "test-utils/**/*",
+        "scripts/**/*"
+    ],
     "files": [
         "./index.ts",
         "./hardhat.config.ts",
@@ -27,6 +37,5 @@
         "./hardhat-cvx.config.ts",
         "./tasks.config.ts",
         "./tasks-fork.config.ts"
-    ],
-    "include": ["tasks/**/*", "test/**/*", "types/**/*", "test-utils/**/*", "scripts/**/*"]
+    ]
 }

@@ -20,30 +20,6 @@ contract MockVoting {
         }
     }
 
-    // This doesn't actually get used by the contracts ever and it's probably easier
-    // to just use `votesFor` and `votesAgainst` for testing. It was only in the
-    // interface for testing when Convex were using it.
-    function getVote(uint256 voteId)
-        external
-        view
-        returns (
-            bool status,
-            bool,
-            uint64,
-            uint64,
-            uint64,
-            uint64,
-            uint256 forVotes,
-            uint256 againstVotes,
-            uint256,
-            bytes memory
-        )
-    {
-        status = false;
-        forVotes = votesFor[voteId];
-        againstVotes = votesAgainst[voteId];
-    }
-
     function vote_for_gauge_weights(address gauge, uint256 weight) external {
         gaugeWeights[gauge] += weight;
     }

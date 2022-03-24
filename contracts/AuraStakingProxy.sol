@@ -13,7 +13,14 @@ interface ICvxLocker {
 }
 
 interface ICrvDepositor {
-    function deposit(uint256, bool) external;
+    function getMinOut(uint256, uint256) external view returns (uint256);
+
+    function deposit(
+        uint256,
+        uint256,
+        bool,
+        address _stakeAddress
+    ) external;
 }
 
 /**
@@ -38,9 +45,9 @@ contract AuraStakingProxy {
     address public immutable cvx;
     address public immutable cvxCrv;
 
-    //convex addresses
-    address public immutable cvxCrvStaking;
-    address public immutable crvDeposit;
+    address public keeper;
+    address public crvDepositorWrapper;
+    uint256 public outputBps;
     uint256 public constant denominator = 10000;
 
     address public rewards;
@@ -58,24 +65,37 @@ contract AuraStakingProxy {
      * @param _crv           CRV token
      * @param _cvx           CVX token
      * @param _cvxCrv        cvxCRV token
-     * @param _cvxCrvStaking BaseRewardPool for cvxCRV staking
-     * @param _crvDeposit    crvDepositor
+     * @param _crvDepositorWrapper    Wrapper that converts CRV to CRVBPT and deposits
+     * @param _outputBps     Configurable output bps where 100% == 10000
      */
     constructor(
         address _rewards,
         address _crv,
         address _cvx,
         address _cvxCrv,
-        address _cvxCrvStaking,
-        address _crvDeposit
+        address _crvDepositorWrapper,
+        uint256 _outputBps
     ) {
         rewards = _rewards;
         owner = msg.sender;
         crv = _crv;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
-        cvxCrvStaking = _cvxCrvStaking;
-        crvDeposit = _crvDeposit;
+        crvDepositorWrapper = _crvDepositorWrapper;
+        outputBps = _outputBps;
+    }
+
+    function setCrvDepositorWrapper(address _crvDepositorWrapper, uint256 _outputBps) external {
+        require(msg.sender == owner, "!auth");
+        require(_outputBps > 9000 && _outputBps < 10000, "Invalid output bps");
+
+        crvDepositorWrapper = _crvDepositorWrapper;
+        outputBps = _outputBps;
+    }
+
+    function setKeeper(address _keeper) external {
+        require(msg.sender == owner, "!auth");
+        keeper = _keeper;
     }
 
     function setPendingOwner(address _po) external {
@@ -103,8 +123,8 @@ contract AuraStakingProxy {
     }
 
     function setApprovals() external {
-        IERC20(crv).safeApprove(crvDeposit, 0);
-        IERC20(crv).safeApprove(crvDeposit, type(uint256).max);
+        IERC20(crv).safeApprove(crvDepositorWrapper, 0);
+        IERC20(crv).safeApprove(crvDepositorWrapper, type(uint256).max);
 
         IERC20(cvxCrv).safeApprove(rewards, 0);
         IERC20(cvxCrv).safeApprove(rewards, type(uint256).max);
@@ -123,11 +143,16 @@ contract AuraStakingProxy {
      *      the booster, and then applies the rewards to the cvxLocker, rewarding the caller in the process.
      */
     function distribute() external {
+        // If keeper enabled, require
+        if (keeper != address(0)) {
+            require(msg.sender == keeper, "!auth");
+        }
+
         //convert crv to cvxCrv
-        // TODO - support 80/20
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
-            ICrvDepositor(crvDeposit).deposit(crvBal, true);
+            uint256 minOut = ICrvDepositor(crvDepositorWrapper).getMinOut(crvBal, outputBps);
+            ICrvDepositor(crvDepositorWrapper).deposit(crvBal, minOut, true, address(0));
         }
 
         //distribute cvxcrv

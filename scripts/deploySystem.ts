@@ -53,6 +53,8 @@ import {
     AuraToken__factory,
     AuraMinter,
     AuraMinter__factory,
+    CrvDepositorWrapper,
+    CrvDepositorWrapper__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -81,6 +83,7 @@ interface DistroList {
 
 interface ExtSystemConfig {
     token: string;
+    tokenBpt: string;
     tokenWhale: string;
     minter: string;
     votingEscrow: string;
@@ -92,6 +95,8 @@ interface ExtSystemConfig {
     gauges?: string[];
     balancerVault: string;
     balancerWeightedPoolFactory: string;
+    balancerPoolId: string;
+    balancerMinOutBps: string;
     weth: string;
 }
 
@@ -114,6 +119,7 @@ interface MultisigConfig {
 /* eslint-disable-next-line */
 const curveSystem: ExtSystemConfig = {
     token: "0xD533a949740bb3306d119CC777fa900bA034cd52",
+    tokenBpt: "0xD533a949740bb3306d119CC777fa900bA034cd52",
     tokenWhale: "0x7a16fF8270133F063aAb6C9977183D9e72835428",
     minter: "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0",
     votingEscrow: "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2",
@@ -123,6 +129,8 @@ const curveSystem: ExtSystemConfig = {
     voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
     gauges: ["0xBC89cd85491d81C6AD2954E6d0362Ee29fCa8F53"],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
+    balancerMinOutBps: "9975",
     balancerWeightedPoolFactory: "0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9",
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
 };
@@ -142,6 +150,7 @@ interface Phase3Deployed extends Phase2Deployed {
     cvxCrv: CvxCrvToken;
     cvxCrvRewards: BaseRewardPool;
     crvDepositor: CrvDepositor;
+    crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
     cvxLocker: AuraLocker;
@@ -217,7 +226,7 @@ async function deployPhase1(
     const voterProxy = await deployContract<CurveVoterProxy>(
         new CurveVoterProxy__factory(deployer),
         "CurveVoterProxy",
-        [extSystem.minter, extSystem.token, extSystem.votingEscrow, extSystem.gaugeController],
+        [extSystem.minter, extSystem.token, extSystem.tokenBpt, extSystem.votingEscrow, extSystem.gaugeController],
         {},
         debug,
     );
@@ -227,8 +236,8 @@ async function deployPhase1(
         const walletChecker = MockWalletChecker__factory.connect(await ve.smart_wallet_checker(), deployer);
         await walletChecker.approveWallet(voterProxy.address);
 
-        const crv = MockERC20__factory.connect(extSystem.token, deployer);
-        await crv.transfer(voterProxy.address, simpleToExactAmount(1));
+        const crvBpt = MockERC20__factory.connect(extSystem.tokenBpt, deployer);
+        await crvBpt.transfer(voterProxy.address, simpleToExactAmount(1));
     }
 
     return { voterProxy };
@@ -284,6 +293,7 @@ async function deployPhase3(
 
     const {
         token,
+        tokenBpt,
         votingEscrow,
         gaugeController,
         feeDistribution,
@@ -373,11 +383,10 @@ async function deployPhase3(
         debug,
     );
 
-    // TODO - ensure `token` is differentiated from 80/20 bpt
     const crvDepositor = await deployContract<CrvDepositor>(
         new CrvDepositor__factory(deployer),
         "CrvDepositor",
-        [voterProxy.address, cvxCrv.address, token, votingEscrow, multisigs.daoMultisig],
+        [voterProxy.address, cvxCrv.address, tokenBpt, votingEscrow, multisigs.daoMultisig],
         {},
         debug,
     );
@@ -445,10 +454,18 @@ async function deployPhase3(
         debug,
     );
 
+    const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
+        new CrvDepositorWrapper__factory(deployer),
+        "CrvDepositorWrapper",
+        [crvDepositor.address, config.balancerVault, config.token, config.weth, config.balancerPoolId],
+        {},
+        debug,
+    );
+
     const cvxStakingProxy = await deployContract<AuraStakingProxy>(
         new AuraStakingProxy__factory(deployer),
         "AuraStakingProxy",
-        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, cvxCrvRewards.address, crvDepositor.address],
+        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, 9980],
         {},
         debug,
     );
@@ -457,6 +474,9 @@ async function deployPhase3(
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
+    await tx.wait();
+
+    tx = await crvDepositorWrapper.setApprovals();
     await tx.wait();
 
     tx = await cvxLocker.transferOwnership(multisigs.daoMultisig);
@@ -658,6 +678,7 @@ async function deployPhase3(
         cvxCrv,
         cvxCrvRewards,
         crvDepositor,
+        crvDepositorWrapper,
         poolManager,
         cvxLocker,
         cvxStakingProxy,
