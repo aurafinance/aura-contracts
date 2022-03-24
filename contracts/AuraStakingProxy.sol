@@ -65,7 +65,7 @@ contract AuraStakingProxy {
      * @param _cvx           CVX token
      * @param _cvxCrv        cvxCRV token
      * @param _cvxCrvStaking BaseRewardPool for cvxCRV staking
-     * @param _crvDeposit    crvDepositor
+     * @param _crvDepositorWrapper    Wrapper that converts CRV to CRVBPT and deposits
      */
     constructor(
         address _rewards,
@@ -135,7 +135,6 @@ contract AuraStakingProxy {
      */
     function distribute() external {
         //convert crv to cvxCrv
-        // TODO - support 80/20
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
             uint256 minOut = ICrvDepositor(crvDepositorWrapper).getMinOut(crvBal);
