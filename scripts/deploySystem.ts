@@ -292,7 +292,7 @@ async function deployForkSystem(
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     const [, weights] = balHelper.sortTokens(
         [phase2.cvx.address, curveSystem.weth],
-        [simpleToExactAmount(1, 16), simpleToExactAmount(99, 16)],
+        [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
     );
     tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
     await waitForTx(tx, true);
@@ -856,7 +856,7 @@ async function deployPhase2(
         await waitForTx(tx, debug);
         tx = await airdrop.setRoot(merkleRoot);
         await waitForTx(tx, debug);
-        tx = await airdrop.setOwner(multisigs.daoMultisig);
+        tx = await airdrop.setOwner(multisigs.treasuryMultisig);
         await waitForTx(tx, debug);
     }
 
@@ -980,6 +980,7 @@ async function deployPhase3(
 
     // PRE-3: TreasuryDAO: LBP.withdraw
     //        TreasuryDAO: WETH.transfer(liqProvider)
+    //        TreasuryDAO: AURA.transfer(liqProvider)
     // -----------------------------
     // 3: Liquidity from LBP taken and used for AURA/ETH pool
     //     - create: TKN/ETH 80/20 BPT

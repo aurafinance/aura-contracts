@@ -50,9 +50,9 @@ function getMockDistro(): DistroList {
         lpIncentives: simpleToExactAmount(10, 24),
         cvxCrvBootstrap: simpleToExactAmount(2, 24),
         lbp: {
-            tknAmount: simpleToExactAmount(2, 24),
+            tknAmount: simpleToExactAmount(2.2, 24),
             wethAmount: simpleToExactAmount(50),
-            matching: simpleToExactAmount(3, 24),
+            matching: simpleToExactAmount(2.8, 24),
         },
         airdrops: [
             { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
