@@ -5,7 +5,7 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { increaseTime, ONE_WEEK, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 
-describe("AuraLocker", () => {
+describe("AuraStakingProxy", () => {
     let accounts: Signer[];
     let contracts: SystemDeployed;
     let mocks: DeployMocksResult;
