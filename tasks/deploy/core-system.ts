@@ -15,14 +15,14 @@ import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/depl
 import {
     AuraLocker__factory,
     AuraMinter__factory,
-    AuraStakingProxy__factory,
     AuraToken__factory,
+    AuraStakingProxy__factory,
     BaseRewardPool__factory,
     BoosterOwner__factory,
     Booster__factory,
     ClaimZap__factory,
-    ConvexToken__factory,
     CrvDepositor__factory,
+    CrvDepositorWrapper__factory,
     CurveVoterProxy__factory,
     CvxCrvToken__factory,
     ERC20__factory,
@@ -88,7 +88,7 @@ task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, h
     const contracts = await deployPhase4(deployer, phase3, mocks.addresses, true);
 
     logExtSystem(mocks.addresses);
-    logContracts(contracts as any as { [key: string]: { address: string } });
+    logContracts(contracts as unknown as { [key: string]: { address: string } });
 });
 
 task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -97,6 +97,7 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
 
     const sys: ExtSystemConfig = {
         token: "0x65c29b54d701DeF26000aA85193915B0c5dB9822",
+        tokenBpt: "0x0000000000000000000000000000000000000000", //  crvBpt.address,
         tokenWhale: "0xbE126Fd179822c5Cb72b0e6E584a6F7afeb9eaBE",
         minter: "0x44d7eb6e0fF0863f16AbC3a9fDa8D49Dab879e40",
         votingEscrow: "0x0e0837C8DA3C1931831Cc9aC2c19265AAa16cF97",
@@ -110,6 +111,8 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
             "0x156c44B88FBA5B65083758e7D1634c9fD27F0a31",
             "0x65964D0d66B9b5dbd0d548a5064a1d4601A0a168",
         ],
+        balancerMinOutBps: "9975",
+        balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
         balancerVault: "0x0000000000000000000000000000000000000000",
         balancerWeightedPoolFactory: "0x0000000000000000000000000000000000000000",
         weth: "0x0000000000000000000000000000000000000000",
@@ -123,6 +126,10 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
         cvxCrv: CvxCrvToken__factory.connect("0x0422a859FeCF2576e2201209AE02eFff916AfCF4", deployer),
         cvxCrvRewards: BaseRewardPool__factory.connect("0x2c9e3F6953B7e7675Eb448ED85666Ece4A109389", deployer),
         crvDepositor: CrvDepositor__factory.connect("0x9044439962dedD4dF5e032ADD45e16Eb609f72B7", deployer),
+        crvDepositorWrapper: CrvDepositorWrapper__factory.connect(
+            "0x9044439962dedD4dF5e032ADD45e16Eb609f72B7",
+            deployer,
+        ), // TODO which is the correct address?
         poolManager: PoolManagerV3__factory.connect("0xF5713ba15e6B2397D86C519BF5DA83F8955f4640", deployer),
         cvxLocker: AuraLocker__factory.connect("0x2E05Cef94C259b6092E14f631Eb20094f7DDDC63", deployer),
         cvxStakingProxy: AuraStakingProxy__factory.connect("0x1DAB1cC828cfb71C379D6EE18468b02DEAe9Aa5E", deployer),
