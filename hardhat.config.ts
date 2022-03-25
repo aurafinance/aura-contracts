@@ -59,6 +59,10 @@ const config: HardhatUserConfig = {
         mainnet: {
             url: process.env.NODE_URL || "https://main-light.eth.linkpool.io",
         },
+        kovan: {
+            url: process.env.NODE_URL || "",
+            gasPrice: 3000000000,
+        },
         forking: {
             url: process.env.NODE_URL || "",
         },

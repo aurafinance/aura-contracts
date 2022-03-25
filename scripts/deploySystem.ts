@@ -71,7 +71,6 @@ import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY, ONE_DAY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
-import { impersonateAccount } from "../test-utils/fork";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { getChain } from "../tasks/utils/networkAddressFactory";
 
@@ -109,9 +108,10 @@ interface BalancerPoolFactories {
     investmentPool: string;
 }
 interface ExtSystemConfig {
+    authorizerAdapter?: string;
     token: string;
     tokenBpt: string;
-    tokenWhale: string;
+    tokenWhale?: string;
     minter: string;
     votingEscrow: string;
     feeDistribution: string;
@@ -125,7 +125,7 @@ interface ExtSystemConfig {
     balancerPoolId: string;
     balancerMinOutBps: string;
     weth: string;
-    wethWhale: string;
+    wethWhale?: string;
 }
 
 interface NamingConfig {
@@ -143,30 +143,6 @@ interface MultisigConfig {
     treasuryMultisig: string;
     daoMultisig: string;
 }
-
-/* eslint-disable-next-line */
-const curveSystem: ExtSystemConfig = {
-    token: "0xD533a949740bb3306d119CC777fa900bA034cd52",
-    tokenBpt: "0xD533a949740bb3306d119CC777fa900bA034cd52",
-    tokenWhale: "0x7a16fF8270133F063aAb6C9977183D9e72835428",
-    minter: "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0",
-    votingEscrow: "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2",
-    feeDistribution: "0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc",
-    gaugeController: "0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB",
-    voteOwnership: "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
-    voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
-    gauges: ["0xBC89cd85491d81C6AD2954E6d0362Ee29fCa8F53"],
-    balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-    balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
-    balancerMinOutBps: "9975",
-    balancerPoolFactories: {
-        weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
-        stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
-        investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
-    },
-    weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-    wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
-};
 
 interface BPTData {
     tokens: string[];
@@ -238,91 +214,6 @@ function getPoolAddress(utils, receipt: ContractReceipt): string {
  * Phase 4: Pools, claimzap & farming
  * Phase 5: Governance - Bravo, GaugeVoting, VoteForwarder, update roles
  */
-
-async function deployForkSystem(
-    hre: HardhatRuntimeEnvironment,
-    signer: Signer,
-    distroList: DistroList,
-    multisigs: MultisigConfig,
-    naming: NamingConfig,
-): Promise<SystemDeployed> {
-    const { ethers } = hre;
-    const balHelper = new AssetHelpers(curveSystem.weth);
-
-    // ~~~ SET UP BALANCES ~~~
-
-    // crvBPT for initialLock && cvxCrv/crvBPT pair
-    const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
-    const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
-    let tx = await crv.transfer(await signer.getAddress(), simpleToExactAmount(1000));
-    await waitForTx(tx, true);
-
-    // weth for LBP creation
-    const wethWhaleSigner = await impersonateAccount(curveSystem.wethWhale);
-    const weth = await MockERC20__factory.connect(curveSystem.weth, wethWhaleSigner.signer);
-    tx = await weth.transfer(await signer.getAddress(), simpleToExactAmount(50));
-    await waitForTx(tx, true);
-
-    // ~~~~~~~~~~~~~~~~~~
-    // ~~~ DEPLOYMENT ~~~
-    // ~~~~~~~~~~~~~~~~~~
-
-    // ~~~~~~~~~~~~~~~
-    // ~~~ PHASE 1 ~~~
-    // ~~~~~~~~~~~~~~~
-    const phase1 = await deployPhase1(signer, curveSystem, false, true);
-
-    // POST-PHASE-1
-    // Whitelist the VoterProxy in the Curve system
-    const ve = ICurveVoteEscrow__factory.connect(curveSystem.votingEscrow, signer);
-    const walletChecker = IWalletChecker__factory.connect(await ve.smart_wallet_checker(), signer);
-    const owner = await walletChecker.dao();
-    const ownerSigner = await impersonateAccount(owner);
-    tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
-    await waitForTx(tx, true);
-
-    // ~~~~~~~~~~~~~~~
-    // ~~~ PHASE 2 ~~~
-    // ~~~~~~~~~~~~~~~
-
-    const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
-    // POST-PHASE-2
-    const treasurySigner = await impersonateAccount(multisigs.treasuryMultisig);
-    const lbp = IInvestmentPool__factory.connect(phase2.lbp, treasurySigner.signer);
-    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
-    const [, weights] = balHelper.sortTokens(
-        [phase2.cvx.address, curveSystem.weth],
-        [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
-    );
-    tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
-    await waitForTx(tx, true);
-    tx = await lbp.setSwapEnabled(true);
-    await waitForTx(tx, true);
-
-    // ~~~~~~~~~~~~~~~
-    // ~~~ PHASE 3 ~~~
-    // ~~~~~~~~~~~~~~~
-
-    // PRE-PHASE-3
-    tx = await weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
-    await waitForTx(tx, true);
-
-    const phase3 = await deployPhase3(hre, signer, phase2, multisigs, curveSystem, true);
-
-    // POST-PHASE-3
-
-    // ~~~~~~~~~~~~~~~
-    // ~~~ PHASE 4 ~~~
-    // ~~~~~~~~~~~~~~~
-
-    // PRE-PHASE-4
-    const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
-    tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
-    await waitForTx(tx, true);
-
-    const phase4 = await deployPhase4(signer, phase3, curveSystem, true);
-    return phase4;
-}
 
 async function deployPhase1(
     signer: Signer,
@@ -652,8 +543,10 @@ async function deployPhase2(
         await waitForTx(tx, debug);
     }
 
-    tx = await booster.setFeeInfo(feeDistribution);
-    await waitForTx(tx, debug);
+    if (!!feeDistribution && feeDistribution != ZERO_ADDRESS) {
+        tx = await booster.setFeeInfo(feeDistribution);
+        await waitForTx(tx, debug);
+    }
 
     tx = await booster.setArbitrator(arbitratorVault.address);
     await waitForTx(tx, debug);
@@ -756,7 +649,7 @@ async function deployPhase2(
             name: `Balancer ${await cvxCrv.symbol()} Stable Pool`,
             symbol: `B-${await cvxCrv.symbol()}-STABLE`,
             swapFee: simpleToExactAmount(1, 15),
-            ampParameter: 50,
+            ampParameter: 25,
         };
         console.log(poolData.tokens);
 
@@ -996,7 +889,7 @@ async function deployPhase3(
         const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
             balLiquidityProvider.address,
         );
-        if (tknAmount.lt(simpleToExactAmount(3, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+        if (tknAmount.lt(simpleToExactAmount(2.8, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
             throw console.error("Invalid balances");
         }
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
@@ -1093,7 +986,6 @@ async function deployPhase4(
 }
 
 export {
-    deployForkSystem,
     DistroList,
     MultisigConfig,
     ExtSystemConfig,
