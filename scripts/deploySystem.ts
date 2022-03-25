@@ -63,6 +63,9 @@ import {
     CrvDepositorWrapper__factory,
     MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
+    IERC20,
+    IERC20__factory,
+    IStablePoolFactory__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -170,7 +173,8 @@ interface BPTData {
     name: string;
     symbol: string;
     swapFee: BN;
-    weights: BN[];
+    weights?: BN[];
+    ampParameter?: number;
 }
 interface Phase1Deployed {
     voterProxy: CurveVoterProxy;
@@ -195,7 +199,11 @@ interface Phase2Deployed extends Phase1Deployed {
     lbp: string;
     balLiquidityProvider: BalLiquidityProvider;
 }
-interface SystemDeployed extends Phase2Deployed {
+
+interface Phase3Deployed extends Phase2Deployed {
+    poolAddress8020: string;
+}
+interface SystemDeployed extends Phase3Deployed {
     claimZap: ClaimZap;
 }
 
@@ -238,33 +246,61 @@ async function deployForkSystem(
     multisigs: MultisigConfig,
     naming: NamingConfig,
 ): Promise<SystemDeployed> {
+    // ~~~ SET UP BALANCES ~~~
+
+    // crvBPT for initialLock && cvxCrv/crvBPT pair
+    const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
+    const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
+    let tx = await crv.transfer(await signer.getAddress(), simpleToExactAmount(1000));
+    await waitForTx(tx, true);
+
+    // weth for LBP creation
+    const wethWhaleSigner = await impersonateAccount(curveSystem.wethWhale);
+    const weth = await MockERC20__factory.connect(curveSystem.weth, wethWhaleSigner.signer);
+    tx = await weth.transfer(await signer.getAddress(), simpleToExactAmount(50));
+    await waitForTx(tx, true);
+
+    // ~~~~~~~~~~~~~~~~~~
+    // ~~~ DEPLOYMENT ~~~
+    // ~~~~~~~~~~~~~~~~~~
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 1 ~~~
+    // ~~~~~~~~~~~~~~~
     const phase1 = await deployPhase1(signer, curveSystem, false, true);
 
+    // POST-PHASE-1
     // Whitelist the VoterProxy in the Curve system
     const ve = ICurveVoteEscrow__factory.connect(curveSystem.votingEscrow, signer);
     const walletChecker = IWalletChecker__factory.connect(await ve.smart_wallet_checker(), signer);
     const owner = await walletChecker.dao();
     const ownerSigner = await impersonateAccount(owner);
-    let tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
+    tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
     await waitForTx(tx, true);
 
-    // Send VoterProxy some CRV for initial lock
-    const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
-    const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
-    tx = await crv.transfer(phase1.voterProxy.address, simpleToExactAmount(1));
-    await waitForTx(tx, true);
-
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 2 ~~~
+    // ~~~~~~~~~~~~~~~
+    console.log("BBBBAAALLLL", (await crv.balanceOf(await signer.getAddress())).toString());
     const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
 
-    const wethWhaleSigner = await impersonateAccount(curveSystem.wethWhale);
-    tx = await MockERC20__factory.connect(curveSystem.weth, wethWhaleSigner.signer).transfer(
-        phase2.balLiquidityProvider.address,
-        simpleToExactAmount(500),
-    );
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 3 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-3
+    tx = await weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
     await waitForTx(tx, true);
 
     const phase3 = await deployPhase3(hre, signer, phase2, multisigs, curveSystem, true);
 
+    // POST-PHASE-3
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 4 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-4
     const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
     tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
     await waitForTx(tx, true);
@@ -561,6 +597,14 @@ async function deployPhase2(
     tx = await voterProxy.setOwner(multisigs.daoMultisig);
     await waitForTx(tx, debug);
 
+    const crvBpt = MockERC20__factory.connect(config.tokenBpt, deployer);
+    let crvBptbalance = await crvBpt.balanceOf(deployerAddress);
+    if (crvBptbalance.lt(simpleToExactAmount(1))) {
+        throw console.error("No crvBPT for initial lock");
+    }
+    tx = await crvBpt.transfer(voterProxy.address, simpleToExactAmount(1));
+    await waitForTx(tx, debug);
+
     tx = await crvDepositor.initialLock();
     await waitForTx(tx, debug);
 
@@ -665,46 +709,82 @@ async function deployPhase2(
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
     await waitForTx(tx, debug);
 
-    // TODO: Pool config
-    //  auraBAL/BPT - StablePoolFactory.sol
-    //              - mainnet: 0xc66Ba2B6595D3613CCab350C886aCE23866EDe24
-    //              - kovan: 0x751dfDAcE1AD995fF13c927f6f761C6604532c79
-    //  AURA LBP - InvestmentPoolFactory.sol
-    //              - mainnet: 0x48767F9F868a4A7b86A90736632F6E44C2df7fa9
-    //              - kovan: 0xb08E16cFc07C684dAA2f93C70323BAdb2A6CBFd2
-    //  AURA/ETH - WeightedPool2TokensFactory.sol
-    //              - mainnet: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
-    //              - kovan: 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
-
-    // TODO - add this pool
     // -----------------------------
     // 2.2.3 Create: auraBAL/BPT BPT Stableswap
     // https://dev.balancer.fi/resources/deploy-pools-from-factory/creation#deploying-a-pool-with-typescript
     // -----------------------------
 
-    // let poolTokens = [cvx.address, config.weth].sort((a, b) => (a > b ? 1 : 0));
-    // console.log(poolTokens);
-    // let poolName = `${await cvx.symbol()}-WETH 50/50 Pool`;
-    // let poolSymbol = `50${await cvx.symbol()}-50WETH`;
-    // let poolSwapFee = simpleToExactAmount(5, 15);
-    // let poolWeights = [simpleToExactAmount(5, 17), simpleToExactAmount(5, 17)];
-    // const weightedPoolFactory = IWeightedPoolFactory__factory.connect(config.balancerWeightedPoolFactory, deployer);
-    // tx = await weightedPoolFactory.create(poolName, poolSymbol, poolTokens, poolWeights, poolSwapFee, ZERO_ADDRESS);
-    // let receipt = await waitForTx(tx, debug);
-    // const events = receipt.events.filter(e => e.event === "PoolCreated");
-    // const poolAddress = events[0].args.pool;
+    crvBptbalance = await crvBpt.balanceOf(deployerAddress);
+    if (crvBptbalance.eq(0)) {
+        throw console.error("Uh oh, deployer has no crvBpt");
+    }
 
-    // let pool = await IBalancerPool__factory.connect(poolAddress, deployer);
-    // let poolId = await pool.getPoolId();
-    // const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
-    // let initialPoolBalances =
-    const cvxCrvBpt = await deployContract<MockERC20>(
-        new MockERC20__factory(deployer),
-        "CvxCrvBPT",
-        ["Balancer Pool Token 50/50 CRV/CVXCRV", "50/50 CRV/CVXCRV", 18, deployerAddress, 100000],
-        {},
-        debug,
-    );
+    tx = await crvBpt.approve(crvDepositor.address, crvBptbalance.div(2));
+    await waitForTx(tx, debug);
+
+    tx = await crvDepositor["deposit(uint256,bool)"](crvBptbalance.div(2), true);
+    await waitForTx(tx, debug);
+
+    const cvxCrvBalance = await cvxCrv.balanceOf(deployerAddress);
+    if (!cvxCrvBalance.eq(crvBptbalance.div(2))) {
+        throw console.error("Uh oh, invalid cvxCrv balance");
+    }
+
+    let cvxCrvBpt;
+    if (chain == Chain.mainnet || chain == Chain.kovan) {
+        const [poolTokens, initialBalances] = balHelper.sortTokens(
+            [cvxCrv.address, crvBpt.address],
+            [cvxCrvBalance, cvxCrvBalance],
+        );
+        const poolData: BPTData = {
+            tokens: poolTokens,
+            name: `Balancer ${await cvxCrv.symbol()} Stable Pool`,
+            symbol: `B-${await cvxCrv.symbol()}-STABLE`,
+            swapFee: simpleToExactAmount(1, 15),
+            ampParameter: 50,
+        };
+        console.log(poolData.tokens);
+
+        const poolFactory = IStablePoolFactory__factory.connect(config.balancerPoolFactories.stablePool, deployer);
+        tx = await poolFactory.create(
+            poolData.name,
+            poolData.symbol,
+            poolData.tokens,
+            poolData.ampParameter,
+            poolData.swapFee,
+            multisigs.treasuryMultisig,
+        );
+        const receipt = await waitForTx(tx, debug);
+        const cvxCrvPoolAddress = getPoolAddress(ethers.utils, receipt);
+        cvxCrvBpt = IERC20__factory.connect(cvxCrvPoolAddress, deployer);
+
+        const poolId = await IBalancerPool__factory.connect(cvxCrvPoolAddress, deployer).getPoolId();
+        const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
+
+        tx = await cvxCrv.approve(config.balancerVault, cvxCrvBalance);
+        await waitForTx(tx, debug);
+        tx = await crvBpt.approve(config.balancerVault, cvxCrvBalance);
+        await waitForTx(tx, debug);
+
+        const joinPoolRequest = {
+            assets: poolTokens,
+            maxAmountsIn: initialBalances as BN[],
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256", "uint256[]"], [0, initialBalances as BN[]]),
+            fromInternalBalance: false,
+        };
+
+        tx = await balancerVault.joinPool(poolId, deployerAddress, deployerAddress, joinPoolRequest);
+        await waitForTx(tx, debug);
+    } else {
+        const fakeBpt = await deployContract<MockERC20>(
+            new MockERC20__factory(deployer),
+            "CvxCrvBPT",
+            ["Balancer Pool Token 50/50 CRV/CVXCRV", "50/50 CRV/CVXCRV", 18, deployerAddress, 100000],
+            {},
+            debug,
+        );
+        cvxCrvBpt = fakeBpt as IERC20;
+    }
 
     // -----------------------------
     // 2.2.4 Schedule: chef (or other) & cvxCRV/CRV incentives
@@ -820,7 +900,7 @@ async function deployPhase2(
             fromInternalBalance: false,
         };
 
-        tx = await balancerVault.joinPool(poolId, deployerAddress, deployerAddress, joinPoolRequest);
+        tx = await balancerVault.joinPool(poolId, deployerAddress, multisigs.treasuryMultisig, joinPoolRequest);
         await waitForTx(tx, debug);
     }
     // Else just make a fake one to move tokens
@@ -876,7 +956,7 @@ async function deployPhase3(
     multisigs: MultisigConfig,
     config: ExtSystemConfig,
     debug = false,
-): Promise<Phase2Deployed> {
+): Promise<Phase3Deployed> {
     const { ethers } = hre;
     const chain = getChain(hre);
     const deployer = signer;
@@ -947,12 +1027,12 @@ async function deployPhase3(
         await waitForTx(tx, debug);
     }
 
-    return deployment;
+    return { ...deployment, poolAddress8020: poolAddress };
 }
 
 async function deployPhase4(
     signer: Signer,
-    deployment: Phase2Deployed,
+    deployment: Phase3Deployed,
     config: ExtSystemConfig,
     debug = false,
 ): Promise<SystemDeployed> {
@@ -961,13 +1041,12 @@ async function deployPhase4(
     const { token, gauges } = config;
     const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, crvDepositor, poolManager } = deployment;
 
+    // PRE-4: daoMultisig.setProtectPool(false)
     // -----------------------------
     // 4. Pool creation etc
     //     - Claimzap
     //     - All initial gauges
     // -----------------------------
-
-    // TODO - add "init" flag to PoolManager in order to allow for pool creation
 
     const claimZap = await deployContract<ClaimZap>(
         new ClaimZap__factory(deployer),

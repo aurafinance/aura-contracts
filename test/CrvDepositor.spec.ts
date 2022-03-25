@@ -61,9 +61,6 @@ describe("CrvDepositor", () => {
 
     describe("basic flow of locking", () => {
         it("locks up for a year initially", async () => {
-            const cvxCrvsupply = await cvxCrv.totalSupply();
-            expect(cvxCrvsupply).eq(0);
-
             const unlockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
             const now = await getTimestamp();
             expect(unlockTime).gt(now.add(ONE_WEEK.mul(51)));

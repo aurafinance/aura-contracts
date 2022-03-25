@@ -51,7 +51,7 @@ function getMockDistro(): DistroList {
         cvxCrvBootstrap: simpleToExactAmount(2, 24),
         lbp: {
             tknAmount: simpleToExactAmount(2, 24),
-            wethAmount: simpleToExactAmount(10),
+            wethAmount: simpleToExactAmount(50),
             matching: simpleToExactAmount(3, 24),
         },
         airdrops: [

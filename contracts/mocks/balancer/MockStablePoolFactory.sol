@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 
-interface IWeightedPoolFactory {
+interface IStablePoolFactory {
     function create(
         string memory name,
         string memory symbol,
