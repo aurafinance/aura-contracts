@@ -251,8 +251,7 @@ task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre
 
     const phase2 = await deployPhase2(hre, deployer, phase1, distroList, multisigs, naming, kovanBalancerConfig, true);
     // POST-PHASE-2
-    const treasurySigner = await impersonateAccount(multisigs.treasuryMultisig);
-    const lbp = IInvestmentPool__factory.connect(phase2.lbp, treasurySigner.signer);
+    const lbp = IInvestmentPool__factory.connect(phase2.lbp, deployer);
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     const [, weights] = balHelper.sortTokens(
         [phase2.cvx.address, kovanBalancerConfig.weth],
@@ -281,8 +280,7 @@ task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre
     // ~~~~~~~~~~~~~~~
 
     // PRE-PHASE-4
-    const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
-    tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
+    tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
     await waitForTx(tx, true);
 
     const phase4 = await deployPhase4(deployer, phase3, kovanBalancerConfig, true);

@@ -614,7 +614,12 @@ async function deployPhase2(
         {},
         debug,
     );
+
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
+    await waitForTx(tx, debug);
+
+    // TODO - replace queueNewRewards
+    tx = await initialCvxCrvStaking.queueNewRewards(distroList.cvxCrvBootstrap);
     await waitForTx(tx, debug);
 
     // -----------------------------
