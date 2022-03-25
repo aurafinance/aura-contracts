@@ -43,11 +43,18 @@ import {
     IUniswapV2Factory__factory,
     IUniswapV2Router01__factory,
     IERC20__factory,
-    IDeposit__factory,
 } from "../../types/generated";
 import { deployContract, getSigner } from "../utils";
 import * as distroList from "./convex-distro.json";
 import { simpleToExactAmount } from "../../test-utils/math";
+interface PoolInfo {
+    lptoken: string;
+    token: string;
+    gauge: string;
+    crvRewards: string;
+    stash: string;
+    shutdown: boolean;
+}
 
 // const convexVoterProxy = "0x989AEb4d175e16225E39E87d0D97A3360524AD80";
 const convexTreasury = "0x1389388d01708118b497f59521f6943Be2541bb7";
@@ -96,11 +103,12 @@ task("deploy:Convex").setAction(async function (taskArguments: TaskArguments, hr
 
     const contractList: { [key: string]: { [key: string]: string } } = {};
     const systemContracts: { [key: string]: string } = {};
-    const poolsContracts: { [key: string]: any } = {};
+    const poolsContracts: { [key: string]: string } = {};
     const poolNames: string[] = [];
     contractList["system"] = systemContracts;
     contractList["pools"] = poolsContracts;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const addContract = function (group: "system" | "pools", name: string, value: any) {
         contractList[group][name] = value;
         const contractListOutput = JSON.stringify(contractList, null, 4);
@@ -218,7 +226,8 @@ task("deploy:Convex").setAction(async function (taskArguments: TaskArguments, hr
     await tx.wait();
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await tx.wait();
-    tx = await booster.setFeeInfo();
+    // TODO - which is the real value?
+    tx = await booster.setFeeInfo("0x0000000000000000000000000000000000000000");
     await tx.wait();
 
     // TODO - set auth to be non EOA
@@ -426,7 +435,7 @@ task("deploy:Convex").setAction(async function (taskArguments: TaskArguments, hr
     for (let i = 0; i < len.toNumber(); i++) {
         pList.push(booster.poolInfo(i));
     }
-    const poolInfo: Array<any> = await Promise.all(pList);
+    const poolInfo: Array<PoolInfo> = await Promise.all(pList);
     for (let i = 0; i < poolInfo.length; i++) {
         addContract("pools", poolNames[i], {
             ...poolInfo,
