@@ -15,3 +15,13 @@ interface IInvestmentPoolFactory {
         uint256 managementSwapFeePercentage
     ) external returns (address);
 }
+
+interface IInvestmentPool {
+    function setSwapEnabled(bool swapEnabled) external;
+
+    function updateWeightsGradually(
+        uint256 startTime,
+        uint256 endTime,
+        uint256[] memory endWeights
+    ) external;
+}

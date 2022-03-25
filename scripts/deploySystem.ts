@@ -1,3 +1,4 @@
+import { IInvestmentPool__factory } from "./../types/generated/factories/IInvestmentPool__factory";
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
     IInvestmentPoolFactory__factory,
@@ -45,7 +46,6 @@ import {
     MerkleAirdropFactory,
     MerkleAirdropFactory__factory,
     MerkleAirdrop__factory,
-    IWeightedPoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
     ConvexMasterChef,
@@ -69,7 +69,7 @@ import {
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY } from "../test-utils/constants";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY, ONE_DAY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -246,6 +246,9 @@ async function deployForkSystem(
     multisigs: MultisigConfig,
     naming: NamingConfig,
 ): Promise<SystemDeployed> {
+    const { ethers } = hre;
+    const balHelper = new AssetHelpers(curveSystem.weth);
+
     // ~~~ SET UP BALANCES ~~~
 
     // crvBPT for initialLock && cvxCrv/crvBPT pair
@@ -281,8 +284,20 @@ async function deployForkSystem(
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 2 ~~~
     // ~~~~~~~~~~~~~~~
-    console.log("BBBBAAALLLL", (await crv.balanceOf(await signer.getAddress())).toString());
+
     const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
+    // POST-PHASE-2
+    const treasurySigner = await impersonateAccount(multisigs.treasuryMultisig);
+    const lbp = IInvestmentPool__factory.connect(phase2.lbp, treasurySigner.signer);
+    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
+    const [, weights] = balHelper.sortTokens(
+        [phase2.cvx.address, curveSystem.weth],
+        [simpleToExactAmount(1, 16), simpleToExactAmount(99, 16)],
+    );
+    tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
+    await waitForTx(tx, true);
+    tx = await lbp.setSwapEnabled(true);
+    await waitForTx(tx, true);
 
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 3 ~~~
