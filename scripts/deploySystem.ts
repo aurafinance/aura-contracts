@@ -807,16 +807,15 @@ async function deployPhase2(
     const currentBlock = await ethers.provider.getBlockNumber();
     const chefCvx = distroList.lpIncentives;
 
-    const blocksInDay = BN.from(6500);
+    const blocksInDay = BN.from(7000);
     const numberOfBlocks = blocksInDay.mul(365).mul(4); // 4 years
     const rewardPerBlock = chefCvx.div(numberOfBlocks);
-    const startBlock = blocksInDay.mul(7).add(currentBlock); //start with small delay
-    const endbonusblock = 0; // No bonus
+    const startBlock = BN.from(currentBlock).add(blocksInDay.mul(7)); //start with small delay
 
     const chef = await deployContract<ConvexMasterChef>(
         new ConvexMasterChef__factory(deployer),
         "Bootstrap",
-        [cvx.address, rewardPerBlock, startBlock, endbonusblock],
+        [cvx.address, rewardPerBlock, startBlock, startBlock.add(numberOfBlocks)],
         {},
         debug,
     );
