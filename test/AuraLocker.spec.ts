@@ -809,25 +809,6 @@ describe("AuraLocker", () => {
             const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
             await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
             await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
-            // const cvxCrvBalanceSP  = await cvxCrv.balanceOf(cvxStakingProxyAccount.address);
-            // const cvxCrvBalanceAL  = await cvxCrv.balanceOf(auraLocker.address);
-            // const cvxCrvBalanceBO  = await cvxCrv.balanceOf(booster.address);
-            // const cvxCrvBalanceDP  = await cvxCrv.balanceOf(await deployer.getAddress());
-            // const cvxCrvBalanceAC  = await cvxCrv.balanceOf(await accounts[0].getAddress());
-
-            // Given that alice locks cvx and delegates to herself
-            // await cvxCrv.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
-            // await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
-            // await mockToken.connect(deployer).approve(auraLocker.address, simpleToExactAmount(100));
-            // await mockToken.connect(deployer).transfer(auraLocker.address, simpleToExactAmount(10));
-
-            // await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
-            // await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
-            // await auraLocker.connect(alice).delegate(aliceAddress);
-
-            // await increaseTime(ONE_WEEK.mul(15));
-            // await auraLocker.checkpointEpoch();
-            // dataBefore = await getSnapShot(aliceAddress, "beforeEach");
         });
         it("fails if the sender is not rewardsDistributor", async () => {
             // Only the rewardsDistributor can queue cvxCRV rewards
@@ -852,33 +833,6 @@ describe("AuraLocker", () => {
             await tx.wait();
         });
         it("only starts distributing the rewards when the queued amount is over 83% of the remaining");
-        it("queues rewards when cvxCrv period is finished", async () => {
-            // AuraStakingProxy.distribute()
-            const rewards = simpleToExactAmount(100);
-            const rewardData = await auraLocker.rewardData(cvxCrv.address);
-            const timeStamp = await getTimestamp();
-            //     console.log(`
-            //    rewardData.lastUpdateTime:      ${rewardData.lastUpdateTime}
-            //    rewardData.periodFinish:        ${rewardData.periodFinish}
-            //    rewardData.rewardPerTokenStored:${rewardData.rewardPerTokenStored.toString()}
-            //    rewardData.rewardRate:          ${rewardData.rewardRate.toString()}
-            //    `);
-
-            expect(timeStamp, "reward period finish").to.gt(rewardData.periodFinish);
-
-            const tx = await auraLocker.connect(cvxStakingProxyAccount.signer).queueNewRewards(rewards);
-
-            // Verifies queuedCvxCrvRewards is 0
-            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish.
-        });
-        it("queues rewards when cvxCrv period is not finished and queuedRatio is lt new reward ratio", async () => {
-            // Verifies queuedCvxCrvRewards is 0
-            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish.
-        });
-        it("queues rewards when cvxCrv period is not finished and queuedRatio is lt new reward ratio", async () => {
-            // Verifies queuedCvxCrvRewards is _rewards
-            // No notification
-        });
     });
 
     context("checking delegation timelines", () => {
@@ -1111,7 +1065,6 @@ describe("AuraLocker", () => {
             await expect(auraLocker.setKickIncentive(100, 1)).revertedWith("min delay");
         });
         it("recover ERC20 with wrong token address", async () => {
-            //  await setup();
             await expect(auraLocker.recoverERC20(cvx.address, ZERO)).revertedWith("Cannot withdraw staking token");
         });
         it("recover ERC20 cannot withdraw reward", async () => {

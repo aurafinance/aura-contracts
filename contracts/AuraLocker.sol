@@ -380,7 +380,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             ? block.timestamp.add(rewardsDuration)
             : block.timestamp.sub(_checkDelay);
         require(length > 0, "no locks");
-        // TODO - REVIEW block.timestamp.add(rewardsDuration) IS tested.
         // e.g. now = 16
         // if contract is shutdown OR latest lock unlock time (e.g. 17) <= now - (1)
         // e.g. 17 <= (16 + 1)
@@ -674,7 +673,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     // Balance of an account which only includes properly locked tokens at the given epoch
     function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
         LockedBalance[] storage locks = userLocks[_user];
-        uint256 len = locks.length;
         //get timestamp of given epoch index
         uint256 epochTime = epochs[_epoch].date;
         //get timestamp of first non-inclusive epoch
