@@ -80,7 +80,6 @@ interface DistroList {
     partnerTreasury: VestData;
     lpSeed: BN;
 }
-
 interface ExtSystemConfig {
     token: string;
     tokenBpt: string;
