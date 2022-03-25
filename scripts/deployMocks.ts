@@ -266,6 +266,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             balancerPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",
             weth: weth.address,
+            wethWhale: deployerAddress,
         },
         namingConfig: {
             cvxName: "Convex Finance",

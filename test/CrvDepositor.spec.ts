@@ -40,7 +40,7 @@ describe("CrvDepositor", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
-        const contracts = await deployPhase3(deployer, phase2, mocks.addresses);
+        const contracts = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();

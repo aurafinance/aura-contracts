@@ -33,7 +33,7 @@ describe("PoolManagerV3", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
-        const contracts = await deployPhase3(accounts[0], phase2, mocks.addresses);
+        const contracts = await deployPhase3(hre, accounts[0], phase2, multisigs, mocks.addresses);
 
         booster = contracts.booster;
         poolManager = contracts.poolManager;

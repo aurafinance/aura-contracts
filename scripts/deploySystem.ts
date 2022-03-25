@@ -9,6 +9,8 @@ import {
     BoosterOwner,
     ClaimZap__factory,
     ClaimZap,
+    BalLiquidityProvider,
+    BalLiquidityProvider__factory,
     Booster__factory,
     Booster,
     CurveVoterProxy__factory,
@@ -60,6 +62,7 @@ import {
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
     MerkleAirdrop,
+    IWeightedPool2TokensFactory__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -119,6 +122,7 @@ interface ExtSystemConfig {
     balancerPoolId: string;
     balancerMinOutBps: string;
     weth: string;
+    wethWhale: string;
 }
 
 interface NamingConfig {
@@ -158,6 +162,7 @@ const curveSystem: ExtSystemConfig = {
         investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
     },
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
 };
 
 interface BPTData {
@@ -187,6 +192,8 @@ interface Phase2Deployed extends Phase1Deployed {
     vestedEscrows: VestedEscrow[];
     dropFactory: MerkleAirdropFactory;
     drops: MerkleAirdrop[];
+    lbp: string;
+    balLiquidityProvider: BalLiquidityProvider;
 }
 interface SystemDeployed extends Phase2Deployed {
     claimZap: ClaimZap;
@@ -248,7 +255,15 @@ async function deployForkSystem(
     await waitForTx(tx, true);
 
     const phase2 = await deployPhase2(hre, signer, phase1, distroList, multisigs, naming, curveSystem, true);
-    const phase3 = await deployPhase3(signer, phase2, curveSystem, true);
+
+    const wethWhaleSigner = await impersonateAccount(curveSystem.wethWhale);
+    tx = await MockERC20__factory.connect(curveSystem.weth, wethWhaleSigner.signer).transfer(
+        phase2.balLiquidityProvider.address,
+        simpleToExactAmount(500),
+    );
+    await waitForTx(tx, true);
+
+    const phase3 = await deployPhase3(hre, signer, phase2, multisigs, curveSystem, true);
 
     const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
     tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
@@ -327,6 +342,8 @@ async function deployPhase2(
     //        - Schedule: Airdrop(s)
     //        - Schedule: LBP
     // -----------------------------
+    // POST-2: TreasuryDAO: LBP.updateWeightsGradually
+    //         TreasuryDAO: LBP.setSwapEnabled
 
     // -----------------------------
     // 2.1 Core system:
@@ -754,7 +771,8 @@ async function deployPhase2(
     // -----------------------------
 
     // If Mainnet or Kovan, create LBP
-    if (chain == Chain.mainnet || chain == Chain.rinkeby) {
+    let lbp;
+    if (chain == Chain.mainnet || chain == Chain.kovan) {
         const { tknAmount, wethAmount } = distroList.lbp;
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
             [cvx.address, config.weth],
@@ -786,7 +804,7 @@ async function deployPhase2(
         );
         const receipt = await waitForTx(tx, debug);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
-
+        lbp = poolAddress;
         const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
         const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
 
@@ -807,24 +825,28 @@ async function deployPhase2(
     }
     // Else just make a fake one to move tokens
     else {
-        tx = await cvx.transfer(multisigs.treasuryMultisig, distroList.lbp.tknAmount);
+        lbp = DEAD_ADDRESS;
+        tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
         await waitForTx(tx, debug);
-        tx = await MockERC20__factory.connect(config.weth, deployer).transfer(
-            multisigs.treasuryMultisig,
-            distroList.lbp.wethAmount,
-        );
+        tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
         await waitForTx(tx, debug);
     }
 
-    // TODO - add matching liq
-    tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.matching);
+    const balLiquidityProvider = await deployContract<BalLiquidityProvider>(
+        new BalLiquidityProvider__factory(deployer),
+        "BalLiquidityProvider",
+        [cvx.address, config.weth, simpleToExactAmount(375), multisigs.daoMultisig, config.balancerVault],
+        {},
+        debug,
+    );
+
+    tx = await cvx.transfer(balLiquidityProvider.address, distroList.lbp.matching);
     await waitForTx(tx, debug);
 
     const balance = await cvx.balanceOf(deployerAddress);
     if (balance.gt(0)) {
         throw console.error("Uh oh, deployer still has CVX to distribute: ", balance.toString());
     }
-    // TODO - add all contracts to output
 
     return {
         ...deployment,
@@ -842,19 +864,89 @@ async function deployPhase2(
         vestedEscrows,
         dropFactory,
         drops,
+        lbp,
+        balLiquidityProvider,
     };
 }
 
 async function deployPhase3(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
     deployment: Phase2Deployed,
+    multisigs: MultisigConfig,
     config: ExtSystemConfig,
     debug = false,
 ): Promise<Phase2Deployed> {
-    if (debug) {
-        console.log(debug);
+    const { ethers } = hre;
+    const chain = getChain(hre);
+    const deployer = signer;
+    const balHelper = new AssetHelpers(config.weth);
+
+    const { cvx, balLiquidityProvider } = deployment;
+
+    // PRE-3: TreasuryDAO: LBP.withdraw
+    //        TreasuryDAO: WETH.transfer(liqProvider)
+    // -----------------------------
+    // 3: Liquidity from LBP taken and used for AURA/ETH pool
+    //     - create: TKN/ETH 80/20 BPT
+    //     - fund: liq
+    // -----------------------------
+    // POST-3: MerkleDrops && 2% cvxCRV staking manual trigger
+
+    // If Mainnet or Kovan, create LBP
+    let tx;
+    let poolAddress;
+    if (chain == Chain.mainnet || chain == Chain.kovan) {
+        const tknAmount = await cvx.balanceOf(balLiquidityProvider.address);
+        const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
+            balLiquidityProvider.address,
+        );
+        if (tknAmount.lt(simpleToExactAmount(3, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+            throw console.error("Invalid balances");
+        }
+        const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
+            [cvx.address, config.weth],
+            [simpleToExactAmount(80, 16), simpleToExactAmount(20, 16)],
+            [tknAmount, wethAmount],
+        );
+        const poolData: BPTData = {
+            tokens: poolTokens,
+            name: `Balancer 80 ${await cvx.symbol()} 20 WETH`,
+            symbol: `B-80${await cvx.symbol()}-20WETH`,
+            swapFee: simpleToExactAmount(1, 16),
+            weights: weights as BN[],
+        };
+        console.log(poolData.tokens);
+
+        const poolFactory = IWeightedPool2TokensFactory__factory.connect(
+            config.balancerPoolFactories.weightedPool2Tokens,
+            deployer,
+        );
+        tx = await poolFactory.create(
+            poolData.name,
+            poolData.symbol,
+            poolData.tokens,
+            poolData.weights,
+            poolData.swapFee,
+            true,
+            multisigs.treasuryMultisig,
+        );
+        const receipt = await waitForTx(tx, debug);
+        poolAddress = getPoolAddress(ethers.utils, receipt);
+
+        const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
+
+        const joinPoolRequest = {
+            assets: poolTokens,
+            maxAmountsIn: initialBalances as BN[],
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256", "uint256[]"], [0, initialBalances as BN[]]),
+            fromInternalBalance: false,
+        };
+
+        tx = await balLiquidityProvider.provideLiquidity(poolId, joinPoolRequest);
+        await waitForTx(tx, debug);
     }
-    // TODO - phase 3 pull LBP tokens from treasuryDAO
+
     return deployment;
 }
 

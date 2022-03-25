@@ -10,6 +10,7 @@ import {
     ExtSystemConfig,
 } from "../../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { simpleToExactAmount } from "./../../test-utils/math";
 import {
     AuraLocker__factory,
     AuraMinter__factory,
@@ -82,7 +83,10 @@ task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, h
         mocks.addresses,
         true,
     );
-    const phase3 = await deployPhase3(deployer, phase2, mocks.addresses, true);
+    const tx = await mocks.weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
+    await tx.wait();
+
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses, true);
     const contracts = await deployPhase4(deployer, phase3, mocks.addresses, true);
 
     logExtSystem(mocks.addresses);
