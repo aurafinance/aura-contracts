@@ -233,6 +233,7 @@ describe("AuraLocker", () => {
             mocks.namingConfig,
             mocks.addresses,
         );
+        await phase3.poolManager.setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         alice = accounts[1];
@@ -374,8 +375,12 @@ describe("AuraLocker", () => {
             const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
             expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
+            const balBefore = await cvxCrv.balanceOf(auraLocker.address);
             const tx = await cvxStakingProxy.distribute();
             await tx.wait();
+
+            const balAfter = await cvxCrv.balanceOf(auraLocker.address);
+            expect(balAfter).gt(balBefore.add(stakingCrvBalance.div(3)));
         });
 
         it("can't process locks that haven't expired", async () => {

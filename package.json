@@ -3,7 +3,8 @@
     "description": "Aura Finance smart contracts",
     "version": "1.0.0",
     "scripts": {
-        "clean": "shx rm -rf ./artifacts ./cache ./coverage ./types/aura ./types/cvx ./coverage.json types/generated",
+        "clean": "shx rm -rf ./artifacts ./cache ./coverage ./types/generated ./coverage.json",
+        "reset": "yarn clean && yarn compile",
         "commit": "git-cz",
         "compile": "yarn compile:cvx && yarn compile:aura",
         "compile:aura": "yarn hardhat compile --config hardhat.config.ts",
@@ -19,7 +20,8 @@
         "prepublishOnly": "pinst --disable",
         "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
         "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
-        "test": "yarn hardhat test",
+        "test": "hardhat test",
+        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
         "typechain": "yarn hardhat typechain"
     },
     "dependencies": {
@@ -57,7 +59,7 @@
         "ethereum-waffle": "^3.4.0",
         "ethers": "^5.5.1",
         "fs-extra": "^10.0.0",
-        "hardhat": "^2.7.0",
+        "hardhat": "2.9.1",
         "hardhat-gas-reporter": "^1.0.4",
         "husky": "^7.0.4",
         "lint-staged": "^11.2.6",
