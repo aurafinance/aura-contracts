@@ -14,14 +14,14 @@ import { simpleToExactAmount } from "./../../test-utils/math";
 import {
     AuraLocker__factory,
     AuraMinter__factory,
-    AuraStakingProxy__factory,
     AuraToken__factory,
+    AuraStakingProxy__factory,
     BaseRewardPool__factory,
     BoosterOwner__factory,
     Booster__factory,
     ClaimZap__factory,
-    ConvexToken__factory,
     CrvDepositor__factory,
+    CrvDepositorWrapper__factory,
     CurveVoterProxy__factory,
     CvxCrvToken__factory,
     ERC20__factory,
@@ -90,7 +90,7 @@ task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, h
     const contracts = await deployPhase4(deployer, phase3, mocks.addresses, true);
 
     logExtSystem(mocks.addresses);
-    logContracts(contracts as any as { [key: string]: { address: string } });
+    logContracts(contracts as unknown as { [key: string]: { address: string } });
 });
 
 task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArguments, hre) {
