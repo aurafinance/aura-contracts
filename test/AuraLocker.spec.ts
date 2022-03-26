@@ -61,8 +61,8 @@ interface SnapshotData {
 // - [x] @AuraLocker.getPastTotalSupply
 // - [ ] @AuraLocker.balanceOf when locks[i].unlockTime <= block.timestamp
 // - [x] @AuraLocker.lockedBalances
-// - [x] @AuraLocker.totalSupply
-// - [x] @AuraLocker.totalSupplyAtEpoch
+// - [ ] @AuraLocker.totalSupply
+// - [ ] @AuraLocker.totalSupplyAtEpoch
 // - [x] @AuraLocker.findEpochId
 // - [x] @AuraLocker.epochCount
 // - [x] @AuraLocker.decimals()
@@ -524,8 +524,11 @@ describe("AuraLocker", () => {
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             // Lock 10 more cvx
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
-
-            expect(await auraLocker.totalSupply(), "totalSupply").to.eq(0);
+            expect(await auraLocker.totalSupply(), "totalSupply").to.eq(simpleToExactAmount(100));
+            expect(
+                await auraLocker.totalSupplyAtEpoch(await auraLocker.findEpochId(await getTimestamp())),
+                "totalSupply",
+            ).to.eq(simpleToExactAmount(100));
 
             await increaseTime(ONE_WEEK);
             // Lock 10 more cvx
@@ -536,6 +539,10 @@ describe("AuraLocker", () => {
             await auraLocker.connect(alice).processExpiredLocks(true);
             expect(await cvx.balanceOf(aliceAddress), "relock - cvx balance does not change").eq(beforeCvxBalance);
             expect(await auraLocker.totalSupply()).eq(simpleToExactAmount(20));
+            expect(
+                await auraLocker.totalSupplyAtEpoch(await auraLocker.findEpochId(await getTimestamp())),
+                "totalSupply",
+            ).to.eq(simpleToExactAmount(20));
             // Lock 10 more cvx
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
             await increaseTime(ONE_WEEK);
@@ -543,6 +550,10 @@ describe("AuraLocker", () => {
             expect(await auraLocker.getVotes(aliceAddress)).eq(simpleToExactAmount(130));
             expect((await auraLocker.balances(aliceAddress)).locked).eq(simpleToExactAmount(130));
             expect(await auraLocker.totalSupply()).eq(simpleToExactAmount(130));
+            expect(
+                await auraLocker.totalSupplyAtEpoch(await auraLocker.findEpochId(await getTimestamp())),
+                "totalSupply",
+            ).to.eq(simpleToExactAmount(130));
         });
         it("doesn't allow processing of the same lock twice", async () => {
             await increaseTime(ONE_WEEK);

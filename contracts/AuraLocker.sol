@@ -732,9 +732,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Supply of all properly locked balances at most recent eligible epoch
     function totalSupply() external view returns (uint256 supply) {
+        return totalSupplyAtEpoch(epochs.length - 1);
+    }
+
+    // Supply of all properly locked balances at the given epoch
+    function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
+        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 cutoffEpoch = currentEpoch.sub(lockDuration);
-        uint256 epochindex = epochs.length;
+        uint256 cutoffEpoch = epochStart.sub(lockDuration);
+        uint256 epochindex = _epoch + 1;
 
         //do not include current epoch's supply
         if (uint256(epochs[epochindex - 1].date) == currentEpoch) {
@@ -742,35 +748,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         }
 
         //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = epochindex - 1; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
-            if (uint256(e.date) <= cutoffEpoch || i == 0) {
-                break;
-            }
-            supply = supply.add(e.supply);
-        }
-
-        return supply;
-    }
-
-    // Supply of all properly locked balances at the given epoch
-    function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
-        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
-        uint256 cutoffEpoch = epochStart.sub(lockDuration);
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-
-        //do not include current epoch's supply
-        if (uint256(epochs[_epoch].date) == currentEpoch) {
-            _epoch--;
-        }
-
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = _epoch; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
+        for (uint256 i = epochindex; i > 0; i--) {
+            Epoch memory e = epochs[i - 1];
             if (uint256(e.date) <= cutoffEpoch) {
                 break;
             }
-            supply = supply.add(epochs[i].supply);
+            supply = supply.add(e.supply);
         }
 
         return supply;
