@@ -663,7 +663,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //also remove amount in the current epoch
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        if (locksLength > 0 && uint256(locks[locksLength - 1].unlockTime).sub(lockDuration) == currentEpoch) {
+        if (
+            locksLength > 0 &&
+            amount != 0 &&
+            uint256(locks[locksLength - 1].unlockTime).sub(lockDuration) == currentEpoch
+        ) {
             amount = amount.sub(locks[locksLength - 1].amount);
         }
 
