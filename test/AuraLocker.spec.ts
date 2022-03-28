@@ -1097,6 +1097,15 @@ describe("AuraLocker", () => {
 
             const week16point5 = await getTimestamp();
 
+            await checkBalances(
+                aliceAddress,
+                16,
+                simpleToExactAmount(200),
+                simpleToExactAmount(300),
+                simpleToExactAmount(200),
+                simpleToExactAmount(300),
+            );
+
             await increaseTime(ONE_WEEK);
 
             const week17point5 = await getTimestamp();
