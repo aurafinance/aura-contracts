@@ -5,12 +5,7 @@ import "@openzeppelin/contracts-0.8/utils/Address.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
-
-interface ICvxLocker {
-    function queueNewRewards(uint256 _rewards) external;
-
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
-}
+import "./Interfaces.sol";
 
 interface ICrvDepositor {
     function getMinOut(uint256, uint256) external view returns (uint256);
