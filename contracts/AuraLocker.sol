@@ -675,15 +675,12 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Balance of an account which only includes properly locked tokens at the given epoch
-    function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
-        LockedBalance[] storage locks = userLocks[_user];
-        //get timestamp of given epoch index
-        uint256 epochTime = epochs[_epoch].date;
-        //get timestamp of first non-inclusive epoch
-        uint256 cutoffEpoch = epochTime.sub(lockDuration);
+    function balanceAtEpochOf(uint256 _epoch, address _user) public view returns (uint256 amount) {
+        uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
 
-        //current epoch is not counted
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 cutoffEpoch = epochStart.sub(lockDuration);
+
+        LockedBalance[] storage locks = userLocks[_user];
 
         //need to add up since the range could be in the middle somewhere
         //traverse inversely to make more current queries more gas efficient
@@ -691,7 +688,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
             uint256 lockEpoch = uint256(locks[i - 1].unlockTime).sub(lockDuration);
             //lock epoch must be less or equal to the epoch we're basing from.
             //also not include the current epoch
-            if (lockEpoch <= epochTime && lockEpoch < currentEpoch) {
+            if (lockEpoch < epochStart) {
                 if (lockEpoch > cutoffEpoch) {
                     amount = amount.add(locks[i - 1].amount);
                 } else {
@@ -736,56 +733,33 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Supply of all properly locked balances at most recent eligible epoch
     function totalSupply() external view returns (uint256 supply) {
-        return totalSupplyAtEpoch(epochs.length - 1);
+        return totalSupplyAtEpoch(findEpochId(block.timestamp));
     }
 
     // Supply of all properly locked balances at the given epoch
     function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
-        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
+
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
-        uint256 epochindex = _epoch + 1;
+        uint256 lastIndex = epochs.length - 1;
 
-        //do not include current epoch's supply
-        if (uint256(epochs[epochindex - 1].date) == currentEpoch) {
-            epochindex--;
-        }
+        uint256 epochIndex = _epoch > lastIndex ? lastIndex : _epoch;
 
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = epochindex; i > 0; i--) {
+        for (uint256 i = epochIndex + 1; i > 0; i--) {
             Epoch memory e = epochs[i - 1];
-            if (uint256(e.date) <= cutoffEpoch) {
+            if (e.date == epochStart) {
+                continue;
+            } else if (e.date <= cutoffEpoch) {
                 break;
+            } else {
+                supply += e.supply;
             }
-            supply = supply.add(e.supply);
         }
-
-        return supply;
     }
 
-    // Find an epoch index based on timestamp
+    // Get an epoch index based on timestamp
     function findEpochId(uint256 _time) public view returns (uint256 epoch) {
-        uint256 max = epochs.length - 1;
-        uint256 min = 0;
-
-        //convert to start point
-        _time = _time.div(rewardsDuration).mul(rewardsDuration);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (min >= max) break;
-
-            uint256 mid = (min + max + 1) / 2;
-            uint256 midEpochBlock = epochs[mid].date;
-            if (midEpochBlock == _time) {
-                //found
-                return mid;
-            } else if (midEpochBlock < _time) {
-                min = mid;
-            } else {
-                max = mid - 1;
-            }
-        }
-        return min;
+        return _time.sub(epochs[0].date).div(rewardsDuration);
     }
 
     /***************************************
