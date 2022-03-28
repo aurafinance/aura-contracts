@@ -2,10 +2,13 @@
 pragma solidity 0.8.11;
 pragma abicoder v2;
 
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import "./Interfaces.sol";
 
 abstract contract BalInvestor {
+    using SafeERC20 for IERC20;
+
     IVault public immutable BALANCER_VAULT;
     address public immutable BAL;
     address public immutable WETH;
@@ -32,8 +35,8 @@ abstract contract BalInvestor {
     }
 
     function _setApprovals() internal {
-        IERC20(WETH).approve(address(BALANCER_VAULT), type(uint256).max);
-        IERC20(BAL).approve(address(BALANCER_VAULT), type(uint256).max);
+        IERC20(WETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+        IERC20(BAL).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
     function _getBptPrice() internal view returns (uint256) {
@@ -58,7 +61,7 @@ abstract contract BalInvestor {
     }
 
     function _investBalToPool(uint256 amount, uint256 minOut) internal {
-        IERC20(BAL).transferFrom(msg.sender, address(this), amount);
+        IERC20(BAL).safeTransferFrom(msg.sender, address(this), amount);
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(BAL);
         assets[1] = IAsset(WETH);

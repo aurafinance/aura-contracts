@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -7,6 +7,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
+import "./Interfaces.sol";
 
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
@@ -20,7 +21,7 @@ interface IRewardStaking {
  *          to depositors.
  * @dev
  */
-contract AuraLocker is ReentrancyGuard, Ownable {
+contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
     using AuraMath112 for uint112;
@@ -169,7 +170,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     modifier updateReward(address _account) {
         {
             Balances storage userBalance = balances[_account];
-            for (uint256 i = 0; i < rewardTokens.length; i++) {
+            uint256 rewardTokensLength = rewardTokens.length;
+            for (uint256 i = 0; i < rewardTokensLength; i++) {
                 address token = rewardTokens[i];
                 uint256 newRewardPerToken = _rewardPerToken(token);
                 rewardData[token].rewardPerTokenStored = newRewardPerToken.to96();
@@ -190,7 +192,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     ****************************************/
 
     // Add a new reward token to be distributed to stakers
-    function addReward(address _rewardsToken, address _distributor) public onlyOwner {
+    function addReward(address _rewardsToken, address _distributor) external onlyOwner {
         require(rewardData[_rewardsToken].lastUpdateTime == 0, "Reward already exists");
         require(_rewardsToken != address(stakingToken), "Cannot add StakingToken as reward");
         rewardTokens.push(_rewardsToken);
@@ -300,7 +302,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Claim all pending rewards
     function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
-        for (uint256 i; i < rewardTokens.length; i++) {
+        uint256 rewardTokensLength = rewardTokens.length;
+        for (uint256 i; i < rewardTokensLength; i++) {
             address _rewardsToken = rewardTokens[i];
             uint256 reward = userData[_account][_rewardsToken].rewards;
             if (reward > 0) {
@@ -461,7 +464,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /**
      * @dev Delegate votes from the sender to `newDelegatee`.
      */
-    function delegate(address newDelegatee) public virtual {
+    function delegate(address newDelegatee) external virtual nonReentrant {
         // Step 1: Get lock data
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 len = locks.length;
@@ -570,21 +573,21 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /**
      * @dev Gets the current votes balance for `account`
      */
-    function getVotes(address account) public view returns (uint256) {
+    function getVotes(address account) external view returns (uint256) {
         return getPastVotes(account, block.timestamp);
     }
 
     /**
      * @dev Get the `pos`-th checkpoint for `account`.
      */
-    function checkpoints(address account, uint32 pos) public view virtual returns (DelegateeCheckpoint memory) {
+    function checkpoints(address account, uint32 pos) external view virtual returns (DelegateeCheckpoint memory) {
         return _checkpointedVotes[account][pos];
     }
 
     /**
      * @dev Get number of checkpoints for `account`.
      */
-    function numCheckpoints(address account) public view virtual returns (uint32) {
+    function numCheckpoints(address account) external view virtual returns (uint32) {
         return _checkpointedVotes[account].length.to32();
     }
 
@@ -609,7 +612,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      * @dev Retrieve the `totalSupply` at the end of `timestamp`. Note, this value is the sum of all balances.
      * It is but NOT the sum of all the delegated votes!
      */
-    function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
+    function getPastTotalSupply(uint256 timestamp) external view returns (uint256) {
         require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
         return totalSupplyAtEpoch(findEpochId(timestamp));
     }
@@ -684,7 +687,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //need to add up since the range could be in the middle somewhere
         //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = locks.length; i > 0; i--) {
+        uint256 locksLength = locks.length;
+        for (uint256 i = locksLength; i > 0; i--) {
             uint256 lockEpoch = uint256(locks[i - 1].unlockTime).sub(lockDuration);
             //lock epoch must be less or equal to the epoch we're basing from.
             //also not include the current epoch
@@ -771,15 +775,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return epochs.length;
     }
 
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
@@ -791,7 +795,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     function claimableRewards(address _account) external view returns (EarnedData[] memory userRewards) {
         userRewards = new EarnedData[](rewardTokens.length);
         Balances storage userBalance = balances[_account];
-        for (uint256 i = 0; i < userRewards.length; i++) {
+        uint256 userRewardsLength = userRewards.length;
+        for (uint256 i = 0; i < userRewardsLength; i++) {
             address token = rewardTokens[i];
             userRewards[i].token = token;
             userRewards[i].amount = _earned(_account, token, userBalance.locked);
@@ -799,7 +804,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return userRewards;
     }
 
-    function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
+    function lastTimeRewardApplicable(address _rewardsToken) external view returns (uint256) {
         return _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish);
     }
 
@@ -837,7 +842,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /***************************************
                 REWARD FUNDING
     ****************************************/
-    function queueNewRewards(uint256 _rewards) external {
+    function queueNewRewards(uint256 _rewards) external nonReentrant {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
 
