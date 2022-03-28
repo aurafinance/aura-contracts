@@ -96,8 +96,6 @@ describe("AuraLocker", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const logSnapShot = (data: SnapshotData, phase: string): SnapshotData => data;
     const getSnapShot = async (accountAddress: string, phase: string = "before"): Promise<SnapshotData> => {
-        // const rewardData = await auraLocker.rewardData(cvxCrv.address);
-        // const userData = await auraLocker.userData(accountAddress);
         const delegateeAddress = await auraLocker.delegates(accountAddress);
         const locks = await getUserLocks(accountAddress, delegateeAddress);
         const checkpointedVotes = await getCheckpointedVotes(delegateeAddress);
@@ -139,8 +137,6 @@ describe("AuraLocker", () => {
         userAddress: string,
         delegateeAddress: string,
     ): Promise<{ userLocks: Array<UserLock>; delegateeUnlocks: Array<BN> }> => {
-        // :Promise<{ {supply: BN, date: number}, index:number }>
-        // let epoch:{supply: BigNumber, date: number};
         const userLocks: Array<UserLock> = [];
         const delegateeUnlocks: Array<BN> = [];
         try {
@@ -159,8 +155,6 @@ describe("AuraLocker", () => {
     const getCheckpointedVotes = async (
         delegateeAddress: string,
     ): Promise<Array<{ votes: BN; epochStart: number }>> => {
-        // :Promise<{ {supply: BN, date: number}, index:number }>
-        // let epoch:{supply: BigNumber, date: number};
         const checkpointedVotes: Array<{ votes: BN; epochStart: number }> = [];
         try {
             const len = await auraLocker.numCheckpoints(delegateeAddress);
@@ -258,7 +252,22 @@ describe("AuraLocker", () => {
         tx = await cvx.transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
     };
+    async function distributeRewardsFromBooster(): Promise<BN> {
+        await booster.earmarkRewards(boosterPoolId);
+        await increaseTime(ONE_DAY);
 
+        const incentive = await booster.stakerIncentive();
+        const rate = await mocks.crvMinter.rate();
+        const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
+
+        expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
+
+        const tx = await cvxStakingProxy.distribute();
+        const receipt = await tx.wait();
+        const event = receipt.events.find(e => e.event === "RewardsDistributed");
+
+        return event.args[1];
+    }
     before(async () => {
         accounts = await ethers.getSigners();
         deployer = accounts[0];
@@ -448,6 +457,29 @@ describe("AuraLocker", () => {
             await expect(tx)
                 .emit(auraLocker, "Withdrawn")
                 .withArgs(aliceAddress, dataBefore.account.balances.locked, relock);
+        });
+        it("notify rewards ", async () => {
+            const amount = simpleToExactAmount(100);
+            const mockToken = await deployContract<MockERC20>(
+                new MockERC20__factory(deployer),
+                "mockToken",
+                ["mockToken", "mockToken", 18, await deployer.getAddress(), simpleToExactAmount(1000000)],
+                {},
+                false,
+            );
+            const distributor = accounts[3];
+            const distributorAddress = await distributor.getAddress();
+
+            await mockToken.connect(deployer).approve(distributorAddress, amount);
+            await mockToken.connect(deployer).transfer(distributorAddress, amount);
+            await mockToken.connect(distributor).approve(auraLocker.address, amount);
+
+            await auraLocker.connect(deployer).addReward(mockToken.address, distributorAddress);
+            await auraLocker.connect(deployer).approveRewardDistributor(mockToken.address, distributorAddress, true);
+
+            const tx = await auraLocker.connect(distributor).notifyRewardAmount(mockToken.address, amount);
+            await expect(tx).to.emit(auraLocker, "RewardAdded").withArgs(mockToken.address, amount);
+            expect(await mockToken.balanceOf(auraLocker.address)).to.equal(amount);
         });
     });
 
@@ -831,17 +863,22 @@ describe("AuraLocker", () => {
     });
 
     context("queueing new rewards", () => {
+        async function mockDepositCVRToStakeContract(amount: number) {
+            const crvDepositorAccount = await impersonateAccount(crvDepositor.address);
+            const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
+            await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
+            await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
+        }
         // let dataBefore: SnapshotData;
         let cvxStakingProxyAccount: Account;
         // t = 0.5, Lock, delegate to self, wait 15 weeks (1.5 weeks before lockup)
         beforeEach(async () => {
             await setup();
             cvxStakingProxyAccount = await impersonateAccount(cvxStakingProxy.address);
-            // Given that cvxStakingProxyAccount holds cvxCrv
-            const crvDepositorAccount = await impersonateAccount(crvDepositor.address);
-            const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
-            await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
-            await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(1000));
+            // Given that cvxStakingProxyAccount holds cvxCrv (fake balance on staking proxy)
+            await mockDepositCVRToStakeContract(1000);
+
+            await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(1000));
         });
         it("fails if the sender is not rewardsDistributor", async () => {
             // Only the rewardsDistributor can queue cvxCRV rewards
@@ -854,18 +891,120 @@ describe("AuraLocker", () => {
             ).revertedWith("No reward");
         });
         it("distribute rewards from the booster", async () => {
-            await booster.earmarkRewards(boosterPoolId);
-            await increaseTime(ONE_DAY);
-
-            const incentive = await booster.stakerIncentive();
-            const rate = await mocks.crvMinter.rate();
-            const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
-            expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
-
-            const tx = await cvxStakingProxy.distribute();
-            await tx.wait();
+            await distributeRewardsFromBooster();
         });
-        it("only starts distributing the rewards when the queued amount is over 83% of the remaining");
+        it("queues rewards when cvxCrv period is finished", async () => {
+            // AuraStakingProxy.distribute(), faked by impersonating account
+            let rewards = simpleToExactAmount(100);
+            const rewardDistribution = await auraLocker.rewardsDuration();
+            const cvxCrvLockerBalance0 = await cvxCrv.balanceOf(auraLocker.address);
+            const queuedCvxCrvRewards0 = await auraLocker.queuedCvxCrvRewards();
+            const rewardData0 = await auraLocker.rewardData(cvxCrv.address);
+            const timeStamp = await getTimestamp();
+
+            expect(timeStamp, "reward period finish").to.gte(rewardData0.periodFinish);
+            expect(await cvxCrv.balanceOf(cvxStakingProxyAccount.address)).to.gt(rewards);
+
+            //  test queuing rewards
+            // await auraLocker.connect(cvxStakingProxyAccount.signer).queueNewRewards(rewards);
+            rewards = await distributeRewardsFromBooster();
+            // Validate
+            const rewardData1 = await auraLocker.rewardData(cvxCrv.address);
+            expect(await cvxCrv.balanceOf(auraLocker.address), "cvxCrv is transfer to locker").to.eq(
+                cvxCrvLockerBalance0.add(rewards),
+            );
+            expect(await auraLocker.queuedCvxCrvRewards(), "queued cvxCrv rewards").to.eq(0);
+
+            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
+            expect(rewardData1.lastUpdateTime, "cvxCrv reward last update time").to.gt(rewardData0.lastUpdateTime);
+            expect(rewardData1.periodFinish, "cvxCrv reward period finish").to.gt(rewardData0.periodFinish);
+            expect(rewardData1.rewardPerTokenStored, "cvxCrv reward per token stored").to.eq(
+                rewardData0.rewardPerTokenStored,
+            );
+            expect(rewardData1.rewardRate, "cvxCrv rewards rate").to.eq(
+                queuedCvxCrvRewards0.add(rewards).div(rewardDistribution),
+            );
+        });
+
+        it("only starts distributing the rewards when the queued amount is over 83% of the remaining", async () => {
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            const cvxCrvLockerBalance0 = await cvxCrv.balanceOf(auraLocker.address);
+            const rewardData0 = await auraLocker.rewardData(cvxCrv.address);
+            const timeStamp = await getTimestamp();
+
+            expect(timeStamp, "reward period finish").to.gte(rewardData0.periodFinish);
+            expect(await cvxCrv.balanceOf(cvxStakingProxyAccount.address)).to.gt(0);
+
+            // cvxStakingProxy.distribute();=>auraLocker.queueNewRewards()
+            // First distribution to update the reward finish period.
+            let rewards = await distributeRewardsFromBooster();
+            // Validate
+            const cvxCrvLockerBalance1 = await cvxCrv.balanceOf(auraLocker.address);
+            const queuedCvxCrvRewards1 = await auraLocker.queuedCvxCrvRewards();
+            const rewardData1 = await auraLocker.rewardData(cvxCrv.address);
+
+            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
+            expect(rewardData1.lastUpdateTime, "cvxCrv reward last update time").to.gt(rewardData0.lastUpdateTime);
+            expect(rewardData1.periodFinish, "cvxCrv reward period finish").to.gt(rewardData0.periodFinish);
+            expect(rewardData1.rewardPerTokenStored, "cvxCrv reward per token stored").to.eq(
+                rewardData0.rewardPerTokenStored,
+            );
+            expect(rewardData1.rewardRate, "cvxCrv rewards rate").to.gt(rewardData0.rewardRate);
+            expect(cvxCrvLockerBalance1, "cvxCrv is transfer to locker").to.eq(cvxCrvLockerBalance0.add(rewards));
+            expect(queuedCvxCrvRewards1, "queued cvxCrv rewards").to.eq(0);
+
+            // Second distribution , without notification as the ratio is not reached.
+            await increaseTime(ONE_DAY);
+            rewards = await distributeRewardsFromBooster();
+
+            const cvxCrvLockerBalance2 = await cvxCrv.balanceOf(auraLocker.address);
+            const queuedCvxCrvRewards2 = await auraLocker.queuedCvxCrvRewards();
+            const rewardData2 = await auraLocker.rewardData(cvxCrv.address);
+
+            // Verify reward data is not updated, as ratio is not reached.
+            expect(rewardData2.lastUpdateTime, "cvxCrv reward last update time").to.eq(rewardData1.lastUpdateTime);
+            expect(rewardData2.periodFinish, "cvxCrv reward period finish").to.eq(rewardData1.periodFinish);
+            expect(rewardData2.rewardPerTokenStored, "cvxCrv reward per token stored").to.eq(
+                rewardData1.rewardPerTokenStored,
+            );
+            expect(rewardData2.rewardRate, "cvxCrv rewards rate").to.eq(rewardData1.rewardRate);
+            expect(cvxCrvLockerBalance2, "cvxCrv is transfer to locker").to.eq(cvxCrvLockerBalance1.add(rewards));
+            expect(queuedCvxCrvRewards2, "queued cvxCrv rewards").to.eq(queuedCvxCrvRewards1.add(rewards));
+
+            // Third distribution the ratio is reached, the reward is distributed.
+            await mockDepositCVRToStakeContract(1000);
+            rewards = await distributeRewardsFromBooster();
+
+            const cvxCrvLockerBalance3 = await cvxCrv.balanceOf(auraLocker.address);
+            const queuedCvxCrvRewards3 = await auraLocker.queuedCvxCrvRewards();
+            const rewardData3 = await auraLocker.rewardData(cvxCrv.address);
+
+            // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
+            expect(rewardData3.lastUpdateTime, "cvxCrv reward last update time").to.gt(rewardData2.lastUpdateTime);
+            expect(rewardData3.periodFinish, "cvxCrv reward period finish").to.gt(rewardData2.periodFinish);
+            expect(rewardData3.rewardPerTokenStored, "cvxCrv reward per token stored").to.gt(
+                rewardData2.rewardPerTokenStored,
+            );
+            expect(rewardData3.rewardRate, "cvxCrv rewards rate").to.gt(rewardData2.rewardRate);
+            expect(cvxCrvLockerBalance3, "cvxCrv is transfer to locker").to.eq(cvxCrvLockerBalance2.add(rewards));
+            expect(queuedCvxCrvRewards3, "queued cvxCrv rewards").to.eq(0);
+
+            // Process expired locks and claim rewards for user.
+            await increaseTime(ONE_WEEK.mul(17));
+
+            await auraLocker.connect(alice).processExpiredLocks(false);
+            const userCvxCrvData = await auraLocker.userData(aliceAddress, cvxCrv.address);
+            const cvxCrvAliceBalance3 = await cvxCrv.balanceOf(aliceAddress);
+
+            const tx = await auraLocker["getReward(address)"](aliceAddress);
+            await expect(tx)
+                .to.emit(auraLocker, "RewardPaid")
+                .withArgs(aliceAddress, cvxCrv.address, userCvxCrvData.rewards);
+            const cvxCrvAliceBalance4 = await cvxCrv.balanceOf(aliceAddress);
+            const cvxCrvLockerBalance4 = await cvxCrv.balanceOf(auraLocker.address);
+            expect(cvxCrvAliceBalance4, "cvxCrv claimed").to.eq(cvxCrvAliceBalance3.add(userCvxCrvData.rewards));
+            expect(cvxCrvLockerBalance4, "cvxCrv sent").to.eq(cvxCrvLockerBalance3.sub(userCvxCrvData.rewards));
+        });
     });
 
     context("checking delegation timelines", () => {
@@ -1051,7 +1190,30 @@ describe("AuraLocker", () => {
         before(async () => {
             await setup();
         });
-        it("lock wrong amount of CVX", async () => {
+        it("@notifyRewardAmount adds cvxCrv", async () => {
+            await expect(auraLocker.notifyRewardAmount(cvxCrv.address, 0)).revertedWith("Use queueNewRewards");
+        });
+        it("notifyRewardAmount sender is not a distributor", async () => {
+            await expect(auraLocker.notifyRewardAmount(cvx.address, 0)).revertedWith("Must be rewardsDistributor");
+        });
+        it("@notifyRewardAmount sends wrong amount", async () => {
+            const mockToken = await deployContract<MockERC20>(
+                new MockERC20__factory(deployer),
+                "mockToken",
+                ["mockToken", "mockToken", 18, await deployer.getAddress(), 10000000],
+                {},
+                false,
+            );
+            const distributor = accounts[3];
+            await auraLocker.connect(deployer).addReward(mockToken.address, await distributor.getAddress());
+            await auraLocker
+                .connect(deployer)
+                .approveRewardDistributor(mockToken.address, await distributor.getAddress(), true);
+            await expect(auraLocker.connect(distributor).notifyRewardAmount(mockToken.address, 0)).revertedWith(
+                "No reward",
+            );
+        });
+        it("@lock wrong amount of CVX", async () => {
             const cvxAmount = 0;
             await expect(auraLocker.connect(alice).lock(aliceAddress, cvxAmount)).revertedWith("Cannot stake 0");
         });
@@ -1064,7 +1226,6 @@ describe("AuraLocker", () => {
             const tx = auraLocker.approveRewardDistributor(ZERO_ADDRESS, ZERO_ADDRESS, false);
             await expect(tx).revertedWith("Reward does not exist");
         });
-        // admin role
         it("non admin - shutdowns", async () => {
             await expect(auraLocker.connect(alice).shutdown()).revertedWith("Ownable: caller is not the owner");
         });
