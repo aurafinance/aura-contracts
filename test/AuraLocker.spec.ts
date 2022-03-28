@@ -401,9 +401,9 @@ describe("AuraLocker", () => {
             expect(dataAfter.epochs.length, "new epochs added").to.equal(newEpochs.add(dataBefore.epochs.length));
 
             const vlCVXBalance = await auraLocker.balanceAtEpochOf(0, aliceAddress);
-            expect(vlCVXBalance, "vlCVXBalance at epoch is correct").to.equal(simpleToExactAmount(100));
+            expect(vlCVXBalance, "vlCVXBalance at epoch is correct").to.equal(0);
             expect(
-                await auraLocker.balanceAtEpochOf(dataAfter.account.locks.length, aliceAddress),
+                await auraLocker.balanceAtEpochOf(dataAfter.epochs.length - 1, aliceAddress),
                 "vlCVXBalance at epoch is correct",
             ).to.equal(simpleToExactAmount(100));
         });
@@ -661,7 +661,7 @@ describe("AuraLocker", () => {
                 simpleToExactAmount(100),
             );
             dataBefore = { ...dataAfter };
-
+            // t = 15.5 -> 16.5
             await increaseTime(ONE_WEEK);
             tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, "after lock week 2");
@@ -671,6 +671,7 @@ describe("AuraLocker", () => {
             );
             dataBefore = { ...dataAfter };
 
+            // t = 16.5 -> 17.5
             await increaseTime(ONE_WEEK);
             await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, "after lock week 3");
@@ -678,6 +679,7 @@ describe("AuraLocker", () => {
             expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(simpleToExactAmount(20));
             dataBefore = { ...dataAfter };
             // 16 weeks
+            // t = 17.5 -> 31.5
             await increaseTime(ONE_WEEK.mul(14));
             await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, " after lock week 17");
@@ -721,6 +723,7 @@ describe("AuraLocker", () => {
             expect(pastVotesBob1, "delegatee votes").to.equal(pastVotesBob0);
 
             // Verify it move past locks, as checkpoint is after next epoch, the `getPastVotes` does return the votes delegated.
+            // t = 31.5 -> 32.5
             await increaseTime(ONE_WEEK);
             //
             const pastVotesAlice2 = await auraLocker.getVotes(aliceAddress);
@@ -731,7 +734,7 @@ describe("AuraLocker", () => {
             expect(
                 await auraLocker.getPastTotalSupply((await getTimestamp()).sub(ONE_DAY)),
                 "past total supply",
-            ).to.equal(simpleToExactAmount(40));
+            ).to.equal(simpleToExactAmount(30));
         });
         it("should allow re-delegating in the same period", async () => {
             const charlie = accounts[3];
@@ -823,9 +826,8 @@ describe("AuraLocker", () => {
             expect(checkpointBob2.votes, "delegatee votes").eq(0);
         });
         it("retrieves balance at a given epoch", async () => {
-            expect(await auraLocker.balanceAtEpochOf(0, aliceAddress), "account balance at epoch 0").to.equal(
-                simpleToExactAmount(100),
-            );
+            expect(await auraLocker.balanceAtEpochOf(0, aliceAddress), "account balance at epoch 0").to.equal(0);
+            expect(await auraLocker.totalSupplyAtEpoch(0), "account balance at epoch 0").to.equal(0);
             expect(await auraLocker.balanceAtEpochOf(0, bobAddress), "account balance is zero").to.equal(0);
         });
     });
@@ -867,6 +869,32 @@ describe("AuraLocker", () => {
         });
         it("only starts distributing the rewards when the queued amount is over 83% of the remaining");
     });
+
+    const checkBalances = async (
+        user: string,
+        epochId: number,
+        expectedBalance: BN | number,
+        expectedSupply: BN | number,
+        prevEpochBal?: BN | number,
+        prevEpochSupply?: BN | number,
+    ) => {
+        const balCur = await auraLocker.balanceOf(user);
+        expect(balCur).eq(expectedBalance);
+        const balAtEpoch = await auraLocker.balanceAtEpochOf(epochId, user);
+        expect(balAtEpoch).eq(expectedBalance);
+        if (prevEpochBal) {
+            const balAtPrevEpoch = await auraLocker.balanceAtEpochOf(epochId - 1, user);
+            expect(balAtPrevEpoch).eq(prevEpochBal);
+        }
+        const supplyCur = await auraLocker.totalSupply();
+        expect(supplyCur).eq(expectedSupply);
+        const supplAtEpoch = await auraLocker.totalSupplyAtEpoch(epochId);
+        expect(supplAtEpoch).eq(expectedSupply);
+        if (prevEpochSupply) {
+            const supplAtPrevEpoch = await auraLocker.totalSupplyAtEpoch(epochId - 1);
+            expect(supplAtPrevEpoch).eq(prevEpochSupply);
+        }
+    };
 
     context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
@@ -920,6 +948,8 @@ describe("AuraLocker", () => {
         });
         // t = 0.5 -> 1.5
         it("delegates to 0", async () => {
+            await checkBalances(aliceAddress, 0, 0, 0);
+
             const tx = await auraLocker.connect(alice).delegate(delegate0);
             await tx.wait();
 
@@ -934,6 +964,7 @@ describe("AuraLocker", () => {
 
             await increaseTime(ONE_WEEK);
 
+            await checkBalances(aliceAddress, 1, simpleToExactAmount(100), simpleToExactAmount(100), 0, 0);
             delegateVotes = await auraLocker.getVotes(delegate0);
             expect(delegateVotes).eq(simpleToExactAmount(100));
         });
@@ -963,6 +994,15 @@ describe("AuraLocker", () => {
 
             const week2point5 = await getTimestamp();
 
+            await checkBalances(
+                aliceAddress,
+                2,
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+            );
+
             delegate0Votes = await auraLocker.getVotes(delegate0);
             const delegate0Historic = await auraLocker.getPastVotes(delegate0, week1point5);
             const delegate0Now = await auraLocker.getPastVotes(delegate0, week2point5);
@@ -985,11 +1025,29 @@ describe("AuraLocker", () => {
             tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
             await tx.wait();
 
+            await checkBalances(
+                aliceAddress,
+                2,
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+            );
+
             const week2point5 = await getTimestamp();
 
             await increaseTime(ONE_WEEK);
 
             const week3point5 = await getTimestamp();
+
+            await checkBalances(
+                aliceAddress,
+                3,
+                simpleToExactAmount(200),
+                simpleToExactAmount(200),
+                simpleToExactAmount(100),
+                simpleToExactAmount(100),
+            );
 
             const delegate1Historic = await auraLocker.getPastVotes(delegate1, week2point5);
             const delegate1Now = await auraLocker.getPastVotes(delegate1, week3point5);
@@ -998,6 +1056,15 @@ describe("AuraLocker", () => {
             expect(delegate1Now).eq(simpleToExactAmount(200));
 
             await increaseTime(ONE_WEEK.mul(5));
+
+            await checkBalances(
+                aliceAddress,
+                8,
+                simpleToExactAmount(200),
+                simpleToExactAmount(200),
+                simpleToExactAmount(200),
+                simpleToExactAmount(200),
+            );
         });
         // t = 8.5 -> 16.5
         it("deposits for bob and delegates", async () => {
@@ -1033,6 +1100,15 @@ describe("AuraLocker", () => {
             await increaseTime(ONE_WEEK);
 
             const week17point5 = await getTimestamp();
+
+            await checkBalances(
+                aliceAddress,
+                17,
+                simpleToExactAmount(100),
+                simpleToExactAmount(200),
+                simpleToExactAmount(200),
+                simpleToExactAmount(300),
+            );
 
             const delegate1Historic = await auraLocker.getPastVotes(delegate1, week16point5);
             const delegate1Now = await auraLocker.getPastVotes(delegate1, week17point5);
