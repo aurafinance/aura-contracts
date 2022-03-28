@@ -48,6 +48,7 @@ interface SnapshotData {
     };
     cvxBalance: BN;
     lockedSupply: BN;
+    totalSupply: BN;
     epochs: Array<{ supply: BN; date: number }>;
 }
 
@@ -116,6 +117,7 @@ describe("AuraLocker", () => {
                     checkpointedVotes,
                 },
                 lockedSupply: await auraLocker.lockedSupply(),
+                totalSupply: await auraLocker.totalSupply(),
                 cvxBalance: await cvx.balanceOf(auraLocker.address),
                 epochs: await getEpochs(),
             },
@@ -429,7 +431,6 @@ describe("AuraLocker", () => {
 
             await tx.wait();
             const cvxCrvAfter = await cvxCrv.balanceOf(aliceAddress);
-
             const cvxCrvBalance = cvxCrvAfter.sub(cvxCrvBefore);
             expect(cvxCrvBalance.gt("0")).to.equal(true);
             expect(cvxCrvBalance).to.equal(dataBefore.account.claimableRewards[0].amount);
@@ -549,6 +550,7 @@ describe("AuraLocker", () => {
 
             expect(await auraLocker.getVotes(aliceAddress)).eq(0);
             expect((await auraLocker.balances(aliceAddress)).locked).eq(0);
+            expect(await auraLocker.balanceOf(aliceAddress)).eq(0);
         });
         it("allows lock to be processed with other unexpired locks following", async () => {
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
@@ -611,6 +613,7 @@ describe("AuraLocker", () => {
             await expect(auraLocker.connect(alice).kickExpiredLocks(aliceAddress)).to.be.revertedWith("no exp locks");
 
             await increaseTime(ONE_WEEK);
+            expect(dataBefore.lockedSupply, "Staked lockedSupply ").to.eq(simpleToExactAmount(100));
 
             const tx = await auraLocker.connect(alice).kickExpiredLocks(aliceAddress);
             const dataAfter = await getSnapShot(aliceAddress);
@@ -619,6 +622,7 @@ describe("AuraLocker", () => {
             expect(dataAfter.account.cvxBalance, "cvx reward should be kicked").eq(
                 dataBefore.account.cvxBalance.add(dataBefore.account.balances.locked),
             );
+            expect(dataAfter.lockedSupply, "Staked lockedSupply ").to.eq(0);
             await verifyCheckpointDelegate(tx, dataBefore, dataAfter);
             // Two events should be trigger, Withdrawn (locked amount) and KickReward (kick reward)
             // As the kicked user and lock user are the same, both amounts should be equal to the locked amount.
@@ -685,24 +689,32 @@ describe("AuraLocker", () => {
             let tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             let dataAfter = await getSnapShot(aliceAddress, "after lock week 1");
             await verifyLock(tx, cvxAmount, dataBefore, dataAfter);
+            expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(
+                simpleToExactAmount(100),
+            );
             dataBefore = { ...dataAfter };
 
             await increaseTime(ONE_WEEK);
             tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, "after lock week 2");
             await verifyLock(tx, cvxAmount, dataBefore, dataAfter);
+            expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(
+                simpleToExactAmount(110),
+            );
             dataBefore = { ...dataAfter };
 
             await increaseTime(ONE_WEEK);
             await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, "after lock week 3");
             await verifyLock(tx, cvxAmount, dataBefore, dataAfter);
+            expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(simpleToExactAmount(20));
             dataBefore = { ...dataAfter };
             // 16 weeks
             await increaseTime(ONE_WEEK.mul(14));
             await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             dataAfter = await getSnapShot(aliceAddress, " after lock week 17");
             await verifyLock(tx, cvxAmount, dataBefore, dataAfter);
+            expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(simpleToExactAmount(30));
             dataBefore = { ...dataAfter };
 
             const pastVotesAlice0 = await auraLocker.getVotes(aliceAddress);
@@ -722,6 +734,7 @@ describe("AuraLocker", () => {
 
             expect(dataAfter.account.delegatee, "new delegatee").to.equal(bobAddress);
             // Balances check after locking and delegation
+            expect(dataAfter.account.auraLockerBalance, "user aura locker balanceOf").to.equal(simpleToExactAmount(30));
             expect(dataAfter.cvxBalance, "Staked CVX").to.equal(initialData.cvxBalance.add(simpleToExactAmount(40)));
             expect(dataAfter.lockedSupply, "Staked lockedSupply ").to.equal(
                 initialData.lockedSupply.add(simpleToExactAmount(40)),
@@ -840,6 +853,12 @@ describe("AuraLocker", () => {
             const checkpointBob2 = await auraLocker.checkpoints(bobAddress, checkpointBobCount2 - 1);
             expect(checkpoint2.votes, "alice votes").eq(0);
             expect(checkpointBob2.votes, "delegatee votes").eq(0);
+        });
+        it("retrieves balance at a given epoch", async () => {
+            expect(await auraLocker.balanceAtEpochOf(0, aliceAddress), "account balance at epoch 0").to.equal(
+                simpleToExactAmount(100),
+            );
+            expect(await auraLocker.balanceAtEpochOf(0, bobAddress), "account balance is zero").to.equal(0);
         });
     });
 
@@ -1327,10 +1346,9 @@ describe("AuraLocker", () => {
 
             const dataBefore = await getSnapShot(aliceAddress);
             tx = await auraLocker.connect(alice).processExpiredLocks(relock);
-            //  auraLocker.balanceOf() will fail, with Arithmetic error. TODO ask MAHA
 
             const balance = await cvx.balanceOf(aliceAddress);
-
+            expect(await auraLocker.balanceOf(aliceAddress), "auraLocker balance for user is zero").to.equal(0);
             expect(await auraLocker.lockedSupply(), "lockedSupply decreases").to.equal(
                 dataBefore.lockedSupply.sub(dataBefore.account.balances.locked),
             );
@@ -1357,6 +1375,7 @@ describe("AuraLocker", () => {
             // Then it should be able to withdraw in an emergency
             const dataBefore = await getSnapShot(aliceAddress);
             tx = await auraLocker.connect(alice).emergencyWithdraw();
+            expect(await auraLocker.balanceOf(aliceAddress)).eq(0);
             const balance = await cvx.balanceOf(aliceAddress);
 
             expect(await auraLocker.lockedSupply(), "lockedSupply decreases").to.equal(
