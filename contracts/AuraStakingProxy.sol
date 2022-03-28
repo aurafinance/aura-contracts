@@ -52,6 +52,7 @@ contract AuraStakingProxy {
     uint256 public callIncentive = 25;
 
     event RewardsDistributed(address indexed token, uint256 amount);
+    event CallIncentiveChanged(uint256 incentive);
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -110,6 +111,7 @@ contract AuraStakingProxy {
         require(msg.sender == owner, "!auth");
         require(_incentive <= 100, "too high");
         callIncentive = _incentive;
+        emit CallIncentiveChanged(_incentive);
     }
 
     function setRewards(address _rewards) external {
