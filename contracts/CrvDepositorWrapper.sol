@@ -27,9 +27,9 @@ contract CrvDepositorWrapper is BalInvestor {
         crvDeposit = _crvDeposit;
     }
 
-    function setApprovals() public {
+    function setApprovals() external {
         _setApprovals();
-        IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max);
+        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max));
     }
 
     /**
@@ -38,7 +38,7 @@ contract CrvDepositorWrapper is BalInvestor {
      * @param _outputBps Multiplier where 100% == 10000, 99.5% == 9950 and 98% == 9800
      * @return minOut Units of BPT to expect as output
      */
-    function getMinOut(uint256 _amount, uint256 _outputBps) public view returns (uint256) {
+    function getMinOut(uint256 _amount, uint256 _outputBps) external view returns (uint256) {
         return _getMinOut(_amount, _outputBps);
     }
 
@@ -47,7 +47,7 @@ contract CrvDepositorWrapper is BalInvestor {
         uint256 _minOut,
         bool _lock,
         address _stakeAddress
-    ) public {
+    ) external {
         _investBalToPool(_amount, _minOut);
         uint256 bptBalance = IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
         ICrvDepositor(crvDeposit).depositFor(msg.sender, bptBalance, _lock, _stakeAddress);

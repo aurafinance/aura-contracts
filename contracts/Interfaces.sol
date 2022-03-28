@@ -53,3 +53,9 @@ interface IVault {
 interface IAsset {
     // solhint-disable-previous-line no-empty-blocks
 }
+
+interface ICvxLocker {
+    function queueNewRewards(uint256 _rewards) external;
+
+    function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
+}

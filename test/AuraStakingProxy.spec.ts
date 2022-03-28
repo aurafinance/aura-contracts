@@ -7,7 +7,7 @@ import { increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../test-u
 import { deployContract } from "../tasks/utils";
 import { MockERC20__factory } from "../types";
 
-describe("AuraLocker", () => {
+describe("AuraStakingProxy", () => {
     let accounts: Signer[];
     let contracts: SystemDeployed;
     let mocks: DeployMocksResult;

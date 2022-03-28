@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.11;
+pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -7,6 +7,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
+import "./Interfaces.sol";
 
 interface IRewardStaking {
     function stakeFor(address, uint256) external;
@@ -20,7 +21,7 @@ interface IRewardStaking {
  *          to depositors.
  * @dev
  */
-contract AuraLocker is ReentrancyGuard, Ownable {
+contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
     using AuraMath112 for uint112;
@@ -47,7 +48,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         address token;
         uint256 amount;
     }
-
     struct Balances {
         uint112 locked;
         uint32 nextUnlockIndex;
@@ -170,7 +170,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     modifier updateReward(address _account) {
         {
             Balances storage userBalance = balances[_account];
-            for (uint256 i = 0; i < rewardTokens.length; i++) {
+            uint256 rewardTokensLength = rewardTokens.length;
+            for (uint256 i = 0; i < rewardTokensLength; i++) {
                 address token = rewardTokens[i];
                 uint256 newRewardPerToken = _rewardPerToken(token);
                 rewardData[token].rewardPerTokenStored = newRewardPerToken.to96();
@@ -191,7 +192,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     ****************************************/
 
     // Add a new reward token to be distributed to stakers
-    function addReward(address _rewardsToken, address _distributor) public onlyOwner {
+    function addReward(address _rewardsToken, address _distributor) external onlyOwner {
         require(rewardData[_rewardsToken].lastUpdateTime == 0, "Reward already exists");
         require(_rewardsToken != address(stakingToken), "Cannot add StakingToken as reward");
         rewardTokens.push(_rewardsToken);
@@ -301,7 +302,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Claim all pending rewards
     function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
-        for (uint256 i; i < rewardTokens.length; i++) {
+        uint256 rewardTokensLength = rewardTokens.length;
+        for (uint256 i; i < rewardTokensLength; i++) {
             address _rewardsToken = rewardTokens[i];
             uint256 reward = userData[_account][_rewardsToken].rewards;
             if (reward > 0) {
@@ -326,10 +328,9 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 epochindex = epochs.length;
 
         //first epoch add in constructor, no need to check 0 length
-
         //check to add
         if (epochs[epochindex - 1].date < currentEpoch) {
-            //fill any epoch gaps
+            //fill any epoch gaps until the next epoch date.
             while (epochs[epochs.length - 1].date != currentEpoch) {
                 uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
                 epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
@@ -362,6 +363,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         lockedSupply -= amt;
 
         emit Withdrawn(msg.sender, amt, false);
+
+        stakingToken.safeTransfer(msg.sender, amt);
     }
 
     // Withdraw all currently locked tokens where the unlock time has passed
@@ -379,7 +382,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         uint256 expiryTime = _checkDelay == 0 && _relock
             ? block.timestamp.add(rewardsDuration)
             : block.timestamp.sub(_checkDelay);
-
+        require(length > 0, "no locks");
         // e.g. now = 16
         // if contract is shutdown OR latest lock unlock time (e.g. 17) <= now - (1)
         // e.g. 17 <= (16 + 1)
@@ -443,7 +446,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
             //transfer reward
             stakingToken.safeTransfer(_rewardAddress, reward);
-
             emit KickReward(_rewardAddress, _account, reward);
         }
 
@@ -462,7 +464,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /**
      * @dev Delegate votes from the sender to `newDelegatee`.
      */
-    function delegate(address newDelegatee) public virtual {
+    function delegate(address newDelegatee) external virtual nonReentrant {
         // Step 1: Get lock data
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 len = locks.length;
@@ -571,21 +573,21 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /**
      * @dev Gets the current votes balance for `account`
      */
-    function getVotes(address account) public view returns (uint256) {
+    function getVotes(address account) external view returns (uint256) {
         return getPastVotes(account, block.timestamp);
     }
 
     /**
      * @dev Get the `pos`-th checkpoint for `account`.
      */
-    function checkpoints(address account, uint32 pos) public view virtual returns (DelegateeCheckpoint memory) {
+    function checkpoints(address account, uint32 pos) external view virtual returns (DelegateeCheckpoint memory) {
         return _checkpointedVotes[account][pos];
     }
 
     /**
      * @dev Get number of checkpoints for `account`.
      */
-    function numCheckpoints(address account) public view virtual returns (uint32) {
+    function numCheckpoints(address account) external view virtual returns (uint32) {
         return _checkpointedVotes[account].length.to32();
     }
 
@@ -610,7 +612,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
      * @dev Retrieve the `totalSupply` at the end of `timestamp`. Note, this value is the sum of all balances.
      * It is but NOT the sum of all the delegated votes!
      */
-    function getPastTotalSupply(uint256 timestamp) public view returns (uint256) {
+    function getPastTotalSupply(uint256 timestamp) external view returns (uint256) {
         require(timestamp < block.timestamp, "ERC20Votes: block not yet mined");
         return totalSupplyAtEpoch(findEpochId(timestamp));
     }
@@ -664,7 +666,11 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
         //also remove amount in the current epoch
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        if (locksLength > 0 && uint256(locks[locksLength - 1].unlockTime).sub(lockDuration) == currentEpoch) {
+        if (
+            locksLength > 0 &&
+            amount != 0 &&
+            uint256(locks[locksLength - 1].unlockTime).sub(lockDuration) == currentEpoch
+        ) {
             amount = amount.sub(locks[locksLength - 1].amount);
         }
 
@@ -672,24 +678,21 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     }
 
     // Balance of an account which only includes properly locked tokens at the given epoch
-    function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
+    function balanceAtEpochOf(uint256 _epoch, address _user) public view returns (uint256 amount) {
+        uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
+
+        uint256 cutoffEpoch = epochStart.sub(lockDuration);
+
         LockedBalance[] storage locks = userLocks[_user];
-
-        //get timestamp of given epoch index
-        uint256 epochTime = epochs[_epoch].date;
-        //get timestamp of first non-inclusive epoch
-        uint256 cutoffEpoch = epochTime.sub(lockDuration);
-
-        //current epoch is not counted
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
 
         //need to add up since the range could be in the middle somewhere
         //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = locks.length; i > 0; i--) {
+        uint256 locksLength = locks.length;
+        for (uint256 i = locksLength; i > 0; i--) {
             uint256 lockEpoch = uint256(locks[i - 1].unlockTime).sub(lockDuration);
             //lock epoch must be less or equal to the epoch we're basing from.
             //also not include the current epoch
-            if (lockEpoch <= epochTime && lockEpoch < currentEpoch) {
+            if (lockEpoch < epochStart) {
                 if (lockEpoch > cutoffEpoch) {
                     amount = amount.add(locks[i - 1].amount);
                 } else {
@@ -734,73 +737,33 @@ contract AuraLocker is ReentrancyGuard, Ownable {
 
     // Supply of all properly locked balances at most recent eligible epoch
     function totalSupply() external view returns (uint256 supply) {
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 cutoffEpoch = currentEpoch.sub(lockDuration);
-        uint256 epochindex = epochs.length;
-
-        //do not include current epoch's supply
-        if (uint256(epochs[epochindex - 1].date) == currentEpoch) {
-            epochindex--;
-        }
-
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = epochindex - 1; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
-            if (uint256(e.date) <= cutoffEpoch) {
-                break;
-            }
-            supply = supply.add(e.supply);
-        }
-
-        return supply;
+        return totalSupplyAtEpoch(findEpochId(block.timestamp));
     }
 
     // Supply of all properly locked balances at the given epoch
     function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
-        uint256 epochStart = uint256(epochs[_epoch].date).div(rewardsDuration).mul(rewardsDuration);
+        uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
+
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
+        uint256 lastIndex = epochs.length - 1;
 
-        //do not include current epoch's supply
-        if (uint256(epochs[_epoch].date) == currentEpoch) {
-            _epoch--;
-        }
+        uint256 epochIndex = _epoch > lastIndex ? lastIndex : _epoch;
 
-        //traverse inversely to make more current queries more gas efficient
-        for (uint256 i = _epoch; i + 1 != 0; i--) {
-            Epoch storage e = epochs[i];
-            if (uint256(e.date) <= cutoffEpoch) {
+        for (uint256 i = epochIndex + 1; i > 0; i--) {
+            Epoch memory e = epochs[i - 1];
+            if (e.date == epochStart) {
+                continue;
+            } else if (e.date <= cutoffEpoch) {
                 break;
+            } else {
+                supply += e.supply;
             }
-            supply = supply.add(epochs[i].supply);
         }
-
-        return supply;
     }
 
-    // Find an epoch index based on timestamp
+    // Get an epoch index based on timestamp
     function findEpochId(uint256 _time) public view returns (uint256 epoch) {
-        uint256 max = epochs.length - 1;
-        uint256 min = 0;
-
-        //convert to start point
-        _time = _time.div(rewardsDuration).mul(rewardsDuration);
-
-        for (uint256 i = 0; i < 128; i++) {
-            if (min >= max) break;
-
-            uint256 mid = (min + max + 1) / 2;
-            uint256 midEpochBlock = epochs[mid].date;
-            if (midEpochBlock == _time) {
-                //found
-                return mid;
-            } else if (midEpochBlock < _time) {
-                min = mid;
-            } else {
-                max = mid - 1;
-            }
-        }
-        return min;
+        return _time.sub(epochs[0].date).div(rewardsDuration);
     }
 
     /***************************************
@@ -812,15 +775,15 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return epochs.length;
     }
 
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
@@ -832,7 +795,8 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     function claimableRewards(address _account) external view returns (EarnedData[] memory userRewards) {
         userRewards = new EarnedData[](rewardTokens.length);
         Balances storage userBalance = balances[_account];
-        for (uint256 i = 0; i < userRewards.length; i++) {
+        uint256 userRewardsLength = userRewards.length;
+        for (uint256 i = 0; i < userRewardsLength; i++) {
             address token = rewardTokens[i];
             userRewards[i].token = token;
             userRewards[i].amount = _earned(_account, token, userBalance.locked);
@@ -840,7 +804,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         return userRewards;
     }
 
-    function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
+    function lastTimeRewardApplicable(address _rewardsToken) external view returns (uint256) {
         return _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish);
     }
 
@@ -878,8 +842,7 @@ contract AuraLocker is ReentrancyGuard, Ownable {
     /***************************************
                 REWARD FUNDING
     ****************************************/
-
-    function queueNewRewards(uint256 _rewards) external {
+    function queueNewRewards(uint256 _rewards) external nonReentrant {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
 
@@ -888,7 +851,6 @@ contract AuraLocker is ReentrancyGuard, Ownable {
         IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), _rewards);
 
         _rewards = _rewards.add(queuedCvxCrvRewards);
-
         if (block.timestamp >= rdata.periodFinish) {
             _notifyReward(cvxCrv, _rewards);
             queuedCvxCrvRewards = 0;
