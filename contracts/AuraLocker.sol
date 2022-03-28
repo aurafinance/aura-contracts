@@ -464,7 +464,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     /**
      * @dev Delegate votes from the sender to `newDelegatee`.
      */
-    function delegate(address newDelegatee) external virtual {
+    function delegate(address newDelegatee) external virtual nonReentrant {
         // Step 1: Get lock data
         LockedBalance[] storage locks = userLocks[msg.sender];
         uint256 len = locks.length;
@@ -868,7 +868,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     /***************************************
                 REWARD FUNDING
     ****************************************/
-    function queueNewRewards(uint256 _rewards) external {
+    function queueNewRewards(uint256 _rewards) external nonReentrant {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
 
