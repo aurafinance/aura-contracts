@@ -1,9 +1,6 @@
-import { IInvestmentPool__factory } from "./../types/generated/factories/IInvestmentPool__factory";
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
     IInvestmentPoolFactory__factory,
-    IWalletChecker__factory,
-    ICurveVoteEscrow__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
@@ -63,13 +60,11 @@ import {
     CrvDepositorWrapper__factory,
     MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
-    IERC20,
-    IERC20__factory,
     IStablePoolFactory__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY, ONE_DAY } from "../test-utils/constants";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { getChain } from "../tasks/utils/networkAddressFactory";
@@ -152,6 +147,11 @@ interface BPTData {
     weights?: BN[];
     ampParameter?: number;
 }
+
+interface BalancerPoolDeployed {
+    poolId: string;
+    address: string;
+}
 interface Phase1Deployed {
     voterProxy: CurveVoterProxy;
 }
@@ -162,29 +162,32 @@ interface Phase2Deployed extends Phase1Deployed {
     booster: Booster;
     boosterOwner: BoosterOwner;
     cvxCrv: CvxCrvToken;
+    cvxCrvBpt: BalancerPoolDeployed;
     cvxCrvRewards: BaseRewardPool;
+    initialCvxCrvStaking: BaseRewardPool;
     crvDepositor: CrvDepositor;
     crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
     voterProxy: CurveVoterProxy;
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
+    chef: ConvexMasterChef;
     vestedEscrows: VestedEscrow[];
     dropFactory: MerkleAirdropFactory;
     drops: MerkleAirdrop[];
-    lbp: string;
+    lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
-    poolAddress8020: string;
+    pool8020Bpt: BalancerPoolDeployed;
 }
 interface SystemDeployed extends Phase3Deployed {
     claimZap: ClaimZap;
 }
 
 async function waitForTx(tx: ContractTransaction, debug = false): Promise<ContractReceipt> {
-    const receipt = await tx.wait();
+    const receipt = await tx.wait(debug ? 3 : undefined);
     if (debug) {
         console.log(`\nTRANSACTION: ${receipt.transactionHash}`);
         console.log(`to:: ${tx.to}`);
@@ -632,18 +635,20 @@ async function deployPhase2(
         throw console.error("Uh oh, deployer has no crvBpt");
     }
 
-    tx = await crvBpt.approve(crvDepositor.address, crvBptbalance.div(2));
+    const depositAmt = crvBptbalance.div(5).mul(2);
+
+    tx = await crvBpt.approve(crvDepositor.address, depositAmt);
     await waitForTx(tx, debug);
 
-    tx = await crvDepositor["deposit(uint256,bool)"](crvBptbalance.div(2), true);
+    tx = await crvDepositor["deposit(uint256,bool)"](depositAmt, true);
     await waitForTx(tx, debug);
 
     const cvxCrvBalance = await cvxCrv.balanceOf(deployerAddress);
-    if (!cvxCrvBalance.eq(crvBptbalance.div(2))) {
+    if (!cvxCrvBalance.eq(depositAmt)) {
         throw console.error("Uh oh, invalid cvxCrv balance");
     }
 
-    let cvxCrvBpt;
+    let cvxCrvBpt: BalancerPoolDeployed;
     if (chain == Chain.mainnet || chain == Chain.kovan) {
         const [poolTokens, initialBalances] = balHelper.sortTokens(
             [cvxCrv.address, crvBpt.address],
@@ -669,9 +674,9 @@ async function deployPhase2(
         );
         const receipt = await waitForTx(tx, debug);
         const cvxCrvPoolAddress = getPoolAddress(ethers.utils, receipt);
-        cvxCrvBpt = IERC20__factory.connect(cvxCrvPoolAddress, deployer);
 
         const poolId = await IBalancerPool__factory.connect(cvxCrvPoolAddress, deployer).getPoolId();
+        cvxCrvBpt = { address: cvxCrvPoolAddress, poolId };
         const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
 
         tx = await cvxCrv.approve(config.balancerVault, cvxCrvBalance);
@@ -696,7 +701,7 @@ async function deployPhase2(
             {},
             debug,
         );
-        cvxCrvBpt = fakeBpt as IERC20;
+        cvxCrvBpt = { address: fakeBpt.address, poolId: ZERO_KEY };
     }
 
     // -----------------------------
@@ -763,7 +768,7 @@ async function deployPhase2(
     // -----------------------------
 
     // If Mainnet or Kovan, create LBP
-    let lbp;
+    let lbpBpt: BalancerPoolDeployed;
     if (chain == Chain.mainnet || chain == Chain.kovan) {
         const { tknAmount, wethAmount } = distroList.lbp;
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
@@ -796,8 +801,8 @@ async function deployPhase2(
         );
         const receipt = await waitForTx(tx, debug);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
-        lbp = poolAddress;
         const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
+        lbpBpt = { address: poolAddress, poolId };
         const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
 
         tx = await MockERC20__factory.connect(config.weth, deployer).approve(config.balancerVault, wethAmount);
@@ -817,7 +822,7 @@ async function deployPhase2(
     }
     // Else just make a fake one to move tokens
     else {
-        lbp = DEAD_ADDRESS;
+        lbpBpt = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
         tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
         await waitForTx(tx, debug);
         tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
@@ -847,16 +852,19 @@ async function deployPhase2(
         booster,
         boosterOwner,
         cvxCrv,
+        cvxCrvBpt,
         cvxCrvRewards,
+        initialCvxCrvStaking,
         crvDepositor,
         crvDepositorWrapper,
         poolManager,
         cvxLocker,
         cvxStakingProxy,
+        chef,
         vestedEscrows,
         dropFactory,
         drops,
-        lbp,
+        lbpBpt,
         balLiquidityProvider,
     };
 }
@@ -888,7 +896,7 @@ async function deployPhase3(
 
     // If Mainnet or Kovan, create LBP
     let tx;
-    let poolAddress;
+    let pool: BalancerPoolDeployed = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
     if (chain == Chain.mainnet || chain == Chain.kovan) {
         const tknAmount = await cvx.balanceOf(balLiquidityProvider.address);
         const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
@@ -925,10 +933,10 @@ async function deployPhase3(
             multisigs.treasuryMultisig,
         );
         const receipt = await waitForTx(tx, debug);
-        poolAddress = getPoolAddress(ethers.utils, receipt);
+        const poolAddress = getPoolAddress(ethers.utils, receipt);
 
         const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
-
+        pool = { address: poolAddress, poolId };
         const joinPoolRequest = {
             assets: poolTokens,
             maxAmountsIn: initialBalances as BN[],
@@ -940,7 +948,7 @@ async function deployPhase3(
         await waitForTx(tx, debug);
     }
 
-    return { ...deployment, poolAddress8020: poolAddress };
+    return { ...deployment, pool8020Bpt: pool };
 }
 
 async function deployPhase4(
