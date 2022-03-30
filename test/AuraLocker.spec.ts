@@ -404,6 +404,8 @@ describe("AuraLocker", () => {
         });
 
         it("checkpoint CVX locker epoch", async () => {
+            await auraLocker.checkpointEpoch();
+
             await increaseTime(ONE_DAY.mul(14));
 
             const dataBefore = await getSnapShot(aliceAddress);
@@ -411,9 +413,7 @@ describe("AuraLocker", () => {
             await tx.wait();
             const dataAfter = await getSnapShot(aliceAddress);
 
-            const rewardsDuration = await auraLocker.rewardsDuration();
-            const newEpochs = ONE_DAY.mul(14).div(rewardsDuration).add(0);
-            expect(dataAfter.epochs.length, "new epochs added").to.equal(newEpochs.add(dataBefore.epochs.length));
+            expect(dataAfter.epochs.length, "new epochs added").to.equal(dataBefore.epochs.length + 2);
 
             const vlCVXBalance = await auraLocker.balanceAtEpochOf(0, aliceAddress);
             expect(vlCVXBalance, "vlCVXBalance at epoch is correct").to.equal(0);
