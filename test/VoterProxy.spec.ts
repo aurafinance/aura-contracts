@@ -151,7 +151,6 @@ describe("VoterProxy", () => {
 
     describe("when withdrawing tokens", () => {
         it("can not withdraw protected tokens", async () => {
-            const amount = ethers.utils.parseEther("100");
             const tx = voterProxy["withdraw(address)"](mocks.crv.address);
             await expect(tx).to.revertedWith("protected");
         });
