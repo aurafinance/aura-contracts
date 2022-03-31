@@ -2,11 +2,23 @@ import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, CurveVoterProxy, MockVoteStorage, MockVoteStorage__factory } from "../types/generated";
+import {
+    Booster,
+    CurveVoterProxy,
+    MockVoteStorage,
+    MockVoteStorage__factory,
+    MockERC20,
+    MockERC20__factory,
+    VlCvxExtraRewardDistribution,
+    AuraLocker,
+    AuraToken,
+} from "../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
+import { increaseTime } from "../test-utils/time";
+import { simpleToExactAmount } from "../test-utils/math";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -30,7 +42,10 @@ describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
     let booster: Booster;
+    let vlCvxExtraRewards: VlCvxExtraRewardDistribution;
     let mocks: DeployMocksResult;
+    let auraLocker: AuraLocker;
+    let cvx: AuraToken;
 
     let deployer: Signer;
     let daoMultisig: Signer;
@@ -61,6 +76,9 @@ describe("VoterProxy", () => {
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
+        vlCvxExtraRewards = contracts.vlCvxExtraRewards;
+        auraLocker = contracts.cvxLocker;
+        cvx = contracts.cvx;
     });
 
     describe("validates vote hash from Snapshot Hub", async () => {
@@ -121,6 +139,49 @@ describe("VoterProxy", () => {
             const eoaAddress = await eoa.getAddress();
             const tx = voterProxy.connect(eoa).migrate(eoaAddress);
             await expect(tx).to.revertedWith("!auth");
+        });
+
+        it("can not call setRewardDeposit", async () => {
+            const eoa = accounts[5];
+            const eoaAddress = await eoa.getAddress();
+            const tx = voterProxy.connect(eoa).setRewardDeposit(eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+    });
+
+    describe("when withdrawing tokens", () => {
+        it("can not withdraw protected tokens", async () => {
+            const amount = ethers.utils.parseEther("100");
+            const tx = voterProxy["withdraw(address)"](mocks.crv.address);
+            await expect(tx).to.revertedWith("protected");
+        });
+
+        it("can withdraw unprotected tokens", async () => {
+            const deployerAddress = await deployer.getAddress();
+            const randomToken = await deployContract<MockERC20>(
+                new MockERC20__factory(deployer),
+                "RandomToken",
+                ["randomToken", "randomToken", 18, deployerAddress, 10000000],
+                {},
+                false,
+            );
+
+            const balance = await randomToken.balanceOf(deployerAddress);
+            await randomToken.transfer(voterProxy.address, balance);
+
+            const cvxAmount = simpleToExactAmount(10);
+
+            // go through 2 epochs in order for the prev epoch to have a total supply
+            for (let i = 0; i < 2; i++) {
+                await cvx.approve(auraLocker.address, cvxAmount);
+                await auraLocker.lock(deployerAddress, cvxAmount);
+                await increaseTime(86400 * 7);
+                await auraLocker.checkpointEpoch();
+            }
+
+            await voterProxy["withdraw(address)"](randomToken.address);
+            const rewardDepositBalance = await randomToken.balanceOf(vlCvxExtraRewards.address);
+            expect(balance).eq(rewardDepositBalance);
         });
     });
 });

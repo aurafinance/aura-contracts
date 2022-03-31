@@ -29,6 +29,7 @@ import {
     MerkleAirdropFactory__factory,
     PoolManagerV3__factory,
     VestedEscrow__factory,
+    VlCvxExtraRewardDistribution__factory,
 } from "../../types";
 
 task("deploy:core").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -136,6 +137,10 @@ task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArgument
         vestedEscrow: VestedEscrow__factory.connect("0x12ee383Bb370D2603E2E7bCE3597aE71cBECde2f", deployer),
         dropFactory: MerkleAirdropFactory__factory.connect("0x2d53Feee8A4a94b2FA4C72551db96BEadC3f383C", deployer),
         claimZap: ClaimZap__factory.connect("0x779688dC607607bF84FCb4B09C4474E2F2A23696", deployer),
+        vlCvxExtraRewards: VlCvxExtraRewardDistribution__factory.connect(
+            "0x0000000000000000000000000000000000000000",
+            deployer,
+        ),
     };
 
     const poolInfo = await cvxSys.booster.poolInfo(0);
