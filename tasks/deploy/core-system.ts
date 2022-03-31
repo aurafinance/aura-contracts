@@ -1,47 +1,35 @@
+import { deployContract } from "./../utils/deploy-utils";
 import { task } from "hardhat/config";
-import { TaskArguments } from "hardhat/types";
+import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
+import { BigNumber as BN, ContractReceipt, ContractTransaction } from "ethers";
 import { getSigner } from "../utils";
-import { simpleToExactAmount } from "./../../test-utils/math";
 import {
-    deployForkSystem,
     deployPhase1,
     deployPhase2,
     deployPhase3,
     deployPhase4,
+    DistroList,
     ExtSystemConfig,
-    SystemDeployed,
+    MultisigConfig,
+    NamingConfig,
+    Phase1Deployed,
 } from "../../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { simpleToExactAmount } from "./../../test-utils/math";
+import { impersonateAccount } from "../../test-utils/fork";
+import { AssetHelpers } from "@balancer-labs/balancer-js";
 import {
-    AuraLocker__factory,
-    AuraStakingProxy__factory,
-    BaseRewardPool__factory,
-    BoosterOwner__factory,
-    Booster__factory,
-    ClaimZap__factory,
-    ConvexToken__factory,
-    CrvDepositor__factory,
+    IWalletChecker__factory,
+    ICurveVoteEscrow__factory,
+    MockERC20__factory,
+    MockWalletChecker,
+    MockWalletChecker__factory,
+    IInvestmentPool__factory,
     CurveVoterProxy__factory,
-    CvxCrvToken__factory,
     ERC20__factory,
-    MerkleAirdropFactory__factory,
-    PoolManagerV3__factory,
-    VestedEscrow__factory,
-} from "../../types";
-
-task("deploy:core").setAction(async function (taskArguments: TaskArguments, hre) {
-    const deployer = await getSigner(hre);
-    console.log(await deployer.getAddress());
-    await deployForkSystem(hre, deployer, getMockDistro(), await getMockMultisigs(deployer, deployer, deployer), {
-        cvxName: "Convex Finance",
-        cvxSymbol: "CVX",
-        vlCvxName: "Vote Locked Convex",
-        vlCvxSymbol: "vlCVX",
-        cvxCrvName: "Convex CRV",
-        cvxCrvSymbol: "cvxCRV",
-        tokenFactoryNamePostfix: " Convex Deposit",
-    });
-});
+    BaseRewardPool__factory,
+} from "../../types/generated";
+import { ONE_DAY, ZERO_ADDRESS } from "../../test-utils/constants";
 
 function logExtSystem(system: ExtSystemConfig) {
     const keys = Object.keys(system);
@@ -59,8 +47,346 @@ function logContracts(contracts: { [key: string]: { address: string } }) {
     console.log(`~~~~ SYSTEM DEPLOYMENT ~~~~`);
     console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~\n`);
     keys.map(k => {
-        console.log(`${k}:\t${contracts[k].address}`);
+        if (Array.isArray(contracts[k])) {
+            console.log(`${k}:\t[${(contracts[k] as any as [{ address: string }]).map(i => i.address)}]`);
+        } else {
+            console.log(`${k}:\t${contracts[k].address}`);
+        }
     });
+}
+
+async function waitForTx(tx: ContractTransaction, debug = false): Promise<ContractReceipt> {
+    const receipt = await tx.wait(3);
+    if (debug) {
+        console.log(`\nTRANSACTION: ${receipt.transactionHash}`);
+        console.log(`to:: ${tx.to}`);
+        console.log(`txData:: ${tx.data}`);
+    }
+    return receipt;
+}
+
+const curveSystem: ExtSystemConfig = {
+    token: "0xD533a949740bb3306d119CC777fa900bA034cd52",
+    tokenBpt: "0xD533a949740bb3306d119CC777fa900bA034cd52",
+    tokenWhale: "0x7a16fF8270133F063aAb6C9977183D9e72835428",
+    minter: "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0",
+    votingEscrow: "0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2",
+    feeDistribution: "0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc",
+    gaugeController: "0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB",
+    voteOwnership: "0xe478de485ad2fe566d49342cbd03e49ed7db3356",
+    voteParameter: "0xbcff8b0b9419b9a88c44546519b1e909cf330399",
+    gauges: ["0xBC89cd85491d81C6AD2954E6d0362Ee29fCa8F53"],
+    balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
+    balancerMinOutBps: "9975",
+    balancerPoolFactories: {
+        weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
+        stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
+        investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
+    },
+    weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
+};
+
+task("deploy:mainnet:crv").setAction(async function (taskArguments: TaskArguments, hre) {
+    const { ethers } = hre;
+    const deployer = await getSigner(hre);
+    const deployerAddress = await deployer.getAddress();
+    const balHelper = new AssetHelpers(curveSystem.weth);
+    console.log(deployerAddress);
+
+    const distroList = getMockDistro();
+    const multisigs = await getMockMultisigs(deployer, deployer, deployer);
+    const naming = {
+        cvxName: "Convex Finance",
+        cvxSymbol: "CVX",
+        vlCvxName: "Vote Locked Convex",
+        vlCvxSymbol: "vlCVX",
+        cvxCrvName: "Convex CRV",
+        cvxCrvSymbol: "cvxCRV",
+        tokenFactoryNamePostfix: " Convex Deposit",
+    };
+
+    // ~~~ SET UP BALANCES ~~~
+
+    // crvBPT for initialLock && cvxCrv/crvBPT pair
+    const tokenWhaleSigner = await impersonateAccount(curveSystem.tokenWhale);
+    const crv = MockERC20__factory.connect(curveSystem.token, tokenWhaleSigner.signer);
+    let tx = await crv.transfer(deployerAddress, simpleToExactAmount(1000));
+    await waitForTx(tx, true);
+
+    // weth for LBP creation
+    const wethWhaleSigner = await impersonateAccount(curveSystem.wethWhale);
+    const weth = await MockERC20__factory.connect(curveSystem.weth, wethWhaleSigner.signer);
+    tx = await weth.transfer(deployerAddress, simpleToExactAmount(50));
+    await waitForTx(tx, true);
+
+    // ~~~~~~~~~~~~~~~~~~
+    // ~~~ DEPLOYMENT ~~~
+    // ~~~~~~~~~~~~~~~~~~
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 1 ~~~
+    // ~~~~~~~~~~~~~~~
+    const phase1 = await deployPhase1(deployer, curveSystem, false, true);
+
+    // POST-PHASE-1
+    // Whitelist the VoterProxy in the Curve system
+    const ve = ICurveVoteEscrow__factory.connect(curveSystem.votingEscrow, deployer);
+    const walletChecker = IWalletChecker__factory.connect(await ve.smart_wallet_checker(), deployer);
+    const owner = await walletChecker.dao();
+    const ownerSigner = await impersonateAccount(owner);
+    tx = await walletChecker.connect(ownerSigner.signer).approveWallet(phase1.voterProxy.address);
+    await waitForTx(tx, true);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 2 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    const phase2 = await deployPhase2(hre, deployer, phase1, distroList, multisigs, naming, curveSystem, true);
+    // POST-PHASE-2
+    const treasurySigner = await impersonateAccount(multisigs.treasuryMultisig);
+    const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
+    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
+    const [, weights] = balHelper.sortTokens(
+        [phase2.cvx.address, curveSystem.weth],
+        [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
+    );
+    tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
+    await waitForTx(tx, true);
+    tx = await lbp.setSwapEnabled(true);
+    await waitForTx(tx, true);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 3 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-3
+    tx = await weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
+    await waitForTx(tx, true);
+
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, curveSystem, true);
+
+    // POST-PHASE-3
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 4 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-4
+    const multisigSigner = await impersonateAccount(multisigs.daoMultisig);
+    tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
+    await waitForTx(tx, true);
+
+    const phase4 = await deployPhase4(deployer, phase3, curveSystem, true);
+    return phase4;
+});
+
+const kovanBalancerConfig: ExtSystemConfig = {
+    authorizerAdapter: "0xeAF536c3202099365369597DD8207c4f5952e91e",
+    token: "0xcb355677E36f390Ccc4a5d4bEADFbF1Eb2071c81",
+    tokenBpt: "0xDC2EcFDf2688f92c85064bE0b929693ACC6dBcA6",
+    minter: "0xE1008f2871F5f5c3da47f806dEbA3cD83Fe0E55B",
+    votingEscrow: "0x0BA4d28a89b0aB0c48253f4f36B204DE24354651",
+    voteOwnership: ZERO_ADDRESS,
+    voteParameter: ZERO_ADDRESS,
+    feeDistribution: ZERO_ADDRESS,
+    gaugeController: "0x28bE1a58A534B281c3A22df28d3720323bfF331D",
+    gauges: [
+        "0xe190e5363c925513228bf25e4633c8cca4809c9a",
+        "0x5e7b7b41377ce4b76d6008f7a91ff9346551c853",
+        "0xf34d5e5715cc6cc9493f5bd252185e8acdc1de0d",
+    ],
+    balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
+    balancerPoolId: "0xdc2ecfdf2688f92c85064be0b929693acc6dbca6000200000000000000000701",
+    balancerMinOutBps: "9975",
+    balancerPoolFactories: {
+        weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
+        stablePool: "0x751dfDAcE1AD995fF13c927f6f761C6604532c79",
+        investmentPool: "0xb08E16cFc07C684dAA2f93C70323BAdb2A6CBFd2",
+    },
+    weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
+};
+
+task("deploy:kovan:1").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const deployerAddress = await deployer.getAddress();
+    console.log(deployerAddress);
+
+    const phase1 = await deployPhase1(deployer, kovanBalancerConfig, false, true);
+    console.log(phase1.voterProxy.address);
+});
+
+task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const deployerAddress = await deployer.getAddress();
+
+    const phase1 = {
+        voterProxy: await CurveVoterProxy__factory.connect("0x6a1E0696069355DB5B282ca33cDb66f66D6bCbe9", deployer),
+    };
+
+    const contracts = await deployKovan234(
+        hre,
+        phase1,
+        getMockDistro(),
+        await getMockMultisigs(deployer, deployer, deployer),
+        {
+            cvxName: "Slipknot Finance",
+            cvxSymbol: "SLK",
+            vlCvxName: "Tightly tied Slipknot",
+            vlCvxSymbol: "ttSLK",
+            cvxCrvName: "Slipknot BUL",
+            cvxCrvSymbol: "slkBUL",
+            tokenFactoryNamePostfix: " Slipknot rope",
+        },
+    );
+
+    logContracts(contracts as unknown as { [key: string]: { address: string } });
+
+    const poolInfo = await contracts.booster.poolInfo(0);
+    const lp = await ERC20__factory.connect(poolInfo.lptoken, deployer);
+
+    let tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
+    await waitForTx(tx);
+
+    tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
+    await waitForTx(tx);
+
+    tx = await contracts.booster.earmarkRewards(0);
+    await waitForTx(tx);
+
+    const tokenBptBal = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).balanceOf(deployerAddress);
+    tx = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).approve(
+        contracts.crvDepositor.address,
+        tokenBptBal,
+    );
+    await waitForTx(tx);
+
+    tx = await contracts.crvDepositor["deposit(uint256,bool,address)"](
+        tokenBptBal,
+        true,
+        contracts.cvxCrvRewards.address,
+    );
+    await waitForTx(tx);
+
+    tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
+    await waitForTx(tx);
+
+    tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
+    await waitForTx(tx);
+
+    tx = await BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer)["getReward()"]();
+    await waitForTx(tx);
+
+    const bal = await contracts.cvx.balanceOf(deployerAddress);
+    if (bal.lte(0)) {
+        throw console.error("No CVX");
+    }
+
+    tx = await contracts.cvx.approve(contracts.cvxLocker.address, bal);
+    await waitForTx(tx);
+
+    tx = await contracts.cvxLocker.lock(await deployer.getAddress(), bal);
+    await waitForTx(tx);
+});
+
+task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const deployerAddress = await deployer.getAddress();
+    console.log(deployerAddress);
+
+    const distroList = getMockDistro();
+    const multisigs = await getMockMultisigs(deployer, deployer, deployer);
+    const naming = {
+        cvxName: "Slipknot Finance",
+        cvxSymbol: "SLK",
+        vlCvxName: "Tightly tied Slipknot",
+        vlCvxSymbol: "ttSLK",
+        cvxCrvName: "Slipknot BUL",
+        cvxCrvSymbol: "slkBUL",
+        tokenFactoryNamePostfix: " Slipknot rope",
+    };
+
+    // ~~~~~~~~~~~~~~~~~~
+    // ~~~ DEPLOYMENT ~~~
+    // ~~~~~~~~~~~~~~~~~~
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 1 ~~~
+    // ~~~~~~~~~~~~~~~
+    const phase1 = await deployPhase1(deployer, kovanBalancerConfig, false, true);
+
+    // POST-PHASE-1
+    // Whitelist the VoterProxy in the Curve system
+    const walletChecker = await deployContract<MockWalletChecker>(
+        new MockWalletChecker__factory(deployer),
+        "MockWalletChecker",
+        [],
+        {},
+    );
+    let tx = await walletChecker.approveWallet(phase1.voterProxy.address);
+    await tx.wait();
+    const aa = await impersonateAccount(kovanBalancerConfig.authorizerAdapter);
+    const ve = ICurveVoteEscrow__factory.connect(kovanBalancerConfig.votingEscrow, aa.signer);
+    tx = await ve.commit_smart_wallet_checker(walletChecker.address);
+    await tx.wait();
+    tx = await ve.apply_smart_wallet_checker();
+    await tx.wait();
+
+    await deployKovan234(hre, phase1, distroList, multisigs, naming);
+});
+
+async function deployKovan234(
+    hre: HardhatRuntimeEnvironment,
+    phase1: Phase1Deployed,
+    distroList: DistroList,
+    multisigs: MultisigConfig,
+    naming: NamingConfig,
+) {
+    const { ethers } = hre;
+    const deployer = await getSigner(hre);
+    const balHelper = new AssetHelpers(kovanBalancerConfig.weth);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 2 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    const phase2 = await deployPhase2(hre, deployer, phase1, distroList, multisigs, naming, kovanBalancerConfig, true);
+    // POST-PHASE-2
+    const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, deployer);
+    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
+    const [, weights] = balHelper.sortTokens(
+        [phase2.cvx.address, kovanBalancerConfig.weth],
+        [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
+    );
+    let tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
+    await waitForTx(tx, true);
+    tx = await lbp.setSwapEnabled(true);
+    await waitForTx(tx, true);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 3 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-3
+    const weth = await MockERC20__factory.connect(kovanBalancerConfig.weth, deployer);
+    tx = await weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(400));
+    await waitForTx(tx, true);
+
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, kovanBalancerConfig, true);
+
+    // POST-PHASE-3
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 4 ~~~
+    // ~~~~~~~~~~~~~~~
+
+    // PRE-PHASE-4
+    tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
+    await waitForTx(tx, true);
+
+    const phase4 = await deployPhase4(deployer, phase3, kovanBalancerConfig, true);
+    return phase4;
 }
 
 task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -72,95 +398,22 @@ task("deploy:testnet").setAction(async function (taskArguments: TaskArguments, h
     const distro = getMockDistro();
 
     const phase1 = await deployPhase1(deployer, mocks.addresses, true, true);
-    const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig, true);
-    const phase3 = await deployPhase3(
+    const phase2 = await deployPhase2(
         hre,
         deployer,
-        phase2,
+        phase1,
         distro,
         multisigs,
         mocks.namingConfig,
         mocks.addresses,
         true,
     );
+    const tx = await mocks.weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
+    await tx.wait();
+
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses, true);
     const contracts = await deployPhase4(deployer, phase3, mocks.addresses, true);
 
     logExtSystem(mocks.addresses);
-    logContracts(contracts as any as { [key: string]: { address: string } });
-});
-
-task("postDeploy:rinkeby").setAction(async function (taskArguments: TaskArguments, hre) {
-    const deployer = await getSigner(hre);
-    console.log(await deployer.getAddress());
-
-    const sys: ExtSystemConfig = {
-        token: "0xDBC620A2465F3b4084F5964CEb73F5BDB3568225",
-        tokenWhale: "0xbE126Fd179822c5Cb72b0e6E584a6F7afeb9eaBE",
-        minter: "0x563789F6580139c501Fde8D58bD25c47121e0609",
-        votingEscrow: "0x80bbF4Fa9D938f0eE69AE2802Af384F8fBdB24bd",
-        gaugeController: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        registry: "0x11D56fA64bD6B87aCe54049cD1Fb3bF25b080Ff8",
-        registryID: 0,
-        voteOwnership: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        voteParameter: "0x0C6a078Cce97D710dd00231Da6A0eCE7fCd63F2F",
-        gauges: ["0x66F5899292d0d9aaE320f2Ae5CFFB1B9c0A69E1f"],
-        balancerVault: "0x0000000000000000000000000000000000000000",
-        balancerWeightedPoolFactory: "0x0000000000000000000000000000000000000000",
-        weth: "0x0000000000000000000000000000000000000000",
-    };
-    const cvxSys: SystemDeployed = {
-        voterProxy: CurveVoterProxy__factory.connect("0xc7d3edd05d4ddd268b5701a9c3d17ab9ebd90121", deployer),
-        cvx: ConvexToken__factory.connect("0xf40dbb882fc7c04e33d949f8dcb2b1ae0b5b3d3d", deployer),
-        booster: Booster__factory.connect("0x0dacce714d0ddd2f78f406752f5abbaad1d20062", deployer),
-        boosterOwner: BoosterOwner__factory.connect("0xff0972f691ab79240a160620481ad6c167f1669a", deployer),
-        cvxCrv: CvxCrvToken__factory.connect("0x059f5c8a2f9315309bc4c8c69e58ce10e6df26fb", deployer),
-        cvxCrvRewards: BaseRewardPool__factory.connect("0xcb2de6561093e663dcc4c622227f3465df800127", deployer),
-        crvDepositor: CrvDepositor__factory.connect("0x314d35451e18417c6f5128a0ec6be5dc675546d8", deployer),
-        poolManager: PoolManagerV3__factory.connect("0xb03854a7d81bf9f657c9d335d2ebcc89f651497f", deployer),
-        cvxLocker: AuraLocker__factory.connect("0x9a5ba49a848e38f154e9f69ace6e8283f90af615", deployer),
-        cvxStakingProxy: AuraStakingProxy__factory.connect("0x02a10e1c53976a618680f390a8a1f7da262e3f01", deployer),
-        vestedEscrow: VestedEscrow__factory.connect("0x34f23e3577b85102dc01e3b5af1fd92d4970019e", deployer),
-        dropFactory: MerkleAirdropFactory__factory.connect("0x6a45ce07f1d6338b7d677b9d3af97a4b54d2d43b", deployer),
-        claimZap: ClaimZap__factory.connect("0xf7190cd62fdc820f4c4b6dfe93fe6c6974234576", deployer),
-    };
-
-    const poolInfo = await cvxSys.booster.poolInfo(0);
-    const lp = await ERC20__factory.connect(poolInfo.lptoken, deployer);
-
-    let tx = await lp.approve(cvxSys.booster.address, simpleToExactAmount(100));
-    await tx.wait();
-
-    tx = await cvxSys.booster.deposit(0, simpleToExactAmount(100), true);
-    await tx.wait();
-
-    tx = await cvxSys.cvx.approve(cvxSys.cvxLocker.address, simpleToExactAmount(100));
-    await tx.wait();
-
-    tx = await cvxSys.cvxLocker.lock(await deployer.getAddress(), simpleToExactAmount(100), 0);
-    await tx.wait();
-
-    tx = await cvxSys.booster.earmarkRewards(0);
-    await tx.wait();
-
-    tx = await cvxSys.cvxStakingProxy.distribute();
-    await tx.wait();
-
-    tx = await ERC20__factory.connect(sys.token, deployer).approve(
-        cvxSys.crvDepositor.address,
-        simpleToExactAmount(100),
-    );
-    await tx.wait();
-
-    tx = await cvxSys.crvDepositor["deposit(uint256,bool,address)"](
-        simpleToExactAmount(100),
-        true,
-        cvxSys.cvxCrvRewards.address,
-    );
-    await tx.wait();
-
-    tx = await lp.approve(cvxSys.booster.address, simpleToExactAmount(100));
-    await tx.wait();
-
-    tx = await cvxSys.booster.deposit(0, simpleToExactAmount(100), true);
-    await tx.wait();
+    logContracts(contracts as unknown as { [key: string]: { address: string } });
 });

@@ -80,3 +80,5 @@ export const sqrt = (value: BN | number): BN => {
     }
     return y;
 };
+
+export const sum = (a: BN, b: BN): BN => a.add(b);

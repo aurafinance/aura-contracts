@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "declaration": true,
         "declarationMap": true,
         "emitDecoratorMetadata": true,
@@ -13,13 +14,23 @@
         "removeComments": true,
         "resolveJsonModule": true,
         "sourceMap": true,
+        "rootDir": ".",
         "strictNullChecks": false,
         "strict": true,
         "target": "es6",
-        "baseUrl": ".",
-        "rootDir": "."
+        "outDir": "./dist/"
     },
     "exclude": ["node_modules"],
+    "include": [
+        "tasks/**/*",
+        "./test/*",
+        "./test/**/*",
+        "./test-fork/*",
+        "./test-fork/**/*",
+        "types/**/*",
+        "test-utils/**/*",
+        "scripts/**/*"
+    ],
     "files": [
         "./index.ts",
         "./hardhat.config.ts",
@@ -27,6 +38,5 @@
         "./hardhat-cvx.config.ts",
         "./tasks.config.ts",
         "./tasks-fork.config.ts"
-    ],
-    "include": ["tasks/**/*", "test/**/*", "types/**/*", "test-utils/**/*", "scripts/**/*"]
+    ]
 }

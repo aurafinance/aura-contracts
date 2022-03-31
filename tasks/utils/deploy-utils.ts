@@ -11,18 +11,18 @@ export const deployContract = async <T extends Contract>(
     const contract = (await contractFactory.deploy(...constructorArgs, overrides)) as T;
     if (debug) {
         console.log(
-            `Deploying ${contractName} contract with hash ${contract.deployTransaction.hash} from ${
+            `\nDeploying ${contractName} contract with hash ${contract.deployTransaction.hash} from ${
                 contract.deployTransaction.from
             } with gas price ${contract.deployTransaction.gasPrice?.toNumber() || 0 / 1e9} Gwei`,
         );
     }
-    const receipt = await contract.deployTransaction.wait();
+    const receipt = await contract.deployTransaction.wait(debug ? 3 : undefined);
     const txCost = receipt.gasUsed.mul(contract.deployTransaction.gasPrice || 0);
     const abiEncodedConstructorArgs = contract.interface.encodeDeploy(constructorArgs);
 
     if (debug) {
         console.log(
-            `Deployed ${contractName} to ${contract.address} in block ${receipt.blockNumber}, using ${
+            `\nDeployed ${contractName} to ${contract.address} in block ${receipt.blockNumber}, using ${
                 receipt.gasUsed
             } gas costing ${formatUnits(txCost)} ETH`,
         );

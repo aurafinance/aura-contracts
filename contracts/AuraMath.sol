@@ -27,6 +27,15 @@ library AuraMath {
         return a / b;
     }
 
+    /**
+     * @dev Returns the average of two numbers. The result is rounded towards
+     * zero.
+     */
+    function average(uint256 a, uint256 b) internal pure returns (uint256) {
+        // (a + b) / 2 can overflow, so we distribute.
+        return (a / 2) + (b / 2) + (((a % 2) + (b % 2)) / 2);
+    }
+
     function to224(uint256 a) internal pure returns (uint224 c) {
         require(a <= type(uint224).max, "AuraMath: uint224 Overflow");
         c = uint224(a);
@@ -50,6 +59,11 @@ library AuraMath {
     function to112(uint256 a) internal pure returns (uint112 c) {
         require(a <= type(uint112).max, "AuraMath: uint112 Overflow");
         c = uint112(a);
+    }
+
+    function to96(uint256 a) internal pure returns (uint96 c) {
+        require(a <= type(uint96).max, "AuraMath: uint96 Overflow");
+        c = uint96(a);
     }
 
     function to64(uint256 a) internal pure returns (uint64 c) {

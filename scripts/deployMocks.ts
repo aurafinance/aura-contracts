@@ -1,6 +1,7 @@
-import { ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
+import { parseEther } from "ethers/lib/utils";
 import {
     MockERC20__factory,
     MockERC20,
@@ -8,8 +9,6 @@ import {
     MockCurveVoteEscrow__factory,
     MockVoting,
     MockVoting__factory,
-    MockRegistry,
-    MockRegistry__factory,
     MockWalletChecker,
     MockWalletChecker__factory,
     MockFeeDistro,
@@ -18,6 +17,10 @@ import {
     MockCurveGauge__factory,
     MockCurveMinter__factory,
     MockCurveMinter,
+    MockBalancerPoolToken,
+    MockBalancerPoolToken__factory,
+    MockBalancerVault,
+    MockBalancerVault__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
@@ -28,10 +31,14 @@ interface DeployMocksResult {
     crvMinter: MockCurveMinter;
     voting: MockVoting;
     votingEscrow: MockCurveVoteEscrow;
-    registry: MockRegistry;
+    feeDistribution: MockFeeDistro;
+    nativeTokenDistribution: MockFeeDistro;
     smartWalletChecker: MockWalletChecker;
-    feeDistro: MockFeeDistro;
     gauges: MockCurveGauge[];
+    crvBpt: MockBalancerPoolToken;
+    balancerVault: MockBalancerVault;
+    bal: MockERC20;
+    weth: MockERC20;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
@@ -40,15 +47,40 @@ interface DeployMocksResult {
 function getMockDistro(): DistroList {
     return {
         miningRewards: simpleToExactAmount(50, 24),
-        lpIncentives: simpleToExactAmount(25, 24),
-        airdrops: [{ merkleRoot: ZERO_KEY, amount: simpleToExactAmount(2, 24) }],
-        vesting: [
-            { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(10, 24) },
-            { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(3.286, 24) },
+        lpIncentives: simpleToExactAmount(10, 24),
+        cvxCrvBootstrap: simpleToExactAmount(2, 24),
+        lbp: {
+            tknAmount: simpleToExactAmount(2.2, 24),
+            wethAmount: simpleToExactAmount(50),
+            matching: simpleToExactAmount(2.8, 24),
+        },
+        airdrops: [
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(0.5, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
+            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
         ],
-        treasury: { address: "0x1389388d01708118b497f59521f6943Be2541bb7", amount: simpleToExactAmount(9.7, 24) },
-        partnerTreasury: { address: ZERO_ADDRESS, amount: simpleToExactAmount(0) },
-        lpSeed: simpleToExactAmount(0.014, 24),
+        vesting: [
+            {
+                period: ONE_WEEK.mul(16),
+                recipients: [
+                    { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(0.5, 24) }, // Team vesting
+                ],
+            },
+            {
+                period: ONE_WEEK.mul(104),
+                recipients: [
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(9.5, 24) }, // Team vesting
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(2, 24) }, // Partner Treasury
+                ],
+            },
+            {
+                period: ONE_WEEK.mul(208),
+                recipients: [
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(17.5, 24) }, // Treasury
+                ],
+            },
+        ],
     };
 }
 
@@ -77,6 +109,14 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         new MockERC20__factory(deployer),
         "MockCRV",
         ["mockCrv", "mockCrv", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
+    const crvBpt = await deployContract<MockBalancerPoolToken>(
+        new MockBalancerPoolToken__factory(deployer),
+        "MockBalancerPoolToken",
+        [18, deployerAddress, 100],
         {},
         debug,
     );
@@ -119,6 +159,17 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
+    const nativeFeeDistro = await deployContract<MockFeeDistro>(
+        new MockFeeDistro__factory(deployer),
+        "MockFeeDistro",
+        [crv.address, simpleToExactAmount(1)],
+        {},
+        debug,
+    );
+
+    tx = await crv.transfer(nativeFeeDistro.address, simpleToExactAmount(1, 22));
+    await tx.wait();
+
     const smartWalletChecker = await deployContract<MockWalletChecker>(
         new MockWalletChecker__factory(deployer),
         "mockWalletChecker",
@@ -130,23 +181,12 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     const votingEscrow = await deployContract<MockCurveVoteEscrow>(
         new MockCurveVoteEscrow__factory(deployer),
         "MockCurveVoteEscrow",
-        [smartWalletChecker.address, crv.address],
+        [smartWalletChecker.address, crvBpt.address],
         {},
         debug,
     );
 
     const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", [], {}, false);
-
-    const registry = await deployContract<MockRegistry>(
-        new MockRegistry__factory(deployer),
-        "MockRegistry",
-        [],
-        {},
-        debug,
-    );
-
-    tx = await registry.setAddress(0, feeDistro.address);
-    await tx.wait();
 
     const gauges = [];
 
@@ -164,31 +204,69 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         gauges.push(gauge);
     }
 
+    tx = await crvBpt.setPrice(parseEther("2.40"));
+    await tx.wait();
+
+    const balancerVault = await deployContract<MockBalancerVault>(
+        new MockBalancerVault__factory(deployer),
+        "MockBalancerVault",
+        [crvBpt.address],
+        {},
+        debug,
+    );
+
+    const bal = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockBAL",
+        ["mockBAL", "mockBAL", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
+    const weth = await deployContract<MockERC20>(
+        new MockERC20__factory(deployer),
+        "MockWETH",
+        ["mockWETH", "mockWETH", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
     return {
         lptoken,
         crv,
         crvMinter,
         voting,
         votingEscrow,
-        registry,
         smartWalletChecker,
-        feeDistro,
+        feeDistribution: feeDistro,
+        nativeTokenDistribution: nativeFeeDistro,
         gauges,
+        crvBpt,
+        balancerVault,
+        bal,
+        weth,
         addresses: {
             token: crv.address,
+            tokenBpt: crvBpt.address,
             tokenWhale: deployerAddress,
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
+            feeDistribution: feeDistro.address,
+            nativeTokenDistribution: nativeFeeDistro.address,
             gaugeController: voting.address,
-            registry: registry.address,
-            registryID: 0,
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
-            // TODO - update these addresses with mocks
-            balancerVault: ZERO_ADDRESS,
-            balancerWeightedPoolFactory: ZERO_ADDRESS,
-            weth: ZERO_ADDRESS,
+            balancerVault: balancerVault.address,
+            balancerPoolFactories: {
+                weightedPool2Tokens: ZERO_ADDRESS,
+                stablePool: ZERO_ADDRESS,
+                investmentPool: ZERO_ADDRESS,
+            },
+            balancerPoolId: ZERO_KEY,
+            balancerMinOutBps: "9975",
+            weth: weth.address,
+            wethWhale: deployerAddress,
         },
         namingConfig: {
             cvxName: "Convex Finance",

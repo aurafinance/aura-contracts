@@ -55,14 +55,19 @@ const config: HardhatUserConfig = {
     networks: {
         hardhat: {
             chainId: chainIds.hardhat,
+            allowUnlimitedContractSize: true,
         },
         mainnet: {
             url: process.env.NODE_URL || "https://main-light.eth.linkpool.io",
         },
+        kovan: {
+            url: process.env.NODE_URL || "",
+            gasPrice: 3000000000,
+        },
         forking: {
             url: process.env.NODE_URL || "",
         },
-        rinkeby: { url: process.env.NODE_URL || "", gasPrice: 1000000000 },
+        rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
     paths: {
         artifacts: "./artifacts",

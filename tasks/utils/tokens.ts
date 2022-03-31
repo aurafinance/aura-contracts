@@ -1,6 +1,8 @@
 export enum Chain {
     mainnet,
     rinkeby,
+    kovan,
+    local,
 }
 
 export interface Token {
