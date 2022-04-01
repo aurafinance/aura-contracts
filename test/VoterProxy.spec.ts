@@ -151,7 +151,9 @@ describe("VoterProxy", () => {
 
     describe("when withdrawing tokens", () => {
         it("can not withdraw protected tokens", async () => {
-            const tx = voterProxy["withdraw(address)"](mocks.crv.address);
+            let tx = voterProxy["withdraw(address)"](mocks.crv.address);
+            await expect(tx).to.revertedWith("protected");
+            tx = voterProxy["withdraw(address)"](mocks.crvBpt.address);
             await expect(tx).to.revertedWith("protected");
         });
 
