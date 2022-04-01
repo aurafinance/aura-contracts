@@ -1,5 +1,7 @@
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
+    AuraExtraRewardsDistributor,
+    AuraPenaltyForwarder,
     IInvestmentPoolFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
@@ -61,6 +63,8 @@ import {
     MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
+    AuraPenaltyForwarder__factory,
+    AuraExtraRewardsDistributor__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -177,6 +181,8 @@ interface Phase2Deployed extends Phase1Deployed {
     drops: MerkleAirdrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
+    penaltyForwarder: AuraPenaltyForwarder;
+    extraRewardsDistributor: AuraExtraRewardsDistributor;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -473,6 +479,22 @@ async function deployPhase2(
         {},
         debug,
     );
+
+    const extraRewardsDistributor = await deployContract<AuraExtraRewardsDistributor>(
+        new AuraExtraRewardsDistributor__factory(deployer),
+        "AuraExtraRewardsDistributor",
+        [cvxLocker.address],
+        {},
+        debug,
+    );
+    const penaltyForwarder = await deployContract<AuraPenaltyForwarder>(
+        new AuraPenaltyForwarder__factory(deployer),
+        "AuraPenaltyForwarder",
+        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
+        {},
+        debug,
+    );
+
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug);
 
@@ -866,6 +888,8 @@ async function deployPhase2(
         drops,
         lbpBpt,
         balLiquidityProvider,
+        penaltyForwarder,
+        extraRewardsDistributor,
     };
 }
 
