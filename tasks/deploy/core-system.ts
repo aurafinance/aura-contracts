@@ -265,7 +265,7 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     tx = await contracts.crvDepositor["deposit(uint256,bool,address)"](
         tokenBptBal,
         true,
-        contracts.cvxCrvRewards.address,
+        contracts.initialCvxCrvStaking.address,
     );
     await waitForTx(tx);
 

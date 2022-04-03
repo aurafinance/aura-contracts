@@ -65,6 +65,8 @@ import {
     IStablePoolFactory__factory,
     AuraPenaltyForwarder__factory,
     AuraExtraRewardsDistributor__factory,
+    AuraBalRewardPool,
+    AuraBalRewardPool__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -168,7 +170,7 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxCrv: CvxCrvToken;
     cvxCrvBpt: BalancerPoolDeployed;
     cvxCrvRewards: BaseRewardPool;
-    initialCvxCrvStaking: BaseRewardPool;
+    initialCvxCrvStaking: AuraBalRewardPool;
     crvDepositor: CrvDepositor;
     crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
@@ -634,19 +636,15 @@ async function deployPhase2(
     // -----------------------------
     // 2.2.2 Schedule: 2% emission for cvxCrv staking
     // -----------------------------
-    const initialCvxCrvStaking = await deployContract<BaseRewardPool>(
-        new BaseRewardPool__factory(deployer),
-        "Bootstrap",
-        [0, cvxCrv.address, cvx.address, deployerAddress, rewardFactory.address],
+    const initialCvxCrvStaking = await deployContract<AuraBalRewardPool>(
+        new AuraBalRewardPool__factory(deployer),
+        "AuraBalRewardPool",
+        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, ONE_WEEK],
         {},
         debug,
     );
 
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
-    await waitForTx(tx, debug);
-
-    // TODO - replace queueNewRewards
-    tx = await initialCvxCrvStaking.queueNewRewards(distroList.cvxCrvBootstrap);
     await waitForTx(tx, debug);
 
     // -----------------------------

@@ -6,14 +6,17 @@ import "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.8/utils/Address.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-// TODO - replace this with modified v
-import "./AuraLocker.sol";
+
+import { IAuraLocker } from "./Interfaces.sol";
 
 /**
  * @title   AuraBalRewardPool
  * @author  Synthetix -> ConvexFinance -> Aura
- * @notice
- * @dev
+ * @dev     Modifications from convex-platform/contracts/contracts/BaseRewardPool.sol:
+ *            - Delayed start (tokens transferred then delay is enforced before notification)
+ *            - One time duration of 14 days
+ *            - Remove child reward contracts
+ *            - Penalty on claim at 20%
  */
 contract AuraBalRewardPool {
     using SafeMath for uint256;
@@ -24,17 +27,16 @@ contract AuraBalRewardPool {
     uint256 public constant duration = 14 days;
 
     address public immutable rewardManager;
-    AuraLocker public immutable auraLocker;
+
+    IAuraLocker public immutable auraLocker;
     address public immutable penaltyForwarder;
+    uint256 public pendingPenalty = 0;
+    uint256 public immutable startTime;
 
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
-    uint256 public queuedRewards = 0;
-    uint256 public currentRewards = 0;
-    uint256 public historicalRewards = 0;
-    uint256 public constant newRewardRatio = 830;
     uint256 private _totalSupply;
 
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -44,25 +46,34 @@ contract AuraBalRewardPool {
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, uint256 reward);
+    event RewardPaid(address indexed user, uint256 reward, bool locked);
+    event PenaltyForwarded(uint256 amount);
 
     /**
-     * @dev
+     * @dev Simple constructoor
      * @param _stakingToken  Pool LP token
-     * @param _rewardToken   Crv
+     * @param _rewardToken   $AURA
      * @param _rewardManager Depositor
+     * @param _auraLocker    $AURA lock contract
+     * @param _penaltyForwarder Address to which penalties are sent
      */
     constructor(
         address _stakingToken,
         address _rewardToken,
         address _rewardManager,
         address _auraLocker,
-        address _penaltyForwarder
+        address _penaltyForwarder,
+        uint256 _startDelay
     ) {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
         rewardManager = _rewardManager;
-        // TODO - add auralocker etc
+        auraLocker = IAuraLocker(_auraLocker);
+        penaltyForwarder = _penaltyForwarder;
+        stakingToken.safeApprove(_auraLocker, type(uint256).max);
+
+        require(_startDelay < 2 weeks, "!delay");
+        startTime = block.timestamp + _startDelay;
     }
 
     function totalSupply() public view returns (uint256) {
@@ -136,7 +147,11 @@ contract AuraBalRewardPool {
         return true;
     }
 
-    function withdraw(uint256 amount, bool claim) public updateReward(msg.sender) returns (bool) {
+    function withdraw(
+        uint256 amount,
+        bool claim,
+        bool lock
+    ) public updateReward(msg.sender) returns (bool) {
         require(amount > 0, "RewardPool : Cannot withdraw 0");
 
         _totalSupply = _totalSupply.sub(amount);
@@ -146,85 +161,59 @@ contract AuraBalRewardPool {
         emit Withdrawn(msg.sender, amount);
 
         if (claim) {
-            getReward(msg.sender);
+            getReward(lock);
         }
 
         return true;
     }
 
-    function withdrawAll(bool claim) external {
-        withdraw(_balances[msg.sender], claim);
-    }
-
-    // TODO - can't claim on behalf of other
     /**
      * @dev Gives a staker their rewards
-     * @param _account     Account for which to claim
+     * @param _lock Lock the rewards? If false, takes a 20% haircut
      */
-    function getReward(address _account) public updateReward(_account) returns (bool) {
-        uint256 reward = earned(_account);
-        // TODO - add penalty
+    function getReward(bool _lock) public updateReward(msg.sender) returns (bool) {
+        uint256 reward = rewards[msg.sender];
         if (reward > 0) {
-            rewards[_account] = 0;
-            rewardToken.safeTransfer(_account, reward);
-            emit RewardPaid(_account, reward);
+            rewards[msg.sender] = 0;
+            if (_lock) {
+                auraLocker.lock(msg.sender, reward);
+            } else {
+                uint256 penalty = (reward * 2) / 10;
+                pendingPenalty += penalty;
+                rewardToken.safeTransfer(msg.sender, reward - penalty);
+            }
+            emit RewardPaid(msg.sender, reward, _lock);
         }
         return true;
     }
 
     /**
-     * @dev Called by a staker to get their allocated rewards
+     * @dev Forwards to the penalty forwarder for distro to Aura Lockers
      */
-    function getReward() external returns (bool) {
-        getReward(msg.sender);
-        return true;
+    function forwardPenalty() public {
+        uint256 toForward = pendingPenalty;
+        pendingPenalty = 0;
+        rewardToken.safeTransfer(penaltyForwarder, toForward);
+        emit PenaltyForwarded(toForward);
     }
 
     /**
-     * @dev Called by the booster to allocate new Crv rewards to this pool
-     *      Curve is queued for rewards and the distribution only begins once the new rewards are sufficiently
-     *      large, or the epoch has ended.
+     * @dev Called once to initialise the rewards based on balance of stakeToken
      */
-    function queueNewRewards(uint256 _rewards) external returns (bool) {
-        require(msg.sender == rewardManager, "!authorized");
-        // TODO - make one time only
-        _rewards = _rewards.add(queuedRewards);
+    function initialiseRewards() external returns (bool) {
+        require(msg.sender == rewardManager || block.timestamp > startTime, "!authorized");
+        require(rewardRate == 0, "!one time");
 
-        if (block.timestamp >= periodFinish) {
-            notifyRewardAmount(_rewards);
-            queuedRewards = 0;
-            return true;
-        }
+        uint256 rewardsAvailable = rewardToken.balanceOf(address(this));
+        require(rewardsAvailable > 0, "!balance");
 
-        //et = now - (finish-duration)
-        uint256 elapsedTime = block.timestamp.sub(periodFinish.sub(duration));
-        //current at now: rewardRate * elapsedTime
-        uint256 currentAtNow = rewardRate * elapsedTime;
-        uint256 queuedRatio = currentAtNow.mul(1000).div(_rewards);
+        rewardRate = rewardsAvailable.div(duration);
 
-        //uint256 queuedRatio = currentRewards.mul(1000).div(_rewards);
-        if (queuedRatio < newRewardRatio) {
-            notifyRewardAmount(_rewards);
-            queuedRewards = 0;
-        } else {
-            queuedRewards = _rewards;
-        }
-        return true;
-    }
-
-    function notifyRewardAmount(uint256 reward) internal updateReward(address(0)) {
-        historicalRewards = historicalRewards.add(reward);
-        if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(duration);
-        } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = remaining.mul(rewardRate);
-            reward = reward.add(leftover);
-            rewardRate = reward.div(duration);
-        }
-        currentRewards = reward;
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(duration);
-        emit RewardAdded(reward);
+
+        emit RewardAdded(rewardsAvailable);
+
+        return true;
     }
 }
