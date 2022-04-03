@@ -14,7 +14,7 @@ type Pool = {
     shutdown: boolean;
 };
 
-describe("Booster", () => {
+describe("BaseRewardPool4626", () => {
     let accounts: Signer[];
     let booster: Booster;
     let mocks: DeployMocksResult;
