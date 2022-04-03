@@ -86,14 +86,14 @@ describe("CrvDepositor", () => {
             const stakeAddress = "0x0000000000000000000000000000000000000000";
             const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
             const amount = crvBalance.mul(10).div(100);
+            const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
 
             const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
             await tx.wait();
 
-            const cvxCrvBalance = await cvxCrv.balanceOf(aliceAddress);
-            expect(cvxCrvBalance).to.equal(amount);
+            const cvxCrvAfter = await cvxCrv.balanceOf(aliceAddress);
+            expect(cvxCrvAfter.sub(cvxCrvBefore)).to.equal(amount);
         });
-
         it("increases lock to a year again", async () => {
             const unlockTimeBefore = await mocks.votingEscrow.lockTimes(voterProxy.address);
 
