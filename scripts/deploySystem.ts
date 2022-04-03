@@ -40,9 +40,6 @@ import {
     PoolManagerSecondaryProxy__factory,
     PoolManagerSecondaryProxy,
     MockERC20__factory,
-    MerkleAirdropFactory,
-    MerkleAirdropFactory__factory,
-    MerkleAirdrop__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
     ConvexMasterChef,
@@ -58,7 +55,6 @@ import {
     ConvexMasterChef__factory,
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
-    MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
     AuraPenaltyForwarder__factory,
@@ -67,6 +63,8 @@ import {
     AuraBalRewardPool__factory,
     AuraVestedEscrow,
     AuraVestedEscrow__factory,
+    AuraMerkleDrop,
+    AuraMerkleDrop__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -77,6 +75,8 @@ import { getChain } from "../tasks/utils/networkAddressFactory";
 
 interface AirdropData {
     merkleRoot: string;
+    startDelay: BN;
+    length: BN;
     amount: BN;
 }
 
@@ -180,8 +180,7 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxStakingProxy: AuraStakingProxy;
     chef: ConvexMasterChef;
     vestedEscrows: AuraVestedEscrow[];
-    dropFactory: MerkleAirdropFactory;
-    drops: MerkleAirdrop[];
+    drops: AuraMerkleDrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
@@ -439,13 +438,7 @@ async function deployPhase2(
     const boosterOwner = await deployContract<BoosterOwner>(
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
-        [
-            multisigs.daoMultisig,
-            poolManagerSecondaryProxy.address,
-            booster.address,
-            stashFactory.address,
-            ZERO_ADDRESS, // TODO - rescuestash or substitute needed
-        ],
+        [multisigs.daoMultisig, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS],
         {},
         debug,
     );
@@ -756,35 +749,32 @@ async function deployPhase2(
     tx = await chef.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug);
 
-    // TODO - add time delay & correct roots
     // -----------------------------
     // 2.2.5 Schedule: Airdrop(s)
     // -----------------------------
 
-    const dropFactory = await deployContract<MerkleAirdropFactory>(
-        new MerkleAirdropFactory__factory(deployer),
-        "MerkleAirdropFactory",
-        [],
-        {},
-        debug,
-    );
     const dropCount = distroList.airdrops.length;
-    const drops: MerkleAirdrop[] = [];
+    const drops: AuraMerkleDrop[] = [];
     for (let i = 0; i < dropCount; i++) {
-        const { merkleRoot, amount } = distroList.airdrops[i];
-        tx = await dropFactory.CreateMerkleAirdrop();
-        const txReceipt = await waitForTx(tx, debug);
-        const merkleDropAddr = txReceipt.events[0].args[0];
-        const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
-        drops.push(airdrop);
-        tx = await airdrop.setRewardToken(cvx.address);
-        await waitForTx(tx, debug);
+        const { merkleRoot, startDelay, length, amount } = distroList.airdrops[i];
+        const airdrop = await deployContract<AuraMerkleDrop>(
+            new AuraMerkleDrop__factory(deployer),
+            "AuraMerkleDrop",
+            [
+                multisigs.treasuryMultisig,
+                merkleRoot,
+                cvx.address,
+                cvxLocker.address,
+                penaltyForwarder.address,
+                startDelay,
+                length,
+            ],
+            {},
+            debug,
+        );
         tx = await cvx.transfer(airdrop.address, amount);
         await waitForTx(tx, debug);
-        tx = await airdrop.setRoot(merkleRoot);
-        await waitForTx(tx, debug);
-        tx = await airdrop.setOwner(multisigs.treasuryMultisig);
-        await waitForTx(tx, debug);
+        drops.push(airdrop);
     }
 
     // -----------------------------
@@ -886,7 +876,6 @@ async function deployPhase2(
         cvxStakingProxy,
         chef,
         vestedEscrows,
-        dropFactory,
         drops,
         lbpBpt,
         balLiquidityProvider,

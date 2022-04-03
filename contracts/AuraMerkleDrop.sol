@@ -59,7 +59,7 @@ contract AuraMerkleDrop {
         penaltyForwarder = _penaltyForwarder;
         startTime = block.timestamp + _startDelay;
 
-        require(_expiresAfter > 4 weeks, "!expiry");
+        require(_expiresAfter > 2 weeks, "!expiry");
         expiryTime = startTime + _expiresAfter;
     }
 

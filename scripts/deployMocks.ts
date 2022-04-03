@@ -55,10 +55,18 @@ function getMockDistro(): DistroList {
             matching: simpleToExactAmount(2.8, 24),
         },
         airdrops: [
-            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
-            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(0.5, 24) },
-            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
-            { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
+            {
+                merkleRoot: ZERO_KEY,
+                startDelay: ONE_WEEK,
+                length: ONE_WEEK.mul(3),
+                amount: simpleToExactAmount(2.5, 24),
+            },
+            {
+                merkleRoot: ZERO_KEY,
+                startDelay: ONE_WEEK.mul(26),
+                length: ONE_WEEK.mul(8),
+                amount: simpleToExactAmount(1, 24),
+            },
         ],
         immutableVesting: [
             {
