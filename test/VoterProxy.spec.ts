@@ -19,6 +19,7 @@ import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
 import { increaseTime } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -144,7 +145,12 @@ describe("VoterProxy", () => {
         it("can not call setRewardDeposit", async () => {
             const eoa = accounts[5];
             const eoaAddress = await eoa.getAddress();
-            const tx = voterProxy.connect(eoa).setRewardDeposit(eoaAddress);
+            const tx = voterProxy.connect(eoa).setRewardDeposit(await deployer.getAddress(), eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+        it("can not call withdraw", async () => {
+            const eoa = accounts[5];
+            const tx = voterProxy.connect(eoa)["withdraw(address)"](ZERO_ADDRESS);
             await expect(tx).to.revertedWith("!auth");
         });
     });
@@ -183,6 +189,18 @@ describe("VoterProxy", () => {
             await voterProxy["withdraw(address)"](randomToken.address);
             const rewardDepositBalance = await randomToken.balanceOf(vlCvxExtraRewards.address);
             expect(balance).eq(rewardDepositBalance);
+        });
+    });
+
+    describe("setting rewardDeposit", () => {
+        it("allows owner to set reward deposit and withdrawer", async () => {
+            const eoa = accounts[6];
+            const eoa7 = accounts[7];
+            const eoaAddress = await eoa.getAddress();
+            const eoaAddress7 = await eoa7.getAddress();
+            await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
+            expect(await voterProxy.withdrawer()).eq(eoaAddress);
+            expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
         });
     });
 });

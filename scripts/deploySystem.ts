@@ -483,7 +483,7 @@ async function deployPhase3(
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await tx.wait();
 
-    tx = await voterProxy.setRewardDeposit(vlCvxExtraRewards.address);
+    tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
