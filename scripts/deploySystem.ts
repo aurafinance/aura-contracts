@@ -1,5 +1,7 @@
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
+    AuraExtraRewardsDistributor,
+    AuraPenaltyForwarder,
     IInvestmentPoolFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
@@ -61,8 +63,8 @@ import {
     MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
-    VlCvxExtraRewardDistribution,
-    VlCvxExtraRewardDistribution__factory,
+    AuraPenaltyForwarder__factory,
+    AuraExtraRewardsDistributor__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -179,7 +181,8 @@ interface Phase2Deployed extends Phase1Deployed {
     drops: MerkleAirdrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
-    vlCvxExtraRewards: VlCvxExtraRewardDistribution; // TODO - remove
+    penaltyForwarder: AuraPenaltyForwarder;
+    extraRewardsDistributor: AuraExtraRewardsDistributor;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -461,14 +464,6 @@ async function deployPhase2(
         debug,
     );
 
-    const vlCvxExtraRewards = await deployContract<VlCvxExtraRewardDistribution>(
-        new VlCvxExtraRewardDistribution__factory(deployer),
-        "vlCvxExtraRewardDistribution",
-        [cvxLocker.address],
-        {},
-        debug,
-    );
-
     const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
         new CrvDepositorWrapper__factory(deployer),
         "CrvDepositorWrapper",
@@ -487,9 +482,23 @@ async function deployPhase2(
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug);
 
-    // TODO - change to auraExtraRwds and depositor
-    tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
-    await tx.wait();
+    const extraRewardsDistributor = await deployContract<AuraExtraRewardsDistributor>(
+        new AuraExtraRewardsDistributor__factory(deployer),
+        "AuraExtraRewardsDistributor",
+        [cvxLocker.address],
+        {},
+        debug,
+    );
+    const penaltyForwarder = await deployContract<AuraPenaltyForwarder>(
+        new AuraPenaltyForwarder__factory(deployer),
+        "AuraPenaltyForwarder",
+        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
+        {},
+        debug,
+    );
+
+    tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
+    await waitForTx(tx, debug);
 
     tx = await cvxLocker.setApprovals();
     await waitForTx(tx, debug);
@@ -881,7 +890,8 @@ async function deployPhase2(
         drops,
         lbpBpt,
         balLiquidityProvider,
-        vlCvxExtraRewards,
+        penaltyForwarder,
+        extraRewardsDistributor,
     };
 }
 

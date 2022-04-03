@@ -9,7 +9,7 @@ import {
     MockVoteStorage__factory,
     MockERC20,
     MockERC20__factory,
-    VlCvxExtraRewardDistribution,
+    AuraExtraRewardsDistributor,
     AuraLocker,
     AuraToken,
 } from "../types/generated";
@@ -43,7 +43,7 @@ describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
     let booster: Booster;
-    let vlCvxExtraRewards: VlCvxExtraRewardDistribution;
+    let extraRewardsDistributor: AuraExtraRewardsDistributor;
     let mocks: DeployMocksResult;
     let auraLocker: AuraLocker;
     let cvx: AuraToken;
@@ -77,7 +77,7 @@ describe("VoterProxy", () => {
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
-        vlCvxExtraRewards = contracts.vlCvxExtraRewards;
+        extraRewardsDistributor = contracts.extraRewardsDistributor;
         auraLocker = contracts.cvxLocker;
         cvx = contracts.cvx;
     });
@@ -187,7 +187,7 @@ describe("VoterProxy", () => {
             }
 
             await voterProxy["withdraw(address)"](randomToken.address);
-            const rewardDepositBalance = await randomToken.balanceOf(vlCvxExtraRewards.address);
+            const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
             expect(balance).eq(rewardDepositBalance);
         });
     });

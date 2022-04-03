@@ -21,7 +21,7 @@ interface IRewardStaking {
  *          to depositors.
  * @dev
  */
-contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
+contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     using AuraMath for uint256;
     using AuraMath224 for uint224;
     using AuraMath112 for uint112;
@@ -680,6 +680,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     // Balance of an account which only includes properly locked tokens at the given epoch
     function balanceAtEpochOf(uint256 _epoch, address _user) public view returns (uint256 amount) {
         uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
+        require(epochStart < block.timestamp, "Epoch is in the future");
 
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
 
@@ -743,6 +744,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, ICvxLocker {
     // Supply of all properly locked balances at the given epoch
     function totalSupplyAtEpoch(uint256 _epoch) public view returns (uint256 supply) {
         uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
+        require(epochStart < block.timestamp, "Epoch is in the future");
 
         uint256 cutoffEpoch = epochStart.sub(lockDuration);
         uint256 lastIndex = epochs.length - 1;
