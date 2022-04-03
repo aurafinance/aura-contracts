@@ -3,7 +3,7 @@ import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../test-utils";
+import { impersonateAccount, increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../test-utils";
 import { deployContract } from "../tasks/utils";
 import { MockERC20__factory } from "../types";
 
@@ -25,16 +25,16 @@ describe("AuraStakingProxy", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
         contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
@@ -43,10 +43,16 @@ describe("AuraStakingProxy", () => {
         bob = accounts[2];
         bobAddress = await bob.getAddress();
 
-        let tx = await contracts.cvx.transfer(aliceAddress, simpleToExactAmount(200));
+        const operatorAccount = await impersonateAccount(contracts.booster.address);
+        let tx = await contracts.cvx
+            .connect(operatorAccount.signer)
+            .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
         await tx.wait();
 
-        tx = await contracts.cvx.transfer(bobAddress, simpleToExactAmount(100));
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        await tx.wait();
+
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
     };
 

@@ -43,6 +43,19 @@ const chainIds = {
 //         url,
 //     };
 // }
+const compilerSettings = {
+    metadata: {
+        // Not including the metadata hash
+        // https://github.com/paulrberg/solidity-template/issues/31
+        bytecodeHash: "none",
+    },
+    // Disable the optimizer when debugging
+    // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+    optimizer: {
+        enabled: true,
+        runs: 800,
+    },
+};
 
 const config: HardhatUserConfig = {
     defaultNetwork: "hardhat",
@@ -60,6 +73,10 @@ const config: HardhatUserConfig = {
         mainnet: {
             url: process.env.NODE_URL || "https://main-light.eth.linkpool.io",
         },
+        kovan: {
+            url: process.env.NODE_URL || "",
+            gasPrice: 3000000000,
+        },
         forking: {
             url: process.env.NODE_URL || "",
         },
@@ -72,20 +89,16 @@ const config: HardhatUserConfig = {
         tests: "./test",
     },
     solidity: {
-        version: "0.8.11",
-        settings: {
-            metadata: {
-                // Not including the metadata hash
-                // https://github.com/paulrberg/solidity-template/issues/31
-                bytecodeHash: "none",
+        compilers: [
+            {
+                version: "0.6.12",
+                settings: compilerSettings,
             },
-            // Disable the optimizer when debugging
-            // https://hardhat.org/hardhat-network/#solidity-optimizer-support
-            optimizer: {
-                enabled: true,
-                runs: 800,
+            {
+                version: "0.8.11",
+                settings: compilerSettings,
             },
-        },
+        ],
     },
     typechain: {
         outDir: "types/generated",

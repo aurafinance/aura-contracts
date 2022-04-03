@@ -219,16 +219,16 @@ describe("AuraLocker", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
@@ -245,11 +245,17 @@ describe("AuraLocker", () => {
         cvxCrv = contracts.cvxCrv;
         crvDepositor = contracts.crvDepositor;
 
-        aliceInitialBalance = simpleToExactAmount(200);
-        let tx = await cvx.transfer(aliceAddress, simpleToExactAmount(200));
+        const operatorAccount = await impersonateAccount(booster.address);
+        let tx = await cvx
+            .connect(operatorAccount.signer)
+            .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
         await tx.wait();
 
-        tx = await cvx.transfer(bobAddress, simpleToExactAmount(100));
+        tx = await cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        await tx.wait();
+        aliceInitialBalance = simpleToExactAmount(200);
+
+        tx = await cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
     };
     async function distributeRewardsFromBooster(): Promise<BN> {
@@ -398,16 +404,16 @@ describe("AuraLocker", () => {
         });
 
         it("checkpoint CVX locker epoch", async () => {
-            await increaseTime(ONE_DAY.mul(15));
+            await auraLocker.checkpointEpoch();
+
+            await increaseTime(ONE_DAY.mul(14));
 
             const dataBefore = await getSnapShot(aliceAddress);
             const tx = await auraLocker.checkpointEpoch();
             await tx.wait();
             const dataAfter = await getSnapShot(aliceAddress);
 
-            const rewardsDuration = await auraLocker.rewardsDuration();
-            const newEpochs = ONE_DAY.mul(15).div(rewardsDuration).add(0);
-            expect(dataAfter.epochs.length, "new epochs added").to.equal(newEpochs.add(dataBefore.epochs.length));
+            expect(dataAfter.epochs.length, "new epochs added").to.equal(dataBefore.epochs.length + 2);
 
             const vlCVXBalance = await auraLocker.balanceAtEpochOf(0, aliceAddress);
             expect(vlCVXBalance, "vlCVXBalance at epoch is correct").to.equal(0);
@@ -1035,6 +1041,18 @@ describe("AuraLocker", () => {
         }
     };
 
+    const checkBalanceAtEpoch = async (
+        user: string,
+        epochId: number,
+        expectedBalance: BN | number,
+        expectedSupply: BN | number,
+    ) => {
+        const balAtEpoch = await auraLocker.balanceAtEpochOf(epochId, user);
+        expect(balAtEpoch).eq(expectedBalance);
+        const supplAtEpoch = await auraLocker.totalSupplyAtEpoch(epochId);
+        expect(supplAtEpoch).eq(expectedSupply);
+    };
+
     context("checking delegation timelines", () => {
         let delegate0, delegate1, delegate2;
 
@@ -1257,6 +1275,10 @@ describe("AuraLocker", () => {
                 simpleToExactAmount(200),
                 simpleToExactAmount(300),
             );
+            await checkBalanceAtEpoch(aliceAddress, 0, simpleToExactAmount(0), simpleToExactAmount(0));
+            await checkBalanceAtEpoch(aliceAddress, 1, simpleToExactAmount(100), simpleToExactAmount(100));
+            await checkBalanceAtEpoch(aliceAddress, 2, simpleToExactAmount(100), simpleToExactAmount(100));
+            await checkBalanceAtEpoch(aliceAddress, 3, simpleToExactAmount(200), simpleToExactAmount(200));
 
             const delegate1Historic = await auraLocker.getPastVotes(delegate1, week16point5);
             const delegate1Now = await auraLocker.getPastVotes(delegate1, week17point5);

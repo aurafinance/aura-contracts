@@ -226,8 +226,7 @@ task("deploy:Convex").setAction(async function (taskArguments: TaskArguments, hr
     await tx.wait();
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await tx.wait();
-    // TODO - which is the real value?
-    tx = await booster.setFeeInfo("0x0000000000000000000000000000000000000000");
+    tx = await booster.setFeeInfo(ZERO_ADDRESS);
     await tx.wait();
 
     // TODO - set auth to be non EOA

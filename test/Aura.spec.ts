@@ -32,16 +32,16 @@ describe("AuraToken", () => {
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
@@ -52,9 +52,6 @@ describe("AuraToken", () => {
         cvx = contracts.cvx;
         voterProxy = contracts.voterProxy;
         minter = contracts.minter;
-
-        const tx = await cvx.transfer(aliceAddress, ethers.utils.parseEther("100"));
-        await tx.wait();
 
         aliceInitialCvxBalance = await cvx.balanceOf(aliceAddress);
         operatorAccount = await impersonateAccount(booster.address);

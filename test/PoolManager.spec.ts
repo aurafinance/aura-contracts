@@ -24,16 +24,16 @@ describe("PoolManagerV3", () => {
         alice = accounts[5];
 
         const phase1 = await deployPhase1(accounts[0], mocks.addresses);
-        const phase2 = await deployPhase2(accounts[0], phase1, multisigs, mocks.namingConfig);
-        const contracts = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             accounts[0],
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const contracts = await deployPhase3(hre, accounts[0], phase2, multisigs, mocks.addresses);
 
         booster = contracts.booster;
         poolManager = contracts.poolManager;

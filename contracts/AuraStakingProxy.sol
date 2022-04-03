@@ -163,7 +163,7 @@ contract AuraStakingProxy {
             IERC20(cvxCrv).safeTransfer(msg.sender, incentiveAmount);
 
             //update rewards
-            ICvxLocker(rewards).queueNewRewards(cvxCrvBal);
+            IAuraLocker(rewards).queueNewRewards(cvxCrvBal);
 
             emit RewardsDistributed(cvxCrv, cvxCrvBal);
         }
@@ -187,7 +187,7 @@ contract AuraStakingProxy {
             _token.safeApprove(rewards, type(uint256).max);
 
             //update rewards
-            ICvxLocker(rewards).notifyRewardAmount(address(_token), bal);
+            IAuraLocker(rewards).notifyRewardAmount(address(_token), bal);
 
             emit RewardsDistributed(address(_token), bal);
         }

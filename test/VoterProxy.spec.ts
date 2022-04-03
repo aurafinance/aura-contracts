@@ -9,7 +9,7 @@ import {
     MockVoteStorage__factory,
     MockERC20,
     MockERC20__factory,
-    VlCvxExtraRewardDistribution,
+    ExtraRewardsDistributor,
     AuraLocker,
     AuraToken,
 } from "../types/generated";
@@ -20,6 +20,7 @@ import { deployContract } from "../tasks/utils";
 import { increaseTime } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
 import { ZERO_ADDRESS } from "../test-utils/constants";
+import { impersonateAccount } from "../test-utils/fork";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -43,7 +44,7 @@ describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
     let booster: Booster;
-    let vlCvxExtraRewards: VlCvxExtraRewardDistribution;
+    let extraRewardsDistributor: ExtraRewardsDistributor;
     let mocks: DeployMocksResult;
     let auraLocker: AuraLocker;
     let cvx: AuraToken;
@@ -62,24 +63,32 @@ describe("VoterProxy", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
         const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
-        vlCvxExtraRewards = contracts.vlCvxExtraRewards;
+        extraRewardsDistributor = contracts.extraRewardsDistributor;
         auraLocker = contracts.cvxLocker;
         cvx = contracts.cvx;
+
+        const operatorAccount = await impersonateAccount(contracts.booster.address);
+        await contracts.cvx
+            .connect(operatorAccount.signer)
+            .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
+        await contracts.cvx
+            .connect(operatorAccount.signer)
+            .transfer(await deployer.getAddress(), simpleToExactAmount(1000));
     });
 
     describe("validates vote hash from Snapshot Hub", async () => {
@@ -178,16 +187,12 @@ describe("VoterProxy", () => {
 
             const cvxAmount = simpleToExactAmount(10);
 
-            // go through 2 epochs in order for the prev epoch to have a total supply
-            for (let i = 0; i < 2; i++) {
-                await cvx.approve(auraLocker.address, cvxAmount);
-                await auraLocker.lock(deployerAddress, cvxAmount);
-                await increaseTime(86400 * 7);
-                await auraLocker.checkpointEpoch();
-            }
+            await cvx.approve(auraLocker.address, cvxAmount);
+            await auraLocker.lock(deployerAddress, cvxAmount);
+            await increaseTime(86400 * 7);
 
             await voterProxy["withdraw(address)"](randomToken.address);
-            const rewardDepositBalance = await randomToken.balanceOf(vlCvxExtraRewards.address);
+            const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
             expect(balance).eq(rewardDepositBalance);
         });
     });

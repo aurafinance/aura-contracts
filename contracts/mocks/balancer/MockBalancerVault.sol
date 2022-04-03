@@ -58,8 +58,8 @@ contract MockBalancerVault {
     }
 
     function joinPool(
-        bytes32 poolId,
-        address sender,
+        bytes32, /* poolId */
+        address, /* sender */
         address recipient,
         JoinPoolRequest memory request
     ) external payable {

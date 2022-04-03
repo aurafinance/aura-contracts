@@ -3,7 +3,15 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import { deployPhase1, deployPhase2, deployPhase3, MultisigConfig } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { CrvDepositor, CurveVoterProxy, CvxCrvToken } from "../types/generated";
+import {
+    CrvDepositor,
+    CurveVoterProxy,
+    CvxCrvToken,
+    ERC20__factory,
+    ERC20,
+    CrvDepositorWrapper,
+    BaseRewardPool,
+} from "../types/generated";
 import { increaseTimeTo, getTimestamp, increaseTime } from "../test-utils/time";
 import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
@@ -19,6 +27,9 @@ describe("CrvDepositor", () => {
     let alice: Signer;
     let aliceAddress: string;
     let multisigs: MultisigConfig;
+    let crv: ERC20;
+    let crvDepositorWrapper: CrvDepositorWrapper;
+    let cvxCrvStaking: BaseRewardPool;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -31,23 +42,26 @@ describe("CrvDepositor", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const contracts = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const contracts = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
 
-        alice = accounts[1];
+        alice = accounts[0];
         aliceAddress = await alice.getAddress();
 
         crvDepositor = contracts.crvDepositor.connect(alice);
         cvxCrv = contracts.cvxCrv.connect(alice);
+        crv = mocks.crv.connect(alice);
         voterProxy = contracts.voterProxy;
+        crvDepositorWrapper = contracts.crvDepositorWrapper.connect(alice);
+        cvxCrvStaking = contracts.cvxCrvRewards;
 
         const tx = await mocks.crvBpt.connect(alice).approve(crvDepositor.address, ethers.constants.MaxUint256);
         await tx.wait();
@@ -61,9 +75,6 @@ describe("CrvDepositor", () => {
 
     describe("basic flow of locking", () => {
         it("locks up for a year initially", async () => {
-            const cvxCrvsupply = await cvxCrv.totalSupply();
-            expect(cvxCrvsupply).eq(0);
-
             const unlockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
             const now = await getTimestamp();
             expect(unlockTime).gt(now.add(ONE_WEEK.mul(51)));
@@ -75,14 +86,14 @@ describe("CrvDepositor", () => {
             const stakeAddress = "0x0000000000000000000000000000000000000000";
             const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
             const amount = crvBalance.mul(10).div(100);
+            const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
 
             const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
             await tx.wait();
 
-            const cvxCrvBalance = await cvxCrv.balanceOf(aliceAddress);
-            expect(cvxCrvBalance).to.equal(amount);
+            const cvxCrvAfter = await cvxCrv.balanceOf(aliceAddress);
+            expect(cvxCrvAfter.sub(cvxCrvBefore)).to.equal(amount);
         });
-
         it("increases lock to a year again", async () => {
             const unlockTimeBefore = await mocks.votingEscrow.lockTimes(voterProxy.address);
 
@@ -101,11 +112,57 @@ describe("CrvDepositor", () => {
     });
 
     describe("depositing via wrapper", () => {
-        it("allows the sender to deposit crv, wrap to crvBpt and deposit");
-        it("stakes on behalf of user");
+        it("allows the sender to deposit crv, wrap to crvBpt and deposit", async () => {
+            const lock = true;
+            const stakeAddress = "0x0000000000000000000000000000000000000000";
+            const balance = await crv.balanceOf(aliceAddress);
+            const amount = balance.mul(10).div(100);
+
+            const cvxCrvBalanceBefore = await cvxCrv.balanceOf(aliceAddress);
+
+            const minOut = await crvDepositorWrapper.getMinOut(amount, "10000");
+            await crv.approve(crvDepositorWrapper.address, amount);
+            await crvDepositorWrapper.deposit(amount, minOut, lock, stakeAddress);
+
+            const cvxCrvBalanceAfter = await cvxCrv.balanceOf(aliceAddress);
+            const cvxCrvBalanceDelta = cvxCrvBalanceAfter.sub(cvxCrvBalanceBefore);
+            expect(cvxCrvBalanceDelta).to.equal(minOut);
+        });
+
+        it("stakes on behalf of user", async () => {
+            const lock = true;
+            const stakeAddress = cvxCrvStaking.address;
+            const balance = await crv.balanceOf(aliceAddress);
+            const amount = balance.mul(10).div(100);
+
+            const stakedBalanceBefore = await cvxCrvStaking.balanceOf(aliceAddress);
+
+            const minOut = await crvDepositorWrapper.getMinOut(amount, "10000");
+            await crv.approve(crvDepositorWrapper.address, amount);
+            await crvDepositorWrapper.deposit(amount, minOut, lock, stakeAddress);
+
+            const stakedBalanceAfter = await cvxCrvStaking.balanceOf(aliceAddress);
+            expect(stakedBalanceAfter.sub(stakedBalanceBefore)).to.equal(minOut);
+        });
     });
     describe("calling depositFor", () => {
-        it("allows deposits on behalf of another user");
+        it("allows deposits on behalf of another user", async () => {
+            const user = accounts[7];
+            const userAddress = await user.getAddress();
+
+            const lock = true;
+            const stakeAddress = "0x0000000000000000000000000000000000000000";
+            const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
+            const amount = crvBalance.mul(10).div(100);
+
+            const cvxCrvBalanceBefore = await cvxCrv.balanceOf(userAddress);
+
+            await crvDepositor.connect(alice).depositFor(userAddress, amount, lock, stakeAddress);
+
+            const cvxCrvBalanceAfter = await cvxCrv.balanceOf(userAddress);
+            const cvxCrvBalanceDelta = cvxCrvBalanceAfter.sub(cvxCrvBalanceBefore);
+            expect(cvxCrvBalanceDelta).to.equal(amount);
+        });
     });
 
     describe("system cool down", () => {

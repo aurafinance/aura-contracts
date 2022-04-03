@@ -40,6 +40,7 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
         require(MockWalletChecker(smart_wallet_checker).check(msg.sender), "!contracts");
         require(lockAmounts[msg.sender] == 0, "Withdraw old tokens first");
         require(unlockTime < block.timestamp + MAX_LEN, "Lock too long");
+        require(amount > 0, "!amount");
 
         lockAmounts[msg.sender] = amount;
         lockTimes[msg.sender] = unlockTime;
@@ -51,6 +52,7 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
     function increase_amount(uint256 amount) external {
         require(lockAmounts[msg.sender] > 0, "Must have a lock");
         require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
+        require(amount > 0, "!amount");
         lockAmounts[msg.sender] += amount;
 
         IERC20(token).transferFrom(msg.sender, address(this), amount);

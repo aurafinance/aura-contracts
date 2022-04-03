@@ -4,11 +4,12 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import {
     Booster,
+    BoosterOwner,
     ERC20__factory,
     BaseRewardPool__factory,
     MockFeeDistro__factory,
-    BoosterOwner,
     MockERC20__factory,
+    BaseRewardPool4626__factory,
 } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
@@ -44,16 +45,16 @@ describe("Booster", () => {
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(deployer, mocks.addresses);
-        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
-        const phase3 = await deployPhase3(
+        const phase2 = await deployPhase2(
             hre,
             deployer,
-            phase2,
+            phase1,
             distro,
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
         );
+        const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
         contracts = await deployPhase4(deployer, phase3, mocks.addresses);
 
