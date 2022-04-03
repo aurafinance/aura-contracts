@@ -60,6 +60,14 @@ function getMockDistro(): DistroList {
             { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
             { merkleRoot: ZERO_KEY, amount: simpleToExactAmount(1, 24) },
         ],
+        immutableVesting: [
+            {
+                period: ONE_WEEK.mul(16),
+                recipients: [
+                    { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(0.5, 24) },
+                ],
+            },
+        ],
         vesting: [
             {
                 period: ONE_WEEK.mul(16),
@@ -70,7 +78,7 @@ function getMockDistro(): DistroList {
             {
                 period: ONE_WEEK.mul(104),
                 recipients: [
-                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(9.5, 24) }, // Team vesting
+                    { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(9, 24) }, // Team vesting
                     { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(2, 24) }, // Partner Treasury
                 ],
             },

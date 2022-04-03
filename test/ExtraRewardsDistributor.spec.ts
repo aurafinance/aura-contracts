@@ -3,16 +3,16 @@ import { Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraLocker, MockERC20, MockERC20__factory, AuraExtraRewardsDistributor } from "../types/generated";
+import { AuraLocker, MockERC20, MockERC20__factory, ExtraRewardsDistributor } from "../types/generated";
 import { impersonateAccount } from "../test-utils/fork";
 import { ONE_WEEK } from "../test-utils/constants";
 import { increaseTime } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
 
-describe("AuraExtraRewardsDistributor", () => {
+describe("ExtraRewardsDistributor", () => {
     let accounts: Signer[];
 
-    let distributor: AuraExtraRewardsDistributor;
+    let distributor: ExtraRewardsDistributor;
     let contracts: SystemDeployed;
     let mockErc20: MockERC20;
     let auraLocker: AuraLocker;

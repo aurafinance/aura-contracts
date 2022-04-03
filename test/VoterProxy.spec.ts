@@ -9,7 +9,7 @@ import {
     MockVoteStorage__factory,
     MockERC20,
     MockERC20__factory,
-    AuraExtraRewardsDistributor,
+    ExtraRewardsDistributor,
     AuraLocker,
     AuraToken,
 } from "../types/generated";
@@ -43,7 +43,7 @@ describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
     let booster: Booster;
-    let extraRewardsDistributor: AuraExtraRewardsDistributor;
+    let extraRewardsDistributor: ExtraRewardsDistributor;
     let mocks: DeployMocksResult;
     let auraLocker: AuraLocker;
     let cvx: AuraToken;

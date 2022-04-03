@@ -7,11 +7,11 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 
 /**
- * @title   AuraExtraRewardsDistributor
+ * @title   ExtraRewardsDistributor
  * @author  ConvexFinance -> Aura Finance
  * @notice
  */
-contract AuraExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
+contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     using SafeERC20 for IERC20;
 
     IAuraLocker public immutable auraLocker;

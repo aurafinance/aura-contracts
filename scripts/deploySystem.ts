@@ -1,6 +1,6 @@
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
-    AuraExtraRewardsDistributor,
+    ExtraRewardsDistributor,
     AuraPenaltyForwarder,
     IInvestmentPoolFactory__factory,
     MockWalletChecker__factory,
@@ -39,8 +39,6 @@ import {
     PoolManagerProxy,
     PoolManagerSecondaryProxy__factory,
     PoolManagerSecondaryProxy,
-    VestedEscrow,
-    VestedEscrow__factory,
     MockERC20__factory,
     MerkleAirdropFactory,
     MerkleAirdropFactory__factory,
@@ -64,9 +62,11 @@ import {
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
     AuraPenaltyForwarder__factory,
-    AuraExtraRewardsDistributor__factory,
+    ExtraRewardsDistributor__factory,
     AuraBalRewardPool,
     AuraBalRewardPool__factory,
+    AuraVestedEscrow,
+    AuraVestedEscrow__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -101,6 +101,7 @@ interface DistroList {
     cvxCrvBootstrap: BN;
     lbp: LBPData;
     airdrops: AirdropData[];
+    immutableVesting: VestingGroup[];
     vesting: VestingGroup[];
 }
 interface BalancerPoolFactories {
@@ -178,13 +179,13 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
     chef: ConvexMasterChef;
-    vestedEscrows: VestedEscrow[];
+    vestedEscrows: AuraVestedEscrow[];
     dropFactory: MerkleAirdropFactory;
     drops: MerkleAirdrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
-    extraRewardsDistributor: AuraExtraRewardsDistributor;
+    extraRewardsDistributor: ExtraRewardsDistributor;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -314,10 +315,9 @@ async function deployPhase2(
         .add(distroList.cvxCrvBootstrap)
         .add(distroList.lbp.tknAmount)
         .add(distroList.lbp.matching);
-    const totalVested = distroList.vesting.reduce(
-        (p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))),
-        BN.from(0),
-    );
+    const totalVested = distroList.vesting
+        .concat(distroList.immutableVesting)
+        .reduce((p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))), BN.from(0));
     const premine = premineIncetives.add(totalVested);
     const checksum = premine.add(distroList.miningRewards);
     if (!checksum.eq(simpleToExactAmount(100, 24))) {
@@ -481,9 +481,9 @@ async function deployPhase2(
         {},
         debug,
     );
-    const extraRewardsDistributor = await deployContract<AuraExtraRewardsDistributor>(
-        new AuraExtraRewardsDistributor__factory(deployer),
-        "AuraExtraRewardsDistributor",
+    const extraRewardsDistributor = await deployContract<ExtraRewardsDistributor>(
+        new ExtraRewardsDistributor__factory(deployer),
+        "ExtraRewardsDistributor",
         [cvxLocker.address],
         {},
         debug,
@@ -608,22 +608,24 @@ async function deployPhase2(
     const rewardsStart = currentTime.add(DELAY);
     const vestedEscrows = [];
 
-    for (let i = 0; i < distroList.vesting.length; i++) {
-        const vestingGroup = distroList.vesting[i];
+    const vestingDistro = distroList.vesting
+        .map(v => ({ ...v, admin: multisigs.vestingMultisig }))
+        .concat(distroList.immutableVesting.map(v => ({ ...v, admin: ZERO_ADDRESS })));
+
+    for (let i = 0; i < vestingDistro.length; i++) {
+        const vestingGroup = vestingDistro[i];
         const groupVestingAmount = vestingGroup.recipients.reduce((p, c) => p.add(c.amount), BN.from(0));
         const rewardsEnd = rewardsStart.add(vestingGroup.period);
 
-        const vestedEscrow = await deployContract<VestedEscrow>(
-            new VestedEscrow__factory(deployer),
-            "VestedEscrow",
-            [cvx.address, rewardsStart, rewardsEnd, cvxLocker.address, multisigs.vestingMultisig],
+        const vestedEscrow = await deployContract<AuraVestedEscrow>(
+            new AuraVestedEscrow__factory(deployer),
+            "AuraVestedEscrow",
+            [cvx.address, vestingGroup.admin, cvxLocker.address, rewardsStart, rewardsEnd],
             {},
             debug,
         );
 
         tx = await cvx.approve(vestedEscrow.address, groupVestingAmount);
-        await waitForTx(tx, debug);
-        tx = await vestedEscrow.addTokens(groupVestingAmount);
         await waitForTx(tx, debug);
         const vestingAddr = vestingGroup.recipients.map(m => m.address);
         const vestingAmounts = vestingGroup.recipients.map(m => m.amount);
