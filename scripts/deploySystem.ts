@@ -55,6 +55,8 @@ import {
     AuraMinter__factory,
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
+    VlCvxExtraRewardDistribution,
+    VlCvxExtraRewardDistribution__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
@@ -156,6 +158,7 @@ interface Phase3Deployed extends Phase2Deployed {
     cvxStakingProxy: AuraStakingProxy;
     vestedEscrow: VestedEscrow;
     dropFactory: MerkleAirdropFactory;
+    vlCvxExtraRewards: VlCvxExtraRewardDistribution;
 }
 
 interface SystemDeployed extends Phase3Deployed {
@@ -453,6 +456,14 @@ async function deployPhase3(
         debug,
     );
 
+    const vlCvxExtraRewards = await deployContract<VlCvxExtraRewardDistribution>(
+        new VlCvxExtraRewardDistribution__factory(deployer),
+        "vlCvxExtraRewardDistribution",
+        [cvxLocker.address],
+        {},
+        debug,
+    );
+
     const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
         new CrvDepositorWrapper__factory(deployer),
         "CrvDepositorWrapper",
@@ -470,6 +481,10 @@ async function deployPhase3(
     );
 
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
+    await tx.wait();
+
+    // TODO - change to auraExtraRwds and depositor
+    tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
@@ -683,6 +698,7 @@ async function deployPhase3(
         cvxStakingProxy,
         vestedEscrow,
         dropFactory,
+        vlCvxExtraRewards,
     };
 }
 
