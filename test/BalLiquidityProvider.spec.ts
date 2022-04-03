@@ -1,5 +1,5 @@
 import hre, { ethers } from "hardhat";
-import { BigNumber as BN, ContractReceipt, Signer } from "ethers";
+import { BigNumber as BN, Signer } from "ethers";
 import { expect } from "chai";
 import {
     deployPhase1,
@@ -29,9 +29,7 @@ describe("BalLiquidityProvider", () => {
     let mocks: DeployMocksResult;
     let deployer: Signer;
     let alice: Signer;
-    let aliceAddress: string;
     let daoAccount: Account;
-
     let multisigs: MultisigConfig;
     let startTokenContract: MockERC20;
     let pairTokenContract: MockERC20;
@@ -261,9 +259,6 @@ describe("BalLiquidityProvider", () => {
         });
     });
     describe("@method rescueToken", async () => {
-        beforeEach(async () => {
-            /* before each context */
-        });
         it("rescueToken should ...", async () => {
             const wethBalance = await mocks.weth.balanceOf(balLiquidityProvider.address);
             expect(wethBalance, "weth balance").to.gt(0);
@@ -274,16 +269,6 @@ describe("BalLiquidityProvider", () => {
         it("fails if sender is not authorized ", async () => {
             await expect(
                 balLiquidityProvider.connect(alice).rescueToken(ZERO_ADDRESS),
-                "not authorized",
-            ).to.be.revertedWith("!auth");
-        });
-        it("fails if token is not either start token or pair token", async () => {
-            await mocks.bal.connect(deployer).transfer(balLiquidityProvider.address, simpleToExactAmount(10));
-            const balance = await mocks.bal.balanceOf(balLiquidityProvider.address);
-            expect(balance, "bal balance").to.gt(0);
-
-            await expect(
-                balLiquidityProvider.connect(alice).rescueToken(mocks.bal.address),
                 "not authorized",
             ).to.be.revertedWith("!auth");
         });
