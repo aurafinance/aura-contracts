@@ -61,6 +61,8 @@ import {
     MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
+    VlCvxExtraRewardDistribution,
+    VlCvxExtraRewardDistribution__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -177,6 +179,7 @@ interface Phase2Deployed extends Phase1Deployed {
     drops: MerkleAirdrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
+    vlCvxExtraRewards: VlCvxExtraRewardDistribution; // TODO - remove
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -458,6 +461,14 @@ async function deployPhase2(
         debug,
     );
 
+    const vlCvxExtraRewards = await deployContract<VlCvxExtraRewardDistribution>(
+        new VlCvxExtraRewardDistribution__factory(deployer),
+        "vlCvxExtraRewardDistribution",
+        [cvxLocker.address],
+        {},
+        debug,
+    );
+
     const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
         new CrvDepositorWrapper__factory(deployer),
         "CrvDepositorWrapper",
@@ -475,6 +486,10 @@ async function deployPhase2(
     );
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug);
+
+    // TODO - change to auraExtraRwds and depositor
+    tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
+    await tx.wait();
 
     tx = await cvxLocker.setApprovals();
     await waitForTx(tx, debug);
@@ -866,6 +881,7 @@ async function deployPhase2(
         drops,
         lbpBpt,
         balLiquidityProvider,
+        vlCvxExtraRewards,
     };
 }
 
