@@ -479,7 +479,6 @@ async function deployPhase2(
         {},
         debug,
     );
-
     const extraRewardsDistributor = await deployContract<AuraExtraRewardsDistributor>(
         new AuraExtraRewardsDistributor__factory(deployer),
         "AuraExtraRewardsDistributor",
@@ -497,6 +496,9 @@ async function deployPhase2(
 
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug);
+
+    tx = await voterProxy.setRewardDeposit(multisigs.daoMultisig, extraRewardsDistributor.address);
+    await tx.wait();
 
     tx = await cvxLocker.setApprovals();
     await waitForTx(tx, debug);

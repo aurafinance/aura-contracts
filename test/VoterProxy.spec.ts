@@ -2,11 +2,24 @@ import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, CurveVoterProxy, MockVoteStorage, MockVoteStorage__factory } from "../types/generated";
+import {
+    Booster,
+    CurveVoterProxy,
+    MockVoteStorage,
+    MockVoteStorage__factory,
+    MockERC20,
+    MockERC20__factory,
+    AuraExtraRewardsDistributor,
+    AuraLocker,
+    AuraToken,
+} from "../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
+import { increaseTime } from "../test-utils/time";
+import { simpleToExactAmount } from "../test-utils/math";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 
 const eip1271MagicValue = "0x1626ba7e";
 
@@ -30,7 +43,10 @@ describe("VoterProxy", () => {
     let accounts: Signer[];
     let voterProxy: CurveVoterProxy;
     let booster: Booster;
+    let extraRewardsDistributor: AuraExtraRewardsDistributor;
     let mocks: DeployMocksResult;
+    let auraLocker: AuraLocker;
+    let cvx: AuraToken;
 
     let deployer: Signer;
     let daoMultisig: Signer;
@@ -61,6 +77,9 @@ describe("VoterProxy", () => {
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
+        extraRewardsDistributor = contracts.extraRewardsDistributor;
+        auraLocker = contracts.cvxLocker;
+        cvx = contracts.cvx;
     });
 
     describe("validates vote hash from Snapshot Hub", async () => {
@@ -121,6 +140,67 @@ describe("VoterProxy", () => {
             const eoaAddress = await eoa.getAddress();
             const tx = voterProxy.connect(eoa).migrate(eoaAddress);
             await expect(tx).to.revertedWith("!auth");
+        });
+
+        it("can not call setRewardDeposit", async () => {
+            const eoa = accounts[5];
+            const eoaAddress = await eoa.getAddress();
+            const tx = voterProxy.connect(eoa).setRewardDeposit(await deployer.getAddress(), eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+        it("can not call withdraw", async () => {
+            const eoa = accounts[5];
+            const tx = voterProxy.connect(eoa)["withdraw(address)"](ZERO_ADDRESS);
+            await expect(tx).to.revertedWith("!auth");
+        });
+    });
+
+    describe("when withdrawing tokens", () => {
+        it("can not withdraw protected tokens", async () => {
+            let tx = voterProxy["withdraw(address)"](mocks.crv.address);
+            await expect(tx).to.revertedWith("protected");
+            tx = voterProxy["withdraw(address)"](mocks.crvBpt.address);
+            await expect(tx).to.revertedWith("protected");
+        });
+
+        it("can withdraw unprotected tokens", async () => {
+            const deployerAddress = await deployer.getAddress();
+            const randomToken = await deployContract<MockERC20>(
+                new MockERC20__factory(deployer),
+                "RandomToken",
+                ["randomToken", "randomToken", 18, deployerAddress, 10000000],
+                {},
+                false,
+            );
+
+            const balance = await randomToken.balanceOf(deployerAddress);
+            await randomToken.transfer(voterProxy.address, balance);
+
+            const cvxAmount = simpleToExactAmount(10);
+
+            // go through 2 epochs in order for the prev epoch to have a total supply
+            for (let i = 0; i < 2; i++) {
+                await cvx.approve(auraLocker.address, cvxAmount);
+                await auraLocker.lock(deployerAddress, cvxAmount);
+                await increaseTime(86400 * 7);
+                await auraLocker.checkpointEpoch();
+            }
+
+            await voterProxy["withdraw(address)"](randomToken.address);
+            const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
+            expect(balance).eq(rewardDepositBalance);
+        });
+    });
+
+    describe("setting rewardDeposit", () => {
+        it("allows owner to set reward deposit and withdrawer", async () => {
+            const eoa = accounts[6];
+            const eoa7 = accounts[7];
+            const eoaAddress = await eoa.getAddress();
+            const eoaAddress7 = await eoa7.getAddress();
+            await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
+            expect(await voterProxy.withdrawer()).eq(eoaAddress);
+            expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
         });
     });
 });
