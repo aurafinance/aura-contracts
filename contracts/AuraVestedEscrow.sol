@@ -60,7 +60,7 @@ contract AuraVestedEscrow is ReentrancyGuard {
         startTime = starttime_;
         endTime = endtime_;
         totalTime = endTime - startTime;
-        require(totalTime > 16 weeks, "!short");
+        require(totalTime >= 16 weeks, "!short");
     }
 
     /***************************************
