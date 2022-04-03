@@ -22,6 +22,7 @@ contract BalLiquidityProvider {
     IVault public immutable bVault;
 
     event LiquidityProvided(uint256[] input, uint256 output);
+    event MinPairAmountChanged(uint256 oldMinPairAmount, uint256 newMinPairAmount);
 
     constructor(
         address _startToken,
@@ -74,15 +75,17 @@ contract BalLiquidityProvider {
     /**
      * @dev Allows the DAO to change the minimum amount of the pair token that must be added as liquidity
      */
-    function changeMinPairAmount(uint256 _newAmount) public {
+    function changeMinPairAmount(uint256 _newAmount) external {
         require(msg.sender == dao, "!auth");
+        emit MinPairAmountChanged(minPairAmount, _newAmount);
         minPairAmount = _newAmount;
     }
 
     /**
-     * @dev Rescues a given token from the contract
+     * @dev Rescues a given token from the contract.
+     * Only provider or DAO can call this function.
      */
-    function rescueToken(address _erc20) public {
+    function rescueToken(address _erc20) external {
         require(msg.sender == provider || msg.sender == dao, "!auth");
         IERC20 tkn = IERC20(_erc20);
         tkn.safeTransfer(dao, tkn.balanceOf(address(this)));
