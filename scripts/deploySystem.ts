@@ -483,6 +483,7 @@ async function deployPhase3(
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await tx.wait();
 
+    // TODO - change to auraExtraRwds and depositor
     tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
     await tx.wait();
 
