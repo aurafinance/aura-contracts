@@ -4,11 +4,12 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import {
     Booster,
+    BoosterOwner,
     ERC20__factory,
     BaseRewardPool__factory,
     MockFeeDistro__factory,
-    BoosterOwner,
     MockERC20__factory,
+    BaseRewardPool4626__factory,
 } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
