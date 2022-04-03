@@ -63,21 +63,24 @@ describe("BaseRewardPool4626", () => {
         aliceAddress = await alice.getAddress();
     };
 
+    let alternateReceiver: Signer;
+
     before(async () => {
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
+
+        await setup();
+        alternateReceiver = accounts[7];
     });
 
-    describe("when depositing directly into BaseRewardPool", () => {
-        let alternateReceiver: Signer;
+    it("has 4626 config setup", async () => {
+        const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+        expect(await crvRewards.asset()).eq(pool.lptoken);
+    });
 
-        before(async () => {
-            await setup();
-            alternateReceiver = accounts[7];
-        });
-
+    describe("depositing raw LP token", () => {
         it("allows direct deposits", async () => {
             const amount = ethers.utils.parseEther("10");
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
