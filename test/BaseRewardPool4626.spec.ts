@@ -1,0 +1,168 @@
+import hre, { ethers } from "hardhat";
+import { expect } from "chai";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { Booster, ERC20__factory, BaseRewardPool4626__factory } from "../types/generated";
+import { Signer } from "ethers";
+
+type Pool = {
+    lptoken: string;
+    token: string;
+    gauge: string;
+    crvRewards: string;
+    stash: string;
+    shutdown: boolean;
+};
+
+describe("Booster", () => {
+    let accounts: Signer[];
+    let booster: Booster;
+    let mocks: DeployMocksResult;
+    let pool: Pool;
+    let contracts: SystemDeployed;
+
+    let deployer: Signer;
+    let deployerAddress: string;
+
+    let alice: Signer;
+    let aliceAddress: string;
+
+    const setup = async () => {
+        mocks = await deployMocks(deployer);
+        const multisigs = await getMockMultisigs(accounts[4], accounts[5], accounts[6]);
+        const distro = getMockDistro();
+
+        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase2 = await deployPhase2(deployer, phase1, multisigs, mocks.namingConfig);
+        const phase3 = await deployPhase3(
+            hre,
+            deployer,
+            phase2,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+        );
+        await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
+        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+
+        ({ booster } = contracts);
+
+        pool = await booster.poolInfo(0);
+
+        // transfer LP tokens to accounts
+        const balance = await mocks.lptoken.balanceOf(deployerAddress);
+        for (const account of accounts) {
+            const accountAddress = await account.getAddress();
+            const share = balance.div(accounts.length);
+            const tx = await mocks.lptoken.transfer(accountAddress, share);
+            await tx.wait();
+        }
+
+        alice = accounts[1];
+        aliceAddress = await alice.getAddress();
+    };
+
+    before(async () => {
+        accounts = await ethers.getSigners();
+
+        deployer = accounts[0];
+        deployerAddress = await deployer.getAddress();
+    });
+
+    describe("when depositing directly into BaseRewardPool", () => {
+        let alternateReciever: Signer;
+
+        before(async () => {
+            await setup();
+            alternateReciever = accounts[7];
+        });
+
+        it("allows direct deposits", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const token = ERC20__factory.connect(pool.token, alice);
+
+            const balanceBefore = await crvRewards.balanceOf(aliceAddress);
+            const tokenBalBefore = await token.balanceOf(crvRewards.address);
+
+            let tx = await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
+            await tx.wait();
+
+            tx = await crvRewards.deposit(amount, aliceAddress);
+            await tx.wait();
+
+            const balanceAfter = await crvRewards.balanceOf(aliceAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+
+            const tokenBalAfter = await token.balanceOf(crvRewards.address);
+            expect(tokenBalAfter.sub(tokenBalBefore)).eq(amount);
+        });
+
+        it("allows direct deposits via mint()", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await crvRewards.balanceOf(aliceAddress);
+
+            let tx = await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
+            await tx.wait();
+
+            tx = await crvRewards.mint(amount, aliceAddress);
+            await tx.wait();
+
+            const balanceAfter = await crvRewards.balanceOf(aliceAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+
+        it("allows direct deposits on behalf of alternate reciever", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const alternateRecieverAddress = await alternateReciever.getAddress();
+
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await crvRewards.balanceOf(alternateRecieverAddress);
+
+            let tx = await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
+            await tx.wait();
+
+            tx = await crvRewards.deposit(amount, alternateRecieverAddress);
+            await tx.wait();
+
+            const balanceAfter = await crvRewards.balanceOf(alternateRecieverAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+
+        it("allows direct withdraws", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
+            const tx = await crvRewards["withdraw(uint256,address,address)"](amount, aliceAddress, aliceAddress);
+            await tx.wait();
+            const balanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+
+        it("allows direct withdraws via redeem()", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
+            const tx = await crvRewards["redeem(uint256,address,address)"](amount, aliceAddress, aliceAddress);
+            await tx.wait();
+            const balanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+
+        it("allows direct withdraws for alternate reciever", async () => {
+            const amount = ethers.utils.parseEther("10");
+            const alternateRecieverAddress = await alternateReciever.getAddress();
+
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await mocks.lptoken.balanceOf(alternateRecieverAddress);
+            const tx = await crvRewards
+                .connect(alternateReciever)
+                ["withdraw(uint256,address,address)"](amount, alternateRecieverAddress, alternateRecieverAddress);
+            await tx.wait();
+            const balanceAfter = await mocks.lptoken.balanceOf(alternateRecieverAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+    });
+});
