@@ -1,5 +1,7 @@
 import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
+    ExtraRewardsDistributor,
+    AuraPenaltyForwarder,
     IInvestmentPoolFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
@@ -37,12 +39,7 @@ import {
     PoolManagerProxy,
     PoolManagerSecondaryProxy__factory,
     PoolManagerSecondaryProxy,
-    VestedEscrow,
-    VestedEscrow__factory,
     MockERC20__factory,
-    MerkleAirdropFactory,
-    MerkleAirdropFactory__factory,
-    MerkleAirdrop__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
     ConvexMasterChef,
@@ -58,11 +55,16 @@ import {
     ConvexMasterChef__factory,
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
-    MerkleAirdrop,
     IWeightedPool2TokensFactory__factory,
     IStablePoolFactory__factory,
-    VlCvxExtraRewardDistribution,
-    VlCvxExtraRewardDistribution__factory,
+    AuraPenaltyForwarder__factory,
+    ExtraRewardsDistributor__factory,
+    AuraBalRewardPool,
+    AuraBalRewardPool__factory,
+    AuraVestedEscrow,
+    AuraVestedEscrow__factory,
+    AuraMerkleDrop,
+    AuraMerkleDrop__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract } from "../tasks/utils";
@@ -73,6 +75,8 @@ import { getChain } from "../tasks/utils/networkAddressFactory";
 
 interface AirdropData {
     merkleRoot: string;
+    startDelay: BN;
+    length: BN;
     amount: BN;
 }
 
@@ -97,6 +101,7 @@ interface DistroList {
     cvxCrvBootstrap: BN;
     lbp: LBPData;
     airdrops: AirdropData[];
+    immutableVesting: VestingGroup[];
     vesting: VestingGroup[];
 }
 interface BalancerPoolFactories {
@@ -166,7 +171,7 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxCrv: CvxCrvToken;
     cvxCrvBpt: BalancerPoolDeployed;
     cvxCrvRewards: BaseRewardPool;
-    initialCvxCrvStaking: BaseRewardPool;
+    initialCvxCrvStaking: AuraBalRewardPool;
     crvDepositor: CrvDepositor;
     crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
@@ -174,12 +179,12 @@ interface Phase2Deployed extends Phase1Deployed {
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
     chef: ConvexMasterChef;
-    vestedEscrows: VestedEscrow[];
-    dropFactory: MerkleAirdropFactory;
-    drops: MerkleAirdrop[];
+    vestedEscrows: AuraVestedEscrow[];
+    drops: AuraMerkleDrop[];
     lbpBpt: BalancerPoolDeployed;
     balLiquidityProvider: BalLiquidityProvider;
-    vlCvxExtraRewards: VlCvxExtraRewardDistribution; // TODO - remove
+    penaltyForwarder: AuraPenaltyForwarder;
+    extraRewardsDistributor: ExtraRewardsDistributor;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -309,10 +314,9 @@ async function deployPhase2(
         .add(distroList.cvxCrvBootstrap)
         .add(distroList.lbp.tknAmount)
         .add(distroList.lbp.matching);
-    const totalVested = distroList.vesting.reduce(
-        (p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))),
-        BN.from(0),
-    );
+    const totalVested = distroList.vesting
+        .concat(distroList.immutableVesting)
+        .reduce((p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))), BN.from(0));
     const premine = premineIncetives.add(totalVested);
     const checksum = premine.add(distroList.miningRewards);
     if (!checksum.eq(simpleToExactAmount(100, 24))) {
@@ -434,13 +438,7 @@ async function deployPhase2(
     const boosterOwner = await deployContract<BoosterOwner>(
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
-        [
-            multisigs.daoMultisig,
-            poolManagerSecondaryProxy.address,
-            booster.address,
-            stashFactory.address,
-            ZERO_ADDRESS, // TODO - rescuestash or substitute needed
-        ],
+        [multisigs.daoMultisig, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS],
         {},
         debug,
     );
@@ -461,14 +459,6 @@ async function deployPhase2(
         debug,
     );
 
-    const vlCvxExtraRewards = await deployContract<VlCvxExtraRewardDistribution>(
-        new VlCvxExtraRewardDistribution__factory(deployer),
-        "vlCvxExtraRewardDistribution",
-        [cvxLocker.address],
-        {},
-        debug,
-    );
-
     const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
         new CrvDepositorWrapper__factory(deployer),
         "CrvDepositorWrapper",
@@ -484,11 +474,25 @@ async function deployPhase2(
         {},
         debug,
     );
+    const extraRewardsDistributor = await deployContract<ExtraRewardsDistributor>(
+        new ExtraRewardsDistributor__factory(deployer),
+        "ExtraRewardsDistributor",
+        [cvxLocker.address],
+        {},
+        debug,
+    );
+    const penaltyForwarder = await deployContract<AuraPenaltyForwarder>(
+        new AuraPenaltyForwarder__factory(deployer),
+        "AuraPenaltyForwarder",
+        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
+        {},
+        debug,
+    );
+
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug);
 
-    // TODO - change to auraExtraRwds and depositor
-    tx = await voterProxy.setRewardDeposit(deployerAddress, vlCvxExtraRewards.address);
+    tx = await voterProxy.setRewardDeposit(multisigs.daoMultisig, extraRewardsDistributor.address);
     await tx.wait();
 
     tx = await cvxLocker.setApprovals();
@@ -597,22 +601,24 @@ async function deployPhase2(
     const rewardsStart = currentTime.add(DELAY);
     const vestedEscrows = [];
 
-    for (let i = 0; i < distroList.vesting.length; i++) {
-        const vestingGroup = distroList.vesting[i];
+    const vestingDistro = distroList.vesting
+        .map(v => ({ ...v, admin: multisigs.vestingMultisig }))
+        .concat(distroList.immutableVesting.map(v => ({ ...v, admin: ZERO_ADDRESS })));
+
+    for (let i = 0; i < vestingDistro.length; i++) {
+        const vestingGroup = vestingDistro[i];
         const groupVestingAmount = vestingGroup.recipients.reduce((p, c) => p.add(c.amount), BN.from(0));
         const rewardsEnd = rewardsStart.add(vestingGroup.period);
 
-        const vestedEscrow = await deployContract<VestedEscrow>(
-            new VestedEscrow__factory(deployer),
-            "VestedEscrow",
-            [cvx.address, rewardsStart, rewardsEnd, cvxLocker.address, multisigs.vestingMultisig],
+        const vestedEscrow = await deployContract<AuraVestedEscrow>(
+            new AuraVestedEscrow__factory(deployer),
+            "AuraVestedEscrow",
+            [cvx.address, vestingGroup.admin, cvxLocker.address, rewardsStart, rewardsEnd],
             {},
             debug,
         );
 
         tx = await cvx.approve(vestedEscrow.address, groupVestingAmount);
-        await waitForTx(tx, debug);
-        tx = await vestedEscrow.addTokens(groupVestingAmount);
         await waitForTx(tx, debug);
         const vestingAddr = vestingGroup.recipients.map(m => m.address);
         const vestingAmounts = vestingGroup.recipients.map(m => m.amount);
@@ -625,19 +631,15 @@ async function deployPhase2(
     // -----------------------------
     // 2.2.2 Schedule: 2% emission for cvxCrv staking
     // -----------------------------
-    const initialCvxCrvStaking = await deployContract<BaseRewardPool>(
-        new BaseRewardPool__factory(deployer),
-        "Bootstrap",
-        [0, cvxCrv.address, cvx.address, deployerAddress, rewardFactory.address],
+    const initialCvxCrvStaking = await deployContract<AuraBalRewardPool>(
+        new AuraBalRewardPool__factory(deployer),
+        "AuraBalRewardPool",
+        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, ONE_WEEK],
         {},
         debug,
     );
 
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
-    await waitForTx(tx, debug);
-
-    // TODO - replace queueNewRewards
-    tx = await initialCvxCrvStaking.queueNewRewards(distroList.cvxCrvBootstrap);
     await waitForTx(tx, debug);
 
     // -----------------------------
@@ -747,35 +749,32 @@ async function deployPhase2(
     tx = await chef.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug);
 
-    // TODO - add time delay & correct roots
     // -----------------------------
     // 2.2.5 Schedule: Airdrop(s)
     // -----------------------------
 
-    const dropFactory = await deployContract<MerkleAirdropFactory>(
-        new MerkleAirdropFactory__factory(deployer),
-        "MerkleAirdropFactory",
-        [],
-        {},
-        debug,
-    );
     const dropCount = distroList.airdrops.length;
-    const drops: MerkleAirdrop[] = [];
+    const drops: AuraMerkleDrop[] = [];
     for (let i = 0; i < dropCount; i++) {
-        const { merkleRoot, amount } = distroList.airdrops[i];
-        tx = await dropFactory.CreateMerkleAirdrop();
-        const txReceipt = await waitForTx(tx, debug);
-        const merkleDropAddr = txReceipt.events[0].args[0];
-        const airdrop = MerkleAirdrop__factory.connect(merkleDropAddr, deployer);
-        drops.push(airdrop);
-        tx = await airdrop.setRewardToken(cvx.address);
-        await waitForTx(tx, debug);
+        const { merkleRoot, startDelay, length, amount } = distroList.airdrops[i];
+        const airdrop = await deployContract<AuraMerkleDrop>(
+            new AuraMerkleDrop__factory(deployer),
+            "AuraMerkleDrop",
+            [
+                multisigs.treasuryMultisig,
+                merkleRoot,
+                cvx.address,
+                cvxLocker.address,
+                penaltyForwarder.address,
+                startDelay,
+                length,
+            ],
+            {},
+            debug,
+        );
         tx = await cvx.transfer(airdrop.address, amount);
         await waitForTx(tx, debug);
-        tx = await airdrop.setRoot(merkleRoot);
-        await waitForTx(tx, debug);
-        tx = await airdrop.setOwner(multisigs.treasuryMultisig);
-        await waitForTx(tx, debug);
+        drops.push(airdrop);
     }
 
     // -----------------------------
@@ -877,11 +876,11 @@ async function deployPhase2(
         cvxStakingProxy,
         chef,
         vestedEscrows,
-        dropFactory,
         drops,
         lbpBpt,
         balLiquidityProvider,
-        vlCvxExtraRewards,
+        penaltyForwarder,
+        extraRewardsDistributor,
     };
 }
 
