@@ -5,10 +5,11 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraBalRewardPool, ERC20 } from "../types/generated";
 import { ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { increaseTime, getTimestamp } from "../test-utils/time";
+import { getTimestamp } from "../test-utils/time";
 import { BN } from "../test-utils/math";
 
-describe("AuraBalRewardPool", () => {
+// TODO - add these tests
+describe("AuraPenaltyForwarder", () => {
     let accounts: Signer[];
 
     let contracts: SystemDeployed;
@@ -65,28 +66,5 @@ describe("AuraBalRewardPool", () => {
         expect(await rewards.startTime()).gt(currentTime.add(ONE_DAY.mul(6)));
         expect(await rewards.startTime()).lt(currentTime.add(ONE_DAY.mul(8)));
         expect(await contracts.cvx.balanceOf(rewards.address)).gt(0);
-    });
-    describe("basic flow", () => {
-        it("allows users to deposit before rewards are added (no rewards accrued)", async () => {
-            await cvxCrv.approve(rewards.address, initialBal.div(5));
-            await rewards.stake(initialBal.div(5));
-            expect(await rewards.rewardPerTokenStored()).eq(0);
-        });
-        it("allows anyone to trigger rewards distribution after startTime", async () => {
-            await increaseTime(ONE_WEEK.mul(2));
-            await rewards.initialiseRewards();
-        });
-        it("accrues rewards to existing depositors following startTime");
-        it("allows subsequent deposits");
-        it("penalises claimers who do not lock");
-        it("gives all rewards to claimers who lock");
-        it("allows anyone to forward penalty on to the PenaltyForwarder");
-        it("only forwards penalties once");
-    });
-    describe("funding rewards", () => {
-        it("blocks funding before startTime");
-        it("allows rewardManager to start process early");
-        it("only allows funding to be called once, ever");
-        it("sets a two week epoch");
     });
 });
