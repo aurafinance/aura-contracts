@@ -16,7 +16,7 @@ contract BalLiquidityProvider {
     IERC20 public immutable pairToken;
     uint256 public minPairAmount;
 
-    address private provider;
+    address private immutable provider;
     address public immutable dao;
 
     IVault public immutable bVault;
