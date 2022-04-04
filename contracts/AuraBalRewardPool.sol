@@ -118,11 +118,11 @@ contract AuraBalRewardPool {
     function stake(uint256 _amount) public updateReward(msg.sender) returns (bool) {
         require(_amount > 0, "RewardPool : Cannot stake 0");
 
-        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
-        emit Staked(msg.sender, _amount);
-
         _totalSupply = _totalSupply.add(_amount);
         _balances[msg.sender] = _balances[msg.sender].add(_amount);
+
+        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        emit Staked(msg.sender, _amount);
 
         return true;
     }
@@ -136,14 +136,13 @@ contract AuraBalRewardPool {
     function stakeFor(address _for, uint256 _amount) external updateReward(_for) returns (bool) {
         require(_amount > 0, "RewardPool : Cannot stake 0");
 
-        //take away from sender
-        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
-        emit Staked(_for, _amount);
-
         //give to _for
         _totalSupply = _totalSupply.add(_amount);
         _balances[_for] = _balances[_for].add(_amount);
 
+        //take away from sender
+        emit Staked(_for, _amount);
+        stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
         return true;
     }
 
