@@ -133,7 +133,7 @@ contract AuraBalRewardPool {
         return true;
     }
 
-    function stakeFor(address _for, uint256 _amount) public updateReward(_for) returns (bool) {
+    function stakeFor(address _for, uint256 _amount) external updateReward(_for) returns (bool) {
         require(_amount > 0, "RewardPool : Cannot stake 0");
 
         //take away from sender
@@ -151,7 +151,7 @@ contract AuraBalRewardPool {
         uint256 amount,
         bool claim,
         bool lock
-    ) public updateReward(msg.sender) returns (bool) {
+    ) external updateReward(msg.sender) returns (bool) {
         require(amount > 0, "RewardPool : Cannot withdraw 0");
 
         _totalSupply = _totalSupply.sub(amount);
@@ -190,7 +190,7 @@ contract AuraBalRewardPool {
     /**
      * @dev Forwards to the penalty forwarder for distro to Aura Lockers
      */
-    function forwardPenalty() public {
+    function forwardPenalty() external {
         uint256 toForward = pendingPenalty;
         pendingPenalty = 0;
         rewardToken.safeTransfer(penaltyForwarder, toForward);

@@ -108,7 +108,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     /**
      * @notice Claim rewards for a specific token at a specific epoch
      */
-    function getReward(address _account, address _token) public {
+    function getReward(address _account, address _token) external {
         _getReward(_account, _token, 0);
     }
 
@@ -116,7 +116,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         address _account,
         address _token,
         uint256 _startIndex
-    ) public {
+    ) external {
         _getReward(_account, _token, _startIndex);
     }
 

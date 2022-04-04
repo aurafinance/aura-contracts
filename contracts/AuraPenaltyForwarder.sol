@@ -43,7 +43,7 @@ contract AuraPenaltyForwarder {
     /**
      * @dev Forwards the complete balance of token in this contract to the distributor
      */
-    function forward() public {
+    function forward() external {
         require(block.timestamp > lastDistribution + distributionDelay, "!elapsed");
         lastDistribution = block.timestamp;
 

@@ -43,7 +43,7 @@ contract BalLiquidityProvider {
      * @dev Provides liquidity on behalf of the dao, in a non-custodial manner.
      *      Has protections in place to ensure that no erroneous liquidity data gets added.
      */
-    function provideLiquidity(bytes32 _poolId, IVault.JoinPoolRequest memory _request) public {
+    function provideLiquidity(bytes32 _poolId, IVault.JoinPoolRequest memory _request) external {
         require(msg.sender == provider, "!auth");
         require(_request.assets.length == 2 && _request.maxAmountsIn.length == 2, "!valid");
         require(pairToken.balanceOf(address(this)) > minPairAmount, "!minLiq");

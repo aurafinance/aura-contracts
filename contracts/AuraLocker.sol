@@ -678,7 +678,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // Balance of an account which only includes properly locked tokens at the given epoch
-    function balanceAtEpochOf(uint256 _epoch, address _user) public view returns (uint256 amount) {
+    function balanceAtEpochOf(uint256 _epoch, address _user) external view returns (uint256 amount) {
         uint256 epochStart = uint256(epochs[0].date).add(uint256(_epoch).mul(rewardsDuration));
         require(epochStart < block.timestamp, "Epoch is in the future");
 

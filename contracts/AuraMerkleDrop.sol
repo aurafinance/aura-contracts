@@ -116,7 +116,7 @@ contract AuraMerkleDrop {
         bytes32[] calldata _proof,
         uint256 _amount,
         bool _lock
-    ) public returns (bool) {
+    ) external returns (bool) {
         require(merkleRoot != bytes32(0), "!root");
         require(block.timestamp > startTime, "!started");
         require(block.timestamp < expiryTime, "!active");
@@ -145,7 +145,7 @@ contract AuraMerkleDrop {
                     FORWARD
     ****************************************/
 
-    function forwardPenalty() public {
+    function forwardPenalty() external {
         uint256 toForward = pendingPenalty;
         pendingPenalty = 0;
         require(penaltyForwarder != address(0), "!forwarder");
