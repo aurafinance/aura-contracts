@@ -29,6 +29,10 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     event RewardPaid(address indexed user, address indexed token, uint256 reward, uint256 index);
     event RewardForfeited(address indexed user, address indexed token, uint256 index);
 
+    /**
+     * @dev Simple constructoor
+     * @param _auraLocker Aura Locker address
+     */
     constructor(address _auraLocker) {
         auraLocker = IAuraLocker(_auraLocker);
     }
@@ -106,12 +110,20 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     /* ========== GET REWARDS ========== */
 
     /**
-     * @notice Claim rewards for a specific token at a specific epoch
+     * @notice Claim rewards for a specific token since the first epoch.
+     * @param _account  Address of vlCVX holder
+     * @param _token    Reward token address
      */
     function getReward(address _account, address _token) public {
         _getReward(_account, _token, 0);
     }
 
+    /**
+     * @notice Claim rewards for a specific token at a specific epoch
+     * @param _account      Address of vlCVX holder
+     * @param _token        Reward token address
+     * @param _startIndex   Index of rewardEpochs[_token] to start checking for rewards from
+     */
     function getReward(
         address _account,
         address _token,
@@ -120,6 +132,12 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         _getReward(_account, _token, _startIndex);
     }
 
+    /**
+     * @notice Claim rewards for a specific token at a specific epoch
+     * @param _account     Address of vlCVX holder
+     * @param _token       Reward token address
+     * @param _startIndex  Index of rewardEpochs[_token] to start checking for rewards from
+     */
     function _getReward(
         address _account,
         address _token,
@@ -163,6 +181,8 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
 
     /**
      * @notice Get claimable rewards (rewardToken) for vlCVX holder
+     * @param _account  Address of vlCVX holder
+     * @param _token    Reward token address
      */
     function claimableRewards(address _account, address _token) external view returns (uint256) {
         (uint256 rewards, ) = _allClaimableRewards(_account, _token, 0);
@@ -171,6 +191,9 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
 
     /**
      * @notice Get claimable rewards for a token at a specific epoch
+     * @param _account     Address of vlCVX holder
+     * @param _token       Reward token address
+     * @param _epoch       The epoch to check for rewards
      */
     function claimableRewardsAtEpoch(
         address _account,
@@ -217,7 +240,12 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         return (claimableTokens, epochIndex);
     }
 
-    //get claimable rewards for a token at a specific epoch
+    /**
+     * @notice Get claimable rewards for a token at a specific epoch
+     * @param _account     Address of vlCVX holder
+     * @param _token       Reward token address
+     * @param _epoch       The epoch to check for rewards
+     */
     function _claimableRewards(
         address _account,
         address _token,
