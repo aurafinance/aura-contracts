@@ -4,8 +4,13 @@ pragma abicoder v2;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import "./Interfaces.sol";
+import { IVault, IPriceOracle, IAsset } from "./Interfaces.sol";
 
+/**
+ * @title   BalInvestor
+ * @notice  Deposits $BAL into a BAL/WETH BPT. Hooks into TWAP to determine minOut.
+ * @dev     Abstract contract for depositing BAL -> balBPT -> auraBAL via crvDepositor
+ */
 abstract contract BalInvestor {
     using SafeERC20 for IERC20;
 

@@ -9,8 +9,6 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 
 /**
  * @title   AuraMerkleDrop
- * @author
- * @notice
  * @dev     Forked from convex-platform/contracts/contracts/MerkleAirdrop.sol. Changes:
  *            - solc 0.8.11 & OpenZeppelin MerkleDrop
  *            - Delayed start w/ trigger
@@ -43,6 +41,15 @@ contract AuraMerkleDrop {
     event Claimed(address addr, uint256 amt, bool locked);
     event PenaltyForwarded(uint256 amount);
 
+    /**
+     * @param _dao              The Aura Dao
+     * @param _merkleRoot       Merkle root
+     * @param _aura             Aura token
+     * @param _auraLocker       Aura locker contract
+     * @param _penaltyForwarder PenaltyForwarded contract
+     * @param _startDelay       Delay until claim is live
+     * @param _expiresAfter     Timestamp claim expires
+     */
     constructor(
         address _dao,
         bytes32 _merkleRoot,
