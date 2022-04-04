@@ -8,8 +8,8 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 
 /**
  * @title   ExtraRewardsDistributor
- * @author  ConvexFinance -> Aura Finance
- * @notice
+ * @author  adapted from ConvexFinance
+ * @notice  Allows anyone to distribute rewards to the AuraLocker at a given epoch.
  */
 contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     using SafeERC20 for IERC20;

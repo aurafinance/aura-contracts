@@ -20,7 +20,7 @@ interface ICrvDepositor {
 
 /**
  * @title   AuraStakingProxy
- * @author  ConvexFinance and Aura
+ * @author  adapted from ConvexFinance
  * @notice  Receives CRV from the Booster as overall reward, then distributes to vlCVX holders. Also
  *          acts as a depositor proxy to support deposit/withdrawals from the CVX staking contract.
  * @dev     From CVX:

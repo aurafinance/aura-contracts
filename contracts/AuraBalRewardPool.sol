@@ -10,7 +10,7 @@ import { IAuraLocker } from "./Interfaces.sol";
 
 /**
  * @title   AuraBalRewardPool
- * @author  Synthetix -> ConvexFinance -> Aura
+ * @author  Synthetix -> ConvexFinance -> adapted
  * @dev     Modifications from convex-platform/contracts/contracts/BaseRewardPool.sol:
  *            - Delayed start (tokens transferred then delay is enforced before notification)
  *            - One time duration of 14 days
