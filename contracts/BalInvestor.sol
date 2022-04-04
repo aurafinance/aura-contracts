@@ -6,6 +6,10 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import "./Interfaces.sol";
 
+/**
+ * @title   BalInvestor
+ * @author  Aura Finance
+ */
 abstract contract BalInvestor {
     using SafeERC20 for IERC20;
 
@@ -15,6 +19,12 @@ abstract contract BalInvestor {
     address public immutable BALANCER_POOL_TOKEN;
     bytes32 public immutable BAL_ETH_POOL_ID;
 
+    /**
+     * @param _balancerVault    Balancer vault contract address
+     * @param _bal              BAL token address
+     * @param _weth             WETH token address
+     * @param _balETHPoolId     The balancer BAL/WETH pool id.
+     */
     constructor(
         IVault _balancerVault,
         address _bal,
@@ -50,6 +60,12 @@ abstract contract BalInvestor {
         return IPriceOracle(BALANCER_POOL_TOKEN).getTimeWeightedAverage(queries)[0];
     }
 
+    /**
+     * @dev Gets minimum output based on BPT oracle price
+     * @param amount Units of BAL to deposit
+     * @param minOutBps Multiplier where 100% == 10000, 99.5% == 9950 and 98% == 9800
+     * @return minOut Units of BPT to expect as output
+     */
     function _getMinOut(uint256 amount, uint256 minOutBps) internal view returns (uint256) {
         // Gets the balancer time weighted average price denominated in BAL
         // e.g.  if 1 BAL == 0.4 BPT, bptOraclePrice == 2.5

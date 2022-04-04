@@ -9,7 +9,8 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 /**
  * @title   ExtraRewardsDistributor
  * @author  ConvexFinance -> Aura Finance
- * @notice
+ * @notice  Distribute various rewards to locked AURA holders (vlAURA)
+ * @dev    Forked from convex-platform/contracts/contracts/vlCvxExtraRewardDistribution.sol:
  */
 contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     using SafeERC20 for IERC20;
@@ -30,7 +31,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
     event RewardForfeited(address indexed user, address indexed token, uint256 index);
 
     /**
-     * @dev Simple constructoor
+     * @dev Simple constructor
      * @param _auraLocker Aura Locker address
      */
     constructor(address _auraLocker) {

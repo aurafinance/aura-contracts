@@ -17,10 +17,19 @@ interface ICrvDepositor {
 /**
  * @title   CrvDepositorWrapper
  * @author  Aura Finance
+ * @notice  Wrapper for CrvDepositor contract, allows users to calculate the min amount of
+ * BPTs given an amount of BAL and deposit it a given balancer pool.
  */
 contract CrvDepositorWrapper is BalInvestor {
     address public crvDeposit;
 
+    /**
+     * @param _crvDeposit       CrvDepositor contract address
+     * @param _balancerVault    Balancer vault contract address
+     * @param _bal              BAL token address
+     * @param _weth             WETH token address
+     * @param _balETHPoolId     The balancer BAL/WETH pool id.
+     */
     constructor(
         address _crvDeposit,
         IVault _balancerVault,
@@ -31,6 +40,9 @@ contract CrvDepositorWrapper is BalInvestor {
         crvDeposit = _crvDeposit;
     }
 
+    /**
+     * @notice  Approves crvDepositorWrapper to transfer contract CrvDepositor
+     */
     function setApprovals() external {
         _setApprovals();
         require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max));
@@ -46,6 +58,13 @@ contract CrvDepositorWrapper is BalInvestor {
         return _getMinOut(_amount, _outputBps);
     }
 
+    /**
+     * @notice Deposits amount of BAL to the CrvDepositor contract, indicating the min amount of BPT to be received
+     * @param _amount Units of BAL to deposit
+     * @param _minOut Minimum units of BPT to expect as output.
+     * @param _lock   Whether to lock the deposit or not.
+     * @param _stakeAddress Address of the staking contract.
+     */
     function deposit(
         uint256 _amount,
         uint256 _minOut,

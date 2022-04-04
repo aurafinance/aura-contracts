@@ -49,7 +49,7 @@ contract AuraBalRewardPool {
     event PenaltyForwarded(uint256 amount);
 
     /**
-     * @dev Simple constructoor
+     * @dev Simple constructor
      * @param _stakingToken  Pool LP token
      * @param _rewardToken   $AURA
      * @param _rewardManager Depositor
