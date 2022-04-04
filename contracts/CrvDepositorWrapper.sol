@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import "./Interfaces.sol";
-import "./BalInvestor.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IVault } from "./Interfaces.sol";
+import { BalInvestor } from "./BalInvestor.sol";
 
 interface ICrvDepositor {
     function depositFor(
@@ -14,6 +14,10 @@ interface ICrvDepositor {
     ) external;
 }
 
+/**
+ * @title   CrvDepositorWrapper
+ * @author  Aura Finance
+ */
 contract CrvDepositorWrapper is BalInvestor {
     address public crvDeposit;
 

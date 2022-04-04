@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "./AuraMath.sol";
-import "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.8/utils/Address.sol";
-import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { AuraMath } from "./AuraMath.sol";
+import { SafeMath } from "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import { IAuraLocker } from "./Interfaces.sol";
 

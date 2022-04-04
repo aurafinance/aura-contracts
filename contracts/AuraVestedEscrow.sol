@@ -9,8 +9,10 @@ import { AuraMath } from "./AuraMath.sol";
 
 /**
  * @title   AuraVestedEscrow
- * @author  ConvexFinance (convex-platform/contracts/contracts/VestedExcrow)
- * @notice  Adaptations:
+ * @author  ConvexFinance (convex-platform/contracts/contracts/VestedEscrow) -> AuraFinance
+ * @notice  Vests tokens over a given timeframe to an array of recipients. Allows locking of
+ *          these tokens directly to staking contract.
+ * @dev     Adaptations:
  *           - One time initialisation
  *           - Consolidation of fundAdmin/admin
  *           - Lock in AuraLocker by default
