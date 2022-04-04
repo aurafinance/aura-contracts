@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
+
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
@@ -12,7 +13,6 @@ interface IStaker {
 
 /**
  * @title   AuraToken
- * @author  Forked from ConvexFinance
  * @notice  Basically an ERC20 with minting functionality operated by the "operator" of the VoterProxy (Booster).
  * @dev     The minting schedule is based on the amount of CRV earned through staking and is
  *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.

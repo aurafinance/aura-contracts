@@ -17,8 +17,7 @@ interface ICrvDepositor {
 /**
  * @title   CrvDepositorWrapper
  * @author  Aura Finance
- * @notice  Wrapper for CrvDepositor contract, allows users to calculate the min amount of
- * BPTs given an amount of BAL and deposit it a given balancer pool.
+ * @notice  Converts BAL -> balBPT and then wraps to auraBAL via the crvDepositor
  */
 contract CrvDepositorWrapper is BalInvestor {
     address public crvDeposit;
@@ -45,7 +44,7 @@ contract CrvDepositorWrapper is BalInvestor {
      */
     function setApprovals() external {
         _setApprovals();
-        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max));
+        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max), "!approval");
     }
 
     /**

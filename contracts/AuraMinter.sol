@@ -6,7 +6,6 @@ import { AuraToken } from "./Aura.sol";
 
 /**
  * @title   AuraMinter
- * @author  Aura
  * @notice  Wraps the AuraToken minterMint function and protects from inflation until
  *          4 years have passed.
  * @dev     Ownership initially owned by the DAO, but likely transferred to smart contract

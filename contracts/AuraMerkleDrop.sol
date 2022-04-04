@@ -9,8 +9,6 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 
 /**
  * @title   AuraMerkleDrop
- * @author
- * @notice
  * @dev     Forked from convex-platform/contracts/contracts/MerkleAirdrop.sol. Changes:
  *            - solc 0.8.11 & OpenZeppelin MerkleDrop
  *            - Delayed start w/ trigger
