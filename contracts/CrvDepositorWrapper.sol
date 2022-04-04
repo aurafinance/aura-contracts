@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import "./Interfaces.sol";
-import "./BalInvestor.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IVault } from "./Interfaces.sol";
+import { BalInvestor } from "./BalInvestor.sol";
 
 interface ICrvDepositor {
     function depositFor(
@@ -14,6 +14,10 @@ interface ICrvDepositor {
     ) external;
 }
 
+/**
+ * @title   CrvDepositorWrapper
+ * @notice  Converts BAL -> balBPT and then wraps to auraBAL via the crvDepositor
+ */
 contract CrvDepositorWrapper is BalInvestor {
     address public crvDeposit;
 
@@ -29,7 +33,7 @@ contract CrvDepositorWrapper is BalInvestor {
 
     function setApprovals() external {
         _setApprovals();
-        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max));
+        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max), "!approval");
     }
 
     /**

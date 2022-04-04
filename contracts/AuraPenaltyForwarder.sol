@@ -20,6 +20,12 @@ contract AuraPenaltyForwarder {
 
     event Forwarded(uint256 amount);
 
+    /**
+     * @dev During deployment approves the distributor to spend all tokens
+     * @param _distributor  Contract that will distribute tokens
+     * @param _token        Token to be distributed
+     * @param _delay        Delay between each distribution trigger
+     */
     constructor(
         address _distributor,
         address _token,

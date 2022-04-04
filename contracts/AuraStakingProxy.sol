@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts-0.8/utils/Address.sol";
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
-import "./Interfaces.sol";
+import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { SafeMath } from "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
+import { IAuraLocker } from "./Interfaces.sol";
 
 interface ICrvDepositor {
     function getMinOut(uint256, uint256) external view returns (uint256);
@@ -20,7 +20,7 @@ interface ICrvDepositor {
 
 /**
  * @title   AuraStakingProxy
- * @author  ConvexFinance and Aura
+ * @author  adapted from ConvexFinance
  * @notice  Receives CRV from the Booster as overall reward, then distributes to vlCVX holders. Also
  *          acts as a depositor proxy to support deposit/withdrawals from the CVX staking contract.
  * @dev     From CVX:
@@ -81,6 +81,11 @@ contract AuraStakingProxy {
         outputBps = _outputBps;
     }
 
+    /**
+     * @notice Set CrvDepositorWrapper
+     * @param   _crvDepositorWrapper CrvDepositorWrapper address
+     * @param   _outputBps Min output base points
+     */
     function setCrvDepositorWrapper(address _crvDepositorWrapper, uint256 _outputBps) external {
         require(msg.sender == owner, "!auth");
         require(_outputBps > 9000 && _outputBps < 10000, "Invalid output bps");
@@ -89,16 +94,25 @@ contract AuraStakingProxy {
         outputBps = _outputBps;
     }
 
+    /**
+     * @notice Set keeper
+     */
     function setKeeper(address _keeper) external {
         require(msg.sender == owner, "!auth");
         keeper = _keeper;
     }
 
+    /**
+     * @notice Set pending owner
+     */
     function setPendingOwner(address _po) external {
         require(msg.sender == owner, "!auth");
         pendingOwner = _po;
     }
 
+    /**
+     * @notice Apply pending owner
+     */
     function applyPendingOwner() external {
         require(msg.sender == owner, "!auth");
         require(pendingOwner != address(0), "invalid owner");
@@ -107,6 +121,10 @@ contract AuraStakingProxy {
         pendingOwner = address(0);
     }
 
+    /**
+     * @notice Set call incentive
+     * @param _incentive Incentive base points
+     */
     function setCallIncentive(uint256 _incentive) external {
         require(msg.sender == owner, "!auth");
         require(_incentive <= 100, "too high");
@@ -114,11 +132,18 @@ contract AuraStakingProxy {
         emit CallIncentiveChanged(_incentive);
     }
 
+    /**
+     * @notice Set reward address
+     */
     function setRewards(address _rewards) external {
         require(msg.sender == owner, "!auth");
         rewards = _rewards;
     }
 
+    /**
+     * @notice  Approve crvDepositorWrapper to transfer contract CRV
+     *          and rewards to transfer cvxCrv
+     */
     function setApprovals() external {
         IERC20(crv).safeApprove(crvDepositorWrapper, 0);
         IERC20(crv).safeApprove(crvDepositorWrapper, type(uint256).max);
@@ -127,6 +152,9 @@ contract AuraStakingProxy {
         IERC20(cvxCrv).safeApprove(rewards, type(uint256).max);
     }
 
+    /**
+     * @notice Transfer stuck ERC20 tokens to `_to`
+     */
     function rescueToken(address _token, address _to) external {
         require(msg.sender == owner, "!auth");
         require(_token != crv && _token != cvx && _token != cvxCrv, "not allowed");
@@ -169,7 +197,9 @@ contract AuraStakingProxy {
         }
     }
 
-    //in case a new reward is ever added, allow generic distribution
+    /**
+     * @notice Allow generic token distribution in case a new reward is ever added
+     */
     function distributeOther(IERC20 _token) external {
         require(address(_token) != crv && address(_token) != cvxCrv, "not allowed");
 
