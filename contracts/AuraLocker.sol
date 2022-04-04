@@ -6,7 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
-import { AuraMath, AuraMath128, AuraMath64, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
+import { AuraMath, AuraMath32, AuraMath112, AuraMath224 } from "./AuraMath.sol";
 import "./Interfaces.sol";
 
 interface IRewardStaking {
@@ -19,7 +19,7 @@ interface IRewardStaking {
  * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
  *          to depositors.
- * @dev     TODO
+ * @dev     Invdividual and delegatee vote power lookups both use independent accounting mechanisms.
  */
 contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     using AuraMath for uint256;
@@ -844,6 +844,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     /***************************************
                 REWARD FUNDING
     ****************************************/
+
     function queueNewRewards(uint256 _rewards) external nonReentrant {
         require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");

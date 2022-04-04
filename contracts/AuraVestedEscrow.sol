@@ -16,6 +16,7 @@ import { AuraMath } from "./AuraMath.sol";
  *           - One time initialisation
  *           - Consolidation of fundAdmin/admin
  *           - Lock in AuraLocker by default
+ *           - Start and end time
  */
 contract AuraVestedEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
