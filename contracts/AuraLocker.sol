@@ -19,7 +19,7 @@ interface IRewardStaking {
  * @notice  Effectively allows for rolling 16 week lockups of CVX, and provides balances available
  *          at each epoch (1 week). Also receives cvxCrv from `CvxStakingProxy` and redistributes
  *          to depositors.
- * @dev
+ * @dev     TODO
  */
 contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     using AuraMath for uint256;
