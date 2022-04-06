@@ -22,7 +22,7 @@ interface ICvxCrvDeposit {
 
 /**
  * @title   ClaimZap
- * @author  ConvexFinance
+ * @author  ConvexFinance -> AuraFinance
  * @notice  Claim zap to bundle various reward claims
  * @dev     Claims from all pools, and stakes cvxCrv and CVX if wanted.
  *          v2:
@@ -89,6 +89,13 @@ contract ClaimZap {
         return "ClaimZap V2.0";
     }
 
+    /**
+     * @notice Approve spending of:
+     *          crv     -> crvDepositor
+     *          crv     -> balancer vault
+     *          cvxCrv  -> cvxCrvRewards
+     *          cvx     -> Locker
+     */
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
 
@@ -105,10 +112,25 @@ contract ClaimZap {
         IERC20(cvx).safeApprove(locker, type(uint256).max);
     }
 
+    /**
+     * @notice Use bitmask to check if option flag is set
+     */
     function CheckOption(uint256 _mask, uint256 _flag) internal pure returns (bool) {
         return (_mask & (1 << _flag)) != 0;
     }
 
+    /**
+     * @notice Claim all the rewards
+     * @param rewardContracts       Array of addresses of LP token rewards
+     * @param extraRewardContracts  Array of addresses of extra rewards
+     * @param tokenRewardContracts  Array of addresses of token rewards e.g vlCvxExtraRewardDistribution
+     * @param tokenRewardTokens     Array of token reward addresses to use with tokenRewardContracts
+     * @param depositCrvMaxAmount   The max amount of CRV to deposit if converting to crvCvx
+     * @param minAmountOut          The min amount out for crv:cvxCrv swaps if swapping. Set this to zero if you
+     *                              want to use CrvDepositor instead of balancer swap
+     * @param depositCvxMaxAmount   The max amount of CVX to deposit if locking CVX
+     * @param options               Claim options
+     */
     function claimRewards(
         address[] calldata rewardContracts,
         address[] calldata extraRewardContracts,
@@ -119,6 +141,8 @@ contract ClaimZap {
         uint256 depositCvxMaxAmount,
         uint256 options
     ) external {
+        require(tokenRewardContracts.length == tokenRewardTokens.length, "!parity");
+
         uint256 crvBalance = IERC20(crv).balanceOf(msg.sender);
         uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender);
 
@@ -139,6 +163,17 @@ contract ClaimZap {
         _claimExtras(depositCrvMaxAmount, minAmountOut, depositCvxMaxAmount, crvBalance, cvxBalance, options);
     }
 
+    /**
+     * @notice  Claim additional rewards from:
+     *          - cvxCrvRewards
+     *          - cvxLocker
+     * @param depositCrvMaxAmount see claimRewards
+     * @param minAmountOut        see claimRewards
+     * @param depositCvxMaxAmount see claimRewards
+     * @param removeCrvBalance    crvBalance to ignore and not redeposit (starting Crv balance)
+     * @param removeCvxBalance    cvxBalance to ignore and not redeposit (starting Cvx balance)
+     * @param options             see claimRewards
+     */
     function _claimExtras(
         uint256 depositCrvMaxAmount,
         uint256 minAmountOut,
@@ -199,6 +234,9 @@ contract ClaimZap {
         }
     }
 
+    /**
+     * @notice Swap Crv for CvxCrv via Balance pool
+     */
     function _swapCrvForCvxCrv(uint256 crvBalance, uint256 minAmountOut) internal {
         IAsset assetIn = IAsset(crv);
         IAsset assetOut = IAsset(cvxCrv);
