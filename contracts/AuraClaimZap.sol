@@ -16,29 +16,8 @@ interface IBasicRewards {
     function stakeFor(address, uint256) external;
 }
 
-interface ICvxRewards {
-    function getReward(
-        address _account,
-        bool _claimExtras,
-        bool _stake
-    ) external;
-}
-
-interface IChefRewards {
-    function claim(uint256 _pid, address _account) external;
-}
-
 interface ICvxCrvDeposit {
     function deposit(uint256, bool) external;
-}
-
-interface ISwapExchange {
-    function exchange(
-        int128,
-        int128,
-        uint256,
-        uint256
-    ) external returns (uint256);
 }
 
 /**
@@ -61,12 +40,11 @@ contract ClaimZap {
     address public immutable cvxCrv;
     address public immutable crvDeposit;
     address public immutable cvxCrvRewards;
-
-    address public immutable exchange;
-
     address public immutable locker;
-
     address public immutable owner;
+
+    address public immutable vault;
+    bytes32 public immutable crvCvxCrvPoolId;
 
     enum Options {
         ClaimCvxCrv, //1
@@ -77,13 +55,14 @@ contract ClaimZap {
     }
 
     /**
-     * @param _crv           CRV token (0xD533a949740bb3306d119CC777fa900bA034cd52);
-     * @param _cvx           CVX token (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
-     * @param _cvxCrv        cvxCRV token (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
-     * @param _crvDeposit    crvDeposit (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
-     * @param _cvxCrvRewards cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
-     * @param _exchange      Used to convert CRV to cvxCRV exchange (0x9D0464996170c6B9e75eED71c68B99dDEDf279e8);//curve
-     * @param _locker        vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
+     * @param _crv              CRV token (0xD533a949740bb3306d119CC777fa900bA034cd52);
+     * @param _cvx              CVX token (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+     * @param _cvxCrv           cvxCRV token (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
+     * @param _crvDeposit       crvDeposit (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
+     * @param _cvxCrvRewards    cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
+     * @param _locker           vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
+     * @param _vault            Balancer vault contract
+     * @param _crvCvxCrvPoolId  Balancer pool ID for crv:crvCvx
      */
     constructor(
         address _crv,
@@ -91,17 +70,18 @@ contract ClaimZap {
         address _cvxCrv,
         address _crvDeposit,
         address _cvxCrvRewards,
-        address _cvxRewards,
-        address _exchange,
-        address _locker
+        address _locker,
+        address _vault,
+        bytes32 _crvCvxCrvPoolId
     ) public {
         crv = _crv;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
         crvDeposit = _crvDeposit;
         cvxCrvRewards = _cvxCrvRewards;
-        exchange = _exchange;
         locker = _locker;
+        vault = _vault;
+        crvCvxCrvPoolId = _crvCvxCrvPoolId;
         owner = msg.sender;
     }
 
@@ -111,10 +91,12 @@ contract ClaimZap {
 
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
+
         IERC20(crv).safeApprove(crvDeposit, 0);
         IERC20(crv).safeApprove(crvDeposit, type(uint256).max);
-        IERC20(crv).safeApprove(exchange, 0);
-        IERC20(crv).safeApprove(exchange, type(uint256).max);
+
+        IERC20(crv).safeApprove(vault, 0);
+        IERC20(crv).safeApprove(vault, type(uint256).max);
 
         IERC20(cvxCrv).safeApprove(cvxCrvRewards, 0);
         IERC20(cvxCrv).safeApprove(cvxCrvRewards, type(uint256).max);
@@ -218,6 +200,22 @@ contract ClaimZap {
     }
 
     function _swapCrvForCvxCrv(uint256 crvBalance, uint256 minAmountOut) internal {
-        // TODO:
+        IAsset assetIn = IAsset(crv);
+        IAsset assetOut = IAsset(cvxCrv);
+
+        IVault.SingleSwap memory singleSwap = IVault.SingleSwap(
+            crvCvxCrvPoolId,
+            IVault.SwapKind.GIVEN_IN,
+            assetIn,
+            assetOut,
+            crvBalance,
+            ""
+        );
+
+        IVault.FundManagement memory funds = IVault.FundManagement(msg.sender, false, payable(msg.sender), false);
+
+        uint256 deadline = block.timestamp + 60 * 15;
+
+        IVault(vault).swap(singleSwap, funds, minAmountOut, deadline);
     }
 }
