@@ -1,12 +1,10 @@
-// TODO:
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity ^0.8.11;
 
-import "./interfaces/MathUtil.sol";
-import "./interfaces/ILockedCvx.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts-0.6/math/SafeMath.sol";
+import "./AuraMath.sol";
+import "./Interfaces.sol";
+import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 interface IBasicRewards {
     function getReward(address _account, bool _claimExtras) external;
@@ -56,14 +54,13 @@ interface ISwapExchange {
  */
 contract ClaimZap {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
+    using AuraMath for uint256;
 
     address public immutable crv;
     address public immutable cvx;
     address public immutable cvxCrv;
     address public immutable crvDeposit;
     address public immutable cvxCrvRewards;
-    address public immutable cvxRewards;
 
     address public immutable exchange;
 
@@ -72,14 +69,11 @@ contract ClaimZap {
     address public immutable owner;
 
     enum Options {
-        ClaimCvx, //1
-        ClaimCvxAndStake, //2
-        ClaimCvxCrv, //4
-        ClaimLockedCvx, //8
-        ClaimLockedCvxStake, //16
-        LockCrvDeposit, //32
-        UseAllWalletFunds, //64
-        LockCvx //128
+        ClaimCvxCrv, //1
+        ClaimLockedCvx, //2
+        ClaimLockedCvxStake, //4
+        LockCrvDeposit, //8
+        UseAllWalletFunds //16
     }
 
     /**
@@ -88,7 +82,6 @@ contract ClaimZap {
      * @param _cvxCrv        cvxCRV token (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
      * @param _crvDeposit    crvDeposit (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
      * @param _cvxCrvRewards cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
-     * @param _cvxRewards    cvxRewards (0xCF50b810E57Ac33B91dCF525C6ddd9881B139332);
      * @param _exchange      Used to convert CRV to cvxCRV exchange (0x9D0464996170c6B9e75eED71c68B99dDEDf279e8);//curve
      * @param _locker        vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
      */
@@ -107,7 +100,6 @@ contract ClaimZap {
         cvxCrv = _cvxCrv;
         crvDeposit = _crvDeposit;
         cvxCrvRewards = _cvxCrvRewards;
-        cvxRewards = _cvxRewards;
         exchange = _exchange;
         locker = _locker;
         owner = msg.sender;
@@ -120,18 +112,15 @@ contract ClaimZap {
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
         IERC20(crv).safeApprove(crvDeposit, 0);
-        IERC20(crv).safeApprove(crvDeposit, uint256(-1));
+        IERC20(crv).safeApprove(crvDeposit, type(uint256).max);
         IERC20(crv).safeApprove(exchange, 0);
-        IERC20(crv).safeApprove(exchange, uint256(-1));
-
-        IERC20(cvx).safeApprove(cvxRewards, 0);
-        IERC20(cvx).safeApprove(cvxRewards, uint256(-1));
+        IERC20(crv).safeApprove(exchange, type(uint256).max);
 
         IERC20(cvxCrv).safeApprove(cvxCrvRewards, 0);
-        IERC20(cvxCrv).safeApprove(cvxCrvRewards, uint256(-1));
+        IERC20(cvxCrv).safeApprove(cvxCrvRewards, type(uint256).max);
 
         IERC20(cvx).safeApprove(locker, 0);
-        IERC20(cvx).safeApprove(locker, uint256(-1));
+        IERC20(cvx).safeApprove(locker, type(uint256).max);
     }
 
     function CheckOption(uint256 _mask, uint256 _flag) internal pure returns (bool) {
@@ -146,7 +135,6 @@ contract ClaimZap {
         uint256 depositCrvMaxAmount,
         uint256 minAmountOut,
         uint256 depositCvxMaxAmount,
-        uint256 spendCvxAmount,
         uint256 options
     ) external {
         uint256 crvBalance = IERC20(crv).balanceOf(msg.sender);
@@ -165,34 +153,18 @@ contract ClaimZap {
             IBasicRewards(tokenRewardContracts[i]).getReward(msg.sender, tokenRewardTokens[i]);
         }
 
-        //claim others/deposit/lock/stake
-        _claimExtras(
-            depositCrvMaxAmount,
-            minAmountOut,
-            depositCvxMaxAmount,
-            spendCvxAmount,
-            crvBalance,
-            cvxBalance,
-            options
-        );
+        // claim others/deposit/lock/stake
+        _claimExtras(depositCrvMaxAmount, minAmountOut, depositCvxMaxAmount, crvBalance, cvxBalance, options);
     }
 
     function _claimExtras(
         uint256 depositCrvMaxAmount,
         uint256 minAmountOut,
         uint256 depositCvxMaxAmount,
-        uint256 spendCvxAmount,
         uint256 removeCrvBalance,
         uint256 removeCvxBalance,
         uint256 options
     ) internal {
-        //claim (and stake) from cvx rewards
-        if (CheckOption(options, uint256(Options.ClaimCvxAndStake))) {
-            ICvxRewards(cvxRewards).getReward(msg.sender, true, true);
-        } else if (CheckOption(options, uint256(Options.ClaimCvx))) {
-            ICvxRewards(cvxRewards).getReward(msg.sender, true, false);
-        }
-
         //claim from cvxCrv rewards
         if (CheckOption(options, uint256(Options.ClaimCvxCrv))) {
             IBasicRewards(cvxCrvRewards).getReward(msg.sender, true);
@@ -200,7 +172,7 @@ contract ClaimZap {
 
         //claim from locker
         if (CheckOption(options, uint256(Options.ClaimLockedCvx))) {
-            ILockedCvx(locker).getReward(msg.sender, CheckOption(options, uint256(Options.ClaimLockedCvxStake)));
+            IAuraLocker(locker).getReward(msg.sender, CheckOption(options, uint256(Options.ClaimLockedCvxStake)));
         }
 
         //reset remove balances if we want to also stake/lock funds already in our wallet
@@ -212,14 +184,13 @@ contract ClaimZap {
         //lock upto given amount of crv and stake
         if (depositCrvMaxAmount > 0) {
             uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
-            crvBalance = MathUtil.min(crvBalance, depositCrvMaxAmount);
+            crvBalance = AuraMath.min(crvBalance, depositCrvMaxAmount);
             if (crvBalance > 0) {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
                 if (minAmountOut > 0) {
-                    //swaps from crv to cvxCrv on curve pool
-                    // TODO - change/generalise
-                    ISwapExchange(exchange).exchange(0, 1, crvBalance, minAmountOut);
+                    //swaps from crv to cvxCrv on balancer stable pool
+                    _swapCrvForCvxCrv(crvBalance, minAmountOut);
                 } else {
                     //deposit
                     ICvxCrvDeposit(crvDeposit).deposit(
@@ -237,17 +208,16 @@ contract ClaimZap {
         //stake up to given amount of cvx
         if (depositCvxMaxAmount > 0) {
             uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
-            cvxBalance = MathUtil.min(cvxBalance, depositCvxMaxAmount);
+            cvxBalance = AuraMath.min(cvxBalance, depositCvxMaxAmount);
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-                if (CheckOption(options, uint256(Options.LockCvx))) {
-                    ILockedCvx(locker).lock(msg.sender, cvxBalance, spendCvxAmount);
-                } else {
-                    //stake for msg.sender
-                    IBasicRewards(cvxRewards).stakeFor(msg.sender, cvxBalance);
-                }
+                IAuraLocker(locker).lock(msg.sender, cvxBalance);
             }
         }
+    }
+
+    function _swapCrvForCvxCrv(uint256 crvBalance, uint256 minAmountOut) internal {
+        // TODO:
     }
 }

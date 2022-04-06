@@ -68,6 +68,10 @@ interface IAuraLocker {
     function queueNewRewards(uint256 _rewards) external;
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
+
+    function getReward(address _account, bool _stake) external;
+
+    function getReward(address _account) external;
 }
 
 interface IExtraRewardsDistributor {
