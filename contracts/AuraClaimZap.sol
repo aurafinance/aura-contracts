@@ -31,7 +31,7 @@ interface ICvxCrvDeposit {
  *           - add option to lock cvx
  *           - add option use all funds in wallet
  */
-contract ClaimZap {
+contract AuraClaimZap {
     using SafeERC20 for IERC20;
     using AuraMath for uint256;
 
@@ -51,7 +51,8 @@ contract ClaimZap {
         ClaimLockedCvx, //2
         ClaimLockedCvxStake, //4
         LockCrvDeposit, //8
-        UseAllWalletFunds //16
+        UseAllWalletFunds, //16
+        LockCvx //32
     }
 
     /**
@@ -121,9 +122,9 @@ contract ClaimZap {
 
     /**
      * @notice Claim all the rewards
-     * @param rewardContracts       Array of addresses of LP token rewards
-     * @param extraRewardContracts  Array of addresses of extra rewards
-     * @param tokenRewardContracts  Array of addresses of token rewards e.g vlCvxExtraRewardDistribution
+     * @param rewardContracts       Array of addresses for LP token rewards
+     * @param extraRewardContracts  Array of addresses for extra rewards
+     * @param tokenRewardContracts  Array of addresses for token rewards e.g vlCvxExtraRewardDistribution
      * @param tokenRewardTokens     Array of token reward addresses to use with tokenRewardContracts
      * @param depositCrvMaxAmount   The max amount of CRV to deposit if converting to crvCvx
      * @param minAmountOut          The min amount out for crv:cvxCrv swaps if swapping. Set this to zero if you
@@ -229,7 +230,9 @@ contract ClaimZap {
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-                IAuraLocker(locker).lock(msg.sender, cvxBalance);
+                if (CheckOption(options, uint256(Options.LockCvx))) {
+                    IAuraLocker(locker).lock(msg.sender, cvxBalance);
+                }
             }
         }
     }
