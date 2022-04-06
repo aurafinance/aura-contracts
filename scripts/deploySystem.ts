@@ -206,7 +206,7 @@ async function waitForTx(tx: ContractTransaction, debug = false): Promise<Contra
 
 function getPoolAddress(utils, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
-    return utils.hexStripZeros(event.topics[1]);
+    return utils.hexZeroPad(utils.hexStripZeros(event.topics[1]), 20);
 }
 
 /**
@@ -634,7 +634,7 @@ async function deployPhase2(
     const initialCvxCrvStaking = await deployContract<AuraBalRewardPool>(
         new AuraBalRewardPool__factory(deployer),
         "AuraBalRewardPool",
-        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, ONE_WEEK],
+        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, DELAY],
         {},
         debug,
     );
