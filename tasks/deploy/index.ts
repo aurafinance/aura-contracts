@@ -1,1 +1,4 @@
-import "./core-system";
+import "./mainnet";
+import "./mainnet-crv";
+import "./kovan";
+import "./mainnet-config";

@@ -1,4 +1,4 @@
-import { simpleToExactAmount } from "./../test-utils/math";
+import { simpleToExactAmount } from "../test-utils/math";
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";

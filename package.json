@@ -22,7 +22,7 @@
         "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
         "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
         "test": "hardhat test",
-        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
+        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test",
         "typechain": "yarn hardhat typechain"
     },
     "dependencies": {
