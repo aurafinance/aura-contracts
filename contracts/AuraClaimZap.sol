@@ -122,7 +122,7 @@ contract AuraClaimZap {
     /**
      * @notice Use bitmask to check if option flag is set
      */
-    function CheckOption(uint256 _mask, uint256 _flag) internal pure returns (bool) {
+    function _checkOption(uint256 _mask, uint256 _flag) internal pure returns (bool) {
         return (_mask & (1 << _flag)) != 0;
     }
 
@@ -190,17 +190,17 @@ contract AuraClaimZap {
         uint256 options
     ) internal {
         //claim from cvxCrv rewards
-        if (CheckOption(options, uint256(Options.ClaimCvxCrv))) {
+        if (_checkOption(options, uint256(Options.ClaimCvxCrv))) {
             IBasicRewards(cvxCrvRewards).getReward(msg.sender, true);
         }
 
         //claim from locker
-        if (CheckOption(options, uint256(Options.ClaimLockedCvx))) {
-            IAuraLocker(locker).getReward(msg.sender, CheckOption(options, uint256(Options.ClaimLockedCvxStake)));
+        if (_checkOption(options, uint256(Options.ClaimLockedCvx))) {
+            IAuraLocker(locker).getReward(msg.sender, _checkOption(options, uint256(Options.ClaimLockedCvxStake)));
         }
 
         //reset remove balances if we want to also stake/lock funds already in our wallet
-        if (CheckOption(options, uint256(Options.UseAllWalletFunds))) {
+        if (_checkOption(options, uint256(Options.UseAllWalletFunds))) {
             removeCrvBalance = 0;
             removeCvxBalance = 0;
         }
@@ -212,7 +212,7 @@ contract AuraClaimZap {
             if (crvBalance > 0) {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
-                if (CheckOption(options, uint256(Options.SwapCrvCvxCrv))) {
+                if (_checkOption(options, uint256(Options.SwapCrvCvxCrv))) {
                     //swaps from crv to cvxCrv on balancer stable pool
                     _swapCrvForCvxCrv(crvBalance, minAmountOut);
                 } else {
@@ -220,7 +220,7 @@ contract AuraClaimZap {
                     ICvxCrvDeposit(crvDeposit).deposit(
                         crvBalance,
                         minAmountOut,
-                        CheckOption(options, uint256(Options.LockCrvDeposit)),
+                        _checkOption(options, uint256(Options.LockCrvDeposit)),
                         address(0)
                     );
                 }
@@ -238,7 +238,7 @@ contract AuraClaimZap {
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-                if (CheckOption(options, uint256(Options.LockCvx))) {
+                if (_checkOption(options, uint256(Options.LockCvx))) {
                     IAuraLocker(locker).lock(msg.sender, cvxBalance);
                 }
             }
