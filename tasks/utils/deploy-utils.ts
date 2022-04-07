@@ -1,14 +1,17 @@
+import { verifyEtherscan } from "./etherscan";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Contract, ContractFactory, ContractReceipt, ContractTransaction, Overrides } from "ethers";
 import { formatUnits } from "@ethersproject/units";
 import { ExtSystemConfig } from "../../scripts/deploySystem";
 
 export const deployContract = async <T extends Contract>(
+    hre: HardhatRuntimeEnvironment,
     contractFactory: ContractFactory,
     contractName = "Contract",
     constructorArgs: Array<unknown> = [],
     overrides: Overrides = {},
     debug = true,
-    waitForBlocks = 0,
+    waitForBlocks = undefined,
 ): Promise<T> => {
     const contract = (await contractFactory.deploy(...constructorArgs, overrides)) as T;
     if (debug) {
@@ -30,6 +33,12 @@ export const deployContract = async <T extends Contract>(
         );
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
+
+    await verifyEtherscan(hre, {
+        address: contract.address,
+        constructorArguments: constructorArgs,
+    });
+
     return contract;
 };
 
@@ -76,7 +85,11 @@ export function logContracts(contracts: { [key: string]: { address: string } }) 
     });
 }
 
-export async function waitForTx(tx: ContractTransaction, debug = false, waitForBlocks = 0): Promise<ContractReceipt> {
+export async function waitForTx(
+    tx: ContractTransaction,
+    debug = false,
+    waitForBlocks = undefined,
+): Promise<ContractReceipt> {
     const receipt = await tx.wait(waitForBlocks);
     if (debug) {
         console.log(`\nTRANSACTION: ${receipt.transactionHash}`);

@@ -51,7 +51,7 @@ describe("Full Deployment", () => {
     describe("Phase 1", () => {
         before(async () => {
             // PHASE 1
-            phase1 = await deployPhase1(deployer, config.addresses, false, true);
+            phase1 = await deployPhase1(hre, deployer, config.addresses, false, true);
 
             // POST-PHASE-1
             // Whitelist the VoterProxy in the Curve system

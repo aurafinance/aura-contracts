@@ -57,12 +57,12 @@ describe("VoterProxy", () => {
 
         deployer = accounts[0];
 
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -74,7 +74,7 @@ describe("VoterProxy", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
-        const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
@@ -112,6 +112,7 @@ describe("VoterProxy", () => {
 
         before(async () => {
             mockVoteStorage = await deployContract<MockVoteStorage>(
+                hre,
                 new MockVoteStorage__factory(deployer),
                 "MockVoteStorage",
                 [],
@@ -175,6 +176,7 @@ describe("VoterProxy", () => {
         it("can withdraw unprotected tokens", async () => {
             const deployerAddress = await deployer.getAddress();
             const randomToken = await deployContract<MockERC20>(
+                hre,
                 new MockERC20__factory(deployer),
                 "RandomToken",
                 ["randomToken", "randomToken", 18, deployerAddress, 10000000],

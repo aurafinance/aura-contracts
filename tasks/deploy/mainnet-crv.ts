@@ -80,7 +80,7 @@ task("deploy:mainnet:crv").setAction(async function (taskArguments: TaskArgument
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 1 ~~~
     // ~~~~~~~~~~~~~~~
-    const phase1 = await deployPhase1(deployer, curveSystem, false, true);
+    const phase1 = await deployPhase1(hre, deployer, curveSystem, false, true);
 
     // POST-PHASE-1
     // Whitelist the VoterProxy in the Curve system
@@ -130,6 +130,6 @@ task("deploy:mainnet:crv").setAction(async function (taskArguments: TaskArgument
     tx = await phase3.poolManager.connect(multisigSigner.signer).setProtectPool(false);
     await waitForTx(tx, true);
 
-    const phase4 = await deployPhase4(deployer, phase3, curveSystem, true);
+    const phase4 = await deployPhase4(hre, deployer, phase3, curveSystem, true);
     return phase4;
 });

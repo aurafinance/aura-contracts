@@ -113,13 +113,13 @@ const distroList = {
         {
             merkleRoot: ZERO_KEY,
             startDelay: ONE_WEEK,
-            length: ONE_WEEK.mul(3),
+            length: ONE_WEEK.mul(4),
             amount: simpleToExactAmount(2.5, 24),
         },
         {
             merkleRoot: ZERO_KEY,
             startDelay: ONE_WEEK.mul(26),
-            length: ONE_WEEK.mul(8),
+            length: ONE_WEEK.mul(26),
             amount: simpleToExactAmount(1, 24),
         },
     ],

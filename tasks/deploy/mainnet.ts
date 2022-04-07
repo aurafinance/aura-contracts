@@ -11,7 +11,7 @@ task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments,
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 1 ~~~
     // ~~~~~~~~~~~~~~~
-    const phase1 = await deployPhase1(deployer, config.addresses, false, true, 3);
+    const phase1 = await deployPhase1(hre, deployer, config.addresses, false, true, 3);
     logContracts(phase1 as unknown as { [key: string]: { address: string } });
 });
 task("deploy:mainnet:2").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -54,7 +54,7 @@ task("deploy:mainnet:4").setAction(async function (taskArguments: TaskArguments,
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 4 ~~~
     // ~~~~~~~~~~~~~~~
-    const phase4 = await deployPhase4(deployer, phase3, config.addresses, true, 3);
+    const phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, true, 3);
     logContracts(phase4 as unknown as { [key: string]: { address: string } });
 });
 

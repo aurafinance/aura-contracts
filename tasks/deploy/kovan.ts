@@ -28,6 +28,7 @@ import {
     CurveVoterProxy__factory,
     ERC20__factory,
     BaseRewardPool__factory,
+    MockERC20,
 } from "../../types/generated";
 import { ONE_DAY, ZERO_ADDRESS } from "../../test-utils/constants";
 
@@ -62,7 +63,7 @@ task("deploy:kovan:1").setAction(async function (taskArguments: TaskArguments, h
     const deployerAddress = await deployer.getAddress();
     console.log(deployerAddress);
 
-    const phase1 = await deployPhase1(deployer, kovanBalancerConfig, false, true, 3);
+    const phase1 = await deployPhase1(hre, deployer, kovanBalancerConfig, false, true, 3);
     console.log(phase1.voterProxy.address);
 });
 
@@ -139,6 +140,18 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     await waitForTx(tx, true, 3);
 });
 
+task("deploy:kovan:mocka").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    await deployContract<MockERC20>(
+        hre,
+        new MockERC20__factory(deployer),
+        "MockCRV",
+        ["sdfsdf", "sdfsdf", 18, await deployer.getAddress(), 10000000],
+        {},
+        true,
+    );
+});
+
 task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const deployerAddress = await deployer.getAddress();
@@ -163,11 +176,12 @@ task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 1 ~~~
     // ~~~~~~~~~~~~~~~
-    const phase1 = await deployPhase1(deployer, kovanBalancerConfig, false, true);
+    const phase1 = await deployPhase1(hre, deployer, kovanBalancerConfig, false, true);
 
     // POST-PHASE-1
     // Whitelist the VoterProxy in the Curve system
     const walletChecker = await deployContract<MockWalletChecker>(
+        hre,
         new MockWalletChecker__factory(deployer),
         "MockWalletChecker",
         [],
@@ -244,6 +258,6 @@ async function deployKovan234(
     tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
     await waitForTx(tx, true, 3);
 
-    const phase4 = await deployPhase4(deployer, phase3, kovanBalancerConfig, true, 3);
+    const phase4 = await deployPhase4(hre, deployer, phase3, kovanBalancerConfig, true, 3);
     return phase4;
 }

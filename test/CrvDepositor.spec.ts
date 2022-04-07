@@ -37,11 +37,11 @@ describe("CrvDepositor", () => {
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
 
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,

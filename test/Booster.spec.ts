@@ -40,11 +40,11 @@ describe("Booster", () => {
     let aliceAddress: string;
 
     const setup = async () => {
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[4], accounts[5], accounts[6]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -56,7 +56,9 @@ describe("Booster", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
-        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.nativeTokenDistribution.address);
+        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.feeDistribution.address);
+        contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         ({ booster, boosterOwner } = contracts);
 
