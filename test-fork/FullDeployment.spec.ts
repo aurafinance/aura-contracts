@@ -2,7 +2,7 @@ import { simpleToExactAmount } from "../test-utils/math";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
 import { ICurveVoteEscrow__factory, MockERC20__factory, MockWalletChecker__factory } from "../types/generated";
-import { getSigner, waitForTx } from "../tasks/utils";
+import { waitForTx } from "../tasks/utils";
 import { impersonate, impersonateAccount } from "../test-utils";
 import { Signer } from "ethers";
 import { deployPhase1, deployPhase2, Phase1Deployed, Phase2Deployed } from "../scripts/deploySystem";
@@ -27,11 +27,9 @@ describe("Full Deployment", () => {
                 },
             ],
         });
-
-        deployer = await getSigner(hre);
-        deployerAddress = await deployer.getAddress();
-
+        deployerAddress = "0xDECADE0000000000000000000000000000000420";
         await setupBalances();
+        deployer = await impersonate(deployerAddress);
     });
 
     const setupBalances = async () => {
@@ -46,6 +44,12 @@ describe("Full Deployment", () => {
         const weth = await MockERC20__factory.connect(config.addresses.weth, wethWhaleSigner.signer);
         tx = await weth.transfer(deployerAddress, simpleToExactAmount(100));
         await waitForTx(tx, true);
+
+        const ethWhale = await impersonate(weth.address);
+        await ethWhale.sendTransaction({
+            to: deployerAddress,
+            value: simpleToExactAmount(1),
+        });
     };
 
     describe("Phase 1", () => {
