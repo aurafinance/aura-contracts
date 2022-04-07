@@ -33,14 +33,6 @@ interface IVault {
         ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
     }
 
-    enum Options {
-        ClaimCvxCrv, //1
-        ClaimLockedCvx, //2
-        ClaimLockedCvxStake, //4
-        LockCrvDeposit, //8
-        UseAllWalletFunds //16
-    }
-
     enum SwapKind {
         GIVEN_IN,
         GIVEN_OUT

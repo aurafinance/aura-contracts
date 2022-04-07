@@ -975,7 +975,7 @@ async function deployPhase4(
     const deployer = signer;
 
     const { token, gauges } = config;
-    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, crvDepositor, poolManager, cvxCrvBpt } = deployment;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, poolManager, cvxCrvBpt, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
     // -----------------------------
@@ -991,7 +991,7 @@ async function deployPhase4(
             token,
             cvx.address,
             cvxCrv.address,
-            crvDepositor.address,
+            crvDepositorWrapper.address,
             cvxCrvRewards.address,
             cvxLocker.address,
             config.balancerVault,

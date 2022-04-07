@@ -17,7 +17,12 @@ interface IBasicRewards {
 }
 
 interface ICvxCrvDeposit {
-    function deposit(uint256, bool) external;
+    function deposit(
+        uint256,
+        uint256,
+        bool,
+        address
+    ) external;
 }
 
 /**
@@ -52,7 +57,8 @@ contract AuraClaimZap {
         ClaimLockedCvxStake, //4
         LockCrvDeposit, //8
         UseAllWalletFunds, //16
-        LockCvx //32
+        LockCvx, //32
+        SwapCrvCvxCrv // 64
     }
 
     /**
@@ -206,17 +212,19 @@ contract AuraClaimZap {
             if (crvBalance > 0) {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
-                if (minAmountOut > 0) {
+                if (CheckOption(options, uint256(Options.SwapCrvCvxCrv))) {
                     //swaps from crv to cvxCrv on balancer stable pool
                     _swapCrvForCvxCrv(crvBalance, minAmountOut);
                 } else {
                     //deposit
                     ICvxCrvDeposit(crvDeposit).deposit(
                         crvBalance,
-                        CheckOption(options, uint256(Options.LockCrvDeposit))
+                        minAmountOut,
+                        CheckOption(options, uint256(Options.LockCrvDeposit)),
+                        address(0)
                     );
                 }
-                //get cvxcrv amount
+
                 uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
                 //stake for msg.sender
                 IBasicRewards(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalance);

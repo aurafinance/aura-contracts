@@ -45,12 +45,42 @@ contract MockBalancerVault {
         bool fromInternalBalance;
     }
 
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    struct SingleSwap {
+        bytes32 poolId;
+        SwapKind kind;
+        IAsset assetIn;
+        IAsset assetOut;
+        uint256 amount;
+        bytes userData;
+    }
+
+    struct FundManagement {
+        address sender;
+        bool fromInternalBalance;
+        address payable recipient;
+        bool toInternalBalance;
+    }
+
     address public pool;
 
     address public poolToken;
 
+    address public tokenA;
+
+    address public tokenB;
+
     constructor(address _poolToken) {
         poolToken = _poolToken;
+    }
+
+    function setTokens(address _tokenA, address _tokenB) external {
+        tokenA = _tokenA;
+        tokenB = _tokenB;
     }
 
     function getPool(bytes32) external view returns (address, PoolSpecialization) {
@@ -66,5 +96,24 @@ contract MockBalancerVault {
         uint256 amount = request.maxAmountsIn[0];
         uint256 price = MockBalancerPoolToken(poolToken).price();
         MockBalancerPoolToken(poolToken).mint(recipient, (amount * 1e18) / price);
+    }
+
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory,
+        uint256, /* limit */
+        uint256 /* deadline */
+    ) external returns (uint256 amountCalculated) {
+        require(address(singleSwap.assetOut) == tokenA || address(singleSwap.assetOut) == tokenB, "!token");
+
+        if (address(singleSwap.assetOut) == tokenA) {
+            // send tokenA
+            IERC20(tokenB).transferFrom(msg.sender, address(this), singleSwap.amount);
+            IERC20(tokenA).transfer(msg.sender, singleSwap.amount);
+        } else if (address(singleSwap.assetOut) == tokenB) {
+            // send tokenB
+            IERC20(tokenA).transferFrom(msg.sender, address(this), singleSwap.amount);
+            IERC20(tokenB).transfer(msg.sender, singleSwap.amount);
+        }
     }
 }
