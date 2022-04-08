@@ -181,7 +181,8 @@ contract AuraClaimZap {
      * @param removeCvxBalance    cvxBalance to ignore and not redeposit (starting Cvx balance)
      * @param options             see claimRewards
      */
-    function _claimExtras(
+    // prettier-ignore
+    function _claimExtras( // solhint-disable-line 
         uint256 depositCrvMaxAmount,
         uint256 minAmountOut,
         uint256 depositCvxMaxAmount,
