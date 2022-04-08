@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.11;
 
-import "./AuraMath.sol";
+import { AuraMath } from "./AuraMath.sol";
 import "./Interfaces.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
@@ -43,7 +43,7 @@ contract AuraClaimZap {
     address public immutable crv;
     address public immutable cvx;
     address public immutable cvxCrv;
-    address public immutable crvDeposit;
+    address public immutable crvDepositWrapper;
     address public immutable cvxCrvRewards;
     address public immutable locker;
     address public immutable owner;
@@ -62,20 +62,20 @@ contract AuraClaimZap {
     }
 
     /**
-     * @param _crv              CRV token (0xD533a949740bb3306d119CC777fa900bA034cd52);
-     * @param _cvx              CVX token (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
-     * @param _cvxCrv           cvxCRV token (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
-     * @param _crvDeposit       crvDeposit (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
-     * @param _cvxCrvRewards    cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
-     * @param _locker           vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
-     * @param _vault            Balancer vault contract
-     * @param _crvCvxCrvPoolId  Balancer pool ID for crv:crvCvx
+     * @param _crv                CRV token (0xD533a949740bb3306d119CC777fa900bA034cd52);
+     * @param _cvx                CVX token (0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+     * @param _cvxCrv             cvxCRV token (0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7);
+     * @param _crvDepositWrapper  crvDepositWrapper (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
+     * @param _cvxCrvRewards      cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
+     * @param _locker             vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
+     * @param _vault              Balancer vault contract
+     * @param _crvCvxCrvPoolId    Balancer pool ID for crv:crvCvx
      */
     constructor(
         address _crv,
         address _cvx,
         address _cvxCrv,
-        address _crvDeposit,
+        address _crvDepositWrapper,
         address _cvxCrvRewards,
         address _locker,
         address _vault,
@@ -84,7 +84,7 @@ contract AuraClaimZap {
         crv = _crv;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
-        crvDeposit = _crvDeposit;
+        crvDepositWrapper = _crvDepositWrapper;
         cvxCrvRewards = _cvxCrvRewards;
         locker = _locker;
         vault = _vault;
@@ -106,8 +106,8 @@ contract AuraClaimZap {
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
 
-        IERC20(crv).safeApprove(crvDeposit, 0);
-        IERC20(crv).safeApprove(crvDeposit, type(uint256).max);
+        IERC20(crv).safeApprove(crvDepositWrapper, 0);
+        IERC20(crv).safeApprove(crvDepositWrapper, type(uint256).max);
 
         IERC20(crv).safeApprove(vault, 0);
         IERC20(crv).safeApprove(vault, type(uint256).max);
@@ -218,7 +218,7 @@ contract AuraClaimZap {
                     _swapCrvForCvxCrv(crvBalance, minAmountOut);
                 } else {
                     //deposit
-                    ICvxCrvDeposit(crvDeposit).deposit(
+                    ICvxCrvDeposit(crvDepositWrapper).deposit(
                         crvBalance,
                         minAmountOut,
                         _checkOption(options, uint256(Options.LockCrvDeposit)),
@@ -262,7 +262,7 @@ contract AuraClaimZap {
             ""
         );
 
-        IVault.FundManagement memory funds = IVault.FundManagement(msg.sender, false, payable(msg.sender), false);
+        IVault.FundManagement memory funds = IVault.FundManagement(address(this), false, payable(address(this)), false);
 
         uint256 deadline = block.timestamp + 60 * 15;
 
