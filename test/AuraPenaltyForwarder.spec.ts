@@ -1,26 +1,27 @@
-import hre, { ethers } from "hardhat";
-import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
+import { Signer } from "ethers";
+import hre, { ethers } from "hardhat";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraBalRewardPool, ERC20 } from "../types/generated";
-import { ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { getTimestamp } from "../test-utils/time";
-import { BN } from "../test-utils/math";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
+import { ONE_WEEK } from "../test-utils/constants";
+import { impersonateAccount } from "../test-utils/fork";
+import { BN, simpleToExactAmount } from "../test-utils/math";
+import { getTimestamp, increaseTime } from "../test-utils/time";
+import { AuraPenaltyForwarder, AuraToken, ExtraRewardsDistributor } from "../types/generated";
 
-// TODO - add these tests
+const safeInfinity = BN.from(2).pow(256).sub(1);
 describe("AuraPenaltyForwarder", () => {
     let accounts: Signer[];
-
     let contracts: SystemDeployed;
-    let rewards: AuraBalRewardPool;
-    let cvxCrv: ERC20;
-
     let deployer: Signer;
-
     let alice: Signer;
     let aliceAddress: string;
-    let initialBal: BN;
+    let aliceInitialBalance: BN;
+    let distributor: ExtraRewardsDistributor;
+    let cvx: AuraToken;
+
+    // Testing contract
+    let penaltyForwarder: AuraPenaltyForwarder;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -46,25 +47,69 @@ describe("AuraPenaltyForwarder", () => {
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
+        penaltyForwarder = contracts.penaltyForwarder;
+        cvx = contracts.cvx;
+        distributor = contracts.extraRewardsDistributor.connect(alice);
 
-        rewards = contracts.initialCvxCrvStaking.connect(alice);
-        cvxCrv = contracts.cvxCrv.connect(alice) as ERC20;
-
-        initialBal = await mocks.crvBpt.balanceOf(await deployer.getAddress());
-        await mocks.crvBpt.transfer(aliceAddress, initialBal);
-        await mocks.crvBpt.connect(alice).approve(contracts.crvDepositor.address, initialBal);
-        await contracts.crvDepositor.connect(alice)["deposit(uint256,bool,address)"](initialBal, true, ZERO_ADDRESS);
+        const operatorAccount = await impersonateAccount(contracts.booster.address);
+        await cvx.connect(operatorAccount.signer).mint(operatorAccount.address, simpleToExactAmount(100000, 18));
+        await cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        aliceInitialBalance = await cvx.balanceOf(aliceAddress);
     });
 
     it("initial configuration is correct", async () => {
-        expect(await rewards.stakingToken()).eq(cvxCrv.address);
-        expect(await rewards.rewardToken()).eq(contracts.cvx.address);
-        expect(await rewards.rewardManager()).eq(await deployer.getAddress());
-        expect(await rewards.auraLocker()).eq(contracts.cvxLocker.address);
-        expect(await rewards.penaltyForwarder()).eq(contracts.penaltyForwarder.address);
         const currentTime = await getTimestamp();
-        expect(await rewards.startTime()).gt(currentTime.add(ONE_DAY.mul(6)));
-        expect(await rewards.startTime()).lt(currentTime.add(ONE_DAY.mul(8)));
-        expect(await contracts.cvx.balanceOf(rewards.address)).gt(0);
+        expect(await penaltyForwarder.distributor(), "distributor").to.eq(distributor.address);
+        expect(await penaltyForwarder.token(), "token").to.eq(cvx.address);
+        expect(await penaltyForwarder.distributionDelay(), "distributionDelay").to.eq(ONE_WEEK.mul(7).div(2));
+        expect(await penaltyForwarder.lastDistribution(), "lastDistribution").to.lte(currentTime);
+    });
+    it("forwarder cvx allowance is correct", async () => {
+        expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(safeInfinity);
+    });
+    describe("forward", async () => {
+        it("fails if the distribution delay is not completed", async () => {
+            const currentTime = await getTimestamp();
+            const lastDistribution = await penaltyForwarder.lastDistribution();
+            const distributionDelay = await penaltyForwarder.distributionDelay();
+            expect(currentTime, "lastDistribution").to.lte(lastDistribution.add(distributionDelay));
+            await expect(penaltyForwarder.forward(), "fails due to ").to.be.revertedWith("!elapsed");
+        });
+        it("fails if the balance of the forwarder is 0", async () => {
+            // increase time so that the distribution delay is completed
+            await increaseTime(await penaltyForwarder.distributionDelay());
+            const penaltyForwarderBalance = await cvx.balanceOf(penaltyForwarder.address);
+            expect(penaltyForwarderBalance, "penalty forwarder balance").to.eq(0);
+
+            await expect(penaltyForwarder.forward(), "empty balance").to.be.revertedWith("!empty");
+        });
+
+        it("should forward all cvx balance to the distributor", async () => {
+            const cvxAmount = aliceInitialBalance.div(2);
+            // Locks some CVX in locker to avoid:
+            // Error: VM Exception while processing transaction: reverted with panic code 0x12 (Division or modulo division by zero)
+            // ExtraRewardsDistributor._addReward (contracts/ExtraRewardsDistributor.sol:97
+            await cvx.connect(alice).approve(contracts.cvxLocker.address, cvxAmount);
+            await contracts.cvxLocker.connect(alice).lock(aliceAddress, cvxAmount);
+
+            // Sends some cvx to the forwarder
+            await cvx.connect(alice).approve(penaltyForwarder.address, cvxAmount);
+            await cvx.connect(alice).transfer(penaltyForwarder.address, cvxAmount);
+            const distributorBalanceBefore = await cvx.balanceOf(distributor.address);
+            const penaltyForwarderBalanceBefore = await cvx.balanceOf(penaltyForwarder.address);
+
+            // Increase time to avoid dividing by zero at ExtraRewardsDistributor._addReward , auraLocker.totalSupplyAtEpoch
+            await increaseTime(ONE_WEEK);
+
+            expect(penaltyForwarderBalanceBefore, "penalty forwarder balance").to.gt(0);
+            // Test
+            const tx = await penaltyForwarder.forward();
+            // Verify events, storage change, balance, etc.
+            await expect(tx).to.emit(penaltyForwarder, "Forwarded").withArgs(cvxAmount);
+            const distributorBalanceAfter = await cvx.balanceOf(distributor.address);
+            const penaltyForwarderBalanceAfter = await cvx.balanceOf(penaltyForwarder.address);
+            expect(penaltyForwarderBalanceAfter, "penalty forwarder balance").to.eq(0);
+            expect(distributorBalanceAfter, "distributor balance").to.eq(distributorBalanceBefore.add(cvxAmount));
+        });
     });
 });
