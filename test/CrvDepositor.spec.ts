@@ -12,7 +12,7 @@ import {
     CrvDepositorWrapper,
     BaseRewardPool,
 } from "../types/generated";
-import { increaseTimeTo, getTimestamp, increaseTime } from "../test-utils/time";
+import { getTimestamp, increaseTime } from "../test-utils/time";
 import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { simpleToExactAmount } from "./../test-utils/math";
 
@@ -209,32 +209,6 @@ describe("CrvDepositor", () => {
 
             expect(lockTimeDelta.toString()).to.equal("0");
             expect(lockAmountDelta.toString()).to.equal("0");
-        });
-
-        it("migrate only callable by dao", async () => {
-            const tx = crvDepositor.connect(accounts[5]).migrate(aliceAddress);
-            await expect(tx).to.revertedWith("!auth");
-        });
-
-        it("migrate to external address", async () => {
-            const bob = accounts[5];
-            const bobAddress = await bob.getAddress();
-
-            const daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
-            const lockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
-            await increaseTimeTo(lockTime.add(1));
-
-            const veBalance = await mocks.votingEscrow.balanceOf(voterProxy.address);
-            const voteProxyCrvBalance = await mocks.crvBpt.balanceOf(voterProxy.address);
-
-            const crvBalanceBefore = await mocks.crvBpt.balanceOf(bobAddress);
-            const tx = await crvDepositor.connect(daoMultisig).migrate(bobAddress);
-            await tx.wait();
-            const crvBalanceAfter = await mocks.crvBpt.balanceOf(bobAddress);
-
-            const crvDelta = crvBalanceAfter.sub(crvBalanceBefore);
-
-            expect(crvDelta).to.equal(veBalance.add(voteProxyCrvBalance));
         });
     });
 });

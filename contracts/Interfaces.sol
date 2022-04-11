@@ -33,6 +33,34 @@ interface IVault {
         ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
     }
 
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    struct SingleSwap {
+        bytes32 poolId;
+        SwapKind kind;
+        IAsset assetIn;
+        IAsset assetOut;
+        uint256 amount;
+        bytes userData;
+    }
+
+    struct FundManagement {
+        address sender;
+        bool fromInternalBalance;
+        address payable recipient;
+        bool toInternalBalance;
+    }
+
+    struct JoinPoolRequest {
+        IAsset[] assets;
+        uint256[] maxAmountsIn;
+        bytes userData;
+        bool fromInternalBalance;
+    }
+
     function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
 
     function joinPool(
@@ -42,12 +70,12 @@ interface IVault {
         JoinPoolRequest memory request
     ) external payable;
 
-    struct JoinPoolRequest {
-        IAsset[] assets;
-        uint256[] maxAmountsIn;
-        bytes userData;
-        bool fromInternalBalance;
-    }
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    ) external returns (uint256 amountCalculated);
 }
 
 interface IAsset {
@@ -68,6 +96,10 @@ interface IAuraLocker {
     function queueNewRewards(uint256 _rewards) external;
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
+
+    function getReward(address _account, bool _stake) external;
+
+    function getReward(address _account) external;
 }
 
 interface IExtraRewardsDistributor {

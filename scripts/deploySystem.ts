@@ -7,8 +7,8 @@ import {
     MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
     BoosterOwner,
-    ClaimZap__factory,
-    ClaimZap,
+    AuraClaimZap__factory,
+    AuraClaimZap,
     BalLiquidityProvider,
     BalLiquidityProvider__factory,
     Booster__factory,
@@ -187,13 +187,15 @@ interface Phase2Deployed extends Phase1Deployed {
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
     extraRewardsDistributor: ExtraRewardsDistributor;
+    poolManagerProxy: PoolManagerProxy;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
     pool8020Bpt: BalancerPoolDeployed;
 }
 interface SystemDeployed extends Phase3Deployed {
-    claimZap: ClaimZap;
+    claimZap: AuraClaimZap;
     feeCollector: ClaimFeesHelper;
 }
 
@@ -914,6 +916,8 @@ async function deployPhase2(
         balLiquidityProvider,
         penaltyForwarder,
         extraRewardsDistributor,
+        poolManagerProxy,
+        poolManagerSecondaryProxy,
     };
 }
 
@@ -1011,7 +1015,7 @@ async function deployPhase4(
     const deployer = signer;
 
     const { token, gauges, feeDistribution, nativeTokenDistribution } = config;
-    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, crvDepositor, poolManager } = deployment;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, cvxCrvBpt, poolManager, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
     //        daoMultisig.setFeeInfo(bbaUSD distro)
@@ -1022,19 +1026,19 @@ async function deployPhase4(
     //     - All initial gauges
     // -----------------------------
 
-    const claimZap = await deployContract<ClaimZap>(
+    const claimZap = await deployContract<AuraClaimZap>(
         hre,
-        new ClaimZap__factory(deployer),
-        "ClaimZap",
+        new AuraClaimZap__factory(deployer),
+        "AuraClaimZap",
         [
             token,
             cvx.address,
             cvxCrv.address,
-            crvDepositor.address,
+            crvDepositorWrapper.address,
             cvxCrvRewards.address,
             cvxLocker.address,
-            DEAD_ADDRESS,
-            cvxLocker.address,
+            config.balancerVault,
+            cvxCrvBpt.poolId,
         ],
         {},
         debug,

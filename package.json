@@ -24,7 +24,8 @@
         "test": "hardhat test",
         "test:fork": "yarn hardhat --config hardhat-fork.config.ts test",
         "test:fork:all": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
-        "typechain": "yarn hardhat typechain"
+        "typechain": "yarn hardhat typechain",
+        "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
         "convex-platform": "file:convex-platform/contracts"

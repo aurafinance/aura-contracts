@@ -19,6 +19,8 @@ import {
     ConvexMasterChef__factory,
     ExtraRewardsDistributor__factory,
     PoolManagerV3__factory,
+    PoolManagerProxy__factory,
+    PoolManagerSecondaryProxy__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -176,6 +178,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     crvDepositor: await CrvDepositor__factory.connect("", deployer),
     crvDepositorWrapper: await CrvDepositorWrapper__factory.connect("", deployer),
     poolManager: await PoolManagerV3__factory.connect("", deployer),
+    poolManagerProxy: await PoolManagerProxy__factory.connect("", deployer),
+    poolManagerSecondaryProxy: await PoolManagerSecondaryProxy__factory.connect("", deployer),
     cvxLocker: await AuraLocker__factory.connect("", deployer),
     cvxStakingProxy: await AuraStakingProxy__factory.connect("", deployer),
     chef: await ConvexMasterChef__factory.connect("", deployer),
