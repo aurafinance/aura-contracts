@@ -21,13 +21,18 @@ import {
     PoolManagerV3__factory,
     PoolManagerProxy__factory,
     PoolManagerSecondaryProxy__factory,
+    RewardFactory__factory,
+    StashFactoryV2__factory,
+    TokenFactory__factory,
+    ProxyFactory__factory,
+    ArbitratorVault__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
-import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
+import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 
 const addresses: ExtSystemConfig = {
-    token: "0xba100000625a3754423978a60c9317c58a424e3d",
+    token: "0xba100000625a3754423978a60c9317c58a424e3D",
     tokenBpt: "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
     tokenWhale: "0x849d52316331967b6ff1198e5e32a0eb168d039d",
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
@@ -82,6 +87,7 @@ const addresses: ExtSystemConfig = {
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10a19e7ee7d7f8a52822f6817de8ea18204f2e4f", // TODO - define treasury
+    keeper: DEAD_ADDRESS, // TODO - define keeper
 };
 
 const naming = {
@@ -168,6 +174,13 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     minter: await AuraMinter__factory.connect("", deployer),
     booster: await Booster__factory.connect("", deployer),
     boosterOwner: await BoosterOwner__factory.connect("", deployer),
+    factories: {
+        rewardFactory: await RewardFactory__factory.connect("", deployer),
+        stashFactory: await StashFactoryV2__factory.connect("", deployer),
+        tokenFactory: await TokenFactory__factory.connect("", deployer),
+        proxyFactory: await ProxyFactory__factory.connect("", deployer),
+    },
+    arbitratorVault: await ArbitratorVault__factory.connect("", deployer),
     cvxCrv: await CvxCrvToken__factory.connect("", deployer),
     cvxCrvBpt: {
         poolId: "",

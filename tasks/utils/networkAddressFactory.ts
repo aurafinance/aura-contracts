@@ -33,7 +33,10 @@ export const getChainAddress = (contractName: ContractNames, chain: Chain): stri
 };
 
 export const getChain = (hre: HardhatRuntime = {}): Chain => {
-    if (hre?.network?.name === "mainnet" || hre?.hardhatArguments?.config === "tasks-fork.config.ts") {
+    if (
+        hre?.network?.name === "mainnet" ||
+        ["tasks-fork.config.ts", "hardhat-fork.config.ts"].includes(hre?.hardhatArguments.config)
+    ) {
         return Chain.mainnet;
     }
     if (hre?.network?.name === "rinkeby") {

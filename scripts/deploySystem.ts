@@ -131,6 +131,7 @@ interface ExtSystemConfig {
     weth: string;
     wethWhale?: string;
     treasury?: string;
+    keeper?: string;
 }
 
 interface NamingConfig {
@@ -166,11 +167,19 @@ interface Phase1Deployed {
     voterProxy: CurveVoterProxy;
 }
 
+interface Factories {
+    rewardFactory: RewardFactory;
+    stashFactory: StashFactoryV2;
+    tokenFactory: TokenFactory;
+    proxyFactory: ProxyFactory;
+}
 interface Phase2Deployed extends Phase1Deployed {
     cvx: AuraToken;
     minter: AuraMinter;
     booster: Booster;
     boosterOwner: BoosterOwner;
+    factories: Factories;
+    arbitratorVault: ArbitratorVault;
     cvxCrv: CvxCrvToken;
     cvxCrvBpt: BalancerPoolDeployed;
     cvxCrvRewards: BaseRewardPool;
@@ -178,6 +187,8 @@ interface Phase2Deployed extends Phase1Deployed {
     crvDepositor: CrvDepositor;
     crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
+    poolManagerProxy: PoolManagerProxy;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
     chef: ConvexMasterChef;
@@ -187,8 +198,6 @@ interface Phase2Deployed extends Phase1Deployed {
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
     extraRewardsDistributor: ExtraRewardsDistributor;
-    poolManagerProxy: PoolManagerProxy;
-    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -539,6 +548,17 @@ async function deployPhase2(
     tx = await cvxStakingProxy.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
+    if (!!config.keeper && config.keeper != ZERO_ADDRESS) {
+        tx = await cvxStakingProxy.setKeeper(config.keeper);
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+
+    tx = await cvxStakingProxy.setPendingOwner(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await cvxStakingProxy.applyPendingOwner();
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await voterProxy.setOperator(booster.address);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -660,7 +680,7 @@ async function deployPhase2(
         hre,
         new AuraBalRewardPool__factory(deployer),
         "AuraBalRewardPool",
-        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, DELAY],
+        [cvxCrv.address, cvx.address, multisigs.treasuryMultisig, cvxLocker.address, penaltyForwarder.address, DELAY],
         {},
         debug,
         waitForBlocks,
@@ -900,6 +920,13 @@ async function deployPhase2(
         minter,
         booster,
         boosterOwner,
+        factories: {
+            rewardFactory,
+            stashFactory,
+            tokenFactory,
+            proxyFactory,
+        },
+        arbitratorVault,
         cvxCrv,
         cvxCrvBpt,
         cvxCrvRewards,
