@@ -1,11 +1,19 @@
-import { getTimestamp } from "./../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
 import { ICurveVoteEscrow__factory, MockERC20__factory, MockWalletChecker__factory } from "../types/generated";
 import { waitForTx } from "../tasks/utils";
-import { impersonate, impersonateAccount, ZERO_ADDRESS, BN, ONE_YEAR, ONE_WEEK } from "../test-utils";
+import {
+    impersonate,
+    impersonateAccount,
+    ZERO_ADDRESS,
+    BN,
+    ONE_YEAR,
+    ONE_WEEK,
+    assertBNClosePercent,
+} from "../test-utils";
 import { Signer } from "ethers";
+import { getTimestamp, latestBlock } from "./../test-utils/time";
 import { deployPhase1, deployPhase2, Phase1Deployed, Phase2Deployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 
@@ -242,38 +250,87 @@ describe("Full Deployment", () => {
                 expect(await crvDepositor.incentiveCrv()).eq(0);
                 expect(await crvDepositor.cooldown()).eq(false);
             });
-            // it("crvDepositorWrapper has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("poolManager has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("poolManagerProxy has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("poolManagerSecondaryProxy has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("Aura Locker has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("Aura staking proxy has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("Aura staking proxy has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
-            // it("Chef has correct config", async () => {
-            //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
-            //     const { multisigs } = config;
-            // });
+            it("crvDepositorWrapper has correct config", async () => {
+                const { crvDepositorWrapper, crvDepositor } = phase2;
+                const { addresses } = config;
+                expect(await crvDepositorWrapper.crvDeposit()).eq(crvDepositor.address);
+                expect(await crvDepositorWrapper.BALANCER_VAULT()).eq(addresses.balancerVault);
+                expect(await crvDepositorWrapper.BAL()).eq(addresses.token);
+                expect(await crvDepositorWrapper.WETH()).eq(addresses.weth);
+                expect(await crvDepositorWrapper.BAL_ETH_POOL_ID()).eq(addresses.balancerPoolId);
+            });
+            it("poolManagerProxy has correct config", async () => {
+                const { booster, poolManagerProxy, poolManagerSecondaryProxy } = phase2;
+                const { multisigs } = config;
+                expect(await poolManagerProxy.pools()).eq(booster.address);
+                expect(await poolManagerProxy.owner()).eq(multisigs.daoMultisig);
+                expect(await poolManagerProxy.operator()).eq(poolManagerSecondaryProxy.address);
+            });
+            it("poolManagerSecondaryProxy has correct config", async () => {
+                const { booster, poolManagerProxy, poolManagerSecondaryProxy, poolManager } = phase2;
+                const { multisigs, addresses } = config;
+                expect(await poolManagerSecondaryProxy.gaugeController()).eq(addresses.gaugeController);
+                expect(await poolManagerSecondaryProxy.pools()).eq(poolManagerProxy.address);
+                expect(await poolManagerSecondaryProxy.booster()).eq(booster.address);
+                expect(await poolManagerSecondaryProxy.owner()).eq(multisigs.daoMultisig);
+                expect(await poolManagerSecondaryProxy.operator()).eq(poolManager.address);
+                expect(await poolManagerSecondaryProxy.isShutdown()).eq(false);
+            });
+            it("poolManager has correct config", async () => {
+                const { poolManagerSecondaryProxy, poolManager } = phase2;
+                const { multisigs, addresses } = config;
+                expect(await poolManager.pools()).eq(poolManagerSecondaryProxy.address);
+                expect(await poolManager.gaugeController()).eq(addresses.gaugeController);
+                expect(await poolManager.operator()).eq(multisigs.daoMultisig);
+                expect(await poolManager.protectAddPool()).eq(true);
+            });
+            it("Aura Locker has correct config", async () => {
+                const { cvxLocker, cvxCrv, cvxStakingProxy, cvx, cvxCrvRewards } = phase2;
+                const { naming, multisigs } = config;
+                expect(await cvxLocker.rewardTokens(0)).eq(cvxCrv.address);
+                expect(await cvxLocker.rewardTokens(1)).eq(ZERO_ADDRESS);
+                expect(await cvxLocker.queuedCvxCrvRewards()).eq(0);
+                expect(await cvxLocker.rewardDistributors(cvxCrv.address, cvxStakingProxy.address)).eq(true);
+                expect(await cvxLocker.lockedSupply()).eq(0);
+                expect(await cvxLocker.stakingToken()).eq(cvx.address);
+                expect(await cvxLocker.cvxCrv()).eq(cvxCrv.address);
+                expect(await cvxLocker.cvxcrvStaking()).eq(cvxCrvRewards.address);
+                expect(await cvxLocker.name()).eq(naming.vlCvxName);
+                expect(await cvxLocker.symbol()).eq(naming.vlCvxSymbol);
+                expect(await cvxLocker.owner()).eq(multisigs.daoMultisig);
+            });
+            it("Aura staking proxy has correct config", async () => {
+                const { cvxLocker, cvxCrv, cvxStakingProxy, cvx, crvDepositorWrapper } = phase2;
+                const { multisigs, addresses } = config;
+                expect(await cvxStakingProxy.crv()).eq(addresses.token);
+                expect(await cvxStakingProxy.cvx()).eq(cvx.address);
+                expect(await cvxStakingProxy.cvxCrv()).eq(cvxCrv.address);
+                expect(await cvxStakingProxy.keeper()).eq(!addresses.keeper ? ZERO_ADDRESS : addresses.keeper);
+                expect(await cvxStakingProxy.crvDepositorWrapper()).eq(crvDepositorWrapper.address);
+                expect(await cvxStakingProxy.outputBps()).eq(9975);
+                expect(await cvxStakingProxy.rewards()).eq(cvxLocker.address);
+                expect(await cvxStakingProxy.owner()).eq(multisigs.daoMultisig);
+                expect(await cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
+            });
+            it("Chef has correct config", async () => {
+                const { cvx, cvxCrvBpt, chef } = phase2;
+                const { distroList } = config;
+                expect(await chef.cvx()).eq(cvx.address);
+                const totalBlocks = BN.from(7000).mul(365).mul(4);
+                const cvxPerBlock = distroList.lpIncentives.div(totalBlocks);
+                assertBNClosePercent(await chef.rewardPerBlock(), cvxPerBlock, "0.01");
+                expect(await chef.poolLength()).eq(1);
+                expect((await chef.poolInfo(0)).lpToken).eq(cvxCrvBpt.address);
+                expect(await chef.totalAllocPoint()).eq(1000);
+                const block = await latestBlock();
+                const expectedStart = BN.from(block.number).add(BN.from(6900).mul(7));
+                expect(await chef.startBlock()).gt(expectedStart);
+                expect(await chef.startBlock()).lt(expectedStart.add(700));
+
+                const expectedEnd = BN.from(block.number).add(BN.from(6970).mul(365).mul(4));
+                expect(await chef.endBlock()).gt(expectedEnd);
+                expect(await chef.endBlock()).lt(expectedEnd.add(10000));
+            });
             // it("VestedEscrows have correct config", async () => {
             //     const { voterProxy, extraRewardsDistributor, booster, crvDepositor } = phase2;
             //     const { multisigs } = config;
