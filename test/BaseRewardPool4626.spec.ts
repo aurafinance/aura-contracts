@@ -1,3 +1,4 @@
+import { simpleToExactAmount } from "./../test-utils/math";
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
@@ -153,9 +154,13 @@ describe("BaseRewardPool4626", () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await mocks.lptoken.balanceOf(alternateReceiverAddress);
+            const rwdBalanaceBefore = await crvRewards.balanceOf(aliceAddress);
+            expect(rwdBalanaceBefore).eq(simpleToExactAmount(5));
             await crvRewards["redeem(uint256,address,address)"](amount, alternateReceiverAddress, aliceAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(alternateReceiverAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            const rwdBalanaceAfter = await crvRewards.balanceOf(aliceAddress);
+            expect(rwdBalanaceAfter).eq(0);
         });
 
         it("fails if sender is not owner", async () => {
