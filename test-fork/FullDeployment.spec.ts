@@ -288,7 +288,7 @@ describe("Full Deployment", () => {
                 const { cvxLocker, cvxCrv, cvxStakingProxy, cvx, cvxCrvRewards } = phase2;
                 const { naming, multisigs } = config;
                 expect(await cvxLocker.rewardTokens(0)).eq(cvxCrv.address);
-                expect(await cvxLocker.rewardTokens(1)).eq(ZERO_ADDRESS);
+                await expect(cvxLocker.rewardTokens(1)).to.be.reverted;
                 expect(await cvxLocker.queuedCvxCrvRewards()).eq(0);
                 expect(await cvxLocker.rewardDistributors(cvxCrv.address, cvxStakingProxy.address)).eq(true);
                 expect(await cvxLocker.lockedSupply()).eq(0);
@@ -307,7 +307,7 @@ describe("Full Deployment", () => {
                 expect(await cvxStakingProxy.cvxCrv()).eq(cvxCrv.address);
                 expect(await cvxStakingProxy.keeper()).eq(!addresses.keeper ? ZERO_ADDRESS : addresses.keeper);
                 expect(await cvxStakingProxy.crvDepositorWrapper()).eq(crvDepositorWrapper.address);
-                expect(await cvxStakingProxy.outputBps()).eq(9975);
+                expect(await cvxStakingProxy.outputBps()).eq(9980);
                 expect(await cvxStakingProxy.rewards()).eq(cvxLocker.address);
                 expect(await cvxStakingProxy.owner()).eq(multisigs.daoMultisig);
                 expect(await cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
@@ -320,15 +320,15 @@ describe("Full Deployment", () => {
                 const cvxPerBlock = distroList.lpIncentives.div(totalBlocks);
                 assertBNClosePercent(await chef.rewardPerBlock(), cvxPerBlock, "0.01");
                 expect(await chef.poolLength()).eq(1);
-                expect((await chef.poolInfo(0)).lpToken).eq(cvxCrvBpt.address);
+                expect((await chef.poolInfo(0)).lpToken.toLowerCase()).eq(cvxCrvBpt.address.toLowerCase());
                 expect(await chef.totalAllocPoint()).eq(1000);
                 const block = await latestBlock();
                 const expectedStart = BN.from(block.number).add(BN.from(6900).mul(7));
                 expect(await chef.startBlock()).gt(expectedStart);
                 expect(await chef.startBlock()).lt(expectedStart.add(700));
 
-                const expectedEnd = BN.from(block.number).add(BN.from(6970).mul(365).mul(4));
-                expect(await chef.endBlock()).gt(expectedEnd);
+                const expectedEnd = expectedStart.add(BN.from(7000).mul(365).mul(4));
+                expect(await chef.endBlock()).gt(expectedEnd.sub(10000));
                 expect(await chef.endBlock()).lt(expectedEnd.add(10000));
             });
             // it("VestedEscrows have correct config", async () => {

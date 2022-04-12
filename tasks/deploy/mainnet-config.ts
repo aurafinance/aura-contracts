@@ -34,7 +34,7 @@ import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
     tokenBpt: "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
-    tokenWhale: "0x849d52316331967b6ff1198e5e32a0eb168d039d",
+    tokenWhale: "0x849D52316331967b6fF1198e5E32A0eB168D039d",
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
     votingEscrow: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
     feeDistribution: undefined, // TODO - add
@@ -78,15 +78,15 @@ const addresses: ExtSystemConfig = {
     ],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
-    balancerMinOutBps: "9975",
+    balancerMinOutBps: "9980",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
         stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
         investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
     },
-    weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
-    treasury: "0x10a19e7ee7d7f8a52822f6817de8ea18204f2e4f", // TODO - define treasury
+    treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f", // TODO - define treasury
     keeper: DEAD_ADDRESS, // TODO - define keeper
 };
 
