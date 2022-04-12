@@ -140,12 +140,29 @@ describe("BaseRewardPool4626", () => {
         });
 
         it("allows direct withdraws via redeem()", async () => {
-            const amount = ethers.utils.parseEther("10");
+            const amount = ethers.utils.parseEther("5");
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
             await crvRewards["redeem(uint256,address,address)"](amount, aliceAddress, aliceAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+
+        it("allows withdraws to receipient", async () => {
+            const amount = ethers.utils.parseEther("5");
+            const alternateReceiverAddress = await alternateReceiver.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const balanceBefore = await mocks.lptoken.balanceOf(alternateReceiverAddress);
+            await crvRewards["redeem(uint256,address,address)"](amount, alternateReceiverAddress, aliceAddress);
+            const balanceAfter = await mocks.lptoken.balanceOf(alternateReceiverAddress);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+        });
+        it("fails if sender is not owner", async () => {
+            const alternateReceiverAddress = await alternateReceiver.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            await expect(
+                crvRewards["redeem(uint256,address,address)"](1, alternateReceiverAddress, alternateReceiverAddress),
+            ).to.be.revertedWith("!owner");
         });
 
         it("allows direct withdraws for alternate reciever", async () => {
