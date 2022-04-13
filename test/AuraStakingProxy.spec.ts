@@ -68,7 +68,7 @@ describe("AuraStakingProxy", () => {
         expect(await contracts.cvxStakingProxy.cvx()).eq(contracts.cvx.address);
         expect(await contracts.cvxStakingProxy.cvxCrv()).eq(contracts.cvxCrv.address);
         expect(await contracts.cvxStakingProxy.crvDepositorWrapper()).eq(contracts.crvDepositorWrapper.address);
-        expect(await contracts.cvxStakingProxy.outputBps()).eq(9980);
+        expect(await contracts.cvxStakingProxy.outputBps()).eq(9975);
         expect(await contracts.cvxStakingProxy.rewards()).eq(contracts.cvxLocker.address);
         expect(await contracts.cvxStakingProxy.owner()).eq(await accounts[0].getAddress());
         expect(await contracts.cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
