@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
@@ -19,14 +18,11 @@ describe("ExtraRewardsDistributor", () => {
     let contracts: SystemDeployed;
     let mockErc20: MockERC20;
     let mockErc20X: MockERC20;
-
     let auraLocker: AuraLocker;
 
     let deployer: Signer;
-
     let alice: Signer;
     let aliceAddress: string;
-
     let bob: Signer;
     let bobAddress: string;
 
@@ -71,54 +67,12 @@ describe("ExtraRewardsDistributor", () => {
         await mockErc20.connect(alice).transfer(bobAddress, simpleToExactAmount(200));
         mockErc20X = await new MockERC20__factory(alice).deploy("MockERC20 X", "MKTX", 18, aliceAddress, 1000);
     });
-    const getRewardEpochs = async (token: string): Promise<Array<{ index: number; epoch: BN }>> => {
-        const epochs = [];
-        try {
-            for (let i = 0; i < 128; i++) {
-                const epoch = await distributor.rewardEpochs(token, i);
-                // console.log(`====rewardEpochs:  ${token} ${i} ${epoch}`);
-                epochs.push({ index: i, epoch });
-            }
-        } catch (error) {
-            // do nothing
-        }
-        return epochs;
-    };
-    const getRewardData = async (
-        token: string,
-        rewardEpochs: Array<{ index: number; epoch: BN }>,
-    ): Promise<Array<BN>> => {
-        const epochs = [];
-        try {
-            rewardEpochs.forEach(async re => {
-                const rewardData = await distributor.rewardData(token, re.epoch);
-                // console.log(`====getRewardData: ${token} ${re.index} ${re.epoch} ${rewardData.toString()} `);
-                epochs.push(rewardData);
-            });
-        } catch (error) {
-            // do nothing
-        }
-        return epochs;
-    };
 
-    async function getSnapshot(token: string, account: string, epoch: number): Promise<void> {
-        // // console.log("==================>getSnapshot",account,epoch);
-        const rewardEpochs = await getRewardEpochs(token);
-        const rewardData = await getRewardData(token, rewardEpochs);
-        // const rewardData = await distributor.rewardData(token,epoch);
-        // const rewardEpochs = await distributor.rewardEpochs(token,epoch);
-        const userClaims = await distributor.userClaims(token, account);
-
-        // console.log("userClaims     ",epoch, userClaims.toString());
-        // console.log("rewardEpochs   ",epoch, rewardEpochs.length);
-        // console.log("rewardData     ",epoch, rewardData.length);
-    }
     async function verifyAddRewards(sender: Signer, fundAmount: BN, epoch: number) {
         await mockErc20.connect(sender).approve(distributor.address, fundAmount);
         const senderBalanceBefore = await mockErc20.balanceOf(await sender.getAddress());
         const distributorBalanceBefore = await mockErc20.balanceOf(distributor.address);
 
-        await getSnapshot(mockErc20.address, await sender.getAddress(), 10 * epoch);
         await expect(distributor.connect(sender).addReward(mockErc20.address, fundAmount))
             .to.emit(distributor, "RewardAdded")
             .withArgs(mockErc20.address, epoch, fundAmount);
@@ -129,25 +83,18 @@ describe("ExtraRewardsDistributor", () => {
         expect(await mockErc20.balanceOf(await sender.getAddress()), "sender balance").to.eq(
             senderBalanceBefore.sub(fundAmount),
         );
-        await getSnapshot(mockErc20.address, await sender.getAddress(), 10 * epoch + 1);
     }
 
     it("initial configuration is correct", async () => {
         expect(await distributor.auraLocker(), "auraLocker").to.eq(auraLocker.address);
     });
 
-    // it("initial configuration is correct", async () => {
-    //     expect(await distributor.rewardData(), "rewardData").to.eq("expected value"); // token -> epoch -> amount
-    //     expect(await distributor.rewardEpochs(), "rewardEpochs").to.eq("expected value");  // token -> epochList
-    //     expect(await distributor.userClaims(), "userClaims").to.eq("expected value");       // token -> account -> last claimed epoch index
-    // });
     it("add rewards", async () => {
         await increaseTime(ONE_WEEK);
         const fundAmount = simpleToExactAmount(1);
         await mockErc20.approve(distributor.address, fundAmount);
         const senderBalanceBefore = await mockErc20.balanceOf(aliceAddress);
         const distributorBalanceBefore = await mockErc20.balanceOf(distributor.address);
-        await getSnapshot(mockErc20.address, aliceAddress, 0);
         await expect(distributor.addReward(mockErc20.address, fundAmount))
             .to.emit(distributor, "RewardAdded")
             .withArgs(mockErc20.address, 1, fundAmount);
@@ -156,7 +103,6 @@ describe("ExtraRewardsDistributor", () => {
             distributorBalanceBefore.add(fundAmount),
         );
         expect(await mockErc20.balanceOf(aliceAddress), "alice balance").to.eq(senderBalanceBefore.sub(fundAmount));
-        await getSnapshot(mockErc20.address, aliceAddress, 1);
     });
     describe("adds rewards", async () => {
         it("allows anyone to fund", async () => {
@@ -245,37 +191,11 @@ describe("ExtraRewardsDistributor", () => {
             );
         });
 
-        async function claimableRewards(
-            ...accounts
-        ): Promise<Array<{ claimableReward: BN; claimableRewardAtEpoch: BN }>> {
-            const rewards = [];
-            const epoch = (await auraLocker.findEpochId(await getTimestamp())).toNumber();
-            for (let i = 0; i < accounts.length; i++) {
-                const account = accounts[i];
-                const claimableReward = await distributor.claimableRewards(account, mockErc20.address);
-                const claimableRewardAtEpoch = await distributor.claimableRewardsAtEpoch(
-                    account,
-                    mockErc20.address,
-                    epoch,
-                );
-                rewards.push({ claimableReward, claimableRewardAtEpoch, account });
-            }
-            console.table(
-                rewards.map(r => ({
-                    accounts: r.account,
-                    claim: r.claimableReward.toString(),
-                    atEpoch: r.claimableRewardAtEpoch.toString(),
-                    epoch: epoch.toString(),
-                })),
-            );
-            return rewards;
-        }
         it("does not allow claiming until the epoch has finished", async () => {
             const fundAmount = simpleToExactAmount(1);
             const lockDuration = await auraLocker.lockDuration();
             const timestamp0 = await getTimestamp();
             let epoch = (await auraLocker.findEpochId(timestamp0)).toNumber();
-            await claimableRewards(aliceAddress, bobAddress);
 
             // 1.- Verify there are no rewards to claim initially
             const claimableRewardStep0 = await distributor.claimableRewards(bobAddress, mockErc20.address);
@@ -298,7 +218,6 @@ describe("ExtraRewardsDistributor", () => {
             await increaseTime(ONE_WEEK); //  new epoch + rewards
             epoch = (await auraLocker.findEpochId(await getTimestamp())).toNumber();
             await verifyAddRewards(bob, fundAmount, epoch);
-            await claimableRewards(aliceAddress, bobAddress);
 
             // 5.- Verify there are no rewards to claim as the lock time has not being reached.
             expect(await getTimestamp(), "lock duration not reached yet").to.lt(timestamp0.add(lockDuration));
@@ -312,7 +231,7 @@ describe("ExtraRewardsDistributor", () => {
             // 6.- Test there are rewards to claim after lock duration has been reached.
             await increaseTime(lockDuration); //  unlock rewards for bob
             await auraLocker.checkpointEpoch();
-            await claimableRewards(aliceAddress, bobAddress);
+
             // Verify there are rewards to claim!
             expect(await distributor.claimableRewards(bobAddress, mockErc20.address), "rewards available").to.gt(0);
         });
@@ -345,7 +264,6 @@ describe("ExtraRewardsDistributor", () => {
             const senderBalanceBefore = await mockErc20X.balanceOf(aliceAddress);
             const distributorBalanceBefore = await mockErc20X.balanceOf(distributor.address);
 
-            await getSnapshot(mockErc20X.address, aliceAddress, 10 * epoch);
             expect(await distributor.rewardEpochsCount(mockErc20X.address), "rewardEpochs count").to.gt(0);
             await expect(distributor.connect(alice).addRewardToEpoch(mockErc20X.address, fundAmount, epoch))
                 .to.emit(distributor, "RewardAdded")
@@ -357,40 +275,30 @@ describe("ExtraRewardsDistributor", () => {
             expect(await mockErc20X.balanceOf(aliceAddress), "sender balance").to.eq(
                 senderBalanceBefore.sub(fundAmount),
             );
-            await getSnapshot(mockErc20X.address, aliceAddress, 10 * epoch + 1);
         });
     });
 
     // Up to this point, alice and bob can claim rewards.
     describe("claiming rewards", async () => {
-        let aliceClaimableReward: BN;
-        let bobClaimableReward: BN;
         let aliceBalanceBefore: BN;
         let bobBalanceBefore: BN;
         beforeEach(async () => {
-            aliceClaimableReward = await distributor.claimableRewards(aliceAddress, mockErc20.address);
-            bobClaimableReward = await distributor.claimableRewards(bobAddress, mockErc20.address);
             aliceBalanceBefore = await mockErc20.balanceOf(aliceAddress);
             bobBalanceBefore = await mockErc20.balanceOf(bobAddress);
             // alice has rewards on the following epoch / rewards
             // claimableRewardsAtEpoch(1) 1000000000000000000 (index 0)
             // claimableRewardsAtEpoch(2) 1000000000000000000 (index 1)
             // claimableRewardsAtEpoch(3) 4000000000000000000 (index 2)
-            // claimableRewardsAtEpoch(4) 1000000000000000000 (index 3)
-            // claimableRewardsAtEpoch(5) 3000000000000000000 (index 4)
-            // claimableRewardsAtEpoch(6) 1000000000000000000 (index 5)
+            // claimableRewardsAtEpoch(4) 0
+            // claimableRewardsAtEpoch(5) 3000000000000000000 (index 3)
+            // claimableRewardsAtEpoch(6)  909090909090909090 (index 4)
 
             // bob has rewards on the following epoch / rewards
             // 6 claimableRewardsAtEpoch 909090909090909090
         });
         // This is important logic as it basically combines forfeit rewards and claim into one to reduce gas
         it("allows users to specify a start index", async () => {
-            // add double of this test
             // Given that bob has rewards on epoch 6 and has not claim yet.
-            const rewardEpochsCount = await distributor.rewardEpochsCount(mockErc20.address);
-            const epochCount = (await auraLocker.epochCount()).toNumber();
-            // console.log("rewardEpochsCount", rewardEpochsCount.toString());
-            // console.log("epochCount", epochCount.toString());
             const epoch = 6;
             const epochIndex = 4; // epoch 6 is index 4 (there is a gap)
             const claimIndex = epochIndex + 1;
@@ -399,29 +307,18 @@ describe("ExtraRewardsDistributor", () => {
                 mockErc20.address,
                 epoch,
             );
-            // for (let i = 1; i < epochCount; i++) {
-            //     const claimableRewardsAtLatestEpoch = await distributor.claimableRewardsAtEpoch(
-            //         aliceAddress,
-            //         mockErc20.address,
-            //         i,
-            //     );
-            //     // console.log(i, "claimableRewardsAtEpoch", claimableRewardsAtLatestEpoch.toString());
-            // }
-
             expect(claimableRewardsAtLatestEpoch, "bob claimable rewards at given epoch").to.gt(0);
             expect(await distributor.userClaims(mockErc20.address, bobAddress), "user claims").to.eq(0);
-            // console.log("=======================before=getReward===========================");
             // When
             const tx = distributor
                 .connect(bob)
                 ["getReward(address,address,uint256)"](bobAddress, mockErc20.address, epochIndex);
-            // console.log("=======================after=getReward===========================");
 
             // Then
             await expect(tx)
                 .to.emit(distributor, "RewardPaid")
                 .withArgs(bobAddress, mockErc20.address, claimableRewardsAtLatestEpoch, claimIndex);
-            expect(await mockErc20.balanceOf(bobAddress), "bob balance").to.eq(
+            expect(await mockErc20.balanceOf(bobAddress), "sends the token to the user").to.eq(
                 bobBalanceBefore.add(claimableRewardsAtLatestEpoch),
             );
             expect(await distributor.userClaims(mockErc20.address, bobAddress), "user claims index updated").to.eq(
@@ -448,7 +345,7 @@ describe("ExtraRewardsDistributor", () => {
             await expect(tx).not.to.emit(distributor, "RewardPaid");
             expect(await mockErc20.balanceOf(bobAddress), "bob balance").to.eq(bobBalanceBefore);
         });
-        it.skip("allows users to specify a start index multiple times", async () => {
+        it.skip("allows users to specify a start index multiple times - backlog", async () => {
             // Claim rewards for epoch 5 so it includes as well epoch 6 , then rewards for epoch 3
             // Given that alice has rewards on epoch 6 and has not claim yet.
             let epoch = 5;
@@ -486,7 +383,7 @@ describe("ExtraRewardsDistributor", () => {
             );
 
             // It should allow to claim rewards for epoch 3 (index 2)
-            // TODO  -  ERROR IS HAPPENING HERE  //
+            // Currently this behavior is not supported -  TODO //
             epoch = 3;
             epochIndex = epoch - 1; // epoch 3 is index 2
             claimIndex = epochIndex + 1; // index 2 + 1
@@ -506,12 +403,74 @@ describe("ExtraRewardsDistributor", () => {
             );
         });
         it("allows users to claim all rewards", async () => {
-            // TODO
+            // Given a user that has not claim rewards
+            const claimableRewards = await distributor.claimableRewards(aliceAddress, mockErc20.address);
+            expect(await distributor.userClaims(mockErc20.address, aliceAddress), "user claims").to.eq(0);
+            const claimIndex = 4 + 1; // Up to this test, the latest index is 4
+
+            console.log("claimableRewards", claimableRewards.toString());
+
+            // When it claim all rewards
+            const tx = distributor.connect(alice)["getReward(address,address)"](aliceAddress, mockErc20.address);
+
+            // Then
+            await expect(tx)
+                .to.emit(distributor, "RewardPaid")
+                .withArgs(aliceAddress, mockErc20.address, claimableRewards, claimIndex);
+            expect(await mockErc20.balanceOf(aliceAddress), "sends the token to the user").to.eq(
+                aliceBalanceBefore.add(claimableRewards),
+            );
+            expect(await distributor.userClaims(mockErc20.address, aliceAddress), "user claims index updated").to.eq(
+                claimIndex,
+            );
         });
-        it("sends the tokens to the user");
     });
     describe("forfeiting rewards", () => {
-        it("allows users to forfeit rewards");
-        it("fails if the index is in the past or the future");
+        before(async () => {
+            // Add some rewards to  be able to forfeit them later.
+            await mockErc20.connect(alice).approve(distributor.address, simpleToExactAmount(100));
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+
+            await increaseTime(ONE_WEEK);
+            const fundAmount = simpleToExactAmount(1);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await distributor.connect(alice).addReward(mockErc20.address, fundAmount);
+            let epoch = (await auraLocker.findEpochId(await getTimestamp())).toNumber();
+            await verifyAddRewards(alice, fundAmount, epoch);
+
+            await increaseTime(ONE_WEEK);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            epoch = (await auraLocker.findEpochId(await getTimestamp())).toNumber();
+            await verifyAddRewards(alice, fundAmount, epoch);
+
+            await increaseTime(ONE_WEEK);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            epoch = (await auraLocker.findEpochId(await getTimestamp())).toNumber();
+            await verifyAddRewards(alice, fundAmount, epoch);
+        });
+        it("fails if the index is in the past or the future", async () => {
+            const rewardEpochsCount = await distributor.rewardEpochsCount(mockErc20.address);
+            const userClaims = await distributor.userClaims(mockErc20.address, aliceAddress);
+            await expect(distributor.connect(alice).forfeitRewards(mockErc20.address, 0)).revertedWith("!past");
+            await expect(
+                distributor.connect(alice).forfeitRewards(mockErc20.address, rewardEpochsCount.sub(1)),
+            ).revertedWith("!past");
+            await expect(distributor.connect(alice).forfeitRewards(mockErc20.address, userClaims.sub(1))).revertedWith(
+                "already claimed",
+            );
+        });
+        it("allows users to forfeit rewards", async () => {
+            const rewardEpochsCount = await distributor.rewardEpochsCount(mockErc20.address);
+            const userClaims = await distributor.userClaims(mockErc20.address, aliceAddress);
+            console.log("rewardEpochsCount", rewardEpochsCount.toString());
+            console.log("userClaims", userClaims.toString());
+
+            const index = userClaims.add(1);
+            const tx = distributor.connect(alice).forfeitRewards(mockErc20.address, index);
+            await expect(tx).to.emit(distributor, "RewardForfeited").withArgs(aliceAddress, mockErc20.address, index);
+            expect(await distributor.userClaims(mockErc20.address, aliceAddress), "user claims index updated").to.eq(
+                index.add(1),
+            );
+        });
     });
 });
