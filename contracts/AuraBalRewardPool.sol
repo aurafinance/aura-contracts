@@ -138,7 +138,7 @@ contract AuraBalRewardPool {
         //give to _for
         _totalSupply = _totalSupply.add(_amount);
         _balances[_for] = _balances[_for].add(_amount);
-        
+
         //take away from sender
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
         emit Staked(_for, _amount);
