@@ -43,6 +43,18 @@ const chainIds = {
 //         url,
 //     };
 // }
+
+// Configuration for test coverage
+// optimizer: {
+//     enabled: false,
+//     runs: 200,
+//     details : {
+//         yul: true,
+//         yulDetails: {
+//           stackAllocation: true,
+//         },
+//       }
+// },
 const compilerSettings = {
     metadata: {
         // Not including the metadata hash

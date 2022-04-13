@@ -190,7 +190,6 @@ describe("ExtraRewardsDistributor", () => {
                 "Cannot backdate to this epoch",
             );
         });
-
         it("does not allow claiming until the epoch has finished", async () => {
             const fundAmount = simpleToExactAmount(1);
             const lockDuration = await auraLocker.lockDuration();
@@ -259,6 +258,30 @@ describe("ExtraRewardsDistributor", () => {
         it("adds reward backdate to existing token", async () => {
             // Given the token already received rewards
             const epoch = 2;
+            const fundAmount = simpleToExactAmount(10);
+            await mockErc20X.connect(alice).approve(distributor.address, fundAmount);
+            const senderBalanceBefore = await mockErc20X.balanceOf(aliceAddress);
+            const distributorBalanceBefore = await mockErc20X.balanceOf(distributor.address);
+
+            expect(await distributor.rewardEpochsCount(mockErc20X.address), "rewardEpochs count").to.gt(0);
+            await expect(distributor.connect(alice).addRewardToEpoch(mockErc20X.address, fundAmount, epoch))
+                .to.emit(distributor, "RewardAdded")
+                .withArgs(mockErc20X.address, epoch, fundAmount);
+
+            expect(await mockErc20X.balanceOf(distributor.address), "distributor balance").to.eq(
+                distributorBalanceBefore.add(fundAmount),
+            );
+            expect(await mockErc20X.balanceOf(aliceAddress), "sender balance").to.eq(
+                senderBalanceBefore.sub(fundAmount),
+            );
+        });
+        it("adds reward to the latest epoch", async () => {
+            // Given the token already received rewards
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+            await increaseTime(ONE_WEEK);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+
+            const epoch = (await auraLocker.epochCount()).toNumber() - 1;
             const fundAmount = simpleToExactAmount(10);
             await mockErc20X.connect(alice).approve(distributor.address, fundAmount);
             const senderBalanceBefore = await mockErc20X.balanceOf(aliceAddress);
@@ -408,8 +431,6 @@ describe("ExtraRewardsDistributor", () => {
             expect(await distributor.userClaims(mockErc20.address, aliceAddress), "user claims").to.eq(0);
             const claimIndex = 4 + 1; // Up to this test, the latest index is 4
 
-            console.log("claimableRewards", claimableRewards.toString());
-
             // When it claim all rewards
             const tx = distributor.connect(alice)["getReward(address,address)"](aliceAddress, mockErc20.address);
 
@@ -460,11 +481,7 @@ describe("ExtraRewardsDistributor", () => {
             );
         });
         it("allows users to forfeit rewards", async () => {
-            const rewardEpochsCount = await distributor.rewardEpochsCount(mockErc20.address);
             const userClaims = await distributor.userClaims(mockErc20.address, aliceAddress);
-            console.log("rewardEpochsCount", rewardEpochsCount.toString());
-            console.log("userClaims", userClaims.toString());
-
             const index = userClaims.add(1);
             const tx = distributor.connect(alice).forfeitRewards(mockErc20.address, index);
             await expect(tx).to.emit(distributor, "RewardForfeited").withArgs(aliceAddress, mockErc20.address, index);
