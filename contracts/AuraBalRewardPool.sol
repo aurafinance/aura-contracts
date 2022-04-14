@@ -69,7 +69,7 @@ contract AuraBalRewardPool {
         rewardManager = _rewardManager;
         auraLocker = IAuraLocker(_auraLocker);
         penaltyForwarder = _penaltyForwarder;
-        stakingToken.safeApprove(_auraLocker, type(uint256).max);
+        rewardToken.safeApprove(_auraLocker, type(uint256).max);
 
         require(_startDelay < 2 weeks, "!delay");
         startTime = block.timestamp + _startDelay;

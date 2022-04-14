@@ -222,7 +222,7 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     const deployerAddress = await deployer.getAddress();
 
     const phase1 = {
-        voterProxy: await CurveVoterProxy__factory.connect("0x6a1E0696069355DB5B282ca33cDb66f66D6bCbe9", deployer),
+        voterProxy: await CurveVoterProxy__factory.connect("0xAf133908d1B435e1B58C91316AF3f17688a47A50", deployer),
     };
 
     const contracts = await deployKovan234(
@@ -247,36 +247,36 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     const lp = await ERC20__factory.connect(poolInfo.lptoken, deployer);
 
     let tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await contracts.booster.earmarkRewards(0);
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     const tokenBptBal = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).balanceOf(deployerAddress);
     tx = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).approve(
         contracts.crvDepositor.address,
         tokenBptBal,
     );
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await contracts.crvDepositor["deposit(uint256,bool,address)"](
         tokenBptBal,
         true,
         contracts.initialCvxCrvStaking.address,
     );
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer)["getReward()"]();
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     const bal = await contracts.cvx.balanceOf(deployerAddress);
     if (bal.lte(0)) {
@@ -284,10 +284,10 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     }
 
     tx = await contracts.cvx.approve(contracts.cvxLocker.address, bal);
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 
     tx = await contracts.cvxLocker.lock(await deployer.getAddress(), bal);
-    await waitForTx(tx);
+    await waitForTx(tx, true);
 });
 
 task("deploy:kovan").setAction(async function (taskArguments: TaskArguments, hre) {

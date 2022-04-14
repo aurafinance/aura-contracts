@@ -7,8 +7,8 @@ import {
     MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
     BoosterOwner,
-    ClaimZap__factory,
-    ClaimZap,
+    AuraClaimZap__factory,
+    AuraClaimZap,
     BalLiquidityProvider,
     BalLiquidityProvider__factory,
     Booster__factory,
@@ -193,7 +193,7 @@ interface Phase3Deployed extends Phase2Deployed {
     pool8020Bpt: BalancerPoolDeployed;
 }
 interface SystemDeployed extends Phase3Deployed {
-    claimZap: ClaimZap;
+    claimZap: AuraClaimZap;
 }
 
 async function waitForTx(tx: ContractTransaction, debug = false): Promise<ContractReceipt> {
@@ -208,7 +208,7 @@ async function waitForTx(tx: ContractTransaction, debug = false): Promise<Contra
 
 function getPoolAddress(utils, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
-    return utils.hexStripZeros(event.topics[1]);
+    return utils.hexZeroPad(utils.hexStripZeros(event.topics[1]), 20);
 }
 
 /**
@@ -636,7 +636,7 @@ async function deployPhase2(
     const initialCvxCrvStaking = await deployContract<AuraBalRewardPool>(
         new AuraBalRewardPool__factory(deployer),
         "AuraBalRewardPool",
-        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, ONE_WEEK],
+        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, DELAY],
         {},
         debug,
     );
@@ -979,7 +979,7 @@ async function deployPhase4(
     const deployer = signer;
 
     const { token, gauges } = config;
-    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, crvDepositor, poolManager } = deployment;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, poolManager, cvxCrvBpt, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
     // -----------------------------
@@ -988,18 +988,18 @@ async function deployPhase4(
     //     - All initial gauges
     // -----------------------------
 
-    const claimZap = await deployContract<ClaimZap>(
-        new ClaimZap__factory(deployer),
-        "ClaimZap",
+    const claimZap = await deployContract<AuraClaimZap>(
+        new AuraClaimZap__factory(deployer),
+        "AuraClaimZap",
         [
             token,
             cvx.address,
             cvxCrv.address,
-            crvDepositor.address,
+            crvDepositorWrapper.address,
             cvxCrvRewards.address,
-            cvxLocker.address, // TODO - deprecate or ensure this is vlCVX
-            DEAD_ADDRESS, // TODO - this needs to be changed, used for trading cvx for cvxCRV
             cvxLocker.address,
+            config.balancerVault,
+            cvxCrvBpt.poolId,
         ],
         {},
         debug,
