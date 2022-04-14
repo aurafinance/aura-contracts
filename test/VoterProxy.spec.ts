@@ -12,14 +12,18 @@ import {
     ExtraRewardsDistributor,
     AuraLocker,
     AuraToken,
+    BoosterOwner,
+    PoolManagerSecondaryProxy,
+    PoolManagerV3,
+    ERC20__factory,
 } from "../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
 import { deployContract } from "../tasks/utils";
-import { increaseTime } from "../test-utils/time";
+import { increaseTime, increaseTimeTo } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
-import { ZERO_ADDRESS } from "../test-utils/constants";
+import { ZERO_ADDRESS, ZERO } from "../test-utils/constants";
 import { impersonateAccount } from "../test-utils/fork";
 
 const eip1271MagicValue = "0x1626ba7e";
@@ -48,14 +52,19 @@ describe("VoterProxy", () => {
     let mocks: DeployMocksResult;
     let auraLocker: AuraLocker;
     let cvx: AuraToken;
+    let poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
+    let boosterOwner: BoosterOwner;
+    let poolManager: PoolManagerV3;
 
     let deployer: Signer;
+    let deployerAddress: string;
     let daoMultisig: Signer;
 
     before(async () => {
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
+        deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
@@ -81,6 +90,9 @@ describe("VoterProxy", () => {
         extraRewardsDistributor = contracts.extraRewardsDistributor;
         auraLocker = contracts.cvxLocker;
         cvx = contracts.cvx;
+        boosterOwner = contracts.boosterOwner;
+        poolManagerSecondaryProxy = contracts.poolManagerSecondaryProxy;
+        poolManager = contracts.poolManager;
 
         const operatorAccount = await impersonateAccount(contracts.booster.address);
         await contracts.cvx
@@ -144,13 +156,6 @@ describe("VoterProxy", () => {
             await expect(tx).to.revertedWith("!auth");
         });
 
-        it("can not call migrate", async () => {
-            const eoa = accounts[5];
-            const eoaAddress = await eoa.getAddress();
-            const tx = voterProxy.connect(eoa).migrate(eoaAddress);
-            await expect(tx).to.revertedWith("!auth");
-        });
-
         it("can not call setRewardDeposit", async () => {
             const eoa = accounts[5];
             const eoaAddress = await eoa.getAddress();
@@ -206,6 +211,62 @@ describe("VoterProxy", () => {
             await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
             expect(await voterProxy.withdrawer()).eq(eoaAddress);
             expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
+        });
+    });
+
+    describe("when shutting down", async () => {
+        it("call shutdown on the booster", async () => {
+            // 1. shutdown pools via poolManagerProxy
+            const poolLength = await booster.poolLength();
+            for (let i = 0; i < Number(poolLength.toString()); i++) {
+                await poolManager.shutdownPool(i);
+            }
+
+            // 2. shutdown system on poolManagerSecondaryProxy
+            await poolManagerSecondaryProxy.shutdownSystem();
+
+            // 3. shutdown system on booster owner
+            await boosterOwner.shutdownSystem();
+            const isShutdown = await booster.isShutdown();
+            expect(isShutdown).eq(true);
+        });
+
+        it("update operator and depositor to EOA", async () => {
+            await voterProxy.setDepositor(deployerAddress);
+            const depositor = await voterProxy.depositor();
+            expect(depositor).eq(deployerAddress);
+
+            await voterProxy.setOperator(deployerAddress);
+            const operator = await voterProxy.operator();
+            expect(operator).eq(deployerAddress);
+        });
+
+        it("release CRV from lock", async () => {
+            const expectedWithdraw = await mocks.votingEscrow.balanceOf(voterProxy.address);
+
+            const balanceBefore = await mocks.crvBpt.balanceOf(voterProxy.address);
+            const tx = voterProxy.release();
+            await expect(tx).to.revertedWith("!unlocked");
+
+            const unlocktime = await mocks.votingEscrow.lockTimes(voterProxy.address);
+            await increaseTimeTo(unlocktime.add("1"));
+
+            await voterProxy.release();
+            const balanceAfter = await mocks.crvBpt.balanceOf(voterProxy.address);
+            expect(balanceAfter.sub(balanceBefore)).eq(expectedWithdraw);
+        });
+
+        it("migrate tokens", async () => {
+            const balance = await mocks.crvBpt.balanceOf(voterProxy.address);
+            const receiverAcc = await accounts[7].getAddress();
+            const data = mocks.crvBpt.interface.encodeFunctionData("transfer", [receiverAcc, balance]);
+            await voterProxy.execute(mocks.crvBpt.address, "0", data);
+
+            const newBalance = await mocks.crvBpt.balanceOf(voterProxy.address);
+            expect(newBalance).eq(ZERO);
+
+            const receiverAccBalance = await mocks.crvBpt.balanceOf(receiverAcc);
+            expect(receiverAccBalance).eq(balance);
         });
     });
 });

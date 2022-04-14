@@ -185,6 +185,8 @@ interface Phase2Deployed extends Phase1Deployed {
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
     extraRewardsDistributor: ExtraRewardsDistributor;
+    poolManagerProxy: PoolManagerProxy;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -881,6 +883,8 @@ async function deployPhase2(
         balLiquidityProvider,
         penaltyForwarder,
         extraRewardsDistributor,
+        poolManagerProxy,
+        poolManagerSecondaryProxy,
     };
 }
 
