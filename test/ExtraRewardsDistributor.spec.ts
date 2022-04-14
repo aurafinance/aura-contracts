@@ -344,6 +344,9 @@ describe("ExtraRewardsDistributor", () => {
             expect(await mockErc20.balanceOf(bobAddress), "sends the token to the user").to.eq(
                 bobBalanceBefore.add(claimableRewardsAtLatestEpoch),
             );
+            expect((await mockErc20.balanceOf(bobAddress)).sub(bobBalanceBefore), "sends the token to the user").to.gt(
+                0,
+            );
             expect(await distributor.userClaims(mockErc20.address, bobAddress), "user claims index updated").to.eq(
                 claimIndex,
             );
