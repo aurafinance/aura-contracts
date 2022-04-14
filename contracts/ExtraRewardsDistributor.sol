@@ -223,9 +223,10 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         uint256 epochIndex = userClaims[_token][_account];
         // e.g. epochIndex = 27 > 0 ? 27 : 0 = 27
         epochIndex = _startIndex > epochIndex ? _startIndex : epochIndex;
-        // e.g. epochIndex = 27 > (30) ? (30) : 27 = 27
-        // e.g. epochIndex = 27 > 20 ? 20 : 27 = 20
-        epochIndex = epochIndex > (tokenEpochs - 1) ? (tokenEpochs - 1) : epochIndex;
+
+        if (epochIndex >= tokenEpochs) {
+            return (0, tokenEpochs);
+        }
 
         uint256 claimableTokens = 0;
 

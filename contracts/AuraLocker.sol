@@ -178,8 +178,8 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
                 rewardData[token].lastUpdateTime = _lastTimeRewardApplicable(rewardData[token].periodFinish).to32();
                 if (_account != address(0)) {
                     userData[_account][token] = UserData({
-                        rewardPerTokenPaid: newRewardPerToken.to112(),
-                        rewards: _earned(_account, token, userBalance.locked).to112()
+                        rewardPerTokenPaid: newRewardPerToken.to128(),
+                        rewards: _earned(_account, token, userBalance.locked).to128()
                     });
                 }
             }
@@ -308,7 +308,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
             uint256 reward = userData[_account][_rewardsToken].rewards;
             if (reward > 0) {
                 userData[_account][_rewardsToken].rewards = 0;
-                if (_rewardsToken == cvxCrv && _stake) {
+                if (_rewardsToken == cvxCrv && _stake && _account == msg.sender) {
                     IRewardStaking(cvxcrvStaking).stakeFor(_account, reward);
                 } else {
                     IERC20(_rewardsToken).safeTransfer(_account, reward);
@@ -435,7 +435,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         lockedSupply = lockedSupply.sub(locked);
 
         //checkpoint the delegatee
-        _checkpointDelegate(delegates(msg.sender), 0, 0);
+        _checkpointDelegate(delegates(_account), 0, 0);
 
         emit Withdrawn(_account, locked, _relock);
 

@@ -21,29 +21,6 @@ const chainIds = {
     ropsten: 3,
 };
 
-// Ensure that we have all the environment variables we need.
-// const mnemonic: string | undefined = process.env.MNEMONIC;
-// if (!mnemonic) {
-//     throw new Error("Please set your MNEMONIC in a .env file");
-// }
-
-// const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
-// if (!infuraApiKey) {
-//     throw new Error("Please set your INFURA_API_KEY in a .env file");
-// }
-
-// function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
-//     const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
-//     return {
-//         accounts: {
-//             count: 10,
-//             mnemonic,
-//             path: "m/44'/60'/0'/0",
-//         },
-//         chainId: chainIds[network],
-//         url,
-//     };
-// }
 const compilerSettings = {
     metadata: {
         // Not including the metadata hash
