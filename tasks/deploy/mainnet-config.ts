@@ -1,6 +1,6 @@
 import { ExtSystemConfig, Phase1Deployed, Phase2Deployed, Phase3Deployed } from "../../scripts/deploySystem";
 import {
-    CurveVoterProxy__factory,
+    VoterProxy__factory,
     AuraToken__factory,
     AuraMinter__factory,
     Booster__factory,
@@ -164,12 +164,12 @@ const distroList = {
 };
 
 const getPhase1 = async (deployer: Signer): Promise<Phase1Deployed> => ({
-    voterProxy: await CurveVoterProxy__factory.connect("", deployer),
+    voterProxy: await VoterProxy__factory.connect("", deployer),
 });
 
 const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     ...(await getPhase1(deployer)),
-    voterProxy: await CurveVoterProxy__factory.connect("", deployer),
+    voterProxy: await VoterProxy__factory.connect("", deployer),
     cvx: await AuraToken__factory.connect("", deployer),
     minter: await AuraMinter__factory.connect("", deployer),
     booster: await Booster__factory.connect("", deployer),

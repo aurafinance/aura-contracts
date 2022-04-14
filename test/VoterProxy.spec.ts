@@ -4,7 +4,7 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scrip
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import {
     Booster,
-    CurveVoterProxy,
+    VoterProxy,
     MockVoteStorage,
     MockVoteStorage__factory,
     MockERC20,
@@ -46,7 +46,7 @@ const invalidHash = hashMessage(JSON.stringify({ ...data, version: "faux" }));
 
 describe("VoterProxy", () => {
     let accounts: Signer[];
-    let voterProxy: CurveVoterProxy;
+    let voterProxy: VoterProxy;
     let booster: Booster;
     let extraRewardsDistributor: ExtraRewardsDistributor;
     let mocks: DeployMocksResult;

@@ -25,7 +25,7 @@ import {
     MockWalletChecker,
     MockWalletChecker__factory,
     IInvestmentPool__factory,
-    CurveVoterProxy__factory,
+    VoterProxy__factory,
     ERC20__factory,
     BaseRewardPool__factory,
     MockERC20,
@@ -72,7 +72,7 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     const deployerAddress = await deployer.getAddress();
 
     const phase1 = {
-        voterProxy: await CurveVoterProxy__factory.connect("0xAf133908d1B435e1B58C91316AF3f17688a47A50", deployer),
+        voterProxy: await VoterProxy__factory.connect("0xAf133908d1B435e1B58C91316AF3f17688a47A50", deployer),
     };
 
     const contracts = await deployKovan234(

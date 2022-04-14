@@ -3,7 +3,7 @@ import { BigNumberish, Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, CurveVoterProxy, AuraToken, AuraMinter } from "../types/generated";
+import { Booster, VoterProxy, AuraToken, AuraMinter } from "../types/generated";
 import { DEAD_ADDRESS, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 import { impersonateAccount } from "../test-utils/fork";
 import { Account } from "types";
@@ -17,7 +17,7 @@ describe("AuraToken", () => {
     let cvx: AuraToken;
     let minter: AuraMinter;
     let mocks: DeployMocksResult;
-    let voterProxy: CurveVoterProxy;
+    let voterProxy: VoterProxy;
     let deployer: Signer;
     let alice: Signer;
     let aliceAddress: string;

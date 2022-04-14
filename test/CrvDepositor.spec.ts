@@ -5,7 +5,7 @@ import { deployPhase1, deployPhase2, deployPhase3, MultisigConfig } from "../scr
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import {
     CrvDepositor,
-    CurveVoterProxy,
+    VoterProxy,
     CvxCrvToken,
     ERC20__factory,
     ERC20,
@@ -21,7 +21,7 @@ describe("CrvDepositor", () => {
     let mocks: DeployMocksResult;
     let crvDepositor: CrvDepositor;
     let cvxCrv: CvxCrvToken;
-    let voterProxy: CurveVoterProxy;
+    let voterProxy: VoterProxy;
     let deployer: Signer;
     let deployerAddress: string;
     let alice: Signer;

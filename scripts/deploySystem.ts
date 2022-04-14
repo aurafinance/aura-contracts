@@ -13,8 +13,8 @@ import {
     BalLiquidityProvider__factory,
     Booster__factory,
     Booster,
-    CurveVoterProxy__factory,
-    CurveVoterProxy,
+    VoterProxy__factory,
+    VoterProxy,
     RewardFactory__factory,
     RewardFactory,
     StashFactoryV2__factory,
@@ -164,7 +164,7 @@ interface BalancerPoolDeployed {
     address: string;
 }
 interface Phase1Deployed {
-    voterProxy: CurveVoterProxy;
+    voterProxy: VoterProxy;
 }
 
 interface Factories {
@@ -244,10 +244,10 @@ async function deployPhase1(
     // 1. VoterProxy
     // -----------------------------
 
-    const voterProxy = await deployContract<CurveVoterProxy>(
+    const voterProxy = await deployContract<VoterProxy>(
         hre,
-        new CurveVoterProxy__factory(deployer),
-        "CurveVoterProxy",
+        new VoterProxy__factory(deployer),
+        "VoterProxy",
         [extSystem.minter, extSystem.token, extSystem.tokenBpt, extSystem.votingEscrow, extSystem.gaugeController],
         {},
         debug,
