@@ -89,15 +89,18 @@ describe("BaseRewardPool4626", () => {
 
             const depositTokenBalanceBefore = await depositToken.balanceOf(pool.crvRewards);
             const balanceBefore = await crvRewards.balanceOf(aliceAddress);
+            const lpBalanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
 
             await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
             await crvRewards.deposit(amount, aliceAddress);
 
             const depositTokenBalanceAfter = await depositToken.balanceOf(pool.crvRewards);
             const balanceAfter = await crvRewards.balanceOf(aliceAddress);
+            const lpBalanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
 
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
             expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(amount);
+            expect(lpBalanceBefore.sub(lpBalanceAfter)).eq(amount);
         });
 
         it("allows direct deposits via mint()", async () => {
