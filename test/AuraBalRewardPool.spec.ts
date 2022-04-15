@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraBalRewardPool, AuraBalRewardPool__factory, ERC20, MockVoteStorage__factory } from "../types/generated";
+import { AuraBalRewardPool, AuraBalRewardPool__factory, ERC20 } from "../types/generated";
 import { ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { increaseTime, getTimestamp } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
@@ -162,18 +162,10 @@ describe("AuraBalRewardPool", () => {
         it("penalises claimers who do not lock", async () => {
             await increaseTime(ONE_WEEK.div(5));
             const earned = await rewards.earned(bobAddress);
-            console.log(
-                "earned",
-                earned.toString(),
-                "rewardAmount",
-                rewardAmount.toString(),
-                "rewardAmount.div(30)",
-                rewardAmount.div(30).toString(),
-            );
-            assertBNClosePercent(earned, rewardAmount.div(30), "0.01");
+            assertBNClosePercent(earned, rewardAmount.div(20), "0.01");
 
             const balBefore = await contracts.cvx.balanceOf(bobAddress);
-            await rewards.connect(bob).getReward(false); // penalty
+            await rewards.connect(bob).getReward(false);
             const balAfter = await contracts.cvx.balanceOf(bobAddress);
 
             assertBNClosePercent(balAfter.sub(balBefore), earned.mul(8).div(10), "0.001");

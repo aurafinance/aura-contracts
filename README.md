@@ -4,11 +4,6 @@
 
 ### Pre Requisites
 
-Before running any command, you need to create a `.env` file and set a BIP-39 compatible mnemonic as an environment
-variable. Follow the example in `.env.example`. If you don't already have a mnemonic, use this [website](https://iancoleman.io/bip39/) to generate one.
-
-Then, proceed with installing dependencies:
-
 ### Submodule
 
 ```sh
