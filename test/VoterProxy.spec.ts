@@ -106,14 +106,22 @@ describe("VoterProxy", () => {
     describe("validates vote hash from Snapshot Hub", async () => {
         it("with a valid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await booster.connect(daoMultisig).setVote(hash, true);
-            const isValid = await voterProxy.isValidSignature(hash, sig);
+            let tx = await booster.connect(daoMultisig).setVote(hash, true);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
+
+            let isValid = await voterProxy.isValidSignature(hash, sig);
             expect(isValid).to.equal(eip1271MagicValue);
+
+            tx = await booster.connect(daoMultisig).setVote(hash, false);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, false);
+            isValid = await voterProxy.isValidSignature(invalidHash, sig);
+            expect(isValid).to.equal("0xffffffff");
         });
 
         it("with an invalid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await booster.connect(daoMultisig).setVote(hash, true);
+            const tx = await booster.connect(daoMultisig).setVote(hash, true);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
             const isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
         });
@@ -156,11 +164,15 @@ describe("VoterProxy", () => {
             const tx = voterProxy.connect(eoa).release();
             await expect(tx).to.revertedWith("!auth");
         });
-
         it("can not call setRewardDeposit", async () => {
             const eoa = accounts[5];
             const eoaAddress = await eoa.getAddress();
             const tx = voterProxy.connect(eoa).setRewardDeposit(await deployer.getAddress(), eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+        it("can not call setSystemConfig", async () => {
+            const eoa = accounts[5];
+            const tx = voterProxy.connect(eoa).setSystemConfig(ZERO_ADDRESS, ZERO_ADDRESS);
             await expect(tx).to.revertedWith("!auth");
         });
         it("can not call withdraw", async () => {
@@ -213,6 +225,18 @@ describe("VoterProxy", () => {
             await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
             expect(await voterProxy.withdrawer()).eq(eoaAddress);
             expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
+        });
+    });
+
+    describe("setting setSystemConfig", () => {
+        it("allows owner to set external system config", async () => {
+            const eoa = accounts[6];
+            const eoa7 = accounts[7];
+            const eoaAddress = await eoa.getAddress();
+            const eoaAddress7 = await eoa7.getAddress();
+            await voterProxy.connect(daoMultisig).setSystemConfig(eoaAddress, eoaAddress7);
+            expect(await voterProxy.gaugeController()).eq(eoaAddress);
+            expect(await voterProxy.mintr()).eq(eoaAddress7);
         });
     });
 
