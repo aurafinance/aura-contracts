@@ -162,7 +162,7 @@ describe("AuraBalRewardPool", () => {
         it("penalises claimers who do not lock", async () => {
             await increaseTime(ONE_WEEK.div(5));
             const earned = await rewards.earned(bobAddress);
-            assertBNClosePercent(earned, rewardAmount.div(20), "0.01");
+            assertBNClosePercent(earned, rewardAmount.div(30), "0.01");
 
             const balBefore = await contracts.cvx.balanceOf(bobAddress);
             await rewards.connect(bob).getReward(false);
