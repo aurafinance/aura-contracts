@@ -1,4 +1,3 @@
-import { verifyEtherscan } from "./etherscan";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Contract, ContractFactory, ContractReceipt, ContractTransaction, Overrides } from "ethers";
 import { formatUnits } from "@ethersproject/units";
