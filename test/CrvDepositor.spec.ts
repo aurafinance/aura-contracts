@@ -38,7 +38,7 @@ describe("CrvDepositor", () => {
         deployerAddress = await deployer.getAddress();
 
         mocks = await deployMocks(hre, deployer);
-        multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
@@ -209,6 +209,30 @@ describe("CrvDepositor", () => {
 
             expect(lockTimeDelta.toString()).to.equal("0");
             expect(lockAmountDelta.toString()).to.equal("0");
+        });
+    });
+    describe("setting setters", () => {
+        it("allows daoOperator to set daoOperator", async () => {
+            expect(await crvDepositor.daoOperator()).eq(multisigs.daoMultisig);
+            const daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
+            await crvDepositor.connect(daoMultisig).setDaoOperator(multisigs.treasuryMultisig);
+            expect(await crvDepositor.daoOperator()).eq(multisigs.treasuryMultisig);
+        });
+        it("allows fails to set daoOperator if not daoOperator", async () => {
+            const daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
+            const tx = crvDepositor.connect(daoMultisig).setDaoOperator(multisigs.treasuryMultisig);
+            await expect(tx).to.revertedWith("!auth");
+        });
+        it("allows feeManager to set feeManager", async () => {
+            expect(await crvDepositor.feeManager()).eq(multisigs.daoMultisig);
+            const daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
+            await crvDepositor.connect(daoMultisig).setFeeManager(multisigs.treasuryMultisig);
+            expect(await crvDepositor.feeManager()).eq(multisigs.treasuryMultisig);
+        });
+        it("allows fails to set feeManager if not feeManager", async () => {
+            const daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
+            const tx = crvDepositor.connect(daoMultisig).setFeeManager(multisigs.treasuryMultisig);
+            await expect(tx).to.revertedWith("!auth");
         });
     });
 });
