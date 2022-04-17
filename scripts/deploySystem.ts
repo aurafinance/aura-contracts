@@ -1088,7 +1088,10 @@ async function deployPhase4(
         await waitForTx(tx, debug, waitForBlocks);
     }
 
-    const feeDistros = [feeDistribution];
+    const feeDistros = [];
+    if (!!feeDistribution && feeDistribution != ZERO_ADDRESS) {
+        feeDistros.push(feeDistribution);
+    }
     if (!!nativeTokenDistribution && nativeTokenDistribution != ZERO_ADDRESS) {
         feeDistros.push(nativeTokenDistribution);
     }

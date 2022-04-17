@@ -63,6 +63,15 @@ interface IVault {
 
     function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
 
+    function getPoolTokens(bytes32 poolId)
+        external
+        view
+        returns (
+            address[] memory tokens,
+            uint256[] memory balances,
+            uint256 lastChangeBlock
+        );
+
     function joinPool(
         bytes32 poolId,
         address sender,
@@ -76,6 +85,26 @@ interface IVault {
         uint256 limit,
         uint256 deadline
     ) external returns (uint256 amountCalculated);
+
+    function exitPool(
+        bytes32 poolId,
+        address sender,
+        address payable recipient,
+        ExitPoolRequest memory request
+    ) external;
+
+    struct ExitPoolRequest {
+        IAsset[] assets;
+        uint256[] minAmountsOut;
+        bytes userData;
+        bool toInternalBalance;
+    }
+    enum ExitKind {
+        EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+        EXACT_BPT_IN_FOR_TOKENS_OUT,
+        BPT_IN_FOR_EXACT_TOKENS_OUT,
+        MANAGEMENT_FEE_TOKENS_OUT // for ManagedPool
+    }
 }
 
 interface IAsset {
