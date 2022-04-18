@@ -9,6 +9,8 @@ export const advanceBlock = async (blocks?: BN | number): Promise<void> => {
         await ethers.provider.send("evm_mine", []);
     } else {
         await ethers.provider.send("hardhat_mine", [ethers.utils.hexlify(blocks)]);
+        // work around for issue [hardhat_mine produces a failed tx when running in Coverage](https://github.com/NomicFoundation/hardhat/issues/2467)
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
     }
 };
 
