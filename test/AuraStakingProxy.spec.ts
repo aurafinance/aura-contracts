@@ -5,7 +5,7 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { impersonateAccount, increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../test-utils";
 import { deployContract } from "../tasks/utils";
-import { MockERC20__factory } from "../types";
+import { MockERC20, MockERC20__factory } from "../types";
 
 describe("AuraStakingProxy", () => {
     let accounts: Signer[];
@@ -89,13 +89,31 @@ describe("AuraStakingProxy", () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).setPendingOwner(ZERO_ADDRESS);
                 await expect(tx).to.revertedWith("!auth");
             });
-            it("fails to apply pending owner", async () => {
+            it("fails to apply pending owner due to auth", async () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).applyPendingOwner();
                 await expect(tx).to.revertedWith("!auth");
+            });
+            it("fails to apply pending owner due to wrong owner", async () => {
+                const oldOwner = await contracts.cvxStakingProxy.owner();
+                const pendingOwner = await contracts.cvxStakingProxy.pendingOwner();
+
+                // sets wrong owner address
+                await contracts.cvxStakingProxy.setPendingOwner(ZERO_ADDRESS);
+
+                expect(oldOwner).not.eq(pendingOwner);
+                const tx = contracts.cvxStakingProxy.applyPendingOwner();
+                await expect(tx).to.revertedWith("invalid owner");
+
+                // reset
+                await contracts.cvxStakingProxy.setPendingOwner(pendingOwner);
             });
             it("fails to set call incentive", async () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).setCallIncentive("0");
                 await expect(tx).to.revertedWith("!auth");
+            });
+            it("fails to set call incentive too high", async () => {
+                const tx = contracts.cvxStakingProxy.setCallIncentive("101");
+                await expect(tx).to.revertedWith("too high");
             });
             it("fails to set reward contract", async () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).setRewards(ZERO_ADDRESS);
@@ -194,6 +212,29 @@ describe("AuraStakingProxy", () => {
                 const balanceAfter = await randomToken.balanceOf(deployerAddress);
                 expect(balanceAfter).eq(amount);
             });
+            it("fails to rescue crv", async () => {
+                const tx = contracts.cvxStakingProxy.rescueToken(mocks.crv.address, ZERO_ADDRESS);
+                await expect(tx).to.revertedWith("not allowed");
+            });
+            it("fails to rescue cvx", async () => {
+                const tx = contracts.cvxStakingProxy.rescueToken(contracts.cvx.address, ZERO_ADDRESS);
+                await expect(tx).to.revertedWith("not allowed");
+            });
+            it("fails to rescue cvxCrv", async () => {
+                const tx = contracts.cvxStakingProxy.rescueToken(contracts.cvxCrv.address, ZERO_ADDRESS);
+                await expect(tx).to.revertedWith("not allowed");
+            });
+            it("set call incentive", async () => {
+                const oldCallIncentive = await contracts.cvxStakingProxy.callIncentive();
+                const tx = contracts.cvxStakingProxy.setCallIncentive(oldCallIncentive.add(1));
+                await expect(tx)
+                    .to.emit(contracts.cvxStakingProxy, "CallIncentiveChanged")
+                    .withArgs(oldCallIncentive.add(1));
+                const newCallIncentive = await contracts.cvxStakingProxy.callIncentive();
+                expect(newCallIncentive).not.eq(oldCallIncentive);
+                // reset
+                await contracts.cvxStakingProxy.setCallIncentive(oldCallIncentive);
+            });
         });
     });
 
@@ -204,7 +245,7 @@ describe("AuraStakingProxy", () => {
             await expect(contracts.cvxStakingProxy.connect(accounts[0]).distribute()).to.be.revertedWith("!auth");
             await contracts.cvxStakingProxy.connect(accounts[1]).distribute();
         });
-        it("allows anyone to distribute if the keeper is 0", async () => {
+        it("allows anyone to distribute", async () => {
             await contracts.cvxStakingProxy.setKeeper(ZERO_ADDRESS);
             await contracts.cvxStakingProxy.connect(accounts[0]).distribute();
         });
@@ -229,6 +270,59 @@ describe("AuraStakingProxy", () => {
             const callIncentiveAmount = minOut.mul(callIncentive).div("10000");
 
             expect(balanceAfter.sub(balanceBefore)).gt(minOut.sub(callIncentiveAmount));
+        });
+    });
+    describe("distributing other rewards", () => {
+        let randomToken: MockERC20;
+        let deployerAddress: string;
+        before(async () => {
+            // const amount = ethers.utils.parseEther("100");
+            deployerAddress = await accounts[0].getAddress();
+            randomToken = await deployContract(
+                new MockERC20__factory(accounts[0]),
+                "RandomToken",
+                ["Random", "RND", 18, deployerAddress, 100],
+                {},
+                false,
+            );
+        });
+        it("fails to distribute cvxCrv or crv", async () => {
+            await expect(contracts.cvxStakingProxy.distributeOther(mocks.crv.address)).to.be.revertedWith(
+                "not allowed",
+            );
+            await expect(contracts.cvxStakingProxy.distributeOther(contracts.cvxCrv.address)).to.be.revertedWith(
+                "not allowed",
+            );
+        });
+        it("allows anyone to distribute", async () => {
+            await contracts.cvxStakingProxy.distributeOther(randomToken.address);
+        });
+        it("distribute other rewards", async () => {
+            const user = await accounts[1];
+            const userAddress = await user.getAddress();
+            const amount = ethers.utils.parseEther("100");
+
+            // Add reward to aura locker
+            await contracts.cvxLocker.addReward(randomToken.address, contracts.cvxStakingProxy.address);
+
+            // Send tokens to the staking proxy
+            await randomToken.transfer(contracts.cvxStakingProxy.address, amount);
+
+            // Distribute rewards
+            const userTokenBalanceBefore = await randomToken.balanceOf(userAddress);
+            const proxyTokenBalanceBefore = await randomToken.balanceOf(contracts.cvxStakingProxy.address);
+            const callIncentive = await contracts.cvxStakingProxy.callIncentive();
+            const denominator = await contracts.cvxStakingProxy.denominator();
+            const incentiveAmount = proxyTokenBalanceBefore.mul(callIncentive).div(denominator);
+            const rewardAmount = proxyTokenBalanceBefore.sub(incentiveAmount);
+
+            const tx = contracts.cvxStakingProxy.connect(user).distributeOther(randomToken.address);
+            await expect(tx)
+                .to.emit(contracts.cvxStakingProxy, "RewardsDistributed")
+                .withArgs(randomToken.address, rewardAmount);
+            expect(await randomToken.balanceOf(userAddress), "incentive to sender").eq(
+                userTokenBalanceBefore.add(incentiveAmount),
+            );
         });
     });
 });

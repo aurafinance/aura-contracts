@@ -4,7 +4,13 @@ import { BigNumberish } from "@ethersproject/bignumber";
 import { BN } from "./math";
 import { ONE_WEEK } from "./constants";
 
-export const advanceBlock = async (): Promise<void> => ethers.provider.send("evm_mine", []);
+export const advanceBlock = async (blocks?: BN | number): Promise<void> => {
+    if (blocks === undefined) {
+        await ethers.provider.send("evm_mine", []);
+    } else {
+        await ethers.provider.send("hardhat_mine", [ethers.utils.hexlify(blocks)]);
+    }
+};
 
 export const increaseTime = async (length: BN | number): Promise<void> => {
     await ethers.provider.send("evm_increaseTime", [BN.from(length).toNumber()]);
