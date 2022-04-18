@@ -75,8 +75,8 @@ describe("AuraBalRewardPool", () => {
         const cvxBalanceBefore = await contracts.cvx.balanceOf(accountAddress);
         const pendingPenaltyBefore = await rewards.pendingPenalty();
 
-        // Test
-        const tx = await rewards.connect(signer).withdraw(amount, claim, lock); //withdraw(amount,claim, lock)
+        // Test withdraw(amount,claim, lock)
+        const tx = await rewards.connect(signer).withdraw(amount, claim, lock);
         await expect(tx).to.emit(rewards, "Withdrawn").withArgs(accountAddress, amount);
         const pendingPenaltyAfter = await rewards.pendingPenalty();
         const lockedBalanceAfter = await contracts.cvxLocker.balances(accountAddress);
@@ -93,12 +93,10 @@ describe("AuraBalRewardPool", () => {
                 expect(pendingPenaltyAfter, "no penalty").eq(pendingPenaltyBefore);
             } else {
                 const cvxBalanceAfter = await contracts.cvx.balanceOf(accountAddress);
-                //  reward is calculated after the withdraw, so we can't check it directly, a simple rule of 3 is used
                 const pendingPenalty = pendingPenaltyAfter.add(pendingPenaltyBefore);
-                const earned = pendingPenalty.mul(10).div(2);
-
-                assertBNClosePercent(cvxBalanceAfter.sub(cvxBalanceBefore), earned.mul(8).div(10), "0.001");
-                assertBNClosePercent(await rewards.pendingPenalty(), earned.mul(2).div(10), "0.001");
+                // The amount CVX send to the user is 4 times the penalty, ie: rewards to user = earned 80%, penalty = earned 20%
+                assertBNClosePercent(cvxBalanceAfter.sub(cvxBalanceBefore), pendingPenalty.mul(4), "0.001");
+                assertBNClosePercent(await rewards.pendingPenalty(), pendingPenalty, "0.001");
             }
         }
     }
