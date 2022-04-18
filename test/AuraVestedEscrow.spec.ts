@@ -4,12 +4,12 @@ import { expect } from "chai";
 import { deployPhase1, deployPhase2, Phase2Deployed } from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraLocker, AuraVestedEscrow, AuraVestedEscrow__factory, ERC20 } from "../types/generated";
-import { ONE_WEEK } from "../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { getTimestamp, increaseTime } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 
-describe("AuraBalRewardPool", () => {
+describe("AuraVestedEscrow", () => {
     let accounts: Signer[];
 
     let contracts: Phase2Deployed;
@@ -125,7 +125,13 @@ describe("AuraBalRewardPool", () => {
         const balEnd = await aura.balanceOf(aliceAddress);
         expect(balEnd.sub(balAfter)).lt(simpleToExactAmount(0.01));
     });
-
+    it("fails to claim if the locker address is zero", async () => {
+        await vestedEscrow.connect(fundAdmin).setLocker(ZERO_ADDRESS);
+        expect(await vestedEscrow.auraLocker()).eq(ZERO_ADDRESS);
+        await expect(vestedEscrow.connect(alice).claim(true)).to.be.revertedWith("!auraLocker");
+        // return original value
+        await vestedEscrow.connect(fundAdmin).setLocker(auraLocker.address);
+    });
     // fast forward 1 month, lock in auraLocker
     it("allows claimers to lock in AuraLocker", async () => {
         await increaseTime(ONE_WEEK.mul(4));
@@ -184,5 +190,44 @@ describe("AuraBalRewardPool", () => {
     it("allows admin to change locker", async () => {
         await vestedEscrow.connect(bob).setLocker(bobAddress);
         expect(await vestedEscrow.auraLocker()).eq(bobAddress);
+    });
+
+    describe("constructor fails", async () => {
+        before(async () => {
+            deployTime = await getTimestamp();
+        });
+        it("if start date is not in the future", async () => {
+            await expect(
+                new AuraVestedEscrow__factory(deployer).deploy(
+                    aura.address,
+                    fundAdminAddress,
+                    auraLocker.address,
+                    deployTime.sub(ONE_WEEK),
+                    deployTime.add(ONE_WEEK.mul(53)),
+                ),
+            ).to.be.revertedWith("start must be future");
+        });
+        it("if end date is before the start date", async () => {
+            await expect(
+                new AuraVestedEscrow__factory(deployer).deploy(
+                    aura.address,
+                    fundAdminAddress,
+                    auraLocker.address,
+                    deployTime.add(ONE_WEEK),
+                    deployTime.add(ONE_WEEK),
+                ),
+            ).to.be.revertedWith("end must be greater");
+        });
+        it("if the vested period is less than 16 weeks", async () => {
+            await expect(
+                new AuraVestedEscrow__factory(deployer).deploy(
+                    aura.address,
+                    fundAdminAddress,
+                    auraLocker.address,
+                    deployTime.add(ONE_WEEK),
+                    deployTime.add(ONE_WEEK.mul(15)),
+                ),
+            ).to.be.revertedWith("!short");
+        });
     });
 });
