@@ -2,14 +2,7 @@
 pragma solidity ^0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-
-interface IFeeClaim {
-    function claim(address) external;
-
-    function last_token_time() external view returns (uint256);
-
-    function token() external view returns (address);
-}
+import { IFeeDistributor } from "./mocks/balancer/MockFeeDistro.sol";
 
 interface IBooster {
     function earmarkFees(address _feeDistro) external returns (bool);
@@ -26,47 +19,40 @@ contract ClaimFeesHelper {
     IBooster public immutable booster;
     address public immutable voterProxy;
 
-    struct Distro {
-        IERC20 feeToken;
-        uint256 lastTokenTime;
-    }
-    mapping(address => Distro) public feeDistros;
+    mapping(address => uint256) public lastTokenTimes;
+    IFeeDistributor public feeDistro;
 
     /**
      * @param _booster      Booster.sol, e.g. 0xF403C135812408BFbE8713b5A23a04b3D48AAE31
      * @param _voterProxy   CVX VoterProxy e.g. 0x989AEb4d175e16225E39E87d0D97A3360524AD80
-     * @param _feeDistros   FeeDistro array e.g. 0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc
+     * @param _feeDistro    FeeDistro e.g. 0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc
      */
     constructor(
         address _booster,
         address _voterProxy,
-        address[] memory _feeDistros
+        address _feeDistro
     ) {
         booster = IBooster(_booster);
         voterProxy = _voterProxy;
-
-        for (uint256 i = 0; i < _feeDistros.length; i++) {
-            address distro = _feeDistros[i];
-            feeDistros[distro] = Distro(IERC20(IFeeClaim(distro).token()), 0);
-        }
+        feeDistro = IFeeDistributor(_feeDistro);
     }
 
     /**
      * @dev Claims fees from fee claimer, and pings the booster to distribute
      */
-    function claimFees(address _distro) external {
-        Distro storage distro = feeDistros[_distro];
+    function claimFees(IERC20 _token) external {
+        uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
+        require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
 
-        uint256 tokenTime = IFeeClaim(_distro).last_token_time();
-        require(tokenTime > distro.lastTokenTime, "not time yet");
-        uint256 bal = distro.feeToken.balanceOf(voterProxy);
-        IFeeClaim(_distro).claim(voterProxy);
+        uint256 bal = IERC20(_token).balanceOf(voterProxy);
+        feeDistro.claimToken(voterProxy, _token);
 
-        while (distro.feeToken.balanceOf(voterProxy) <= bal) {
-            IFeeClaim(_distro).claim(voterProxy);
+        // Loop through until something is transferred
+        while (IERC20(_token).balanceOf(voterProxy) <= bal) {
+            feeDistro.claimToken(voterProxy, _token);
         }
 
-        booster.earmarkFees(_distro);
-        distro.lastTokenTime = tokenTime;
+        booster.earmarkFees(address(_token));
+        lastTokenTimes[address(_token)] = tokenTime;
     }
 }
