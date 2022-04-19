@@ -1091,7 +1091,7 @@ async function deployPhase4(
         hre,
         new ClaimFeesHelper__factory(deployer),
         "ClaimFeesHelper",
-        [deployment.booster.address, deployment.voterProxy.address, feeDistribution],
+        [deployment.booster.address, deployment.voterProxy.address, feeDistribution || ZERO_ADDRESS],
         {},
         debug,
         waitForBlocks,
