@@ -11,8 +11,8 @@ import {
     MockVoting__factory,
     MockWalletChecker,
     MockWalletChecker__factory,
-    MockFeeDistro,
-    MockFeeDistro__factory,
+    MockFeeDistributor,
+    MockFeeDistributor__factory,
     MockCurveGauge,
     MockCurveGauge__factory,
     MockCurveMinter__factory,
@@ -32,8 +32,7 @@ interface DeployMocksResult {
     crvMinter: MockCurveMinter;
     voting: MockVoting;
     votingEscrow: MockCurveVoteEscrow;
-    feeDistribution: MockFeeDistro;
-    nativeTokenDistribution: MockFeeDistro;
+    feeDistribution: MockFeeDistributor;
     smartWalletChecker: MockWalletChecker;
     gauges: MockCurveGauge[];
     crvBpt: MockBalancerPoolToken;
@@ -161,37 +160,22 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         debug,
     );
 
-    const feeToken = await deployContract<MockERC20>(
+    const feeDistro = await deployContract<MockFeeDistributor>(
         hre,
-        new MockERC20__factory(deployer),
-        "FeeToken",
-        ["Fee Token", "feeToken", 18, deployerAddress, 10000000],
+        new MockFeeDistributor__factory(deployer),
+        "MockFeeDistributor",
+        [
+            [lptoken.address, crv.address],
+            [simpleToExactAmount(1), simpleToExactAmount(1)],
+        ],
         {},
         debug,
     );
 
-    const feeDistro = await deployContract<MockFeeDistro>(
-        hre,
-        new MockFeeDistro__factory(deployer),
-        "MockFeeDistro",
-        [feeToken.address, simpleToExactAmount(1)],
-        {},
-        debug,
-    );
-
-    tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
+    tx = await lptoken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
-    const nativeFeeDistro = await deployContract<MockFeeDistro>(
-        hre,
-        new MockFeeDistro__factory(deployer),
-        "MockFeeDistro",
-        [crv.address, simpleToExactAmount(1)],
-        {},
-        debug,
-    );
-
-    tx = await crv.transfer(nativeFeeDistro.address, simpleToExactAmount(1, 22));
+    tx = await crv.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
     const smartWalletChecker = await deployContract<MockWalletChecker>(
@@ -276,7 +260,6 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         votingEscrow,
         smartWalletChecker,
         feeDistribution: feeDistro,
-        nativeTokenDistribution: nativeFeeDistro,
         gauges,
         crvBpt,
         balancerVault,
@@ -289,7 +272,6 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
             feeDistribution: feeDistro.address,
-            nativeTokenDistribution: nativeFeeDistro.address,
             gaugeController: voting.address,
             voteOwnership: voting.address,
             voteParameter: voting.address,

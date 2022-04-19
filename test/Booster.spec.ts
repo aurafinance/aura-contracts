@@ -7,9 +7,8 @@ import {
     BoosterOwner,
     ERC20__factory,
     BaseRewardPool__factory,
-    MockFeeDistro__factory,
+    MockFeeDistributor__factory,
     MockERC20__factory,
-    BaseRewardPool4626__factory,
 } from "../types/generated";
 import { Signer } from "ethers";
 import { increaseTime } from "../test-utils/time";
@@ -56,8 +55,8 @@ describe("Booster", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
-        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.nativeTokenDistribution.address);
-        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.feeDistribution.address);
+        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.lptoken.address, mocks.feeDistribution.address);
+        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
         contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         ({ booster, boosterOwner } = contracts);
@@ -164,56 +163,70 @@ describe("Booster", () => {
         });
 
         it("has both native token and distro in the initial config", async () => {
-            const nativeDistro = await booster.fees(mocks.nativeTokenDistribution.address);
-            expect(nativeDistro.token).eq(mocks.crv.address);
+            const nativeDistro = await booster.feeTokens(mocks.crv.address);
+            expect(nativeDistro.distro).eq(mocks.feeDistribution.address);
             expect(nativeDistro.rewards).eq(contracts.cvxCrvRewards.address);
             expect(nativeDistro.active).eq(true);
-            const feeDistro = await booster.fees(mocks.feeDistribution.address);
-            expect(feeDistro.token).eq(await mocks.feeDistribution.token());
+            const feeDistro = await booster.feeTokens(mocks.lptoken.address);
+            expect(feeDistro.distro).eq(mocks.feeDistribution.address);
             expect(feeDistro.rewards).eq(await contracts.cvxCrvRewards.extraRewards(0));
             expect(feeDistro.active).eq(true);
         });
         describe("setting fee info fails if", () => {
             it("not called by owner", async () => {
-                await expect(booster.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS)).to.be.revertedWith("!auth");
-                await expect(boosterOwner.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS)).to.be.revertedWith("!owner");
-            });
-            it("distro contract already added", async () => {
+                await expect(booster.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
+                    "!auth",
+                );
                 await expect(
-                    boosterOwner.connect(accounts[6]).setFeeInfo(mocks.nativeTokenDistribution.address),
-                ).to.be.revertedWith("Already exists");
+                    boosterOwner.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS),
+                ).to.be.revertedWith("!owner");
             });
-            it("distro has no fee token", async () => {
-                const feeDistro = await new MockFeeDistro__factory(deployer).deploy(
-                    ZERO_ADDRESS,
-                    simpleToExactAmount(1),
-                );
-                await expect(boosterOwner.connect(accounts[6]).setFeeInfo(feeDistro.address)).to.be.revertedWith(
-                    "Fee distro not initialised",
-                );
+            it("either input is null", async () => {
+                await expect(
+                    boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, ZERO_ADDRESS),
+                ).to.be.revertedWith("!addresses");
+                await expect(
+                    boosterOwner.connect(accounts[6]).setFeeInfo(ZERO_ADDRESS, mocks.feeDistribution.address),
+                ).to.be.revertedWith("!addresses");
+            });
+            it("gauge token is added", async () => {
+                await expect(
+                    boosterOwner
+                        .connect(accounts[6])
+                        .setFeeInfo(mocks.gauges[0].address, mocks.feeDistribution.address),
+                ).to.be.revertedWith("!token");
             });
         });
         describe("setting fee info", () => {
             it("sets directly to cvxCrv if the reward token is crv", async () => {
-                const feeDistro = await new MockFeeDistro__factory(deployer).deploy(
-                    mocks.crv.address,
-                    simpleToExactAmount(1),
+                const feeDistro = await new MockFeeDistributor__factory(deployer).deploy(
+                    [mocks.crv.address],
+                    [simpleToExactAmount(1)],
                 );
-                await boosterOwner.connect(accounts[6]).setFeeInfo(feeDistro.address);
+                await boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, feeDistro.address);
 
-                const storage = await booster.fees(feeDistro.address);
-                expect(storage.token).eq(mocks.crv.address);
+                const storage = await booster.feeTokens(mocks.crv.address);
+                expect(storage.distro).eq(feeDistro.address);
                 expect(storage.rewards).eq(contracts.cvxCrvRewards.address);
+
+                await boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
             });
             it("creates a token rewards otherwise", async () => {
-                const feeDistro = await new MockFeeDistro__factory(deployer).deploy(
-                    mocks.lptoken.address,
-                    simpleToExactAmount(1),
+                const newMockToken = await new MockERC20__factory(deployer).deploy(
+                    "mk2",
+                    "mk2",
+                    18,
+                    deployerAddress,
+                    1000,
                 );
-                await boosterOwner.connect(accounts[6]).setFeeInfo(feeDistro.address);
+                const feeDistro = await new MockFeeDistributor__factory(deployer).deploy(
+                    [newMockToken.address],
+                    [simpleToExactAmount(1)],
+                );
+                await boosterOwner.connect(accounts[6]).setFeeInfo(newMockToken.address, feeDistro.address);
 
-                const storage = await booster.fees(feeDistro.address);
-                expect(storage.token).eq(await feeDistro.token());
+                const storage = await booster.feeTokens(newMockToken.address);
+                expect(storage.distro).eq(feeDistro.address);
                 expect(storage.rewards).eq(await contracts.cvxCrvRewards.extraRewards(1));
                 expect(storage.rewards).not.eq(contracts.cvxCrvRewards.address);
             });
@@ -233,37 +246,37 @@ describe("Booster", () => {
                 );
             });
             it("sets the active status on a distro", async () => {
-                const addr = mocks.nativeTokenDistribution.address;
+                const addr = mocks.crv.address;
                 let tx = await boosterOwner.connect(accounts[6]).updateFeeInfo(addr, false);
                 await expect(tx).to.emit(booster, "FeeInfoChanged").withArgs(addr, false);
+                expect((await booster.feeTokens(addr)).active).eq(false);
 
                 tx = await boosterOwner.connect(accounts[6]).updateFeeInfo(addr, true);
                 await expect(tx).to.emit(booster, "FeeInfoChanged").withArgs(addr, true);
+                expect((await booster.feeTokens(addr)).active).eq(true);
             });
         });
         describe("earmarking fees", () => {
             it("allows for crv to be earmarked to cvxCrv rewards", async () => {
                 const balbefore = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
-                await booster.earmarkFees(mocks.nativeTokenDistribution.address);
+                await booster.earmarkFees(mocks.crv.address);
                 const balafter = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
 
                 expect(balafter).eq(balbefore.add(simpleToExactAmount(1)));
             });
             it("sends 100% of the rewards to the reward contract", async () => {
-                const feeDistro = await booster.fees(mocks.feeDistribution.address);
-                const token = MockERC20__factory.connect(feeDistro.token, alice);
+                const feeDistro = await booster.feeTokens(mocks.lptoken.address);
+                const token = MockERC20__factory.connect(mocks.lptoken.address, alice);
 
                 const balbefore = await token.balanceOf(feeDistro.rewards);
-                await booster.earmarkFees(mocks.feeDistribution.address);
+                await booster.earmarkFees(mocks.lptoken.address);
                 const balafter = await token.balanceOf(feeDistro.rewards);
 
                 expect(balafter).eq(balbefore.add(simpleToExactAmount(1)));
             });
             it("fails if the distro is inactive", async () => {
-                await boosterOwner.connect(accounts[6]).updateFeeInfo(mocks.nativeTokenDistribution.address, false);
-                await expect(booster.earmarkFees(mocks.nativeTokenDistribution.address)).to.be.revertedWith(
-                    "Inactive distro",
-                );
+                await boosterOwner.connect(accounts[6]).updateFeeInfo(mocks.crv.address, false);
+                await expect(booster.earmarkFees(mocks.crv.address)).to.be.revertedWith("Inactive distro");
             });
             it("fails if the distro does not exist", async () => {
                 await expect(booster.earmarkFees(ZERO_ADDRESS)).to.be.revertedWith("Inactive distro");

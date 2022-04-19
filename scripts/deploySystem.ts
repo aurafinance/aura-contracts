@@ -119,7 +119,6 @@ interface ExtSystemConfig {
     minter: string;
     votingEscrow: string;
     feeDistribution: string;
-    nativeTokenDistribution?: string;
     gaugeController: string;
     voteOwnership?: string;
     voteParameter?: string;
@@ -1048,7 +1047,7 @@ async function deployPhase4(
 ): Promise<SystemDeployed> {
     const deployer = signer;
 
-    const { token, gauges, feeDistribution, nativeTokenDistribution } = config;
+    const { token, gauges, feeDistribution } = config;
     const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, cvxCrvBpt, poolManager, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
@@ -1088,18 +1087,11 @@ async function deployPhase4(
         await waitForTx(tx, debug, waitForBlocks);
     }
 
-    const feeDistros = [];
-    if (!!feeDistribution && feeDistribution != ZERO_ADDRESS) {
-        feeDistros.push(feeDistribution);
-    }
-    if (!!nativeTokenDistribution && nativeTokenDistribution != ZERO_ADDRESS) {
-        feeDistros.push(nativeTokenDistribution);
-    }
     const feeCollector = await deployContract<ClaimFeesHelper>(
         hre,
         new ClaimFeesHelper__factory(deployer),
         "ClaimFeesHelper",
-        [deployment.booster.address, deployment.voterProxy.address, feeDistros],
+        [deployment.booster.address, deployment.voterProxy.address, feeDistribution],
         {},
         debug,
         waitForBlocks,
