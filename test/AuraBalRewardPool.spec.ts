@@ -93,7 +93,7 @@ describe("AuraBalRewardPool", () => {
                 expect(pendingPenaltyAfter, "no penalty").eq(pendingPenaltyBefore);
             } else {
                 const cvxBalanceAfter = await contracts.cvx.balanceOf(accountAddress);
-                const pendingPenalty = pendingPenaltyAfter.add(pendingPenaltyBefore);
+                const pendingPenalty = pendingPenaltyAfter.sub(pendingPenaltyBefore);
                 // The amount CVX send to the user is 4 times the penalty, ie: rewards to user = earned 80%, penalty = earned 20%
                 assertBNClosePercent(cvxBalanceAfter.sub(cvxBalanceBefore), pendingPenalty.mul(4), "0.001");
                 assertBNClosePercent(await rewards.pendingPenalty(), pendingPenalty, "0.001");
