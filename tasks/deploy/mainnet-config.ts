@@ -86,7 +86,7 @@ const addresses: ExtSystemConfig = {
     },
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
-    treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f", // TODO - define treasury
+    treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
     keeper: DEAD_ADDRESS, // TODO - define keeper
 };
 
@@ -116,10 +116,9 @@ const distroList = {
         wethAmount: simpleToExactAmount(66), // TODO - update wethAmount
         matching: simpleToExactAmount(2.8, 24),
     },
-    // TODO - add final merkleRoots
     airdrops: [
         {
-            merkleRoot: ZERO_KEY,
+            merkleRoot: ZERO_KEY, // TODO - add final merkleRoot
             startDelay: ONE_WEEK,
             length: ONE_WEEK.mul(4),
             amount: simpleToExactAmount(2.5, 24),
@@ -131,7 +130,6 @@ const distroList = {
             amount: simpleToExactAmount(1, 24),
         },
     ],
-    // TODO - add final stream data
     immutableVesting: [
         {
             period: ONE_WEEK.mul(104),
@@ -146,18 +144,37 @@ const distroList = {
             ],
         },
     ],
-    // TODO - add final stream data
     vesting: [
+        // 4 MONTHS - 0.041%
         {
-            period: ONE_WEEK.mul(24),
+            period: ONE_WEEK.mul(16),
             recipients: [
-                { address: "0x1e1300EEAf333c572E4FC0133614291fa9d0df8B", amount: simpleToExactAmount(1, 24) }, // Team vesting
+                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.025, 24) }, // Contractor 1
+                { address: "0xb64f3884ceed18594bd707122988e913fa26f4bf", amount: simpleToExactAmount(0.008, 24) }, // Contractor 2
+                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.008, 24) }, // Contractor 3 // TODO - add addr
             ],
         },
+        // 6 MONTHS - 0.0675% + 1.0165% future team
+        {
+            period: ONE_WEEK.mul(26),
+            recipients: [
+                { address: "0x33c7B2c7Bf017FA8BF31A4a412A36f39124411d8", amount: simpleToExactAmount(0.0675, 24) }, // Contractor 4
+                { address: multisigs.vestingMultisig, amount: simpleToExactAmount(1.0165, 24) }, // Vesting dao - future team
+            ],
+        },
+        // 24 MONTHS - 8.875%
         {
             period: ONE_WEEK.mul(104),
             recipients: [
-                { address: "0x0cebb78bf382d3b9e5ae2b73930dc41a9a7a5e06", amount: simpleToExactAmount(9, 24) }, // Team vesting
+                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(3.5, 24) }, // Core team 1
+                { address: "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5", amount: simpleToExactAmount(3.5, 24) }, // Core team 2
+                { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team 3
+                { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team 4
+                { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team 5
+                { address: "0x3078c3b436511152d86675f9cbfd89ec1672f804", amount: simpleToExactAmount(0.3, 24) }, // Core team 6
+                { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team 7
+                { address: "0xe3B6c287C1369C6A4fa8d4e857813695C52948EF", amount: simpleToExactAmount(0.075, 24) }, // Core team 8
+                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.05, 24) }, // Core team 9
             ],
         },
     ],

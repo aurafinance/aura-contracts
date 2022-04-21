@@ -225,8 +225,8 @@ describe("Full Deployment", () => {
                     expect(await booster.voteOwnership()).eq(ZERO_ADDRESS);
                     expect(await booster.voteParameter()).eq(ZERO_ADDRESS);
 
-                    expect(await booster.lockIncentive()).eq(550);
-                    expect(await booster.stakerIncentive()).eq(1100);
+                    expect(await booster.lockIncentive()).eq(825);
+                    expect(await booster.stakerIncentive()).eq(825);
                     expect(await booster.earmarkIncentive()).eq(50);
                     expect(await booster.platformFee()).eq(0);
                     expect(await booster.MaxFees()).eq(2500);
