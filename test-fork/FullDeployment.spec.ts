@@ -1,3 +1,4 @@
+import { hashMessage } from "@ethersproject/hash";
 import { Account } from "./../types/common";
 import { simpleToExactAmount } from "../test-utils/math";
 import hre, { network } from "hardhat";
@@ -11,6 +12,7 @@ import {
     IVault,
     IVault__factory,
     ERC20,
+    IBalancerPool__factory,
 } from "../types/generated";
 import { waitForTx } from "../tasks/utils";
 import {
@@ -453,7 +455,19 @@ describe("Full Deployment", () => {
         });
 
         it("allows dao to vote on gauge weights");
-        it("allows dao to setVotes for Snapshot");
+
+        it("allows dao to setVotes for Snapshot", async () => {
+            const eip1271MagicValue = "0x1626ba7e";
+            const msg = "message";
+            const hash = hashMessage(msg);
+            const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+
+            const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
+            await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
+
+            const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
+            expect(isValid).to.equal(eip1271MagicValue);
+        });
 
         const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
             const currentTime = BN.from(
@@ -588,7 +602,17 @@ describe("Full Deployment", () => {
                 await increaseTime(ONE_HOUR.mul(96));
             });
             describe("verifying config", () => {
-                it("creates the 8020 pool successfully");
+                it("creates the 8020 pool successfully", async () => {
+                    const poolId = phase3.pool8020Bpt.poolId;
+                    const treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                    const balancerVault = IVault__factory.connect(
+                        config.addresses.balancerVault,
+                        treasurySigner.signer,
+                    );
+                    const poolTokens = await balancerVault.getPoolTokens(poolId);
+                    expect(poolTokens.tokens[0]).eq(config.addresses.weth);
+                    expect(poolTokens.tokens[1]).eq(phase3.cvx.address);
+                });
             });
         });
         describe("POST-Phase 3", () => {
