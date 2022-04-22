@@ -615,6 +615,9 @@ async function deployPhase2(
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await arbitratorVault.setOperator(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await booster.setArbitrator(arbitratorVault.address);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -725,10 +728,12 @@ async function deployPhase2(
             tokens: poolTokens,
             name: `Balancer ${await cvxCrv.symbol()} Stable Pool`,
             symbol: `B-${await cvxCrv.symbol()}-STABLE`,
-            swapFee: simpleToExactAmount(1, 15),
+            swapFee: simpleToExactAmount(3, 15),
             ampParameter: 25,
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IStablePoolFactory__factory.connect(config.balancerPoolFactories.stablePool, deployer);
         tx = await poolFactory.create(
@@ -758,7 +763,7 @@ async function deployPhase2(
             fromInternalBalance: false,
         };
 
-        tx = await balancerVault.joinPool(poolId, deployerAddress, deployerAddress, joinPoolRequest);
+        tx = await balancerVault.joinPool(poolId, deployerAddress, multisigs.treasuryMultisig, joinPoolRequest);
         await waitForTx(tx, debug, waitForBlocks);
     } else {
         const fakeBpt = await deployContract<MockERC20>(
@@ -853,7 +858,9 @@ async function deployPhase2(
             swapFee: simpleToExactAmount(2, 16),
             weights: weights as BN[],
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IInvestmentPoolFactory__factory.connect(
             config.balancerPoolFactories.investmentPool,
@@ -997,10 +1004,12 @@ async function deployPhase3(
             tokens: poolTokens,
             name: `Balancer 80 ${await cvx.symbol()} 20 WETH`,
             symbol: `B-80${await cvx.symbol()}-20WETH`,
-            swapFee: simpleToExactAmount(1, 16),
+            swapFee: simpleToExactAmount(6, 15),
             weights: weights as BN[],
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IWeightedPool2TokensFactory__factory.connect(
             config.balancerPoolFactories.weightedPool2Tokens,

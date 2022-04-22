@@ -1,9 +1,11 @@
+import { MockCurveGauge__factory } from "./../../types/generated/factories/MockCurveGauge__factory";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -76,4 +78,19 @@ task("mainnet:getgauges").setAction(async function (taskArguments: TaskArguments
         gaugeAddress.push(thisAddr);
     }
     console.log(gaugeAddress);
+});
+
+task("mainnet:getStashes").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { addresses } = config;
+    const { gauges } = addresses;
+
+    const gaugesWithRewardTokens = [];
+    for (let i = 0; i < gauges.length; i++) {
+        const gauge = MockCurveGauge__factory.connect(gauges[i], deployer);
+        if ((await gauge.reward_tokens(0)) != ZERO_ADDRESS) {
+            gaugesWithRewardTokens.push(gauges[i]);
+        }
+    }
+    console.log(gaugesWithRewardTokens);
 });
