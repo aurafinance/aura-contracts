@@ -903,7 +903,7 @@ async function deployPhase2(
         hre,
         new BalLiquidityProvider__factory(deployer),
         "BalLiquidityProvider",
-        [cvx.address, config.weth, simpleToExactAmount(375), multisigs.daoMultisig, config.balancerVault],
+        [cvx.address, config.weth, simpleToExactAmount(375), multisigs.treasuryMultisig, config.balancerVault],
         {},
         debug,
         waitForBlocks,

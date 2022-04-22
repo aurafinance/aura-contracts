@@ -540,7 +540,7 @@ describe("Full Deployment", () => {
                     expect(await balLiquidityProvider.minPairAmount()).eq(simpleToExactAmount(375));
                     expect(await balLiquidityProvider.dao()).eq(multisigs.treasuryMultisig);
                     expect(await balLiquidityProvider.bVault()).eq(addresses.balancerVault);
-                    expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(simpleToExactAmount(2.8));
+                    expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(simpleToExactAmount(2.8, 24));
                 });
                 it("penaltyForwarder has correct config", async () => {
                     const { penaltyForwarder, extraRewardsDistributor, cvx } = phase2;
@@ -548,7 +548,7 @@ describe("Full Deployment", () => {
                     expect(await penaltyForwarder.distributor()).eq(extraRewardsDistributor.address);
                     expect(await penaltyForwarder.token()).eq(cvx.address);
                     expect(await penaltyForwarder.distributionDelay()).eq(ONE_WEEK.mul(7).div(2));
-                    assertBNClose(await penaltyForwarder.lastDistribution(), await getTimestamp(), 60);
+                    assertBNClose(await penaltyForwarder.lastDistribution(), await getTimestamp(), 100);
                 });
                 it("extraRewardsDistributor has correct config", async () => {
                     const { extraRewardsDistributor, cvxLocker } = phase2;
