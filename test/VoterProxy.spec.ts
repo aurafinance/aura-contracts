@@ -182,6 +182,18 @@ describe("VoterProxy", () => {
         });
     });
 
+    describe("setting rewardDeposit", () => {
+        it("allows owner to set reward deposit and withdrawer", async () => {
+            expect(await voterProxy.withdrawer()).eq(ZERO_ADDRESS);
+            expect(await voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
+            await voterProxy
+                .connect(daoMultisig)
+                .setRewardDeposit(await daoMultisig.getAddress(), extraRewardsDistributor.address);
+            expect(await voterProxy.withdrawer()).eq(await daoMultisig.getAddress());
+            expect(await voterProxy.rewardDeposit()).eq(extraRewardsDistributor.address);
+        });
+    });
+
     describe("when withdrawing tokens", () => {
         it("can not withdraw protected tokens", async () => {
             let tx = voterProxy.connect(daoMultisig)["withdraw(address)"](mocks.crv.address);
@@ -213,18 +225,6 @@ describe("VoterProxy", () => {
             await voterProxy.connect(daoMultisig)["withdraw(address)"](randomToken.address);
             const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
             expect(balance).eq(rewardDepositBalance);
-        });
-    });
-
-    describe("setting rewardDeposit", () => {
-        it("allows owner to set reward deposit and withdrawer", async () => {
-            const eoa = accounts[6];
-            const eoa7 = accounts[7];
-            const eoaAddress = await eoa.getAddress();
-            const eoaAddress7 = await eoa7.getAddress();
-            await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
-            expect(await voterProxy.withdrawer()).eq(eoaAddress);
-            expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
         });
     });
 

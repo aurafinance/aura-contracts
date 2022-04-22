@@ -539,9 +539,6 @@ async function deployPhase2(
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await voterProxy.setRewardDeposit(multisigs.daoMultisig, extraRewardsDistributor.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
     tx = await cvxLocker.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 

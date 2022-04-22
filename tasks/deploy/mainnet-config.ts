@@ -34,10 +34,10 @@ import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
     tokenBpt: "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
-    tokenWhale: "0x849D52316331967b6fF1198e5E32A0eB168D039d",
+    tokenWhale: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
     votingEscrow: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
-    feeDistribution: undefined, // TODO - add
+    feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9",
     gaugeController: "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
