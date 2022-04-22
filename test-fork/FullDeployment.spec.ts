@@ -182,6 +182,7 @@ describe("Full Deployment", () => {
                 it("Contracts have correct Aura balance", async () => {
                     const { cvx, initialCvxCrvStaking, balLiquidityProvider, drops, vestedEscrows, chef } = phase2;
                     const { addresses, distroList } = config;
+                    expect(await cvx.totalSupply()).eq(simpleToExactAmount(50, 24));
                     expect(await cvx.balanceOf(chef.address)).eq(distroList.lpIncentives);
                     expect(await cvx.balanceOf(initialCvxCrvStaking.address)).eq(distroList.cvxCrvBootstrap);
                     expect(await cvx.balanceOf(addresses.balancerVault)).eq(distroList.lbp.tknAmount);

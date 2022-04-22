@@ -87,7 +87,7 @@ const addresses: ExtSystemConfig = {
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
-    keeper: DEAD_ADDRESS, // TODO - define keeper
+    keeper: ZERO_ADDRESS, // TODO - define keeper
 };
 
 const naming = {
@@ -151,7 +151,7 @@ const distroList = {
             recipients: [
                 { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.025, 24) }, // Contractor 1
                 { address: "0xb64f3884ceed18594bd707122988e913fa26f4bf", amount: simpleToExactAmount(0.008, 24) }, // Contractor 2
-                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.008, 24) }, // Contractor 3 // TODO - add addr
+                { address: "0x498f95A7b752A6FcF97559C815914cE4777b2390", amount: simpleToExactAmount(0.008, 24) }, // Contractor 3
             ],
         },
         // 6 MONTHS - 0.0675% + 1.0165% future team
