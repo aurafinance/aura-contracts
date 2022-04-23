@@ -41,16 +41,6 @@ library AuraMath {
         c = uint224(a);
     }
 
-    function to216(uint256 a) internal pure returns (uint216 c) {
-        require(a <= type(uint216).max, "AuraMath: uint216 Overflow");
-        c = uint216(a);
-    }
-
-    function to208(uint256 a) internal pure returns (uint208 c) {
-        require(a <= type(uint208).max, "AuraMath: uint208 Overflow");
-        c = uint208(a);
-    }
-
     function to128(uint256 a) internal pure returns (uint128 c) {
         require(a <= type(uint128).max, "AuraMath: uint128 Overflow");
         c = uint128(a);
@@ -66,60 +56,16 @@ library AuraMath {
         c = uint96(a);
     }
 
-    function to64(uint256 a) internal pure returns (uint64 c) {
-        require(a <= type(uint64).max, "AuraMath: uint64 Overflow");
-        c = uint64(a);
-    }
-
-    function to40(uint256 a) internal pure returns (uint40 c) {
-        require(a <= type(uint40).max, "AuraMath: uint40 Overflow");
-        c = uint40(a);
-    }
-
     function to32(uint256 a) internal pure returns (uint32 c) {
         require(a <= type(uint32).max, "AuraMath: uint32 Overflow");
         c = uint32(a);
     }
 }
 
-/// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint128.
-library AuraMath128 {
-    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {
-        c = a + b;
-    }
-
-    function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {
-        c = a - b;
-    }
-}
-
-/// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint64.
-library AuraMath64 {
-    function add(uint64 a, uint64 b) internal pure returns (uint64 c) {
-        c = a + b;
-    }
-
-    function sub(uint64 a, uint64 b) internal pure returns (uint64 c) {
-        c = a - b;
-    }
-}
-
 /// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint32.
 library AuraMath32 {
-    function add(uint32 a, uint32 b) internal pure returns (uint32 c) {
-        c = a + b;
-    }
-
     function sub(uint32 a, uint32 b) internal pure returns (uint32 c) {
         c = a - b;
-    }
-
-    function mul(uint32 a, uint32 b) internal pure returns (uint32 c) {
-        c = a * b;
-    }
-
-    function div(uint32 a, uint32 b) internal pure returns (uint32) {
-        return a / b;
     }
 }
 
@@ -132,31 +78,11 @@ library AuraMath112 {
     function sub(uint112 a, uint112 b) internal pure returns (uint112 c) {
         c = a - b;
     }
-
-    function mul(uint112 a, uint112 b) internal pure returns (uint112 c) {
-        c = a * b;
-    }
-
-    function div(uint112 a, uint112 b) internal pure returns (uint112) {
-        return a / b;
-    }
 }
 
 /// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint224.
 library AuraMath224 {
     function add(uint224 a, uint224 b) internal pure returns (uint224 c) {
         c = a + b;
-    }
-
-    function sub(uint224 a, uint224 b) internal pure returns (uint224 c) {
-        c = a - b;
-    }
-
-    function mul(uint224 a, uint224 b) internal pure returns (uint224 c) {
-        c = a * b;
-    }
-
-    function div(uint224 a, uint224 b) internal pure returns (uint224) {
-        return a / b;
     }
 }
