@@ -13,6 +13,7 @@ import {
     IVault,
     IVault__factory,
     ERC20,
+    ERC20__factory,
     IBalancerPool__factory,
     ExtraRewardStashV3__factory,
 } from "../types/generated";
@@ -45,6 +46,7 @@ import {
 } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
+import { ethers } from "ethers";
 
 const debug = false;
 
@@ -1012,6 +1014,65 @@ describe("Full Deployment", () => {
             });
         });
         describe("TEST-Phase 4", () => {
+            describe("claimZap tests", () => {
+                it("set approval for deposits", async () => {
+                    const crv = await ERC20__factory.connect(config.addresses.token, deployer);
+                    await phase4.claimZap.setApprovals();
+                    expect(await crv.allowance(phase4.claimZap.address, phase4.crvDepositorWrapper.address)).gte(
+                        ethers.constants.MaxUint256,
+                    );
+                    expect(await crv.allowance(phase4.claimZap.address, config.addresses.balancerVault)).gte(
+                        ethers.constants.MaxUint256,
+                    );
+                    expect(await phase4.cvxCrv.allowance(phase4.claimZap.address, phase4.cvxCrvRewards.address)).gte(
+                        ethers.constants.MaxUint256,
+                    );
+                    expect(await phase4.cvx.allowance(phase4.claimZap.address, phase4.cvxLocker.address)).gte(
+                        ethers.constants.MaxUint256,
+                    );
+                });
+                it("claim rewards from cvxCrvStaking", async () => {
+                    const stakerAddress = "0xdecadE000000000000000000000000000000042f";
+                    const staker = await impersonateAccount(stakerAddress);
+                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
+                    const crvBpt = ERC20__factory.connect(config.addresses.tokenBpt, deployer);
+
+                    // send crv and crvBpt to staker account
+                    await getCrvBpt(stakerAddress);
+                    await getCrv(stakerAddress);
+
+                    // stake in crvDepositor
+                    const crvBptBalance = await crvBpt.balanceOf(stakerAddress);
+                    await crvBpt.connect(staker.signer).approve(phase4.crvDepositor.address, crvBptBalance);
+                    await phase4.crvDepositor
+                        .connect(staker.signer)
+                        ["deposit(uint256,bool,address)"](crvBptBalance, true, phase4.cvxCrvRewards.address);
+
+                    const rewardBalanceBefore = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
+                    expect(rewardBalanceBefore).eq(crvBptBalance);
+
+                    // distribute rewards from booster
+                    const crvBalance = await crv.balanceOf(stakerAddress);
+                    await crv.connect(staker.signer).transfer(phase4.booster.address, crvBalance);
+                    await phase4.booster.earmarkRewards(0);
+                    await increaseTime(ONE_WEEK.mul("4"));
+
+                    // claim rewards from claim zap
+                    const option = 1 + 8;
+                    const expectedRewards = await phase4.cvxCrvRewards.earned(stakerAddress);
+                    const minBptAmountOut = await phase4.crvDepositorWrapper.getMinOut(expectedRewards, 9500);
+                    await crv.connect(staker.signer).approve(phase4.claimZap.address, ethers.constants.MaxUint256);
+                    await phase4.claimZap
+                        .connect(staker.signer)
+                        .claimRewards([], [], [], [], expectedRewards, minBptAmountOut, 0, option);
+
+                    const newRewardBalance = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
+                    expect(newRewardBalance).gte(minBptAmountOut.add(rewardBalanceBefore));
+                });
+
+                it("claim rewards and convert cvxCrv on balanacer");
+            });
+
             it("allows BPT deposits");
             it("allows earmarking of fees");
             it("allows earmarking of rewards");
