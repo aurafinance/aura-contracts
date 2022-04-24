@@ -57,8 +57,7 @@ contract AuraClaimZap {
         ClaimLockedCvxStake, //4
         LockCrvDeposit, //8
         UseAllWalletFunds, //16
-        LockCvx, //32
-        SwapCrvCvxCrv // 64
+        LockCvx //32
     }
 
     /**
@@ -210,21 +209,17 @@ contract AuraClaimZap {
         if (depositCrvMaxAmount > 0) {
             uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
             crvBalance = AuraMath.min(crvBalance, depositCrvMaxAmount);
+
             if (crvBalance > 0) {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
-                if (_checkOption(options, uint256(Options.SwapCrvCvxCrv))) {
-                    //swaps from crv to cvxCrv on balancer stable pool
-                    _swapCrvForCvxCrv(crvBalance, minAmountOut);
-                } else {
-                    //deposit
-                    ICvxCrvDeposit(crvDepositWrapper).deposit(
-                        crvBalance,
-                        minAmountOut,
-                        _checkOption(options, uint256(Options.LockCrvDeposit)),
-                        address(0)
-                    );
-                }
+                //deposit
+                ICvxCrvDeposit(crvDepositWrapper).deposit(
+                    crvBalance,
+                    minAmountOut,
+                    _checkOption(options, uint256(Options.LockCrvDeposit)),
+                    address(0)
+                );
 
                 uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
                 //stake for msg.sender
@@ -244,28 +239,5 @@ contract AuraClaimZap {
                 }
             }
         }
-    }
-
-    /**
-     * @notice Swap Crv for CvxCrv via Balance pool
-     */
-    function _swapCrvForCvxCrv(uint256 crvBalance, uint256 minAmountOut) internal {
-        IAsset assetIn = IAsset(crv);
-        IAsset assetOut = IAsset(cvxCrv);
-
-        IVault.SingleSwap memory singleSwap = IVault.SingleSwap(
-            crvCvxCrvPoolId,
-            IVault.SwapKind.GIVEN_IN,
-            assetIn,
-            assetOut,
-            crvBalance,
-            ""
-        );
-
-        IVault.FundManagement memory funds = IVault.FundManagement(address(this), false, payable(address(this)), false);
-
-        uint256 deadline = block.timestamp + 60 * 15;
-
-        IVault(vault).swap(singleSwap, funds, minAmountOut, deadline);
     }
 }

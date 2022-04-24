@@ -92,22 +92,6 @@ describe("AuraClaimZap", () => {
         expect(newRewardBalance).eq(minBptAmountOut.add(rewardBalance));
     });
 
-    it("claims crv and then swaps for cxvCrv on balancer", async () => {
-        const option = 1 + 8 + 64;
-        await contracts.booster.earmarkRewards(0);
-        await increaseTime(ONE_WEEK.mul("4"));
-        const expectedRewards = await contracts.cvxCrvRewards.earned(aliceAddress);
-        const rewardBalanceBefore = await contracts.cvxCrvRewards.balanceOf(aliceAddress);
-
-        const minCvxCrvAmountOut = expectedRewards;
-        await contracts.claimZap
-            .connect(alice)
-            .claimRewards([], [], [], [], expectedRewards, minCvxCrvAmountOut, 0, option);
-
-        const rewardBalanceAfter = await contracts.cvxCrvRewards.balanceOf(aliceAddress);
-        expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(expectedRewards);
-    });
-
     it("claim from lp staking pool", async () => {
         const stake = true;
         const amount = ethers.utils.parseEther("10");

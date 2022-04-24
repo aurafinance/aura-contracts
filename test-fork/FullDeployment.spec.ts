@@ -1070,8 +1070,6 @@ describe("Full Deployment", () => {
                     const newRewardBalance = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
                     expect(newRewardBalance).gte(minBptAmountOut.add(rewardBalanceBefore));
                 });
-
-                it("claim rewards and convert cvxCrv on balanacer");
             });
 
             it("allows BPT deposits");
