@@ -1036,6 +1036,7 @@ describe("Full Deployment", () => {
                     const staker = await impersonateAccount(stakerAddress);
                     const crv = ERC20__factory.connect(config.addresses.token, deployer);
                     const crvBpt = ERC20__factory.connect(config.addresses.tokenBpt, deployer);
+                    const rewardBalanceInitial = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
 
                     // send crv and crvBpt to staker account
                     await getCrvBpt(stakerAddress);
@@ -1049,7 +1050,7 @@ describe("Full Deployment", () => {
                         ["deposit(uint256,bool,address)"](crvBptBalance, true, phase4.cvxCrvRewards.address);
 
                     const rewardBalanceBefore = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
-                    expect(rewardBalanceBefore).eq(crvBptBalance);
+                    expect(rewardBalanceBefore.sub(rewardBalanceInitial)).eq(crvBptBalance);
 
                     // distribute rewards from booster
                     const crvBalance = await crv.balanceOf(stakerAddress);
