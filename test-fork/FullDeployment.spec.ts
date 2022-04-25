@@ -15,8 +15,8 @@ import {
     IBalancerPool__factory,
     ExtraRewardStashV3__factory,
     BaseRewardPool4626__factory,
+    BaseRewardPool__factory,
 } from "../types/generated";
-import { waitForTx } from "../tasks/utils";
 import {
     impersonate,
     impersonateAccount,
@@ -32,6 +32,7 @@ import {
     ZERO_KEY,
 } from "../test-utils";
 import { Signer } from "ethers";
+import { waitForTx } from "../tasks/utils";
 import { getTimestamp, latestBlock, increaseTime } from "./../test-utils/time";
 import {
     deployPhase2,
@@ -96,6 +97,13 @@ describe("Full Deployment", () => {
         const wethWhaleSigner = await impersonateAccount(config.addresses.wethWhale);
         const weth = await MockERC20__factory.connect(config.addresses.weth, wethWhaleSigner.signer);
         const tx = await weth.transfer(recipient, amount);
+        await waitForTx(tx, debug);
+    };
+
+    const getLpToken = async (recipient: string, amount = simpleToExactAmount(10)) => {
+        const lpWhaleSigner = await impersonateAccount(config.addresses.staBAL3Whale);
+        const lp = await MockERC20__factory.connect(config.addresses.staBAL3, lpWhaleSigner.signer);
+        const tx = await lp.transfer(recipient, amount);
         await waitForTx(tx, debug);
     };
 
@@ -1015,6 +1023,14 @@ describe("Full Deployment", () => {
             });
         });
         describe("TEST-Phase 4", () => {
+            let stakerAddress;
+            let staker;
+
+            before(async () => {
+                stakerAddress = "0xdecadE000000000000000000000000000000042f";
+                staker = await impersonateAccount(stakerAddress);
+            });
+
             describe("claimZap tests", () => {
                 it("set approval for deposits", async () => {
                     const crv = await ERC20__factory.connect(config.addresses.token, deployer);
@@ -1030,8 +1046,6 @@ describe("Full Deployment", () => {
                     );
                 });
                 it("claim rewards from cvxCrvStaking", async () => {
-                    const stakerAddress = "0xdecadE000000000000000000000000000000042f";
-                    const staker = await impersonateAccount(stakerAddress);
                     const crv = ERC20__factory.connect(config.addresses.token, deployer);
                     const crvBpt = ERC20__factory.connect(config.addresses.tokenBpt, deployer);
                     const rewardBalanceInitial = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
@@ -1070,15 +1084,106 @@ describe("Full Deployment", () => {
                 });
             });
             describe("booster & deposits", () => {
-                it("allows BPT deposits into pools directly");
-                it("allows BPT deposits into pools through the Booster");
-                it("allows withdrawals directly from the pool 4626");
-                it("allows withdrawals directly from the pool normal");
+                it("allow deposit into pool via Booster", async () => {
+                    await getLpToken(stakerAddress, simpleToExactAmount(10));
+
+                    const poolInfo = await phase4.booster.poolInfo(0);
+                    expect(poolInfo.lptoken.toLowerCase()).eq(config.addresses.staBAL3.toLowerCase());
+
+                    const lptoken = await ERC20__factory.connect(poolInfo.lptoken, deployer);
+                    const lptokenBalance = await lptoken.balanceOf(stakerAddress);
+                    const depositToken = await ERC20__factory.connect(poolInfo.token, deployer);
+                    const depositTokenBalanceBefore = await depositToken.balanceOf(stakerAddress);
+
+                    expect(lptokenBalance).gt(0);
+
+                    const stake = false;
+                    await lptoken.connect(staker.signer).approve(phase4.booster.address, ethers.constants.MaxUint256);
+                    await phase4.booster.connect(staker.signer).deposit(0, lptokenBalance, stake);
+
+                    const depositTokenBalanceAfter = await depositToken.balanceOf(stakerAddress);
+                    expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalance);
+                });
+                it("allows BPT deposits into pools directly", async () => {
+                    const poolInfo = await phase4.booster.poolInfo(0);
+
+                    const rewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const depositToken = await ERC20__factory.connect(poolInfo.token, staker.signer);
+                    const balance = await depositToken.balanceOf(stakerAddress);
+
+                    const rewardBalanceBefore = await rewards.balanceOf(stakerAddress);
+                    await depositToken.approve(rewards.address, balance);
+                    await rewards.stake(balance);
+                    const rewardBalanceAfter = await rewards.balanceOf(stakerAddress);
+                    expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(balance);
+                });
+                it("allows withdrawals directly from the pool 4626", async () => {
+                    const amount = simpleToExactAmount(1);
+                    const poolInfo = await phase4.booster.poolInfo(0);
+
+                    const rewards = await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const lptoken = await ERC20__factory.connect(poolInfo.lptoken, staker.signer);
+                    const balanceBefore = await lptoken.balanceOf(stakerAddress);
+                    const rewardBalance = await rewards.balanceOf(stakerAddress);
+
+                    await rewards["withdraw(uint256,address,address)"](amount, stakerAddress, stakerAddress);
+
+                    const balanceAfter = await lptoken.balanceOf(stakerAddress);
+                    expect(balanceAfter.sub(balanceBefore)).eq(amount);
+                });
+                it("allows withdrawals directly from the pool normal", async () => {
+                    const amount = simpleToExactAmount(1);
+                    const poolInfo = await phase4.booster.poolInfo(0);
+
+                    const rewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const depositToken = await ERC20__factory.connect(poolInfo.token, staker.signer);
+                    const balanceBefore = await depositToken.balanceOf(stakerAddress);
+                    const rewardBalance = await rewards.balanceOf(stakerAddress);
+
+                    await rewards.withdraw(amount, false);
+
+                    const balanceAfter = await depositToken.balanceOf(stakerAddress);
+                    expect(balanceAfter.sub(balanceBefore)).eq(amount);
+                });
                 it("allows users to deposit into proper cvxCrv staking");
-                it("allows earmarking of fees ($BAL)");
+                it("allows earmarking of fees ($BAL)", async () => {
+                    await getCrv(stakerAddress, simpleToExactAmount(10));
+                    const feeInfo = await phase3.booster.feeTokens(config.addresses.token);
+                    const crv = MockERC20__factory.connect(config.addresses.token, deployer);
+                    await crv.connect(staker.signer).transfer(feeInfo.distro, simpleToExactAmount(10));
+
+                    const feeToken = await ERC20__factory.connect(config.addresses.token, deployer);
+                    const balanceBefore = await feeToken.balanceOf(feeInfo.rewards);
+                    await increaseTime(ONE_WEEK.mul("4"));
+
+                    await phase4.booster.earmarkFees(config.addresses.token);
+                    const balanceAfter = await feeToken.balanceOf(feeInfo.rewards);
+                    expect(balanceAfter).gt(balanceBefore);
+                });
                 it("allows earmarking of fees ($bb-a-USD)");
-                it("allows earmarking of rewards");
-                it("pays out a premium to the caller");
+                it("allows earmarking of rewards", async () => {
+                    const poolInfo = await phase4.booster.poolInfo(0);
+                    const crvRewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
+                    const crv = MockERC20__factory.connect(config.addresses.token, deployer);
+                    const balanceBefore = await crv.balanceOf(crvRewards.address);
+
+                    await increaseTime(ONE_WEEK.mul("4"));
+                    await phase4.booster.earmarkRewards(0);
+
+                    const gauge = await ERC20__factory.connect(poolInfo.gauge, deployer);
+                    const bal = await gauge.balanceOf(phase4.voterProxy.address);
+
+                    const balanceAfter = await crv.balanceOf(crvRewards.address);
+                    expect(balanceAfter).gt(balanceBefore);
+                });
+                it("pays out a premium to the caller", async () => {
+                    const crv = await ERC20__factory.connect(config.addresses.token, deployer);
+                    const balanceBefore = await crv.balanceOf(stakerAddress);
+                    await increaseTime(ONE_WEEK.mul("1"));
+                    await phase4.booster.connect(staker.signer).earmarkRewards(0);
+                    const balanceAfter = await crv.balanceOf(stakerAddress);
+                    expect(balanceAfter).gt(balanceBefore);
+                });
                 it("allows users to earn $BAl and $AURA");
                 it("allows conversion of rewards via AuraStakingProxy");
             });
@@ -1091,8 +1196,33 @@ describe("Full Deployment", () => {
                 it("allows a fee to be disabled");
             });
             describe("crv depositor", () => {
-                it("accrues incentives for the caller");
-                it("pays out the incentives to teh caller");
+                it("allows BPT deposits", async () => {
+                    const crvBpt = ERC20__factory.connect(config.addresses.tokenBpt, deployer);
+                    const rewardBalanceBefore = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
+
+                    await getCrvBpt(stakerAddress, simpleToExactAmount(10));
+
+                    const crvBptBalance = await crvBpt.balanceOf(stakerAddress);
+                    await crvBpt.connect(staker.signer).approve(phase4.crvDepositor.address, crvBptBalance);
+                    await phase4.crvDepositor
+                        .connect(staker.signer)
+                        ["deposit(uint256,bool,address)"](crvBptBalance, false, phase4.cvxCrvRewards.address);
+
+                    const lockIncentive = await phase4.crvDepositor.lockIncentive();
+                    const FEE_DENOMINATOR = await phase4.crvDepositor.FEE_DENOMINATOR();
+                    const incentive = crvBptBalance.mul(lockIncentive).div(FEE_DENOMINATOR);
+
+                    const rewardBalanceAfter = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
+                    expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(crvBptBalance.sub(incentive));
+                });
+                it("pays out the incentives to the caller", async () => {
+                    const incentiveCrv = await phase4.crvDepositor.incentiveCrv();
+                    expect(incentiveCrv).gt(0);
+                    const balanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    await phase4.crvDepositor.connect(staker.signer).lockCurve();
+                    const balanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    expect(balanceAfter.sub(balanceBefore)).eq(incentiveCrv);
+                });
             });
             describe("aura locker", () => {
                 it("allows users to delegate voting power");
@@ -1100,6 +1230,10 @@ describe("Full Deployment", () => {
                 it("allows users to claim rewards");
                 it("allows other things too");
             });
+
+            it("allows users to deposit into proper cvxCrv staking");
+
+            it("allows users to claim from auraLocker");
         });
     });
     describe("1 month later", () => {

@@ -88,6 +88,8 @@ const addresses: ExtSystemConfig = {
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
     keeper: ZERO_ADDRESS, // TODO - define keeper
+    staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
+    staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
 };
 
 const naming = {
