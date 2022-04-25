@@ -181,7 +181,7 @@ const distroList = {
 };
 
 const getPhase1 = async (deployer: Signer): Promise<Phase1Deployed> => ({
-    voterProxy: await VoterProxy__factory.connect("", deployer),
+    voterProxy: await VoterProxy__factory.connect("0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2", deployer),
 });
 
 const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({

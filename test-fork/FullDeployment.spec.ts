@@ -34,7 +34,6 @@ import {
 import { Signer } from "ethers";
 import { getTimestamp, latestBlock, increaseTime } from "./../test-utils/time";
 import {
-    deployPhase1,
     deployPhase2,
     deployPhase3,
     deployPhase4,
@@ -66,12 +65,12 @@ describe("Full Deployment", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14634433,
+                        blockNumber: 14654150,
                     },
                 },
             ],
         });
-        deployerAddress = "0xdeCadE0000000000000000000000000000000420";
+        deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         // TODO - should have sufficient balances on acc, remove this before final test
         await setupBalances();
         deployer = await impersonate(deployerAddress);
@@ -121,7 +120,7 @@ describe("Full Deployment", () => {
         describe("DEPLOY-Phase 1", () => {
             before(async () => {
                 // PHASE 1
-                phase1 = await deployPhase1(hre, deployer, config.addresses, false, debug);
+                phase1 = await config.getPhase1(deployer);
 
                 // POST-PHASE-1
                 // Whitelist the VoterProxy in the Curve system
@@ -326,7 +325,7 @@ describe("Full Deployment", () => {
                         expect(poolTokens.tokens[0]).eq(addresses.tokenBpt);
                         expect(poolTokens.tokens[1]).eq(cvxCrv.address);
                         expect(poolTokens.balances[0]).eq(poolTokens.balances[1]);
-                        expect(poolTokens.balances[0]).gt(simpleToExactAmount(99.6));
+                        expect(poolTokens.balances[0]).eq(simpleToExactAmount(99.6));
                     }
 
                     const poolERC20 = IERC20__factory.connect(cvxCrvBpt.address, deployer);
@@ -573,7 +572,7 @@ describe("Full Deployment", () => {
                     const balances = await balancerVault.getPoolTokens(lbpBpt.poolId);
                     const pool = IBalancerPool__factory.connect(lbpBpt.address, deployer);
                     const weights = await pool.getNormalizedWeights();
-                    if (balances.tokens[0].toLowerCase() == cvx.address) {
+                    if (balances.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(balances.balances[0]).eq(simpleToExactAmount(2.2, 24));
                         expect(balances.balances[1]).eq(simpleToExactAmount(66));
                         assertBNClosePercent(weights[0], simpleToExactAmount(99, 16), "0.0001");
@@ -828,7 +827,7 @@ describe("Full Deployment", () => {
                     const poolTokens = await balancerVault.getPoolTokens(pool8020Bpt.poolId);
                     const pool = IBalancerPool__factory.connect(pool8020Bpt.address, deployer);
                     const weights = await pool.getNormalizedWeights();
-                    if (poolTokens.tokens[0].toLowerCase() == cvx.address) {
+                    if (poolTokens.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(poolTokens.tokens[1]).eq(config.addresses.weth);
                         assertBNClosePercent(weights[0], simpleToExactAmount(80, 16), "0.0001");
                         assertBNClosePercent(weights[1], simpleToExactAmount(20, 16), "0.0001");
@@ -1021,9 +1020,6 @@ describe("Full Deployment", () => {
                     const crv = await ERC20__factory.connect(config.addresses.token, deployer);
                     await phase4.claimZap.setApprovals();
                     expect(await crv.allowance(phase4.claimZap.address, phase4.crvDepositorWrapper.address)).gte(
-                        ethers.constants.MaxUint256,
-                    );
-                    expect(await crv.allowance(phase4.claimZap.address, config.addresses.balancerVault)).gte(
                         ethers.constants.MaxUint256,
                     );
                     expect(await phase4.cvxCrv.allowance(phase4.claimZap.address, phase4.cvxCrvRewards.address)).gte(
