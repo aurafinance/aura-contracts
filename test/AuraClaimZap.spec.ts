@@ -52,9 +52,6 @@ describe("AuraClaimZap", () => {
         expect(await mocks.crv.allowance(contracts.claimZap.address, contracts.crvDepositorWrapper.address)).gte(
             ethers.constants.MaxUint256,
         );
-        expect(await mocks.crv.allowance(contracts.claimZap.address, mocks.balancerVault.address)).gte(
-            ethers.constants.MaxUint256,
-        );
         expect(await contracts.cvxCrv.allowance(contracts.claimZap.address, contracts.cvxCrvRewards.address)).gte(
             ethers.constants.MaxUint256,
         );

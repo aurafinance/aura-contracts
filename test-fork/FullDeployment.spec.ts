@@ -1,6 +1,4 @@
-import { BaseRewardPool4626__factory } from "./../types/generated/factories/BaseRewardPool4626__factory";
 import { hashMessage } from "@ethersproject/hash";
-import { Account } from "./../types/common";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
 import {
@@ -16,6 +14,7 @@ import {
     ERC20__factory,
     IBalancerPool__factory,
     ExtraRewardStashV3__factory,
+    BaseRewardPool4626__factory,
 } from "../types/generated";
 import { waitForTx } from "../tasks/utils";
 import {
@@ -44,19 +43,13 @@ import {
     Phase3Deployed,
     SystemDeployed,
 } from "../scripts/deploySystem";
+import { Account } from "./../types/common";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
 
 const debug = false;
 
-// TODO:
-//  - Test post phase 1 system behaviour
-//  - Test post phase 2 system behaviour
-//  - Spec out tests for phase 3
-//  - Test post phase 3 config
-//  - Test post phase 3 system behaviour
-//  - Spec out tests for phase 4
 describe("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
@@ -361,6 +354,10 @@ describe("Full Deployment", () => {
                     expect(await initialCvxCrvStaking.auraLocker()).eq(cvxLocker.address);
                     expect(await initialCvxCrvStaking.penaltyForwarder()).eq(penaltyForwarder.address);
                     expect(await initialCvxCrvStaking.pendingPenalty()).eq(0);
+
+                    const time = await getTimestamp();
+                    expect(await initialCvxCrvStaking.startTime()).gt(time.add(ONE_WEEK).sub(60));
+                    expect(await initialCvxCrvStaking.startTime()).lt(time.add(ONE_WEEK));
                 });
                 it("CrvDepositor has correct config", async () => {
                     const { voterProxy, cvxCrv, crvDepositor } = phase2;
@@ -661,7 +658,6 @@ describe("Full Deployment", () => {
         });
 
         it("allows dao to vote on gauge weights");
-
         it("allows dao to setVotes for Snapshot", async () => {
             const eip1271MagicValue = "0x1626ba7e";
             const msg = "message";
@@ -674,6 +670,8 @@ describe("Full Deployment", () => {
             const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
             expect(isValid).to.equal(eip1271MagicValue);
         });
+        it("doesn't allow pools to be added or rewards earmarked");
+        it("doesn't add feeInfo to Booster");
 
         const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
             const currentTime = BN.from(
@@ -743,6 +741,7 @@ describe("Full Deployment", () => {
             await increaseTime(ONE_HOUR.mul(24));
             await swapEthForAura(swapper, simpleToExactAmount(100));
         });
+        it("allows AURA holders to stake in vlAURA");
     });
 
     describe("Phase 3", () => {
@@ -852,10 +851,6 @@ describe("Full Deployment", () => {
                 const tx = await phase3.initialCvxCrvStaking.initialiseRewards();
                 await waitForTx(tx, debug);
             });
-            it("starts the merkle drops");
-            it("starts the vesting");
-            it("starts the chef rewards");
-            it("allows users to lock in auraLocker");
         });
         describe("TEST-Phase 3", () => {
             let alice: Account;
@@ -919,11 +914,19 @@ describe("Full Deployment", () => {
                     const cvxCrvSupplyAfter = await phase3.cvxCrv.totalSupply();
                     expect(cvxCrvSupplyAfter.sub(cvxCrvSupply)).eq(simpleToExactAmount(200));
                 });
-                it("allows users to claim from cvxCrv staking");
+                it("allows users to claim and lock from cvxCrv staking");
+                it("allows users to claim directly from cvxCrv staking with penalty");
+                it("allows anyone to forward the penalty");
             });
-            it("allows users to claim merkle drops");
-            it("allows users to claim vesting");
+            describe("merkle drops", () => {
+                it("allows users to claim merkle drops");
+                it("allows users to lock directly");
+            });
+            describe("vesting", () => {
+                it("allows users to claim vesting");
+            });
             it("allows users to deposit BPT for chef rewards");
+            it("allows users to lock in auraLocker");
         });
     });
 
@@ -963,7 +966,7 @@ describe("Full Deployment", () => {
                     expect(await feeCollector.feeDistro()).eq(addresses.feeDistribution);
                 });
                 it("has correct config for claimZap", async () => {
-                    const { claimZap, cvx, cvxCrv, crvDepositorWrapper, cvxLocker, cvxCrvRewards, cvxCrvBpt } = phase4;
+                    const { claimZap, cvx, cvxCrv, crvDepositorWrapper, cvxLocker, cvxCrvRewards } = phase4;
                     const { addresses } = config;
 
                     expect(await claimZap.crv()).eq(addresses.token);
@@ -973,8 +976,6 @@ describe("Full Deployment", () => {
                     expect(await claimZap.cvxCrvRewards()).eq(cvxCrvRewards.address);
                     expect(await claimZap.locker()).eq(cvxLocker.address);
                     expect(await claimZap.owner()).eq(deployerAddress);
-                    expect(await claimZap.vault()).eq(addresses.balancerVault);
-                    expect(await claimZap.crvCvxCrvPoolId()).eq(cvxCrvBpt.poolId);
                 });
                 it("adds the pools", async () => {
                     expect(await phase4.booster.poolLength()).gt(0);
@@ -1010,7 +1011,8 @@ describe("Full Deployment", () => {
                     expect(tokenInfo.token).eq(rToken);
                     expect(tokenInfo.rewardAddress).eq(virtualRewardPool);
                 });
-                it("allows new rewards to be added to extraRewardsStash and claimed");
+                it("extraRewardsStash actually processes reward tokens");
+                it("allows NEW rewards to be added to extraRewardsStash and claimed");
             });
         });
         describe("TEST-Phase 4", () => {
@@ -1071,12 +1073,45 @@ describe("Full Deployment", () => {
                     expect(newRewardBalance).gte(minBptAmountOut.add(rewardBalanceBefore));
                 });
             });
-
-            it("allows BPT deposits");
-            it("allows earmarking of fees");
-            it("allows earmarking of rewards");
-            it("allows users to deposit into proper cvxCrv staking");
-            it("allows users to claim from auraLocker");
+            describe("booster & deposits", () => {
+                it("allows BPT deposits into pools directly");
+                it("allows BPT deposits into pools through the Booster");
+                it("allows withdrawals directly from the pool 4626");
+                it("allows withdrawals directly from the pool normal");
+                it("allows users to deposit into proper cvxCrv staking");
+                it("allows earmarking of fees ($BAL)");
+                it("allows earmarking of fees ($bb-a-USD)");
+                it("allows earmarking of rewards");
+                it("pays out a premium to the caller");
+                it("allows users to earn $BAl and $AURA");
+                it("allows conversion of rewards via AuraStakingProxy");
+            });
+            describe("admin etc", () => {
+                it("does not allow a duplicate pool to be added");
+                it("allows a pool to be shut down");
+                it("allows the fee rates to be set");
+                it("does not allow the system to be shut down");
+                it("does not allow a fee info to be added that has a gauge");
+                it("allows a fee to be disabled");
+            });
+            describe("crv depositor", () => {
+                it("accrues incentives for the caller");
+                it("pays out the incentives to teh caller");
+            });
+            describe("aura locker", () => {
+                it("allows users to delegate voting power");
+                it("allows users to re-delegate");
+                it("allows users to claim rewards");
+                it("allows other things too");
+            });
         });
+    });
+    describe("1 month later", () => {
+        it("allows any penalty to be forwarded to aura lockers via ExtraRewardDistributor");
+    });
+    describe("3 months later", () => {
+        it("allows users to relock a week before finish");
+        it("allows users to unlock from auraLocker");
+        it("allows users to be kicked for a fee from auraLocker");
     });
 });

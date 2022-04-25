@@ -16,7 +16,7 @@ interface IBasicRewards {
     function stakeFor(address, uint256) external;
 }
 
-interface ICvxCrvDeposit {
+interface ICrvDepositorWrapper {
     function deposit(
         uint256,
         uint256,
@@ -48,9 +48,6 @@ contract AuraClaimZap {
     address public immutable locker;
     address public immutable owner;
 
-    address public immutable vault;
-    bytes32 public immutable crvCvxCrvPoolId;
-
     enum Options {
         ClaimCvxCrv, //1
         ClaimLockedCvx, //2
@@ -67,8 +64,6 @@ contract AuraClaimZap {
      * @param _crvDepositWrapper  crvDepositWrapper (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
      * @param _cvxCrvRewards      cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
      * @param _locker             vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
-     * @param _vault              Balancer vault contract
-     * @param _crvCvxCrvPoolId    Balancer pool ID for crv:crvCvx
      */
     constructor(
         address _crv,
@@ -76,18 +71,14 @@ contract AuraClaimZap {
         address _cvxCrv,
         address _crvDepositWrapper,
         address _cvxCrvRewards,
-        address _locker,
-        address _vault,
-        bytes32 _crvCvxCrvPoolId
-    ) public {
+        address _locker
+    ) {
         crv = _crv;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
         crvDepositWrapper = _crvDepositWrapper;
         cvxCrvRewards = _cvxCrvRewards;
         locker = _locker;
-        vault = _vault;
-        crvCvxCrvPoolId = _crvCvxCrvPoolId;
         owner = msg.sender;
     }
 
@@ -98,7 +89,6 @@ contract AuraClaimZap {
     /**
      * @notice Approve spending of:
      *          crv     -> crvDepositor
-     *          crv     -> balancer vault
      *          cvxCrv  -> cvxCrvRewards
      *          cvx     -> Locker
      */
@@ -107,9 +97,6 @@ contract AuraClaimZap {
 
         IERC20(crv).safeApprove(crvDepositWrapper, 0);
         IERC20(crv).safeApprove(crvDepositWrapper, type(uint256).max);
-
-        IERC20(crv).safeApprove(vault, 0);
-        IERC20(crv).safeApprove(vault, type(uint256).max);
 
         IERC20(cvxCrv).safeApprove(cvxCrvRewards, 0);
         IERC20(cvxCrv).safeApprove(cvxCrvRewards, type(uint256).max);
@@ -214,7 +201,7 @@ contract AuraClaimZap {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
                 //deposit
-                ICvxCrvDeposit(crvDepositWrapper).deposit(
+                ICrvDepositorWrapper(crvDepositWrapper).deposit(
                     crvBalance,
                     minAmountOut,
                     _checkOption(options, uint256(Options.LockCrvDeposit)),

@@ -1054,7 +1054,7 @@ async function deployPhase4(
     const deployer = signer;
 
     const { token, gauges, feeDistribution } = config;
-    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, cvxCrvBpt, poolManager, crvDepositorWrapper } = deployment;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, poolManager, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
     //        daoMultisig.setFeeInfo(bbaUSD distro)
@@ -1069,16 +1069,7 @@ async function deployPhase4(
         hre,
         new AuraClaimZap__factory(deployer),
         "AuraClaimZap",
-        [
-            token,
-            cvx.address,
-            cvxCrv.address,
-            crvDepositorWrapper.address,
-            cvxCrvRewards.address,
-            cvxLocker.address,
-            config.balancerVault,
-            cvxCrvBpt.poolId,
-        ],
+        [token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, cvxCrvRewards.address, cvxLocker.address],
         {},
         debug,
         waitForBlocks,
