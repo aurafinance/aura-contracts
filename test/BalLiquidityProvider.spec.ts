@@ -44,10 +44,10 @@ describe("BalLiquidityProvider", () => {
         deployer = accounts[0];
         alice = accounts[1];
 
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -59,7 +59,7 @@ describe("BalLiquidityProvider", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
-        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         // Setup test contract.
         balLiquidityProvider = contracts.balLiquidityProvider;

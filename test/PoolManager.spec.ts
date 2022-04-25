@@ -17,13 +17,13 @@ describe("PoolManagerV3", () => {
     before(async () => {
         accounts = await ethers.getSigners();
 
-        mocks = await deployMocks(accounts[0]);
+        mocks = await deployMocks(hre, accounts[0]);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
         alice = accounts[5];
 
-        const phase1 = await deployPhase1(accounts[0], mocks.addresses);
+        const phase1 = await deployPhase1(hre, accounts[0], mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             accounts[0],
@@ -45,6 +45,7 @@ describe("PoolManagerV3", () => {
         before(async () => {
             const badLptoken = "0x0000000000000000000000000000000000000000";
             badGauge = await deployContract<MockCurveGauge>(
+                hre,
                 new MockCurveGauge__factory(accounts[0]),
                 "MockCurveGauge",
                 ["BadGauge", "badGauge", badLptoken, []],

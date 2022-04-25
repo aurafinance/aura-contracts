@@ -27,10 +27,10 @@ describe("AuraBalRewardPool", () => {
     let rewardAmount: BN;
 
     const reset = async () => {
-        const mocks = await deployMocks(deployer);
+        const mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -42,7 +42,7 @@ describe("AuraBalRewardPool", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
-        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();

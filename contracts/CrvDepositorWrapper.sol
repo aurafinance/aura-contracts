@@ -19,7 +19,7 @@ interface ICrvDepositor {
  * @notice  Converts BAL -> balBPT and then wraps to auraBAL via the crvDepositor
  */
 contract CrvDepositorWrapper is BalInvestor {
-    address public crvDeposit;
+    address public immutable crvDeposit;
 
     constructor(
         address _crvDeposit,

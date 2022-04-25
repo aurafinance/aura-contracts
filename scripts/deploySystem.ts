@@ -1,4 +1,4 @@
-import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
+import { BigNumber as BN, ContractReceipt, Signer } from "ethers";
 import {
     ExtraRewardsDistributor,
     AuraPenaltyForwarder,
@@ -13,8 +13,8 @@ import {
     BalLiquidityProvider__factory,
     Booster__factory,
     Booster,
-    CurveVoterProxy__factory,
-    CurveVoterProxy,
+    VoterProxy__factory,
+    VoterProxy,
     RewardFactory__factory,
     RewardFactory,
     StashFactoryV2__factory,
@@ -65,9 +65,11 @@ import {
     AuraVestedEscrow__factory,
     AuraMerkleDrop,
     AuraMerkleDrop__factory,
+    ClaimFeesHelper,
+    ClaimFeesHelper__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
-import { Chain, deployContract } from "../tasks/utils";
+import { Chain, deployContract, waitForTx } from "../tasks/utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK, ZERO_KEY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -117,7 +119,6 @@ interface ExtSystemConfig {
     minter: string;
     votingEscrow: string;
     feeDistribution: string;
-    nativeTokenDistribution?: string;
     gaugeController: string;
     voteOwnership?: string;
     voteParameter?: string;
@@ -128,6 +129,8 @@ interface ExtSystemConfig {
     balancerMinOutBps: string;
     weth: string;
     wethWhale?: string;
+    treasury?: string;
+    keeper?: string;
 }
 
 interface NamingConfig {
@@ -160,14 +163,22 @@ interface BalancerPoolDeployed {
     address: string;
 }
 interface Phase1Deployed {
-    voterProxy: CurveVoterProxy;
+    voterProxy: VoterProxy;
 }
 
+interface Factories {
+    rewardFactory: RewardFactory;
+    stashFactory: StashFactoryV2;
+    tokenFactory: TokenFactory;
+    proxyFactory: ProxyFactory;
+}
 interface Phase2Deployed extends Phase1Deployed {
     cvx: AuraToken;
     minter: AuraMinter;
     booster: Booster;
     boosterOwner: BoosterOwner;
+    factories: Factories;
+    arbitratorVault: ArbitratorVault;
     cvxCrv: CvxCrvToken;
     cvxCrvBpt: BalancerPoolDeployed;
     cvxCrvRewards: BaseRewardPool;
@@ -175,7 +186,8 @@ interface Phase2Deployed extends Phase1Deployed {
     crvDepositor: CrvDepositor;
     crvDepositorWrapper: CrvDepositorWrapper;
     poolManager: PoolManagerV3;
-    voterProxy: CurveVoterProxy;
+    poolManagerProxy: PoolManagerProxy;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
     cvxLocker: AuraLocker;
     cvxStakingProxy: AuraStakingProxy;
     chef: ConvexMasterChef;
@@ -185,8 +197,6 @@ interface Phase2Deployed extends Phase1Deployed {
     balLiquidityProvider: BalLiquidityProvider;
     penaltyForwarder: AuraPenaltyForwarder;
     extraRewardsDistributor: ExtraRewardsDistributor;
-    poolManagerProxy: PoolManagerProxy;
-    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
 }
 
 interface Phase3Deployed extends Phase2Deployed {
@@ -194,16 +204,7 @@ interface Phase3Deployed extends Phase2Deployed {
 }
 interface SystemDeployed extends Phase3Deployed {
     claimZap: AuraClaimZap;
-}
-
-async function waitForTx(tx: ContractTransaction, debug = false): Promise<ContractReceipt> {
-    const receipt = await tx.wait(debug ? 3 : undefined);
-    if (debug) {
-        console.log(`\nTRANSACTION: ${receipt.transactionHash}`);
-        console.log(`to:: ${tx.to}`);
-        console.log(`txData:: ${tx.data}`);
-    }
-    return receipt;
+    feeCollector: ClaimFeesHelper;
 }
 
 function getPoolAddress(utils, receipt: ContractReceipt): string {
@@ -229,10 +230,12 @@ function getPoolAddress(utils, receipt: ContractReceipt): string {
  */
 
 async function deployPhase1(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
     extSystem: ExtSystemConfig,
     approveWalletLocal = true,
     debug = false,
+    waitForBlocks = 0,
 ): Promise<Phase1Deployed> {
     const deployer = signer;
 
@@ -240,12 +243,14 @@ async function deployPhase1(
     // 1. VoterProxy
     // -----------------------------
 
-    const voterProxy = await deployContract<CurveVoterProxy>(
-        new CurveVoterProxy__factory(deployer),
-        "CurveVoterProxy",
+    const voterProxy = await deployContract<VoterProxy>(
+        hre,
+        new VoterProxy__factory(deployer),
+        "VoterProxy",
         [extSystem.minter, extSystem.token, extSystem.tokenBpt, extSystem.votingEscrow, extSystem.gaugeController],
         {},
         debug,
+        waitForBlocks,
     );
 
     if (approveWalletLocal) {
@@ -269,6 +274,7 @@ async function deployPhase2(
     naming: NamingConfig,
     config: ExtSystemConfig,
     debug = false,
+    waitForBlocks = 0,
 ): Promise<Phase2Deployed> {
     const { ethers } = hre;
     const chain = getChain(hre);
@@ -276,16 +282,7 @@ async function deployPhase2(
     const deployerAddress = await deployer.getAddress();
     const balHelper = new AssetHelpers(config.weth);
 
-    const {
-        token,
-        tokenBpt,
-        votingEscrow,
-        gaugeController,
-        feeDistribution,
-        nativeTokenDistribution,
-        voteOwnership,
-        voteParameter,
-    } = config;
+    const { token, tokenBpt, votingEscrow, gaugeController, voteOwnership, voteParameter } = config;
     const { voterProxy } = deployment;
 
     // -----------------------------
@@ -307,7 +304,6 @@ async function deployPhase2(
     //     - factories (reward, token, proxy, stash)
     //     - cvxCrv (cvxCrv, crvDepositor)
     //     - pool management (poolManager + 2x proxies)
-    //     TODO - ensure all places using vlCVX (i.e. vesting & lockdrop) are updated
     //     - vlCVX + ((stkCVX && stakerProxy) || fix)
     // -----------------------------
 
@@ -327,205 +323,262 @@ async function deployPhase2(
     }
 
     const cvx = await deployContract<AuraToken>(
+        hre,
         new AuraToken__factory(deployer),
         "AuraToken",
         [deployment.voterProxy.address, naming.cvxName, naming.cvxSymbol],
         {},
         debug,
+        waitForBlocks,
     );
 
     const minter = await deployContract<AuraMinter>(
+        hre,
         new AuraMinter__factory(deployer),
         "AuraMinter",
         [cvx.address, multisigs.daoMultisig],
         {},
         debug,
+        waitForBlocks,
     );
 
     const booster = await deployContract<Booster>(
+        hre,
         new Booster__factory(deployer),
         "Booster",
         [voterProxy.address, cvx.address, token, voteOwnership, voteParameter],
         {},
         debug,
+        waitForBlocks,
     );
 
     const rewardFactory = await deployContract<RewardFactory>(
+        hre,
         new RewardFactory__factory(deployer),
         "RewardFactory",
         [booster.address, token],
         {},
         debug,
+        waitForBlocks,
     );
 
     const tokenFactory = await deployContract<TokenFactory>(
+        hre,
         new TokenFactory__factory(deployer),
         "TokenFactory",
         [booster.address, naming.tokenFactoryNamePostfix, naming.cvxSymbol.toLowerCase()],
         {},
         debug,
+        waitForBlocks,
     );
 
     const proxyFactory = await deployContract<ProxyFactory>(
+        hre,
         new ProxyFactory__factory(deployer),
         "ProxyFactory",
         [],
         {},
-        false,
+        debug,
+        waitForBlocks,
     );
     const stashFactory = await deployContract<StashFactoryV2>(
+        hre,
         new StashFactoryV2__factory(deployer),
         "StashFactory",
         [booster.address, rewardFactory.address, proxyFactory.address],
         {},
         debug,
+        waitForBlocks,
     );
 
     const stashV3 = await deployContract<ExtraRewardStashV3>(
+        hre,
         new ExtraRewardStashV3__factory(deployer),
         "ExtraRewardStashV3",
         [token],
         {},
         debug,
+        waitForBlocks,
     );
 
     const cvxCrv = await deployContract<CvxCrvToken>(
+        hre,
         new CvxCrvToken__factory(deployer),
         "CvxCrv",
         [naming.cvxCrvName, naming.cvxCrvSymbol],
         {},
         debug,
+        waitForBlocks,
     );
 
     const crvDepositor = await deployContract<CrvDepositor>(
+        hre,
         new CrvDepositor__factory(deployer),
         "CrvDepositor",
         [voterProxy.address, cvxCrv.address, tokenBpt, votingEscrow, multisigs.daoMultisig],
         {},
         debug,
+        waitForBlocks,
     );
 
     const cvxCrvRewards = await deployContract<BaseRewardPool>(
+        hre,
         new BaseRewardPool__factory(deployer),
         "BaseRewardPool",
         [0, cvxCrv.address, token, booster.address, rewardFactory.address],
         {},
         debug,
+        waitForBlocks,
     );
 
     const poolManagerProxy = await deployContract<PoolManagerProxy>(
+        hre,
         new PoolManagerProxy__factory(deployer),
         "PoolManagerProxy",
         [booster.address, deployerAddress],
         {},
         debug,
+        waitForBlocks,
     );
 
     const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
+        hre,
         new PoolManagerSecondaryProxy__factory(deployer),
         "PoolManagerProxy",
         [gaugeController, poolManagerProxy.address, booster.address, deployerAddress],
         {},
         debug,
+        waitForBlocks,
     );
 
     const poolManager = await deployContract<PoolManagerV3>(
+        hre,
         new PoolManagerV3__factory(deployer),
         "PoolManagerV3",
         [poolManagerSecondaryProxy.address, gaugeController, multisigs.daoMultisig],
         {},
         debug,
+        waitForBlocks,
     );
 
     const boosterOwner = await deployContract<BoosterOwner>(
+        hre,
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
         [multisigs.daoMultisig, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS],
         {},
         debug,
+        waitForBlocks,
     );
 
     const arbitratorVault = await deployContract<ArbitratorVault>(
+        hre,
         new ArbitratorVault__factory(deployer),
         "ArbitratorVault",
         [booster.address],
         {},
         debug,
+        waitForBlocks,
     );
 
     const cvxLocker = await deployContract<AuraLocker>(
+        hre,
         new AuraLocker__factory(deployer),
         "AuraLocker",
         [naming.vlCvxName, naming.vlCvxSymbol, cvx.address, cvxCrv.address, cvxCrvRewards.address],
         {},
         debug,
+        waitForBlocks,
     );
 
     const crvDepositorWrapper = await deployContract<CrvDepositorWrapper>(
+        hre,
         new CrvDepositorWrapper__factory(deployer),
         "CrvDepositorWrapper",
         [crvDepositor.address, config.balancerVault, config.token, config.weth, config.balancerPoolId],
         {},
         debug,
+        waitForBlocks,
     );
 
     const cvxStakingProxy = await deployContract<AuraStakingProxy>(
+        hre,
         new AuraStakingProxy__factory(deployer),
         "AuraStakingProxy",
-        [cvxLocker.address, config.token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, 9980],
+        [
+            cvxLocker.address,
+            config.token,
+            cvx.address,
+            cvxCrv.address,
+            crvDepositorWrapper.address,
+            config.balancerMinOutBps,
+        ],
         {},
         debug,
+        waitForBlocks,
     );
     const extraRewardsDistributor = await deployContract<ExtraRewardsDistributor>(
+        hre,
         new ExtraRewardsDistributor__factory(deployer),
         "ExtraRewardsDistributor",
         [cvxLocker.address],
         {},
         debug,
+        waitForBlocks,
     );
     const penaltyForwarder = await deployContract<AuraPenaltyForwarder>(
+        hre,
         new AuraPenaltyForwarder__factory(deployer),
         "AuraPenaltyForwarder",
         [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
         {},
         debug,
+        waitForBlocks,
     );
 
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
-    await waitForTx(tx, debug);
-
-    tx = await voterProxy.setRewardDeposit(multisigs.daoMultisig, extraRewardsDistributor.address);
-    await tx.wait();
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await cvxLocker.setApprovals();
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await crvDepositorWrapper.setApprovals();
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await cvxLocker.transferOwnership(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await cvxStakingProxy.setApprovals();
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    if (!!config.keeper && config.keeper != ZERO_ADDRESS) {
+        tx = await cvxStakingProxy.setKeeper(config.keeper);
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+
+    tx = await cvxStakingProxy.setPendingOwner(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await cvxStakingProxy.applyPendingOwner();
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await voterProxy.setOperator(booster.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await cvx.init(deployerAddress, premine.toString(), minter.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await cvxCrv.setOperator(crvDepositor.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await voterProxy.setDepositor(crvDepositor.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await voterProxy.setOwner(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     const crvBpt = MockERC20__factory.connect(config.tokenBpt, deployer);
     let crvBptbalance = await crvBpt.balanceOf(deployerAddress);
@@ -533,56 +586,49 @@ async function deployPhase2(
         throw console.error("No crvBPT for initial lock");
     }
     tx = await crvBpt.transfer(voterProxy.address, simpleToExactAmount(1));
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await crvDepositor.initialLock();
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setPoolManager(poolManagerProxy.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await poolManagerProxy.setOwner(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await poolManagerSecondaryProxy.setOwner(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
-    if (!!nativeTokenDistribution && nativeTokenDistribution != ZERO_ADDRESS) {
-        tx = await booster.setFeeInfo(nativeTokenDistribution);
-        await waitForTx(tx, debug);
-    }
-
-    if (!!feeDistribution && feeDistribution != ZERO_ADDRESS) {
-        tx = await booster.setFeeInfo(feeDistribution);
-        await waitForTx(tx, debug);
-    }
+    tx = await arbitratorVault.setOperator(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setArbitrator(arbitratorVault.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setVoteDelegate(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFeeManager(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setOwner(boosterOwner.address);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     // -----------------------------
     // 2.2. Token liquidity:
@@ -600,7 +646,7 @@ async function deployPhase2(
 
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     const DELAY = ONE_WEEK;
-    const rewardsStart = currentTime.add(DELAY);
+    const vestingStart = currentTime.add(DELAY);
     const vestedEscrows = [];
 
     const vestingDistro = distroList.vesting
@@ -610,22 +656,24 @@ async function deployPhase2(
     for (let i = 0; i < vestingDistro.length; i++) {
         const vestingGroup = vestingDistro[i];
         const groupVestingAmount = vestingGroup.recipients.reduce((p, c) => p.add(c.amount), BN.from(0));
-        const rewardsEnd = rewardsStart.add(vestingGroup.period);
+        const vestingEnd = vestingStart.add(vestingGroup.period);
 
         const vestedEscrow = await deployContract<AuraVestedEscrow>(
+            hre,
             new AuraVestedEscrow__factory(deployer),
             "AuraVestedEscrow",
-            [cvx.address, vestingGroup.admin, cvxLocker.address, rewardsStart, rewardsEnd],
+            [cvx.address, vestingGroup.admin, cvxLocker.address, vestingStart, vestingEnd],
             {},
             debug,
+            waitForBlocks,
         );
 
         tx = await cvx.approve(vestedEscrow.address, groupVestingAmount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
         const vestingAddr = vestingGroup.recipients.map(m => m.address);
         const vestingAmounts = vestingGroup.recipients.map(m => m.amount);
         tx = await vestedEscrow.fund(vestingAddr, vestingAmounts);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
 
         vestedEscrows.push(vestedEscrow);
     }
@@ -633,16 +681,19 @@ async function deployPhase2(
     // -----------------------------
     // 2.2.2 Schedule: 2% emission for cvxCrv staking
     // -----------------------------
+
     const initialCvxCrvStaking = await deployContract<AuraBalRewardPool>(
+        hre,
         new AuraBalRewardPool__factory(deployer),
         "AuraBalRewardPool",
-        [cvxCrv.address, cvx.address, deployerAddress, cvxLocker.address, penaltyForwarder.address, DELAY],
+        [cvxCrv.address, cvx.address, multisigs.treasuryMultisig, cvxLocker.address, penaltyForwarder.address, DELAY],
         {},
         debug,
+        waitForBlocks,
     );
 
     tx = await cvx.transfer(initialCvxCrvStaking.address, distroList.cvxCrvBootstrap);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     // -----------------------------
     // 2.2.3 Create: auraBAL/BPT BPT Stableswap
@@ -657,10 +708,10 @@ async function deployPhase2(
     const depositAmt = crvBptbalance.div(5).mul(2);
 
     tx = await crvBpt.approve(crvDepositor.address, depositAmt);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await crvDepositor["deposit(uint256,bool)"](depositAmt, true);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     const cvxCrvBalance = await cvxCrv.balanceOf(deployerAddress);
     if (!cvxCrvBalance.eq(depositAmt)) {
@@ -677,10 +728,12 @@ async function deployPhase2(
             tokens: poolTokens,
             name: `Balancer ${await cvxCrv.symbol()} Stable Pool`,
             symbol: `B-${await cvxCrv.symbol()}-STABLE`,
-            swapFee: simpleToExactAmount(1, 15),
+            swapFee: simpleToExactAmount(3, 15),
             ampParameter: 25,
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IStablePoolFactory__factory.connect(config.balancerPoolFactories.stablePool, deployer);
         tx = await poolFactory.create(
@@ -691,7 +744,7 @@ async function deployPhase2(
             poolData.swapFee,
             multisigs.treasuryMultisig,
         );
-        const receipt = await waitForTx(tx, debug);
+        const receipt = await waitForTx(tx, debug, waitForBlocks);
         const cvxCrvPoolAddress = getPoolAddress(ethers.utils, receipt);
 
         const poolId = await IBalancerPool__factory.connect(cvxCrvPoolAddress, deployer).getPoolId();
@@ -699,9 +752,9 @@ async function deployPhase2(
         const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
 
         tx = await cvxCrv.approve(config.balancerVault, cvxCrvBalance);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
         tx = await crvBpt.approve(config.balancerVault, cvxCrvBalance);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
 
         const joinPoolRequest = {
             assets: poolTokens,
@@ -710,15 +763,17 @@ async function deployPhase2(
             fromInternalBalance: false,
         };
 
-        tx = await balancerVault.joinPool(poolId, deployerAddress, deployerAddress, joinPoolRequest);
-        await waitForTx(tx, debug);
+        tx = await balancerVault.joinPool(poolId, deployerAddress, multisigs.treasuryMultisig, joinPoolRequest);
+        await waitForTx(tx, debug, waitForBlocks);
     } else {
         const fakeBpt = await deployContract<MockERC20>(
+            hre,
             new MockERC20__factory(deployer),
             "CvxCrvBPT",
             ["Balancer Pool Token 50/50 CRV/CVXCRV", "50/50 CRV/CVXCRV", 18, deployerAddress, 100000],
             {},
             debug,
+            waitForBlocks,
         );
         cvxCrvBpt = { address: fakeBpt.address, poolId: ZERO_KEY };
     }
@@ -735,21 +790,23 @@ async function deployPhase2(
     const startBlock = BN.from(currentBlock).add(blocksInDay.mul(7)); //start with small delay
 
     const chef = await deployContract<ConvexMasterChef>(
+        hre,
         new ConvexMasterChef__factory(deployer),
         "Bootstrap",
         [cvx.address, rewardPerBlock, startBlock, startBlock.add(numberOfBlocks)],
         {},
         debug,
+        waitForBlocks,
     );
 
     tx = await cvx.transfer(chef.address, distroList.lpIncentives);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS, false);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await chef.transferOwnership(multisigs.daoMultisig);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     // -----------------------------
     // 2.2.5 Schedule: Airdrop(s)
@@ -760,6 +817,7 @@ async function deployPhase2(
     for (let i = 0; i < dropCount; i++) {
         const { merkleRoot, startDelay, length, amount } = distroList.airdrops[i];
         const airdrop = await deployContract<AuraMerkleDrop>(
+            hre,
             new AuraMerkleDrop__factory(deployer),
             "AuraMerkleDrop",
             [
@@ -773,9 +831,10 @@ async function deployPhase2(
             ],
             {},
             debug,
+            waitForBlocks,
         );
         tx = await cvx.transfer(airdrop.address, amount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
         drops.push(airdrop);
     }
 
@@ -799,7 +858,9 @@ async function deployPhase2(
             swapFee: simpleToExactAmount(2, 16),
             weights: weights as BN[],
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IInvestmentPoolFactory__factory.connect(
             config.balancerPoolFactories.investmentPool,
@@ -815,16 +876,16 @@ async function deployPhase2(
             false,
             0,
         );
-        const receipt = await waitForTx(tx, debug);
+        const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
         const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
         lbpBpt = { address: poolAddress, poolId };
         const balancerVault = IBalancerVault__factory.connect(config.balancerVault, deployer);
 
         tx = await MockERC20__factory.connect(config.weth, deployer).approve(config.balancerVault, wethAmount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
         tx = await cvx.approve(config.balancerVault, tknAmount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
 
         const joinPoolRequest = {
             assets: poolTokens,
@@ -834,27 +895,29 @@ async function deployPhase2(
         };
 
         tx = await balancerVault.joinPool(poolId, deployerAddress, multisigs.treasuryMultisig, joinPoolRequest);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
     }
     // Else just make a fake one to move tokens
     else {
         lbpBpt = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
         tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
         tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
     }
 
     const balLiquidityProvider = await deployContract<BalLiquidityProvider>(
+        hre,
         new BalLiquidityProvider__factory(deployer),
         "BalLiquidityProvider",
-        [cvx.address, config.weth, simpleToExactAmount(375), multisigs.daoMultisig, config.balancerVault],
+        [cvx.address, config.weth, simpleToExactAmount(375), multisigs.treasuryMultisig, config.balancerVault],
         {},
         debug,
+        waitForBlocks,
     );
 
     tx = await cvx.transfer(balLiquidityProvider.address, distroList.lbp.matching);
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     const balance = await cvx.balanceOf(deployerAddress);
     if (balance.gt(0)) {
@@ -867,6 +930,13 @@ async function deployPhase2(
         minter,
         booster,
         boosterOwner,
+        factories: {
+            rewardFactory,
+            stashFactory,
+            tokenFactory,
+            proxyFactory,
+        },
+        arbitratorVault,
         cvxCrv,
         cvxCrvBpt,
         cvxCrvRewards,
@@ -895,6 +965,7 @@ async function deployPhase3(
     multisigs: MultisigConfig,
     config: ExtSystemConfig,
     debug = false,
+    waitForBlocks = 0,
 ): Promise<Phase3Deployed> {
     const { ethers } = hre;
     const chain = getChain(hre);
@@ -933,10 +1004,12 @@ async function deployPhase3(
             tokens: poolTokens,
             name: `Balancer 80 ${await cvx.symbol()} 20 WETH`,
             symbol: `B-80${await cvx.symbol()}-20WETH`,
-            swapFee: simpleToExactAmount(1, 16),
+            swapFee: simpleToExactAmount(6, 15),
             weights: weights as BN[],
         };
-        console.log(poolData.tokens);
+        if (debug) {
+            console.log(poolData.tokens);
+        }
 
         const poolFactory = IWeightedPool2TokensFactory__factory.connect(
             config.balancerPoolFactories.weightedPool2Tokens,
@@ -951,7 +1024,7 @@ async function deployPhase3(
             true,
             multisigs.treasuryMultisig,
         );
-        const receipt = await waitForTx(tx, debug);
+        const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
 
         const poolId = await IBalancerPool__factory.connect(poolAddress, deployer).getPoolId();
@@ -964,24 +1037,28 @@ async function deployPhase3(
         };
 
         tx = await balLiquidityProvider.provideLiquidity(poolId, joinPoolRequest);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
     }
 
     return { ...deployment, pool8020Bpt: pool };
 }
 
 async function deployPhase4(
+    hre: HardhatRuntimeEnvironment,
     signer: Signer,
     deployment: Phase3Deployed,
     config: ExtSystemConfig,
     debug = false,
+    waitForBlocks = 0,
 ): Promise<SystemDeployed> {
     const deployer = signer;
 
-    const { token, gauges } = config;
-    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, poolManager, cvxCrvBpt, crvDepositorWrapper } = deployment;
+    const { token, gauges, feeDistribution } = config;
+    const { cvx, cvxCrv, cvxLocker, cvxCrvRewards, poolManager, crvDepositorWrapper } = deployment;
 
     // PRE-4: daoMultisig.setProtectPool(false)
+    //        daoMultisig.setFeeInfo(bbaUSD distro)
+    //        daoMultisig.setFeeInfo($BAL distro)
     // -----------------------------
     // 4. Pool creation etc
     //     - Claimzap
@@ -989,44 +1066,49 @@ async function deployPhase4(
     // -----------------------------
 
     const claimZap = await deployContract<AuraClaimZap>(
+        hre,
         new AuraClaimZap__factory(deployer),
         "AuraClaimZap",
-        [
-            token,
-            cvx.address,
-            cvxCrv.address,
-            crvDepositorWrapper.address,
-            cvxCrvRewards.address,
-            cvxLocker.address,
-            config.balancerVault,
-            cvxCrvBpt.poolId,
-        ],
+        [token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, cvxCrvRewards.address, cvxLocker.address],
         {},
         debug,
+        waitForBlocks,
     );
 
     let tx = await claimZap.setApprovals();
-    await waitForTx(tx, debug);
+    await waitForTx(tx, debug, waitForBlocks);
 
     const gaugeLength = gauges.length;
     for (let i = 0; i < gaugeLength; i++) {
         tx = await poolManager["addPool(address)"](gauges[i]);
-        await waitForTx(tx, debug);
+        await waitForTx(tx, debug, waitForBlocks);
     }
 
-    return { ...deployment, claimZap };
+    const feeCollector = await deployContract<ClaimFeesHelper>(
+        hre,
+        new ClaimFeesHelper__factory(deployer),
+        "ClaimFeesHelper",
+        [deployment.booster.address, deployment.voterProxy.address, feeDistribution || ZERO_ADDRESS],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { ...deployment, claimZap, feeCollector };
 }
 
 export {
     DistroList,
     MultisigConfig,
     ExtSystemConfig,
+    BalancerPoolDeployed,
     NamingConfig,
     deployPhase1,
     Phase1Deployed,
     deployPhase2,
     Phase2Deployed,
     deployPhase3,
+    Phase3Deployed,
     deployPhase4,
     SystemDeployed,
 };

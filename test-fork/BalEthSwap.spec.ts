@@ -1,5 +1,5 @@
-import { simpleToExactAmount } from "./../test-utils/math";
-import { ethers, network } from "hardhat";
+import { simpleToExactAmount } from "../test-utils/math";
+import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
@@ -44,6 +44,7 @@ describe("TestBalEth", () => {
         balToken = ERC20__factory.connect(bal, signer);
 
         testEthBal = await deployContract<MockBalInvestor>(
+            hre,
             new MockBalInvestor__factory(signer),
             "testEthBal",
             [vault, bal, weth, poolId],

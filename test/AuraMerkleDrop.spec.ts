@@ -38,11 +38,11 @@ describe("AuraMerkleDrop", () => {
         accounts = await ethers.getSigners();
         deployer = accounts[0];
 
-        const mocks = await deployMocks(deployer);
+        const mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         contracts = await deployPhase2(hre, deployer, phase1, distro, multisigs, mocks.namingConfig, mocks.addresses);
 
         deployerAddress = await deployer.getAddress();

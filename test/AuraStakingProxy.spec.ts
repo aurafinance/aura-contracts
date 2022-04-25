@@ -20,11 +20,11 @@ describe("AuraStakingProxy", () => {
     let bobAddress: string;
 
     const setup = async () => {
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -36,7 +36,7 @@ describe("AuraStakingProxy", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
-        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
@@ -68,7 +68,7 @@ describe("AuraStakingProxy", () => {
         expect(await contracts.cvxStakingProxy.cvx()).eq(contracts.cvx.address);
         expect(await contracts.cvxStakingProxy.cvxCrv()).eq(contracts.cvxCrv.address);
         expect(await contracts.cvxStakingProxy.crvDepositorWrapper()).eq(contracts.crvDepositorWrapper.address);
-        expect(await contracts.cvxStakingProxy.outputBps()).eq(9980);
+        expect(await contracts.cvxStakingProxy.outputBps()).eq(9975);
         expect(await contracts.cvxStakingProxy.rewards()).eq(contracts.cvxLocker.address);
         expect(await contracts.cvxStakingProxy.owner()).eq(await accounts[0].getAddress());
         expect(await contracts.cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
@@ -179,6 +179,7 @@ describe("AuraStakingProxy", () => {
                 const amount = ethers.utils.parseEther("100");
                 const deployerAddress = await accounts[0].getAddress();
                 const randomToken = await deployContract(
+                    hre,
                     new MockERC20__factory(accounts[0]),
                     "RandomToken",
                     ["Random", "RND", 18, deployerAddress, 100],
@@ -229,6 +230,8 @@ describe("AuraStakingProxy", () => {
             const callIncentiveAmount = minOut.mul(callIncentive).div("10000");
 
             expect(balanceAfter.sub(balanceBefore)).gt(minOut.sub(callIncentiveAmount));
+            // False negative check
+            expect(balanceAfter).gt(0);
         });
     });
 });

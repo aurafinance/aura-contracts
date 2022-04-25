@@ -28,3 +28,4 @@ contracts.json
 
 # types
 types/generated/**/*
+_flat

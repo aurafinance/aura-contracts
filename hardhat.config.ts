@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "@nomiclabs/hardhat-etherscan";
 
 import { resolve } from "path";
 
@@ -48,7 +49,7 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
         },
         mainnet: {
-            url: process.env.NODE_URL || "https://main-light.eth.linkpool.io",
+            url: process.env.NODE_URL || "",
         },
         kovan: {
             url: process.env.NODE_URL || "",
@@ -80,6 +81,9 @@ const config: HardhatUserConfig = {
     typechain: {
         outDir: "types/generated",
         target: "ethers-v5",
+    },
+    etherscan: {
+        apiKey: process.env.ETHERSCAN_KEY,
     },
 };
 

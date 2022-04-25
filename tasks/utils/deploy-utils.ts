@@ -1,12 +1,16 @@
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Contract, ContractFactory, ContractReceipt, ContractTransaction, Overrides } from "ethers";
 import { formatUnits } from "@ethersproject/units";
+import { ExtSystemConfig } from "../../scripts/deploySystem";
 
 export const deployContract = async <T extends Contract>(
+    hre: HardhatRuntimeEnvironment,
     contractFactory: ContractFactory,
     contractName = "Contract",
     constructorArgs: Array<unknown> = [],
     overrides: Overrides = {},
     debug = true,
+    waitForBlocks = undefined,
 ): Promise<T> => {
     const contract = (await contractFactory.deploy(...constructorArgs, overrides)) as T;
     if (debug) {
@@ -16,7 +20,7 @@ export const deployContract = async <T extends Contract>(
             } with gas price ${contract.deployTransaction.gasPrice?.toNumber() || 0 / 1e9} Gwei`,
         );
     }
-    const receipt = await contract.deployTransaction.wait(debug ? 3 : undefined);
+    const receipt = await contract.deployTransaction.wait(waitForBlocks);
     const txCost = receipt.gasUsed.mul(contract.deployTransaction.gasPrice || 0);
     const abiEncodedConstructorArgs = contract.interface.encodeDeploy(constructorArgs);
 
@@ -28,6 +32,12 @@ export const deployContract = async <T extends Contract>(
         );
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
+
+    // await verifyEtherscan(hre, {
+    //     address: contract.address,
+    //     constructorArguments: constructorArgs,
+    // });
+
     return contract;
 };
 
@@ -49,3 +59,41 @@ export const logTxDetails = async (tx: ContractTransaction, method: string): Pro
 
     return receipt;
 };
+
+export function logExtSystem(system: ExtSystemConfig) {
+    const keys = Object.keys(system);
+    console.log(`\n~~~~~~~~~~~~~~~~~~~~~~~~~~~`);
+    console.log(`~~~~~~~ EXT  SYSTEM ~~~~~~~`);
+    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~\n`);
+    keys.map(k => {
+        console.log(`${k}:\t${system[k]}`);
+    });
+}
+
+export function logContracts(contracts: { [key: string]: { address: string } }) {
+    const keys = Object.keys(contracts);
+    console.log(`\n~~~~~~~~~~~~~~~~~~~~~~~~~~~`);
+    console.log(`~~~~ SYSTEM DEPLOYMENT ~~~~`);
+    console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~\n`);
+    keys.map(k => {
+        if (Array.isArray(contracts[k])) {
+            console.log(`${k}:\t[${(contracts[k] as any as [{ address: string }]).map(i => i.address)}]`);
+        } else {
+            console.log(`${k}:\t${contracts[k].address}`);
+        }
+    });
+}
+
+export async function waitForTx(
+    tx: ContractTransaction,
+    debug = false,
+    waitForBlocks = undefined,
+): Promise<ContractReceipt> {
+    const receipt = await tx.wait(waitForBlocks);
+    if (debug) {
+        console.log(`\nTRANSACTION: ${receipt.transactionHash}`);
+        console.log(`to:: ${tx.to}`);
+        console.log(`txData:: ${tx.data}`);
+    }
+    return receipt;
+}

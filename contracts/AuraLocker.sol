@@ -883,8 +883,6 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
         // of transactions required and ensure correctness of the _reward amount
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _reward);
-
-        emit RewardAdded(_rewardsToken, _reward);
     }
 
     function _notifyReward(address _rewardsToken, uint256 _reward) internal updateReward(address(0)) {
@@ -900,5 +898,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
 
         rdata.lastUpdateTime = block.timestamp.to32();
         rdata.periodFinish = block.timestamp.add(rewardsDuration).to32();
+
+        emit RewardAdded(_rewardsToken, _reward);
     }
 }

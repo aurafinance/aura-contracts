@@ -18,6 +18,7 @@ echo "[*] creating internal directory structure";
 
 find . -name "*.sol" \
   -not -path "./node_modules/*" \
+  -not -path "./convex-platform/*" \
   -not -path "./artifacts/*" \
   -not -path "./contracts/mocks/*" \
   | xargs dirname | sed "s/^\.//g" | xargs -I{} mkdir -p "$repo_directory{}"
@@ -26,6 +27,7 @@ echo "[*] copying files to $repo_directory";
 
 find . -name "*.sol" \
   -not -path "./node_modules/*" \
+  -not -path "./convex-platform/*" \
   -not -path "./artifacts/*" \
   -not -path "./contracts/mocks/*" \
   | xargs -I{} echo "{}" | sed "s/^\.//g" | xargs -I{} cp ".{}" "$repo_directory{}" 

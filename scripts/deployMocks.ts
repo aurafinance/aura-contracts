@@ -11,8 +11,8 @@ import {
     MockVoting__factory,
     MockWalletChecker,
     MockWalletChecker__factory,
-    MockFeeDistro,
-    MockFeeDistro__factory,
+    MockFeeDistributor,
+    MockFeeDistributor__factory,
     MockCurveGauge,
     MockCurveGauge__factory,
     MockCurveMinter__factory,
@@ -24,6 +24,7 @@ import {
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 interface DeployMocksResult {
     lptoken: MockERC20;
@@ -31,8 +32,7 @@ interface DeployMocksResult {
     crvMinter: MockCurveMinter;
     voting: MockVoting;
     votingEscrow: MockCurveVoteEscrow;
-    feeDistribution: MockFeeDistro;
-    nativeTokenDistribution: MockFeeDistro;
+    feeDistribution: MockFeeDistributor;
     smartWalletChecker: MockWalletChecker;
     gauges: MockCurveGauge[];
     crvBpt: MockBalancerPoolToken;
@@ -113,7 +113,7 @@ async function getMockMultisigs(
     };
 }
 
-async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksResult> {
+async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
@@ -122,6 +122,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     // -----------------------------
 
     const crv = await deployContract<MockERC20>(
+        hre,
         new MockERC20__factory(deployer),
         "MockCRV",
         ["mockCrv", "mockCrv", 18, deployerAddress, 10000000],
@@ -130,6 +131,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const crvBpt = await deployContract<MockBalancerPoolToken>(
+        hre,
         new MockBalancerPoolToken__factory(deployer),
         "MockBalancerPoolToken",
         [18, deployerAddress, 100],
@@ -138,6 +140,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const crvMinter = await deployContract<MockCurveMinter>(
+        hre,
         new MockCurveMinter__factory(deployer),
         "MockCurveMinter",
         [crv.address, simpleToExactAmount(1, 18)],
@@ -149,6 +152,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     await tx.wait();
 
     const lptoken = await deployContract<MockERC20>(
+        hre,
         new MockERC20__factory(deployer),
         "MockLPToken",
         ["mockLPToken", "mockLPToken", 18, deployerAddress, 10000000],
@@ -156,37 +160,26 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         debug,
     );
 
-    const feeToken = await deployContract<MockERC20>(
-        new MockERC20__factory(deployer),
-        "FeeToken",
-        ["Fee Token", "feeToken", 18, deployerAddress, 10000000],
+    const feeDistro = await deployContract<MockFeeDistributor>(
+        hre,
+        new MockFeeDistributor__factory(deployer),
+        "MockFeeDistributor",
+        [
+            [lptoken.address, crv.address],
+            [simpleToExactAmount(1), simpleToExactAmount(1)],
+        ],
         {},
         debug,
     );
 
-    const feeDistro = await deployContract<MockFeeDistro>(
-        new MockFeeDistro__factory(deployer),
-        "MockFeeDistro",
-        [feeToken.address, simpleToExactAmount(1)],
-        {},
-        debug,
-    );
-
-    tx = await feeToken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
+    tx = await lptoken.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
-    const nativeFeeDistro = await deployContract<MockFeeDistro>(
-        new MockFeeDistro__factory(deployer),
-        "MockFeeDistro",
-        [crv.address, simpleToExactAmount(1)],
-        {},
-        debug,
-    );
-
-    tx = await crv.transfer(nativeFeeDistro.address, simpleToExactAmount(1, 22));
+    tx = await crv.transfer(feeDistro.address, simpleToExactAmount(1, 22));
     await tx.wait();
 
     const smartWalletChecker = await deployContract<MockWalletChecker>(
+        hre,
         new MockWalletChecker__factory(deployer),
         "mockWalletChecker",
         [],
@@ -195,6 +188,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const votingEscrow = await deployContract<MockCurveVoteEscrow>(
+        hre,
         new MockCurveVoteEscrow__factory(deployer),
         "MockCurveVoteEscrow",
         [smartWalletChecker.address, crvBpt.address],
@@ -202,12 +196,20 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         debug,
     );
 
-    const voting = await deployContract<MockVoting>(new MockVoting__factory(deployer), "MockVoting", [], {}, false);
+    const voting = await deployContract<MockVoting>(
+        hre,
+        new MockVoting__factory(deployer),
+        "MockVoting",
+        [],
+        {},
+        false,
+    );
 
     const gauges = [];
 
     for (let i = 0; i < 3; i++) {
         const gauge = await deployContract<MockCurveGauge>(
+            hre,
             new MockCurveGauge__factory(deployer),
             "MockCurveGauge",
             [`TestGauge_${i + 1}`, `tstGauge_${i + 1}`, lptoken.address, []],
@@ -224,6 +226,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     await tx.wait();
 
     const balancerVault = await deployContract<MockBalancerVault>(
+        hre,
         new MockBalancerVault__factory(deployer),
         "MockBalancerVault",
         [crvBpt.address],
@@ -232,6 +235,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const bal = await deployContract<MockERC20>(
+        hre,
         new MockERC20__factory(deployer),
         "MockBAL",
         ["mockBAL", "mockBAL", 18, deployerAddress, 10000000],
@@ -240,6 +244,7 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
     );
 
     const weth = await deployContract<MockERC20>(
+        hre,
         new MockERC20__factory(deployer),
         "MockWETH",
         ["mockWETH", "mockWETH", 18, deployerAddress, 10000000],
@@ -255,7 +260,6 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
         votingEscrow,
         smartWalletChecker,
         feeDistribution: feeDistro,
-        nativeTokenDistribution: nativeFeeDistro,
         gauges,
         crvBpt,
         balancerVault,
@@ -268,7 +272,6 @@ async function deployMocks(signer: Signer, debug = false): Promise<DeployMocksRe
             minter: crvMinter.address,
             votingEscrow: votingEscrow.address,
             feeDistribution: feeDistro.address,
-            nativeTokenDistribution: nativeFeeDistro.address,
             gaugeController: voting.address,
             voteOwnership: voting.address,
             voteParameter: voting.address,

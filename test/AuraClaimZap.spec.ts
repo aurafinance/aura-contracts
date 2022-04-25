@@ -23,10 +23,10 @@ describe("AuraClaimZap", () => {
         aliceAddress = await alice.getAddress();
 
         deployer = accounts[0];
-        mocks = await deployMocks(deployer);
+        mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -38,7 +38,7 @@ describe("AuraClaimZap", () => {
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
-        contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         await mocks.crv.transfer(aliceAddress, simpleToExactAmount(1));
         await mocks.crv.transfer(mocks.balancerVault.address, simpleToExactAmount(10));
@@ -50,9 +50,6 @@ describe("AuraClaimZap", () => {
     it("set approval for deposits", async () => {
         await contracts.claimZap.setApprovals();
         expect(await mocks.crv.allowance(contracts.claimZap.address, contracts.crvDepositorWrapper.address)).gte(
-            ethers.constants.MaxUint256,
-        );
-        expect(await mocks.crv.allowance(contracts.claimZap.address, mocks.balancerVault.address)).gte(
             ethers.constants.MaxUint256,
         );
         expect(await contracts.cvxCrv.allowance(contracts.claimZap.address, contracts.cvxCrvRewards.address)).gte(
@@ -90,22 +87,6 @@ describe("AuraClaimZap", () => {
 
         const newRewardBalance = await contracts.cvxCrvRewards.balanceOf(aliceAddress);
         expect(newRewardBalance).eq(minBptAmountOut.add(rewardBalance));
-    });
-
-    it("claims crv and then swaps for cxvCrv on balancer", async () => {
-        const option = 1 + 8 + 64;
-        await contracts.booster.earmarkRewards(0);
-        await increaseTime(ONE_WEEK.mul("4"));
-        const expectedRewards = await contracts.cvxCrvRewards.earned(aliceAddress);
-        const rewardBalanceBefore = await contracts.cvxCrvRewards.balanceOf(aliceAddress);
-
-        const minCvxCrvAmountOut = expectedRewards;
-        await contracts.claimZap
-            .connect(alice)
-            .claimRewards([], [], [], [], expectedRewards, minCvxCrvAmountOut, 0, option);
-
-        const rewardBalanceAfter = await contracts.cvxCrvRewards.balanceOf(aliceAddress);
-        expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(expectedRewards);
     });
 
     it("claim from lp staking pool", async () => {

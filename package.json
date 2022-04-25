@@ -22,7 +22,8 @@
         "prettier": "prettier --config ./.prettierrc.yaml --write \"**/*.{js,json,md,sol,ts}\"",
         "prettier:check": "prettier --check --config ./.prettierrc.yaml \"**/*.{js,json,md,sol,ts}\"",
         "test": "hardhat test",
-        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
+        "test:fork": "yarn hardhat --config hardhat-fork.config.ts test",
+        "test:fork:all": "yarn hardhat --config hardhat-fork.config.ts test ./test-fork/**/*.spec.ts",
         "typechain": "yarn hardhat typechain",
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
@@ -41,6 +42,7 @@
         "@ethersproject/hash": "^5.5.0",
         "@ethersproject/providers": "^5.5.0",
         "@nomiclabs/hardhat-ethers": "^2.0.2",
+        "@nomiclabs/hardhat-etherscan": "^3.0.3",
         "@nomiclabs/hardhat-waffle": "^2.0.1",
         "@openzeppelin/contracts-0.8": "npm:@openzeppelin/contracts@4.4.2",
         "@snapshot-labs/snapshot.js": "^0.3.53",

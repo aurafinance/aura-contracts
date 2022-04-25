@@ -28,4 +28,4 @@ jobs:
               run: |
                   touch .env
                   echo NODE_URL=${{ secrets.NODE_URL }} >> .env
-            - run: yarn test:fork
+            - run: yarn test:fork:all

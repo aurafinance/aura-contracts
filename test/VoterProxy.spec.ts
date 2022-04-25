@@ -4,7 +4,7 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scrip
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import {
     Booster,
-    CurveVoterProxy,
+    VoterProxy,
     MockVoteStorage,
     MockVoteStorage__factory,
     MockERC20,
@@ -46,7 +46,7 @@ const invalidHash = hashMessage(JSON.stringify({ ...data, version: "faux" }));
 
 describe("VoterProxy", () => {
     let accounts: Signer[];
-    let voterProxy: CurveVoterProxy;
+    let voterProxy: VoterProxy;
     let booster: Booster;
     let extraRewardsDistributor: ExtraRewardsDistributor;
     let mocks: DeployMocksResult;
@@ -66,12 +66,12 @@ describe("VoterProxy", () => {
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
 
-        mocks = await deployMocks(deployer);
-        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        mocks = await deployMocks(hre, deployer);
+        const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
         daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(deployer, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
             hre,
             deployer,
@@ -82,8 +82,8 @@ describe("VoterProxy", () => {
             mocks.addresses,
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.setProtectPool(false);
-        const contracts = await deployPhase4(deployer, phase3, mocks.addresses);
+        await phase3.poolManager.connect(daoMultisig).setProtectPool(false);
+        const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         voterProxy = contracts.voterProxy;
         booster = contracts.booster;
@@ -106,14 +106,22 @@ describe("VoterProxy", () => {
     describe("validates vote hash from Snapshot Hub", async () => {
         it("with a valid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await booster.connect(daoMultisig).setVote(hash, true);
-            const isValid = await voterProxy.isValidSignature(hash, sig);
+            let tx = await booster.connect(daoMultisig).setVote(hash, true);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
+
+            let isValid = await voterProxy.isValidSignature(hash, sig);
             expect(isValid).to.equal(eip1271MagicValue);
+
+            tx = await booster.connect(daoMultisig).setVote(hash, false);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, false);
+            isValid = await voterProxy.isValidSignature(invalidHash, sig);
+            expect(isValid).to.equal("0xffffffff");
         });
 
         it("with an invalid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            await booster.connect(daoMultisig).setVote(hash, true);
+            const tx = await booster.connect(daoMultisig).setVote(hash, true);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
             const isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
         });
@@ -124,6 +132,7 @@ describe("VoterProxy", () => {
 
         before(async () => {
             mockVoteStorage = await deployContract<MockVoteStorage>(
+                hre,
                 new MockVoteStorage__factory(deployer),
                 "MockVoteStorage",
                 [],
@@ -155,11 +164,15 @@ describe("VoterProxy", () => {
             const tx = voterProxy.connect(eoa).release();
             await expect(tx).to.revertedWith("!auth");
         });
-
         it("can not call setRewardDeposit", async () => {
             const eoa = accounts[5];
             const eoaAddress = await eoa.getAddress();
             const tx = voterProxy.connect(eoa).setRewardDeposit(await deployer.getAddress(), eoaAddress);
+            await expect(tx).to.revertedWith("!auth");
+        });
+        it("can not call setSystemConfig", async () => {
+            const eoa = accounts[5];
+            const tx = voterProxy.connect(eoa).setSystemConfig(ZERO_ADDRESS, ZERO_ADDRESS);
             await expect(tx).to.revertedWith("!auth");
         });
         it("can not call withdraw", async () => {
@@ -169,17 +182,30 @@ describe("VoterProxy", () => {
         });
     });
 
+    describe("setting rewardDeposit", () => {
+        it("allows owner to set reward deposit and withdrawer", async () => {
+            expect(await voterProxy.withdrawer()).eq(ZERO_ADDRESS);
+            expect(await voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
+            await voterProxy
+                .connect(daoMultisig)
+                .setRewardDeposit(await daoMultisig.getAddress(), extraRewardsDistributor.address);
+            expect(await voterProxy.withdrawer()).eq(await daoMultisig.getAddress());
+            expect(await voterProxy.rewardDeposit()).eq(extraRewardsDistributor.address);
+        });
+    });
+
     describe("when withdrawing tokens", () => {
         it("can not withdraw protected tokens", async () => {
-            let tx = voterProxy["withdraw(address)"](mocks.crv.address);
+            let tx = voterProxy.connect(daoMultisig)["withdraw(address)"](mocks.crv.address);
             await expect(tx).to.revertedWith("protected");
-            tx = voterProxy["withdraw(address)"](mocks.crvBpt.address);
+            tx = voterProxy.connect(daoMultisig)["withdraw(address)"](mocks.crvBpt.address);
             await expect(tx).to.revertedWith("protected");
         });
 
         it("can withdraw unprotected tokens", async () => {
             const deployerAddress = await deployer.getAddress();
             const randomToken = await deployContract<MockERC20>(
+                hre,
                 new MockERC20__factory(deployer),
                 "RandomToken",
                 ["randomToken", "randomToken", 18, deployerAddress, 10000000],
@@ -196,21 +222,21 @@ describe("VoterProxy", () => {
             await auraLocker.lock(deployerAddress, cvxAmount);
             await increaseTime(86400 * 7);
 
-            await voterProxy["withdraw(address)"](randomToken.address);
+            await voterProxy.connect(daoMultisig)["withdraw(address)"](randomToken.address);
             const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
             expect(balance).eq(rewardDepositBalance);
         });
     });
 
-    describe("setting rewardDeposit", () => {
-        it("allows owner to set reward deposit and withdrawer", async () => {
+    describe("setting setSystemConfig", () => {
+        it("allows owner to set external system config", async () => {
             const eoa = accounts[6];
             const eoa7 = accounts[7];
             const eoaAddress = await eoa.getAddress();
             const eoaAddress7 = await eoa7.getAddress();
-            await voterProxy.connect(daoMultisig).setRewardDeposit(eoaAddress, eoaAddress7);
-            expect(await voterProxy.withdrawer()).eq(eoaAddress);
-            expect(await voterProxy.rewardDeposit()).eq(eoaAddress7);
+            await voterProxy.connect(daoMultisig).setSystemConfig(eoaAddress, eoaAddress7);
+            expect(await voterProxy.gaugeController()).eq(eoaAddress);
+            expect(await voterProxy.mintr()).eq(eoaAddress7);
         });
     });
 
@@ -219,24 +245,24 @@ describe("VoterProxy", () => {
             // 1. shutdown pools via poolManagerProxy
             const poolLength = await booster.poolLength();
             for (let i = 0; i < Number(poolLength.toString()); i++) {
-                await poolManager.shutdownPool(i);
+                await poolManager.connect(daoMultisig).shutdownPool(i);
             }
 
             // 2. shutdown system on poolManagerSecondaryProxy
-            await poolManagerSecondaryProxy.shutdownSystem();
+            await poolManagerSecondaryProxy.connect(daoMultisig).shutdownSystem();
 
             // 3. shutdown system on booster owner
-            await boosterOwner.shutdownSystem();
+            await boosterOwner.connect(daoMultisig).shutdownSystem();
             const isShutdown = await booster.isShutdown();
             expect(isShutdown).eq(true);
         });
 
         it("update operator and depositor to EOA", async () => {
-            await voterProxy.setDepositor(deployerAddress);
+            await voterProxy.connect(daoMultisig).setDepositor(deployerAddress);
             const depositor = await voterProxy.depositor();
             expect(depositor).eq(deployerAddress);
 
-            await voterProxy.setOperator(deployerAddress);
+            await voterProxy.connect(daoMultisig).setOperator(deployerAddress);
             const operator = await voterProxy.operator();
             expect(operator).eq(deployerAddress);
         });

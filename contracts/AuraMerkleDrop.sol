@@ -62,7 +62,7 @@ contract AuraMerkleDrop {
         dao = _dao;
         merkleRoot = _merkleRoot;
         aura = IERC20(_aura);
-        _setLocker(_auraLocker);
+        auraLocker = IAuraLocker(_auraLocker);
         penaltyForwarder = _penaltyForwarder;
         startTime = block.timestamp + _startDelay;
 
@@ -103,16 +103,8 @@ contract AuraMerkleDrop {
 
     function setLocker(address _newLocker) external {
         require(msg.sender == dao, "!auth");
-        _setLocker(_newLocker);
+        auraLocker = IAuraLocker(_newLocker);
         emit LockerSet(_newLocker);
-    }
-
-    function _setLocker(address _locker) internal {
-        auraLocker = IAuraLocker(_locker);
-        if (_locker != address(0)) {
-            aura.safeApprove(_locker, 0);
-            aura.safeApprove(_locker, type(uint256).max);
-        }
     }
 
     /***************************************
@@ -136,6 +128,8 @@ contract AuraMerkleDrop {
         hasClaimed[msg.sender] = true;
 
         if (_lock) {
+            aura.safeApprove(address(auraLocker), 0);
+            aura.safeApprove(address(auraLocker), _amount);
             auraLocker.lock(msg.sender, _amount);
         } else {
             // If there is an address for auraLocker, and not locking, apply 20% penalty
