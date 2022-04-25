@@ -239,7 +239,7 @@ describe("BalLiquidityProvider", () => {
         });
     });
     describe("@method changeMinPairAmount", async () => {
-        it("changeMinPairAmount should ...", async () => {
+        it("should update the min pair amount", async () => {
             // Given
             const oldMinPairAmount = await balLiquidityProvider.minPairAmount();
             const newMinPairAmount = simpleToExactAmount(1);
@@ -259,7 +259,7 @@ describe("BalLiquidityProvider", () => {
         });
     });
     describe("@method rescueToken", async () => {
-        it("rescueToken should ...", async () => {
+        it("should rescue tokens from the contract", async () => {
             const wethBalance = await mocks.weth.balanceOf(balLiquidityProvider.address);
             expect(wethBalance, "weth balance").to.gt(0);
             await balLiquidityProvider.connect(deployer).rescueToken(mocks.weth.address);

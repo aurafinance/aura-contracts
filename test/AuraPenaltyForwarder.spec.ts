@@ -9,7 +9,6 @@ import { BN, simpleToExactAmount } from "../test-utils/math";
 import { getTimestamp, increaseTime } from "../test-utils/time";
 import { AuraPenaltyForwarder, AuraToken, ExtraRewardsDistributor } from "../types/generated";
 
-const safeInfinity = BN.from(2).pow(256).sub(1);
 describe("AuraPenaltyForwarder", () => {
     let accounts: Signer[];
     let contracts: SystemDeployed;
@@ -65,7 +64,9 @@ describe("AuraPenaltyForwarder", () => {
         expect(await penaltyForwarder.lastDistribution(), "lastDistribution").to.lte(currentTime);
     });
     it("forwarder cvx allowance is correct", async () => {
-        expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(safeInfinity);
+        expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(
+            ethers.constants.MaxUint256,
+        );
     });
     describe("forward", async () => {
         it("fails if the distribution delay is not completed", async () => {
