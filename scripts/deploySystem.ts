@@ -465,7 +465,14 @@ async function deployPhase2(
         hre,
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
-        [multisigs.daoMultisig, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS],
+        [
+            multisigs.daoMultisig,
+            poolManagerSecondaryProxy.address,
+            booster.address,
+            stashFactory.address,
+            ZERO_ADDRESS,
+            true,
+        ],
         {},
         debug,
         waitForBlocks,
@@ -603,7 +610,7 @@ async function deployPhase2(
     tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await poolManagerProxy.setOwner(multisigs.daoMultisig);
+    tx = await poolManagerProxy.setOwner(ZERO_ADDRESS);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
