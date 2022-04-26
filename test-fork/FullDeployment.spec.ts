@@ -97,14 +97,14 @@ describe("Full Deployment", () => {
 
     const getWeth = async (recipient: string, amount = simpleToExactAmount(100)) => {
         const wethWhaleSigner = await impersonateAccount(config.addresses.wethWhale);
-        const weth = await MockERC20__factory.connect(config.addresses.weth, wethWhaleSigner.signer);
+        const weth = MockERC20__factory.connect(config.addresses.weth, wethWhaleSigner.signer);
         const tx = await weth.transfer(recipient, amount);
         await waitForTx(tx, debug);
     };
 
     const getLpToken = async (recipient: string, amount = simpleToExactAmount(10)) => {
         const lpWhaleSigner = await impersonateAccount(config.addresses.staBAL3Whale);
-        const lp = await MockERC20__factory.connect(config.addresses.staBAL3, lpWhaleSigner.signer);
+        const lp = MockERC20__factory.connect(config.addresses.staBAL3, lpWhaleSigner.signer);
         const tx = await lp.transfer(recipient, amount);
         await waitForTx(tx, debug);
     };
@@ -1144,7 +1144,6 @@ describe("Full Deployment", () => {
                     const balanceAfter = await depositToken.balanceOf(stakerAddress);
                     expect(balanceAfter.sub(balanceBefore)).eq(amount);
                 });
-                it("allows users to deposit into proper cvxCrv staking");
                 it("allows earmarking of fees ($BAL)", async () => {
                     await getCrv(stakerAddress, simpleToExactAmount(10));
                     const feeInfo = await phase3.booster.feeTokens(config.addresses.token);
@@ -1295,8 +1294,31 @@ describe("Full Deployment", () => {
                 });
             });
             describe("aura locker", () => {
-                it("allows users to delegate voting power");
-                it("allows users to re-delegate");
+                it("allows users to lock aura", async () => {
+                    const cvxBalance = await phase4.cvx.balanceOf(stakerAddress);
+                    const balancesBefore = await phase4.cvxLocker.balances(stakerAddress);
+                    await phase4.cvx.connect(staker.signer).approve(phase4.cvxLocker.address, cvxBalance);
+                    await phase4.cvxLocker.connect(staker.signer).lock(stakerAddress, cvxBalance);
+                    const balancesAfter = await phase4.cvxLocker.balances(stakerAddress);
+                    expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(cvxBalance);
+                });
+                it("allows users to delegate voting power", async () => {
+                    const delegateTo = "0x7F101fE45e6649A6fB8F3F8B43ed03D353f2B90c";
+                    await phase4.cvxLocker.connect(staker.signer).delegate(delegateTo);
+                    const delegated = await phase4.cvxLocker.delegates(stakerAddress);
+                    expect(delegated).eq(delegateTo);
+                });
+                it("allows users to re-delegate", async () => {
+                    await phase4.cvxLocker.connect(staker.signer).delegate(stakerAddress);
+                    const delegated = await phase4.cvxLocker.delegates(stakerAddress);
+                    expect(delegated).eq(stakerAddress);
+                });
+                it("has votes after checkpoint", async () => {
+                    const cvxBalances = await phase4.cvxLocker.balances(stakerAddress);
+                    await increaseTime(ONE_WEEK);
+                    const votes = await phase4.cvxLocker.getVotes(stakerAddress);
+                    expect(votes).eq(cvxBalances.locked);
+                });
                 it("allows users to claim rewards");
                 it("allows other things too");
             });
