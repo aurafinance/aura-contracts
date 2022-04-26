@@ -979,9 +979,52 @@ describe("Full Deployment", () => {
                     const cvxCrvSupplyAfter = await phase3.cvxCrv.totalSupply();
                     expect(cvxCrvSupplyAfter.sub(cvxCrvSupply)).eq(simpleToExactAmount(200));
                 });
-                it("allows users to claim and lock from cvxCrv staking");
-                it("allows users to claim directly from cvxCrv staking with penalty");
-                it("allows anyone to forward the penalty");
+                it("allows users to claim and lock from cvxCrv staking", async () => {
+                    const { initialCvxCrvStaking, cvxLocker } = phase3;
+                    await increaseTime(ONE_HOUR.mul(4));
+                    const earnedBefore = await initialCvxCrvStaking.earned(alice.address);
+                    expect(earnedBefore).gt(1000000000);
+                    const lockerBalBefore = await cvxLocker.lockedBalances(alice.address);
+
+                    await initialCvxCrvStaking.connect(alice.signer).getReward(true);
+
+                    const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
+                    assertBNClose(earnedAfter, BN.from(0), 1000);
+                    const lockerBalafter = await cvxLocker.lockedBalances(alice.address);
+
+                    assertBNClosePercent(lockerBalafter.total.sub(lockerBalBefore.total), earnedBefore, "0.01");
+                });
+                it("allows users to claim directly from cvxCrv staking with penalty", async () => {
+                    const { initialCvxCrvStaking, cvx } = phase3;
+                    await increaseTime(ONE_HOUR.mul(4));
+                    const earnedBefore = await initialCvxCrvStaking.earned(alice.address);
+                    expect(earnedBefore).gt(1000000000);
+                    const rawBalBefore = await cvx.balanceOf(alice.address);
+                    const penaltyBefore = await initialCvxCrvStaking.pendingPenalty();
+
+                    await initialCvxCrvStaking.connect(alice.signer).getReward(false);
+
+                    const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
+                    assertBNClose(earnedAfter, BN.from(0), 1000);
+                    const rawBalAfter = await cvx.balanceOf(alice.address);
+                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(5).mul(4), "0.01");
+                    const penaltyAfter = await initialCvxCrvStaking.pendingPenalty();
+                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(4));
+                });
+                it("allows anyone to forward the penalty", async () => {
+                    const { initialCvxCrvStaking, cvx } = phase3;
+                    const pendingPenaltyBefore = await initialCvxCrvStaking.pendingPenalty();
+                    const rawBalBefore = await cvx.balanceOf(initialCvxCrvStaking.address);
+                    expect(pendingPenaltyBefore).gt(0);
+
+                    await initialCvxCrvStaking.forwardPenalty();
+
+                    const pendingPenaltyAfter = await initialCvxCrvStaking.pendingPenalty();
+                    expect(pendingPenaltyAfter).eq(0);
+
+                    const rawBalAfter = await cvx.balanceOf(initialCvxCrvStaking.address);
+                    expect(rawBalBefore.sub(rawBalAfter)).eq(pendingPenaltyBefore);
+                });
             });
             describe("merkle drops", () => {
                 it("allows users to claim merkle drops");
@@ -990,8 +1033,10 @@ describe("Full Deployment", () => {
             describe("vesting", () => {
                 it("allows users to claim vesting");
             });
-            it("allows users to deposit BPT for chef rewards");
-            it("allows users to lock in auraLocker");
+            describe("chef", () => {
+                it("allows users to deposit BPT for chef rewards");
+                it("allows users to claim said rewards");
+            });
         });
     });
 
