@@ -1023,8 +1023,8 @@ describe("Full Deployment", () => {
             });
         });
         describe("TEST-Phase 4", () => {
-            let stakerAddress;
-            let staker;
+            let stakerAddress: string;
+            let staker: Account;
 
             before(async () => {
                 stakerAddress = "0xdecadE000000000000000000000000000000042f";
@@ -1033,7 +1033,7 @@ describe("Full Deployment", () => {
 
             describe("claimZap tests", () => {
                 it("set approval for deposits", async () => {
-                    const crv = await ERC20__factory.connect(config.addresses.token, deployer);
+                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
                     await phase4.claimZap.setApprovals();
                     expect(await crv.allowance(phase4.claimZap.address, phase4.crvDepositorWrapper.address)).gte(
                         ethers.constants.MaxUint256,
@@ -1090,9 +1090,9 @@ describe("Full Deployment", () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
                     expect(poolInfo.lptoken.toLowerCase()).eq(config.addresses.staBAL3.toLowerCase());
 
-                    const lptoken = await ERC20__factory.connect(poolInfo.lptoken, deployer);
+                    const lptoken = ERC20__factory.connect(poolInfo.lptoken, deployer);
                     const lptokenBalance = await lptoken.balanceOf(stakerAddress);
-                    const depositToken = await ERC20__factory.connect(poolInfo.token, deployer);
+                    const depositToken = ERC20__factory.connect(poolInfo.token, deployer);
                     const depositTokenBalanceBefore = await depositToken.balanceOf(stakerAddress);
 
                     expect(lptokenBalance).gt(0);
@@ -1107,8 +1107,8 @@ describe("Full Deployment", () => {
                 it("allows BPT deposits into pools directly", async () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
 
-                    const rewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
-                    const depositToken = await ERC20__factory.connect(poolInfo.token, staker.signer);
+                    const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const depositToken = ERC20__factory.connect(poolInfo.token, staker.signer);
                     const balance = await depositToken.balanceOf(stakerAddress);
 
                     const rewardBalanceBefore = await rewards.balanceOf(stakerAddress);
@@ -1121,10 +1121,9 @@ describe("Full Deployment", () => {
                     const amount = simpleToExactAmount(1);
                     const poolInfo = await phase4.booster.poolInfo(0);
 
-                    const rewards = await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
-                    const lptoken = await ERC20__factory.connect(poolInfo.lptoken, staker.signer);
+                    const rewards = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const lptoken = ERC20__factory.connect(poolInfo.lptoken, staker.signer);
                     const balanceBefore = await lptoken.balanceOf(stakerAddress);
-                    const rewardBalance = await rewards.balanceOf(stakerAddress);
 
                     await rewards["withdraw(uint256,address,address)"](amount, stakerAddress, stakerAddress);
 
@@ -1135,10 +1134,9 @@ describe("Full Deployment", () => {
                     const amount = simpleToExactAmount(1);
                     const poolInfo = await phase4.booster.poolInfo(0);
 
-                    const rewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
-                    const depositToken = await ERC20__factory.connect(poolInfo.token, staker.signer);
+                    const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const depositToken = ERC20__factory.connect(poolInfo.token, staker.signer);
                     const balanceBefore = await depositToken.balanceOf(stakerAddress);
-                    const rewardBalance = await rewards.balanceOf(stakerAddress);
 
                     await rewards.withdraw(amount, false);
 
@@ -1152,9 +1150,9 @@ describe("Full Deployment", () => {
                     const crv = MockERC20__factory.connect(config.addresses.token, deployer);
                     await crv.connect(staker.signer).transfer(feeInfo.distro, simpleToExactAmount(10));
 
-                    const feeToken = await ERC20__factory.connect(config.addresses.token, deployer);
+                    const feeToken = ERC20__factory.connect(config.addresses.token, deployer);
                     const balanceBefore = await feeToken.balanceOf(feeInfo.rewards);
-                    await increaseTime(ONE_WEEK.mul("4"));
+                    await increaseTime(ONE_WEEK);
 
                     await phase4.booster.earmarkFees(config.addresses.token);
                     const balanceAfter = await feeToken.balanceOf(feeInfo.rewards);
@@ -1163,21 +1161,18 @@ describe("Full Deployment", () => {
                 it("allows earmarking of fees ($bb-a-USD)");
                 it("allows earmarking of rewards", async () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
-                    const crvRewards = await BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
+                    const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
                     const crv = MockERC20__factory.connect(config.addresses.token, deployer);
                     const balanceBefore = await crv.balanceOf(crvRewards.address);
 
-                    await increaseTime(ONE_WEEK.mul("4"));
+                    await increaseTime(ONE_WEEK);
                     await phase4.booster.earmarkRewards(0);
-
-                    const gauge = await ERC20__factory.connect(poolInfo.gauge, deployer);
-                    const bal = await gauge.balanceOf(phase4.voterProxy.address);
 
                     const balanceAfter = await crv.balanceOf(crvRewards.address);
                     expect(balanceAfter).gt(balanceBefore);
                 });
                 it("pays out a premium to the caller", async () => {
-                    const crv = await ERC20__factory.connect(config.addresses.token, deployer);
+                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
                     const balanceBefore = await crv.balanceOf(stakerAddress);
                     await increaseTime(ONE_WEEK.mul("1"));
                     await phase4.booster.connect(staker.signer).earmarkRewards(0);
