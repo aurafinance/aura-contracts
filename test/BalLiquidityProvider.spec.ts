@@ -45,7 +45,7 @@ describe("BalLiquidityProvider", () => {
         alice = accounts[1];
 
         mocks = await deployMocks(hre, deployer);
-        multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
         const distro = getMockDistro();
         const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
@@ -58,14 +58,15 @@ describe("BalLiquidityProvider", () => {
             mocks.addresses,
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.setProtectPool(false);
+        const protocolDAO = await impersonateAccount(multisigs.daoMultisig);
+        await phase3.poolManager.connect(protocolDAO.signer).setProtectPool(false);
         contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         // Setup test contract.
         balLiquidityProvider = contracts.balLiquidityProvider;
         startTokenContract = new MockERC20__factory(deployer).attach(await balLiquidityProvider.startToken());
         pairTokenContract = new MockERC20__factory(deployer).attach(await balLiquidityProvider.pairToken());
-        daoAccount = await impersonateAccount(multisigs.daoMultisig);
+        daoAccount = await impersonateAccount(multisigs.treasuryMultisig);
     };
 
     before("init contract", async () => {
@@ -76,7 +77,7 @@ describe("BalLiquidityProvider", () => {
             expect(await balLiquidityProvider.startToken(), "startToken").to.eq(contracts.cvx.address);
             expect(await balLiquidityProvider.pairToken(), "pairToken").to.eq(mocks.addresses.weth);
             expect(await balLiquidityProvider.minPairAmount(), "minPairAmount").to.eq(simpleToExactAmount(375));
-            expect(await balLiquidityProvider.dao(), "dao").to.eq(multisigs.daoMultisig);
+            expect(await balLiquidityProvider.dao(), "dao").to.eq(multisigs.treasuryMultisig);
             expect(await balLiquidityProvider.bVault(), "bVault").to.eq(mocks.addresses.balancerVault);
         });
         it("initial liquidity", async () => {
@@ -265,6 +266,7 @@ describe("BalLiquidityProvider", () => {
             await balLiquidityProvider.connect(deployer).rescueToken(mocks.weth.address);
             // Verify events, storage change, balance, etc.
             expect(await mocks.weth.balanceOf(balLiquidityProvider.address), "weth balance").to.eq(0);
+            expect(await mocks.weth.balanceOf(daoAccount.address), "weth balance").to.eq(wethBalance);
         });
         it("fails if sender is not authorized ", async () => {
             await expect(

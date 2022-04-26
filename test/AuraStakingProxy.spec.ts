@@ -282,6 +282,7 @@ describe("AuraStakingProxy", () => {
             // const amount = ethers.utils.parseEther("100");
             deployerAddress = await accounts[0].getAddress();
             randomToken = await deployContract(
+                hre,
                 new MockERC20__factory(accounts[0]),
                 "RandomToken",
                 ["Random", "RND", 18, deployerAddress, 100],

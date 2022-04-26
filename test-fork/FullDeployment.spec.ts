@@ -271,7 +271,7 @@ describe("Full Deployment", () => {
                     expect(await boosterOwner.rescueStash()).eq(ZERO_ADDRESS);
                     expect(await boosterOwner.owner()).eq(multisigs.daoMultisig);
                     expect(await boosterOwner.pendingowner()).eq(ZERO_ADDRESS);
-                    expect(await boosterOwner.isSealed()).eq(false);
+                    expect(await boosterOwner.isSealed()).eq(true);
                     expect(await boosterOwner.isForceTimerStarted()).eq(false);
                     expect(await boosterOwner.forceTimestamp()).eq(0);
                 });
@@ -390,9 +390,8 @@ describe("Full Deployment", () => {
                 });
                 it("poolManagerProxy has correct config", async () => {
                     const { booster, poolManagerProxy, poolManagerSecondaryProxy } = phase2;
-                    const { multisigs } = config;
                     expect(await poolManagerProxy.pools()).eq(booster.address);
-                    expect(await poolManagerProxy.owner()).eq(multisigs.daoMultisig);
+                    expect(await poolManagerProxy.owner()).eq(ZERO_ADDRESS);
                     expect(await poolManagerProxy.operator()).eq(poolManagerSecondaryProxy.address);
                 });
                 it("poolManagerSecondaryProxy has correct config", async () => {
