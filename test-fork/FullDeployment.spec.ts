@@ -15,6 +15,7 @@ import {
     IBalancerPool__factory,
     ExtraRewardStashV3__factory,
     BaseRewardPool4626__factory,
+    MockVoting__factory,
 } from "../types/generated";
 import { waitForTx } from "../tasks/utils";
 import {
@@ -645,101 +646,167 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             });
         });
-    });
 
-    describe("TEST-Phase 2", () => {
-        let treasurySigner: Account;
-        let balancerVault: IVault;
-        before(async () => {
-            treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-            balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+        describe("TEST-Phase 2", () => {
+            let treasurySigner: Account;
+            let daoSigner: Account;
+            let balancerVault: IVault;
+            before(async () => {
+                treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                daoSigner = await impersonateAccount(config.multisigs.daoMultisig);
+                balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+            });
+
+            it("doesn't allow dao to set more than 10k votes on gaugeController", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
+                        .connect(daoSigner.signer)
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Used too much power");
+            });
+            it("allows dao to vote on gauge weights", async () => {
+                const { booster, voterProxy } = phase2;
+                const { addresses } = config;
+                await booster
+                    .connect(daoSigner.signer)
+                    .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5000, 5000]);
+                const gaugeController = MockVoting__factory.connect(addresses.gaugeController, deployer);
+                expect((await gaugeController.vote_user_slopes(voterProxy.address, addresses.gauges[0])).power).eq(
+                    5000,
+                );
+                expect(await gaugeController.vote_user_power(voterProxy.address)).eq(10000);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[1])).gt(0);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[2])).eq(0);
+            });
+            it("doesn't allow dao to set votes again so quickly on gaugeController", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
+                        .connect(daoSigner.signer)
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Cannot vote so often");
+            });
+            it("allows dao to setVotes for Snapshot", async () => {
+                const eip1271MagicValue = "0x1626ba7e";
+                const msg = "message";
+                const hash = hashMessage(msg);
+                const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+
+                const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
+                await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
+
+                const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
+                expect(isValid).to.equal(eip1271MagicValue);
+            });
+            it("doesn't allow pools to be added or rewards earmarked", async () => {
+                const { poolManager, booster } = phase2;
+                const { addresses } = config;
+
+                await expect(poolManager["addPool(address)"](addresses.gauges[0])).to.be.revertedWith("!auth");
+
+                await expect(booster.earmarkRewards(0)).to.be.reverted;
+            });
+            it("doesn't add feeInfo to Booster", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+
+                const balFee = await booster.feeTokens(addresses.token);
+                expect(balFee.distro).eq(ZERO_ADDRESS);
+                expect(balFee.rewards).eq(ZERO_ADDRESS);
+                expect(balFee.active).eq(false);
+
+                await expect(booster.earmarkFees(addresses.token)).to.be.revertedWith("Inactive distro");
+            });
+
+            const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
+                const currentTime = BN.from(
+                    (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
+                );
+                const tx = await balancerVault.connect(sender.signer).swap(
+                    {
+                        poolId: phase2.lbpBpt.poolId,
+                        kind: SwapKind.GivenIn,
+                        assetIn: config.addresses.weth,
+                        assetOut: phase2.cvx.address,
+                        amount: amount,
+                        userData: "0x",
+                    },
+                    {
+                        sender: sender.address,
+                        fromInternalBalance: false,
+                        recipient: sender.address,
+                        toInternalBalance: false,
+                    },
+                    limit,
+                    currentTime.add(60 * 15),
+                );
+                await waitForTx(tx, debug);
+            };
+            // T = 0 -> 4.5
+            it("executes some swaps", async () => {
+                const swapperAddress = "0xdecadE000000000000000000000000000000042f";
+                const swapper = await impersonateAccount(swapperAddress);
+                await getEth(swapperAddress);
+                await getWeth(swapperAddress, simpleToExactAmount(500));
+
+                const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
+                const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
+                await waitForTx(tx, debug);
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(24));
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+
+                await increaseTime(ONE_HOUR.mul(24));
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+            });
+            it("allows AURA holders to stake in vlAURA", async () => {
+                const { cvxLocker, cvx } = phase2;
+
+                const swapperAddress = "0xdecadE000000000000000000000000000000042f";
+                const swapper = await impersonateAccount(swapperAddress);
+
+                await cvx.connect(swapper.signer).approve(cvxLocker.address, simpleToExactAmount(100000));
+                await cvxLocker.connect(swapper.signer).lock(swapperAddress, simpleToExactAmount(100000));
+
+                const lock = await cvxLocker.lockedBalances(swapperAddress);
+                expect(lock.total).eq(simpleToExactAmount(100000));
+                expect(lock.unlockable).eq(0);
+                expect(lock.locked).eq(simpleToExactAmount(100000));
+                expect(lock.lockData[0].amount).eq(simpleToExactAmount(100000));
+                const balance = await cvxLocker.balanceOf(swapperAddress);
+                expect(balance).eq(0);
+            });
         });
-
-        it("allows dao to vote on gauge weights");
-        it("allows dao to setVotes for Snapshot", async () => {
-            const eip1271MagicValue = "0x1626ba7e";
-            const msg = "message";
-            const hash = hashMessage(msg);
-            const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
-
-            const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
-            await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
-
-            const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
-            expect(isValid).to.equal(eip1271MagicValue);
-        });
-        it("doesn't allow pools to be added or rewards earmarked");
-        it("doesn't add feeInfo to Booster");
-
-        const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
-            const currentTime = BN.from(
-                (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
-            );
-            const tx = await balancerVault.connect(sender.signer).swap(
-                {
-                    poolId: phase2.lbpBpt.poolId,
-                    kind: SwapKind.GivenIn,
-                    assetIn: config.addresses.weth,
-                    assetOut: phase2.cvx.address,
-                    amount: amount,
-                    userData: "0x",
-                },
-                {
-                    sender: sender.address,
-                    fromInternalBalance: false,
-                    recipient: sender.address,
-                    toInternalBalance: false,
-                },
-                limit,
-                currentTime.add(60 * 15),
-            );
-            await waitForTx(tx, debug);
-        };
-        // T = 0 -> 4.5
-        it("executes some swaps", async () => {
-            const swapperAddress = "0xdecadE000000000000000000000000000000042f";
-            const swapper = await impersonateAccount(swapperAddress);
-            await getEth(swapperAddress);
-            await getWeth(swapperAddress, simpleToExactAmount(500));
-
-            const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
-            const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
-            await waitForTx(tx, debug);
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(24));
-            await swapEthForAura(swapper, simpleToExactAmount(100));
-
-            await increaseTime(ONE_HOUR.mul(24));
-            await swapEthForAura(swapper, simpleToExactAmount(100));
-        });
-        it("allows AURA holders to stake in vlAURA");
     });
 
     describe("Phase 3", () => {
@@ -976,9 +1043,31 @@ describe("Full Deployment", () => {
                     expect(await claimZap.owner()).eq(deployerAddress);
                 });
                 it("adds the pools", async () => {
-                    expect(await phase4.booster.poolLength()).gt(0);
-                    expect(await phase4.booster.poolLength()).eq(config.addresses.gauges.length);
-                    // TODO - check actual poolInfo
+                    const { booster, voterProxy, factories } = phase4;
+                    const { addresses } = config;
+
+                    expect(await booster.poolLength()).gt(0);
+                    expect(await booster.poolLength()).eq(addresses.gauges.length);
+
+                    const pool0 = await booster.poolInfo(0);
+                    expect(pool0.gauge).eq(addresses.gauges[0]);
+                    expect(pool0.stash).not.eq(ZERO_ADDRESS);
+
+                    await booster.earmarkRewards(0);
+
+                    const rewardContract = BaseRewardPool4626__factory.connect(pool0.crvRewards, deployer);
+
+                    await expect(rewardContract.extraRewards(0)).to.be.reverted;
+
+                    const stash = ExtraRewardStashV3__factory.connect(pool0.stash, deployer);
+                    expect(await stash.pid()).eq(0);
+                    expect(await stash.operator()).eq(booster.address);
+                    expect(await stash.staker()).eq(voterProxy.address);
+                    expect(await stash.gauge()).eq(pool0.gauge);
+                    expect(await stash.rewardFactory()).eq(factories.rewardFactory.address);
+                    expect(await stash.hasRedirected()).eq(true);
+                    expect(await stash.hasCurveRewards()).eq(false);
+                    await expect(stash.tokenList(0)).to.be.reverted;
                 });
                 // check for a gauge with a stash and make sure it has been added
                 it("extraRewardsStash has correct config", async () => {
@@ -1088,6 +1177,11 @@ describe("Full Deployment", () => {
                 it("does not allow the system to be shut down");
                 it("does not allow a fee info to be added that has a gauge");
                 it("allows a fee to be disabled");
+            });
+            describe("boosterOwner", () => {
+                it("does not allow boosterOwner to revert control");
+                it("allows boosterOwner owner to be changed");
+                it("allows boosterOwner to call all fns on booster");
             });
             describe("crv depositor", () => {
                 it("accrues incentives for the caller");
