@@ -1253,7 +1253,17 @@ describe("Full Deployment", () => {
 
                     expect(tx).to.be.revertedWith("!token");
                 });
-                it("allows a fee to be disabled");
+                it("allows a fee to be disabled", async () => {
+                    const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+                    await phase4.boosterOwner.connect(daoMultisig.signer).updateFeeInfo(config.addresses.token, false);
+                    const feeInfo = await phase4.booster.feeTokens(config.addresses.token);
+                    expect(feeInfo.active).eq(false);
+
+                    // reset feeInfo
+                    await phase4.boosterOwner.connect(daoMultisig.signer).updateFeeInfo(config.addresses.token, true);
+                    const feeInfoNow = await phase4.booster.feeTokens(config.addresses.token);
+                    expect(feeInfoNow.active).eq(true);
+                });
             });
             describe("crv depositor", () => {
                 it("allows BPT deposits", async () => {
