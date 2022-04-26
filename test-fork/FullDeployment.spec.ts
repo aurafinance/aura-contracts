@@ -1103,7 +1103,7 @@ describe("Full Deployment", () => {
                     const depositTokenBalanceAfter = await depositToken.balanceOf(stakerAddress);
                     expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalance);
                 });
-                it("allows BPT deposits into pools directly", async () => {
+                it("allows BPT deposits directly into the pool 4626", async () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
 
                     const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
@@ -1182,9 +1182,55 @@ describe("Full Deployment", () => {
                 it("allows conversion of rewards via AuraStakingProxy");
             });
             describe("admin etc", () => {
-                it("does not allow a duplicate pool to be added");
-                it("allows a pool to be shut down");
-                it("allows the fee rates to be set");
+                it("does not allow a duplicate pool to be added", async () => {
+                    const poolInfo = await phase4.booster.poolInfo(0);
+                    const tx = phase4.poolManager["addPool(address)"](poolInfo.gauge);
+                    await expect(tx).to.be.revertedWith("already registered gauge");
+                });
+                it("allows a pool to be shut down", async () => {
+                    const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+
+                    const pid = config.addresses.gauges.length - 1;
+                    const poolInfoBefore = await phase4.booster.poolInfo(pid);
+                    expect(poolInfoBefore.shutdown).eq(false);
+
+                    await phase4.poolManager.connect(daoMultisig.signer).shutdownPool(pid);
+
+                    const poolInfoAfter = await phase4.booster.poolInfo(pid);
+                    expect(poolInfoAfter.shutdown).eq(true);
+                });
+                it("allows the fee rates to be set", async () => {
+                    const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+
+                    const lockIncentive = await phase4.booster.lockIncentive();
+                    const stakerIncentive = await phase4.booster.stakerIncentive();
+                    const earmarkIncentive = await phase4.booster.earmarkIncentive();
+                    const platformFee = await phase4.booster.platformFee();
+
+                    await phase4.booster
+                        .connect(daoMultisig.signer)
+                        .setFees(
+                            lockIncentive.add(1),
+                            stakerIncentive.add(1),
+                            earmarkIncentive.add(1),
+                            platformFee.add(1),
+                        );
+
+                    const lockIncentiveAfter = await phase4.booster.lockIncentive();
+                    const stakerIncentiveAfter = await phase4.booster.stakerIncentive();
+                    const earmarkIncentiveAfter = await phase4.booster.earmarkIncentive();
+                    const platformFeeAfter = await phase4.booster.platformFee();
+
+                    expect(lockIncentiveAfter).eq(lockIncentive.add(1));
+                    expect(stakerIncentiveAfter).eq(stakerIncentive.add(1));
+                    expect(earmarkIncentiveAfter).eq(earmarkIncentive.add(1));
+                    expect(platformFeeAfter).eq(platformFee.add(1));
+
+                    // reset fees
+                    await phase4.booster
+                        .connect(daoMultisig.signer)
+                        .setFees(lockIncentive, stakerIncentive, earmarkIncentive, platformFee);
+                });
                 it("does not allow the system to be shut down");
                 it("does not allow a fee info to be added that has a gauge");
                 it("allows a fee to be disabled");
