@@ -16,6 +16,8 @@ import {
     ExtraRewardStashV3__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
+    MockFeeDistro,
+    MockFeeDistro__factory,
 } from "../types/generated";
 import {
     impersonate,
@@ -32,7 +34,7 @@ import {
     ZERO_KEY,
 } from "../test-utils";
 import { Signer } from "ethers";
-import { waitForTx } from "../tasks/utils";
+import { deployContract, waitForTx } from "../tasks/utils";
 import { getTimestamp, latestBlock, increaseTime } from "./../test-utils/time";
 import {
     deployPhase2,
@@ -1232,7 +1234,25 @@ describe("Full Deployment", () => {
                         .setFees(lockIncentive, stakerIncentive, earmarkIncentive, platformFee);
                 });
                 it("does not allow the system to be shut down");
-                it("does not allow a fee info to be added that has a gauge");
+                it("does not allow a fee info to be added that has a gauge", async () => {
+                    const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+                    const poolInfo = await phase4.booster.poolInfo(0);
+
+                    const maliciousFeeDistro = await deployContract<MockFeeDistro>(
+                        hre,
+                        new MockFeeDistro__factory(deployer),
+                        "MockFeeDistro",
+                        [],
+                        {},
+                        debug,
+                    );
+
+                    const tx = phase4.boosterOwner
+                        .connect(daoMultisig.signer)
+                        .setFeeInfo(poolInfo.gauge, maliciousFeeDistro.address);
+
+                    expect(tx).to.be.revertedWith("!token");
+                });
                 it("allows a fee to be disabled");
             });
             describe("crv depositor", () => {
