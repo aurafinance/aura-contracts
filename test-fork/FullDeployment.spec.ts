@@ -1347,10 +1347,11 @@ describe("Full Deployment", () => {
                     expect(delegated).eq(stakerAddress);
                 });
                 it("has votes after checkpoint", async () => {
+                    const votesBefore = await phase4.cvxLocker.getVotes(stakerAddress);
                     const cvxBalances = await phase4.cvxLocker.balances(stakerAddress);
                     await increaseTime(ONE_WEEK);
-                    const votes = await phase4.cvxLocker.getVotes(stakerAddress);
-                    expect(votes).eq(cvxBalances.locked);
+                    const votesAfter = await phase4.cvxLocker.getVotes(stakerAddress);
+                    expect(votesAfter.sub(votesBefore)).eq(cvxBalances.locked);
                 });
                 it("allows users to claim rewards", async () => {
                     const cvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
