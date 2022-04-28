@@ -1179,7 +1179,23 @@ describe("Full Deployment", () => {
                     const balanceAfter = await crv.balanceOf(stakerAddress);
                     expect(balanceAfter).gt(balanceBefore);
                 });
-                it("allows users to earn $BAl and $AURA");
+                it("allows users to earn $BAl and $AURA", async () => {
+                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
+                    const poolInfo = await phase4.booster.poolInfo(0);
+                    const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
+                    const cvxBalanceBefore = await phase4.cvx.balanceOf(stakerAddress);
+                    const crvBalanceBefore = await crv.balanceOf(stakerAddress);
+                    const earned = await rewards.earned(stakerAddress);
+                    await rewards["getReward(address,bool)"](stakerAddress, true);
+                    const cvxBalanceAfter = await phase4.cvx.balanceOf(stakerAddress);
+                    const crvBalanceAfter = await crv.balanceOf(stakerAddress);
+
+                    const crvBalance = crvBalanceAfter.sub(crvBalanceBefore);
+                    const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore);
+
+                    expect(crvBalance).gte(earned);
+                    expect(cvxBalance).gt(0);
+                });
                 it("allows conversion of rewards via AuraStakingProxy");
             });
             describe("admin etc", () => {
@@ -1335,8 +1351,6 @@ describe("Full Deployment", () => {
             });
 
             it("allows users to deposit into proper cvxCrv staking");
-
-            it("allows users to claim from auraLocker");
         });
     });
     describe("1 month later", () => {
