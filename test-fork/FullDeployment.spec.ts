@@ -16,8 +16,8 @@ import {
     ExtraRewardStashV3__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
-    MockFeeDistro,
-    MockFeeDistro__factory,
+    MockFeeDistributor,
+    MockFeeDistributor__factory,
 } from "../types/generated";
 import {
     impersonate,
@@ -1105,7 +1105,7 @@ describe("Full Deployment", () => {
                     const depositTokenBalanceAfter = await depositToken.balanceOf(stakerAddress);
                     expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalance);
                 });
-                it("allows BPT deposits directly into the pool 4626", async () => {
+                it("allows auraBPT deposits directly into the reward pool", async () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
 
                     const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
@@ -1118,6 +1118,7 @@ describe("Full Deployment", () => {
                     const rewardBalanceAfter = await rewards.balanceOf(stakerAddress);
                     expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(balance);
                 });
+                it("allows BPT deposits directly into the pool");
                 it("allows withdrawals directly from the pool 4626", async () => {
                     const amount = simpleToExactAmount(1);
                     const poolInfo = await phase4.booster.poolInfo(0);
@@ -1253,11 +1254,11 @@ describe("Full Deployment", () => {
                     const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
                     const poolInfo = await phase4.booster.poolInfo(0);
 
-                    const maliciousFeeDistro = await deployContract<MockFeeDistro>(
+                    const maliciousFeeDistro = await deployContract<MockFeeDistributor>(
                         hre,
-                        new MockFeeDistro__factory(deployer),
+                        new MockFeeDistributor__factory(deployer),
                         "MockFeeDistro",
-                        [],
+                        [[], []],
                         {},
                         debug,
                     );
@@ -1266,7 +1267,7 @@ describe("Full Deployment", () => {
                         .connect(daoMultisig.signer)
                         .setFeeInfo(poolInfo.gauge, maliciousFeeDistro.address);
 
-                    expect(tx).to.be.revertedWith("!token");
+                    await expect(tx).to.be.revertedWith("!token");
                 });
                 it("allows a fee to be disabled", async () => {
                     const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
