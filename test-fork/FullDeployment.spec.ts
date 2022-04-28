@@ -1319,7 +1319,18 @@ describe("Full Deployment", () => {
                     const votes = await phase4.cvxLocker.getVotes(stakerAddress);
                     expect(votes).eq(cvxBalances.locked);
                 });
-                it("allows users to claim rewards");
+                it("allows users to claim rewards", async () => {
+                    const cvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    await getCrv(phase4.booster.address, simpleToExactAmount(1));
+                    await phase4.booster.earmarkRewards(0);
+                    await phase4.cvxStakingProxy.distribute();
+                    await increaseTime(ONE_WEEK);
+                    const rewards = await phase4.cvxLocker.claimableRewards(stakerAddress);
+                    await phase4.cvxLocker.connect(staker.signer)["getReward(address)"](stakerAddress);
+                    const cvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    const cvxCrvBalance = cvxCrvBalanceAfter.sub(cvxCrvBalanceBefore);
+                    expect(cvxCrvBalance).eq(rewards[0].amount);
+                });
                 it("allows other things too");
             });
 
