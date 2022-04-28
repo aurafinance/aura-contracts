@@ -1118,7 +1118,23 @@ describe("Full Deployment", () => {
                     const rewardBalanceAfter = await rewards.balanceOf(stakerAddress);
                     expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(balance);
                 });
-                it("allows BPT deposits directly into the pool");
+                it("allows BPT deposits directly into the reward pool", async () => {
+                    await getLpToken(stakerAddress, simpleToExactAmount(10));
+                    const poolInfo = await phase4.booster.poolInfo(0);
+
+                    const lpToken = ERC20__factory.connect(poolInfo.lptoken, staker.signer);
+                    const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
+
+                    const lpTokenBalance = await lpToken.balanceOf(stakerAddress);
+
+                    const rewardBalanceBefore = await baseRewardPool.balanceOf(stakerAddress);
+
+                    await lpToken.approve(baseRewardPool.address, lpTokenBalance);
+                    await baseRewardPool.deposit(lpTokenBalance, stakerAddress);
+                    const rewardBalanceAfter = await baseRewardPool.balanceOf(stakerAddress);
+
+                    expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(lpTokenBalance);
+                });
                 it("allows withdrawals directly from the pool 4626", async () => {
                     const amount = simpleToExactAmount(1);
                     const poolInfo = await phase4.booster.poolInfo(0);
