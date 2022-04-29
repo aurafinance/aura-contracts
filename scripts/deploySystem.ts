@@ -133,6 +133,7 @@ interface ExtSystemConfig {
     keeper?: string;
     staBAL3?: string;
     staBAL3Whale?: string;
+    feeToken?: string;
 }
 
 interface NamingConfig {

@@ -78,7 +78,7 @@ const addresses: ExtSystemConfig = {
     ],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
-    balancerMinOutBps: "9980",
+    balancerMinOutBps: "9950",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
         stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
@@ -90,6 +90,7 @@ const addresses: ExtSystemConfig = {
     keeper: ZERO_ADDRESS, // TODO - define keeper
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
+    feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
 };
 
 const naming = {

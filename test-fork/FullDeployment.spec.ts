@@ -1,3 +1,4 @@
+import { VirtualBalanceRewardPool } from "./../types/generated/VirtualBalanceRewardPool";
 import { hashMessage } from "@ethersproject/hash";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
@@ -19,6 +20,7 @@ import {
     MockFeeDistributor,
     MockFeeDistributor__factory,
     MockVoting__factory,
+    VirtualBalanceRewardPool__factory,
 } from "../types/generated";
 import {
     impersonate,
@@ -72,7 +74,7 @@ describe("Full Deployment", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14654150,
+                        blockNumber: 14679277,
                     },
                 },
             ],
@@ -441,7 +443,7 @@ describe("Full Deployment", () => {
                     expect(await cvxStakingProxy.cvxCrv()).eq(cvxCrv.address);
                     expect(await cvxStakingProxy.keeper()).eq(!addresses.keeper ? ZERO_ADDRESS : addresses.keeper);
                     expect(await cvxStakingProxy.crvDepositorWrapper()).eq(crvDepositorWrapper.address);
-                    expect(await cvxStakingProxy.outputBps()).eq(9980);
+                    expect(await cvxStakingProxy.outputBps()).eq(9950);
                     expect(await cvxStakingProxy.rewards()).eq(cvxLocker.address);
                     expect(await cvxStakingProxy.owner()).eq(multisigs.daoMultisig);
                     expect(await cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
@@ -1152,11 +1154,37 @@ describe("Full Deployment", () => {
     describe("Phase 4", () => {
         describe("PRE-Phase 4", () => {
             it("only allows daoMultisig to set protect pool to false", async () => {
+                await expect(phase3.poolManager.connect(deployer).setProtectPool(false)).to.be.revertedWith("!auth");
+
                 const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
                 const tx = await phase3.poolManager.connect(daoMultisig.signer).setProtectPool(false);
                 await waitForTx(tx, debug);
             });
-            it("only allows daoMultisig to set Fee info (bbaUSD)");
+            it("only allows daoMultisig to set Fee info (bbaUSD)", async () => {
+                await expect(
+                    phase3.boosterOwner
+                        .connect(deployer)
+                        .setFeeInfo(config.addresses.feeToken, config.addresses.feeDistribution),
+                ).to.be.revertedWith("!owner");
+
+                await expect(
+                    phase3.booster
+                        .connect(deployer)
+                        .setFeeInfo(config.addresses.feeToken, config.addresses.feeDistribution),
+                ).to.be.revertedWith("!auth");
+
+                const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+                const tx = await phase3.boosterOwner
+                    .connect(daoMultisig.signer)
+                    .setFeeInfo(config.addresses.feeToken, config.addresses.feeDistribution);
+                await waitForTx(tx, debug);
+
+                const feeInfo = await phase3.booster.feeTokens(config.addresses.feeToken);
+                expect(feeInfo.distro).eq(config.addresses.feeDistribution);
+                expect(feeInfo.rewards).eq(await phase3.cvxCrvRewards.extraRewards(0));
+                expect(feeInfo.rewards).not.eq(phase3.cvxCrvRewards.address);
+                expect(feeInfo.active).eq(true);
+            });
             it("only allows daoMultisig to set Fee info (native token)", async () => {
                 const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
                 const tx = await phase3.boosterOwner
@@ -1252,8 +1280,6 @@ describe("Full Deployment", () => {
                     expect(tokenInfo.token).eq(rToken);
                     expect(tokenInfo.rewardAddress).eq(virtualRewardPool);
                 });
-                it("extraRewardsStash actually processes reward tokens");
-                it("allows NEW rewards to be added to extraRewardsStash and claimed");
             });
         });
         describe("TEST-Phase 4", () => {
@@ -1263,6 +1289,51 @@ describe("Full Deployment", () => {
             before(async () => {
                 stakerAddress = "0xdecadE000000000000000000000000000000042f";
                 staker = await impersonateAccount(stakerAddress);
+            });
+
+            describe("stash tests", () => {
+                it("extraRewardsStash actually processes reward tokens", async () => {
+                    // Pool id 6 (0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE) has a reward token of LDO
+                    // Let's check it's being processed correctly and is claimable by users
+                    const { booster } = phase4;
+                    const poolInfo = await booster.poolInfo(6);
+                    expect(poolInfo.gauge).eq("0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE");
+                    expect(poolInfo.stash).not.eq(ZERO_ADDRESS);
+                    const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
+                    const extraRewardPool = VirtualBalanceRewardPool__factory.connect(
+                        await baseRewardPool.extraRewards(0),
+                        staker.signer,
+                    );
+                    await getEth("0x3c0aea3576b0d70e581ff613248a74d56cde0853");
+
+                    const tokenWhaleSigner = await impersonateAccount("0x3c0aea3576b0d70e581ff613248a74d56cde0853");
+                    const tkn = MockERC20__factory.connect(poolInfo.lptoken, tokenWhaleSigner.signer);
+                    const tx = await tkn.transfer(stakerAddress, simpleToExactAmount(100));
+                    await waitForTx(tx, debug);
+
+                    // 0 - Deposit into the pool
+                    await tkn.connect(staker.signer).approve(baseRewardPool.address, simpleToExactAmount(100));
+                    await baseRewardPool.deposit(simpleToExactAmount(100), stakerAddress);
+                    expect(await baseRewardPool.balanceOf(stakerAddress)).gt(0);
+                    await increaseTime(ONE_HOUR);
+
+                    // 1 - Earmarking rewards should transfer more rewards to the pool
+                    const rewardToken = MockERC20__factory.connect(
+                        "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
+                        staker.signer,
+                    );
+                    const rewardBalBefore = await rewardToken.balanceOf(extraRewardPool.address);
+                    await booster.earmarkRewards(6);
+                    const rewardBalAfter = await rewardToken.balanceOf(extraRewardPool.address);
+                    expect(rewardBalAfter.sub(rewardBalBefore)).gt(0);
+
+                    // 2 - Claiming should allow users to claim the rewards
+                    const userBalBefore = await rewardToken.balanceOf(stakerAddress);
+                    await baseRewardPool["getReward()"]();
+                    const userBalAfter = await rewardToken.balanceOf(stakerAddress);
+                    expect(userBalAfter.sub(userBalBefore)).gt(0);
+                });
+                it("allows NEW rewards to be added to extraRewardsStash and claimed");
             });
 
             describe("claimZap tests", () => {
@@ -1408,7 +1479,22 @@ describe("Full Deployment", () => {
                     const balanceAfter = await feeToken.balanceOf(feeInfo.rewards);
                     expect(balanceAfter).gt(balanceBefore);
                 });
-                it("allows earmarking of fees ($bb-a-USD)");
+                it("allows earmarking of fees ($bb-a-USD)", async () => {
+                    const feeInfo = await phase3.booster.feeTokens(config.addresses.feeToken);
+
+                    const tokenWhaleSigner = await impersonateAccount(config.addresses.balancerVault);
+                    const bbausd = MockERC20__factory.connect(config.addresses.feeToken, tokenWhaleSigner.signer);
+                    const tx = await bbausd.transfer(feeInfo.distro, simpleToExactAmount(100));
+                    await waitForTx(tx, debug);
+
+                    const feeToken = ERC20__factory.connect(config.addresses.feeToken, deployer);
+                    const balanceBefore = await feeToken.balanceOf(feeInfo.rewards);
+                    await increaseTime(ONE_WEEK);
+
+                    await phase4.booster.earmarkFees(config.addresses.feeToken);
+                    const balanceAfter = await feeToken.balanceOf(feeInfo.rewards);
+                    expect(balanceAfter).gt(balanceBefore);
+                });
                 it("allows earmarking of rewards", async () => {
                     const poolInfo = await phase4.booster.poolInfo(0);
                     const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
