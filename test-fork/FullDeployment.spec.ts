@@ -1213,7 +1213,20 @@ describe("Full Deployment", () => {
                     expect(crvBalance).gte(earned);
                     expect(cvxBalance).gt(0);
                 });
-                it("allows conversion of rewards via AuraStakingProxy");
+                it("allows conversion of rewards via AuraStakingProxy", async () => {
+                    const crv = MockERC20__factory.connect(config.addresses.token, deployer);
+                    const crvBalance = await crv.balanceOf(phase4.cvxStakingProxy.address);
+                    expect(crvBalance).gt(0);
+
+                    const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    const cvxLockerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
+                    await phase4.cvxStakingProxy.connect(staker.signer).distribute();
+                    const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    const cvxLockerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
+
+                    expect(callerCvxCrvBalanceAfter).gt(callerCvxCrvBalanceBefore);
+                    expect(cvxLockerCvxCrvBalanceAfter).gt(cvxLockerCvxCrvBalanceBefore);
+                });
             });
             describe("admin etc", () => {
                 it("does not allow a duplicate pool to be added", async () => {
@@ -1367,8 +1380,6 @@ describe("Full Deployment", () => {
                 });
                 it("allows other things too");
             });
-
-            it("allows users to deposit into proper cvxCrv staking");
         });
     });
     describe("1 month later", () => {
