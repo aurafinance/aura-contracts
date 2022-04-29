@@ -1042,9 +1042,10 @@ describe("Full Deployment", () => {
                         [deployerAddress]: amount,
                     });
 
-                    // TODO - remove once root set on mainnet config
                     treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                    await phase3.drops[0].connect(treasurySigner.signer).setRoot(tree.getHexRoot());
+                    if ((await phase3.drops[0].merkleRoot()) == ZERO_KEY) {
+                        await phase3.drops[0].connect(treasurySigner.signer).setRoot(tree.getHexRoot());
+                    }
                 });
                 it("doesn't allow just anyone to claim a merkle drop", async () => {
                     const { drops } = phase3;
