@@ -131,6 +131,8 @@ interface ExtSystemConfig {
     wethWhale?: string;
     treasury?: string;
     keeper?: string;
+    staBAL3?: string;
+    staBAL3Whale?: string;
 }
 
 interface NamingConfig {
