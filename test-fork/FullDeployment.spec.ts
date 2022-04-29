@@ -21,6 +21,7 @@ import {
     MockFeeDistributor__factory,
     MockVoting__factory,
     VirtualBalanceRewardPool__factory,
+    MockCurveGauge__factory,
 } from "../types/generated";
 import {
     impersonate,
@@ -112,6 +113,13 @@ describe("Full Deployment", () => {
         const lpWhaleSigner = await impersonateAccount(config.addresses.staBAL3Whale);
         const lp = MockERC20__factory.connect(config.addresses.staBAL3, lpWhaleSigner.signer);
         const tx = await lp.transfer(recipient, amount);
+        await waitForTx(tx, debug);
+    };
+
+    const getLdo = async (recipient: string, amount = simpleToExactAmount(10)) => {
+        const ldoWhale = await impersonateAccount(config.addresses.ldoWhale);
+        const ldo = MockERC20__factory.connect(config.addresses.ldo, ldoWhale.signer);
+        const tx = await ldo.transfer(recipient, amount);
         await waitForTx(tx, debug);
     };
 
@@ -1318,10 +1326,15 @@ describe("Full Deployment", () => {
                     await increaseTime(ONE_HOUR);
 
                     // 1 - Earmarking rewards should transfer more rewards to the pool
-                    const rewardToken = MockERC20__factory.connect(
-                        "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
-                        staker.signer,
-                    );
+                    const ldoDepositor = await impersonateAccount(config.addresses.stEthGaugeLdoDepositor);
+                    const gauge = MockCurveGauge__factory.connect(poolInfo.gauge, ldoDepositor.signer);
+                    const rewardToken = MockERC20__factory.connect(config.addresses.ldo, staker.signer);
+                    await getLdo(ldoDepositor.address, simpleToExactAmount(10));
+                    await rewardToken.connect(ldoDepositor.signer).approve(poolInfo.gauge, ethers.constants.MaxUint256);
+                    await gauge
+                        .connect(ldoDepositor.signer)
+                        .deposit_reward_token(rewardToken.address, simpleToExactAmount(10));
+
                     const rewardBalBefore = await rewardToken.balanceOf(extraRewardPool.address);
                     await booster.earmarkRewards(6);
                     const rewardBalAfter = await rewardToken.balanceOf(extraRewardPool.address);

@@ -134,6 +134,9 @@ interface ExtSystemConfig {
     staBAL3?: string;
     staBAL3Whale?: string;
     feeToken?: string;
+    ldo?: string;
+    ldoWhale?: string;
+    stEthGaugeLdoDepositor?: string;
 }
 
 interface NamingConfig {
