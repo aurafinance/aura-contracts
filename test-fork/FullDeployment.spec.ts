@@ -15,6 +15,7 @@ import {
     IBalancerPool__factory,
     ExtraRewardStashV3__factory,
     BaseRewardPool4626__factory,
+    MockVoting__factory,
 } from "../types/generated";
 import { waitForTx } from "../tasks/utils";
 import {
@@ -30,9 +31,11 @@ import {
     simpleToExactAmount,
     ONE_DAY,
     ZERO_KEY,
+    createTreeWithAccounts,
+    getAccountBalanceProof,
 } from "../test-utils";
 import { Signer } from "ethers";
-import { getTimestamp, latestBlock, increaseTime } from "./../test-utils/time";
+import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../test-utils/time";
 import {
     deployPhase2,
     deployPhase3,
@@ -46,6 +49,7 @@ import { Account } from "./../types/common";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
+import MerkleTree from "merkletreejs";
 
 const debug = false;
 
@@ -645,101 +649,167 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             });
         });
-    });
 
-    describe("TEST-Phase 2", () => {
-        let treasurySigner: Account;
-        let balancerVault: IVault;
-        before(async () => {
-            treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-            balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+        describe("TEST-Phase 2", () => {
+            let treasurySigner: Account;
+            let daoSigner: Account;
+            let balancerVault: IVault;
+            before(async () => {
+                treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                daoSigner = await impersonateAccount(config.multisigs.daoMultisig);
+                balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+            });
+
+            it("doesn't allow dao to set more than 10k votes on gaugeController", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
+                        .connect(daoSigner.signer)
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Used too much power");
+            });
+            it("allows dao to vote on gauge weights", async () => {
+                const { booster, voterProxy } = phase2;
+                const { addresses } = config;
+                await booster
+                    .connect(daoSigner.signer)
+                    .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5000, 5000]);
+                const gaugeController = MockVoting__factory.connect(addresses.gaugeController, deployer);
+                expect((await gaugeController.vote_user_slopes(voterProxy.address, addresses.gauges[0])).power).eq(
+                    5000,
+                );
+                expect(await gaugeController.vote_user_power(voterProxy.address)).eq(10000);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[1])).gt(0);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[2])).eq(0);
+            });
+            it("doesn't allow dao to set votes again so quickly on gaugeController", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
+                        .connect(daoSigner.signer)
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Cannot vote so often");
+            });
+            it("allows dao to setVotes for Snapshot", async () => {
+                const eip1271MagicValue = "0x1626ba7e";
+                const msg = "message";
+                const hash = hashMessage(msg);
+                const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+
+                const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
+                await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
+
+                const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
+                expect(isValid).to.equal(eip1271MagicValue);
+            });
+            it("doesn't allow pools to be added or rewards earmarked", async () => {
+                const { poolManager, booster } = phase2;
+                const { addresses } = config;
+
+                await expect(poolManager["addPool(address)"](addresses.gauges[0])).to.be.revertedWith("!auth");
+
+                await expect(booster.earmarkRewards(0)).to.be.reverted;
+            });
+            it("doesn't add feeInfo to Booster", async () => {
+                const { booster } = phase2;
+                const { addresses } = config;
+
+                const balFee = await booster.feeTokens(addresses.token);
+                expect(balFee.distro).eq(ZERO_ADDRESS);
+                expect(balFee.rewards).eq(ZERO_ADDRESS);
+                expect(balFee.active).eq(false);
+
+                await expect(booster.earmarkFees(addresses.token)).to.be.revertedWith("Inactive distro");
+            });
+
+            const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
+                const currentTime = BN.from(
+                    (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
+                );
+                const tx = await balancerVault.connect(sender.signer).swap(
+                    {
+                        poolId: phase2.lbpBpt.poolId,
+                        kind: SwapKind.GivenIn,
+                        assetIn: config.addresses.weth,
+                        assetOut: phase2.cvx.address,
+                        amount: amount,
+                        userData: "0x",
+                    },
+                    {
+                        sender: sender.address,
+                        fromInternalBalance: false,
+                        recipient: sender.address,
+                        toInternalBalance: false,
+                    },
+                    limit,
+                    currentTime.add(60 * 15),
+                );
+                await waitForTx(tx, debug);
+            };
+            // T = 0 -> 4.5
+            it("executes some swaps", async () => {
+                const swapperAddress = "0xdecadE000000000000000000000000000000042f";
+                const swapper = await impersonateAccount(swapperAddress);
+                await getEth(swapperAddress);
+                await getWeth(swapperAddress, simpleToExactAmount(500));
+
+                const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
+                const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
+                await waitForTx(tx, debug);
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(2));
+                await swapEthForAura(swapper, simpleToExactAmount(20));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(6));
+                await swapEthForAura(swapper, simpleToExactAmount(50));
+
+                await increaseTime(ONE_HOUR.mul(24));
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+
+                await increaseTime(ONE_HOUR.mul(24));
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+            });
+            it("allows AURA holders to stake in vlAURA", async () => {
+                const { cvxLocker, cvx } = phase2;
+
+                const swapperAddress = "0xdecadE000000000000000000000000000000042f";
+                const swapper = await impersonateAccount(swapperAddress);
+
+                await cvx.connect(swapper.signer).approve(cvxLocker.address, simpleToExactAmount(100000));
+                await cvxLocker.connect(swapper.signer).lock(swapperAddress, simpleToExactAmount(100000));
+
+                const lock = await cvxLocker.lockedBalances(swapperAddress);
+                expect(lock.total).eq(simpleToExactAmount(100000));
+                expect(lock.unlockable).eq(0);
+                expect(lock.locked).eq(simpleToExactAmount(100000));
+                expect(lock.lockData[0].amount).eq(simpleToExactAmount(100000));
+                const balance = await cvxLocker.balanceOf(swapperAddress);
+                expect(balance).eq(0);
+            });
         });
-
-        it("allows dao to vote on gauge weights");
-        it("allows dao to setVotes for Snapshot", async () => {
-            const eip1271MagicValue = "0x1626ba7e";
-            const msg = "message";
-            const hash = hashMessage(msg);
-            const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
-
-            const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
-            await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
-
-            const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
-            expect(isValid).to.equal(eip1271MagicValue);
-        });
-        it("doesn't allow pools to be added or rewards earmarked");
-        it("doesn't add feeInfo to Booster");
-
-        const swapEthForAura = async (sender: Account, amount = simpleToExactAmount(100), limit = 0) => {
-            const currentTime = BN.from(
-                (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
-            );
-            const tx = await balancerVault.connect(sender.signer).swap(
-                {
-                    poolId: phase2.lbpBpt.poolId,
-                    kind: SwapKind.GivenIn,
-                    assetIn: config.addresses.weth,
-                    assetOut: phase2.cvx.address,
-                    amount: amount,
-                    userData: "0x",
-                },
-                {
-                    sender: sender.address,
-                    fromInternalBalance: false,
-                    recipient: sender.address,
-                    toInternalBalance: false,
-                },
-                limit,
-                currentTime.add(60 * 15),
-            );
-            await waitForTx(tx, debug);
-        };
-        // T = 0 -> 4.5
-        it("executes some swaps", async () => {
-            const swapperAddress = "0xdecadE000000000000000000000000000000042f";
-            const swapper = await impersonateAccount(swapperAddress);
-            await getEth(swapperAddress);
-            await getWeth(swapperAddress, simpleToExactAmount(500));
-
-            const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
-            const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
-            await waitForTx(tx, debug);
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(2));
-            await swapEthForAura(swapper, simpleToExactAmount(20));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(6));
-            await swapEthForAura(swapper, simpleToExactAmount(50));
-
-            await increaseTime(ONE_HOUR.mul(24));
-            await swapEthForAura(swapper, simpleToExactAmount(100));
-
-            await increaseTime(ONE_HOUR.mul(24));
-            await swapEthForAura(swapper, simpleToExactAmount(100));
-        });
-        it("allows AURA holders to stake in vlAURA");
     });
 
     describe("Phase 3", () => {
@@ -912,19 +982,160 @@ describe("Full Deployment", () => {
                     const cvxCrvSupplyAfter = await phase3.cvxCrv.totalSupply();
                     expect(cvxCrvSupplyAfter.sub(cvxCrvSupply)).eq(simpleToExactAmount(200));
                 });
-                it("allows users to claim and lock from cvxCrv staking");
-                it("allows users to claim directly from cvxCrv staking with penalty");
-                it("allows anyone to forward the penalty");
+                it("allows users to claim and lock from cvxCrv staking", async () => {
+                    const { initialCvxCrvStaking, cvxLocker } = phase3;
+                    await increaseTime(ONE_HOUR.mul(4));
+                    const earnedBefore = await initialCvxCrvStaking.earned(alice.address);
+                    expect(earnedBefore).gt(1000000000);
+                    const lockerBalBefore = await cvxLocker.lockedBalances(alice.address);
+
+                    await initialCvxCrvStaking.connect(alice.signer).getReward(true);
+
+                    const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
+                    assertBNClose(earnedAfter, BN.from(0), 1000);
+                    const lockerBalafter = await cvxLocker.lockedBalances(alice.address);
+
+                    assertBNClosePercent(lockerBalafter.total.sub(lockerBalBefore.total), earnedBefore, "0.01");
+                });
+                it("allows users to claim directly from cvxCrv staking with penalty", async () => {
+                    const { initialCvxCrvStaking, cvx } = phase3;
+                    await increaseTime(ONE_HOUR.mul(4));
+                    const earnedBefore = await initialCvxCrvStaking.earned(alice.address);
+                    expect(earnedBefore).gt(1000000000);
+                    const rawBalBefore = await cvx.balanceOf(alice.address);
+                    const penaltyBefore = await initialCvxCrvStaking.pendingPenalty();
+
+                    await initialCvxCrvStaking.connect(alice.signer).getReward(false);
+
+                    const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
+                    assertBNClose(earnedAfter, BN.from(0), 1000);
+                    const rawBalAfter = await cvx.balanceOf(alice.address);
+                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(5).mul(4), "0.01");
+                    const penaltyAfter = await initialCvxCrvStaking.pendingPenalty();
+                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(4));
+                });
+                it("allows anyone to forward the penalty", async () => {
+                    const { initialCvxCrvStaking, cvx } = phase3;
+                    const pendingPenaltyBefore = await initialCvxCrvStaking.pendingPenalty();
+                    const rawBalBefore = await cvx.balanceOf(initialCvxCrvStaking.address);
+                    expect(pendingPenaltyBefore).gt(0);
+
+                    await initialCvxCrvStaking.forwardPenalty();
+
+                    const pendingPenaltyAfter = await initialCvxCrvStaking.pendingPenalty();
+                    expect(pendingPenaltyAfter).eq(0);
+
+                    const rawBalAfter = await cvx.balanceOf(initialCvxCrvStaking.address);
+                    expect(rawBalBefore.sub(rawBalAfter)).eq(pendingPenaltyBefore);
+                });
             });
             describe("merkle drops", () => {
-                it("allows users to claim merkle drops");
-                it("allows users to lock directly");
+                let tree: MerkleTree;
+                let treasurySigner: Account;
+                const amount = simpleToExactAmount(100);
+                const eoaAddress = "0xdECade000000000000000000000000000000A42f";
+                const dropperAddress = "0xdecadE000000000000000000000000000000042f";
+
+                before(async () => {
+                    tree = createTreeWithAccounts({
+                        [dropperAddress]: amount,
+                        [deployerAddress]: amount,
+                    });
+
+                    treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                    if ((await phase3.drops[0].merkleRoot()) == ZERO_KEY) {
+                        await phase3.drops[0].connect(treasurySigner.signer).setRoot(tree.getHexRoot());
+                    }
+                });
+                it("doesn't allow just anyone to claim a merkle drop", async () => {
+                    const { drops } = phase3;
+
+                    const eoa = await impersonateAccount(eoaAddress);
+                    await expect(
+                        drops[0]
+                            .connect(eoa.signer)
+                            .claim(getAccountBalanceProof(tree, deployerAddress, amount), amount, true),
+                    ).to.be.revertedWith("invalid proof");
+                });
+                it("allows users to claim merkle drops", async () => {
+                    const { drops, cvxLocker } = phase3;
+
+                    const balBefore = (await cvxLocker.lockedBalances(dropperAddress)).locked;
+                    const dropper = await impersonateAccount(dropperAddress);
+                    await drops[0]
+                        .connect(dropper.signer)
+                        .claim(getAccountBalanceProof(tree, dropperAddress, amount), amount, true);
+
+                    const balAfter = (await cvxLocker.lockedBalances(dropperAddress)).locked;
+                    expect(balAfter.sub(balBefore)).eq(amount);
+                });
             });
             describe("vesting", () => {
-                it("allows users to claim vesting");
+                it("allows users to claim vesting", async () => {
+                    const { vestedEscrows, cvx } = phase3;
+                    const escrow = vestedEscrows[2];
+
+                    const user = "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5";
+                    const userAcc = await impersonateAccount(user);
+
+                    const balBefore = await cvx.balanceOf(user);
+                    const availableBefore = await escrow.available(user);
+                    const remainingBefore = await escrow.remaining(user);
+
+                    expect(availableBefore).gt(0);
+                    assertBNClosePercent(remainingBefore, simpleToExactAmount(3.5, 24), "0.11");
+
+                    await escrow.connect(userAcc.signer).claim(false);
+
+                    const balAfter = await cvx.balanceOf(user);
+                    const availableAfter = await escrow.available(user);
+                    // const remainingAfter = await escrow.remaining(user);
+
+                    const credited = balAfter.sub(balBefore);
+                    expect(credited).gt(0);
+                    // expect(remainingBefore.sub(remainingAfter)).eq(credited);
+                    assertBNClose(availableAfter, BN.from(0), 10000000);
+                });
             });
-            it("allows users to deposit BPT for chef rewards");
-            it("allows users to lock in auraLocker");
+            describe("chef", () => {
+                let treasurySigner: Account;
+                let cvxCrvBptToken: ERC20;
+
+                before(async () => {
+                    treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                    cvxCrvBptToken = ERC20__factory.connect(phase3.cvxCrvBpt.address, treasurySigner.signer);
+                    // TODO - remove once on mainnet
+                    await advanceBlock(BN.from(7000).mul(7));
+                    expect(await hre.ethers.provider.getBlockNumber()).gt(await phase3.chef.startBlock());
+                });
+                it("allows users to deposit BPT for chef rewards", async () => {
+                    const balBefore = await cvxCrvBptToken.balanceOf(treasurySigner.address);
+                    expect(balBefore).gt(0);
+
+                    await cvxCrvBptToken.approve(phase3.chef.address, balBefore);
+                    await phase3.chef.connect(treasurySigner.signer).deposit(0, balBefore);
+
+                    const balAfter = await cvxCrvBptToken.balanceOf(treasurySigner.address);
+                    expect(balAfter).eq(0);
+                    const chefBal = await cvxCrvBptToken.balanceOf(phase3.chef.address);
+                    expect(chefBal).eq(balBefore);
+
+                    const userBalance = await phase3.chef.userInfo(0, treasurySigner.address);
+                    expect(userBalance.amount).eq(balBefore);
+                });
+                it("allows users to claim said rewards", async () => {
+                    await increaseTime(ONE_HOUR);
+
+                    const balBefore = await phase3.cvx.balanceOf(treasurySigner.address);
+                    await phase3.chef.connect(treasurySigner.signer).claim(0, treasurySigner.address);
+                    const balAfter = await phase3.cvx.balanceOf(treasurySigner.address);
+
+                    expect(balAfter.sub(balBefore)).gt(0);
+
+                    const userBalance = await phase3.chef.userInfo(0, treasurySigner.address);
+                    expect(userBalance.rewardDebt).eq(balAfter.sub(balBefore));
+                });
+            });
         });
     });
 
@@ -976,9 +1187,31 @@ describe("Full Deployment", () => {
                     expect(await claimZap.owner()).eq(deployerAddress);
                 });
                 it("adds the pools", async () => {
-                    expect(await phase4.booster.poolLength()).gt(0);
-                    expect(await phase4.booster.poolLength()).eq(config.addresses.gauges.length);
-                    // TODO - check actual poolInfo
+                    const { booster, voterProxy, factories } = phase4;
+                    const { addresses } = config;
+
+                    expect(await booster.poolLength()).gt(0);
+                    expect(await booster.poolLength()).eq(addresses.gauges.length);
+
+                    const pool0 = await booster.poolInfo(0);
+                    expect(pool0.gauge).eq(addresses.gauges[0]);
+                    expect(pool0.stash).not.eq(ZERO_ADDRESS);
+
+                    await booster.earmarkRewards(0);
+
+                    const rewardContract = BaseRewardPool4626__factory.connect(pool0.crvRewards, deployer);
+
+                    await expect(rewardContract.extraRewards(0)).to.be.reverted;
+
+                    const stash = ExtraRewardStashV3__factory.connect(pool0.stash, deployer);
+                    expect(await stash.pid()).eq(0);
+                    expect(await stash.operator()).eq(booster.address);
+                    expect(await stash.staker()).eq(voterProxy.address);
+                    expect(await stash.gauge()).eq(pool0.gauge);
+                    expect(await stash.rewardFactory()).eq(factories.rewardFactory.address);
+                    expect(await stash.hasRedirected()).eq(true);
+                    expect(await stash.hasCurveRewards()).eq(false);
+                    await expect(stash.tokenList(0)).to.be.reverted;
                 });
                 // check for a gauge with a stash and make sure it has been added
                 it("extraRewardsStash has correct config", async () => {
@@ -1088,6 +1321,11 @@ describe("Full Deployment", () => {
                 it("does not allow the system to be shut down");
                 it("does not allow a fee info to be added that has a gauge");
                 it("allows a fee to be disabled");
+            });
+            describe("boosterOwner", () => {
+                it("does not allow boosterOwner to revert control");
+                it("allows boosterOwner owner to be changed");
+                it("allows boosterOwner to call all fns on booster");
             });
             describe("crv depositor", () => {
                 it("accrues incentives for the caller");
