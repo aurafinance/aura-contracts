@@ -1278,7 +1278,11 @@ describe("Full Deployment", () => {
                         .connect(daoMultisig.signer)
                         .setFees(lockIncentive, stakerIncentive, earmarkIncentive, platformFee);
                 });
-                it("does not allow the system to be shut down");
+                it("does not allow the system to be shut down", async () => {
+                    const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+                    const tx = phase4.boosterOwner.connect(daoMultisig.signer).shutdownSystem();
+                    await expect(tx).to.be.revertedWith("!poolMgrShutdown");
+                });
                 it("does not allow a fee info to be added that has a gauge", async () => {
                     const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
                     const poolInfo = await phase4.booster.poolInfo(0);
@@ -1378,7 +1382,6 @@ describe("Full Deployment", () => {
                     const cvxCrvBalance = cvxCrvBalanceAfter.sub(cvxCrvBalanceBefore);
                     expect(cvxCrvBalance).eq(rewards[0].amount);
                 });
-                it("allows other things too");
             });
         });
     });
