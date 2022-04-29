@@ -31,9 +31,11 @@ import {
     simpleToExactAmount,
     ONE_DAY,
     ZERO_KEY,
+    createTreeWithAccounts,
+    getAccountBalanceProof,
 } from "../test-utils";
 import { Signer } from "ethers";
-import { getTimestamp, latestBlock, increaseTime } from "./../test-utils/time";
+import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../test-utils/time";
 import {
     deployPhase2,
     deployPhase3,
@@ -47,6 +49,7 @@ import { Account } from "./../types/common";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
+import MerkleTree from "merkletreejs";
 
 const debug = false;
 
@@ -1027,15 +1030,110 @@ describe("Full Deployment", () => {
                 });
             });
             describe("merkle drops", () => {
-                it("allows users to claim merkle drops");
-                it("allows users to lock directly");
+                let tree: MerkleTree;
+                let treasurySigner: Account;
+                const amount = simpleToExactAmount(100);
+                const eoaAddress = "0xdECade000000000000000000000000000000A42f";
+                const dropperAddress = "0xdecadE000000000000000000000000000000042f";
+
+                before(async () => {
+                    tree = createTreeWithAccounts({
+                        [dropperAddress]: amount,
+                        [deployerAddress]: amount,
+                    });
+
+                    // TODO - remove once root set on mainnet config
+                    treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                    await phase3.drops[0].connect(treasurySigner.signer).setRoot(tree.getHexRoot());
+                });
+                it("doesn't allow just anyone to claim a merkle drop", async () => {
+                    const { drops } = phase3;
+
+                    const eoa = await impersonateAccount(eoaAddress);
+                    await expect(
+                        drops[0]
+                            .connect(eoa.signer)
+                            .claim(getAccountBalanceProof(tree, deployerAddress, amount), amount, true),
+                    ).to.be.revertedWith("invalid proof");
+                });
+                it("allows users to claim merkle drops", async () => {
+                    const { drops, cvxLocker } = phase3;
+
+                    const balBefore = (await cvxLocker.lockedBalances(dropperAddress)).locked;
+                    const dropper = await impersonateAccount(dropperAddress);
+                    await drops[0]
+                        .connect(dropper.signer)
+                        .claim(getAccountBalanceProof(tree, dropperAddress, amount), amount, true);
+
+                    const balAfter = (await cvxLocker.lockedBalances(dropperAddress)).locked;
+                    expect(balAfter.sub(balBefore)).eq(amount);
+                });
             });
             describe("vesting", () => {
-                it("allows users to claim vesting");
+                it("allows users to claim vesting", async () => {
+                    const { vestedEscrows, cvx } = phase3;
+                    const escrow = vestedEscrows[2];
+
+                    const user = "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5";
+                    const userAcc = await impersonateAccount(user);
+
+                    const balBefore = await cvx.balanceOf(user);
+                    const availableBefore = await escrow.available(user);
+                    const remainingBefore = await escrow.remaining(user);
+
+                    expect(availableBefore).gt(0);
+                    assertBNClosePercent(remainingBefore, simpleToExactAmount(3.5, 24), "0.11");
+
+                    await escrow.connect(userAcc.signer).claim(false);
+
+                    const balAfter = await cvx.balanceOf(user);
+                    const availableAfter = await escrow.available(user);
+                    // const remainingAfter = await escrow.remaining(user);
+
+                    const credited = balAfter.sub(balBefore);
+                    expect(credited).gt(0);
+                    // expect(remainingBefore.sub(remainingAfter)).eq(credited);
+                    assertBNClose(availableAfter, BN.from(0), 10000000);
+                });
             });
             describe("chef", () => {
-                it("allows users to deposit BPT for chef rewards");
-                it("allows users to claim said rewards");
+                let treasurySigner: Account;
+                let cvxCrvBptToken: ERC20;
+
+                before(async () => {
+                    treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+                    cvxCrvBptToken = ERC20__factory.connect(phase3.cvxCrvBpt.address, treasurySigner.signer);
+                    // TODO - remove once on mainnet
+                    await advanceBlock(BN.from(7000).mul(7));
+                    expect(await hre.ethers.provider.getBlockNumber()).gt(await phase3.chef.startBlock());
+                });
+                it("allows users to deposit BPT for chef rewards", async () => {
+                    const balBefore = await cvxCrvBptToken.balanceOf(treasurySigner.address);
+                    expect(balBefore).gt(0);
+
+                    await cvxCrvBptToken.approve(phase3.chef.address, balBefore);
+                    await phase3.chef.connect(treasurySigner.signer).deposit(0, balBefore);
+
+                    const balAfter = await cvxCrvBptToken.balanceOf(treasurySigner.address);
+                    expect(balAfter).eq(0);
+                    const chefBal = await cvxCrvBptToken.balanceOf(phase3.chef.address);
+                    expect(chefBal).eq(balBefore);
+
+                    const userBalance = await phase3.chef.userInfo(0, treasurySigner.address);
+                    expect(userBalance.amount).eq(balBefore);
+                });
+                it("allows users to claim said rewards", async () => {
+                    await increaseTime(ONE_HOUR);
+
+                    const balBefore = await phase3.cvx.balanceOf(treasurySigner.address);
+                    await phase3.chef.connect(treasurySigner.signer).claim(0, treasurySigner.address);
+                    const balAfter = await phase3.cvx.balanceOf(treasurySigner.address);
+
+                    expect(balAfter.sub(balBefore)).gt(0);
+
+                    const userBalance = await phase3.chef.userInfo(0, treasurySigner.address);
+                    expect(userBalance.rewardDebt).eq(balAfter.sub(balBefore));
+                });
             });
         });
     });
