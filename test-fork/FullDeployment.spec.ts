@@ -1,4 +1,3 @@
-import { VirtualBalanceRewardPool } from "./../types/generated/VirtualBalanceRewardPool";
 import { hashMessage } from "@ethersproject/hash";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
