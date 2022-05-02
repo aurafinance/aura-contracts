@@ -10,7 +10,7 @@
         "compile:aura": "yarn hardhat compile --config hardhat.config.ts",
         "compile:cvx": "yarn hardhat compile --config hardhat-cvx.config.ts",
         "compile:ts": "npx tsc",
-        "coverage": "yarn typechain && hardhat coverage --solcoverjs ./.solcover.js --temp artifacts --testfiles 'test/**/*.ts'",
+        "coverage": "yarn typechain && hardhat coverage:externalSrc --solcoverjs ./.solcover.js --temp artifacts --testfiles 'test/**/*.ts'",
         "lint": "yarn lint:sol && yarn lint:ts && yarn prettier:check",
         "lint:sol": "solhint --config ./.solhint.json \"contracts/**/*.sol\"",
         "lint:ts": "eslint --config ./.eslintrc.yaml --ignore-path ./.eslintignore --ext .js,.ts .",
