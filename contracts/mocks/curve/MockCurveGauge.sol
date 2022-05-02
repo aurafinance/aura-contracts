@@ -37,4 +37,12 @@ contract MockCurveGauge is ERC20 {
             IERC20(reward_tokens[i]).transfer(msg.sender, amount);
         }
     }
+
+    function claimable_reward(address, address) external view returns (uint256) {
+        return 0;
+    }
+
+    function deposit_reward_token(address, uint256) external {}
+
+    function add_reward(address _reward_token, address _distributor) external {}
 }
