@@ -43,4 +43,6 @@ contract MockCurveGauge is ERC20 {
     }
 
     function deposit_reward_token(address, uint256) external {}
+
+    function add_reward(address _reward_token, address _distributor) external {}
 }
