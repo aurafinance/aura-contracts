@@ -9,7 +9,7 @@
 **/artifacts
 **/build
 **/cache
-**/coverage
+/coverage
 **/.coverage_artifacts
 **/.coverage_cache
 **/.coverage_contracts

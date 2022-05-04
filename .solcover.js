@@ -3,6 +3,6 @@ module.exports = {
     providerOptions: {
         mnemonic: process.env.MNEMONIC,
     },
-    skipFiles: ["mocks", "test"],
+    skipFiles: ["mocks", "test", "convex-platform/contracts/contracts/interfaces"],
     configureYulOptimizer: true,
 };
