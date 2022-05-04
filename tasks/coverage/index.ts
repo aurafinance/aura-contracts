@@ -1,6 +1,7 @@
 import { task, subtask } from "hardhat/config";
 import { TaskArguments, RunSuperFunction, HardhatRuntimeEnvironment } from "hardhat/types";
 import fs from "fs-extra";
+import path from "path";
 /**
  * Copy external sources to the hre config path source directory.
  *
@@ -14,6 +15,12 @@ const copyExternalSrc = async (hre, externalSrc) => {
         fs.mkdirSync(destDir, { recursive: true });
     }
     fs.copySync(srcDir, destDir);
+}
+const updatePathOnReport = async () => {
+    const reportPath = path.resolve(__dirname, "../../coverage/lcov.info");
+    const data = fs.readFileSync(reportPath, "utf8");
+    const result = data.replace(/aura-contracts\/contracts\/convex-platform/g, 'aura-contracts/convex-platform');
+    fs.writeFileSync(reportPath, result, "utf8");
 }
 
 subtask("coverage:clean")
@@ -46,5 +53,6 @@ task("coverage:externalSrc")
         const { testfiles, solcoverjs, temp } = taskArgs;
         await hre.run("coverage:setup", { externalSrc: taskArgs.externalSrc });
         await hre.run("coverage", { testfiles, solcoverjs, temp });
+        await updatePathOnReport();
         await hre.run("coverage:clean", { externalSrc: taskArgs.externalSrc });
     });
