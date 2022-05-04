@@ -646,35 +646,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
 
     // Balance of an account which only includes properly locked tokens as of the most recent eligible epoch
     function balanceOf(address _user) external view returns (uint256 amount) {
-        LockedBalance[] storage locks = userLocks[_user];
-        Balances storage userBalance = balances[_user];
-        uint256 nextUnlockIndex = userBalance.nextUnlockIndex;
-
-        //start with total locked
-        amount = balances[_user].locked;
-
-        uint256 locksLength = locks.length;
-        //remove old records only (will be better gas-wise than adding up)
-        for (uint256 i = nextUnlockIndex; i < locksLength; i++) {
-            if (locks[i].unlockTime <= block.timestamp) {
-                amount = amount.sub(locks[i].amount);
-            } else {
-                //stop now as no futher checks are needed
-                break;
-            }
-        }
-
-        //also remove amount in the current epoch
-        uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        if (
-            locksLength > 0 &&
-            amount != 0 &&
-            uint256(locks[locksLength - 1].unlockTime).sub(lockDuration) == currentEpoch
-        ) {
-            amount = amount.sub(locks[locksLength - 1].amount);
-        }
-
-        return amount;
+        return balanceAtEpochOf(findEpochId(block.timestamp), _user);
     }
 
     // Balance of an account which only includes properly locked tokens at the given epoch
