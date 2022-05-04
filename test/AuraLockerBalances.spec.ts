@@ -1,25 +1,12 @@
 import { expect } from "chai";
-import { ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { deployContract } from "../tasks/utils";
-import {
-    BN,
-    getTimestamp,
-    increaseTime,
-    ONE_DAY,
-    ONE_WEEK,
-    simpleToExactAmount,
-    ZERO,
-    ZERO_ADDRESS,
-} from "../test-utils";
+import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 import { impersonateAccount } from "../test-utils/fork";
 import { AuraLocker, AuraToken } from "../types/generated";
 import balanceData from "./auraLockerBalanceData.json";
-
-console.log(balanceData);
 
 enum UserName {
     alice = "alice",
@@ -61,8 +48,6 @@ interface EpochGroup {
 describe("AuraLockerBalances", () => {
     let auraLocker: AuraLocker;
     let cvx: AuraToken;
-
-    let groupedData: EpochGroup[];
 
     let alice: Account;
     let bob: Account;
@@ -114,6 +99,7 @@ describe("AuraLockerBalances", () => {
 
         const operatorAccount = await impersonateAccount(booster.address);
         await cvx.connect(operatorAccount.signer).mint(operatorAccount.address, simpleToExactAmount(100000, 18));
+        await cvx.connect(operatorAccount.signer).transfer(alice.address, simpleToExactAmount(10000));
         await cvx.connect(alice.signer).approve(auraLocker.address, simpleToExactAmount(10000));
         await cvx.connect(operatorAccount.signer).transfer(bob.address, simpleToExactAmount(10000));
         await cvx.connect(bob.signer).approve(auraLocker.address, simpleToExactAmount(10000));
@@ -121,18 +107,20 @@ describe("AuraLockerBalances", () => {
         await cvx.connect(carol.signer).approve(auraLocker.address, simpleToExactAmount(10000));
         await cvx.connect(operatorAccount.signer).transfer(daniel.address, simpleToExactAmount(10000));
         await cvx.connect(daniel.signer).approve(auraLocker.address, simpleToExactAmount(10000));
+    });
 
+    const getGroupedData = (): EpochGroup[] => {
+        const scale = simpleToExactAmount(1);
         const parsedData = balanceData.map(d => ({
             epoch: d.time,
             user: d.user as UserName,
             action: d.action as ActionName,
-            amount: d.amount == null ? undefined : BN.from(d.amount),
-            balanceOf: d.amount == null ? undefined : BN.from(d.amount),
-            totalSupply: d.amount == null ? undefined : BN.from(d.amount),
-            votes: d.amount == null ? undefined : BN.from(d.amount),
+            amount: d.amount == null ? undefined : BN.from(d.amount).mul(scale),
+            balanceOf: d.balanceOf == null ? undefined : BN.from(d.balanceOf).mul(scale),
+            totalSupply: d.totalSupply == null ? undefined : BN.from(d.totalSupply).mul(scale),
+            votes: d.votes == null ? undefined : BN.from(d.votes).mul(scale),
         }));
-
-        groupedData = [];
+        const groupedData = [];
         parsedData.map(d => {
             let len = groupedData.length;
             if (len == 0 || groupedData[len - 1].epoch != d.epoch) {
@@ -143,7 +131,7 @@ describe("AuraLockerBalances", () => {
                 });
                 len += 1;
             }
-            if (d.action == "balances") {
+            if (d.action == ActionName.balances) {
                 groupedData[len - 1].balances.push({
                     user: d.user,
                     balanceOf: d.balanceOf,
@@ -158,8 +146,195 @@ describe("AuraLockerBalances", () => {
                 });
             }
         });
-    });
-    it("has the data", async () => {
-        expect(groupedData.length).eq(23);
+        return groupedData;
+    };
+
+    const userToAccount = async (user: UserName): Promise<Account> => {
+        const accounts = await ethers.getSigners();
+        switch (user.toString()) {
+            case UserName.alice.toString():
+                return {
+                    signer: accounts[4],
+                    address: await accounts[4].getAddress(),
+                };
+            case UserName.bob.toString():
+                return {
+                    signer: accounts[5],
+                    address: await accounts[5].getAddress(),
+                };
+            case UserName.carol.toString():
+                return {
+                    signer: accounts[6],
+                    address: await accounts[6].getAddress(),
+                };
+            case UserName.daniel.toString():
+                return {
+                    signer: accounts[7],
+                    address: await accounts[7].getAddress(),
+                };
+            default:
+                return null;
+        }
+    };
+
+    const getUserAddresses = async (): Promise<string[]> => {
+        const accounts = await ethers.getSigners();
+        return await Promise.all([
+            accounts[4].getAddress(),
+            accounts[5].getAddress(),
+            accounts[6].getAddress(),
+            accounts[7].getAddress(),
+        ]);
+    };
+
+    describe("Run all the epochs", () => {
+        // let dataBefore: Data
+
+        // FOR EACH EPOCH:
+        //  - check
+        //   - all current user balances
+        //   - all HISTORIC user balances for all epochs
+        //   - total supply
+        //  - act
+        //  - check
+        //   - all current user balances
+        //   - all HISTORIC user balances for all epochs
+        //   - total supply
+        for (const epochData of getGroupedData()) {
+            describe(`Epoch ${epochData.epoch}`, () => {
+                let startTime: BN;
+                let epochId: number;
+                before(async () => {
+                    startTime = await getTimestamp();
+                    epochId = Math.floor(epochData.epoch);
+                });
+                after(async () => {
+                    await increaseTime(ONE_WEEK);
+                });
+                it("has correct epoch id", async () => {
+                    const contractEpoch = await auraLocker.findEpochId(startTime);
+                    expect(contractEpoch).eq(epochId);
+                });
+                // Just a sanity check to ensure that the balance lookups can just be mapped by index
+                it("has balances in correct order", () => {
+                    expect(epochData.balances[0].user).eq(UserName.alice);
+                    expect(epochData.balances[1].user).eq(UserName.bob);
+                    expect(epochData.balances[2].user).eq(UserName.carol);
+                    expect(epochData.balances[3].user).eq(UserName.daniel);
+                });
+
+                const checkBalances = (wen: string) => {
+                    describe(`checking balances ${wen}`, () => {
+                        it("looks up current balances & totalSupply", async () => {
+                            const userAddresses = await getUserAddresses();
+                            const balances = await Promise.all(userAddresses.map(a => auraLocker.balanceOf(a)));
+                            const votes = await Promise.all(userAddresses.map(a => auraLocker.getVotes(a)));
+                            const supply = await auraLocker.totalSupply();
+
+                            balances.map((b, i) => expect(b).eq(epochData.balances[i].balanceOf));
+                            votes.map((b, i) => expect(b).eq(epochData.balances[i].votes));
+                            expect(supply).eq(epochData.balances[0].totalSupply);
+                        });
+                        it(`looks up ALL historical total supply between epoch 0 and ${epochData.epoch}`, async () => {
+                            const lookupData = getGroupedData().slice(0, epochId + 1);
+                            const totalSupplies = await Promise.all(
+                                lookupData.map((d, i) => auraLocker.totalSupplyAtEpoch(i)),
+                            );
+
+                            totalSupplies.map((t, i) => expect(t).eq(lookupData[i].balances[0].totalSupply));
+                        });
+
+                        const checkHistorical = async (user: UserName, id: number) => {
+                            const lookupData = getGroupedData().slice(0, epochId + 1);
+                            const userAddress = (await userToAccount(user)).address;
+                            const votesAt = await Promise.all(
+                                lookupData.map((d, i) =>
+                                    auraLocker.getPastVotes(userAddress, startTime.sub(ONE_WEEK.mul(epochId - i))),
+                                ),
+                            );
+
+                            votesAt.map((v, i) => expect(v).eq(lookupData[i].balances[id].votes));
+
+                            const balancesAt = await Promise.all(
+                                lookupData.map((d, i) => auraLocker.balanceAtEpochOf(i, userAddress)),
+                            );
+
+                            balancesAt.map((b, i) => expect(b).eq(lookupData[i].balances[id].balanceOf));
+                        };
+                        it("looks up ALL historical balances for alice", async () => {
+                            await checkHistorical(UserName.alice, 0);
+                        });
+                        it("looks up ALL historical balances for bob", async () => {
+                            await checkHistorical(UserName.bob, 1);
+                        });
+                        it("looks up ALL historical balances for carol", async () => {
+                            await checkHistorical(UserName.carol, 2);
+                        });
+                        it("looks up ALL historical balances for daniel", async () => {
+                            await checkHistorical(UserName.daniel, 3);
+                        });
+                    });
+                };
+
+                checkBalances("before");
+
+                if (epochData.actions.length > 0) {
+                    describe("performing actions", () => {
+                        for (const actionData of epochData.actions) {
+                            switch (actionData.action) {
+                                case ActionName.lock:
+                                    it(`locks up ${ethers.utils.formatEther(actionData.amount)} for ${
+                                        actionData.user
+                                    }`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).lock(user.address, actionData.amount);
+                                    });
+                                    break;
+                                case ActionName.checkpointEpoch:
+                                    it(`checkpoints epoch`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).checkpointEpoch();
+                                    });
+                                    break;
+                                case ActionName.delegate1:
+                                    it(`allows ${actionData.user} to delegate to alice`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).delegate(alice.address);
+                                    });
+                                    break;
+                                case ActionName.delegate2:
+                                    it(`allows ${actionData.user} to delegate to bob`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).delegate(bob.address);
+                                    });
+                                    break;
+                                case ActionName.delegate3:
+                                    it(`allows ${actionData.user} to delegate to carol`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).delegate(carol.address);
+                                    });
+                                    break;
+                                case ActionName.processExpiredClaim:
+                                    it(`allows ${actionData.user} to process their locks and withdraw their capital`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).processExpiredLocks(false);
+                                    });
+                                    break;
+                                case ActionName.processExpiredRelock:
+                                    it(`allows ${actionData.user} to process and relock outstanding locks`, async () => {
+                                        const user = await userToAccount(actionData.user);
+                                        await auraLocker.connect(user.signer).processExpiredLocks(true);
+                                    });
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    });
+
+                    checkBalances("after");
+                }
+            });
+        }
     });
 });
