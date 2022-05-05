@@ -499,7 +499,7 @@ describe("Full Deployment", () => {
                     expect(await escrow0.totalTime()).eq(ONE_WEEK.mul(16));
                     expect(await escrow0.initialised()).eq(true);
                     expect(await escrow0.remaining("0xaf3824e8401299B25C4D59a8a035Cf9312a3B454")).eq(
-                        simpleToExactAmount(0.025, 24),
+                        simpleToExactAmount(0.02, 24),
                     );
                     // [ 1 ] = 26 weeks, 0.0675% + 1.0165% future team
                     const escrow1 = vestedEscrows[1];
@@ -513,7 +513,7 @@ describe("Full Deployment", () => {
                     expect(await escrow1.totalTime()).eq(ONE_WEEK.mul(26));
                     expect(await escrow1.initialised()).eq(true);
                     expect(await escrow1.remaining(config.multisigs.vestingMultisig)).eq(
-                        simpleToExactAmount(1.0165, 24),
+                        simpleToExactAmount(0.9415, 24),
                     );
                     // [ 2 ] = 104 weeks, 8.875%
                     const escrow2 = vestedEscrows[2];
@@ -604,12 +604,12 @@ describe("Full Deployment", () => {
                     const weights = await pool.getNormalizedWeights();
                     if (balances.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(balances.balances[0]).eq(simpleToExactAmount(2.2, 24));
-                        expect(balances.balances[1]).eq(simpleToExactAmount(66));
+                        expect(balances.balances[1]).eq(simpleToExactAmount(100));
                         assertBNClosePercent(weights[0], simpleToExactAmount(99, 16), "0.0001");
                         assertBNClosePercent(weights[1], simpleToExactAmount(1, 16), "0.0001");
                     } else {
                         expect(balances.balances[1]).eq(simpleToExactAmount(2.2, 24));
-                        expect(balances.balances[0]).eq(simpleToExactAmount(66));
+                        expect(balances.balances[0]).eq(simpleToExactAmount(100));
                         assertBNClosePercent(weights[1], simpleToExactAmount(99, 16), "0.0001");
                         assertBNClosePercent(weights[0], simpleToExactAmount(1, 16), "0.0001");
                     }
@@ -1585,10 +1585,12 @@ describe("Full Deployment", () => {
                     const crvBalance = await crv.balanceOf(phase4.cvxStakingProxy.address);
                     expect(crvBalance).gt(0);
 
-                    const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    const keeper = await impersonateAccount(config.addresses.keeper);
+
+                    const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
-                    await phase4.cvxStakingProxy.connect(staker.signer).distribute();
-                    const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    await phase4.cvxStakingProxy.connect(keeper.signer).distribute();
+                    const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
 
                     expect(callerCvxCrvBalanceAfter).gt(callerCvxCrvBalanceBefore);
@@ -1798,7 +1800,9 @@ describe("Full Deployment", () => {
                     const cvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
                     await getCrv(phase4.booster.address, simpleToExactAmount(1));
                     await phase4.booster.earmarkRewards(0);
-                    await phase4.cvxStakingProxy.distribute();
+
+                    const keeper = await impersonateAccount(config.addresses.keeper);
+                    await phase4.cvxStakingProxy.connect(keeper.signer).distribute();
                     await increaseTime(ONE_HOUR);
                     const rewards = await phase4.cvxLocker.claimableRewards(stakerAddress);
                     expect(rewards[0].amount).gt(0);
