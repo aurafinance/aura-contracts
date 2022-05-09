@@ -11,7 +11,7 @@ import {
     MockERC20__factory,
 } from "../types/generated";
 import { Signer } from "ethers";
-import { increaseTime } from "../test-utils/time";
+import { increaseTime, increaseTimeTo } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
 import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
 
@@ -363,6 +363,21 @@ describe("Booster", () => {
             const expectedRewards = rewardPerToken.mul(balance).div(simpleToExactAmount(1));
 
             expect(expectedRewards).to.equal(crvBalance);
+        });
+
+        it("@method BaseRewardPool.processIdleRewards()", async () => {
+            await mocks.crvMinter.setRate(1000);
+            await booster.earmarkRewards(0);
+            const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
+            const queuedRewards = await crvRewards.queuedRewards();
+            expect(queuedRewards).gt(0);
+
+            const periodFinish = await crvRewards.periodFinish();
+            await increaseTimeTo(periodFinish);
+
+            await crvRewards.processIdleRewards();
+            const queuedRewardsAfter = await crvRewards.queuedRewards();
+            expect(queuedRewardsAfter).eq(0);
         });
     });
 });
