@@ -175,7 +175,7 @@ const distroList = {
             period: ONE_WEEK.mul(104),
             recipients: [
                 { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(3.5, 24) }, // Core team 1
-                { address: "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5", amount: simpleToExactAmount(3.5, 24) }, // Core team 2
+                { address: "0xB1f881f47baB744E7283851bC090bAA626df931d", amount: simpleToExactAmount(3.5, 24) }, // Core team 2
                 { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team 3
                 { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team 4
                 { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team 5
