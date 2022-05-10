@@ -1,0 +1,8 @@
+{
+    "exclude_informational": true,
+    "exclude_low": true,
+    "exclude_medium": true,
+    "exclude_high": false,
+    "solc_disable_warnings": true,
+    "filter_paths": "openzeppelin|console.sol|Migrations.sol|mocks|interfaces"
+}
