@@ -42,6 +42,7 @@ const addresses: ExtSystemConfig = {
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
     gauges: [
+        // TODO - only include high value gauges in launch (i.e. > 1% of votes?)
         "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac",
         "0x605eA53472A496c3d483869Fe8F355c12E861e19",
         "0x4ca6AC0509E6381Ca7CD872a6cdC0Fbf00600Fa1",
