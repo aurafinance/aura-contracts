@@ -134,3 +134,14 @@ interface IAuraLocker {
 interface IExtraRewardsDistributor {
     function addReward(address _token, uint256 _amount) external;
 }
+
+interface ICrvDepositorWrapper {
+    function getMinOut(uint256, uint256) external view returns (uint256);
+
+    function deposit(
+        uint256,
+        uint256,
+        bool,
+        address _stakeAddress
+    ) external;
+}

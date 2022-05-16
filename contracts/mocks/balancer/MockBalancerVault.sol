@@ -71,5 +71,6 @@ contract MockBalancerVault {
             IERC20(tokenA).transferFrom(funds.sender, address(this), singleSwap.amount);
             IERC20(tokenB).transfer(funds.recipient, singleSwap.amount);
         }
+        return singleSwap.amount;
     }
 }

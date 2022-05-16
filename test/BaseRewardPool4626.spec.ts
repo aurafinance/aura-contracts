@@ -89,6 +89,7 @@ describe("BaseRewardPool4626", () => {
 
             const depositTokenBalanceBefore = await depositToken.balanceOf(pool.crvRewards);
             const balanceBefore = await crvRewards.balanceOf(aliceAddress);
+            const totalSupplyBefore = await crvRewards.totalSupply();
             const lpBalanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
 
             await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
@@ -96,9 +97,11 @@ describe("BaseRewardPool4626", () => {
 
             const depositTokenBalanceAfter = await depositToken.balanceOf(pool.crvRewards);
             const balanceAfter = await crvRewards.balanceOf(aliceAddress);
+            const totalSupplyAfter = await crvRewards.totalSupply();
             const lpBalanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
 
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(totalSupplyAfter.sub(totalSupplyBefore)).eq(amount);
             expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(amount);
             expect(lpBalanceBefore.sub(lpBalanceAfter)).eq(amount);
         });
@@ -126,12 +129,15 @@ describe("BaseRewardPool4626", () => {
 
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await crvRewards.balanceOf(alternateReceiverAddress);
+            const totalSupplyBefore = await crvRewards.totalSupply();
 
             await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
             await crvRewards.deposit(amount, alternateReceiverAddress);
 
             const balanceAfter = await crvRewards.balanceOf(alternateReceiverAddress);
+            const totalSupplyAfter = await crvRewards.totalSupply();
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(totalSupplyAfter.sub(totalSupplyBefore)).eq(amount);
         });
 
         it("allows direct withdraws", async () => {
