@@ -17,6 +17,10 @@ contract MockCurveMinter is IMinter {
         rate = _rate;
     }
 
+    function setRate(uint256 _rate) external {
+        rate = _rate;
+    }
+
     function mint(address) external {
         crv.transfer(msg.sender, rate);
     }
