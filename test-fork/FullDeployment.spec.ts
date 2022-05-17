@@ -526,8 +526,8 @@ describe("Full Deployment", () => {
                     expect(await escrow2.endTime()).lt(time.add(ONE_WEEK.mul(105)));
                     expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
                     expect(await escrow2.initialised()).eq(true);
-                    expect(await escrow2.remaining("0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5")).eq(
-                        simpleToExactAmount(3.5, 24),
+                    expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
+                        simpleToExactAmount(3, 24),
                     );
                     // [ 3 ] = 104 weeks, 2%
                     const escrow3 = vestedEscrows[3];
