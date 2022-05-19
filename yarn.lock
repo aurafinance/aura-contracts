@@ -4560,10 +4560,10 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=277738&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=71f792&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
-  checksum: c1a4fc72a6e7e6618e68e64f02be89bff49fd1687e4e052fee83086b0fe202fdf48ebc534206891f29ee8ab5e7179a1bb7d77bb9371f998b250a579f4a620776
+  checksum: c790b75a5e7dd80a74a3ac4acee17c5dbd84a1a6ac6c480bc3dff1817a35a8138b58490c513ad5b93d17adf6a81d7e430a0cc6bea4f3b17bfa6b61d86ea87082
   languageName: node
   linkType: hard
 
