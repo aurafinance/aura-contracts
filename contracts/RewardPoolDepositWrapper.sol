@@ -37,7 +37,7 @@ contract RewardPoolDepositWrapper {
         uint256 _inputAmount,
         bytes32 _balancerPoolId,
         IVault.JoinPoolRequest memory _request
-    ) public {
+    ) external {
         // 1. Transfer input token
         _inputToken.safeTransferFrom(msg.sender, address(this), _inputAmount);
 

@@ -1,5 +1,6 @@
 import { BigNumber as BN, ContractReceipt, Signer } from "ethers";
 import {
+    RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
     AuraPenaltyForwarder,
     IInvestmentPoolFactory__factory,
@@ -67,6 +68,7 @@ import {
     AuraMerkleDrop__factory,
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
+    RewardPoolDepositWrapper__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -211,6 +213,7 @@ interface Phase3Deployed extends Phase2Deployed {
 interface SystemDeployed extends Phase3Deployed {
     claimZap: AuraClaimZap;
     feeCollector: ClaimFeesHelper;
+    rewardDepositWrapper: RewardPoolDepositWrapper;
 }
 
 function getPoolAddress(utils, receipt: ContractReceipt): string {
@@ -1107,7 +1110,17 @@ async function deployPhase4(
         waitForBlocks,
     );
 
-    return { ...deployment, claimZap, feeCollector };
+    const rewardDepositWrapper = await deployContract<RewardPoolDepositWrapper>(
+        hre,
+        new RewardPoolDepositWrapper__factory(deployer),
+        "RewardPoolDepositWrapper",
+        [config.balancerVault],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { ...deployment, claimZap, feeCollector, rewardDepositWrapper };
 }
 
 export {
