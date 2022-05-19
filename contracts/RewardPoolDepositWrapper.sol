@@ -9,6 +9,15 @@ interface RewardPool {
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
 }
 
+/**
+ * @title   RewardPoolDepositWrapper
+ * @notice  Peripheral contract that allows users to deposit into a Balancer pool and then stake their BPT
+ *          into Aura in 1 tx. Flow:
+ *            - rawToken.transferFrom(user, address(this))
+ *            - vault.deposit(rawToken), receive poolToken
+ *            - poolToken.approve(rewardPool)
+ *            - rewardPool.deposit(poolToken), converts to auraBPT and then deposits
+ */
 contract RewardPoolDepositWrapper {
     using SafeERC20 for IERC20;
 
@@ -18,6 +27,10 @@ contract RewardPoolDepositWrapper {
         bVault = IVault(_bVault);
     }
 
+    /**
+     * @dev Deposits a single raw token into a BPT before depositing in reward pool.
+     *      Requires sender to approve this contract before calling.
+     */
     function depositSingle(
         address _rewardPoolAddress,
         IERC20 _inputToken,
