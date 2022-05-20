@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import { IVault } from "./Interfaces.sol";
+import { IVault, ICrvDepositorWrapper } from "./Interfaces.sol";
 import { BalInvestor } from "./BalInvestor.sol";
 
 interface ICrvDepositor {
@@ -18,7 +18,7 @@ interface ICrvDepositor {
  * @title   CrvDepositorWrapper
  * @notice  Converts BAL -> balBPT and then wraps to auraBAL via the crvDepositor
  */
-contract CrvDepositorWrapper is BalInvestor {
+contract CrvDepositorWrapper is ICrvDepositorWrapper, BalInvestor {
     address public immutable crvDeposit;
 
     constructor(
