@@ -2,7 +2,7 @@
 pragma solidity ^0.8.11;
 
 import { AuraMath } from "./AuraMath.sol";
-import "./Interfaces.sol";
+import { IAuraLocker, ICrvDepositorWrapper } from "./Interfaces.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
@@ -14,15 +14,6 @@ interface IBasicRewards {
     function getReward(address _account, address _token) external;
 
     function stakeFor(address, uint256) external;
-}
-
-interface ICrvDepositorWrapper {
-    function deposit(
-        uint256,
-        uint256,
-        bool,
-        address
-    ) external;
 }
 
 /**

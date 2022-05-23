@@ -4,6 +4,7 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
+import "./tasks/coverage";
 
 import { resolve } from "path";
 
