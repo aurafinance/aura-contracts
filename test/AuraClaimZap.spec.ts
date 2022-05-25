@@ -121,7 +121,7 @@ describe("AuraClaimZap", () => {
     it("fails if claim rewards are incorrect", async () => {
         const options = 0;
         await expect(
-            await contracts.claimZap.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], 0, 0, 0, options),
+            contracts.claimZap.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], 0, 0, 0, options),
         ).to.be.revertedWith("!parity");
     });
 });
