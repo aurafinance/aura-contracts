@@ -291,11 +291,6 @@ describe("AuraMerkleDrop", () => {
                 merkleDrop.connect(alice).claim(getAccountBalanceProof(tree, aliceAddress, amount), amount, lock),
             ).to.be.revertedWith("!active");
         });
-        it("forward penalty fails if penaltyForwarder is not set", async () => {
-            expect(await merkleDrop.penaltyForwarder(), "penaltyForwarder").to.eq(ZERO_ADDRESS);
-            // Test
-            await expect(merkleDrop.forwardPenalty()).to.be.revertedWith("!forwarder");
-        });
     });
     describe("admin", () => {
         let tree: MerkleTree;
