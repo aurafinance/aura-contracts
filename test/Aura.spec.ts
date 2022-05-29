@@ -69,23 +69,23 @@ describe("AuraToken", () => {
     });
     describe("@method AuraToken.init fails if ", async () => {
         it("caller is not the operator", async () => {
-            await expect(cvx.connect(deployer).init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.connect(deployer).init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
         it("called more than once", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
         it("wrong amount of tokens", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
         it("wrong minter address", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
     });
 
-    it("@method AuraToken.updateOperator sets new operator", async () => {
+    it("@method AuraToken.updateOperator fails to set new operator", async () => {
         const previousOperator = await cvx.operator();
-        const tx = cvx.connect(deployer).updateOperator();
-        await expect(tx).to.emit(cvx, "OperatorChanged").withArgs(previousOperator, booster.address);
+        expect(previousOperator).eq(booster.address);
+        await expect(cvx.connect(deployer).updateOperator()).to.be.revertedWith("!operator");
     });
     it("@method AuraToken.mint does not mint if sender is not the operator", async () => {
         const beforeBalance = await cvx.balanceOf(aliceAddress);

@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { deployPhase1, deployPhase2, Phase2Deployed } from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraLocker, AuraVestedEscrow, AuraVestedEscrow__factory, ERC20 } from "../types/generated";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
+import { ONE_HOUR, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { getTimestamp, increaseTime } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
@@ -39,8 +39,17 @@ describe("AuraVestedEscrow", () => {
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
-        contracts = await deployPhase2(hre, deployer, phase1, distro, multisigs, mocks.namingConfig, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses, true, true);
+        contracts = await deployPhase2(
+            hre,
+            deployer,
+            phase1,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+            true,
+        );
 
         deployerAddress = await deployer.getAddress();
 
@@ -147,6 +156,9 @@ describe("AuraVestedEscrow", () => {
         const balAfter = await auraLocker.balances(aliceAddress);
 
         await expect(tx).to.emit(vestedEscrow, "Claim").withArgs(aliceAddress, balAfter.locked, true);
+
+        await increaseTime(ONE_HOUR);
+        await vestedEscrow.connect(alice).claim(true);
     });
     it("fails to cancel if not admin", async () => {
         await expect(vestedEscrow.connect(alice).cancel(bobAddress)).to.be.revertedWith("!auth");
