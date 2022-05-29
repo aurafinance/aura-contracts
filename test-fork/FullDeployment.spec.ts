@@ -440,7 +440,7 @@ describe("Full Deployment", () => {
                     const { naming, multisigs } = config;
                     expect(await cvxLocker.rewardTokens(0)).eq(cvxCrv.address);
                     await expect(cvxLocker.rewardTokens(1)).to.be.reverted;
-                    expect(await cvxLocker.queuedCvxCrvRewards()).eq(0);
+                    expect(await cvxLocker.queuedRewards(cvxCrv.address)).eq(0);
                     expect(await cvxLocker.rewardDistributors(cvxCrv.address, cvxStakingProxy.address)).eq(true);
                     expect(await cvxLocker.lockedSupply()).eq(0);
                     expect(await cvxLocker.stakingToken()).eq(cvx.address);
