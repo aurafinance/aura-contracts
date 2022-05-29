@@ -17,7 +17,7 @@ import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IVault";
 
-const debug = true;
+const debug = false;
 
 const usdcWhale = "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503";
 const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";

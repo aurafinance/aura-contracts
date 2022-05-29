@@ -49,8 +49,11 @@ describe("AuraStakingProxy", () => {
             .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
         await tx.wait();
 
-        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(300));
         await tx.wait();
+
+        await contracts.cvx.connect(alice).approve(contracts.cvxLocker.address, simpleToExactAmount(100));
+        await contracts.cvxLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
 
         tx = await contracts.cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();

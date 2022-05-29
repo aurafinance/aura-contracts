@@ -1,4 +1,3 @@
-import { MockAuraLockor } from "./../dist/types/generated/MockAuraLockor.d";
 import { expect } from "chai";
 import { ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
@@ -25,6 +24,7 @@ import {
     Booster,
     CrvDepositor,
     CvxCrvToken,
+    MockAuraLockor,
     MockAuraLockor__factory,
     MockERC20,
     MockERC20__factory,
