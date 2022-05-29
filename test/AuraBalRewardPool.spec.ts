@@ -1,10 +1,17 @@
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
+import {
+    deployPhase1,
+    deployPhase2,
+    deployPhase3,
+    deployPhase4,
+    MultisigConfig,
+    SystemDeployed,
+} from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraBalRewardPool, AuraBalRewardPool__factory, ERC20 } from "../types/generated";
-import { ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
+import { DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { increaseTime, getTimestamp } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { assertBNClose, assertBNClosePercent } from "../test-utils/assertions";
@@ -15,6 +22,7 @@ describe("AuraBalRewardPool", () => {
     let contracts: SystemDeployed;
     let rewards: AuraBalRewardPool;
     let cvxCrv: ERC20;
+    let multisigs: MultisigConfig;
 
     let deployer: Signer;
 
@@ -30,7 +38,7 @@ describe("AuraBalRewardPool", () => {
 
     const reset = async () => {
         const mocks = await deployMocks(hre, deployer);
-        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        multisigs = await getMockMultisigs(accounts[0], accounts[7], accounts[0]);
         const distro = getMockDistro();
         const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
         const phase2 = await deployPhase2(
@@ -109,7 +117,7 @@ describe("AuraBalRewardPool", () => {
     it("initial configuration is correct", async () => {
         expect(await rewards.stakingToken()).eq(cvxCrv.address);
         expect(await rewards.rewardToken()).eq(contracts.cvx.address);
-        expect(await rewards.rewardManager()).eq(await deployer.getAddress());
+        expect(await rewards.rewardManager()).eq(multisigs.treasuryMultisig);
         expect(await rewards.auraLocker()).eq(contracts.cvxLocker.address);
         expect(await rewards.penaltyForwarder()).eq(contracts.penaltyForwarder.address);
         const currentTime = await getTimestamp();
@@ -222,7 +230,7 @@ describe("AuraBalRewardPool", () => {
             await expect(rewards.connect(bob).initialiseRewards()).to.be.revertedWith("!authorized");
         });
         it("allows rewardManager to start process early", async () => {
-            const tx = await rewards.connect(deployer).initialiseRewards();
+            const tx = await rewards.connect(accounts[7]).initialiseRewards();
             await expect(tx).to.emit(rewards, "RewardAdded").withArgs(rewardAmount);
         });
         it("only allows funding to be called once, ever", async () => {
@@ -239,6 +247,29 @@ describe("AuraBalRewardPool", () => {
                 ONE_WEEK,
             );
             await expect(rewardPool.connect(deployer).initialiseRewards()).to.be.revertedWith("!balance");
+        });
+        it("fails to rescue after rewards start", async () => {
+            await expect(rewards.connect(bob).rescueReward()).to.be.revertedWith("!rescuer");
+            await expect(rewards.connect(accounts[7]).rescueReward()).to.be.revertedWith("Already started");
+        });
+    });
+    describe("rescuing", () => {
+        before(async () => {
+            await reset();
+        });
+        it("rescues rewards before contract has started", async () => {
+            const treasuryAddress = await accounts[7].getAddress();
+            const contractBal = await contracts.cvx.balanceOf(rewards.address);
+            expect(contractBal).gt(0);
+            const treasuryBal = await contracts.cvx.balanceOf(treasuryAddress);
+            await rewards.connect(accounts[7]).rescueReward();
+            const treasuryBalAfter = await contracts.cvx.balanceOf(treasuryAddress);
+            expect(treasuryBalAfter).eq(treasuryBal.add(contractBal));
+        });
+        it("allows admin to update auraLocker address", async () => {
+            await expect(rewards.connect(deployer).setLocker(DEAD_ADDRESS)).to.be.revertedWith("!auth");
+            await rewards.connect(accounts[7]).setLocker(DEAD_ADDRESS);
+            expect(await rewards.auraLocker()).eq(DEAD_ADDRESS);
         });
     });
     describe("fails", () => {
