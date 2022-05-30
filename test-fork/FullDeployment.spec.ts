@@ -56,7 +56,8 @@ import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/bal
 import { ethers } from "ethers";
 import MerkleTree from "merkletreejs";
 
-const debug = false;
+const debug = true;
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const testAccounts = {
     swapper: "0x0000000000000000000000000000000000000002",
@@ -91,6 +92,8 @@ describe("Full Deployment", () => {
         // TODO - should have sufficient balances on acc, remove this before final test
         await setupBalances();
         deployer = await impersonate(deployerAddress);
+        //
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
     });
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
@@ -839,7 +842,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe("Phase 3", () => {
+    describe.skip("Phase 3", () => {
         describe("PRE-Phase 3", () => {
             let treasurySigner: Account;
             let balancerVault: IVault;
@@ -1166,7 +1169,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe("Phase 4", () => {
+    describe.skip("Phase 4", () => {
         describe("PRE-Phase 4", () => {
             it("only allows daoMultisig to set protect pool to false", async () => {
                 await expect(phase3.poolManager.connect(deployer).setProtectPool(false)).to.be.revertedWith("!auth");
@@ -1812,7 +1815,7 @@ describe("Full Deployment", () => {
             });
         });
     });
-    describe("Phase X", () => {
+    describe.skip("Phase X", () => {
         let stakerAddress: string;
         let staker: Account;
 

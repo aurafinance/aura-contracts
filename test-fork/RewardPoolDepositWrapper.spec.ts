@@ -18,6 +18,7 @@ import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IVault";
 
 const debug = false;
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const usdcWhale = "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503";
 const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -51,6 +52,7 @@ describe("RewardPoolDepositWrapper", () => {
         console.log("ii");
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         await setupBalances();
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
 
         console.log("iii");
         deployer = await impersonate(deployerAddress);
