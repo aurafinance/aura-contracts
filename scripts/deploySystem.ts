@@ -818,7 +818,7 @@ async function deployPhase2(
     tx = await cvx.transfer(chef.address, distroList.lpIncentives);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS, false);
+    tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await chef.transferOwnership(multisigs.daoMultisig);
