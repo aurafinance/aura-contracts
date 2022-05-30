@@ -5,6 +5,7 @@ import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { Booster, ERC20__factory, BaseRewardPool4626__factory, BaseRewardPool4626 } from "../types/generated";
 import { Signer } from "ethers";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 
 type Pool = {
     lptoken: string;
@@ -106,6 +107,32 @@ describe("BaseRewardPool4626", () => {
             allowance = await crvRewards.allowance(aliceAddress, deployerAddress);
             expect(allowance).eq(0);
         });
+        it("returns the amount of decimals", async () => {
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            expect(await crvRewards.decimals()).eq(18);
+        });
+        it("returns the correct amount of assets on convertToAssets 1:1", async () => {
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const amount = simpleToExactAmount(1, 18);
+            const assets = await crvRewards.convertToAssets(amount);
+            expect(assets).eq(amount);
+        });
+        it("returns the correct amount of shares on convertToShares 1:1", async () => {
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const amount = simpleToExactAmount(1, 18);
+            const shares = await crvRewards.convertToShares(amount);
+            expect(shares).eq(amount);
+        });
+        // gets the maxDeposit of the pool
+        it("returns the correct amount of maxDeposit/maxMint for any user", async () => {
+            const aliceAddress = await alice.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            expect(await crvRewards.maxDeposit(aliceAddress)).eq(ethers.constants.MaxUint256);
+            expect(await crvRewards.maxMint(aliceAddress)).eq(ethers.constants.MaxUint256);
+
+            expect(await crvRewards.maxDeposit(ZERO_ADDRESS)).eq(ethers.constants.MaxUint256);
+            expect(await crvRewards.maxMint(ZERO_ADDRESS)).eq(ethers.constants.MaxUint256);
+        });
     });
 
     describe("checking flow from crvLP deposits", () => {
@@ -120,15 +147,24 @@ describe("BaseRewardPool4626", () => {
             const lpBalanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
 
             await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
+
+            // shares/assets ration is 1:1
+            const shares = await crvRewards.previewDeposit(amount);
+            const totalAssetsBefore = await crvRewards.totalAssets();
+
             await crvRewards.deposit(amount, aliceAddress);
 
             const depositTokenBalanceAfter = await depositToken.balanceOf(pool.crvRewards);
             const balanceAfter = await crvRewards.balanceOf(aliceAddress);
             const totalSupplyAfter = await crvRewards.totalSupply();
+            const totalAssetsAfter = await crvRewards.totalAssets();
+
             const lpBalanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
 
+            expect(balanceAfter.sub(balanceBefore)).eq(shares);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
             expect(totalSupplyAfter.sub(totalSupplyBefore)).eq(amount);
+            expect(totalAssetsAfter.sub(totalAssetsBefore)).eq(amount);
             expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(amount);
             expect(lpBalanceBefore.sub(lpBalanceAfter)).eq(amount);
         });
@@ -142,12 +178,22 @@ describe("BaseRewardPool4626", () => {
             const balanceBefore = await crvRewards.balanceOf(aliceAddress);
 
             await mocks.lptoken.connect(alice).approve(pool.crvRewards, amount);
+            // shares/assets ration is 1:1
+            const assets = await crvRewards.previewMint(amount);
+            const totalAssetsBefore = await crvRewards.totalAssets();
+
             await crvRewards.mint(amount, aliceAddress);
 
             const depositTokenBalanceAfter = await depositToken.balanceOf(pool.crvRewards);
             const balanceAfter = await crvRewards.balanceOf(aliceAddress);
+            const totalAssetsAfter = await crvRewards.totalAssets();
+
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(assets).eq(amount);
+            expect(totalAssetsAfter.sub(totalAssetsBefore)).eq(assets);
             expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(amount);
+            expect(await crvRewards.maxWithdraw(aliceAddress)).eq(balanceAfter);
+            expect(await crvRewards.maxRedeem(aliceAddress)).eq(balanceAfter);
         });
 
         it("allows direct deposits on behalf of alternate reciever", async () => {
@@ -171,18 +217,28 @@ describe("BaseRewardPool4626", () => {
             const amount = ethers.utils.parseEther("10");
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
+            // shares/assets ration is 1:1
+            const shares = await crvRewards.previewWithdraw(amount);
             await crvRewards["withdraw(uint256,address,address)"](amount, aliceAddress, aliceAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(balanceAfter.sub(balanceBefore)).eq(shares);
+            expect(await crvRewards.maxWithdraw(aliceAddress)).eq(await crvRewards.balanceOf(aliceAddress));
+            expect(await crvRewards.maxRedeem(aliceAddress)).eq(await crvRewards.balanceOf(aliceAddress));
         });
 
         it("allows direct withdraws via redeem()", async () => {
             const amount = ethers.utils.parseEther("5");
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await mocks.lptoken.balanceOf(aliceAddress);
+            // shares/assets ration is 1:1
+            const assets = await crvRewards.previewRedeem(amount);
             await crvRewards["redeem(uint256,address,address)"](amount, aliceAddress, aliceAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(aliceAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(balanceAfter.sub(balanceBefore)).eq(assets);
+            expect(await crvRewards.maxWithdraw(aliceAddress)).eq(await crvRewards.balanceOf(aliceAddress));
+            expect(await crvRewards.maxRedeem(aliceAddress)).eq(await crvRewards.balanceOf(aliceAddress));
         });
 
         it("allows withdraws to receipient", async () => {
@@ -192,24 +248,32 @@ describe("BaseRewardPool4626", () => {
             const balanceBefore = await mocks.lptoken.balanceOf(alternateReceiverAddress);
             const rwdBalanaceBefore = await crvRewards.balanceOf(aliceAddress);
             expect(rwdBalanaceBefore).eq(simpleToExactAmount(5));
+            // shares/assets ration is 1:1
+            const assets = await crvRewards.previewRedeem(amount);
             await crvRewards["redeem(uint256,address,address)"](amount, alternateReceiverAddress, aliceAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(alternateReceiverAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(balanceAfter.sub(balanceBefore)).eq(assets);
             const rwdBalanaceAfter = await crvRewards.balanceOf(aliceAddress);
             expect(rwdBalanaceAfter).eq(0);
+            expect(await crvRewards.maxWithdraw(aliceAddress)).eq(rwdBalanaceAfter);
+            expect(await crvRewards.maxRedeem(aliceAddress)).eq(rwdBalanaceAfter);
         });
 
-        it("allows direct withdraws for alternate reciever", async () => {
+        it("allows direct withdraws for alternate receiver", async () => {
             const amount = ethers.utils.parseEther("10");
             const alternateReceiverAddress = await alternateReceiver.getAddress();
 
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const balanceBefore = await mocks.lptoken.balanceOf(alternateReceiverAddress);
+            // shares/assets ration is 1:1
+            const shares = await crvRewards.previewWithdraw(amount);
             await crvRewards
                 .connect(alternateReceiver)
                 ["withdraw(uint256,address,address)"](amount, alternateReceiverAddress, alternateReceiverAddress);
             const balanceAfter = await mocks.lptoken.balanceOf(alternateReceiverAddress);
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
+            expect(balanceAfter.sub(balanceBefore)).eq(shares);
         });
     });
 
