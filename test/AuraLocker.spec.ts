@@ -270,7 +270,7 @@ describe("AuraLocker", () => {
 
         expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
-        const tx = await cvxStakingProxy.distribute();
+        const tx = await cvxStakingProxy["distribute()"]();
         const receipt = await tx.wait();
         const event = receipt.events.find(e => e.event === "RewardsDistributed");
 
@@ -393,7 +393,7 @@ describe("AuraLocker", () => {
             expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
             const balBefore = await cvxCrv.balanceOf(auraLocker.address);
-            const tx = await cvxStakingProxy.distribute();
+            const tx = await cvxStakingProxy["distribute()"]();
             await tx.wait();
 
             const balAfter = await cvxCrv.balanceOf(auraLocker.address);
@@ -951,7 +951,7 @@ describe("AuraLocker", () => {
 
             expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
-            await expect(cvxStakingProxy.distribute()).to.be.revertedWith("!balance");
+            await expect(cvxStakingProxy["distribute()"]()).to.be.revertedWith("!balance");
         });
         it("distribute rewards from the booster", async () => {
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
@@ -959,7 +959,7 @@ describe("AuraLocker", () => {
         });
         it("queues rewards when cvxCrv period is finished", async () => {
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
-            // AuraStakingProxy.distribute(), faked by impersonating account
+            // AuraStakingProxy["distribute()"](), faked by impersonating account
             let rewards = simpleToExactAmount(100);
             const rewardDistribution = await auraLocker.rewardsDuration();
             const cvxCrvLockerBalance0 = await cvxCrv.balanceOf(auraLocker.address);
@@ -1000,7 +1000,7 @@ describe("AuraLocker", () => {
             expect(timeStamp, "reward period finish").to.gte(rewardData0.periodFinish);
             expect(await cvxCrv.balanceOf(cvxStakingProxyAccount.address)).to.gt(0);
 
-            // cvxStakingProxy.distribute();=>auraLocker.queueNewRewards()
+            // cvxStakingProxy["distribute()"]();=>auraLocker.queueNewRewards()
             // First distribution to update the reward finish period.
             let rewards = await distributeRewardsFromBooster();
             // Validate
@@ -1140,7 +1140,7 @@ describe("AuraLocker", () => {
             tx = await booster.earmarkRewards(boosterPoolId);
             await tx.wait();
 
-            tx = await cvxStakingProxy.distribute();
+            tx = await cvxStakingProxy["distribute()"]();
             await tx.wait();
 
             const lock = await auraLocker.userLocks(aliceAddress, 0);

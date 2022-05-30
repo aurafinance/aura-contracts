@@ -152,6 +152,11 @@ contract AuraStakingProxy {
         IERC20(_token).safeTransfer(_to, bal);
     }
 
+    function distribute(uint256 _minOut) external {
+        require(msg.sender == keeper, "!auth");
+        _distribute(_minOut);
+    }
+
     /**
      * @dev Collects cvxCRV rewards from cvxRewardPool, converts any CRV deposited directly from
      *      the booster, and then applies the rewards to the cvxLocker, rewarding the caller in the process.
@@ -161,11 +166,16 @@ contract AuraStakingProxy {
         if (keeper != address(0)) {
             require(msg.sender == keeper, "!auth");
         }
+        _distribute(0);
+    }
 
+    function _distribute(uint256 _minOut) internal {
         //convert crv to cvxCrv
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         if (crvBal > 0) {
-            uint256 minOut = ICrvDepositorWrapper(crvDepositorWrapper).getMinOut(crvBal, outputBps);
+            uint256 minOut = _minOut != 0
+                ? _minOut
+                : ICrvDepositorWrapper(crvDepositorWrapper).getMinOut(crvBal, outputBps);
             ICrvDepositorWrapper(crvDepositorWrapper).deposit(crvBal, minOut, true, address(0));
         }
 

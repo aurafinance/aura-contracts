@@ -1587,7 +1587,7 @@ describe("Full Deployment", () => {
 
                     const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
                     const cvxLockerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
-                    await phase4.cvxStakingProxy.connect(staker.signer).distribute();
+                    await phase4.cvxStakingProxy.connect(staker.signer)["distribute()"]();
                     const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
                     const cvxLockerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
 
@@ -1798,7 +1798,7 @@ describe("Full Deployment", () => {
                     const cvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
                     await getCrv(phase4.booster.address, simpleToExactAmount(1));
                     await phase4.booster.earmarkRewards(0);
-                    await phase4.cvxStakingProxy.distribute();
+                    await phase4.cvxStakingProxy["distribute()"]();
                     await increaseTime(ONE_HOUR);
                     const rewards = await phase4.cvxLocker.claimableRewards(stakerAddress);
                     expect(rewards[0].amount).gt(0);

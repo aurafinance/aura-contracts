@@ -185,30 +185,8 @@ describe("CrvDepositor", () => {
         });
 
         it("deposit skips lock", async () => {
-            const lock = true;
-            const stakeAddress = "0x0000000000000000000000000000000000000000";
-            const crvBalance = await mocks.crvBpt.balanceOf(aliceAddress);
-            const amount = crvBalance.mul(10).div(100);
-
-            const beforeLockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
-            const beforeLockAmount = await mocks.votingEscrow.lockAmounts(voterProxy.address);
-            const cvxCrvBalanceBefore = await cvxCrv.balanceOf(aliceAddress);
-
-            const tx = await crvDepositor["deposit(uint256,bool,address)"](amount, lock, stakeAddress);
-            await tx.wait();
-
-            const cvxCrvBalanceAfter = await cvxCrv.balanceOf(aliceAddress);
-            const cvxCrvBalanceDelta = cvxCrvBalanceAfter.sub(cvxCrvBalanceBefore);
-            expect(cvxCrvBalanceDelta).to.equal(amount);
-
-            const afterLockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
-            const afterLockAmount = await mocks.votingEscrow.lockAmounts(voterProxy.address);
-
-            const lockTimeDelta = afterLockTime.sub(beforeLockTime);
-            const lockAmountDelta = afterLockAmount.sub(beforeLockAmount);
-
-            expect(lockTimeDelta.toString()).to.equal("0");
-            expect(lockAmountDelta.toString()).to.equal("0");
+            const tx = crvDepositor["deposit(uint256,bool,address)"](simpleToExactAmount(1), true, ZERO_ADDRESS);
+            await expect(tx).to.revertedWith("cooldown");
         });
     });
     describe("setting setters", () => {
