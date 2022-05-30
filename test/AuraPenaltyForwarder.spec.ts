@@ -3,7 +3,7 @@ import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { ONE_WEEK } from "../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { impersonateAccount } from "../test-utils/fork";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { getTimestamp, increaseTime } from "../test-utils/time";
@@ -62,6 +62,7 @@ describe("AuraPenaltyForwarder", () => {
         expect(await penaltyForwarder.token(), "token").to.eq(cvx.address);
         expect(await penaltyForwarder.distributionDelay(), "distributionDelay").to.eq(ONE_WEEK.mul(7).div(2));
         expect(await penaltyForwarder.lastDistribution(), "lastDistribution").to.lte(currentTime);
+        expect(await penaltyForwarder.owner(), "owner").to.eq(await deployer.getAddress());
     });
     it("forwarder cvx allowance is correct", async () => {
         expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(0);
@@ -109,6 +110,29 @@ describe("AuraPenaltyForwarder", () => {
             const penaltyForwarderBalanceAfter = await cvx.balanceOf(penaltyForwarder.address);
             expect(penaltyForwarderBalanceAfter, "penalty forwarder balance").to.eq(0);
             expect(distributorBalanceAfter, "distributor balance").to.eq(distributorBalanceBefore.add(cvxAmount));
+        });
+    });
+    describe("sets distributor", async () => {
+        it("fails if the caller is not the owner", async () => {
+            await expect(
+                penaltyForwarder.connect(alice).setDistributor(distributor.address),
+                "fails due to ",
+            ).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+        it("sets the new distributor", async () => {
+            const distributorOld = await penaltyForwarder.distributor();
+
+            let tx = await penaltyForwarder.setDistributor(ZERO_ADDRESS);
+            await expect(tx).to.emit(penaltyForwarder, "DistributorChanged").withArgs(ZERO_ADDRESS);
+
+            expect(await penaltyForwarder.distributor(), "distributor").to.eq(ZERO_ADDRESS);
+
+            // Returns original value
+
+            tx = await penaltyForwarder.setDistributor(distributorOld);
+            await expect(tx).to.emit(penaltyForwarder, "DistributorChanged").withArgs(distributorOld);
+
+            expect(await penaltyForwarder.distributor(), "distributor").to.eq(distributor.address);
         });
     });
 });

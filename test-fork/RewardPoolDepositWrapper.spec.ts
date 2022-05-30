@@ -18,6 +18,7 @@ import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IVault";
 
 const debug = false;
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const usdcWhale = "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503";
 const usdcAddress = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
@@ -36,7 +37,6 @@ describe("RewardPoolDepositWrapper", () => {
     let usdc: ERC20;
 
     before(async () => {
-        console.log("i");
         await network.provider.request({
             method: "hardhat_reset",
             params: [
@@ -48,15 +48,13 @@ describe("RewardPoolDepositWrapper", () => {
                 },
             ],
         });
-        console.log("ii");
+
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         await setupBalances();
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
 
-        console.log("iii");
         deployer = await impersonate(deployerAddress);
-        console.log("iv");
         phase1 = await config.getPhase1(deployer);
-        console.log("v");
         phase2 = await deployPhase2(
             hre,
             deployer,
@@ -67,27 +65,18 @@ describe("RewardPoolDepositWrapper", () => {
             config.addresses,
             debug,
         );
-        console.log("vi");
         await getWeth(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
-        console.log("vii");
         phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
 
-        console.log("viii");
         const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
-        console.log("iix");
         const tx = await phase3.poolManager.connect(daoMultisig.signer).setProtectPool(false);
-        console.log("ix");
         await waitForTx(tx, debug);
 
-        console.log("x");
         phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, debug);
-        console.log("xi");
 
         staker = await impersonate(stakerAddress);
-        console.log("xii");
 
         usdc = ERC20__factory.connect(usdcAddress, staker);
-        console.log("xiii");
 
         await getUSDC(stakerAddress, simpleToExactAmount(100, 6));
     });

@@ -57,6 +57,7 @@ import { ethers } from "ethers";
 import MerkleTree from "merkletreejs";
 
 const debug = false;
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const testAccounts = {
     swapper: "0x0000000000000000000000000000000000000002",
@@ -91,6 +92,8 @@ describe("Full Deployment", () => {
         // TODO - should have sufficient balances on acc, remove this before final test
         await setupBalances();
         deployer = await impersonate(deployerAddress);
+        //
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
     });
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
