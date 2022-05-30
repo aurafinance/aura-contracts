@@ -24,6 +24,7 @@ contract AuraVestedEscrow is ReentrancyGuard {
     IERC20 public immutable rewardToken;
 
     address public admin;
+    address public immutable funder;
     IAuraLocker public auraLocker;
 
     uint256 public immutable startTime;
@@ -58,6 +59,7 @@ contract AuraVestedEscrow is ReentrancyGuard {
 
         rewardToken = IERC20(rewardToken_);
         admin = admin_;
+        funder = msg.sender;
         auraLocker = IAuraLocker(auraLocker_);
 
         startTime = starttime_;
@@ -94,7 +96,10 @@ contract AuraVestedEscrow is ReentrancyGuard {
      * @param _amount     Arrary of amount of rewardTokens to vest
      */
     function fund(address[] calldata _recipient, uint256[] calldata _amount) external nonReentrant {
+        require(_recipient.length == _amount.length, "!arr");
         require(!initialised, "initialised already");
+        require(msg.sender == funder, "!funder");
+        require(block.timestamp < startTime, "already started");
 
         uint256 totalAmount = 0;
         for (uint256 i = 0; i < _recipient.length; i++) {
