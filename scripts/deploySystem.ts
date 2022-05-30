@@ -294,6 +294,8 @@ async function deployPhase2(
     const { token, tokenBpt, votingEscrow, gaugeController, voteOwnership, voteParameter } = config;
     const { voterProxy } = deployment;
 
+    console.log("============deployPhase2==============", new Date().toString());
+
     // -----------------------------
     // 2: cvx, booster, factories, cvxCrv, crvDepositor, poolManager, vlCVX + stakerProxy
     //        - Schedule: Vesting streams
@@ -380,6 +382,7 @@ async function deployPhase2(
         debug,
         waitForBlocks,
     );
+    console.log("============deployPhase2==tokenFactory==============", new Date().toString());
 
     const proxyFactory = await deployContract<ProxyFactory>(
         hre,
@@ -429,7 +432,7 @@ async function deployPhase2(
         debug,
         waitForBlocks,
     );
-
+    console.log("============deployPhase2==crvDepositor==============", new Date().toString());
     const cvxCrvRewards = await deployContract<BaseRewardPool>(
         hre,
         new BaseRewardPool__factory(deployer),
@@ -486,7 +489,7 @@ async function deployPhase2(
         debug,
         waitForBlocks,
     );
-
+    console.log("============deployPhase2==boosterOwner==============", new Date().toString());
     const arbitratorVault = await deployContract<ArbitratorVault>(
         hre,
         new ArbitratorVault__factory(deployer),
@@ -551,7 +554,8 @@ async function deployPhase2(
         debug,
         waitForBlocks,
     );
-
+    console.log("============deployPhase2==penaltyForwarder==============", new Date().toString());
+    console.log("============deployPhase2==ALL CONTRACTS DEPLOYED==============", new Date().toString());
     let tx = await cvxLocker.addReward(cvxCrv.address, cvxStakingProxy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -609,7 +613,10 @@ async function deployPhase2(
 
     tx = await crvDepositor.setFeeManager(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
-
+    console.log(
+        "============deployPhase2==crvDepositor.setFeeManager(multisigs.daoMultisig)==============",
+        new Date().toString(),
+    );
     tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -651,7 +658,10 @@ async function deployPhase2(
 
     tx = await extraRewardsDistributor.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
-
+    console.log(
+        "============deployPhase2==extraRewardsDistributor.transferOwnership(multisigs.daoMultisig)==============",
+        new Date().toString(),
+    );
     // -----------------------------
     // 2.2. Token liquidity:
     //     - Schedule: vesting (team, treasury, etc)
@@ -676,6 +686,12 @@ async function deployPhase2(
         .concat(distroList.immutableVesting.map(v => ({ ...v, admin: ZERO_ADDRESS })));
 
     for (let i = 0; i < vestingDistro.length; i++) {
+        console.log(
+            "============deployPhase2==vestingDistro==============",
+            vestingDistro.length,
+            i,
+            new Date().toString(),
+        );
         const vestingGroup = vestingDistro[i];
         const groupVestingAmount = vestingGroup.recipients.reduce((p, c) => p.add(c.amount), BN.from(0));
         const vestingEnd = vestingStart.add(vestingGroup.period);
