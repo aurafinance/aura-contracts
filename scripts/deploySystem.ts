@@ -646,6 +646,12 @@ async function deployPhase2(
     tx = await booster.setOwner(boosterOwner.address);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await extraRewardsDistributor.modifyWhitelist(penaltyForwarder.address, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await extraRewardsDistributor.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
     // -----------------------------
     // 2.2. Token liquidity:
     //     - Schedule: vesting (team, treasury, etc)
