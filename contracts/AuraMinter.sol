@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { AuraToken } from "./Aura.sol";

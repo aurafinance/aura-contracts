@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { AuraMath } from "./AuraMath.sol";
