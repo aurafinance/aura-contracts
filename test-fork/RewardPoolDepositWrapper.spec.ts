@@ -36,6 +36,7 @@ describe("RewardPoolDepositWrapper", () => {
     let usdc: ERC20;
 
     before(async () => {
+        console.log("i");
         await network.provider.request({
             method: "hardhat_reset",
             params: [
@@ -47,11 +48,15 @@ describe("RewardPoolDepositWrapper", () => {
                 },
             ],
         });
+        console.log("ii");
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         await setupBalances();
 
+        console.log("iii");
         deployer = await impersonate(deployerAddress);
+        console.log("iv");
         phase1 = await config.getPhase1(deployer);
+        console.log("v");
         phase2 = await deployPhase2(
             hre,
             deployer,
@@ -62,18 +67,27 @@ describe("RewardPoolDepositWrapper", () => {
             config.addresses,
             debug,
         );
+        console.log("vi");
         await getWeth(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
+        console.log("vii");
         phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
 
+        console.log("viii");
         const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
+        console.log("iix");
         const tx = await phase3.poolManager.connect(daoMultisig.signer).setProtectPool(false);
+        console.log("ix");
         await waitForTx(tx, debug);
 
+        console.log("x");
         phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, debug);
+        console.log("xi");
 
         staker = await impersonate(stakerAddress);
+        console.log("xii");
 
         usdc = ERC20__factory.connect(usdcAddress, staker);
+        console.log("xiii");
 
         await getUSDC(stakerAddress, simpleToExactAmount(100, 6));
     });
