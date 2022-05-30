@@ -120,7 +120,6 @@ describe("AuraPenaltyForwarder", () => {
             ).to.be.revertedWith("Ownable: caller is not the owner");
         });
         it("sets the new distributor", async () => {
-            // emit DistributorChanged(_distributor);
             const distributorOld = await penaltyForwarder.distributor();
 
             let tx = await penaltyForwarder.setDistributor(ZERO_ADDRESS);

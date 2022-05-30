@@ -56,7 +56,7 @@ import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/bal
 import { ethers } from "ethers";
 import MerkleTree from "merkletreejs";
 
-const debug = true;
+const debug = false;
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const testAccounts = {
@@ -842,7 +842,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe.skip("Phase 3", () => {
+    describe("Phase 3", () => {
         describe("PRE-Phase 3", () => {
             let treasurySigner: Account;
             let balancerVault: IVault;
@@ -1169,7 +1169,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe.skip("Phase 4", () => {
+    describe("Phase 4", () => {
         describe("PRE-Phase 4", () => {
             it("only allows daoMultisig to set protect pool to false", async () => {
                 await expect(phase3.poolManager.connect(deployer).setProtectPool(false)).to.be.revertedWith("!auth");
@@ -1815,7 +1815,7 @@ describe("Full Deployment", () => {
             });
         });
     });
-    describe.skip("Phase X", () => {
+    describe("Phase X", () => {
         let stakerAddress: string;
         let staker: Account;
 
