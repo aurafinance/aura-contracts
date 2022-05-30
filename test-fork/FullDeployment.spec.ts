@@ -1717,10 +1717,10 @@ describe("Full Deployment", () => {
                 });
                 it("allows boosterOwner to call all fns on booster", async () => {
                     const { booster, boosterOwner } = phase4;
-                    await booster.connect(daoSigner.signer).setFeeManager(boosterOwner.address);
 
+                    await boosterOwner.connect(daoSigner.signer).setFeeManager(config.multisigs.treasuryMultisig);
+                    expect(await booster.feeManager()).eq(config.multisigs.treasuryMultisig);
                     await boosterOwner.connect(daoSigner.signer).setFeeManager(daoSigner.address);
-                    expect(await booster.feeManager()).eq(daoSigner.address);
 
                     await boosterOwner.connect(daoSigner.signer).setFactories(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS);
                     expect(await booster.stashFactory()).eq(ZERO_ADDRESS);
@@ -1730,9 +1730,9 @@ describe("Full Deployment", () => {
                     await boosterOwner.connect(daoSigner.signer).setArbitrator(ZERO_ADDRESS);
                     expect(await booster.rewardArbitrator()).eq(ZERO_ADDRESS);
 
-                    await booster.connect(daoSigner.signer).setVoteDelegate(boosterOwner.address);
                     await boosterOwner.connect(daoSigner.signer).setVoteDelegate(ZERO_ADDRESS);
                     expect(await booster.voteDelegate()).eq(ZERO_ADDRESS);
+                    await boosterOwner.connect(daoSigner.signer).setVoteDelegate(daoSigner.address);
 
                     await boosterOwner.connect(daoSigner.signer).updateFeeInfo(config.addresses.token, false);
                     expect((await booster.feeTokens(config.addresses.token)).active).eq(false);
