@@ -64,9 +64,7 @@ describe("AuraPenaltyForwarder", () => {
         expect(await penaltyForwarder.lastDistribution(), "lastDistribution").to.lte(currentTime);
     });
     it("forwarder cvx allowance is correct", async () => {
-        expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(
-            ethers.constants.MaxUint256,
-        );
+        expect(await cvx.allowance(penaltyForwarder.address, distributor.address), "allowance").to.eq(0);
     });
     describe("forward", async () => {
         it("fails if the distribution delay is not completed", async () => {

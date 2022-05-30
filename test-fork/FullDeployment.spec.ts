@@ -637,12 +637,14 @@ describe("Full Deployment", () => {
 
                     expect(await penaltyForwarder.distributor()).eq(extraRewardsDistributor.address);
                     expect(await penaltyForwarder.token()).eq(cvx.address);
+                    expect(await penaltyForwarder.owner()).eq(config.multisigs.daoMultisig);
                     expect(await penaltyForwarder.distributionDelay()).eq(ONE_WEEK.mul(7).div(2));
                     assertBNClose(await penaltyForwarder.lastDistribution(), await getTimestamp(), 100);
                 });
                 it("extraRewardsDistributor has correct config", async () => {
                     const { extraRewardsDistributor, cvxLocker } = phase2;
                     expect(await extraRewardsDistributor.auraLocker()).eq(cvxLocker.address);
+                    expect(await extraRewardsDistributor.owner()).eq(config.multisigs.daoMultisig);
                 });
             });
         });
@@ -1828,7 +1830,7 @@ describe("Full Deployment", () => {
                 // Check that a penalty has been accrued
                 const penaltyBal = await cvx.balanceOf(penaltyForwarder.address);
                 expect(penaltyBal).gt(0);
-                const distirbutorBalBefore = await cvx.balanceOf(extraRewardsDistributor.address);
+                const distributorBalBefore = await cvx.balanceOf(extraRewardsDistributor.address);
 
                 // Forward the penalty to rewardsDistributor
                 await penaltyForwarder.forward();
@@ -1836,7 +1838,7 @@ describe("Full Deployment", () => {
                 // Check the reward has been added
                 expect(await cvx.balanceOf(penaltyForwarder.address)).eq(0);
                 const distributorBalAfter = await cvx.balanceOf(extraRewardsDistributor.address);
-                expect(distributorBalAfter.sub(distirbutorBalBefore)).eq(penaltyBal);
+                expect(distributorBalAfter.sub(distributorBalBefore)).eq(penaltyBal);
                 expect(await extraRewardsDistributor.rewardEpochsCount(cvx.address)).eq(1);
 
                 // Check the reward is claimable

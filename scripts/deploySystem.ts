@@ -546,7 +546,7 @@ async function deployPhase2(
         hre,
         new AuraPenaltyForwarder__factory(deployer),
         "AuraPenaltyForwarder",
-        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
+        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2), multisigs.daoMultisig],
         {},
         debug,
         waitForBlocks,
