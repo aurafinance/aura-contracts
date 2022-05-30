@@ -165,7 +165,7 @@ describe("BalLiquidityProvider", () => {
             // Given
             const startTokenBalance = await startTokenContract.balanceOf(balLiquidityProvider.address);
             // set a wrong max amount in start token.
-            joinPoolRequest.maxAmountsIn = [simpleToExactAmount(123), simpleToExactAmount(123)];
+            joinPoolRequest.maxAmountsIn = [simpleToExactAmount(123000), simpleToExactAmount(123000)];
             expect(startTokenBalance, "initial start token balance").to.not.eq(joinPoolRequest.maxAmountsIn[0]);
             // When
             await expect(
