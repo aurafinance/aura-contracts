@@ -332,17 +332,6 @@ describe("AuraBalRewardPool", () => {
             await expect(
                 new AuraBalRewardPool__factory(deployer).deploy(
                     cvxCrv.address,
-                    ZERO_ADDRESS,
-                    await deployer.getAddress(),
-                    contracts.cvxLocker.address,
-                    contracts.penaltyForwarder.address,
-                    ONE_WEEK,
-                ),
-                "Wrong _rewardToken",
-            ).revertedWith("!rewardToken");
-            await expect(
-                new AuraBalRewardPool__factory(deployer).deploy(
-                    cvxCrv.address,
                     contracts.cvx.address,
                     ZERO_ADDRESS,
                     contracts.cvxLocker.address,
