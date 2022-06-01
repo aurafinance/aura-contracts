@@ -9,6 +9,7 @@ import { getTimestamp, increaseTime } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 
+const debug = false;
 describe("AuraVestedEscrow", () => {
     let accounts: Signer[];
 
@@ -48,7 +49,7 @@ describe("AuraVestedEscrow", () => {
             multisigs,
             mocks.namingConfig,
             mocks.addresses,
-            true,
+            debug,
         );
 
         deployerAddress = await deployer.getAddress();
@@ -89,6 +90,12 @@ describe("AuraVestedEscrow", () => {
         expect(await vestedEscrow.endTime()).eq(deployTime.add(ONE_WEEK.mul(53)));
         expect(await vestedEscrow.totalTime()).eq(ONE_WEEK.mul(52));
         expect(await vestedEscrow.initialised()).eq(false);
+    });
+    it("fails to fund due to wrong array of recipients", async () => {
+        await expect(vestedEscrow.fund([aliceAddress, bobAddress], [])).to.be.revertedWith("!arr");
+    });
+    it("fails to fund if it is not the funder", async () => {
+        await expect(vestedEscrow.connect(alice).fund([], [])).to.be.revertedWith("!funder");
     });
     // Funds Alice = 200 and Bob = 100
     it("funds an array of recipients", async () => {

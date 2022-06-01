@@ -126,6 +126,10 @@ describe("AuraStakingProxy", () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).rescueToken(ZERO_ADDRESS, ZERO_ADDRESS);
                 await expect(tx).to.revertedWith("!auth");
             });
+            it("fails to distribute", async () => {
+                const tx = contracts.cvxStakingProxy.connect(accounts[2])["distribute(uint256)"](0);
+                await expect(tx).to.be.revertedWith("!auth");
+            });
         });
         describe("when called by owner", () => {
             it("fails to set crvDepositorWrapper if output bps out of range", async () => {
