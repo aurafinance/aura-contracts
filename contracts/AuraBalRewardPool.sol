@@ -65,13 +65,14 @@ contract AuraBalRewardPool {
         uint256 _startDelay
     ) {
         require(_stakingToken != _rewardToken && _stakingToken != address(0), "!tokens");
+        require(_rewardToken != address(0), "!rewardToken");
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
         require(_rewardManager != address(0), "!manager");
         rewardManager = _rewardManager;
         require(_auraLocker != address(0), "!locker");
         auraLocker = IAuraLocker(_auraLocker);
-        require(_penaltyForwarder != address(0), "!locker");
+        require(_penaltyForwarder != address(0), "!forwarder");
         penaltyForwarder = _penaltyForwarder;
 
         require(_startDelay > 4 days && _startDelay < 2 weeks, "!delay");
