@@ -192,6 +192,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     modifier notBlacklisted(address _sender, address _receiver) {
         uint256 csS;
         uint256 csR;
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             csS := extcodesize(_sender)
             csR := extcodesize(_receiver)

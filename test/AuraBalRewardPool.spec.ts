@@ -292,9 +292,76 @@ describe("AuraBalRewardPool", () => {
                     await deployer.getAddress(),
                     contracts.cvxLocker.address,
                     contracts.penaltyForwarder.address,
+                    0,
+                ),
+                "Wrong startDelay < 4 days",
+            ).revertedWith("!delay");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    cvxCrv.address,
+                    contracts.cvx.address,
+                    await deployer.getAddress(),
+                    contracts.cvxLocker.address,
+                    contracts.penaltyForwarder.address,
                     ONE_WEEK.mul(2),
                 ),
+                "Wrong startDelay >= 2 weeks",
             ).revertedWith("!delay");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    ZERO_ADDRESS,
+                    contracts.cvx.address,
+                    await deployer.getAddress(),
+                    contracts.cvxLocker.address,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                ),
+                "Wrong _stakingToken",
+            ).revertedWith("!tokens");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    contracts.cvx.address,
+                    contracts.cvx.address,
+                    await deployer.getAddress(),
+                    contracts.cvxLocker.address,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                ),
+                "Wrong _stakingToken",
+            ).revertedWith("!tokens");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    cvxCrv.address,
+                    contracts.cvx.address,
+                    ZERO_ADDRESS,
+                    contracts.cvxLocker.address,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                ),
+                "Wrong _rewardManager",
+            ).revertedWith("!manager");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    cvxCrv.address,
+                    contracts.cvx.address,
+                    await deployer.getAddress(),
+                    ZERO_ADDRESS,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                ),
+                "Wrong _auraLocker",
+            ).revertedWith("!locker");
+            await expect(
+                new AuraBalRewardPool__factory(deployer).deploy(
+                    cvxCrv.address,
+                    contracts.cvx.address,
+                    await deployer.getAddress(),
+                    contracts.cvxLocker.address,
+                    ZERO_ADDRESS,
+                    ONE_WEEK,
+                ),
+                "Wrong _penaltyForwarder",
+            ).revertedWith("!forwarder");
         });
     });
 });

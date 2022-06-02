@@ -520,6 +520,20 @@ describe("AuraLocker", () => {
         it("still allows blacklisted EOA's to lock", async () => {
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
         });
+        it("blocks contracts from depositing for a blacklist smart contract", async () => {
+            const mockToken = await deployContract<MockERC20>(
+                hre,
+                new MockERC20__factory(deployer),
+                "mockToken",
+                ["mockToken", "mockToken", 18, await deployer.getAddress(), simpleToExactAmount(1000000)],
+                {},
+                false,
+            );
+            await auraLocker.connect(accounts[7]).modifyBlacklist(mockToken.address, true);
+            await expect(lockor.connect(alice).lockFor(mockToken.address, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
+        });
         it("blocks contracts from depositing when they are blacklisted", async () => {
             await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, true);
             await expect(lockor.connect(alice).lockFor(bobAddress, simpleToExactAmount(10))).to.be.revertedWith(
@@ -1354,7 +1368,7 @@ describe("AuraLocker", () => {
         before(async () => {
             await setup();
         });
-        it("queueNewRewards sender is not a distributor", async () => {
+        it("@queueNewRewards sender is not a distributor", async () => {
             await expect(auraLocker.queueNewRewards(cvx.address, 0)).revertedWith("!authorized");
         });
         it("@queueNewRewards sends wrong amount", async () => {
@@ -1411,6 +1425,11 @@ describe("AuraLocker", () => {
                 "Ownable: caller is not the owner",
             );
         });
+        it("non admin - modify Blacklist", async () => {
+            await expect(auraLocker.connect(alice).modifyBlacklist(ZERO_ADDRESS, true)).revertedWith(
+                "Ownable: caller is not the owner",
+            );
+        });
         it("set Kick Incentive with wrong rate", async () => {
             await expect(auraLocker.connect(accounts[7]).setKickIncentive(501, ZERO)).revertedWith("over max rate");
         });
@@ -1431,6 +1450,28 @@ describe("AuraLocker", () => {
         });
         it("emergency withdraw is call and it is not shutdown", async () => {
             await expect(auraLocker.emergencyWithdraw()).revertedWith("Must be shutdown");
+        });
+        it("@addReward staking token", async () => {
+            await expect(
+                auraLocker.connect(accounts[7]).addReward(await auraLocker.stakingToken(), ZERO_ADDRESS),
+            ).revertedWith("Cannot add StakingToken as reward");
+        });
+        it("@addReward reward already exist", async () => {
+            await auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000001", ZERO_ADDRESS);
+            await expect(
+                auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000001", ZERO_ADDRESS),
+            ).revertedWith("Reward already exists");
+        });
+        it("@addReward 5 or more rewards", async () => {
+            await auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000002", ZERO_ADDRESS);
+            await expect(
+                auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000003", ZERO_ADDRESS),
+            ).revertedWith("Max rewards length");
+        });
+        it("@getReward wrong skip index argument", async () => {
+            await expect(
+                auraLocker.connect(accounts[7])["getReward(address,bool[])"](aliceAddress, [false, false]),
+            ).revertedWith("!arr");
         });
     });
     context("admin", () => {

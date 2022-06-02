@@ -71,7 +71,7 @@ contract AuraBalRewardPool {
         rewardManager = _rewardManager;
         require(_auraLocker != address(0), "!locker");
         auraLocker = IAuraLocker(_auraLocker);
-        require(_penaltyForwarder != address(0), "!locker");
+        require(_penaltyForwarder != address(0), "!forwarder");
         penaltyForwarder = _penaltyForwarder;
 
         require(_startDelay > 4 days && _startDelay < 2 weeks, "!delay");

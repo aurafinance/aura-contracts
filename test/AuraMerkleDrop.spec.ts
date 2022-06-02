@@ -116,6 +116,32 @@ describe("AuraMerkleDrop", () => {
                 ),
             ).to.be.revertedWith("!expiry");
         });
+        it("if zero address on any argument", async () => {
+            await expect(
+                new AuraMerkleDrop__factory(deployer).deploy(
+                    ZERO_ADDRESS,
+                    tree.getHexRoot(),
+                    aura.address,
+                    auraLocker.address,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                    ONE_WEEK.mul(3),
+                ),
+                "Wrong _dao",
+            ).to.be.revertedWith("!dao");
+            await expect(
+                new AuraMerkleDrop__factory(deployer).deploy(
+                    adminAddress,
+                    tree.getHexRoot(),
+                    ZERO_ADDRESS,
+                    auraLocker.address,
+                    contracts.penaltyForwarder.address,
+                    ONE_WEEK,
+                    ONE_WEEK.mul(3),
+                ),
+                "Wrong aura",
+            ).to.be.revertedWith("!aura");
+        });
     });
     describe("basic MerkleDrop interactions", () => {
         let tree: MerkleTree;
@@ -338,6 +364,10 @@ describe("AuraMerkleDrop", () => {
             await expect(tx).to.emit(merkleDrop, "RootSet").withArgs(newRoot);
             expect(await merkleDrop.merkleRoot()).to.eq(newRoot);
         });
+        it("rescue rewards", async () => {
+            const tx = await merkleDrop.connect(admin).rescueReward();
+            await expect(tx).to.emit(merkleDrop, "Rescued");
+        });
         it("starts early the drop ", async () => {
             const timestamp = await getTimestamp();
             const tx = await merkleDrop.connect(admin).startEarly();
@@ -364,12 +394,16 @@ describe("AuraMerkleDrop", () => {
             await expect(tx).to.emit(merkleDrop, "LockerSet").withArgs(bobAddress);
             expect(await merkleDrop.auraLocker()).to.eq(bobAddress);
         });
+        it("fails to rescue rewards one week after deployment", async () => {
+            await expect(merkleDrop.connect(admin).rescueReward()).to.be.revertedWith("too late");
+        });
         it("fails if admin is not the sender", async () => {
             await expect(merkleDrop.connect(bob).setDao(bobAddress)).to.be.revertedWith("!auth");
             await expect(merkleDrop.connect(bob).setRoot(ethers.constants.HashZero)).to.be.revertedWith("!auth");
             await expect(merkleDrop.connect(bob).startEarly()).to.be.revertedWith("!auth");
             await expect(merkleDrop.connect(bob).withdrawExpired()).to.be.revertedWith("!auth");
             await expect(merkleDrop.connect(bob).setLocker(bobAddress)).to.be.revertedWith("!auth");
+            await expect(merkleDrop.connect(bob).rescueReward()).to.be.revertedWith("!auth");
         });
         it("fails to set a new root if it was previously set ", async () => {
             await expect(merkleDrop.connect(admin).setRoot(tree.getHexRoot())).to.be.revertedWith("already set");
