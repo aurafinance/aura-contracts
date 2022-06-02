@@ -43,7 +43,7 @@ contract MockFeeDistributor is IFeeDistributor {
 
     function getTokenTimeCursor(
         IERC20 /* token */
-    ) external view returns (uint256) {
+    ) external pure returns (uint256) {
         return 1;
     }
 }

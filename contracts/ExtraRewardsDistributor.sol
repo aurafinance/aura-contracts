@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { IExtraRewardsDistributor, IAuraLocker } from "./Interfaces.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 
 /**
@@ -11,11 +12,13 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
  * @author  adapted from ConvexFinance
  * @notice  Allows anyone to distribute rewards to the AuraLocker at a given epoch.
  */
-contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
+contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor, Ownable {
     using SafeERC20 for IERC20;
 
     IAuraLocker public immutable auraLocker;
 
+    // user -> canAdd
+    mapping(address => bool) public canAddReward;
     // token -> epoch -> amount
     mapping(address => mapping(uint256 => uint256)) public rewardData;
     // token -> epochList
@@ -25,6 +28,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
 
     /* ========== EVENTS ========== */
 
+    event WhitelistModified(address user, bool canAdd);
     event RewardAdded(address indexed token, uint256 indexed epoch, uint256 reward);
     event RewardPaid(address indexed user, address indexed token, uint256 reward, uint256 index);
     event RewardForfeited(address indexed user, address indexed token, uint256 index);
@@ -33,8 +37,15 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
      * @dev Simple constructoor
      * @param _auraLocker Aura Locker address
      */
-    constructor(address _auraLocker) {
+    constructor(address _auraLocker) Ownable() {
         auraLocker = IAuraLocker(_auraLocker);
+    }
+
+    /* ========== ADD WHITELIST ========== */
+
+    function modifyWhitelist(address _depositor, bool _canAdd) external onlyOwner {
+        canAddReward[_depositor] = _canAdd;
+        emit WhitelistModified(_depositor, _canAdd);
     }
 
     /* ========== ADD REWARDS ========== */
@@ -89,6 +100,9 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         uint256 _amount,
         uint256 _epoch
     ) internal nonReentrant {
+        require(canAddReward[msg.sender], "!auth");
+        require(_amount > 0, "!amount");
+
         // Pull before reward accrual
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -120,16 +134,11 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
 
     /**
      * @notice Claim rewards for a specific token at a specific epoch
-     * @param _account      Address of vlCVX holder
      * @param _token        Reward token address
      * @param _startIndex   Index of rewardEpochs[_token] to start checking for rewards from
      */
-    function getReward(
-        address _account,
-        address _token,
-        uint256 _startIndex
-    ) public {
-        _getReward(_account, _token, _startIndex);
+    function getReward(address _token, uint256 _startIndex) public {
+        _getReward(msg.sender, _token, _startIndex);
     }
 
     /**
@@ -142,7 +151,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor {
         address _account,
         address _token,
         uint256 _startIndex
-    ) public {
+    ) internal nonReentrant {
         //get claimable tokens
         (uint256 claimableTokens, uint256 index) = _allClaimableRewards(_account, _token, _startIndex);
 

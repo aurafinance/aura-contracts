@@ -49,8 +49,11 @@ describe("AuraStakingProxy", () => {
             .mint(operatorAccount.address, simpleToExactAmount(100000, 18));
         await tx.wait();
 
-        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(200));
+        tx = await contracts.cvx.connect(operatorAccount.signer).transfer(aliceAddress, simpleToExactAmount(300));
         await tx.wait();
+
+        await contracts.cvx.connect(alice).approve(contracts.cvxLocker.address, simpleToExactAmount(100));
+        await contracts.cvxLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
 
         tx = await contracts.cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
@@ -122,6 +125,10 @@ describe("AuraStakingProxy", () => {
             it("fails to rescue token", async () => {
                 const tx = contracts.cvxStakingProxy.connect(accounts[2]).rescueToken(ZERO_ADDRESS, ZERO_ADDRESS);
                 await expect(tx).to.revertedWith("!auth");
+            });
+            it("fails to distribute", async () => {
+                const tx = contracts.cvxStakingProxy.connect(accounts[2])["distribute(uint256)"](0);
+                await expect(tx).to.be.revertedWith("!auth");
             });
         });
         describe("when called by owner", () => {
@@ -243,12 +250,12 @@ describe("AuraStakingProxy", () => {
         it("fails to distribute if caller is not the keeper", async () => {
             const keeper = await accounts[1].getAddress();
             await contracts.cvxStakingProxy.setKeeper(keeper);
-            await expect(contracts.cvxStakingProxy.connect(accounts[0]).distribute()).to.be.revertedWith("!auth");
-            await contracts.cvxStakingProxy.connect(accounts[1]).distribute();
+            await expect(contracts.cvxStakingProxy.connect(accounts[0])["distribute()"]()).to.be.revertedWith("!auth");
+            await contracts.cvxStakingProxy.connect(accounts[1])["distribute()"]();
         });
         it("allows anyone to distribute", async () => {
             await contracts.cvxStakingProxy.setKeeper(ZERO_ADDRESS);
-            await contracts.cvxStakingProxy.connect(accounts[0]).distribute();
+            await contracts.cvxStakingProxy.connect(accounts[0])["distribute()"]();
         });
         it("distribute rewards from the booster", async () => {
             await contracts.booster.earmarkRewards(0);
@@ -260,7 +267,7 @@ describe("AuraStakingProxy", () => {
             expect(stakingProxyBalance).to.equal(rate.mul(incentive).div(10000));
 
             const balanceBefore = await contracts.cvxCrv.balanceOf(contracts.cvxLocker.address);
-            const tx = await contracts.cvxStakingProxy.distribute();
+            const tx = await contracts.cvxStakingProxy["distribute()"]();
             await tx.wait();
 
             const balanceAfter = await contracts.cvxCrv.balanceOf(contracts.cvxLocker.address);

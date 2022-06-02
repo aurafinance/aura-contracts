@@ -3,7 +3,7 @@ import { BigNumberish, Signer } from "ethers";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, VoterProxy, AuraToken, AuraMinter } from "../types/generated";
+import { Booster, VoterProxy, AuraToken, AuraMinter, AuraToken__factory } from "../types/generated";
 import { DEAD_ADDRESS, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 import { impersonateAccount } from "../test-utils/fork";
 import { Account } from "types";
@@ -65,27 +65,37 @@ describe("AuraToken", () => {
         // Expects to be pre-mined with 50 m tokens. (as per deployment script)
         expect(await cvx.totalSupply()).to.eq(simpleToExactAmount(EMISSIONS_INIT_SUPPLY));
         expect(await cvx.EMISSIONS_MAX_SUPPLY()).to.equal(simpleToExactAmount(EMISSIONS_MAX_SUPPLY));
+        expect(await cvx.INIT_MINT_AMOUNT()).to.equal(simpleToExactAmount(EMISSIONS_INIT_SUPPLY));
         expect(await cvx.reductionPerCliff()).to.equal(simpleToExactAmount(EMISSIONS_MAX_SUPPLY).div(500));
     });
     describe("@method AuraToken.init fails if ", async () => {
         it("caller is not the operator", async () => {
-            await expect(cvx.connect(deployer).init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            await expect(cvx.connect(deployer).init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only operator");
         });
         it("called more than once", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
-        });
-        it("wrong amount of tokens", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            const operator = await impersonateAccount(await cvx.operator());
+            expect(await cvx.totalSupply()).to.not.eq(0);
+            await expect(cvx.connect(operator.signer).init(DEAD_ADDRESS, DEAD_ADDRESS)).to.revertedWith("Only once");
         });
         it("wrong minter address", async () => {
-            await expect(cvx.init(DEAD_ADDRESS, 0, DEAD_ADDRESS)).to.revertedWith("Only operator");
+            const auraToken = await new AuraToken__factory(deployer).deploy(voterProxy.address, "AuraToken", "AURA");
+            const operator = await impersonateAccount(await auraToken.operator());
+            await expect(auraToken.connect(operator.signer).init(DEAD_ADDRESS, ZERO_ADDRESS)).to.revertedWith(
+                "Invalid minter",
+            );
         });
     });
 
-    it("@method AuraToken.updateOperator sets new operator", async () => {
+    it("@method AuraToken.updateOperator fails to set new operator", async () => {
         const previousOperator = await cvx.operator();
-        const tx = cvx.connect(deployer).updateOperator();
-        await expect(tx).to.emit(cvx, "OperatorChanged").withArgs(previousOperator, booster.address);
+        expect(previousOperator).eq(booster.address);
+        await expect(cvx.connect(deployer).updateOperator()).to.be.revertedWith("!operator");
+    });
+    it("@method AuraToken.updateOperator only if it is initialized", async () => {
+        const auraToken = await new AuraToken__factory(deployer).deploy(voterProxy.address, "AuraToken", "AURA");
+        const operator = await impersonateAccount(await auraToken.operator());
+        expect(await auraToken.totalSupply()).to.eq(0);
+        await expect(auraToken.connect(operator.signer).updateOperator()).to.be.revertedWith("!init");
     });
     it("@method AuraToken.mint does not mint if sender is not the operator", async () => {
         const beforeBalance = await cvx.balanceOf(aliceAddress);

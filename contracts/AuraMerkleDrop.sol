@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { MerkleProof } from "@openzeppelin/contracts-0.8/utils/cryptography/MerkleProof.sol";
 import { IAuraLocker } from "./Interfaces.sol";
+import { AuraMath } from "./AuraMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
@@ -28,6 +29,7 @@ contract AuraMerkleDrop {
     address public immutable penaltyForwarder;
     uint256 public pendingPenalty = 0;
 
+    uint256 public immutable deployTime;
     uint256 public startTime;
     uint256 public immutable expiryTime;
 
@@ -40,6 +42,7 @@ contract AuraMerkleDrop {
     event LockerSet(address newLocker);
     event Claimed(address addr, uint256 amt, bool locked);
     event PenaltyForwarded(uint256 amount);
+    event Rescued();
 
     /**
      * @param _dao              The Aura Dao
@@ -59,11 +62,15 @@ contract AuraMerkleDrop {
         uint256 _startDelay,
         uint256 _expiresAfter
     ) {
+        require(_dao != address(0), "!dao");
         dao = _dao;
         merkleRoot = _merkleRoot;
+        require(_aura != address(0), "!aura");
         aura = IERC20(_aura);
         auraLocker = IAuraLocker(_auraLocker);
+
         penaltyForwarder = _penaltyForwarder;
+        deployTime = block.timestamp;
         startTime = block.timestamp + _startDelay;
 
         require(_expiresAfter > 2 weeks, "!expiry");
@@ -96,7 +103,7 @@ contract AuraMerkleDrop {
     function withdrawExpired() external {
         require(msg.sender == dao, "!auth");
         require(block.timestamp > expiryTime, "!expired");
-        uint256 amt = aura.balanceOf(address(this));
+        uint256 amt = aura.balanceOf(address(this)) - pendingPenalty;
         aura.safeTransfer(dao, amt);
         emit ExpiredWithdrawn(amt);
     }
@@ -105,6 +112,16 @@ contract AuraMerkleDrop {
         require(msg.sender == dao, "!auth");
         auraLocker = IAuraLocker(_newLocker);
         emit LockerSet(_newLocker);
+    }
+
+    function rescueReward() public {
+        require(msg.sender == dao, "!auth");
+        require(block.timestamp < AuraMath.min(deployTime + 1 weeks, startTime), "too late");
+
+        uint256 amt = aura.balanceOf(address(this));
+        aura.safeTransfer(dao, amt);
+
+        emit Rescued();
     }
 
     /***************************************
@@ -133,7 +150,9 @@ contract AuraMerkleDrop {
             auraLocker.lock(msg.sender, _amount);
         } else {
             // If there is an address for auraLocker, and not locking, apply 20% penalty
-            uint256 penalty = address(auraLocker) == address(0) ? 0 : (_amount * 2) / 10;
+            uint256 penalty = address(penaltyForwarder) == address(0) || address(auraLocker) == address(0)
+                ? 0
+                : (_amount * 2) / 10;
             pendingPenalty += penalty;
             aura.safeTransfer(msg.sender, _amount - penalty);
         }
@@ -149,7 +168,6 @@ contract AuraMerkleDrop {
     function forwardPenalty() public {
         uint256 toForward = pendingPenalty;
         pendingPenalty = 0;
-        require(penaltyForwarder != address(0), "!forwarder");
         aura.safeTransfer(penaltyForwarder, toForward);
         emit PenaltyForwarded(toForward);
     }

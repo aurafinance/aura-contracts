@@ -4,11 +4,12 @@ import { expect } from "chai";
 import { deployPhase1, deployPhase2, Phase2Deployed } from "../scripts/deploySystem";
 import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { AuraLocker, AuraVestedEscrow, AuraVestedEscrow__factory, ERC20 } from "../types/generated";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
+import { ONE_HOUR, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { getTimestamp, increaseTime } from "../test-utils/time";
 import { BN, simpleToExactAmount } from "../test-utils/math";
 import { impersonateAccount } from "../test-utils/fork";
 
+const debug = false;
 describe("AuraVestedEscrow", () => {
     let accounts: Signer[];
 
@@ -39,8 +40,17 @@ describe("AuraVestedEscrow", () => {
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
-        contracts = await deployPhase2(hre, deployer, phase1, distro, multisigs, mocks.namingConfig, mocks.addresses);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses, true, true);
+        contracts = await deployPhase2(
+            hre,
+            deployer,
+            phase1,
+            distro,
+            multisigs,
+            mocks.namingConfig,
+            mocks.addresses,
+            debug,
+        );
 
         deployerAddress = await deployer.getAddress();
 
@@ -80,6 +90,12 @@ describe("AuraVestedEscrow", () => {
         expect(await vestedEscrow.endTime()).eq(deployTime.add(ONE_WEEK.mul(53)));
         expect(await vestedEscrow.totalTime()).eq(ONE_WEEK.mul(52));
         expect(await vestedEscrow.initialised()).eq(false);
+    });
+    it("fails to fund due to wrong array of recipients", async () => {
+        await expect(vestedEscrow.fund([aliceAddress, bobAddress], [])).to.be.revertedWith("!arr");
+    });
+    it("fails to fund if it is not the funder", async () => {
+        await expect(vestedEscrow.connect(alice).fund([], [])).to.be.revertedWith("!funder");
     });
     // Funds Alice = 200 and Bob = 100
     it("funds an array of recipients", async () => {
@@ -147,6 +163,9 @@ describe("AuraVestedEscrow", () => {
         const balAfter = await auraLocker.balances(aliceAddress);
 
         await expect(tx).to.emit(vestedEscrow, "Claim").withArgs(aliceAddress, balAfter.locked, true);
+
+        await increaseTime(ONE_HOUR);
+        await vestedEscrow.connect(alice).claim(true);
     });
     it("fails to cancel if not admin", async () => {
         await expect(vestedEscrow.connect(alice).cancel(bobAddress)).to.be.revertedWith("!auth");

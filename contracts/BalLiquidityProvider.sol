@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { IVault } from "./Interfaces.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -46,6 +46,7 @@ contract BalLiquidityProvider {
     function provideLiquidity(bytes32 _poolId, IVault.JoinPoolRequest memory _request) public {
         require(msg.sender == provider, "!auth");
         require(_request.assets.length == 2 && _request.maxAmountsIn.length == 2, "!valid");
+        require(_request.assets[0] != _request.assets[1], "!assets");
         require(pairToken.balanceOf(address(this)) > minPairAmount, "!minLiq");
 
         for (uint256 i = 0; i < 2; i++) {
@@ -54,7 +55,10 @@ contract BalLiquidityProvider {
 
             IERC20 tkn = IERC20(asset);
             uint256 bal = tkn.balanceOf(address(this));
-            require(bal > 0 && bal == _request.maxAmountsIn[i], "!bal");
+            require(
+                bal > 0 && bal >= _request.maxAmountsIn[i] && bal <= (_request.maxAmountsIn[i] * 102) / 100,
+                "!bal"
+            );
 
             tkn.safeApprove(address(bVault), 0);
             tkn.safeApprove(address(bVault), bal);

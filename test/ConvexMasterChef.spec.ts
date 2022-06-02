@@ -214,7 +214,7 @@ describe("ConvexMasterChef", () => {
             await randomToken.transfer(chef.address, simpleToExactAmount(100000));
 
             // Test
-            await chef.add(1000, randomToken.address, ZERO_ADDRESS, false);
+            await chef.add(1000, randomToken.address, ZERO_ADDRESS);
             // Then
             const poolInfo: PoolInfo = await chef.poolInfo(pidRtkn);
             expect(await chef.totalAllocPoint(), "totalAllocPoint").to.eq(2000);
