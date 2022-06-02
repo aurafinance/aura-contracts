@@ -190,19 +190,12 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     modifier notBlacklisted(address _sender, address _receiver) {
-        uint256 csS;
-        uint256 csR;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            csS := extcodesize(_sender)
-            csR := extcodesize(_receiver)
+        require(!blacklist[_sender], "blacklisted");
+
+        if (_sender != _receiver) {
+            require(!blacklist[_receiver], "blacklisted");
         }
-        if (csS != 0) {
-            require(!blacklist[_sender], "blacklisted");
-        }
-        if (csR != 0) {
-            require(_sender == _receiver || !blacklist[_receiver], "blacklisted");
-        }
+
         _;
     }
 
@@ -211,6 +204,13 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     ****************************************/
 
     function modifyBlacklist(address _account, bool _blacklisted) external onlyOwner {
+        uint256 cs;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            cs := extcodesize(_account)
+        }
+        require(cs != 0, "Must be contract");
+
         blacklist[_account] = _blacklisted;
         emit BlacklistModified(_account, _blacklisted);
     }

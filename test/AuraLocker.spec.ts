@@ -512,15 +512,29 @@ describe("AuraLocker", () => {
             await lockor.connect(alice).lock(simpleToExactAmount(10));
             await lockor.connect(alice).lockFor(aliceAddress, simpleToExactAmount(10));
         });
-        it("allows blacklisting", async () => {
-            const tx = await auraLocker.connect(accounts[7]).modifyBlacklist(aliceAddress, true);
-            await expect(tx).to.emit(auraLocker, "BlacklistModified").withArgs(aliceAddress, true);
-            expect(await auraLocker.blacklist(aliceAddress)).eq(true);
+        it("allows blacklisting of contracts", async () => {
+            const tx = await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, true);
+            await expect(tx).to.emit(auraLocker, "BlacklistModified").withArgs(lockor.address, true);
+            expect(await auraLocker.blacklist(lockor.address)).eq(true);
         });
-        it("still allows blacklisted EOA's to lock", async () => {
+        it("blocks contracts from depositing when they are blacklisted", async () => {
+            await expect(lockor.connect(alice).lockFor(bobAddress, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
+        });
+        it("blocks users from depositing for blacklisted contracts", async () => {
+            await expect(auraLocker.connect(alice).lock(lockor.address, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
+        });
+        it("doesn't allow blacklisting of EOA's", async () => {
+            await expect(auraLocker.connect(accounts[7]).modifyBlacklist(aliceAddress, true)).to.be.revertedWith(
+                "Must be contract",
+            );
+            expect(await auraLocker.blacklist(aliceAddress)).eq(false);
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
         });
-        it("blocks contracts from depositing for a blacklist smart contract", async () => {
+        it("blocks contracts from depositing for a blacklisted smart contract", async () => {
             const mockToken = await deployContract<MockERC20>(
                 hre,
                 new MockERC20__factory(deployer),
@@ -529,14 +543,9 @@ describe("AuraLocker", () => {
                 {},
                 false,
             );
+            await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, false);
             await auraLocker.connect(accounts[7]).modifyBlacklist(mockToken.address, true);
             await expect(lockor.connect(alice).lockFor(mockToken.address, simpleToExactAmount(10))).to.be.revertedWith(
-                "blacklisted",
-            );
-        });
-        it("blocks contracts from depositing when they are blacklisted", async () => {
-            await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, true);
-            await expect(lockor.connect(alice).lockFor(bobAddress, simpleToExactAmount(10))).to.be.revertedWith(
                 "blacklisted",
             );
         });
