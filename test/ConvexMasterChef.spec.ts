@@ -107,6 +107,7 @@ describe("ConvexMasterChef", () => {
             expect(await chef.BONUS_MULTIPLIER(), "BONUS_MULTIPLIER").to.eq(2);
             assertBNClose(startBlock, expectedStartBlock, 30);
             expect(await chef.endBlock(), "endBlock").to.eq(startBlock.add(numberOfBlocksIn4Years));
+            expect(await chef.isAddedPool(cvx.address), "isAddedPool").to.be.true;
         });
         it("validates deployment values", async () => {
             const poolInfo: PoolInfo = await chef.poolInfo(0);
@@ -226,6 +227,7 @@ describe("ConvexMasterChef", () => {
             expect(poolInfo.rewarder, "userInfo rewarder").to.eq(ZERO_ADDRESS);
             // Verify the pool will not receive any reward until the start block
             expect(poolInfo.lastRewardBlock, "userInfo lastRewardBlock").to.gte(await chef.startBlock());
+            expect(await chef.isAddedPool(randomToken.address), "LP Token pool added").to.eq(true);
         });
         it("should not update pool if current block is lt last reward block", async () => {
             const currentBlock = await ethers.provider.getBlockNumber();
@@ -309,6 +311,66 @@ describe("ConvexMasterChef", () => {
 
             const tx = chef.claim(pidCvx, aliceAddress);
             await expect(tx).to.emit(chef, "RewardPaid").withArgs(aliceAddress, pidCvx, 0);
+        });
+        it("should not add a duplicated LP token", async () => {
+            expect(await chef.isAddedPool(randomToken.address), "LP Token pool added").to.eq(true);
+            // Test
+            await expect(chef.add(1000, randomToken.address, ZERO_ADDRESS)).to.be.revertedWith(
+                "add: Duplicated LP Token",
+            );
+        });
+    });
+    describe("edge cases", async () => {
+        it("should set totalAllocPoint to a given pool", async () => {
+            // chef.set(pid, allocPoint, rewarder, updateRewarder)
+            const pid = 0;
+            const poolAllocPoint = 0;
+            const poolInfo = await chef.poolInfo(pid);
+            const totalAllocPoint = await chef.totalAllocPoint();
+            // Test
+            await chef.set(pid, poolAllocPoint, poolInfo.rewarder, false);
+
+            expect(await chef.totalAllocPoint(), "total allocation updated").to.eq(
+                totalAllocPoint.sub(poolInfo.allocPoint).add(poolAllocPoint),
+            );
+            expect((await chef.poolInfo(pid)).allocPoint, "pool allocation updated").to.eq(poolAllocPoint);
+        });
+        it("should not allow to set totalAllocPoint to 0", async () => {
+            // Given that total allocation is already 1000
+            const pid = 1;
+            const poolAllocPoint = 0;
+            const poolInfo = await chef.poolInfo(pid);
+            const totalAllocPoint = await chef.totalAllocPoint();
+            expect(totalAllocPoint.sub(poolInfo.allocPoint).add(poolAllocPoint), "total allocation").to.eq(0);
+            // Test
+            await expect(chef.set(pid, poolAllocPoint, poolInfo.rewarder, false)).to.be.revertedWith("!alloc");
+        });
+
+        it("should not add more pools than (limit <32)", async () => {
+            const poolLength = await chef.poolLength();
+            let randomTtn: MockERC20;
+            for (let i = poolLength.toNumber(); i < 32; i++) {
+                randomTtn = await deployContract<MockERC20>(
+                    hre,
+                    new MockERC20__factory(deployer),
+                    `RandomToken${i}`,
+                    ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
+                    {},
+                    false,
+                );
+                await randomTtn.transfer(chef.address, simpleToExactAmount(100000));
+                await chef.add(1000, randomTtn.address, ZERO_ADDRESS);
+            }
+            randomTtn = await deployContract<MockERC20>(
+                hre,
+                new MockERC20__factory(deployer),
+                `RandomToken32`,
+                ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
+                {},
+                false,
+            );
+            await randomTtn.transfer(chef.address, simpleToExactAmount(100000));
+            await expect(chef.add(1000, randomTtn.address, ZERO_ADDRESS)).to.be.revertedWith("max pools");
         });
     });
 });

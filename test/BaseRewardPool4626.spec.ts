@@ -3,9 +3,18 @@ import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, ERC20__factory, BaseRewardPool4626__factory, BaseRewardPool4626 } from "../types/generated";
+import {
+    Booster,
+    ERC20__factory,
+    BaseRewardPool4626__factory,
+    BaseRewardPool4626,
+    MockERC20,
+    MockERC20__factory,
+} from "../types/generated";
 import { Signer } from "ethers";
-import { ZERO_ADDRESS } from "../test-utils/constants";
+import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
+import { deployContract } from "../tasks/utils";
+import { impersonateAccount } from "../test-utils/fork";
 
 type Pool = {
     lptoken: string;
@@ -351,6 +360,34 @@ describe("BaseRewardPool4626", () => {
                     .connect(withdrawer)
                     ["withdraw(uint256,address,address)"](simpleToExactAmount(1), withdrawerAddress, depositorAddress),
             ).to.be.revertedWith("ERC4626: withdrawal amount exceeds allowance");
+        });
+    });
+    describe("checks methods", async () => {
+        it("should not add more than 12 extra rewards", async () => {
+            let crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const maxExtraRewards = 12;
+            const len = await crvRewards.extraRewardsLength();
+            const rewardManagerAddress = await crvRewards.rewardManager();
+            const rewardManager = await impersonateAccount(rewardManagerAddress);
+            crvRewards = crvRewards.connect(rewardManager.signer);
+            let randomTtn: MockERC20;
+
+            for (let i = len.toNumber(); i < maxExtraRewards; i++) {
+                randomTtn = await deployContract<MockERC20>(
+                    hre,
+                    new MockERC20__factory(deployer),
+                    `RandomToken${i}`,
+                    ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
+                    {},
+                    false,
+                );
+                await crvRewards.addExtraReward(randomTtn.address);
+            }
+
+            expect(await crvRewards.extraRewardsLength()).to.eq(maxExtraRewards);
+            // Test adding an extra reward once the limit is reached
+            await crvRewards.addExtraReward(DEAD_ADDRESS);
+            expect(await crvRewards.extraRewardsLength(), "extra reward not added").to.eq(maxExtraRewards);
         });
     });
 });
