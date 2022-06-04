@@ -238,7 +238,7 @@ describe("Booster", () => {
                 const lockRewards = await booster.lockRewards();
                 expect(lockRewards).to.eq(contracts.cvxCrvRewards.address);
                 let len = await contracts.cvxCrvRewards.extraRewardsLength();
-                console.log("🚀 ~ file: Booster.spec.ts ~ line 207 ~ it ~ extraRewardsLength", len.toString());
+
                 for (let i = len.toNumber(); i <= maxExtraRewards; i++) {
                     const lptoken = await deployContract<MockERC20>(
                         hre,
@@ -258,20 +258,7 @@ describe("Booster", () => {
                             .setFeeInfo(lptoken.address, mocks.feeDistribution.address);
                         len = await contracts.cvxCrvRewards.extraRewardsLength();
                     }
-
-                    console.log("🚀 ~ file: Booster.spec.ts ~ line 220 ~ it ~ extraRewardsLength", len);
                 }
-
-                // const cvxCrvRewards =BaseRewardPool__factory.connect(lockRewards, deployer);
-
-                // set fee info , owner, not shutdown,
-                // lockRewards=> IRewards and rewardFactory => IRewardFactory are set
-                // _feeToken and _feeDistro are set
-                // _feeToken is not crv
-                // _feeDistro => IFeeDistributor
-                // feeTokens[_feeToken].distro  is not set yet
-                // it creates a new reward contract
-                //  emit FeeInfoUpdated
             });
         });
         describe("updating fee info", () => {
