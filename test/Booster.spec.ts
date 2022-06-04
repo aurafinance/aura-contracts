@@ -162,7 +162,7 @@ describe("Booster", () => {
             expect(balsAfter[4]).eq(balsBefore[4].add(simpleToExactAmount(1).div(10000).mul(50)));
         });
     });
-    describe.only("managing fee distributors to cvxCRV", async () => {
+    describe("managing fee distributors to cvxCRV", async () => {
         before(async () => {
             await setup();
         });
