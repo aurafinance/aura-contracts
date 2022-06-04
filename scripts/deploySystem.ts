@@ -326,7 +326,7 @@ async function deployPhase2(
         .reduce((p, c) => p.add(c.recipients.reduce((pp, cc) => pp.add(cc.amount), BN.from(0))), BN.from(0));
     const premine = premineIncetives.add(totalVested);
     const checksum = premine.add(distroList.miningRewards);
-    if (!checksum.eq(simpleToExactAmount(100, 24))) {
+    if (!checksum.eq(simpleToExactAmount(100, 24)) || !premine.eq(simpleToExactAmount(50, 24))) {
         console.log(checksum.toString());
         throw console.error();
     }
@@ -546,7 +546,7 @@ async function deployPhase2(
         hre,
         new AuraPenaltyForwarder__factory(deployer),
         "AuraPenaltyForwarder",
-        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2)],
+        [extraRewardsDistributor.address, cvx.address, ONE_WEEK.mul(7).div(2), multisigs.daoMultisig],
         {},
         debug,
         waitForBlocks,
@@ -581,7 +581,7 @@ async function deployPhase2(
     tx = await voterProxy.setOperator(booster.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await cvx.init(deployerAddress, premine.toString(), minter.address);
+    tx = await cvx.init(deployerAddress, minter.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
@@ -644,6 +644,12 @@ async function deployPhase2(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setOwner(boosterOwner.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await extraRewardsDistributor.modifyWhitelist(penaltyForwarder.address, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await extraRewardsDistributor.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
     // -----------------------------
@@ -744,7 +750,7 @@ async function deployPhase2(
             tokens: poolTokens,
             name: `Balancer ${await cvxCrv.symbol()} Stable Pool`,
             symbol: `B-${await cvxCrv.symbol()}-STABLE`,
-            swapFee: simpleToExactAmount(3, 15),
+            swapFee: simpleToExactAmount(6, 15),
             ampParameter: 25,
         };
         if (debug) {
@@ -818,7 +824,7 @@ async function deployPhase2(
     tx = await cvx.transfer(chef.address, distroList.lpIncentives);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS, false);
+    tx = await chef.add(1000, cvxCrvBpt.address, ZERO_ADDRESS);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await chef.transferOwnership(multisigs.daoMultisig);
@@ -1020,7 +1026,7 @@ async function deployPhase3(
             tokens: poolTokens,
             name: `Balancer 80 ${await cvx.symbol()} 20 WETH`,
             symbol: `B-80${await cvx.symbol()}-20WETH`,
-            swapFee: simpleToExactAmount(6, 15),
+            swapFee: simpleToExactAmount(1, 16),
             weights: weights as BN[],
         };
         if (debug) {

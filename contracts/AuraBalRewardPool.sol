@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { AuraMath } from "./AuraMath.sol";
-import { SafeMath } from "@openzeppelin/contracts-0.8/utils/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
@@ -18,7 +17,7 @@ import { IAuraLocker } from "./Interfaces.sol";
  *            - Penalty on claim at 20%
  */
 contract AuraBalRewardPool {
-    using SafeMath for uint256;
+    using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public immutable rewardToken;
@@ -27,7 +26,7 @@ contract AuraBalRewardPool {
 
     address public immutable rewardManager;
 
-    IAuraLocker public immutable auraLocker;
+    IAuraLocker public auraLocker;
     address public immutable penaltyForwarder;
     uint256 public pendingPenalty = 0;
     uint256 public immutable startTime;
@@ -47,6 +46,7 @@ contract AuraBalRewardPool {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward, bool locked);
     event PenaltyForwarded(uint256 amount);
+    event Rescued();
 
     /**
      * @dev Simple constructoor
@@ -64,14 +64,17 @@ contract AuraBalRewardPool {
         address _penaltyForwarder,
         uint256 _startDelay
     ) {
+        require(_stakingToken != _rewardToken && _stakingToken != address(0), "!tokens");
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
+        require(_rewardManager != address(0), "!manager");
         rewardManager = _rewardManager;
+        require(_auraLocker != address(0), "!locker");
         auraLocker = IAuraLocker(_auraLocker);
+        require(_penaltyForwarder != address(0), "!forwarder");
         penaltyForwarder = _penaltyForwarder;
-        rewardToken.safeApprove(_auraLocker, type(uint256).max);
 
-        require(_startDelay < 2 weeks, "!delay");
+        require(_startDelay > 4 days && _startDelay < 2 weeks, "!delay");
         startTime = block.timestamp + _startDelay;
     }
 
@@ -175,6 +178,7 @@ contract AuraBalRewardPool {
         if (reward > 0) {
             rewards[msg.sender] = 0;
             if (_lock) {
+                rewardToken.safeIncreaseAllowance(address(auraLocker), reward);
                 auraLocker.lock(msg.sender, reward);
             } else {
                 uint256 penalty = (reward * 2) / 10;
@@ -194,6 +198,27 @@ contract AuraBalRewardPool {
         pendingPenalty = 0;
         rewardToken.safeTransfer(penaltyForwarder, toForward);
         emit PenaltyForwarded(toForward);
+    }
+
+    /**
+     * @dev Rescues the reward token provided it hasn't been initiated yet
+     */
+    function rescueReward() public {
+        require(msg.sender == rewardManager, "!rescuer");
+        require(block.timestamp < startTime && rewardRate == 0, "Already started");
+
+        uint256 balance = rewardToken.balanceOf(address(this));
+        rewardToken.transfer(rewardManager, balance);
+
+        emit Rescued();
+    }
+
+    /**
+     * @dev Updates the locker address
+     */
+    function setLocker(address _newLocker) external {
+        require(msg.sender == rewardManager, "!auth");
+        auraLocker = IAuraLocker(_newLocker);
     }
 
     /**

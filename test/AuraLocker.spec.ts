@@ -24,6 +24,8 @@ import {
     Booster,
     CrvDepositor,
     CvxCrvToken,
+    MockAuraLockor,
+    MockAuraLockor__factory,
     MockERC20,
     MockERC20__factory,
 } from "../types/generated";
@@ -215,7 +217,7 @@ describe("AuraLocker", () => {
 
     const setup = async () => {
         mocks = await deployMocks(hre, deployer);
-        const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
+        const multisigs = await getMockMultisigs(accounts[5], accounts[6], accounts[7]);
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
@@ -229,7 +231,7 @@ describe("AuraLocker", () => {
             mocks.addresses,
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.setProtectPool(false);
+        await phase3.poolManager.connect(accounts[7]).setProtectPool(false);
         const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         alice = accounts[1];
@@ -268,7 +270,7 @@ describe("AuraLocker", () => {
 
         expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
-        const tx = await cvxStakingProxy.distribute();
+        const tx = await cvxStakingProxy["distribute()"]();
         const receipt = await tx.wait();
         const event = receipt.events.find(e => e.event === "RewardsDistributed");
 
@@ -290,7 +292,7 @@ describe("AuraLocker", () => {
         expect(await auraLocker.cvxCrv(), "AuraLocker cvxCrv").to.equal(cvxCrv.address);
         expect(await auraLocker.cvxcrvStaking(), "AuraLocker cvxCrvStaking").to.equal(cvxCrvRewards.address);
         expect(await auraLocker.epochCount(), "AuraLocker epoch counts").to.equal(1);
-        expect(await auraLocker.queuedCvxCrvRewards(), "AuraLocker lockDuration").to.equal(0);
+        expect(await auraLocker.queuedRewards(cvxCrv.address), "AuraLocker lockDuration").to.equal(0);
         expect(await auraLocker.rewardPerToken(cvxCrv.address), "AuraLocker rewardPerToken").to.equal(0);
         expect(await auraLocker.lastTimeRewardApplicable(cvxCrv.address), "cvxCrv lastTimeRewardApplicable").to.gt(0);
         // expect(await auraLocker.rewardTokens(0),"AuraLocker lockDuration").to.equal( 86400 * 7 * 17);
@@ -391,7 +393,7 @@ describe("AuraLocker", () => {
             expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
 
             const balBefore = await cvxCrv.balanceOf(auraLocker.address);
-            const tx = await cvxStakingProxy.distribute();
+            const tx = await cvxStakingProxy["distribute()"]();
             await tx.wait();
 
             const balAfter = await cvxCrv.balanceOf(auraLocker.address);
@@ -423,6 +425,31 @@ describe("AuraLocker", () => {
             ).to.equal(simpleToExactAmount(100));
         });
 
+        it("notify rewards ", async () => {
+            const amount = simpleToExactAmount(100);
+            const mockToken = await deployContract<MockERC20>(
+                hre,
+                new MockERC20__factory(deployer),
+                "mockToken",
+                ["mockToken", "mockToken", 18, await deployer.getAddress(), simpleToExactAmount(1000000)],
+                {},
+                false,
+            );
+            const distributor = accounts[3];
+            const distributorAddress = await distributor.getAddress();
+
+            await mockToken.connect(deployer).approve(distributorAddress, amount);
+            await mockToken.connect(deployer).transfer(distributorAddress, amount);
+            await mockToken.connect(distributor).approve(auraLocker.address, amount);
+
+            await auraLocker.connect(accounts[7]).addReward(mockToken.address, distributorAddress);
+            await auraLocker.connect(accounts[7]).approveRewardDistributor(mockToken.address, distributorAddress, true);
+
+            const tx = await auraLocker.connect(distributor).queueNewRewards(mockToken.address, amount);
+            await expect(tx).to.emit(auraLocker, "RewardAdded").withArgs(mockToken.address, amount);
+            expect(await mockToken.balanceOf(auraLocker.address)).to.equal(amount);
+        });
+
         it("get rewards from CVX locker", async () => {
             await increaseTime(ONE_DAY.mul(105));
             const cvxCrvBefore = await cvxCrv.balanceOf(aliceAddress);
@@ -432,7 +459,7 @@ describe("AuraLocker", () => {
                 dataBefore.account.claimableRewards[0].amount.div(100),
             );
 
-            const tx = await auraLocker["getReward(address)"](aliceAddress);
+            const tx = await auraLocker["getReward(address,bool[])"](aliceAddress, [false, false]);
             const dataAfter = await getSnapShot(aliceAddress);
 
             await tx.wait();
@@ -464,8 +491,50 @@ describe("AuraLocker", () => {
                 .emit(auraLocker, "Withdrawn")
                 .withArgs(aliceAddress, dataBefore.account.balances.locked, relock);
         });
-        it("notify rewards ", async () => {
-            const amount = simpleToExactAmount(100);
+    });
+
+    context("smart contract deposits", () => {
+        let lockor: MockAuraLockor;
+        before(async () => {
+            lockor = await deployContract<MockAuraLockor>(
+                hre,
+                new MockAuraLockor__factory(deployer),
+                "Lockor",
+                [cvx.address, auraLocker.address],
+                {},
+                false,
+            );
+
+            await cvx.connect(alice).approve(lockor.address, simpleToExactAmount(1000));
+            await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(1000));
+        });
+        it("allows smart contract deposits", async () => {
+            await lockor.connect(alice).lock(simpleToExactAmount(10));
+            await lockor.connect(alice).lockFor(aliceAddress, simpleToExactAmount(10));
+        });
+        it("allows blacklisting of contracts", async () => {
+            const tx = await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, true);
+            await expect(tx).to.emit(auraLocker, "BlacklistModified").withArgs(lockor.address, true);
+            expect(await auraLocker.blacklist(lockor.address)).eq(true);
+        });
+        it("blocks contracts from depositing when they are blacklisted", async () => {
+            await expect(lockor.connect(alice).lockFor(bobAddress, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
+        });
+        it("blocks users from depositing for blacklisted contracts", async () => {
+            await expect(auraLocker.connect(alice).lock(lockor.address, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
+        });
+        it("doesn't allow blacklisting of EOA's", async () => {
+            await expect(auraLocker.connect(accounts[7]).modifyBlacklist(aliceAddress, true)).to.be.revertedWith(
+                "Must be contract",
+            );
+            expect(await auraLocker.blacklist(aliceAddress)).eq(false);
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
+        });
+        it("blocks contracts from depositing for a blacklisted smart contract", async () => {
             const mockToken = await deployContract<MockERC20>(
                 hre,
                 new MockERC20__factory(deployer),
@@ -474,19 +543,11 @@ describe("AuraLocker", () => {
                 {},
                 false,
             );
-            const distributor = accounts[3];
-            const distributorAddress = await distributor.getAddress();
-
-            await mockToken.connect(deployer).approve(distributorAddress, amount);
-            await mockToken.connect(deployer).transfer(distributorAddress, amount);
-            await mockToken.connect(distributor).approve(auraLocker.address, amount);
-
-            await auraLocker.connect(deployer).addReward(mockToken.address, distributorAddress);
-            await auraLocker.connect(deployer).approveRewardDistributor(mockToken.address, distributorAddress, true);
-
-            const tx = await auraLocker.connect(distributor).notifyRewardAmount(mockToken.address, amount);
-            await expect(tx).to.emit(auraLocker, "RewardAdded").withArgs(mockToken.address, amount);
-            expect(await mockToken.balanceOf(auraLocker.address)).to.equal(amount);
+            await auraLocker.connect(accounts[7]).modifyBlacklist(lockor.address, false);
+            await auraLocker.connect(accounts[7]).modifyBlacklist(mockToken.address, true);
+            await expect(lockor.connect(alice).lockFor(mockToken.address, simpleToExactAmount(10))).to.be.revertedWith(
+                "blacklisted",
+            );
         });
     });
 
@@ -891,23 +952,41 @@ describe("AuraLocker", () => {
         });
         it("fails if the sender is not rewardsDistributor", async () => {
             // Only the rewardsDistributor can queue cvxCRV rewards
-            await expect(auraLocker.queueNewRewards(simpleToExactAmount(100))).revertedWith("!authorized");
+            await expect(auraLocker.queueNewRewards(cvxCrv.address, simpleToExactAmount(100))).revertedWith(
+                "!authorized",
+            );
         });
         it("fails if the amount of rewards is 0", async () => {
             // Only the rewardsDistributor can queue cvxCRV rewards
             await expect(
-                auraLocker.connect(cvxStakingProxyAccount.signer).queueNewRewards(simpleToExactAmount(0)),
+                auraLocker
+                    .connect(cvxStakingProxyAccount.signer)
+                    .queueNewRewards(cvxCrv.address, simpleToExactAmount(0)),
             ).revertedWith("No reward");
         });
+        it("fails if balance is too low", async () => {
+            await booster.earmarkRewards(boosterPoolId);
+            await increaseTime(ONE_DAY);
+
+            const incentive = await booster.stakerIncentive();
+            const rate = await mocks.crvMinter.rate();
+            const stakingCrvBalance = await mocks.crv.balanceOf(cvxStakingProxy.address);
+
+            expect(stakingCrvBalance).to.equal(rate.mul(incentive).div(10000));
+
+            await expect(cvxStakingProxy["distribute()"]()).to.be.revertedWith("!balance");
+        });
         it("distribute rewards from the booster", async () => {
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
             await distributeRewardsFromBooster();
         });
         it("queues rewards when cvxCrv period is finished", async () => {
-            // AuraStakingProxy.distribute(), faked by impersonating account
+            await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            // AuraStakingProxy["distribute()"](), faked by impersonating account
             let rewards = simpleToExactAmount(100);
             const rewardDistribution = await auraLocker.rewardsDuration();
             const cvxCrvLockerBalance0 = await cvxCrv.balanceOf(auraLocker.address);
-            const queuedCvxCrvRewards0 = await auraLocker.queuedCvxCrvRewards();
+            const queuedCvxCrvRewards0 = await auraLocker.queuedRewards(cvxCrv.address);
             const rewardData0 = await auraLocker.rewardData(cvxCrv.address);
             const timeStamp = await getTimestamp();
 
@@ -922,7 +1001,7 @@ describe("AuraLocker", () => {
             expect(await cvxCrv.balanceOf(auraLocker.address), "cvxCrv is transfer to locker").to.eq(
                 cvxCrvLockerBalance0.add(rewards),
             );
-            expect(await auraLocker.queuedCvxCrvRewards(), "queued cvxCrv rewards").to.eq(0);
+            expect(await auraLocker.queuedRewards(cvxCrv.address), "queued cvxCrv rewards").to.eq(0);
 
             // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
             expect(rewardData1.lastUpdateTime, "cvxCrv reward last update time").to.gt(rewardData0.lastUpdateTime);
@@ -944,12 +1023,12 @@ describe("AuraLocker", () => {
             expect(timeStamp, "reward period finish").to.gte(rewardData0.periodFinish);
             expect(await cvxCrv.balanceOf(cvxStakingProxyAccount.address)).to.gt(0);
 
-            // cvxStakingProxy.distribute();=>auraLocker.queueNewRewards()
+            // cvxStakingProxy["distribute()"]();=>auraLocker.queueNewRewards()
             // First distribution to update the reward finish period.
             let rewards = await distributeRewardsFromBooster();
             // Validate
             const cvxCrvLockerBalance1 = await cvxCrv.balanceOf(auraLocker.address);
-            const queuedCvxCrvRewards1 = await auraLocker.queuedCvxCrvRewards();
+            const queuedCvxCrvRewards1 = await auraLocker.queuedRewards(cvxCrv.address);
             const rewardData1 = await auraLocker.rewardData(cvxCrv.address);
 
             // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
@@ -967,7 +1046,7 @@ describe("AuraLocker", () => {
             rewards = await distributeRewardsFromBooster();
 
             const cvxCrvLockerBalance2 = await cvxCrv.balanceOf(auraLocker.address);
-            const queuedCvxCrvRewards2 = await auraLocker.queuedCvxCrvRewards();
+            const queuedCvxCrvRewards2 = await auraLocker.queuedRewards(cvxCrv.address);
             const rewardData2 = await auraLocker.rewardData(cvxCrv.address);
 
             // Verify reward data is not updated, as ratio is not reached.
@@ -985,7 +1064,7 @@ describe("AuraLocker", () => {
             rewards = await distributeRewardsFromBooster();
 
             const cvxCrvLockerBalance3 = await cvxCrv.balanceOf(auraLocker.address);
-            const queuedCvxCrvRewards3 = await auraLocker.queuedCvxCrvRewards();
+            const queuedCvxCrvRewards3 = await auraLocker.queuedRewards(cvxCrv.address);
             const rewardData3 = await auraLocker.rewardData(cvxCrv.address);
 
             // Verify reward data is updated, reward rate, lastUpdateTime, periodFinish; when the lastUpdateTime is lt than now.
@@ -1076,15 +1155,15 @@ describe("AuraLocker", () => {
             delegate2 = await accounts[4].getAddress();
 
             // Mint some cvxCRV and add as the reward token manually
-            let tx = await booster.earmarkRewards(boosterPoolId);
-            await tx.wait();
-
-            tx = await cvxStakingProxy.distribute();
-            await tx.wait();
-
-            tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
+            let tx = await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await tx.wait();
             tx = await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(100));
+            await tx.wait();
+
+            tx = await booster.earmarkRewards(boosterPoolId);
+            await tx.wait();
+
+            tx = await cvxStakingProxy["distribute()"]();
             await tx.wait();
 
             const lock = await auraLocker.userLocks(aliceAddress, 0);
@@ -1298,13 +1377,10 @@ describe("AuraLocker", () => {
         before(async () => {
             await setup();
         });
-        it("@notifyRewardAmount adds cvxCrv", async () => {
-            await expect(auraLocker.notifyRewardAmount(cvxCrv.address, 0)).revertedWith("Use queueNewRewards");
+        it("@queueNewRewards sender is not a distributor", async () => {
+            await expect(auraLocker.queueNewRewards(cvx.address, 0)).revertedWith("!authorized");
         });
-        it("notifyRewardAmount sender is not a distributor", async () => {
-            await expect(auraLocker.notifyRewardAmount(cvx.address, 0)).revertedWith("Must be rewardsDistributor");
-        });
-        it("@notifyRewardAmount sends wrong amount", async () => {
+        it("@queueNewRewards sends wrong amount", async () => {
             const mockToken = await deployContract<MockERC20>(
                 hre,
                 new MockERC20__factory(deployer),
@@ -1314,11 +1390,11 @@ describe("AuraLocker", () => {
                 false,
             );
             const distributor = accounts[3];
-            await auraLocker.connect(deployer).addReward(mockToken.address, await distributor.getAddress());
+            await auraLocker.connect(accounts[7]).addReward(mockToken.address, await distributor.getAddress());
             await auraLocker
-                .connect(deployer)
+                .connect(accounts[7])
                 .approveRewardDistributor(mockToken.address, await distributor.getAddress(), true);
-            await expect(auraLocker.connect(distributor).notifyRewardAmount(mockToken.address, 0)).revertedWith(
+            await expect(auraLocker.connect(distributor).queueNewRewards(mockToken.address, 0)).revertedWith(
                 "No reward",
             );
         });
@@ -1332,7 +1408,7 @@ describe("AuraLocker", () => {
             );
         });
         it("approves reward wrong arguments", async () => {
-            const tx = auraLocker.approveRewardDistributor(ZERO_ADDRESS, ZERO_ADDRESS, false);
+            const tx = auraLocker.connect(accounts[7]).approveRewardDistributor(ZERO_ADDRESS, ZERO_ADDRESS, false);
             await expect(tx).revertedWith("Reward does not exist");
         });
         it("non admin - shutdowns", async () => {
@@ -1358,24 +1434,53 @@ describe("AuraLocker", () => {
                 "Ownable: caller is not the owner",
             );
         });
+        it("non admin - modify Blacklist", async () => {
+            await expect(auraLocker.connect(alice).modifyBlacklist(ZERO_ADDRESS, true)).revertedWith(
+                "Ownable: caller is not the owner",
+            );
+        });
         it("set Kick Incentive with wrong rate", async () => {
-            await expect(auraLocker.setKickIncentive(501, ZERO)).revertedWith("over max rate");
+            await expect(auraLocker.connect(accounts[7]).setKickIncentive(501, ZERO)).revertedWith("over max rate");
         });
         it("set Kick Incentive with wrong delay", async () => {
-            await expect(auraLocker.setKickIncentive(100, 1)).revertedWith("min delay");
+            await expect(auraLocker.connect(accounts[7]).setKickIncentive(100, 1)).revertedWith("min delay");
         });
         it("recover ERC20 with wrong token address", async () => {
-            await expect(auraLocker.recoverERC20(cvx.address, ZERO)).revertedWith("Cannot withdraw staking token");
+            await expect(auraLocker.connect(accounts[7]).recoverERC20(cvx.address, ZERO)).revertedWith(
+                "Cannot withdraw staking token",
+            );
         });
         it("recover ERC20 cannot withdraw reward", async () => {
-            await auraLocker.addReward(cvxCrvRewards.address, cvxCrvRewards.address);
+            await auraLocker.connect(accounts[7]).addReward(cvxCrvRewards.address, cvxCrvRewards.address);
             expect((await auraLocker.rewardData(cvxCrvRewards.address)).lastUpdateTime).to.not.eq(0);
-            await expect(auraLocker.recoverERC20(cvxCrvRewards.address, ZERO)).revertedWith(
+            await expect(auraLocker.connect(accounts[7]).recoverERC20(cvxCrvRewards.address, ZERO)).revertedWith(
                 "Cannot withdraw reward token",
             );
         });
         it("emergency withdraw is call and it is not shutdown", async () => {
             await expect(auraLocker.emergencyWithdraw()).revertedWith("Must be shutdown");
+        });
+        it("@addReward staking token", async () => {
+            await expect(
+                auraLocker.connect(accounts[7]).addReward(await auraLocker.stakingToken(), ZERO_ADDRESS),
+            ).revertedWith("Cannot add StakingToken as reward");
+        });
+        it("@addReward reward already exist", async () => {
+            await auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000001", ZERO_ADDRESS);
+            await expect(
+                auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000001", ZERO_ADDRESS),
+            ).revertedWith("Reward already exists");
+        });
+        it("@addReward 5 or more rewards", async () => {
+            await auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000002", ZERO_ADDRESS);
+            await expect(
+                auraLocker.connect(accounts[7]).addReward("0x0000000000000000000000000000000000000003", ZERO_ADDRESS),
+            ).revertedWith("Max rewards length");
+        });
+        it("@getReward wrong skip index argument", async () => {
+            await expect(
+                auraLocker.connect(accounts[7])["getReward(address,bool[])"](aliceAddress, [false, false]),
+            ).revertedWith("!arr");
         });
     });
     context("admin", () => {
@@ -1387,15 +1492,19 @@ describe("AuraLocker", () => {
             await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
 
             // approves  distributor
-            await auraLocker.approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, true);
+            await auraLocker.connect(accounts[7]).approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, true);
             await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(true);
 
             // disapproves  distributor
-            await auraLocker.approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, false);
+            await auraLocker
+                .connect(accounts[7])
+                .approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, false);
             await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(false);
         });
         it("set Kick Incentive", async () => {
-            await expect(auraLocker.setKickIncentive(100, 3)).emit(auraLocker, "KickIncentiveSet").withArgs(100, 3);
+            await expect(auraLocker.connect(accounts[7]).setKickIncentive(100, 3))
+                .emit(auraLocker, "KickIncentiveSet")
+                .withArgs(100, 3);
             expect(await auraLocker.kickRewardPerEpoch()).to.eq(100);
             expect(await auraLocker.kickRewardEpochDelay()).to.eq(3);
         });
@@ -1412,13 +1521,13 @@ describe("AuraLocker", () => {
             await mockToken.connect(deployer).approve(auraLocker.address, simpleToExactAmount(100));
             await mockToken.connect(deployer).transfer(auraLocker.address, simpleToExactAmount(10));
 
-            const mockDeployerBalanceBefore = await mockToken.balanceOf(await deployer.getAddress());
+            const mockDeployerBalanceBefore = await mockToken.balanceOf(await accounts[7].getAddress());
             const mockLockerBalanceBefore = await mockToken.balanceOf(auraLocker.address);
             expect(mockLockerBalanceBefore, "locker external lp reward").to.eq(simpleToExactAmount(10));
-            const tx = auraLocker.recoverERC20(mockToken.address, simpleToExactAmount(10));
+            const tx = auraLocker.connect(accounts[7]).recoverERC20(mockToken.address, simpleToExactAmount(10));
             await expect(tx).emit(auraLocker, "Recovered").withArgs(mockToken.address, simpleToExactAmount(10));
 
-            const mockDeployerBalanceAfter = await mockToken.balanceOf(await deployer.getAddress());
+            const mockDeployerBalanceAfter = await mockToken.balanceOf(await accounts[7].getAddress());
             const mockLockerBalanceAfter = await mockToken.balanceOf(auraLocker.address);
 
             expect(mockLockerBalanceAfter, "locker external lp reward").to.eq(0);
@@ -1433,7 +1542,7 @@ describe("AuraLocker", () => {
         });
         it("fails if lock", async () => {
             // Given that the aura locker is shutdown
-            await auraLocker.connect(deployer).shutdown();
+            await auraLocker.connect(accounts[7]).shutdown();
             expect(await auraLocker.isShutdown()).to.eq(true);
             // Then it should fail to lock
             const cvxAmount = simpleToExactAmount(100);
@@ -1450,7 +1559,7 @@ describe("AuraLocker", () => {
             await expect(auraLocker.connect(alice).processExpiredLocks(relock)).revertedWith("no exp locks");
 
             // Given that the aura locker is shutdown
-            await auraLocker.connect(deployer).shutdown();
+            await auraLocker.connect(accounts[7]).shutdown();
             expect(await auraLocker.isShutdown()).to.eq(true);
             // Then it should be able to process unexpired locks
 
@@ -1469,7 +1578,7 @@ describe("AuraLocker", () => {
         });
         it("emergencyWithdraw  when user has no locks", async () => {
             // Given that the aura locker is shutdown
-            await auraLocker.connect(deployer).shutdown();
+            await auraLocker.connect(accounts[7]).shutdown();
             expect(await auraLocker.isShutdown()).to.eq(true);
             // It fails if the user has no locks
             await expect(auraLocker.connect(alice).emergencyWithdraw()).revertedWith("Nothing locked");
@@ -1480,7 +1589,7 @@ describe("AuraLocker", () => {
             await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
             let tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             // Given that the aura locker is shutdown
-            await auraLocker.connect(deployer).shutdown();
+            await auraLocker.connect(accounts[7]).shutdown();
             expect(await auraLocker.isShutdown()).to.eq(true);
             // Then it should be able to withdraw in an emergency
             const dataBefore = await getSnapShot(aliceAddress);

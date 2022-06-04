@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { AuraMath } from "./AuraMath.sol";
 import { IAuraLocker, ICrvDepositorWrapper } from "./Interfaces.sol";
@@ -206,15 +206,13 @@ contract AuraClaimZap {
         }
 
         //stake up to given amount of cvx
-        if (depositCvxMaxAmount > 0) {
+        if (depositCvxMaxAmount > 0 && _checkOption(options, uint256(Options.LockCvx))) {
             uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
             cvxBalance = AuraMath.min(cvxBalance, depositCvxMaxAmount);
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-                if (_checkOption(options, uint256(Options.LockCvx))) {
-                    IAuraLocker(locker).lock(msg.sender, cvxBalance);
-                }
+                IAuraLocker(locker).lock(msg.sender, cvxBalance);
             }
         }
     }

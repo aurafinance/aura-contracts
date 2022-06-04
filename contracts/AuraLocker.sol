@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
@@ -69,7 +68,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
 
     // Rewards
     address[] public rewardTokens;
-    uint256 public queuedCvxCrvRewards = 0;
+    mapping(address => uint256) public queuedRewards;
     uint256 public constant newRewardRatio = 830;
     //     Core reward data
     mapping(address => RewardData) public rewardData;
@@ -100,6 +99,8 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     mapping(address => mapping(uint256 => uint256)) public delegateeUnlocks;
 
     // Config
+    //     Blacklisted smart contract interactions
+    mapping(address => bool) public blacklist;
     //     Tokens
     IERC20 public immutable stakingToken;
     address public immutable cvxCrv;
@@ -130,6 +131,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     event KickReward(address indexed _user, address indexed _kicked, uint256 _reward);
     event RewardAdded(address indexed _token, uint256 _reward);
 
+    event BlacklistModified(address account, bool blacklisted);
     event KickIncentiveSet(uint256 rate, uint256 delay);
     event Shutdown();
 
@@ -187,14 +189,38 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         _;
     }
 
+    modifier notBlacklisted(address _sender, address _receiver) {
+        require(!blacklist[_sender], "blacklisted");
+
+        if (_sender != _receiver) {
+            require(!blacklist[_receiver], "blacklisted");
+        }
+
+        _;
+    }
+
     /***************************************
                     ADMIN
     ****************************************/
+
+    function modifyBlacklist(address _account, bool _blacklisted) external onlyOwner {
+        uint256 cs;
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            cs := extcodesize(_account)
+        }
+        require(cs != 0, "Must be contract");
+
+        blacklist[_account] = _blacklisted;
+        emit BlacklistModified(_account, _blacklisted);
+    }
 
     // Add a new reward token to be distributed to stakers
     function addReward(address _rewardsToken, address _distributor) external onlyOwner {
         require(rewardData[_rewardsToken].lastUpdateTime == 0, "Reward already exists");
         require(_rewardsToken != address(stakingToken), "Cannot add StakingToken as reward");
+        require(rewardTokens.length < 5, "Max rewards length");
+
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].lastUpdateTime = uint32(block.timestamp);
         rewardData[_rewardsToken].periodFinish = uint32(block.timestamp);
@@ -255,7 +281,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     //lock tokens
-    function _lock(address _account, uint256 _amount) internal {
+    function _lock(address _account, uint256 _amount) internal notBlacklisted(msg.sender, _account) {
         require(_amount > 0, "Cannot stake 0");
         require(!isShutdown, "shutdown");
 
@@ -318,6 +344,21 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         }
     }
 
+    function getReward(address _account, bool[] calldata _skipIdx) external nonReentrant updateReward(_account) {
+        uint256 rewardTokensLength = rewardTokens.length;
+        require(_skipIdx.length == rewardTokensLength, "!arr");
+        for (uint256 i; i < rewardTokensLength; i++) {
+            if (_skipIdx[i]) continue;
+            address _rewardsToken = rewardTokens[i];
+            uint256 reward = userData[_account][_rewardsToken].rewards;
+            if (reward > 0) {
+                userData[_account][_rewardsToken].rewards = 0;
+                IERC20(_rewardsToken).safeTransfer(_account, reward);
+                emit RewardPaid(_account, _rewardsToken, reward);
+            }
+        }
+    }
+
     function checkpointEpoch() external {
         _checkpointEpoch();
     }
@@ -325,14 +366,13 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     //insert a new epoch if needed. fill in any gaps
     function _checkpointEpoch() internal {
         uint256 currentEpoch = block.timestamp.div(rewardsDuration).mul(rewardsDuration);
-        uint256 epochindex = epochs.length;
 
         //first epoch add in constructor, no need to check 0 length
         //check to add
-        if (epochs[epochindex - 1].date < currentEpoch) {
-            //fill any epoch gaps until the next epoch date.
-            while (epochs[epochs.length - 1].date != currentEpoch) {
-                uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date).add(rewardsDuration);
+        uint256 nextEpochDate = uint256(epochs[epochs.length - 1].date);
+        if (nextEpochDate < currentEpoch) {
+            while (nextEpochDate != currentEpoch) {
+                nextEpochDate = nextEpochDate.add(rewardsDuration);
                 epochs.push(Epoch({ supply: 0, date: uint32(nextEpochDate) }));
             }
         }
@@ -401,7 +441,7 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
                 uint256 currentEpoch = block.timestamp.sub(_checkDelay).div(rewardsDuration).mul(rewardsDuration);
                 uint256 epochsover = currentEpoch.sub(uint256(locks[length - 1].unlockTime)).div(rewardsDuration);
                 uint256 rRate = AuraMath.min(kickRewardPerEpoch.mul(epochsover + 1), denominator);
-                reward = uint256(locks[length - 1].amount).mul(rRate).div(denominator);
+                reward = uint256(locked).mul(rRate).div(denominator);
             }
         } else {
             //use a processed index(nextUnlockIndex) to not loop as much
@@ -817,18 +857,20 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
                 REWARD FUNDING
     ****************************************/
 
-    function queueNewRewards(uint256 _rewards) external nonReentrant {
-        require(rewardDistributors[cvxCrv][msg.sender], "!authorized");
+    function queueNewRewards(address _rewardsToken, uint256 _rewards) external nonReentrant {
+        require(rewardDistributors[_rewardsToken][msg.sender], "!authorized");
         require(_rewards > 0, "No reward");
 
-        RewardData storage rdata = rewardData[cvxCrv];
+        RewardData storage rdata = rewardData[_rewardsToken];
 
-        IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), _rewards);
+        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _rewards);
 
-        _rewards = _rewards.add(queuedCvxCrvRewards);
+        _rewards = _rewards.add(queuedRewards[_rewardsToken]);
+        require(_rewards < 1e25, "!rewards");
+
         if (block.timestamp >= rdata.periodFinish) {
-            _notifyReward(cvxCrv, _rewards);
-            queuedCvxCrvRewards = 0;
+            _notifyReward(_rewardsToken, _rewards);
+            queuedRewards[_rewardsToken] = 0;
             return;
         }
 
@@ -838,23 +880,11 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         uint256 currentAtNow = rdata.rewardRate * elapsedTime;
         uint256 queuedRatio = currentAtNow.mul(1000).div(_rewards);
         if (queuedRatio < newRewardRatio) {
-            _notifyReward(cvxCrv, _rewards);
-            queuedCvxCrvRewards = 0;
+            _notifyReward(_rewardsToken, _rewards);
+            queuedRewards[_rewardsToken] = 0;
         } else {
-            queuedCvxCrvRewards = _rewards;
+            queuedRewards[_rewardsToken] = _rewards;
         }
-    }
-
-    function notifyRewardAmount(address _rewardsToken, uint256 _reward) external {
-        require(_rewardsToken != cvxCrv, "Use queueNewRewards");
-        require(rewardDistributors[_rewardsToken][msg.sender], "Must be rewardsDistributor");
-        require(_reward > 0, "No reward");
-
-        _notifyReward(_rewardsToken, _reward);
-
-        // handle the transfer of reward tokens via `transferFrom` to reduce the number
-        // of transactions required and ensure correctness of the _reward amount
-        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _reward);
     }
 
     function _notifyReward(address _rewardsToken, uint256 _reward) internal updateReward(address(0)) {
@@ -867,6 +897,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
             uint256 leftover = remaining.mul(rdata.rewardRate);
             rdata.rewardRate = _reward.add(leftover).div(rewardsDuration).to96();
         }
+
+        // Equivalent to 10 million tokens over a weeks duration
+        require(rdata.rewardRate < 1e20, "!rewardRate");
+        require(lockedSupply >= 1e20, "!balance");
 
         rdata.lastUpdateTime = block.timestamp.to32();
         rdata.periodFinish = block.timestamp.add(rewardsDuration).to32();

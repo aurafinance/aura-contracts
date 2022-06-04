@@ -25,6 +25,7 @@ describe("ExtraRewardsDistributor", () => {
     let aliceAddress: string;
     let bob: Signer;
     let bobAddress: string;
+    let rob: Signer;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -51,6 +52,7 @@ describe("ExtraRewardsDistributor", () => {
         aliceAddress = await alice.getAddress();
         bob = accounts[2];
         bobAddress = await bob.getAddress();
+        rob = accounts[3];
 
         distributor = contracts.extraRewardsDistributor.connect(alice);
         auraLocker = contracts.cvxLocker.connect(alice);
@@ -66,6 +68,9 @@ describe("ExtraRewardsDistributor", () => {
         mockErc20 = await new MockERC20__factory(alice).deploy("MockERC20", "mk20", 18, aliceAddress, 1000);
         await mockErc20.connect(alice).transfer(bobAddress, simpleToExactAmount(200));
         mockErc20X = await new MockERC20__factory(alice).deploy("MockERC20 X", "MKTX", 18, aliceAddress, 1000);
+
+        await contracts.extraRewardsDistributor.modifyWhitelist(aliceAddress, true);
+        await contracts.extraRewardsDistributor.modifyWhitelist(bobAddress, true);
     });
 
     async function verifyAddRewards(sender: Signer, fundAmount: BN, epoch: number) {
@@ -87,6 +92,7 @@ describe("ExtraRewardsDistributor", () => {
 
     it("initial configuration is correct", async () => {
         expect(await distributor.auraLocker(), "auraLocker").to.eq(auraLocker.address);
+        expect(await distributor.owner(), "owner").to.eq(await deployer.getAddress());
     });
 
     it("add rewards", async () => {
@@ -103,6 +109,14 @@ describe("ExtraRewardsDistributor", () => {
             distributorBalanceBefore.add(fundAmount),
         );
         expect(await mockErc20.balanceOf(aliceAddress), "alice balance").to.eq(senderBalanceBefore.sub(fundAmount));
+    });
+    describe("fails", async () => {
+        it("if adds 0 rewards", async () => {
+            await expect(distributor.addReward(mockErc20.address, 0)).to.be.revertedWith("!amount");
+        });
+        it("if non auth adds rewards", async () => {
+            await expect(distributor.connect(rob).addReward(mockErc20.address, 10)).to.be.revertedWith("!auth");
+        });
     });
     describe("adds rewards", async () => {
         it("allows anyone to fund", async () => {
@@ -333,9 +347,7 @@ describe("ExtraRewardsDistributor", () => {
             expect(claimableRewardsAtLatestEpoch, "bob claimable rewards at given epoch").to.gt(0);
             expect(await distributor.userClaims(mockErc20.address, bobAddress), "user claims").to.eq(0);
             // When
-            const tx = distributor
-                .connect(bob)
-                ["getReward(address,address,uint256)"](bobAddress, mockErc20.address, epochIndex);
+            const tx = distributor.connect(bob)["getReward(address,uint256)"](mockErc20.address, epochIndex);
 
             // Then
             await expect(tx)
@@ -364,9 +376,7 @@ describe("ExtraRewardsDistributor", () => {
                 epoch - 1,
             );
             // When
-            const tx = distributor
-                .connect(bob)
-                ["getReward(address,address,uint256)"](bobAddress, mockErc20.address, epoch);
+            const tx = distributor.connect(bob)["getReward(address,uint256)"](mockErc20.address, epoch);
             // Then
             await expect(tx).not.to.emit(distributor, "RewardPaid");
             expect(await mockErc20.balanceOf(bobAddress), "bob balance").to.eq(bobBalanceBefore);
