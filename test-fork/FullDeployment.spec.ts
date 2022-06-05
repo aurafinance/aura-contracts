@@ -263,8 +263,8 @@ describe("Full Deployment", () => {
                     expect(await booster.voteOwnership()).eq(ZERO_ADDRESS);
                     expect(await booster.voteParameter()).eq(ZERO_ADDRESS);
 
-                    expect(await booster.lockIncentive()).eq(825);
-                    expect(await booster.stakerIncentive()).eq(825);
+                    expect(await booster.lockIncentive()).eq(550);
+                    expect(await booster.stakerIncentive()).eq(1100);
                     expect(await booster.earmarkIncentive()).eq(50);
                     expect(await booster.platformFee()).eq(0);
                     expect(await booster.MaxFees()).eq(2500);
@@ -530,7 +530,7 @@ describe("Full Deployment", () => {
                     expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
                     expect(await escrow2.initialised()).eq(true);
                     expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
-                        simpleToExactAmount(3, 24),
+                        simpleToExactAmount(3.5, 24),
                     );
                     // [ 3 ] = 104 weeks, 2%
                     const escrow3 = vestedEscrows[3];
@@ -654,11 +654,11 @@ describe("Full Deployment", () => {
 
         describe("POST-Phase 2", () => {
             let lbp: IInvestmentPool;
-            let treasurySigner: Account;
+            let launchSigner: Account;
             let currentTime: BN;
             before(async () => {
-                treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
+                launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
+                lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
                 currentTime = BN.from(
                     (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
                 );
@@ -667,11 +667,11 @@ describe("Full Deployment", () => {
                 const balHelper = new AssetHelpers(config.addresses.weth);
                 const [, weights] = balHelper.sortTokens(
                     [phase2.cvx.address, config.addresses.weth],
-                    [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
+                    [simpleToExactAmount(55, 16), simpleToExactAmount(45, 16)],
                 );
                 const tx = await lbp.updateWeightsGradually(
                     currentTime.add(3600),
-                    currentTime.add(ONE_DAY.mul(4)),
+                    currentTime.add(ONE_DAY.mul(3)),
                     weights as BN[],
                 );
                 await waitForTx(tx, debug);
@@ -780,16 +780,17 @@ describe("Full Deployment", () => {
                 );
                 await waitForTx(tx, debug);
             };
-            // T = 0 -> 4.5
+            // T = 0 -> 5
             it("executes some swaps", async () => {
                 const swapper = await impersonateAccount(testAccounts.swapper);
                 await getEth(testAccounts.swapper);
-                await getWeth(testAccounts.swapper, simpleToExactAmount(500));
+                await getWeth(testAccounts.swapper, simpleToExactAmount(600));
 
                 const weth = MockERC20__factory.connect(config.addresses.weth, swapper.signer);
-                const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
+                let tx = await weth.approve(balancerVault.address, simpleToExactAmount(600));
                 await waitForTx(tx, debug);
 
+                // t = 0
                 await increaseTime(ONE_HOUR.mul(2));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
@@ -802,25 +803,50 @@ describe("Full Deployment", () => {
                 await increaseTime(ONE_HOUR.mul(2));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
-                await increaseTime(ONE_HOUR.mul(2));
+                await increaseTime(ONE_HOUR.mul(4));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
                 await increaseTime(ONE_HOUR.mul(6));
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
                 await increaseTime(ONE_HOUR.mul(6));
+                // t = 1
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
-                await increaseTime(ONE_HOUR.mul(6));
+                await increaseTime(ONE_HOUR.mul(12));
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
-                await increaseTime(ONE_HOUR.mul(6));
+                await increaseTime(ONE_HOUR.mul(12));
+                // t = 2
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
                 await increaseTime(ONE_HOUR.mul(24));
+                // t = 3
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+
+                const launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
+                const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
+                const currentTime = BN.from(
+                    (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
+                );
+                const balHelper = new AssetHelpers(config.addresses.weth);
+                const [, weights] = balHelper.sortTokens(
+                    [phase2.cvx.address, config.addresses.weth],
+                    [simpleToExactAmount(25, 16), simpleToExactAmount(75, 16)],
+                );
+                tx = await lbp.updateWeightsGradually(
+                    currentTime.add(900),
+                    currentTime.add(ONE_DAY.mul(2)),
+                    weights as BN[],
+                );
+                await waitForTx(tx, debug);
+
+                await increaseTime(ONE_HOUR.mul(24));
+                // t = 4
                 await swapEthForAura(swapper, simpleToExactAmount(100));
 
                 await increaseTime(ONE_HOUR.mul(24));
+                // t = 5
                 await swapEthForAura(swapper, simpleToExactAmount(100));
             });
             it("allows AURA holders to stake in vlAURA", async () => {
@@ -893,8 +919,9 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             });
             it("treasuryDAO sends aura to liq provider", async () => {
-                const auraBal = await aura.balanceOf(treasurySigner.address);
-                const tx = await aura.transfer(phase2.balLiquidityProvider.address, auraBal);
+                const tx = await phase2.balLiquidityProvider
+                    .connect(treasurySigner.signer)
+                    .rescueToken(aura.address, simpleToExactAmount(1, 24));
                 await waitForTx(tx, debug);
             });
         });
@@ -902,7 +929,7 @@ describe("Full Deployment", () => {
             before(async () => {
                 // PHASE 3
                 phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
-                await increaseTime(ONE_HOUR.mul(96));
+                await increaseTime(ONE_HOUR.mul(48));
             });
             describe("verifying config", () => {
                 it("creates the 8020 pool successfully", async () => {
@@ -1040,9 +1067,9 @@ describe("Full Deployment", () => {
                     const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
                     assertBNClose(earnedAfter, BN.from(0), 1000);
                     const rawBalAfter = await cvx.balanceOf(alice.address);
-                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(5).mul(4), "0.01");
+                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(10).mul(7), "0.01");
                     const penaltyAfter = await initialCvxCrvStaking.pendingPenalty();
-                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(4));
+                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(7).mul(3));
                 });
                 it("allows anyone to forward the penalty", async () => {
                     const { initialCvxCrvStaking, cvx } = phase3;
@@ -1105,7 +1132,7 @@ describe("Full Deployment", () => {
                     const { vestedEscrows, cvx } = phase3;
                     const escrow = vestedEscrows[2];
 
-                    const user = "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5";
+                    const user = "0xB1f881f47baB744E7283851bC090bAA626df931d";
                     const userAcc = await impersonateAccount(user);
 
                     const balBefore = await cvx.balanceOf(user);

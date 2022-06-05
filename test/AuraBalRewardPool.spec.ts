@@ -103,7 +103,7 @@ describe("AuraBalRewardPool", () => {
                 const cvxBalanceAfter = await contracts.cvx.balanceOf(accountAddress);
                 const pendingPenalty = pendingPenaltyAfter.sub(pendingPenaltyBefore);
                 // The amount CVX send to the user is 4 times the penalty, ie: rewards to user = earned 80%, penalty = earned 20%
-                assertBNClosePercent(cvxBalanceAfter.sub(cvxBalanceBefore), pendingPenalty.mul(4), "0.001");
+                assertBNClosePercent(cvxBalanceAfter.sub(cvxBalanceBefore), pendingPenalty.mul(7).div(3), "0.001");
                 assertBNClosePercent(await rewards.pendingPenalty(), pendingPenalty, "0.001");
             }
         }
@@ -174,8 +174,8 @@ describe("AuraBalRewardPool", () => {
             await rewards.connect(bob).getReward(false);
             const balAfter = await contracts.cvx.balanceOf(bobAddress);
 
-            assertBNClosePercent(balAfter.sub(balBefore), earned.mul(8).div(10), "0.001");
-            assertBNClosePercent(await rewards.pendingPenalty(), earned.mul(2).div(10), "0.001");
+            assertBNClosePercent(balAfter.sub(balBefore), earned.mul(7).div(10), "0.001");
+            assertBNClosePercent(await rewards.pendingPenalty(), earned.mul(3).div(10), "0.001");
         });
         it("gives all rewards to claimers who lock", async () => {
             const balBefore = await contracts.cvxLocker.balances(aliceAddress);

@@ -112,6 +112,7 @@ const multisigs = {
     vestingMultisig: "0x97bA9Ec4d946366c75DE81734a51740Fffa7a300",
     treasuryMultisig: "0x8BE7Cb562a52398E55f0a04a76028d1805Aa435f",
     daoMultisig: "0xfEE0Bbe31345a7c27368534fEf45a57133FF3A86",
+    launchMultisig: DEAD_ADDRESS,
 };
 
 const distroList = {
@@ -174,11 +175,11 @@ const distroList = {
         {
             period: ONE_WEEK.mul(104),
             recipients: [
-                { address: "0xB1f881f47baB744E7283851bC090bAA626df931d", amount: simpleToExactAmount(3, 24) }, // Core team 1
-                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(1.5, 24) }, // Core team 2
+                { address: "0xB1f881f47baB744E7283851bC090bAA626df931d", amount: simpleToExactAmount(3.5, 24) }, // Core team 1
+                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(3.5, 24) }, // Core team 2
                 { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team 3
                 { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team 4
-                { address: DEAD_ADDRESS, amount: simpleToExactAmount(0.5, 24) }, // Core team 5 // TODO: Maha
+                // { address: DEAD_ADDRESS, amount: simpleToExactAmount(0.5, 24) }, // Core team 5 // TODO: Maha
                 { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team 6
                 { address: "0x3078c3b436511152d86675f9cbfd89ec1672f804", amount: simpleToExactAmount(0.3, 24) }, // Core team 7
                 { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team 8

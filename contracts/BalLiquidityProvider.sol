@@ -89,9 +89,9 @@ contract BalLiquidityProvider {
      * @dev Rescues a given token from the contract.
      * Only provider or DAO can call this function.
      */
-    function rescueToken(address _erc20) external {
+    function rescueToken(address _erc20, uint256 _amount) external {
         require(msg.sender == provider || msg.sender == dao, "!auth");
         IERC20 tkn = IERC20(_erc20);
-        tkn.safeTransfer(dao, tkn.balanceOf(address(this)));
+        tkn.safeTransfer(dao, _amount);
     }
 }
