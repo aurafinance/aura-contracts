@@ -126,6 +126,14 @@ describe("BalLiquidityProvider", () => {
                 "invalid request",
             ).to.be.revertedWith("!valid");
         });
+        it("fails if the pair of tokens is the same", async () => {
+            joinPoolRequest.assets = [await balLiquidityProvider.startToken(), await balLiquidityProvider.startToken()];
+            joinPoolRequest.maxAmountsIn = [simpleToExactAmount(80, 16), simpleToExactAmount(80, 16)];
+            await expect(
+                balLiquidityProvider.connect(deployer).provideLiquidity(poolId, joinPoolRequest),
+                "invalid request",
+            ).to.be.revertedWith("!assets");
+        });
         it("fails if the current balance is greater than the min pair amount", async () => {
             // Given pair token balance is greater than min pair amount
             const pairTokenBalance = await pairTokenContract.balanceOf(balLiquidityProvider.address);
@@ -165,7 +173,7 @@ describe("BalLiquidityProvider", () => {
             // Given
             const startTokenBalance = await startTokenContract.balanceOf(balLiquidityProvider.address);
             // set a wrong max amount in start token.
-            joinPoolRequest.maxAmountsIn = [simpleToExactAmount(123), simpleToExactAmount(123)];
+            joinPoolRequest.maxAmountsIn = [simpleToExactAmount(123000), simpleToExactAmount(123000)];
             expect(startTokenBalance, "initial start token balance").to.not.eq(joinPoolRequest.maxAmountsIn[0]);
             // When
             await expect(

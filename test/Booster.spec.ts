@@ -9,11 +9,13 @@ import {
     BaseRewardPool__factory,
     MockFeeDistributor__factory,
     MockERC20__factory,
+    MockERC20,
 } from "../types/generated";
 import { Signer } from "ethers";
-import { increaseTime } from "../test-utils/time";
+import { increaseTime, increaseTimeTo } from "../test-utils/time";
 import { simpleToExactAmount } from "../test-utils/math";
 import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
+import { deployContract } from "../tasks/utils";
 
 type Pool = {
     lptoken: string;
@@ -24,6 +26,8 @@ type Pool = {
     shutdown: boolean;
 };
 
+const debug = false;
+
 describe("Booster", () => {
     let accounts: Signer[];
     let booster: Booster;
@@ -31,6 +35,7 @@ describe("Booster", () => {
     let mocks: DeployMocksResult;
     let pool: Pool;
     let contracts: SystemDeployed;
+    let daoSigner: Signer;
 
     let deployer: Signer;
     let deployerAddress: string;
@@ -40,7 +45,7 @@ describe("Booster", () => {
 
     const setup = async () => {
         mocks = await deployMocks(hre, deployer);
-        const multisigs = await getMockMultisigs(accounts[4], accounts[5], accounts[6]);
+        const multisigs = await getMockMultisigs(accounts[4], accounts[5], daoSigner);
         const distro = getMockDistro();
 
         const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
@@ -54,9 +59,9 @@ describe("Booster", () => {
             mocks.addresses,
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
-        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.lptoken.address, mocks.feeDistribution.address);
-        await phase3.boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
+        await phase3.poolManager.connect(daoSigner).setProtectPool(false);
+        await phase3.boosterOwner.connect(daoSigner).setFeeInfo(mocks.lptoken.address, mocks.feeDistribution.address);
+        await phase3.boosterOwner.connect(daoSigner).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
         contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         ({ booster, boosterOwner } = contracts);
@@ -78,9 +83,9 @@ describe("Booster", () => {
 
     before(async () => {
         accounts = await ethers.getSigners();
-
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
+        daoSigner = accounts[6];
     });
 
     describe("managing system revenue fees", async () => {
@@ -98,36 +103,36 @@ describe("Booster", () => {
             expect(platformFee).eq(0);
 
             const feeManager = await booster.feeManager();
-            expect(feeManager).eq(await accounts[6].getAddress());
+            expect(feeManager).eq(await daoSigner.getAddress());
         });
         it("doesn't allow just anyone to change fees", async () => {
             await expect(booster.connect(accounts[5]).setFees(1, 2, 3, 4)).to.be.revertedWith("!auth");
         });
         it("allows feeManager to set the fees", async () => {
-            const tx = await booster.connect(accounts[6]).setFees(500, 300, 25, 0);
+            const tx = await booster.connect(daoSigner).setFees(500, 300, 25, 0);
             await expect(tx).to.emit(booster, "FeesUpdated").withArgs(500, 300, 25, 0);
         });
         it("enforces 25% upper bound", async () => {
-            await expect(booster.connect(accounts[6]).setFees(1500, 1000, 50, 0)).to.be.revertedWith(">MaxFees");
+            await expect(booster.connect(daoSigner).setFees(1500, 1000, 50, 0)).to.be.revertedWith(">MaxFees");
 
-            const tx = await booster.connect(accounts[6]).setFees(1500, 900, 50, 0);
+            const tx = await booster.connect(daoSigner).setFees(1500, 900, 50, 0);
             await expect(tx).to.emit(booster, "FeesUpdated").withArgs(1500, 900, 50, 0);
         });
         it("enforces bounds on each fee type", async () => {
             // lockFees 300-1500
-            await expect(booster.connect(accounts[6]).setFees(200, 500, 50, 0)).to.be.revertedWith("!lockFees");
-            await expect(booster.connect(accounts[6]).setFees(1600, 500, 50, 0)).to.be.revertedWith("!lockFees");
+            await expect(booster.connect(daoSigner).setFees(200, 500, 50, 0)).to.be.revertedWith("!lockFees");
+            await expect(booster.connect(daoSigner).setFees(1600, 500, 50, 0)).to.be.revertedWith("!lockFees");
             // stakerFees 300-1500
-            await expect(booster.connect(accounts[6]).setFees(500, 200, 50, 0)).to.be.revertedWith("!stakerFees");
-            await expect(booster.connect(accounts[6]).setFees(500, 1600, 50, 0)).to.be.revertedWith("!stakerFees");
+            await expect(booster.connect(daoSigner).setFees(500, 200, 50, 0)).to.be.revertedWith("!stakerFees");
+            await expect(booster.connect(daoSigner).setFees(500, 1600, 50, 0)).to.be.revertedWith("!stakerFees");
             // callerFees 10-100
-            await expect(booster.connect(accounts[6]).setFees(500, 500, 2, 0)).to.be.revertedWith("!callerFees");
-            await expect(booster.connect(accounts[6]).setFees(500, 500, 110, 0)).to.be.revertedWith("!callerFees");
+            await expect(booster.connect(daoSigner).setFees(500, 500, 2, 0)).to.be.revertedWith("!callerFees");
+            await expect(booster.connect(daoSigner).setFees(500, 500, 110, 0)).to.be.revertedWith("!callerFees");
             // platform 0-200
-            await expect(booster.connect(accounts[6]).setFees(500, 500, 50, 250)).to.be.revertedWith("!platform");
+            await expect(booster.connect(daoSigner).setFees(500, 500, 50, 250)).to.be.revertedWith("!platform");
         });
         it("distributes the fees to the correct places", async () => {
-            await booster.connect(accounts[6]).setFees(1500, 900, 50, 50);
+            await booster.connect(daoSigner).setFees(1500, 900, 50, 50);
 
             // bals before
             const balsBefore = await Promise.all([
@@ -139,7 +144,7 @@ describe("Booster", () => {
             ]);
 
             // collect the rewards
-            await booster.connect(accounts[6]).setTreasury(DEAD_ADDRESS);
+            await booster.connect(daoSigner).setTreasury(DEAD_ADDRESS);
             await booster.connect(alice).earmarkRewards(0);
 
             // bals after
@@ -172,44 +177,19 @@ describe("Booster", () => {
             expect(feeDistro.rewards).eq(await contracts.cvxCrvRewards.extraRewards(0));
             expect(feeDistro.active).eq(true);
         });
-        describe("setting fee info fails if", () => {
-            it("not called by owner", async () => {
-                await expect(booster.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
-                    "!auth",
-                );
-                await expect(
-                    boosterOwner.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS),
-                ).to.be.revertedWith("!owner");
-            });
-            it("either input is null", async () => {
-                await expect(
-                    boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, ZERO_ADDRESS),
-                ).to.be.revertedWith("!addresses");
-                await expect(
-                    boosterOwner.connect(accounts[6]).setFeeInfo(ZERO_ADDRESS, mocks.feeDistribution.address),
-                ).to.be.revertedWith("!addresses");
-            });
-            it("gauge token is added", async () => {
-                await expect(
-                    boosterOwner
-                        .connect(accounts[6])
-                        .setFeeInfo(mocks.gauges[0].address, mocks.feeDistribution.address),
-                ).to.be.revertedWith("!token");
-            });
-        });
         describe("setting fee info", () => {
             it("sets directly to cvxCrv if the reward token is crv", async () => {
                 const feeDistro = await new MockFeeDistributor__factory(deployer).deploy(
                     [mocks.crv.address],
                     [simpleToExactAmount(1)],
                 );
-                await boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, feeDistro.address);
+                await boosterOwner.connect(daoSigner).setFeeInfo(mocks.crv.address, feeDistro.address);
 
                 const storage = await booster.feeTokens(mocks.crv.address);
                 expect(storage.distro).eq(feeDistro.address);
                 expect(storage.rewards).eq(contracts.cvxCrvRewards.address);
 
-                await boosterOwner.connect(accounts[6]).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
+                await boosterOwner.connect(daoSigner).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
             });
             it("creates a token rewards otherwise", async () => {
                 const newMockToken = await new MockERC20__factory(deployer).deploy(
@@ -223,12 +203,62 @@ describe("Booster", () => {
                     [newMockToken.address],
                     [simpleToExactAmount(1)],
                 );
-                await boosterOwner.connect(accounts[6]).setFeeInfo(newMockToken.address, feeDistro.address);
+                await boosterOwner.connect(daoSigner).setFeeInfo(newMockToken.address, feeDistro.address);
 
                 const storage = await booster.feeTokens(newMockToken.address);
                 expect(storage.distro).eq(feeDistro.address);
                 expect(storage.rewards).eq(await contracts.cvxCrvRewards.extraRewards(1));
                 expect(storage.rewards).not.eq(contracts.cvxCrvRewards.address);
+            });
+        });
+        describe("setting fee info fails if", () => {
+            it("not called by owner", async () => {
+                await expect(booster.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
+                    "!auth",
+                );
+                await expect(
+                    boosterOwner.connect(accounts[5]).setFeeInfo(ZERO_ADDRESS, ZERO_ADDRESS),
+                ).to.be.revertedWith("!owner");
+            });
+            it("either input is null", async () => {
+                await expect(
+                    boosterOwner.connect(daoSigner).setFeeInfo(mocks.crv.address, ZERO_ADDRESS),
+                ).to.be.revertedWith("!addresses");
+                await expect(
+                    boosterOwner.connect(daoSigner).setFeeInfo(ZERO_ADDRESS, mocks.feeDistribution.address),
+                ).to.be.revertedWith("!addresses");
+            });
+            it("gauge token is added", async () => {
+                await expect(
+                    boosterOwner.connect(daoSigner).setFeeInfo(mocks.gauges[0].address, mocks.feeDistribution.address),
+                ).to.be.revertedWith("!token");
+            });
+            it("too many rewards", async () => {
+                const maxExtraRewards = 10;
+                const lockRewards = await booster.lockRewards();
+                expect(lockRewards).to.eq(contracts.cvxCrvRewards.address);
+                let len = await contracts.cvxCrvRewards.extraRewardsLength();
+
+                for (let i = len.toNumber(); i <= maxExtraRewards; i++) {
+                    const lptoken = await deployContract<MockERC20>(
+                        hre,
+                        new MockERC20__factory(deployer),
+                        `MockLPToken${i}`,
+                        ["mockLPToken", "mockLPToken", 18, deployerAddress, 10000000],
+                        {},
+                        debug,
+                    );
+                    if (i == maxExtraRewards) {
+                        await expect(
+                            boosterOwner.connect(daoSigner).setFeeInfo(lptoken.address, mocks.feeDistribution.address),
+                        ).to.be.revertedWith("too many reward");
+                    } else {
+                        await boosterOwner
+                            .connect(daoSigner)
+                            .setFeeInfo(lptoken.address, mocks.feeDistribution.address);
+                        len = await contracts.cvxCrvRewards.extraRewardsLength();
+                    }
+                }
             });
         });
         describe("updating fee info", () => {
@@ -241,17 +271,17 @@ describe("Booster", () => {
                 );
             });
             it("fails if distro does not exist", async () => {
-                await expect(boosterOwner.connect(accounts[6]).updateFeeInfo(ZERO_ADDRESS, false)).to.be.revertedWith(
+                await expect(boosterOwner.connect(daoSigner).updateFeeInfo(ZERO_ADDRESS, false)).to.be.revertedWith(
                     "Fee doesn't exist",
                 );
             });
             it("sets the active status on a distro", async () => {
                 const addr = mocks.crv.address;
-                let tx = await boosterOwner.connect(accounts[6]).updateFeeInfo(addr, false);
+                let tx = await boosterOwner.connect(daoSigner).updateFeeInfo(addr, false);
                 await expect(tx).to.emit(booster, "FeeInfoChanged").withArgs(addr, false);
                 expect((await booster.feeTokens(addr)).active).eq(false);
 
-                tx = await boosterOwner.connect(accounts[6]).updateFeeInfo(addr, true);
+                tx = await boosterOwner.connect(daoSigner).updateFeeInfo(addr, true);
                 await expect(tx).to.emit(booster, "FeeInfoChanged").withArgs(addr, true);
                 expect((await booster.feeTokens(addr)).active).eq(true);
             });
@@ -275,7 +305,7 @@ describe("Booster", () => {
                 expect(balafter).eq(balbefore.add(simpleToExactAmount(1)));
             });
             it("fails if the distro is inactive", async () => {
-                await boosterOwner.connect(accounts[6]).updateFeeInfo(mocks.crv.address, false);
+                await boosterOwner.connect(daoSigner).updateFeeInfo(mocks.crv.address, false);
                 await expect(booster.earmarkFees(mocks.crv.address)).to.be.revertedWith("Inactive distro");
             });
             it("fails if the distro does not exist", async () => {
@@ -363,6 +393,21 @@ describe("Booster", () => {
             const expectedRewards = rewardPerToken.mul(balance).div(simpleToExactAmount(1));
 
             expect(expectedRewards).to.equal(crvBalance);
+        });
+
+        it("@method BaseRewardPool.processIdleRewards()", async () => {
+            await mocks.crvMinter.setRate(1000);
+            await booster.earmarkRewards(0);
+            const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
+            const queuedRewards = await crvRewards.queuedRewards();
+            expect(queuedRewards).gt(0);
+
+            const periodFinish = await crvRewards.periodFinish();
+            await increaseTimeTo(periodFinish);
+
+            await crvRewards.processIdleRewards();
+            const queuedRewardsAfter = await crvRewards.queuedRewards();
+            expect(queuedRewardsAfter).eq(0);
         });
     });
 });

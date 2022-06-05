@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
 import { SystemDeployed, deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
 import { increaseTime } from "../test-utils/time";
-import { ONE_WEEK } from "../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import { BaseRewardPool__factory } from "../types/generated";
 
@@ -45,6 +45,10 @@ describe("AuraClaimZap", () => {
         await contracts.cvxCrv.transfer(mocks.balancerVault.address, simpleToExactAmount(10));
 
         await mocks.balancerVault.setTokens(contracts.cvxCrv.address, mocks.crv.address);
+    });
+
+    it("initial configuration is correct", async () => {
+        expect(await contracts.claimZap.getName()).to.be.eq("ClaimZap V2.0");
     });
 
     it("set approval for deposits", async () => {
@@ -109,5 +113,15 @@ describe("AuraClaimZap", () => {
 
         const balanceAfter = await mocks.crv.balanceOf(aliceAddress);
         expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
+    });
+    it("verifies only owner can set approvals", async () => {
+        expect(await contracts.claimZap.owner()).not.eq(aliceAddress);
+        await expect(contracts.claimZap.connect(alice).setApprovals()).to.be.revertedWith("!auth");
+    });
+    it("fails if claim rewards are incorrect", async () => {
+        const options = 0;
+        await expect(
+            contracts.claimZap.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], 0, 0, 0, options),
+        ).to.be.revertedWith("!parity");
     });
 });

@@ -27,7 +27,6 @@ import {
     impersonateAccount,
     ZERO_ADDRESS,
     BN,
-    ONE_YEAR,
     ONE_WEEK,
     ONE_HOUR,
     assertBNClosePercent,
@@ -57,6 +56,7 @@ import { ethers } from "ethers";
 import MerkleTree from "merkletreejs";
 
 const debug = false;
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const testAccounts = {
     swapper: "0x0000000000000000000000000000000000000002",
@@ -182,6 +182,9 @@ describe("Full Deployment", () => {
     });
 
     describe("Phase 2", () => {
+        before(async () => {
+            await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
+        });
         describe("DEPLOY-Phase 2", () => {
             before(async () => {
                 // PHASE 2
@@ -223,8 +226,8 @@ describe("Full Deployment", () => {
                     expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(distroList.lbp.matching);
 
                     const dropBalances = await Promise.all(drops.map(a => cvx.balanceOf(a.address)));
-                    const aidrdropSum = distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0));
-                    expect(dropBalances.reduce((p, c) => p.add(c), BN.from(0))).eq(aidrdropSum);
+                    const airdropSum = distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0));
+                    expect(dropBalances.reduce((p, c) => p.add(c), BN.from(0))).eq(airdropSum);
 
                     const vestingBalances = await Promise.all(vestedEscrows.map(a => cvx.balanceOf(a.address)));
                     const vestingSum = distroList.vesting
@@ -440,7 +443,7 @@ describe("Full Deployment", () => {
                     const { naming, multisigs } = config;
                     expect(await cvxLocker.rewardTokens(0)).eq(cvxCrv.address);
                     await expect(cvxLocker.rewardTokens(1)).to.be.reverted;
-                    expect(await cvxLocker.queuedCvxCrvRewards()).eq(0);
+                    expect(await cvxLocker.queuedRewards(cvxCrv.address)).eq(0);
                     expect(await cvxLocker.rewardDistributors(cvxCrv.address, cvxStakingProxy.address)).eq(true);
                     expect(await cvxLocker.lockedSupply()).eq(0);
                     expect(await cvxLocker.stakingToken()).eq(cvx.address);
@@ -637,12 +640,14 @@ describe("Full Deployment", () => {
 
                     expect(await penaltyForwarder.distributor()).eq(extraRewardsDistributor.address);
                     expect(await penaltyForwarder.token()).eq(cvx.address);
+                    expect(await penaltyForwarder.owner()).eq(config.multisigs.daoMultisig);
                     expect(await penaltyForwarder.distributionDelay()).eq(ONE_WEEK.mul(7).div(2));
                     assertBNClose(await penaltyForwarder.lastDistribution(), await getTimestamp(), 100);
                 });
                 it("extraRewardsDistributor has correct config", async () => {
                     const { extraRewardsDistributor, cvxLocker } = phase2;
                     expect(await extraRewardsDistributor.auraLocker()).eq(cvxLocker.address);
+                    expect(await extraRewardsDistributor.owner()).eq(config.multisigs.daoMultisig);
                 });
             });
         });
@@ -781,7 +786,7 @@ describe("Full Deployment", () => {
                 await getEth(testAccounts.swapper);
                 await getWeth(testAccounts.swapper, simpleToExactAmount(500));
 
-                const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
+                const weth = MockERC20__factory.connect(config.addresses.weth, swapper.signer);
                 const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
                 await waitForTx(tx, debug);
 
@@ -1589,7 +1594,8 @@ describe("Full Deployment", () => {
 
                     const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
-                    await phase4.cvxStakingProxy.connect(keeper.signer).distribute();
+
+                    await phase4.cvxStakingProxy.connect(keeper.signer)["distribute()"]();
                     const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
 
@@ -1719,10 +1725,10 @@ describe("Full Deployment", () => {
                 });
                 it("allows boosterOwner to call all fns on booster", async () => {
                     const { booster, boosterOwner } = phase4;
-                    await booster.connect(daoSigner.signer).setFeeManager(boosterOwner.address);
 
+                    await boosterOwner.connect(daoSigner.signer).setFeeManager(config.multisigs.treasuryMultisig);
+                    expect(await booster.feeManager()).eq(config.multisigs.treasuryMultisig);
                     await boosterOwner.connect(daoSigner.signer).setFeeManager(daoSigner.address);
-                    expect(await booster.feeManager()).eq(daoSigner.address);
 
                     await boosterOwner.connect(daoSigner.signer).setFactories(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS);
                     expect(await booster.stashFactory()).eq(ZERO_ADDRESS);
@@ -1732,9 +1738,9 @@ describe("Full Deployment", () => {
                     await boosterOwner.connect(daoSigner.signer).setArbitrator(ZERO_ADDRESS);
                     expect(await booster.rewardArbitrator()).eq(ZERO_ADDRESS);
 
-                    await booster.connect(daoSigner.signer).setVoteDelegate(boosterOwner.address);
                     await boosterOwner.connect(daoSigner.signer).setVoteDelegate(ZERO_ADDRESS);
                     expect(await booster.voteDelegate()).eq(ZERO_ADDRESS);
+                    await boosterOwner.connect(daoSigner.signer).setVoteDelegate(daoSigner.address);
 
                     await boosterOwner.connect(daoSigner.signer).updateFeeInfo(config.addresses.token, false);
                     expect((await booster.feeTokens(config.addresses.token)).active).eq(false);
@@ -1802,7 +1808,8 @@ describe("Full Deployment", () => {
                     await phase4.booster.earmarkRewards(0);
 
                     const keeper = await impersonateAccount(config.addresses.keeper);
-                    await phase4.cvxStakingProxy.connect(keeper.signer).distribute();
+                    await phase4.cvxStakingProxy.connect(keeper.signer)["distribute()"]();
+
                     await increaseTime(ONE_HOUR);
                     const rewards = await phase4.cvxLocker.claimableRewards(stakerAddress);
                     expect(rewards[0].amount).gt(0);
@@ -1832,7 +1839,7 @@ describe("Full Deployment", () => {
                 // Check that a penalty has been accrued
                 const penaltyBal = await cvx.balanceOf(penaltyForwarder.address);
                 expect(penaltyBal).gt(0);
-                const distirbutorBalBefore = await cvx.balanceOf(extraRewardsDistributor.address);
+                const distributorBalBefore = await cvx.balanceOf(extraRewardsDistributor.address);
 
                 // Forward the penalty to rewardsDistributor
                 await penaltyForwarder.forward();
@@ -1840,7 +1847,7 @@ describe("Full Deployment", () => {
                 // Check the reward has been added
                 expect(await cvx.balanceOf(penaltyForwarder.address)).eq(0);
                 const distributorBalAfter = await cvx.balanceOf(extraRewardsDistributor.address);
-                expect(distributorBalAfter.sub(distirbutorBalBefore)).eq(penaltyBal);
+                expect(distributorBalAfter.sub(distributorBalBefore)).eq(penaltyBal);
                 expect(await extraRewardsDistributor.rewardEpochsCount(cvx.address)).eq(1);
 
                 // Check the reward is claimable

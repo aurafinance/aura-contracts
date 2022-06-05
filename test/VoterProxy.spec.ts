@@ -222,6 +222,7 @@ describe("VoterProxy", () => {
             await auraLocker.lock(deployerAddress, cvxAmount);
             await increaseTime(86400 * 7);
 
+            await extraRewardsDistributor.connect(daoMultisig).modifyWhitelist(voterProxy.address, true);
             await voterProxy.connect(daoMultisig)["withdraw(address)"](randomToken.address);
             const rewardDepositBalance = await randomToken.balanceOf(extraRewardsDistributor.address);
             expect(balance).eq(rewardDepositBalance);

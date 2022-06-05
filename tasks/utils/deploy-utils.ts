@@ -77,7 +77,7 @@ export function logContracts(contracts: { [key: string]: { address: string } }) 
     console.log(`~~~~~~~~~~~~~~~~~~~~~~~~~~~\n`);
     keys.map(k => {
         if (Array.isArray(contracts[k])) {
-            console.log(`${k}:\t[${(contracts[k] as any as [{ address: string }]).map(i => i.address)}]`);
+            console.log(`${k}:\t[${(contracts[k] as unknown as [{ address: string }]).map(i => i.address)}]`);
         } else {
             console.log(`${k}:\t${contracts[k].address}`);
         }

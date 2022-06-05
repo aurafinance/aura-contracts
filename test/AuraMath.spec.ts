@@ -60,6 +60,7 @@ describe("library AuraMath", () => {
                 0,
             );
             expect(await auraMath.AuraMath_div(2, 1)).to.eq(2);
+            expect(await auraMath.AuraMath_div(3, 2)).to.eq(1);
             expect(await auraMath.AuraMath_div(1, 1)).to.eq(1);
             expect(await auraMath.AuraMath_div(ethers.constants.MaxUint256, ethers.constants.MaxUint256)).to.eq(1);
             await expect(auraMath.AuraMath_div(-1, 2), "no negative numbers").to.reverted;

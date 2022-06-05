@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
-import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
 import { AuraMath } from "./AuraMath.sol";
 
 interface IStaker {
@@ -18,14 +15,13 @@ interface IStaker {
  *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.
  */
 contract AuraToken is ERC20 {
-    using SafeERC20 for IERC20;
-    using Address for address;
     using AuraMath for uint256;
 
     address public operator;
     address public immutable vecrvProxy;
 
     uint256 public constant EMISSIONS_MAX_SUPPLY = 5e25; // 50m
+    uint256 public constant INIT_MINT_AMOUNT = 5e25; // 50m
     uint256 public constant totalCliffs = 500;
     uint256 public immutable reductionPerCliff;
 
@@ -55,20 +51,14 @@ contract AuraToken is ERC20 {
     /**
      * @dev Initialise and mints initial supply of tokens.
      * @param _to        Target address to mint.
-     * @param _amount    Amount of tokens to mint.
      * @param _minter    The minter address.
      */
-    function init(
-        address _to,
-        uint256 _amount,
-        address _minter
-    ) external {
+    function init(address _to, address _minter) external {
         require(msg.sender == operator, "Only operator");
         require(totalSupply() == 0, "Only once");
-        require(_amount > 0, "Must mint something");
         require(_minter != address(0), "Invalid minter");
 
-        _mint(_to, _amount);
+        _mint(_to, INIT_MINT_AMOUNT);
         updateOperator();
         minter = _minter;
         minterMinted = 0;
@@ -80,7 +70,11 @@ contract AuraToken is ERC20 {
      * @dev This can be called if the operator of the voterProxy somehow changes.
      */
     function updateOperator() public {
+        require(totalSupply() != 0, "!init");
+
         address newOperator = IStaker(vecrvProxy).operator();
+        require(newOperator != operator && newOperator != address(0), "!operator");
+
         emit OperatorChanged(operator, newOperator);
         operator = newOperator;
     }
@@ -98,7 +92,7 @@ contract AuraToken is ERC20 {
         }
 
         // e.g. emissionsMinted = 6e25 - 5e25 - 0 = 1e25;
-        uint256 emissionsMinted = totalSupply() - EMISSIONS_MAX_SUPPLY - minterMinted;
+        uint256 emissionsMinted = totalSupply() - INIT_MINT_AMOUNT - minterMinted;
         // e.g. reductionPerCliff = 5e25 / 500 = 1e23
         // e.g. cliff = 1e25 / 1e23 = 100
         uint256 cliff = emissionsMinted.div(reductionPerCliff);

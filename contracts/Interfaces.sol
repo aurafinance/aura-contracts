@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
-pragma abicoder v2;
 
 interface IPriceOracle {
     struct OracleAverageQuery {
@@ -122,9 +121,7 @@ interface IAuraLocker {
 
     function totalSupplyAtEpoch(uint256 _epoch) external view returns (uint256 supply);
 
-    function queueNewRewards(uint256 _rewards) external;
-
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
+    function queueNewRewards(address _rewardsToken, uint256 reward) external;
 
     function getReward(address _account, bool _stake) external;
 
@@ -133,4 +130,15 @@ interface IAuraLocker {
 
 interface IExtraRewardsDistributor {
     function addReward(address _token, uint256 _amount) external;
+}
+
+interface ICrvDepositorWrapper {
+    function getMinOut(uint256, uint256) external view returns (uint256);
+
+    function deposit(
+        uint256,
+        uint256,
+        bool,
+        address _stakeAddress
+    ) external;
 }

@@ -34,17 +34,25 @@ contract MockVoting {
         return gaugeWeights[gauge];
     }
 
-    function vote_user_slopes(address user, address gauge) external view returns (VotedSlope memory) {
+    function vote_user_slopes(
+        address, /*user*/
+        address /*gauge*/
+    ) external pure returns (VotedSlope memory) {
         return VotedSlope(0, 0, 0);
     }
 
     // Total vote power used by user
-    function vote_user_power(address user) external view returns (uint256) {
+    function vote_user_power(
+        address /* user */
+    ) external pure returns (uint256) {
         return 0;
     }
 
     // Last user vote's timestamp for each gauge address
-    function last_user_vote(address user, address gauge) external view returns (uint256) {
+    function last_user_vote(
+        address, /*user*/
+        address /*gauge*/
+    ) external pure returns (uint256) {
         return 0;
     }
 }

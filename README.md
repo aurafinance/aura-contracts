@@ -97,3 +97,9 @@ yarn task timeTravel --duration 69420 --network forking
 
 [Cvx Reward Flow](https://docs.google.com/drawings/d/1csXH2TP74UeIhQie1j8fmJvBsBAvGzHAB_-FkfXJ7k8/edit?usp=sharing)
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vTGNgox8tvYi1kRxkBnPB8Rwas6Tb5Ic2pCquqG7oIYqLrBF8I9r3n-2fQKtjKfY7xhQrvFKV0Yn5_j/pub?w=1629&h=960" />
+
+# Security
+
+Smart contract security is a top priority for those working on Aura Finance. All reasonable precautions must be taken to ensure the protocol is safe to use[see Security documentation](https://docs.aura.finance/aura/security) .
+
+If you have any feedback or concerns, don’t hesitate to reach out to `security@aura.finance`

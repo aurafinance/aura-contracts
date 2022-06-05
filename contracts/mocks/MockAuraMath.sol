@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.11;
+pragma solidity 0.8.11;
 
 import { AuraMath, AuraMath32, AuraMath112, AuraMath224 } from "../AuraMath.sol";
 
