@@ -40,7 +40,7 @@ describe("AuraVestedEscrow", () => {
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         const distro = getMockDistro();
 
-        const phase1 = await deployPhase1(hre, deployer, mocks.addresses, true, true);
+        const phase1 = await deployPhase1(hre, deployer, mocks.addresses, true, debug);
         contracts = await deployPhase2(
             hre,
             deployer,
