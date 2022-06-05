@@ -27,7 +27,6 @@ import {
     impersonateAccount,
     ZERO_ADDRESS,
     BN,
-    ONE_YEAR,
     ONE_WEEK,
     ONE_HOUR,
     assertBNClosePercent,
@@ -92,8 +91,6 @@ describe("Full Deployment", () => {
         // TODO - should have sufficient balances on acc, remove this before final test
         await setupBalances();
         deployer = await impersonate(deployerAddress);
-        //
-        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
     });
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
@@ -185,6 +182,9 @@ describe("Full Deployment", () => {
     });
 
     describe("Phase 2", () => {
+        before(async () => {
+            await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
+        });
         describe("DEPLOY-Phase 2", () => {
             before(async () => {
                 // PHASE 2
@@ -226,8 +226,8 @@ describe("Full Deployment", () => {
                     expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(distroList.lbp.matching);
 
                     const dropBalances = await Promise.all(drops.map(a => cvx.balanceOf(a.address)));
-                    const aidrdropSum = distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0));
-                    expect(dropBalances.reduce((p, c) => p.add(c), BN.from(0))).eq(aidrdropSum);
+                    const airdropSum = distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0));
+                    expect(dropBalances.reduce((p, c) => p.add(c), BN.from(0))).eq(airdropSum);
 
                     const vestingBalances = await Promise.all(vestedEscrows.map(a => cvx.balanceOf(a.address)));
                     const vestingSum = distroList.vesting
@@ -786,7 +786,7 @@ describe("Full Deployment", () => {
                 await getEth(testAccounts.swapper);
                 await getWeth(testAccounts.swapper, simpleToExactAmount(500));
 
-                const weth = await MockERC20__factory.connect(config.addresses.weth, swapper.signer);
+                const weth = MockERC20__factory.connect(config.addresses.weth, swapper.signer);
                 const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
                 await waitForTx(tx, debug);
 

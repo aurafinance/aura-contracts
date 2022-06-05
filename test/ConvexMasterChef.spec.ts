@@ -50,6 +50,7 @@ describe("ConvexMasterChef", () => {
     let bob: Signer;
     let bobAddress: string;
     let deployer: Signer;
+    let deployerAddress: string;
     let daoMultisig: Signer;
     let distro: DistroList;
     let contracts: SystemDeployed;
@@ -58,7 +59,7 @@ describe("ConvexMasterChef", () => {
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
-
+        deployerAddress = await deployer.getAddress();
         mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[0], accounts[0], accounts[0]);
         daoMultisig = await ethers.getSigner(multisigs.daoMultisig);
@@ -86,7 +87,7 @@ describe("ConvexMasterChef", () => {
         cvx = contracts.cvx;
         chef = contracts.chef;
 
-        const initialBal = await mocks.crvBpt.balanceOf(await deployer.getAddress());
+        const initialBal = await mocks.crvBpt.balanceOf(deployerAddress);
         await mocks.crvBpt.transfer(aliceAddress, initialBal.div(2));
         await mocks.crvBpt.transfer(bobAddress, initialBal.div(2));
 
@@ -195,15 +196,15 @@ describe("ConvexMasterChef", () => {
                 hre,
                 new MockERC20__factory(deployer),
                 "RandomToken",
-                ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
+                ["randomToken", "randomToken", 18, deployerAddress, 10000000],
                 {},
                 false,
             );
 
             const poolInfo: PoolInfo = await chef.poolInfo(pidCvx);
-            cvxCrvBPT = await new MockERC20__factory(deployer).attach(poolInfo.lpToken);
+            cvxCrvBPT = new MockERC20__factory(deployer).attach(poolInfo.lpToken);
 
-            const initialBal = await cvxCrvBPT.balanceOf(await deployer.getAddress());
+            const initialBal = await cvxCrvBPT.balanceOf(deployerAddress);
             await cvxCrvBPT.transfer(aliceAddress, initialBal.div(2));
             await cvxCrvBPT.transfer(bobAddress, initialBal.div(2));
 
@@ -321,6 +322,16 @@ describe("ConvexMasterChef", () => {
         });
     });
     describe("edge cases", async () => {
+        async function deployRandomToken(i: number): Promise<MockERC20> {
+            return deployContract<MockERC20>(
+                hre,
+                new MockERC20__factory(deployer),
+                `RandomToken${i}`,
+                ["randomToken", "randomToken", 18, deployerAddress, 10000000],
+                {},
+                false,
+            );
+        }
         it("should set totalAllocPoint to a given pool", async () => {
             // chef.set(pid, allocPoint, rewarder, updateRewarder)
             const pid = 0;
@@ -346,29 +357,25 @@ describe("ConvexMasterChef", () => {
             await expect(chef.set(pid, poolAllocPoint, poolInfo.rewarder, false)).to.be.revertedWith("!alloc");
         });
 
+        it("should add more pools when it is under the (limit <32)", async () => {
+            const poolLength = await chef.poolLength();
+            let randomTtn: MockERC20;
+            for (let i = poolLength.toNumber(); i < 15; i++) {
+                randomTtn = await deployRandomToken(i);
+                await randomTtn.transfer(chef.address, simpleToExactAmount(100000));
+                await chef.add(1000, randomTtn.address, ZERO_ADDRESS);
+            }
+            expect(await chef.poolLength()).to.be.lt(32);
+        });
         it("should not add more pools than (limit <32)", async () => {
             const poolLength = await chef.poolLength();
             let randomTtn: MockERC20;
             for (let i = poolLength.toNumber(); i < 32; i++) {
-                randomTtn = await deployContract<MockERC20>(
-                    hre,
-                    new MockERC20__factory(deployer),
-                    `RandomToken${i}`,
-                    ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
-                    {},
-                    false,
-                );
+                randomTtn = await deployRandomToken(i);
                 await randomTtn.transfer(chef.address, simpleToExactAmount(100000));
                 await chef.add(1000, randomTtn.address, ZERO_ADDRESS);
             }
-            randomTtn = await deployContract<MockERC20>(
-                hre,
-                new MockERC20__factory(deployer),
-                `RandomToken32`,
-                ["randomToken", "randomToken", 18, await deployer.getAddress(), 10000000],
-                {},
-                false,
-            );
+            randomTtn = await deployRandomToken(32);
             await randomTtn.transfer(chef.address, simpleToExactAmount(100000));
             await expect(chef.add(1000, randomTtn.address, ZERO_ADDRESS)).to.be.revertedWith("max pools");
         });
