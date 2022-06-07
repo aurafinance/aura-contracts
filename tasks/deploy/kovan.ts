@@ -29,6 +29,7 @@ import {
     ERC20__factory,
     BaseRewardPool__factory,
     MockERC20,
+    IERC20__factory,
 } from "../../types/generated";
 import { ONE_DAY, ZERO_ADDRESS } from "../../test-utils/constants";
 
@@ -58,12 +59,15 @@ const kovanBalancerConfig: ExtSystemConfig = {
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
 };
 
+const forking = false;
+const waitForBlocks = forking ? undefined : 3;
+
 task("deploy:kovan:1").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const deployerAddress = await deployer.getAddress();
     console.log(deployerAddress);
 
-    const phase1 = await deployPhase1(hre, deployer, kovanBalancerConfig, false, true, 3);
+    const phase1 = await deployPhase1(hre, deployer, kovanBalancerConfig, false, true, waitForBlocks);
     console.log(phase1.voterProxy.address);
 });
 
@@ -72,7 +76,7 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     const deployerAddress = await deployer.getAddress();
 
     const phase1 = {
-        voterProxy: await VoterProxy__factory.connect("0xAf133908d1B435e1B58C91316AF3f17688a47A50", deployer),
+        voterProxy: await VoterProxy__factory.connect("0xAc4dD3cb87220090fBd77B65D5c8436EE7a6D08c", deployer),
     };
 
     const contracts = await deployKovan234(
@@ -97,36 +101,36 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     const lp = await ERC20__factory.connect(poolInfo.lptoken, deployer);
 
     let tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await contracts.booster.earmarkRewards(0);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     const tokenBptBal = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).balanceOf(deployerAddress);
     tx = await ERC20__factory.connect(kovanBalancerConfig.tokenBpt, deployer).approve(
         contracts.crvDepositor.address,
         tokenBptBal,
     );
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await contracts.crvDepositor["deposit(uint256,bool,address)"](
         tokenBptBal,
         true,
         contracts.initialCvxCrvStaking.address,
     );
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await lp.approve(contracts.booster.address, simpleToExactAmount(1));
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await contracts.booster.deposit(0, simpleToExactAmount(1), true);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer)["getReward()"]();
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     const bal = await contracts.cvx.balanceOf(deployerAddress);
     if (bal.lte(0)) {
@@ -134,10 +138,19 @@ task("deploy:kovan:234").setAction(async function (taskArguments: TaskArguments,
     }
 
     tx = await contracts.cvx.approve(contracts.cvxLocker.address, bal);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     tx = await contracts.cvxLocker.lock(await deployer.getAddress(), bal);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
+
+    tx = await IERC20__factory.connect(contracts.cvxCrvBpt.address, deployer).approve(
+        contracts.chef.address,
+        simpleToExactAmount(1),
+    );
+    await waitForTx(tx, true, waitForBlocks);
+
+    tx = await contracts.chef.deposit(0, simpleToExactAmount(1));
+    await waitForTx(tx, true, waitForBlocks);
 });
 
 task("deploy:kovan:mocka").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -223,7 +236,7 @@ async function deployKovan234(
         naming,
         kovanBalancerConfig,
         true,
-        3,
+        waitForBlocks,
     );
     // POST-PHASE-2
     const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, deployer);
@@ -233,9 +246,9 @@ async function deployKovan234(
         [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
     );
     let tx = await lbp.updateWeightsGradually(currentTime.add(3600), currentTime.add(ONE_DAY.mul(4)), weights as BN[]);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
     tx = await lbp.setSwapEnabled(true);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
     // ~~~~~~~~~~~~~~~
     // ~~~ PHASE 3 ~~~
@@ -244,9 +257,9 @@ async function deployKovan234(
     // PRE-PHASE-3
     const weth = await MockERC20__factory.connect(kovanBalancerConfig.weth, deployer);
     tx = await weth.transfer(phase2.balLiquidityProvider.address, simpleToExactAmount(400));
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
-    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, kovanBalancerConfig, true, 3);
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, kovanBalancerConfig, true, waitForBlocks);
 
     // POST-PHASE-3
 
@@ -256,8 +269,8 @@ async function deployKovan234(
 
     // PRE-PHASE-4
     tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
-    await waitForTx(tx, true, 3);
+    await waitForTx(tx, true, waitForBlocks);
 
-    const phase4 = await deployPhase4(hre, deployer, phase3, kovanBalancerConfig, true, 3);
+    const phase4 = await deployPhase4(hre, deployer, phase3, kovanBalancerConfig, true, waitForBlocks);
     return phase4;
 }

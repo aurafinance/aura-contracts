@@ -94,9 +94,9 @@ describe("Booster", () => {
         });
         it("has the correct initial config", async () => {
             const lockFee = await booster.lockIncentive();
-            expect(lockFee).eq(825);
+            expect(lockFee).eq(550);
             const stakerFee = await booster.stakerIncentive();
-            expect(stakerFee).eq(825);
+            expect(stakerFee).eq(1100);
             const callerFee = await booster.earmarkIncentive();
             expect(callerFee).eq(50);
             const platformFee = await booster.platformFee();

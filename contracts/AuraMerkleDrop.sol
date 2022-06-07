@@ -152,7 +152,7 @@ contract AuraMerkleDrop {
             // If there is an address for auraLocker, and not locking, apply 20% penalty
             uint256 penalty = address(penaltyForwarder) == address(0) || address(auraLocker) == address(0)
                 ? 0
-                : (_amount * 2) / 10;
+                : (_amount * 3) / 10;
             pendingPenalty += penalty;
             aura.safeTransfer(msg.sender, _amount - penalty);
         }

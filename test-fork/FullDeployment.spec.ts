@@ -82,7 +82,7 @@ describe("Full Deployment", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14679277,
+                        blockNumber: 14915960,
                     },
                 },
             ],
@@ -139,12 +139,8 @@ describe("Full Deployment", () => {
     };
 
     const setupBalances = async () => {
-        // crvBPT for initialLock && cvxCrv/crvBPT pair
-        await getCrvBpt(deployerAddress);
         // weth for LBP creation
         await getWeth(deployerAddress);
-
-        await getEth(deployerAddress);
     };
 
     describe("Phase 1", () => {
@@ -152,15 +148,6 @@ describe("Full Deployment", () => {
             before(async () => {
                 // PHASE 1
                 phase1 = await config.getPhase1(deployer);
-
-                // POST-PHASE-1
-                // Whitelist the VoterProxy in the Curve system
-                const checker = await new MockWalletChecker__factory(deployer).deploy();
-                await checker.approveWallet(phase1.voterProxy.address);
-                const admin = await impersonate("0x8f42adbba1b16eaae3bb5754915e0d06059add75");
-                const ve = ICurveVoteEscrow__factory.connect(config.addresses.votingEscrow, admin);
-                await ve.commit_smart_wallet_checker(checker.address);
-                await ve.apply_smart_wallet_checker();
             });
             describe("verifying config", () => {
                 it("VoterProxy has correct config", async () => {
@@ -263,8 +250,8 @@ describe("Full Deployment", () => {
                     expect(await booster.voteOwnership()).eq(ZERO_ADDRESS);
                     expect(await booster.voteParameter()).eq(ZERO_ADDRESS);
 
-                    expect(await booster.lockIncentive()).eq(825);
-                    expect(await booster.stakerIncentive()).eq(825);
+                    expect(await booster.lockIncentive()).eq(550);
+                    expect(await booster.stakerIncentive()).eq(1100);
                     expect(await booster.earmarkIncentive()).eq(50);
                     expect(await booster.platformFee()).eq(0);
                     expect(await booster.MaxFees()).eq(2500);
@@ -353,14 +340,12 @@ describe("Full Deployment", () => {
                     await expect(pool.getNormalizedWeights()).to.be.reverted;
                     if (poolTokens.tokens[0].toLowerCase() == cvxCrv.address.toLowerCase()) {
                         expect(poolTokens.tokens[1]).eq(addresses.tokenBpt);
-                        expect(poolTokens.balances[0]).eq(poolTokens.balances[1]);
-                        expect(poolTokens.balances[0]).eq(simpleToExactAmount(99.6));
                     } else {
                         expect(poolTokens.tokens[0]).eq(addresses.tokenBpt);
                         expect(poolTokens.tokens[1]).eq(cvxCrv.address);
-                        expect(poolTokens.balances[0]).eq(poolTokens.balances[1]);
-                        expect(poolTokens.balances[0]).eq(simpleToExactAmount(99.6));
                     }
+                    expect(poolTokens.balances[0]).eq(poolTokens.balances[1]);
+                    expect(poolTokens.balances[0]).eq(BN.from("115559823758891957564"));
 
                     const poolERC20 = IERC20__factory.connect(cvxCrvBpt.address, deployer);
                     expect(await poolERC20.balanceOf(config.multisigs.treasuryMultisig)).eq(
@@ -490,7 +475,7 @@ describe("Full Deployment", () => {
                     const time = await getTimestamp();
                     expect(vestedEscrows.length).eq(5);
 
-                    // [ 0 ] = 16 weeks, 0.041%
+                    // [ 0 ] = 16 weeks
                     const escrow0 = vestedEscrows[0];
                     expect(await escrow0.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow0.admin()).eq(config.multisigs.vestingMultisig);
@@ -501,10 +486,10 @@ describe("Full Deployment", () => {
                     expect(await escrow0.endTime()).lt(time.add(ONE_WEEK.mul(17)));
                     expect(await escrow0.totalTime()).eq(ONE_WEEK.mul(16));
                     expect(await escrow0.initialised()).eq(true);
-                    expect(await escrow0.remaining("0xaf3824e8401299B25C4D59a8a035Cf9312a3B454")).eq(
-                        simpleToExactAmount(0.025, 24),
+                    expect(await escrow0.remaining("0xb64f3884ceed18594bd707122988e913fa26f4bf")).eq(
+                        simpleToExactAmount(0.008, 24),
                     );
-                    // [ 1 ] = 26 weeks, 0.0675% + 1.0165% future team
+                    // [ 1 ] = 26 weeks
                     const escrow1 = vestedEscrows[1];
                     expect(await escrow1.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow1.admin()).eq(config.multisigs.vestingMultisig);
@@ -516,9 +501,9 @@ describe("Full Deployment", () => {
                     expect(await escrow1.totalTime()).eq(ONE_WEEK.mul(26));
                     expect(await escrow1.initialised()).eq(true);
                     expect(await escrow1.remaining(config.multisigs.vestingMultisig)).eq(
-                        simpleToExactAmount(1.0165, 24),
+                        simpleToExactAmount(1.4515, 24),
                     );
-                    // [ 2 ] = 104 weeks, 8.875%
+                    // [ 2 ] = 104 weeks
                     const escrow2 = vestedEscrows[2];
                     expect(await escrow2.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow2.admin()).eq(config.multisigs.vestingMultisig);
@@ -529,7 +514,7 @@ describe("Full Deployment", () => {
                     expect(await escrow2.endTime()).lt(time.add(ONE_WEEK.mul(105)));
                     expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
                     expect(await escrow2.initialised()).eq(true);
-                    expect(await escrow2.remaining("0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5")).eq(
+                    expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
                         simpleToExactAmount(3.5, 24),
                     );
                     // [ 3 ] = 104 weeks, 2%
@@ -607,12 +592,12 @@ describe("Full Deployment", () => {
                     const weights = await pool.getNormalizedWeights();
                     if (balances.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(balances.balances[0]).eq(simpleToExactAmount(2.2, 24));
-                        expect(balances.balances[1]).eq(simpleToExactAmount(66));
+                        expect(balances.balances[1]).eq(simpleToExactAmount(100));
                         assertBNClosePercent(weights[0], simpleToExactAmount(99, 16), "0.0001");
                         assertBNClosePercent(weights[1], simpleToExactAmount(1, 16), "0.0001");
                     } else {
                         expect(balances.balances[1]).eq(simpleToExactAmount(2.2, 24));
-                        expect(balances.balances[0]).eq(simpleToExactAmount(66));
+                        expect(balances.balances[0]).eq(simpleToExactAmount(100));
                         assertBNClosePercent(weights[1], simpleToExactAmount(99, 16), "0.0001");
                         assertBNClosePercent(weights[0], simpleToExactAmount(1, 16), "0.0001");
                     }
@@ -654,11 +639,11 @@ describe("Full Deployment", () => {
 
         describe("POST-Phase 2", () => {
             let lbp: IInvestmentPool;
-            let treasurySigner: Account;
+            let launchSigner: Account;
             let currentTime: BN;
             before(async () => {
-                treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
+                launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
+                lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
                 currentTime = BN.from(
                     (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
                 );
@@ -667,11 +652,11 @@ describe("Full Deployment", () => {
                 const balHelper = new AssetHelpers(config.addresses.weth);
                 const [, weights] = balHelper.sortTokens(
                     [phase2.cvx.address, config.addresses.weth],
-                    [simpleToExactAmount(10, 16), simpleToExactAmount(90, 16)],
+                    [simpleToExactAmount(55, 16), simpleToExactAmount(45, 16)],
                 );
                 const tx = await lbp.updateWeightsGradually(
                     currentTime.add(3600),
-                    currentTime.add(ONE_DAY.mul(4)),
+                    currentTime.add(ONE_DAY.mul(3)),
                     weights as BN[],
                 );
                 await waitForTx(tx, debug);
@@ -780,16 +765,17 @@ describe("Full Deployment", () => {
                 );
                 await waitForTx(tx, debug);
             };
-            // T = 0 -> 4.5
+            // T = 0 -> 5
             it("executes some swaps", async () => {
                 const swapper = await impersonateAccount(testAccounts.swapper);
                 await getEth(testAccounts.swapper);
-                await getWeth(testAccounts.swapper, simpleToExactAmount(500));
+                await getWeth(testAccounts.swapper, simpleToExactAmount(600));
 
                 const weth = MockERC20__factory.connect(config.addresses.weth, swapper.signer);
-                const tx = await weth.approve(balancerVault.address, simpleToExactAmount(500));
+                let tx = await weth.approve(balancerVault.address, simpleToExactAmount(600));
                 await waitForTx(tx, debug);
 
+                // t = 0
                 await increaseTime(ONE_HOUR.mul(2));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
@@ -802,25 +788,50 @@ describe("Full Deployment", () => {
                 await increaseTime(ONE_HOUR.mul(2));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
-                await increaseTime(ONE_HOUR.mul(2));
+                await increaseTime(ONE_HOUR.mul(4));
                 await swapEthForAura(swapper, simpleToExactAmount(20));
 
                 await increaseTime(ONE_HOUR.mul(6));
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
                 await increaseTime(ONE_HOUR.mul(6));
+                // t = 1
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
-                await increaseTime(ONE_HOUR.mul(6));
+                await increaseTime(ONE_HOUR.mul(12));
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
-                await increaseTime(ONE_HOUR.mul(6));
+                await increaseTime(ONE_HOUR.mul(12));
+                // t = 2
                 await swapEthForAura(swapper, simpleToExactAmount(50));
 
                 await increaseTime(ONE_HOUR.mul(24));
+                // t = 3
+                await swapEthForAura(swapper, simpleToExactAmount(100));
+
+                const launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
+                const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
+                const currentTime = BN.from(
+                    (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
+                );
+                const balHelper = new AssetHelpers(config.addresses.weth);
+                const [, weights] = balHelper.sortTokens(
+                    [phase2.cvx.address, config.addresses.weth],
+                    [simpleToExactAmount(25, 16), simpleToExactAmount(75, 16)],
+                );
+                tx = await lbp.updateWeightsGradually(
+                    currentTime.add(900),
+                    currentTime.add(ONE_DAY.mul(2)),
+                    weights as BN[],
+                );
+                await waitForTx(tx, debug);
+
+                await increaseTime(ONE_HOUR.mul(24));
+                // t = 4
                 await swapEthForAura(swapper, simpleToExactAmount(100));
 
                 await increaseTime(ONE_HOUR.mul(24));
+                // t = 5
                 await swapEthForAura(swapper, simpleToExactAmount(100));
             });
             it("allows AURA holders to stake in vlAURA", async () => {
@@ -893,8 +904,9 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             });
             it("treasuryDAO sends aura to liq provider", async () => {
-                const auraBal = await aura.balanceOf(treasurySigner.address);
-                const tx = await aura.transfer(phase2.balLiquidityProvider.address, auraBal);
+                const tx = await phase2.balLiquidityProvider
+                    .connect(treasurySigner.signer)
+                    .rescueToken(aura.address, simpleToExactAmount(1, 24));
                 await waitForTx(tx, debug);
             });
         });
@@ -902,7 +914,7 @@ describe("Full Deployment", () => {
             before(async () => {
                 // PHASE 3
                 phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
-                await increaseTime(ONE_HOUR.mul(96));
+                await increaseTime(ONE_HOUR.mul(48));
             });
             describe("verifying config", () => {
                 it("creates the 8020 pool successfully", async () => {
@@ -980,7 +992,7 @@ describe("Full Deployment", () => {
                     await waitForTx(tx, debug);
 
                     const minOut = await phase3.crvDepositorWrapper.getMinOut(simpleToExactAmount(500), 9900);
-                    expect(minOut).gt(simpleToExactAmount(200));
+                    expect(minOut).gt(simpleToExactAmount(190));
 
                     tx = await phase3.crvDepositorWrapper
                         .connect(alice.signer)
@@ -988,7 +1000,7 @@ describe("Full Deployment", () => {
                     await waitForTx(tx, debug);
 
                     const balance = await phase3.cvxCrv.balanceOf(alice.address);
-                    expect(balance).gt(simpleToExactAmount(700));
+                    expect(balance).gt(simpleToExactAmount(690));
 
                     expect(await crv.balanceOf(alice.address)).eq(0);
                     expect(await crvBpt.balanceOf(alice.address)).eq(0);
@@ -1040,9 +1052,9 @@ describe("Full Deployment", () => {
                     const earnedAfter = await initialCvxCrvStaking.earned(alice.address);
                     assertBNClose(earnedAfter, BN.from(0), 1000);
                     const rawBalAfter = await cvx.balanceOf(alice.address);
-                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(5).mul(4), "0.01");
+                    assertBNClosePercent(rawBalAfter.sub(rawBalBefore), earnedBefore.div(10).mul(7), "0.01");
                     const penaltyAfter = await initialCvxCrvStaking.pendingPenalty();
-                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(4));
+                    expect(penaltyAfter.sub(penaltyBefore)).eq(rawBalAfter.sub(rawBalBefore).div(7).mul(3));
                 });
                 it("allows anyone to forward the penalty", async () => {
                     const { initialCvxCrvStaking, cvx } = phase3;
@@ -1105,7 +1117,7 @@ describe("Full Deployment", () => {
                     const { vestedEscrows, cvx } = phase3;
                     const escrow = vestedEscrows[2];
 
-                    const user = "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5";
+                    const user = "0xB1f881f47baB744E7283851bC090bAA626df931d";
                     const userAcc = await impersonateAccount(user);
 
                     const balBefore = await cvx.balanceOf(user);
@@ -1247,7 +1259,6 @@ describe("Full Deployment", () => {
                     const { addresses } = config;
 
                     expect(await booster.poolLength()).gt(0);
-                    expect(await booster.poolLength()).eq(addresses.gauges.length);
 
                     const pool0 = await booster.poolInfo(0);
                     expect(pool0.gauge).eq(addresses.gauges[0]);
@@ -1326,12 +1337,14 @@ describe("Full Deployment", () => {
 
                     const tokenWhaleSigner = await impersonateAccount("0x3c0aea3576b0d70e581ff613248a74d56cde0853");
                     const tkn = MockERC20__factory.connect(poolInfo.lptoken, tokenWhaleSigner.signer);
-                    const tx = await tkn.transfer(stakerAddress, simpleToExactAmount(100));
+                    let tx = await tkn.transfer(stakerAddress, simpleToExactAmount(100));
                     await waitForTx(tx, debug);
 
                     // 0 - Deposit into the pool
-                    await tkn.connect(staker.signer).approve(baseRewardPool.address, simpleToExactAmount(100));
-                    await baseRewardPool.deposit(simpleToExactAmount(100), stakerAddress);
+                    tx = await tkn.connect(staker.signer).approve(baseRewardPool.address, simpleToExactAmount(100));
+                    await waitForTx(tx, debug);
+                    tx = await baseRewardPool.deposit(simpleToExactAmount(100), stakerAddress);
+                    await waitForTx(tx, debug);
                     expect(await baseRewardPool.balanceOf(stakerAddress)).gt(0);
                     await increaseTime(ONE_HOUR);
 
@@ -1340,19 +1353,25 @@ describe("Full Deployment", () => {
                     const gauge = MockCurveGauge__factory.connect(poolInfo.gauge, ldoDepositor.signer);
                     const rewardToken = MockERC20__factory.connect(config.addresses.ldo, staker.signer);
                     await getLdo(ldoDepositor.address, simpleToExactAmount(10));
-                    await rewardToken.connect(ldoDepositor.signer).approve(poolInfo.gauge, ethers.constants.MaxUint256);
-                    await gauge
+                    tx = await rewardToken
+                        .connect(ldoDepositor.signer)
+                        .approve(poolInfo.gauge, ethers.constants.MaxUint256);
+                    await waitForTx(tx, debug);
+                    tx = await gauge
                         .connect(ldoDepositor.signer)
                         .deposit_reward_token(rewardToken.address, simpleToExactAmount(10));
+                    await waitForTx(tx, debug);
 
                     const rewardBalBefore = await rewardToken.balanceOf(extraRewardPool.address);
-                    await booster.earmarkRewards(6);
+                    tx = await booster.earmarkRewards(6);
+                    await waitForTx(tx, debug);
                     const rewardBalAfter = await rewardToken.balanceOf(extraRewardPool.address);
                     expect(rewardBalAfter.sub(rewardBalBefore)).gt(0);
 
                     // 2 - Claiming should allow users to claim the rewards
                     const userBalBefore = await rewardToken.balanceOf(stakerAddress);
-                    await baseRewardPool["getReward()"]();
+                    tx = await baseRewardPool["getReward()"]();
+                    await waitForTx(tx, debug);
                     const userBalAfter = await rewardToken.balanceOf(stakerAddress);
                     expect(userBalAfter.sub(userBalBefore)).gt(0);
                 });
@@ -1590,10 +1609,13 @@ describe("Full Deployment", () => {
                     const crvBalance = await crv.balanceOf(phase4.cvxStakingProxy.address);
                     expect(crvBalance).gt(0);
 
-                    const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
+                    const keeper = await impersonateAccount(config.addresses.keeper);
+
+                    const callerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
-                    await phase4.cvxStakingProxy.connect(staker.signer)["distribute()"]();
-                    const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(stakerAddress);
+
+                    await phase4.cvxStakingProxy.connect(keeper.signer)["distribute()"]();
+                    const callerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(keeper.address);
                     const cvxLockerCvxCrvBalanceAfter = await phase4.cvxCrv.balanceOf(phase4.cvxLocker.address);
 
                     expect(callerCvxCrvBalanceAfter).gt(callerCvxCrvBalanceBefore);
@@ -1609,7 +1631,7 @@ describe("Full Deployment", () => {
                 it("allows a pool to be shut down", async () => {
                     const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
 
-                    const pid = config.addresses.gauges.length - 1;
+                    const pid = 5;
                     const poolInfoBefore = await phase4.booster.poolInfo(pid);
                     expect(poolInfoBefore.shutdown).eq(false);
 
@@ -1803,7 +1825,10 @@ describe("Full Deployment", () => {
                     const cvxCrvBalanceBefore = await phase4.cvxCrv.balanceOf(stakerAddress);
                     await getCrv(phase4.booster.address, simpleToExactAmount(1));
                     await phase4.booster.earmarkRewards(0);
-                    await phase4.cvxStakingProxy["distribute()"]();
+
+                    const keeper = await impersonateAccount(config.addresses.keeper);
+                    await phase4.cvxStakingProxy.connect(keeper.signer)["distribute()"]();
+
                     await increaseTime(ONE_HOUR);
                     const rewards = await phase4.cvxLocker.claimableRewards(stakerAddress);
                     expect(rewards[0].amount).gt(0);
@@ -1895,9 +1920,9 @@ describe("Full Deployment", () => {
                 let unlockTime = BN.from(lockedBalanceBefore.lockData[0].unlockTime);
                 let currentTime = await getTimestamp();
                 // unlock > 20 weeks
-                expect(unlockTime.sub(currentTime)).gt(ONE_WEEK.mul(3).div(2));
+                expect(unlockTime.sub(currentTime)).gt(ONE_WEEK);
                 // unlock < 20.5 weeks
-                expect(unlockTime.sub(currentTime)).lt(ONE_WEEK.mul(BN.from(2)));
+                expect(unlockTime.sub(currentTime)).lt(ONE_WEEK.mul(2));
 
                 const userBalanceBefore = await cvxLocker.balances(stakerAddress);
                 expect(userBalanceBefore.nextUnlockIndex).eq(0);
@@ -1942,6 +1967,7 @@ describe("Full Deployment", () => {
                 const { cvxLocker } = phase4;
                 const swapper = await impersonateAccount(testAccounts.swapper);
 
+                await increaseTime(ONE_WEEK);
                 await cvxLocker.kickExpiredLocks(swapper.address);
             });
         });

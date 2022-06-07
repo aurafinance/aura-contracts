@@ -50,31 +50,30 @@ const addresses: ExtSystemConfig = {
         "0x5A481455E62D5825429C8c416f3B8D2938755B64",
         "0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE",
         "0xb154d9D7f6C5d618c08D276f94239c03CFBF4575",
-        // TODO - add these gauges (only if they have weight - run fork)
-        // "0xdB7D7C535B4081Bb8B719237bdb7DB9f23Cc0b83",
-        // "0xaB5ea78c8323212cC5736bfe4874557Bc778Bfbf",
-        // "0x8F4a5C19A74D7111bC0e1486640F0aAB537dE5A1",
-        // "0xD61dc7452C852B866c0Ae49F4e87C38884AE231d",
-        // "0xC5f8B1de80145e3a74524a3d1a772a31eD2B50cc",
-        // "0x7A89f34E976285b7b885b32b2dE566389C2436a0",
-        // "0x68d019f64A7aa97e2D4e7363AEE42251D08124Fb",
-        // "0x78DF155d6d75Ca2a1b1B2027f37414Ac1e7A1Ed8",
-        // "0xc43d32BC349cea7e0fe829F53E26096c184756fa",
-        // "0x4f9463405F5bC7b4C1304222c1dF76EFbD81a407",
-        // "0x9AB7B0C7b154f626451c9e8a68dC04f58fb6e5Ce",
-        // "0xE273d4aCC555A245a80cB494E9E0dE5cD18Ed530",
-        // "0x4e311e207CEAaaed421F17E909DA16527565Daef",
-        // "0x4E3c048BE671852277Ad6ce29Fd5207aA12fabff",
-        // "0x055d483D00b0FFe0c1123c96363889Fb03fa13a4",
-        // "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
-        // "0xbeC2d02008Dc64A6AD519471048CF3D3aF5ca0C5",
-        // "0x31e7F53D27BFB324656FACAa69Fe440169522E1C",
-        // "0xD6E4d70bdA78FBa018c2429e1b84153b9284298e",
-        // "0x78259f2e946B11a0bE404d29d3cc017eCddE84C6",
-        // "0xAFc28B2412B343574E8673D4fb6b220473677602",
-        // "0xCB664132622f29943f67FA56CCfD1e24CC8B4995",
-        // "0xf4339872Ad09B34a29Be76EE81D4F30BCf7dbf9F",
-        // "0x57d40FF4cF7441A04A05628911F57bb940B6C238",
+        "0xdB7D7C535B4081Bb8B719237bdb7DB9f23Cc0b83",
+        "0xaB5ea78c8323212cC5736bfe4874557Bc778Bfbf",
+        "0x8F4a5C19A74D7111bC0e1486640F0aAB537dE5A1",
+        "0xD61dc7452C852B866c0Ae49F4e87C38884AE231d",
+        "0xC5f8B1de80145e3a74524a3d1a772a31eD2B50cc",
+        "0x7A89f34E976285b7b885b32b2dE566389C2436a0",
+        "0x68d019f64A7aa97e2D4e7363AEE42251D08124Fb",
+        "0x78DF155d6d75Ca2a1b1B2027f37414Ac1e7A1Ed8",
+        "0xc43d32BC349cea7e0fe829F53E26096c184756fa",
+        "0x4f9463405F5bC7b4C1304222c1dF76EFbD81a407",
+        "0x9AB7B0C7b154f626451c9e8a68dC04f58fb6e5Ce",
+        "0xE273d4aCC555A245a80cB494E9E0dE5cD18Ed530",
+        "0x4e311e207CEAaaed421F17E909DA16527565Daef",
+        "0x4E3c048BE671852277Ad6ce29Fd5207aA12fabff",
+        "0x055d483D00b0FFe0c1123c96363889Fb03fa13a4",
+        "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
+        "0xbeC2d02008Dc64A6AD519471048CF3D3aF5ca0C5",
+        "0x31e7F53D27BFB324656FACAa69Fe440169522E1C",
+        "0xD6E4d70bdA78FBa018c2429e1b84153b9284298e",
+        "0x78259f2e946B11a0bE404d29d3cc017eCddE84C6",
+        "0xAFc28B2412B343574E8673D4fb6b220473677602",
+        "0xCB664132622f29943f67FA56CCfD1e24CC8B4995",
+        "0xf4339872Ad09B34a29Be76EE81D4F30BCf7dbf9F",
+        "0x57d40FF4cF7441A04A05628911F57bb940B6C238",
     ],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
@@ -87,13 +86,13 @@ const addresses: ExtSystemConfig = {
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
-    keeper: ZERO_ADDRESS, // TODO - define keeper
+    keeper: "0xc3f4D7b4EF10Dfe1dFfc4Ac2EC4D3Ee29CBF67aE",
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
     feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
-    stEthGaugeLdoDepositor: "0xc38c5f97B34E175FFd35407fc91a937300E33860",
+    stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
 };
 
 const naming = {
@@ -106,11 +105,11 @@ const naming = {
     tokenFactoryNamePostfix: " Aura Deposit",
 };
 
-// TODO - add proper multisigs
 const multisigs = {
-    vestingMultisig: "0x97bA9Ec4d946366c75DE81734a51740Fffa7a300",
-    treasuryMultisig: "0x8BE7Cb562a52398E55f0a04a76028d1805Aa435f",
-    daoMultisig: "0xfEE0Bbe31345a7c27368534fEf45a57133FF3A86",
+    vestingMultisig: "0xab9ff9Fbc44Bb889751c4E70AD2F6977267A1E09",
+    treasuryMultisig: "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9",
+    daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    launchMultisig: "0x7d9D5bcc35D3835c1E4Eb3Dff24599CA9e96EDCc",
 };
 
 const distroList = {
@@ -119,7 +118,7 @@ const distroList = {
     cvxCrvBootstrap: simpleToExactAmount(2, 24),
     lbp: {
         tknAmount: simpleToExactAmount(2.2, 24),
-        wethAmount: simpleToExactAmount(66), // TODO - update wethAmount
+        wethAmount: simpleToExactAmount(100),
         matching: simpleToExactAmount(2.8, 24),
     },
     airdrops: [
@@ -151,36 +150,42 @@ const distroList = {
         },
     ],
     vesting: [
-        // 4 MONTHS - 0.041%
+        // 4 MONTHS - 0.016%
         {
             period: ONE_WEEK.mul(16),
             recipients: [
-                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.025, 24) }, // Contractor 1
-                { address: "0xb64f3884ceed18594bd707122988e913fa26f4bf", amount: simpleToExactAmount(0.008, 24) }, // Contractor 2
-                { address: "0x498f95A7b752A6FcF97559C815914cE4777b2390", amount: simpleToExactAmount(0.008, 24) }, // Contractor 3
+                { address: "0xb64f3884ceed18594bd707122988e913fa26f4bf", amount: simpleToExactAmount(0.008, 24) }, // Temp
+                { address: "0x498f95A7b752A6FcF97559C815914cE4777b2390", amount: simpleToExactAmount(0.008, 24) }, // Temp
             ],
         },
-        // 6 MONTHS - 0.0675% + 1.0165% future team
+        // 6 MONTHS - 0.0825% + 1.4515% future team
         {
             period: ONE_WEEK.mul(26),
             recipients: [
-                { address: "0x33c7B2c7Bf017FA8BF31A4a412A36f39124411d8", amount: simpleToExactAmount(0.0675, 24) }, // Contractor 4
-                { address: multisigs.vestingMultisig, amount: simpleToExactAmount(1.0165, 24) }, // Vesting dao - future team
+                { address: "0x33c7B2c7Bf017FA8BF31A4a412A36f39124411d8", amount: simpleToExactAmount(0.0675, 24) }, // Temp
+                { address: "0x337F8f3316E1326B3188E534913F759460bd57CB", amount: simpleToExactAmount(0.015, 24) }, // Temp
+                { address: multisigs.vestingMultisig, amount: simpleToExactAmount(1.4515, 24) }, // Vesting dao - future team
             ],
         },
-        // 24 MONTHS - 8.875%
+        // 24 MONTHS - 8.45%
         {
             period: ONE_WEEK.mul(104),
             recipients: [
-                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(3.5, 24) }, // Core team 1
-                { address: "0x680b07BD5f18aB1d7dE5DdBBc64907E370697EA5", amount: simpleToExactAmount(3.5, 24) }, // Core team 2
-                { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team 3
-                { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team 4
-                { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team 5
-                { address: "0x3078c3b436511152d86675f9cbfd89ec1672f804", amount: simpleToExactAmount(0.3, 24) }, // Core team 6
-                { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team 7
-                { address: "0xe3B6c287C1369C6A4fa8d4e857813695C52948EF", amount: simpleToExactAmount(0.075, 24) }, // Core team 8
-                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.05, 24) }, // Core team 9
+                { address: "0xe3B6c287C1369C6A4fa8d4e857813695C52948EF", amount: simpleToExactAmount(0.275, 24) }, // Core team
+                { address: "0x023320e0C9Ac45644c3305cE574360E901c7f582", amount: simpleToExactAmount(0.5, 24) }, // Core team
+                { address: "0xB1f881f47baB744E7283851bC090bAA626df931d", amount: simpleToExactAmount(3.5, 24) }, // Core team
+                { address: "0xE4b32828B558F17BcaF5efD52f0C067dba38833c", amount: simpleToExactAmount(0.45, 24) }, // Core team
+                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.075, 24) }, // Core team
+                { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team
+                { address: "0x3078c3b436511152d86675f9cbfd89ec1672f804", amount: simpleToExactAmount(0.3, 24) }, // Core team
+                { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team
+                { address: "0x3CBFFF3E75881c1619eaa82DC724BDEE6fF6ED19", amount: simpleToExactAmount(0.06, 24) }, // Core team
+                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.175, 24) }, // Core team
+                { address: "0x738175DB2C999581f29163e6D4D3516Ad4aF8834", amount: simpleToExactAmount(0.125, 24) }, // Core team
+                { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team
+                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(1.5, 24) }, // Core team
+                { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team
+                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.04, 24) }, // Core team
             ],
         },
     ],

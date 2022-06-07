@@ -3,6 +3,7 @@ import {
     RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
     AuraPenaltyForwarder,
+    IGaugeController__factory,
     IInvestmentPoolFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
@@ -155,6 +156,7 @@ interface MultisigConfig {
     vestingMultisig: string;
     treasuryMultisig: string;
     daoMultisig: string;
+    launchMultisig: string;
 }
 
 interface BPTData {
@@ -640,6 +642,9 @@ async function deployPhase2(
     tx = await booster.setVoteDelegate(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await booster.setFees(550, 1100, 50, 0);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await booster.setFeeManager(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -894,7 +899,7 @@ async function deployPhase2(
             poolData.tokens,
             poolData.weights,
             poolData.swapFee,
-            multisigs.treasuryMultisig,
+            multisigs.launchMultisig,
             false,
             0,
         );
@@ -1014,7 +1019,7 @@ async function deployPhase3(
         const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
             balLiquidityProvider.address,
         );
-        if (tknAmount.lt(simpleToExactAmount(2.8, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+        if (tknAmount.lt(simpleToExactAmount(1.5, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
             throw console.error("Invalid balances");
         }
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
@@ -1101,7 +1106,12 @@ async function deployPhase4(
     await waitForTx(tx, debug, waitForBlocks);
 
     const gaugeLength = gauges.length;
+    const gaugeController = IGaugeController__factory.connect(config.gaugeController, deployer);
     for (let i = 0; i < gaugeLength; i++) {
+        if (gaugeLength > 10) {
+            const weight = await gaugeController.get_gauge_weight(gauges[i]);
+            if (weight.lt(simpleToExactAmount(2500))) continue;
+        }
         tx = await poolManager["addPool(address)"](gauges[i]);
         await waitForTx(tx, debug, waitForBlocks);
     }

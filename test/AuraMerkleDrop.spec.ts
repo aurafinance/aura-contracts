@@ -201,7 +201,7 @@ describe("AuraMerkleDrop", () => {
             const userAuraBalanceBefore = await aura.balanceOf(bobAddress);
             const userBalanceBefore = await auraLocker.balances(bobAddress);
             const pendingPenaltyBefore = await merkleDrop.pendingPenalty();
-            const penalty = amount.mul(2).div(10);
+            const penalty = amount.mul(3).div(10);
             expect(await merkleDrop.hasClaimed(bobAddress), "user  has not claimed").to.eq(false);
             // test
             const tx = merkleDrop.connect(bob).claim(getAccountBalanceProof(tree, bobAddress, amount), amount, lock);

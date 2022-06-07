@@ -110,6 +110,7 @@ async function getMockMultisigs(
         vestingMultisig: await vestingSigner.getAddress(),
         treasuryMultisig: await treasurySigner.getAddress(),
         daoMultisig: await daoSigner.getAddress(),
+        launchMultisig: await daoSigner.getAddress(),
     };
 }
 
