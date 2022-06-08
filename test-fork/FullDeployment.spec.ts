@@ -34,8 +34,6 @@ import {
     simpleToExactAmount,
     ONE_DAY,
     ZERO_KEY,
-    createTreeWithAccounts,
-    getAccountBalanceProof,
 } from "../test-utils";
 import { Signer } from "ethers";
 import { deployContract, waitForTx } from "../tasks/utils";
@@ -53,16 +51,16 @@ import { Account } from "./../types/common";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
-import MerkleTree from "merkletreejs";
 
 const debug = false;
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const merkleDropRootHashes = ["0xe176be1ffd0bde6dcb64ad90f238c988300d474892d789c211c63a44bf262e9b", ZERO_KEY];
 
 const testAccounts = {
     swapper: "0x0000000000000000000000000000000000000002",
     alice: "0x0000000000000000000000000000000000000003",
     eoa: "0x0000000000000000000000000000000000000004",
-    dropper: "0x0000000000000000000000000000000000000005",
     staker: "0x0000000000000000000000000000000000000006",
 };
 
@@ -547,6 +545,7 @@ describe("Full Deployment", () => {
                 it("Drops have correct config", async () => {
                     const { drops } = phase2;
                     const { multisigs } = config;
+                    const [rootHashOne, rootHashTwo] = merkleDropRootHashes;
 
                     const time = await getTimestamp();
                     expect(drops.length).eq(2);
@@ -554,7 +553,7 @@ describe("Full Deployment", () => {
                     // [ 0 ] = 2.5m, 4 weeks
                     const drop = drops[0];
                     expect(await drop.dao()).eq(multisigs.treasuryMultisig);
-                    expect(await drop.merkleRoot()).eq(ZERO_KEY);
+                    expect(await drop.merkleRoot()).eq(rootHashOne);
                     expect(await drop.aura()).eq(phase2.cvx.address);
                     expect(await drop.auraLocker()).eq(phase2.cvxLocker.address);
                     expect(await drop.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
@@ -567,7 +566,7 @@ describe("Full Deployment", () => {
                     // [ 1 ] = 1m, 26 weeks
                     const drop1 = drops[1];
                     expect(await drop1.dao()).eq(multisigs.treasuryMultisig);
-                    expect(await drop1.merkleRoot()).eq(ZERO_KEY);
+                    expect(await drop1.merkleRoot()).eq(rootHashTwo);
                     expect(await drop1.aura()).eq(phase2.cvx.address);
                     expect(await drop1.auraLocker()).eq(phase2.cvxLocker.address);
                     expect(await drop1.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
@@ -1072,21 +1071,54 @@ describe("Full Deployment", () => {
                 });
             });
             describe("merkle drops", () => {
-                let tree: MerkleTree;
                 let treasurySigner: Account;
-                const amount = simpleToExactAmount(100);
+
                 const eoaAddress = testAccounts.eoa;
-                const dropperAddress = testAccounts.dropper;
+
+                const droppers = {
+                    whale: {
+                        address: "0xaac0aa431c237c2c0b5f041c8e59b3f1a43ac78f",
+                        allocation: "33506849383911890434692",
+                        proof: [
+                            "0x649bc2756ceab54460d21beae4e271d0a474dde222edfa9be5a8674caa325945",
+                            "0x2ea16ed85f499c6ccf63de9155802c5df9ad285be9ada7cae0d39276bb2ffe8d",
+                            "0x5f31d0ffc6d5cab1b40c77e1560c44556744cd458e1d3d4a9f4f63fad3b380c0",
+                            "0xcbd4f504822921cc3a8d76a4ecba20e0783fe2f9acdcd3731195845f40cd69af",
+                            "0xffb6999eba2d295cd30e4c22d9cb0fb0ccf16e7654685bb3351fbcfec8eab694",
+                            "0xad91298e86af9846f5bf2d9a3a7c4ae60489bc9eeb2942c40d0bedba6d03045f",
+                            "0xc2de03b39e51ef88e1b2ff7f19c4ea150bfaf3e1ea9652ccdecd58ee382f09eb",
+                            "0xf426d4473efb50dbb7e192b8ae5afae2944a7cd249a4bffacd1c038d931bdb03",
+                            "0xa7ed4112c1eff244b7432b31eab52f11b2e3def8b90b5dd516b67fb8b86d46d9",
+                            "0x21e204b170262ab9b4591d9ac7b0c49dc38d29a336e635f49351cb4cc5ef92b3",
+                            "0x67dc181587226ef4db959e868247198e00dff600beb808adde06d12c3bf960c9",
+                            "0x7f061b434edb28761c9c94fb583ca62a36bd54f8347e54e8fcfa09c3c58f2746",
+                            "0x5f89350241c8865d533d3eaaa6cd934ea41c0b7a5b541de29948542c2adc2d0f",
+                        ],
+                    },
+                    random: {
+                        address: "0x22728fb916c38d23a70ce66af2fc7c4c3a961a75",
+                        allocation: "63956790893749165150",
+                        proof: [
+                            "0xfc19e13d65f7d134f86515c164b84cd726b8eab34b3e66ca0b81ce16bbce0345",
+                            "0x9d90a5a731c30117a29af0e73db97af0c8d9c34f4f874994f041f34e7b768126",
+                            "0x6e20d9f5edaf3eea18ce06ab7a889a663e77c351a0b4151afb309322c65aac14",
+                            "0xbe598a6be3cfe0d53f87fb27257b954c89228c3ddb4afca83081c2052c60d2a3",
+                            "0xac8ca185413c89e0338f0e9be6c46fc69d02948d6660d1b65b671408c8ed6c15",
+                            "0x0991e96519e9db6f5ba2232ba8d234b5bce9fa69f8d6165d5a0afbc857da869a",
+                            "0xfc2dd2204bccf8821f01e8b40c60589202724423ea2f9aa85088757efebcd773",
+                            "0xeaa39ca7b3710efadd019dcac2a0fe9804bd751262551193fb69f36a78e442f8",
+                            "0xe771d3e1c31537574758556ea2654ca9ba50994811bfda3846d20a020821a22a",
+                            "0x3d9c55807449b322d36ac8213cb541ed06f5caa6eb2336e50ed250b992c4ebf3",
+                            "0xac277c38a9969fa376fdc0e52e1474f26af5d410e99222690d63efebe1decc54",
+                            "0x63040214034cbcc460bf47dbadf50c81896bd07f3deb713bb91c054881e4ce33",
+                        ],
+                    },
+                };
 
                 before(async () => {
-                    tree = createTreeWithAccounts({
-                        [dropperAddress]: amount,
-                        [deployerAddress]: amount,
-                    });
-
                     treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
                     if ((await phase3.drops[0].merkleRoot()) == ZERO_KEY) {
-                        await phase3.drops[0].connect(treasurySigner.signer).setRoot(tree.getHexRoot());
+                        await phase3.drops[0].connect(treasurySigner.signer).setRoot(merkleDropRootHashes[0]);
                     }
                 });
                 it("doesn't allow just anyone to claim a merkle drop", async () => {
@@ -1094,22 +1126,41 @@ describe("Full Deployment", () => {
 
                     const eoa = await impersonateAccount(eoaAddress);
                     await expect(
-                        drops[0]
-                            .connect(eoa.signer)
-                            .claim(getAccountBalanceProof(tree, deployerAddress, amount), amount, true),
+                        drops[0].connect(eoa.signer).claim(droppers.whale.proof, droppers.whale.allocation, true),
+                    ).to.be.revertedWith("invalid proof");
+                });
+                it("requires a valid proof", async () => {
+                    const { drops } = phase3;
+
+                    const dropper = await impersonateAccount(droppers.whale.address);
+                    const emptyProof = Array.from({ length: 12 }).map(() => ZERO_KEY);
+                    await expect(
+                        drops[0].connect(dropper.signer).claim(emptyProof, droppers.whale.allocation, true),
                     ).to.be.revertedWith("invalid proof");
                 });
                 it("allows users to claim merkle drops", async () => {
                     const { drops, cvxLocker } = phase3;
 
-                    const balBefore = (await cvxLocker.lockedBalances(dropperAddress)).locked;
-                    const dropper = await impersonateAccount(dropperAddress);
-                    await drops[0]
-                        .connect(dropper.signer)
-                        .claim(getAccountBalanceProof(tree, dropperAddress, amount), amount, true);
+                    {
+                        const balBefore = (await cvxLocker.lockedBalances(droppers.whale.address)).locked;
+                        const dropper = await impersonateAccount(droppers.whale.address);
+                        await drops[0]
+                            .connect(dropper.signer)
+                            .claim(droppers.whale.proof, droppers.whale.allocation, true);
 
-                    const balAfter = (await cvxLocker.lockedBalances(dropperAddress)).locked;
-                    expect(balAfter.sub(balBefore)).eq(amount);
+                        const balAfter = (await cvxLocker.lockedBalances(droppers.whale.address)).locked;
+                        expect(balAfter.sub(balBefore)).eq(droppers.whale.allocation);
+                    }
+                    {
+                        const balBefore = (await cvxLocker.lockedBalances(droppers.random.address)).locked;
+                        const dropper = await impersonateAccount(droppers.random.address);
+                        await drops[0]
+                            .connect(dropper.signer)
+                            .claim(droppers.random.proof, droppers.random.allocation, true);
+
+                        const balAfter = (await cvxLocker.lockedBalances(droppers.random.address)).locked;
+                        expect(balAfter.sub(balBefore)).eq(droppers.random.allocation);
+                    }
                 });
             });
             describe("vesting", () => {
