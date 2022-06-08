@@ -123,7 +123,7 @@ const distroList = {
     },
     airdrops: [
         {
-            merkleRoot: "0xe176be1ffd0bde6dcb64ad90f238c988300d474892d789c211c63a44bf262e9b",
+            merkleRoot: "0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78",
             startDelay: ONE_WEEK,
             length: ONE_WEEK.mul(4),
             amount: simpleToExactAmount(2.5, 24),
