@@ -123,7 +123,7 @@ const distroList = {
     },
     airdrops: [
         {
-            merkleRoot: ZERO_KEY, // TODO - add final merkleRoot
+            merkleRoot: "0xe176be1ffd0bde6dcb64ad90f238c988300d474892d789c211c63a44bf262e9b",
             startDelay: ONE_WEEK,
             length: ONE_WEEK.mul(4),
             amount: simpleToExactAmount(2.5, 24),
