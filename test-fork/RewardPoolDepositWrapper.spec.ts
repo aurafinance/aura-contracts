@@ -37,6 +37,8 @@ describe("RewardPoolDepositWrapper", () => {
     let usdc: ERC20;
 
     before(async () => {
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
+
         await network.provider.request({
             method: "hardhat_reset",
             params: [

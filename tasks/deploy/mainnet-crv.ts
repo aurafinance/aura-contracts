@@ -12,7 +12,7 @@ import {
     IWalletChecker__factory,
     ICurveVoteEscrow__factory,
     MockERC20__factory,
-    IInvestmentPool__factory,
+    ILBP__factory,
 } from "../../types/generated";
 import { ONE_DAY, ZERO_ADDRESS } from "../../test-utils/constants";
 
@@ -33,7 +33,7 @@ const curveSystem: ExtSystemConfig = {
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
         stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
-        investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
+        bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
     },
     weth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
@@ -98,7 +98,7 @@ task("deploy:mainnet:crv").setAction(async function (taskArguments: TaskArgument
     const phase2 = await deployPhase2(hre, deployer, phase1, distroList, multisigs, naming, curveSystem, true);
     // POST-PHASE-2
     const treasurySigner = await impersonateAccount(multisigs.treasuryMultisig);
-    const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
+    const lbp = ILBP__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     const [, weights] = balHelper.sortTokens(
         [phase2.cvx.address, curveSystem.weth],

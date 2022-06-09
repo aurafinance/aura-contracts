@@ -181,7 +181,7 @@ contract AuraBalRewardPool {
                 rewardToken.safeIncreaseAllowance(address(auraLocker), reward);
                 auraLocker.lock(msg.sender, reward);
             } else {
-                uint256 penalty = (reward * 2) / 10;
+                uint256 penalty = (reward * 3) / 10;
                 pendingPenalty += penalty;
                 rewardToken.safeTransfer(msg.sender, reward - penalty);
             }

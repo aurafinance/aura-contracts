@@ -280,7 +280,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             balancerPoolFactories: {
                 weightedPool2Tokens: ZERO_ADDRESS,
                 stablePool: ZERO_ADDRESS,
-                investmentPool: ZERO_ADDRESS,
+                bootstrappingPool: ZERO_ADDRESS,
             },
             balancerPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",

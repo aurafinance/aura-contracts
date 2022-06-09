@@ -3,7 +3,8 @@ import {
     RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
     AuraPenaltyForwarder,
-    IInvestmentPoolFactory__factory,
+    IGaugeController__factory,
+    ILBPFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
@@ -111,7 +112,7 @@ interface DistroList {
 interface BalancerPoolFactories {
     weightedPool2Tokens: string;
     stablePool: string;
-    investmentPool: string;
+    bootstrappingPool: string;
 }
 interface ExtSystemConfig {
     authorizerAdapter?: string;
@@ -640,6 +641,9 @@ async function deployPhase2(
     tx = await booster.setVoteDelegate(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await booster.setFees(550, 1100, 50, 0);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await booster.setFeeManager(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -884,19 +888,15 @@ async function deployPhase2(
             console.log(poolData.tokens);
         }
 
-        const poolFactory = IInvestmentPoolFactory__factory.connect(
-            config.balancerPoolFactories.investmentPool,
-            deployer,
-        );
+        const poolFactory = ILBPFactory__factory.connect(config.balancerPoolFactories.bootstrappingPool, deployer);
         tx = await poolFactory.create(
             poolData.name,
             poolData.symbol,
             poolData.tokens,
             poolData.weights,
             poolData.swapFee,
-            multisigs.treasuryMultisig,
+            deployerAddress,
             false,
-            0,
         );
         const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
@@ -1014,7 +1014,7 @@ async function deployPhase3(
         const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
             balLiquidityProvider.address,
         );
-        if (tknAmount.lt(simpleToExactAmount(2.8, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+        if (tknAmount.lt(simpleToExactAmount(1.5, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
             throw console.error("Invalid balances");
         }
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
@@ -1101,7 +1101,12 @@ async function deployPhase4(
     await waitForTx(tx, debug, waitForBlocks);
 
     const gaugeLength = gauges.length;
+    const gaugeController = IGaugeController__factory.connect(config.gaugeController, deployer);
     for (let i = 0; i < gaugeLength; i++) {
+        if (gaugeLength > 10) {
+            const weight = await gaugeController.get_gauge_weight(gauges[i]);
+            if (weight.lt(simpleToExactAmount(2500))) continue;
+        }
         tx = await poolManager["addPool(address)"](gauges[i]);
         await waitForTx(tx, debug, waitForBlocks);
     }

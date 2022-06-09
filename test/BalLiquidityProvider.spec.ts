@@ -271,14 +271,14 @@ describe("BalLiquidityProvider", () => {
         it("should rescue tokens from the contract", async () => {
             const wethBalance = await mocks.weth.balanceOf(balLiquidityProvider.address);
             expect(wethBalance, "weth balance").to.gt(0);
-            await balLiquidityProvider.connect(deployer).rescueToken(mocks.weth.address);
+            await balLiquidityProvider.connect(deployer).rescueToken(mocks.weth.address, wethBalance);
             // Verify events, storage change, balance, etc.
             expect(await mocks.weth.balanceOf(balLiquidityProvider.address), "weth balance").to.eq(0);
             expect(await mocks.weth.balanceOf(daoAccount.address), "weth balance").to.eq(wethBalance);
         });
         it("fails if sender is not authorized ", async () => {
             await expect(
-                balLiquidityProvider.connect(alice).rescueToken(ZERO_ADDRESS),
+                balLiquidityProvider.connect(alice).rescueToken(ZERO_ADDRESS, 1),
                 "not authorized",
             ).to.be.revertedWith("!auth");
         });
