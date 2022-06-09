@@ -24,7 +24,7 @@ import {
     MockERC20__factory,
     MockWalletChecker,
     MockWalletChecker__factory,
-    IInvestmentPool__factory,
+    ILBP__factory,
     VoterProxy__factory,
     ERC20__factory,
     BaseRewardPool__factory,
@@ -54,7 +54,7 @@ const kovanBalancerConfig: ExtSystemConfig = {
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
         stablePool: "0x751dfDAcE1AD995fF13c927f6f761C6604532c79",
-        investmentPool: "0xb08E16cFc07C684dAA2f93C70323BAdb2A6CBFd2",
+        bootstrappingPool: "0x0F3e0c4218b7b0108a3643cFe9D3ec0d4F57c54e",
     },
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
 };
@@ -239,7 +239,7 @@ async function deployKovan234(
         waitForBlocks,
     );
     // POST-PHASE-2
-    const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, deployer);
+    const lbp = ILBP__factory.connect(phase2.lbpBpt.address, deployer);
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     const [, weights] = balHelper.sortTokens(
         [phase2.cvx.address, kovanBalancerConfig.weth],

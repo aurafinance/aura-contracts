@@ -4,7 +4,7 @@ import {
     ExtraRewardsDistributor,
     AuraPenaltyForwarder,
     IGaugeController__factory,
-    IInvestmentPoolFactory__factory,
+    ILBPFactory__factory,
     MockWalletChecker__factory,
     MockCurveVoteEscrow__factory,
     BoosterOwner__factory,
@@ -112,7 +112,7 @@ interface DistroList {
 interface BalancerPoolFactories {
     weightedPool2Tokens: string;
     stablePool: string;
-    investmentPool: string;
+    bootstrappingPool: string;
 }
 interface ExtSystemConfig {
     authorizerAdapter?: string;
@@ -156,7 +156,6 @@ interface MultisigConfig {
     vestingMultisig: string;
     treasuryMultisig: string;
     daoMultisig: string;
-    launchMultisig: string;
 }
 
 interface BPTData {
@@ -889,19 +888,15 @@ async function deployPhase2(
             console.log(poolData.tokens);
         }
 
-        const poolFactory = IInvestmentPoolFactory__factory.connect(
-            config.balancerPoolFactories.investmentPool,
-            deployer,
-        );
+        const poolFactory = ILBPFactory__factory.connect(config.balancerPoolFactories.bootstrappingPool, deployer);
         tx = await poolFactory.create(
             poolData.name,
             poolData.symbol,
             poolData.tokens,
             poolData.weights,
             poolData.swapFee,
-            multisigs.launchMultisig,
+            deployerAddress,
             false,
-            0,
         );
         const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);

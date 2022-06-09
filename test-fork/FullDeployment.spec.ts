@@ -4,8 +4,8 @@ import { expect } from "chai";
 import {
     ICurveVoteEscrow__factory,
     IERC20__factory,
-    IInvestmentPool,
-    IInvestmentPool__factory,
+    ILBP,
+    ILBP__factory,
     MockERC20__factory,
     MockWalletChecker__factory,
     IVault,
@@ -579,12 +579,10 @@ describe("Full Deployment", () => {
                 });
                 it("LbpBPT has correct config", async () => {
                     const { cvx, lbpBpt } = phase2;
-
                     // Token amounts
                     // Weights
                     // Swap = false
                     // Balance = treasuryDAO
-
                     const balancerVault = IVault__factory.connect(config.addresses.balancerVault, deployer);
                     const balances = await balancerVault.getPoolTokens(lbpBpt.poolId);
                     const pool = IBalancerPool__factory.connect(lbpBpt.address, deployer);
@@ -592,13 +590,15 @@ describe("Full Deployment", () => {
                     if (balances.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(balances.balances[0]).eq(simpleToExactAmount(2.2, 24));
                         expect(balances.balances[1]).eq(simpleToExactAmount(100));
-                        assertBNClosePercent(weights[0], simpleToExactAmount(99, 16), "0.0001");
-                        assertBNClosePercent(weights[1], simpleToExactAmount(1, 16), "0.0001");
+                        console.log(weights[0].toString(), weights[1].toString());
+                        assertBNClosePercent(weights[0], simpleToExactAmount(99, 16), "0.1");
+                        assertBNClosePercent(weights[1], simpleToExactAmount(1, 16), "0.1");
                     } else {
                         expect(balances.balances[1]).eq(simpleToExactAmount(2.2, 24));
                         expect(balances.balances[0]).eq(simpleToExactAmount(100));
-                        assertBNClosePercent(weights[1], simpleToExactAmount(99, 16), "0.0001");
-                        assertBNClosePercent(weights[0], simpleToExactAmount(1, 16), "0.0001");
+                        console.log(weights[0].toString(), weights[1].toString());
+                        assertBNClosePercent(weights[1], simpleToExactAmount(99, 16), "0.1");
+                        assertBNClosePercent(weights[0], simpleToExactAmount(1, 16), "0.1");
                     }
                     const swapEnabled = await pool.getSwapEnabled();
                     expect(swapEnabled).eq(false);
@@ -637,12 +637,12 @@ describe("Full Deployment", () => {
         });
 
         describe("POST-Phase 2", () => {
-            let lbp: IInvestmentPool;
+            let lbp: ILBP;
             let launchSigner: Account;
             let currentTime: BN;
             before(async () => {
-                launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
-                lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
+                launchSigner = await impersonateAccount(deployerAddress);
+                lbp = ILBP__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
                 currentTime = BN.from(
                     (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
                 );
@@ -808,8 +808,8 @@ describe("Full Deployment", () => {
                 // t = 3
                 await swapEthForAura(swapper, simpleToExactAmount(100));
 
-                const launchSigner = await impersonateAccount(config.multisigs.launchMultisig);
-                const lbp = IInvestmentPool__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
+                const launchSigner = await impersonateAccount(deployerAddress);
+                const lbp = ILBP__factory.connect(phase2.lbpBpt.address, launchSigner.signer);
                 const currentTime = BN.from(
                     (await hre.ethers.provider.getBlock(await hre.ethers.provider.getBlockNumber())).timestamp,
                 );
