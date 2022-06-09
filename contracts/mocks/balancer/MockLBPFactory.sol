@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 
-interface IInvestmentPoolFactory {
+interface ILBPFactory {
     function create(
         string memory name,
         string memory symbol,
@@ -11,12 +11,11 @@ interface IInvestmentPoolFactory {
         uint256[] memory weights,
         uint256 swapFeePercentage,
         address owner,
-        bool swapEnabledOnStart,
-        uint256 managementSwapFeePercentage
+        bool swapEnabledOnStart
     ) external returns (address);
 }
 
-interface IInvestmentPool {
+interface ILBP {
     function setSwapEnabled(bool swapEnabled) external;
 
     function updateWeightsGradually(

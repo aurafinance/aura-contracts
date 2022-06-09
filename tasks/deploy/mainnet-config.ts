@@ -81,7 +81,7 @@ const addresses: ExtSystemConfig = {
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
         stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
-        investmentPool: "0x48767F9F868a4A7b86A90736632F6E44C2df7fa9",
+        bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
     },
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
@@ -109,7 +109,6 @@ const multisigs = {
     vestingMultisig: "0xab9ff9Fbc44Bb889751c4E70AD2F6977267A1E09",
     treasuryMultisig: "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9",
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-    launchMultisig: "0x7d9D5bcc35D3835c1E4Eb3Dff24599CA9e96EDCc",
 };
 
 const distroList = {
