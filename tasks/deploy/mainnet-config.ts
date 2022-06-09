@@ -96,7 +96,7 @@ const addresses: ExtSystemConfig = {
 };
 
 const naming = {
-    cvxName: "Aura Finance",
+    cvxName: "Aura",
     cvxSymbol: "AURA",
     vlCvxName: "Vote Locked Aura",
     vlCvxSymbol: "vlAURA",
@@ -196,42 +196,68 @@ const getPhase1 = async (deployer: Signer): Promise<Phase1Deployed> => ({
 
 const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     ...(await getPhase1(deployer)),
-    voterProxy: await VoterProxy__factory.connect("", deployer),
-    cvx: await AuraToken__factory.connect("", deployer),
-    minter: await AuraMinter__factory.connect("", deployer),
-    booster: await Booster__factory.connect("", deployer),
-    boosterOwner: await BoosterOwner__factory.connect("", deployer),
+    cvx: await AuraToken__factory.connect("0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF", deployer),
+    minter: await AuraMinter__factory.connect("0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707", deployer),
+    booster: await Booster__factory.connect("0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10", deployer),
+    boosterOwner: await BoosterOwner__factory.connect("0xFa838Af70314135159b309bf27f1DbF1F954eC34", deployer),
     factories: {
-        rewardFactory: await RewardFactory__factory.connect("", deployer),
-        stashFactory: await StashFactoryV2__factory.connect("", deployer),
-        tokenFactory: await TokenFactory__factory.connect("", deployer),
-        proxyFactory: await ProxyFactory__factory.connect("", deployer),
+        rewardFactory: await RewardFactory__factory.connect("0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356", deployer),
+        stashFactory: await StashFactoryV2__factory.connect("0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5", deployer),
+        tokenFactory: await TokenFactory__factory.connect("0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC", deployer),
+        proxyFactory: await ProxyFactory__factory.connect("0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F", deployer),
     },
-    arbitratorVault: await ArbitratorVault__factory.connect("", deployer),
-    cvxCrv: await CvxCrvToken__factory.connect("", deployer),
+    arbitratorVault: await ArbitratorVault__factory.connect("0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40", deployer),
+    cvxCrv: await CvxCrvToken__factory.connect("0x616e8BfA43F920657B3497DBf40D6b1A02D4608d", deployer),
     cvxCrvBpt: {
-        poolId: "",
-        address: "",
+        poolId: "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388000200000000000000000234",
+        address: "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388",
     },
-    cvxCrvRewards: await BaseRewardPool__factory.connect("", deployer),
-    initialCvxCrvStaking: await AuraBalRewardPool__factory.connect("", deployer),
-    crvDepositor: await CrvDepositor__factory.connect("", deployer),
-    crvDepositorWrapper: await CrvDepositorWrapper__factory.connect("", deployer),
-    poolManager: await PoolManagerV3__factory.connect("", deployer),
-    poolManagerProxy: await PoolManagerProxy__factory.connect("", deployer),
-    poolManagerSecondaryProxy: await PoolManagerSecondaryProxy__factory.connect("", deployer),
-    cvxLocker: await AuraLocker__factory.connect("", deployer),
-    cvxStakingProxy: await AuraStakingProxy__factory.connect("", deployer),
-    chef: await ConvexMasterChef__factory.connect("", deployer),
-    vestedEscrows: [await AuraVestedEscrow__factory.connect("", deployer)],
-    drops: [await AuraMerkleDrop__factory.connect("", deployer)],
+    cvxCrvRewards: await BaseRewardPool__factory.connect("0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC", deployer),
+    initialCvxCrvStaking: await AuraBalRewardPool__factory.connect(
+        "0xC47162863a12227E5c3B0860715F9cF721651C0c",
+        deployer,
+    ),
+    crvDepositor: await CrvDepositor__factory.connect("0xeAd792B55340Aa20181A80d6a16db6A0ECd1b827", deployer),
+    crvDepositorWrapper: await CrvDepositorWrapper__factory.connect(
+        "0x68655AD9852a99C87C0934c7290BB62CFa5D4123",
+        deployer,
+    ),
+    poolManager: await PoolManagerV3__factory.connect("0xf843F61508Fc17543412DE55B10ED87f4C28DE50", deployer),
+    poolManagerProxy: await PoolManagerProxy__factory.connect("0x16A04E58a77aB1CE561A37371dFb479a8594947A", deployer),
+    poolManagerSecondaryProxy: await PoolManagerSecondaryProxy__factory.connect(
+        "0xdc274F4854831FED60f9Eca12CaCbD449134cF67",
+        deployer,
+    ),
+    cvxLocker: await AuraLocker__factory.connect("0x3Fa73f1E5d8A792C80F426fc8F84FBF7Ce9bBCAC", deployer),
+    cvxStakingProxy: await AuraStakingProxy__factory.connect("0xd9e863B7317a66fe0a4d2834910f604Fd6F89C6c", deployer),
+    chef: await ConvexMasterChef__factory.connect("0x1ab80F7Fb46B25b7e0B2cfAC23Fc88AC37aaf4e9", deployer),
+    vestedEscrows: [
+        await AuraVestedEscrow__factory.connect("0x5bd3fCA8D3d8c94a6419d85E0a76ec8Da52d836a", deployer),
+        await AuraVestedEscrow__factory.connect("0x24346652e0e2aE0CE05c781501fDF4Fe4553fAc6", deployer),
+        await AuraVestedEscrow__factory.connect("0x45025Ebc38647bcf7Edd2b40CfDaF3fbfE1538F5", deployer),
+        await AuraVestedEscrow__factory.connect("0xFd72170339AC6d7bdda09D1eACA346B21a30D422", deployer),
+        await AuraVestedEscrow__factory.connect("0x43B17088503F4CE1AED9fB302ED6BB51aD6694Fa", deployer),
+    ],
+    drops: [
+        await AuraMerkleDrop__factory.connect("0x45EB1A004373b1D8457134A2C04a42d69D287724", deployer),
+        await AuraMerkleDrop__factory.connect("0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB", deployer),
+    ],
     lbpBpt: {
-        poolId: "",
-        address: "",
+        poolId: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee000200000000000000000235",
+        address: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee",
     },
-    balLiquidityProvider: await BalLiquidityProvider__factory.connect("", deployer),
-    penaltyForwarder: await AuraPenaltyForwarder__factory.connect("", deployer),
-    extraRewardsDistributor: await ExtraRewardsDistributor__factory.connect("", deployer),
+    balLiquidityProvider: await BalLiquidityProvider__factory.connect(
+        "0xa7429af4DeB16827dAd0e71D8AEEa9C2bF70e32c",
+        deployer,
+    ),
+    penaltyForwarder: await AuraPenaltyForwarder__factory.connect(
+        "0x4043569200F7a7a1D989AbbaBC2De2Bde1C20D1E",
+        deployer,
+    ),
+    extraRewardsDistributor: await ExtraRewardsDistributor__factory.connect(
+        "0xA3739b206097317c72EF416F0E75BB8f58FbD308",
+        deployer,
+    ),
 });
 
 const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({

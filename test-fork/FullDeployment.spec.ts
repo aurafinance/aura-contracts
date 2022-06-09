@@ -2,12 +2,10 @@ import { hashMessage } from "@ethersproject/hash";
 import hre, { network } from "hardhat";
 import { expect } from "chai";
 import {
-    ICurveVoteEscrow__factory,
     IERC20__factory,
     ILBP,
     ILBP__factory,
     MockERC20__factory,
-    MockWalletChecker__factory,
     IVault,
     IVault__factory,
     ERC20,
@@ -38,15 +36,7 @@ import {
 import { Signer } from "ethers";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../test-utils/time";
-import {
-    deployPhase2,
-    deployPhase3,
-    deployPhase4,
-    Phase1Deployed,
-    Phase2Deployed,
-    Phase3Deployed,
-    SystemDeployed,
-} from "../scripts/deploySystem";
+import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { Account } from "./../types/common";
 import { config } from "../tasks/deploy/mainnet-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
@@ -67,8 +57,7 @@ const testAccounts = {
 describe("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
-
-    let phase1: Phase1Deployed;
+    const phase2Timestamp = BN.from(1654772222);
     let phase2: Phase2Deployed;
     let phase3: Phase3Deployed;
     let phase4: SystemDeployed;
@@ -80,14 +69,12 @@ describe("Full Deployment", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14915960,
+                        blockNumber: 14932468,
                     },
                 },
             ],
         });
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
-        // TODO - should have sufficient balances on acc, remove this before final test
-        await setupBalances();
         deployer = await impersonate(deployerAddress);
     });
 
@@ -136,36 +123,6 @@ describe("Full Deployment", () => {
         });
     };
 
-    const setupBalances = async () => {
-        // weth for LBP creation
-        await getWeth(deployerAddress);
-    };
-
-    describe("Phase 1", () => {
-        describe("DEPLOY-Phase 1", () => {
-            before(async () => {
-                // PHASE 1
-                phase1 = await config.getPhase1(deployer);
-            });
-            describe("verifying config", () => {
-                it("VoterProxy has correct config", async () => {
-                    const { voterProxy } = phase1;
-                    const { addresses } = config;
-                    expect(await voterProxy.mintr()).eq(addresses.minter);
-                    expect(await voterProxy.crv()).eq(addresses.token);
-                    expect(await voterProxy.crvBpt()).eq(addresses.tokenBpt);
-                    expect(await voterProxy.escrow()).eq(addresses.votingEscrow);
-                    expect(await voterProxy.gaugeController()).eq(addresses.gaugeController);
-                    expect(await voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
-                    expect(await voterProxy.withdrawer()).eq(ZERO_ADDRESS);
-                    expect(await voterProxy.owner()).eq(deployerAddress);
-                    expect(await voterProxy.operator()).eq(ZERO_ADDRESS);
-                    expect(await voterProxy.depositor()).eq(ZERO_ADDRESS);
-                });
-            });
-        });
-    });
-
     describe("Phase 2", () => {
         before(async () => {
             await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
@@ -173,21 +130,18 @@ describe("Full Deployment", () => {
         describe("DEPLOY-Phase 2", () => {
             before(async () => {
                 // PHASE 2
-                phase2 = await deployPhase2(
-                    hre,
-                    deployer,
-                    phase1,
-                    config.distroList,
-                    config.multisigs,
-                    config.naming,
-                    config.addresses,
-                    debug,
-                );
+                phase2 = await config.getPhase2(deployer);
             });
             describe("verifying config", () => {
                 it("VotingProxy has correct config", async () => {
                     const { voterProxy, booster, crvDepositor } = phase2;
-                    const { multisigs } = config;
+                    const { multisigs, addresses } = config;
+
+                    expect(await voterProxy.mintr()).eq(addresses.minter);
+                    expect(await voterProxy.crv()).eq(addresses.token);
+                    expect(await voterProxy.crvBpt()).eq(addresses.tokenBpt);
+                    expect(await voterProxy.escrow()).eq(addresses.votingEscrow);
+                    expect(await voterProxy.gaugeController()).eq(addresses.gaugeController);
                     expect(await voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
                     expect(await voterProxy.withdrawer()).eq(ZERO_ADDRESS);
                     expect(await voterProxy.owner()).eq(multisigs.daoMultisig);
@@ -371,9 +325,8 @@ describe("Full Deployment", () => {
                     expect(await initialCvxCrvStaking.penaltyForwarder()).eq(penaltyForwarder.address);
                     expect(await initialCvxCrvStaking.pendingPenalty()).eq(0);
 
-                    const time = await getTimestamp();
-                    expect(await initialCvxCrvStaking.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await initialCvxCrvStaking.startTime()).lt(time.add(ONE_WEEK));
+                    expect(await initialCvxCrvStaking.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await initialCvxCrvStaking.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
                 });
                 it("CrvDepositor has correct config", async () => {
                     const { voterProxy, cvxCrv, crvDepositor } = phase2;
@@ -470,7 +423,6 @@ describe("Full Deployment", () => {
                 });
                 it("VestedEscrows have correct config", async () => {
                     const { vestedEscrows } = phase2;
-                    const time = await getTimestamp();
                     expect(vestedEscrows.length).eq(5);
 
                     // [ 0 ] = 16 weeks
@@ -478,10 +430,10 @@ describe("Full Deployment", () => {
                     expect(await escrow0.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow0.admin()).eq(config.multisigs.vestingMultisig);
                     expect(await escrow0.auraLocker()).eq(phase2.cvxLocker.address);
-                    expect(await escrow0.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await escrow0.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await escrow0.endTime()).gt(time.add(ONE_WEEK.mul(17)).sub(60));
-                    expect(await escrow0.endTime()).lt(time.add(ONE_WEEK.mul(17)));
+                    expect(await escrow0.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow0.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow0.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(17)).sub(5400));
+                    expect(await escrow0.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(17)).add(5400));
                     expect(await escrow0.totalTime()).eq(ONE_WEEK.mul(16));
                     expect(await escrow0.initialised()).eq(true);
                     expect(await escrow0.remaining("0xb64f3884ceed18594bd707122988e913fa26f4bf")).eq(
@@ -492,10 +444,10 @@ describe("Full Deployment", () => {
                     expect(await escrow1.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow1.admin()).eq(config.multisigs.vestingMultisig);
                     expect(await escrow1.auraLocker()).eq(phase2.cvxLocker.address);
-                    expect(await escrow1.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await escrow1.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await escrow1.endTime()).gt(time.add(ONE_WEEK.mul(27)).sub(60));
-                    expect(await escrow1.endTime()).lt(time.add(ONE_WEEK.mul(27)));
+                    expect(await escrow1.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow1.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow1.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(27)).sub(5400));
+                    expect(await escrow1.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(27)).add(5400));
                     expect(await escrow1.totalTime()).eq(ONE_WEEK.mul(26));
                     expect(await escrow1.initialised()).eq(true);
                     expect(await escrow1.remaining(config.multisigs.vestingMultisig)).eq(
@@ -506,10 +458,10 @@ describe("Full Deployment", () => {
                     expect(await escrow2.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow2.admin()).eq(config.multisigs.vestingMultisig);
                     expect(await escrow2.auraLocker()).eq(phase2.cvxLocker.address);
-                    expect(await escrow2.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await escrow2.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await escrow2.endTime()).gt(time.add(ONE_WEEK.mul(105)).sub(60));
-                    expect(await escrow2.endTime()).lt(time.add(ONE_WEEK.mul(105)));
+                    expect(await escrow2.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow2.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow2.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
+                    expect(await escrow2.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
                     expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
                     expect(await escrow2.initialised()).eq(true);
                     expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
@@ -520,10 +472,10 @@ describe("Full Deployment", () => {
                     expect(await escrow3.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow3.admin()).eq(ZERO_ADDRESS);
                     expect(await escrow3.auraLocker()).eq(phase2.cvxLocker.address);
-                    expect(await escrow3.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await escrow3.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await escrow3.endTime()).gt(time.add(ONE_WEEK.mul(105)).sub(60));
-                    expect(await escrow3.endTime()).lt(time.add(ONE_WEEK.mul(105)));
+                    expect(await escrow3.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow3.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow3.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
+                    expect(await escrow3.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
                     expect(await escrow3.totalTime()).eq(ONE_WEEK.mul(104));
                     expect(await escrow3.initialised()).eq(true);
                     expect(await escrow3.remaining(config.addresses.treasury)).eq(simpleToExactAmount(2, 24));
@@ -532,10 +484,10 @@ describe("Full Deployment", () => {
                     expect(await escrow4.rewardToken()).eq(phase2.cvx.address);
                     expect(await escrow4.admin()).eq(ZERO_ADDRESS);
                     expect(await escrow4.auraLocker()).eq(phase2.cvxLocker.address);
-                    expect(await escrow4.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await escrow4.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await escrow4.endTime()).gt(time.add(ONE_WEEK.mul(209)).sub(60));
-                    expect(await escrow4.endTime()).lt(time.add(ONE_WEEK.mul(209)));
+                    expect(await escrow4.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow4.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow4.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(209)).sub(5400));
+                    expect(await escrow4.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(209)).add(5400));
                     expect(await escrow4.totalTime()).eq(ONE_WEEK.mul(208));
                     expect(await escrow4.initialised()).eq(true);
                     expect(await escrow4.remaining(config.multisigs.treasuryMultisig)).eq(
@@ -547,7 +499,6 @@ describe("Full Deployment", () => {
                     const { multisigs } = config;
                     const [rootHashOne, rootHashTwo] = merkleDropRootHashes;
 
-                    const time = await getTimestamp();
                     expect(drops.length).eq(2);
 
                     // [ 0 ] = 2.5m, 4 weeks
@@ -558,10 +509,10 @@ describe("Full Deployment", () => {
                     expect(await drop.auraLocker()).eq(phase2.cvxLocker.address);
                     expect(await drop.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
                     expect(await drop.pendingPenalty()).eq(0);
-                    expect(await drop.startTime()).gt(time.add(ONE_WEEK).sub(60));
-                    expect(await drop.startTime()).lt(time.add(ONE_WEEK));
-                    expect(await drop.expiryTime()).gt(time.add(ONE_WEEK.mul(5)).sub(60));
-                    expect(await drop.expiryTime()).lt(time.add(ONE_WEEK.mul(5)));
+                    expect(await drop.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await drop.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await drop.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(5)).sub(5400));
+                    expect(await drop.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(5)).add(5400));
                     expect(await phase2.cvx.balanceOf(drop.address)).eq(simpleToExactAmount(2.5, 24));
                     // [ 1 ] = 1m, 26 weeks
                     const drop1 = drops[1];
@@ -571,10 +522,10 @@ describe("Full Deployment", () => {
                     expect(await drop1.auraLocker()).eq(phase2.cvxLocker.address);
                     expect(await drop1.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
                     expect(await drop1.pendingPenalty()).eq(0);
-                    expect(await drop1.startTime()).gt(time.add(ONE_WEEK.mul(26)).sub(60));
-                    expect(await drop1.startTime()).lt(time.add(ONE_WEEK.mul(26)));
-                    expect(await drop1.expiryTime()).gt(time.add(ONE_WEEK.mul(52)).sub(60));
-                    expect(await drop1.expiryTime()).lt(time.add(ONE_WEEK.mul(52)));
+                    expect(await drop1.startTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(26)).sub(5400));
+                    expect(await drop1.startTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(26)).add(5400));
+                    expect(await drop1.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(52)).sub(5400));
+                    expect(await drop1.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(52)).add(5400));
                     expect(await phase2.cvx.balanceOf(drop1.address)).eq(simpleToExactAmount(1, 24));
                 });
                 it("LbpBPT has correct config", async () => {
@@ -626,7 +577,7 @@ describe("Full Deployment", () => {
                     expect(await penaltyForwarder.token()).eq(cvx.address);
                     expect(await penaltyForwarder.owner()).eq(config.multisigs.daoMultisig);
                     expect(await penaltyForwarder.distributionDelay()).eq(ONE_WEEK.mul(7).div(2));
-                    assertBNClose(await penaltyForwarder.lastDistribution(), await getTimestamp(), 100);
+                    assertBNClose(await penaltyForwarder.lastDistribution(), phase2Timestamp, 5400);
                 });
                 it("extraRewardsDistributor has correct config", async () => {
                     const { extraRewardsDistributor, cvxLocker } = phase2;
@@ -654,7 +605,7 @@ describe("Full Deployment", () => {
                     [simpleToExactAmount(55, 16), simpleToExactAmount(45, 16)],
                 );
                 const tx = await lbp.updateWeightsGradually(
-                    currentTime.add(3600),
+                    currentTime.add(5400),
                     currentTime.add(ONE_DAY.mul(3)),
                     weights as BN[],
                 );
