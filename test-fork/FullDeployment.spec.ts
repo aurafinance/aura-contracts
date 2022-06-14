@@ -43,7 +43,6 @@ import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/bal
 import { ethers } from "ethers";
 
 const debug = false;
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const merkleDropRootHashes = ["0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78", ZERO_KEY];
 
@@ -124,9 +123,6 @@ describe("Full Deployment", () => {
     };
 
     describe("Phase 2", () => {
-        before(async () => {
-            await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
-        });
         describe("DEPLOY-Phase 2", () => {
             before(async () => {
                 // PHASE 2
@@ -830,7 +826,7 @@ describe("Full Deployment", () => {
                     treasurySigner.address,
                     {
                         assets: balances.tokens,
-                        minAmountsOut: [0, 0],
+                        minAmountsOut: balances.balances.map(b => b.mul(9).div(10)),
                         userData: hre.ethers.utils.defaultAbiCoder.encode(
                             ["uint256", "uint256"],
                             [WeightedPoolExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, lpBalBefore],
@@ -884,9 +880,11 @@ describe("Full Deployment", () => {
                         ),
                     ).eq(0);
 
+                    const pool = IBalancerPool__factory.connect(pool8020Bpt.address, deployer);
+                    expect(await pool.getOwner()).eq(config.addresses.balancerPoolOwner);
+
                     // Weights
                     const poolTokens = await balancerVault.getPoolTokens(pool8020Bpt.poolId);
-                    const pool = IBalancerPool__factory.connect(pool8020Bpt.address, deployer);
                     const weights = await pool.getNormalizedWeights();
                     if (poolTokens.tokens[0].toLowerCase() == cvx.address.toLowerCase()) {
                         expect(poolTokens.tokens[1]).eq(config.addresses.weth);

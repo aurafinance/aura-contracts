@@ -130,6 +130,7 @@ interface ExtSystemConfig {
     balancerPoolFactories: BalancerPoolFactories;
     balancerPoolId: string;
     balancerMinOutBps: string;
+    balancerPoolOwner?: string;
     weth: string;
     wethWhale?: string;
     treasury?: string;
@@ -1044,7 +1045,9 @@ async function deployPhase3(
             poolData.weights,
             poolData.swapFee,
             true,
-            multisigs.treasuryMultisig,
+            !!config.balancerPoolOwner && config.balancerPoolOwner != ZERO_ADDRESS
+                ? config.balancerPoolOwner
+                : multisigs.treasuryMultisig,
         );
         const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);

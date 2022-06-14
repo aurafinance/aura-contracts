@@ -9,4 +9,6 @@ interface IBalancerPool {
     function getNormalizedWeights() external view returns (uint256[] memory);
 
     function getSwapEnabled() external view returns (bool);
+
+    function getOwner() external view returns (address);
 }

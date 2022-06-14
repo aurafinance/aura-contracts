@@ -78,9 +78,10 @@ const addresses: ExtSystemConfig = {
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
     balancerMinOutBps: "9950",
+    balancerPoolOwner: "0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
-        stablePool: "0xc66Ba2B6595D3613CCab350C886aCE23866EDe24",
+        stablePool: "0x8df6EfEc5547e31B0eb7d1291B511FF8a2bf987c",
         bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
     },
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
@@ -209,8 +210,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     arbitratorVault: await ArbitratorVault__factory.connect("0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40", deployer),
     cvxCrv: await CvxCrvToken__factory.connect("0x616e8BfA43F920657B3497DBf40D6b1A02D4608d", deployer),
     cvxCrvBpt: {
-        poolId: "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388000200000000000000000234",
-        address: "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388",
+        poolId: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249",
+        address: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd",
     },
     cvxCrvRewards: await BaseRewardPool__factory.connect("0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC", deployer),
     initialCvxCrvStaking: await AuraBalRewardPool__factory.connect(
