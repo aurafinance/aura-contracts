@@ -1015,7 +1015,7 @@ async function deployPhase3(
         const wethAmount = await MockERC20__factory.connect(config.weth, deployer).balanceOf(
             balLiquidityProvider.address,
         );
-        if (tknAmount.lt(simpleToExactAmount(1.5, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+        if (tknAmount.lt(simpleToExactAmount(2, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
             throw console.error("Invalid balances");
         }
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(

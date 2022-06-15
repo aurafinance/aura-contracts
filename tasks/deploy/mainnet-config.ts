@@ -264,8 +264,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
 const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({
     ...(await getPhase2(deployer)),
     pool8020Bpt: {
-        poolId: "",
-        address: "",
+        poolId: "0xc29562b045d80fd77c69bec09541f5c16fe20d9d000200000000000000000251",
+        address: "0xc29562b045d80fd77c69bec09541f5c16fe20d9d",
     },
 });
 
