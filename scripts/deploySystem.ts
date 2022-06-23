@@ -1108,7 +1108,7 @@ async function deployPhase4(
     for (let i = 0; i < gaugeLength; i++) {
         if (gaugeLength > 10) {
             const weight = await gaugeController.get_gauge_weight(gauges[i]);
-            if (weight.lt(simpleToExactAmount(2500))) continue;
+            if (weight.lt(simpleToExactAmount(15000))) continue;
         }
         tx = await poolManager["addPool(address)"](gauges[i]);
         await waitForTx(tx, debug, waitForBlocks);

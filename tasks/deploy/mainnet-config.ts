@@ -1,4 +1,10 @@
-import { ExtSystemConfig, Phase1Deployed, Phase2Deployed, Phase3Deployed } from "../../scripts/deploySystem";
+import {
+    ExtSystemConfig,
+    Phase1Deployed,
+    Phase2Deployed,
+    Phase3Deployed,
+    SystemDeployed,
+} from "../../scripts/deploySystem";
 import {
     VoterProxy__factory,
     AuraToken__factory,
@@ -26,6 +32,9 @@ import {
     TokenFactory__factory,
     ProxyFactory__factory,
     ArbitratorVault__factory,
+    AuraClaimZap__factory,
+    ClaimFeesHelper__factory,
+    RewardPoolDepositWrapper__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -74,6 +83,17 @@ const addresses: ExtSystemConfig = {
         "0xCB664132622f29943f67FA56CCfD1e24CC8B4995",
         "0xf4339872Ad09B34a29Be76EE81D4F30BCf7dbf9F",
         "0x57d40FF4cF7441A04A05628911F57bb940B6C238",
+        "0xa57453737849A4029325dfAb3F6034656644E104",
+        "0xA6468eca7633246Dcb24E5599681767D27d1F978",
+        "0x158772F59Fe0d3b75805fC11139b46CBc89F70e5",
+        "0x852CF729dEF9beB9De2f18c97a0ea6bf93a7dF8B",
+        "0x40AC67ea5bD1215D99244651CC71a03468bce6c0",
+        "0xbD0DAe90cb4a0e08f1101929C2A01eB165045660",
+        "0x86EC8Bd97622dc80B4a7346bc853760d99D14C7F",
+        "0xe3A3Ca91794a995fe0bB24060987e73931B15f3D",
+        "0x7CDc9dC877b69328ca8b1Ff11ebfBe2a444Cf350",
+        "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2",
+        "0xAF50825B010Ae4839Ac444f6c12D44b96819739B",
     ],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014",
@@ -185,7 +205,7 @@ const distroList = {
                 { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team
                 { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(1.5, 24) }, // Core team
                 { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team
-                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.04, 24) }, // Core team
+                { address: "0x2fB09D2fD9e4Ca5C0597c6F81CDa7ed537469aaA", amount: simpleToExactAmount(0.04, 24) }, // Core team
             ],
         },
     ],
@@ -269,6 +289,16 @@ const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({
     },
 });
 
+const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
+    ...(await getPhase3(deployer)),
+    claimZap: await AuraClaimZap__factory.connect("0x623B83755a39B12161A63748f3f595A530917Ab2", deployer),
+    feeCollector: await ClaimFeesHelper__factory.connect("0x999dBcE0A18F721F04E793f916C30e72A9D0f56E", deployer),
+    rewardDepositWrapper: await RewardPoolDepositWrapper__factory.connect(
+        "0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59",
+        deployer,
+    ),
+});
+
 export const config = {
     addresses,
     naming,
@@ -277,4 +307,5 @@ export const config = {
     getPhase1,
     getPhase2,
     getPhase3,
+    getPhase4,
 };
