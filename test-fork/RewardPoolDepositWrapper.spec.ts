@@ -4,15 +4,7 @@ import { ERC20, ERC20__factory, IVault__factory, MockERC20__factory } from "../t
 import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
 import { Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
-import {
-    deployPhase2,
-    deployPhase3,
-    deployPhase4,
-    Phase1Deployed,
-    Phase2Deployed,
-    Phase3Deployed,
-    SystemDeployed,
-} from "../scripts/deploySystem";
+import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IVault";
