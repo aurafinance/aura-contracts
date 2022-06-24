@@ -4,15 +4,7 @@ import { ERC20, ERC20__factory, IVault__factory, MockERC20__factory } from "../t
 import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
 import { Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
-import {
-    deployPhase2,
-    deployPhase3,
-    deployPhase4,
-    Phase1Deployed,
-    Phase2Deployed,
-    Phase3Deployed,
-    SystemDeployed,
-} from "../scripts/deploySystem";
+import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IVault";
@@ -27,7 +19,6 @@ describe("RewardPoolDepositWrapper", () => {
     let deployer: Signer;
     let deployerAddress: string;
 
-    let phase1: Phase1Deployed;
     let phase2: Phase2Deployed;
     let phase3: Phase3Deployed;
     let phase4: SystemDeployed;
@@ -37,36 +28,24 @@ describe("RewardPoolDepositWrapper", () => {
     let usdc: ERC20;
 
     before(async () => {
-        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
-
         await network.provider.request({
             method: "hardhat_reset",
             params: [
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14805422,
+                        blockNumber: 14932468,
                     },
                 },
             ],
         });
 
+        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         await setupBalances();
-        await sleep(30000); // 30 seconds to avoid max tx issues when doing full deployment
 
         deployer = await impersonate(deployerAddress);
-        phase1 = await config.getPhase1(deployer);
-        phase2 = await deployPhase2(
-            hre,
-            deployer,
-            phase1,
-            config.distroList,
-            config.multisigs,
-            config.naming,
-            config.addresses,
-            debug,
-        );
+        phase2 = await config.getPhase2(deployer);
         await getWeth(phase2.balLiquidityProvider.address, simpleToExactAmount(500));
         phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
 
@@ -135,7 +114,7 @@ describe("RewardPoolDepositWrapper", () => {
             maxAmountsIn: [0, simpleToExactAmount(100, 6), 0],
             userData: ethers.utils.defaultAbiCoder.encode(
                 ["uint256", "uint256[]", "uint256"],
-                [1, [0, simpleToExactAmount(100, 6), 0], simpleToExactAmount(99.4)],
+                [1, [0, simpleToExactAmount(100, 6), 0], simpleToExactAmount(99)],
             ),
             fromInternalBalance: false,
         };
@@ -151,6 +130,6 @@ describe("RewardPoolDepositWrapper", () => {
 
         const balAfter = await crvRewards.balanceOf(stakerAddress);
 
-        expect(balAfter.sub(balBefore)).gt(simpleToExactAmount(99.4));
+        expect(balAfter.sub(balBefore)).gt(simpleToExactAmount(99));
     });
 });

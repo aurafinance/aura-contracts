@@ -92,6 +92,8 @@ interface IVault {
         ExitPoolRequest memory request
     ) external;
 
+    function getInternalBalance(address user, address[] memory tokens) external view returns (uint256[] memory);
+
     struct ExitPoolRequest {
         IAsset[] assets;
         uint256[] minAmountsOut;

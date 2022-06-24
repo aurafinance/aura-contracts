@@ -130,6 +130,7 @@ interface ExtSystemConfig {
     balancerPoolFactories: BalancerPoolFactories;
     balancerPoolId: string;
     balancerMinOutBps: string;
+    balancerPoolOwner?: string;
     weth: string;
     wethWhale?: string;
     treasury?: string;
@@ -1015,6 +1016,7 @@ async function deployPhase3(
             balLiquidityProvider.address,
         );
         if (tknAmount.lt(simpleToExactAmount(1.5, 24)) || wethAmount.lt(simpleToExactAmount(375))) {
+            console.log(tknAmount.toString(), wethAmount.toString());
             throw console.error("Invalid balances");
         }
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
@@ -1044,7 +1046,9 @@ async function deployPhase3(
             poolData.weights,
             poolData.swapFee,
             true,
-            multisigs.treasuryMultisig,
+            !!config.balancerPoolOwner && config.balancerPoolOwner != ZERO_ADDRESS
+                ? config.balancerPoolOwner
+                : multisigs.treasuryMultisig,
         );
         const receipt = await waitForTx(tx, debug, waitForBlocks);
         const poolAddress = getPoolAddress(ethers.utils, receipt);
@@ -1105,7 +1109,7 @@ async function deployPhase4(
     for (let i = 0; i < gaugeLength; i++) {
         if (gaugeLength > 10) {
             const weight = await gaugeController.get_gauge_weight(gauges[i]);
-            if (weight.lt(simpleToExactAmount(2500))) continue;
+            if (weight.lt(simpleToExactAmount(15000))) continue;
         }
         tx = await poolManager["addPool(address)"](gauges[i]);
         await waitForTx(tx, debug, waitForBlocks);

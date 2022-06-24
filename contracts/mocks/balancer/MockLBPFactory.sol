@@ -23,4 +23,13 @@ interface ILBP {
         uint256 endTime,
         uint256[] memory endWeights
     ) external;
+
+    function getGradualWeightUpdateParams()
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256[] memory endWeights
+        );
 }
