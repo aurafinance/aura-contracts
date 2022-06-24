@@ -11,7 +11,7 @@ interface IBooster {
 /**
  * @title   BoosterHelper
  * @author  AuraFinance
- * @notice  Invokes booster.earmarkRewards fees and distribute
+ * @notice  Invokes booster.earmarkRewards for multiple pools.
  * @dev     Allows anyone to call `earmarkRewards`  via the booster.
  */
 contract BoosterHelper {
@@ -38,7 +38,6 @@ contract BoosterHelper {
         }
         // Return all incentives to the sender
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
-        IERC20(crv).safeIncreaseAllowance(msg.sender, crvBal);
         IERC20(crv).safeTransfer(msg.sender, crvBal);
         return crvBal;
     }
