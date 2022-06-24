@@ -274,32 +274,6 @@ describe("Full Deployment", () => {
                     expect(await cvxCrv.name()).eq(naming.cvxCrvName);
                     expect(await cvxCrv.symbol()).eq(naming.cvxCrvSymbol);
                 });
-                it("CvxCrvBpt has correct config", async () => {
-                    const { cvxCrv, cvxCrvBpt } = phase2;
-                    const { addresses } = config;
-
-                    // Token amounts
-                    // Weights
-                    // Balance = treasuryDAO
-
-                    const balancerVault = IVault__factory.connect(addresses.balancerVault, deployer);
-                    const poolTokens = await balancerVault.getPoolTokens(cvxCrvBpt.poolId);
-                    const pool = IBalancerPool__factory.connect(cvxCrvBpt.address, deployer);
-                    await expect(pool.getNormalizedWeights()).to.be.reverted;
-                    if (poolTokens.tokens[0].toLowerCase() == cvxCrv.address.toLowerCase()) {
-                        expect(poolTokens.tokens[1]).eq(addresses.tokenBpt);
-                    } else {
-                        expect(poolTokens.tokens[0]).eq(addresses.tokenBpt);
-                        expect(poolTokens.tokens[1]).eq(cvxCrv.address);
-                    }
-                    expect(poolTokens.balances[0]).eq(poolTokens.balances[1]);
-                    expect(poolTokens.balances[0]).eq(BN.from("115559823758891957564"));
-
-                    const poolERC20 = IERC20__factory.connect(cvxCrvBpt.address, deployer);
-                    expect(await poolERC20.balanceOf(config.multisigs.treasuryMultisig)).eq(
-                        (await poolERC20.totalSupply()).sub(simpleToExactAmount(1, 6)),
-                    );
-                });
                 it("CvxCrvRewards has correct config", async () => {
                     const { cvxCrvRewards, cvxCrv, factories, booster } = phase2;
                     const { addresses } = config;
@@ -399,14 +373,16 @@ describe("Full Deployment", () => {
                     expect(await cvxStakingProxy.pendingOwner()).eq(ZERO_ADDRESS);
                 });
                 it("Chef has correct config", async () => {
-                    const { cvx, cvxCrvBpt, chef } = phase2;
+                    const { cvx, chef } = phase2;
                     const { distroList } = config;
                     expect(await chef.cvx()).eq(cvx.address);
                     const totalBlocks = BN.from(7000).mul(365).mul(4);
                     const cvxPerBlock = distroList.lpIncentives.div(totalBlocks);
                     assertBNClosePercent(await chef.rewardPerBlock(), cvxPerBlock, "0.01");
                     expect(await chef.poolLength()).eq(1);
-                    expect((await chef.poolInfo(0)).lpToken.toLowerCase()).eq(cvxCrvBpt.address.toLowerCase());
+                    expect((await chef.poolInfo(0)).lpToken.toLowerCase()).eq(
+                        "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388",
+                    );
                     expect(await chef.totalAllocPoint()).eq(1000);
                     const block = await latestBlock();
                     const expectedStart = BN.from(block.number).add(BN.from(6900).mul(7));
@@ -1145,7 +1121,10 @@ describe("Full Deployment", () => {
 
                 before(async () => {
                     treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                    cvxCrvBptToken = ERC20__factory.connect(phase3.cvxCrvBpt.address, treasurySigner.signer);
+                    cvxCrvBptToken = ERC20__factory.connect(
+                        "0x6641a8c1d33bd3dec8dd85e69c63cafb5bf36388",
+                        treasurySigner.signer,
+                    );
                     // TODO - remove once on mainnet
                     await advanceBlock(BN.from(7000).mul(7));
                     expect(await hre.ethers.provider.getBlockNumber()).gt(await phase3.chef.startBlock());
@@ -1285,18 +1264,18 @@ describe("Full Deployment", () => {
                     // Pool id 6 (0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE) has a reward token of LDO
                     // Let's check it's being processed correctly and is claimable by users
                     const { booster, factories, voterProxy } = phase4;
-                    const poolInfo = await booster.poolInfo(6);
+                    const poolInfo = await booster.poolInfo(4);
                     expect(poolInfo.gauge).eq("0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE");
                     expect(poolInfo.stash).not.eq(ZERO_ADDRESS);
 
-                    await booster.earmarkRewards(6);
+                    await booster.earmarkRewards(4);
 
                     const rewardContract = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, deployer);
                     const virtualRewardPool = await rewardContract.extraRewards(0);
                     expect(virtualRewardPool).not.eq(ZERO_ADDRESS);
 
                     const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer);
-                    expect(await stash.pid()).eq(6);
+                    expect(await stash.pid()).eq(4);
                     expect(await stash.operator()).eq(booster.address);
                     expect(await stash.staker()).eq(voterProxy.address);
                     expect(await stash.gauge()).eq("0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE");
@@ -1325,7 +1304,7 @@ describe("Full Deployment", () => {
                     // Pool id 6 (0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE) has a reward token of LDO
                     // Let's check it's being processed correctly and is claimable by users
                     const { booster } = phase4;
-                    const poolInfo = await booster.poolInfo(6);
+                    const poolInfo = await booster.poolInfo(4);
                     expect(poolInfo.gauge).eq("0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE");
                     expect(poolInfo.stash).not.eq(ZERO_ADDRESS);
                     const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
@@ -1363,7 +1342,7 @@ describe("Full Deployment", () => {
                     await waitForTx(tx, debug);
 
                     const rewardBalBefore = await rewardToken.balanceOf(extraRewardPool.address);
-                    tx = await booster.earmarkRewards(6);
+                    tx = await booster.earmarkRewards(4);
                     await waitForTx(tx, debug);
                     const rewardBalAfter = await rewardToken.balanceOf(extraRewardPool.address);
                     expect(rewardBalAfter.sub(rewardBalBefore)).gt(0);
@@ -1377,7 +1356,7 @@ describe("Full Deployment", () => {
                 });
                 it("allows NEW rewards to be added to extraRewardsStash and claimed", async () => {
                     const { booster } = phase4;
-                    const poolInfo = await booster.poolInfo(6);
+                    const poolInfo = await booster.poolInfo(4);
                     const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
                     const authorizer = await impersonateAccount("0x8f42adbba1b16eaae3bb5754915e0d06059add75");
                     const gauge = MockCurveGauge__factory.connect(poolInfo.gauge, authorizer.signer);
@@ -1396,7 +1375,7 @@ describe("Full Deployment", () => {
 
                     // 2. Stash checks for new reward tokens
                     const rewardsBefore = await baseRewardPool.extraRewardsLength();
-                    await booster.earmarkRewards(6);
+                    await booster.earmarkRewards(4);
                     const rewardsAfter = await baseRewardPool.extraRewardsLength();
                     expect(rewardsAfter).eq(rewardsBefore.add(1));
 
