@@ -33,7 +33,7 @@ contract BoosterHelper {
         uint256 len = _pids.length;
         require(len > 0, "!pids");
 
-        for (uint256 i = 0; i <= len; i++) {
+        for (uint256 i = 0; i < len; i++) {
             require(booster.earmarkRewards(_pids[i]), "!earmark reward");
         }
         // Return all incentives to the sender
