@@ -961,7 +961,7 @@ describe("Full Deployment", () => {
                     assertBNClose(earnedAfter, BN.from(0), 1000);
                     const lockerBalafter = await cvxLocker.lockedBalances(alice.address);
 
-                    assertBNClosePercent(lockerBalafter.total.sub(lockerBalBefore.total), earnedBefore, "0.01");
+                    assertBNClosePercent(lockerBalafter.total.sub(lockerBalBefore.total), earnedBefore, "0.05");
                 });
                 it("allows users to claim directly from cvxCrv staking with penalty", async () => {
                     const { initialCvxCrvStaking, cvx } = phase3;
