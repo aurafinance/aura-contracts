@@ -28,41 +28,8 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
 
     // get gauges
     console.log("Getting gauges from gauge controller");
-    const provider = ethers.getDefaultProvider();
-
-    const gaugeController = new ethers.Contract(
-        "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD",
-        ["function gauges(uint256 arg) view returns (address)", "function n_gauges() view returns (uint256)"],
-        provider,
-    );
-
-    const nGauges = await gaugeController.n_gauges();
-    const gaugeList: { address: string; symbol: string }[] = [];
-
-    const gaugeInterface = ["function symbol() view returns (string)"];
-
-    // skip the first 5 gauges
-    for (let i = 4; i < Number(nGauges.toString()); i++) {
-        const gaugeAddress = await gaugeController.gauges(i);
-        const gauge = new ethers.Contract(gaugeAddress, gaugeInterface, provider);
-
-        try {
-            const symbol = await gauge.symbol();
-            gaugeList.push({ address: gaugeAddress, symbol });
-        } catch (error) {
-            // TOOD: why do some of the gauges not have a symbol?
-            // console.log(`bad gauge ${i} ${gaugeAddress}`);
-        }
-    }
-
     const savePath = path.resolve(__dirname, "gauge_snapshot.json");
-    const existingGauges = JSON.parse(fs.readFileSync(savePath, "utf-8"));
-    if (!isEqual(gaugeList, existingGauges)) {
-        console.log("New gauges found. A new snapshot has been saved. Review the changes and rerun this task.");
-        console.log("Snapshot saved to:", savePath);
-        fs.writeFileSync(savePath, JSON.stringify(gaugeList));
-        return;
-    }
+    const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
 
     // create proposal
     console.log("Creating proposal on snapshot");
@@ -102,7 +69,7 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
         type: "weighted",
         title: "Title",
         body: "Body",
-        choices: gaugeList.map(choice => choice.symbol),
+        choices: gaugeList.map(choice => choice.pool.symbol),
         start: startDate.getTime(),
         end: endDate.getTime(),
         snapshot: latestBlock,
@@ -115,7 +82,7 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
     console.log(receipt);
 });
 
-task("snapshot:result")
+task("snapshot:result:legacy", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
     .setAction(async function (taskArgs: TaskArguments, _: HardhatRuntime) {
         const query = gql`
@@ -133,24 +100,27 @@ task("snapshot:result")
         const proposalId = taskArgs.proposal;
         const data = await request(`${config.hub}/graphql`, query, { proposal: proposalId });
         const proposal = data.proposal;
+        const labels = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./labels.json"), "utf-8"));
 
-        const results: { choice: string; score: number; percentage: number }[] = [];
+        const results: { choice: string; score: number; percentage: number; address: string }[] = [];
 
         for (let i = 0; i < proposal.choices.length; i++) {
             const score = proposal.scores[i];
             const choice = proposal.choices[i];
             const percentage = score / proposal.scores_total;
+            const resp = labels.find(({ label }) => label.toLowerCase() === choice.toLowerCase());
 
-            results.push({ choice, score, percentage });
+            results.push({ choice, score, percentage, address: resp?.address });
         }
 
         console.log(
             table(
-                results.map(({ choice, score, percentage }) => [
-                    choice,
-                    score,
-                    `${percentage > 0.005 ? "\x1b[32m" : "\x1b[31m"} ${(percentage * 100).toFixed(2)} \x1b[0m`,
-                ]),
+                results
+                    .map(
+                        ({ choice, score, percentage, address }) =>
+                            percentage > 0.005 && [choice, score, (percentage * 100).toFixed(2) + "%", address],
+                    )
+                    .filter(Boolean),
             ),
         );
     });
