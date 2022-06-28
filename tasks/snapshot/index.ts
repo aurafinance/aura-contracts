@@ -6,6 +6,8 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import snapshot from "@snapshot-labs/snapshot.js";
 import { Wallet } from "ethers";
 import isEqual from "lodash/isEqual";
+import { request, gql } from "graphql-request";
+import { table } from "table";
 
 const wallet = new Wallet(process.env.PRIV_KEY);
 const account = wallet.address;
@@ -112,3 +114,43 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
 
     console.log(receipt);
 });
+
+task("snapshot:result")
+    .addParam("proposal", "The proposal ID of the snapshot")
+    .setAction(async function (taskArgs: TaskArguments, _: HardhatRuntime) {
+        const query = gql`
+            query Proposal($proposal: String) {
+                proposal(id: $proposal) {
+                    id
+                    scores_total
+                    scores
+                    choices
+                }
+            }
+        `;
+
+        const config = configs.main;
+        const proposalId = taskArgs.proposal;
+        const data = await request(`${config.hub}/graphql`, query, { proposal: proposalId });
+        const proposal = data.proposal;
+
+        const results: { choice: string; score: number; percentage: number }[] = [];
+
+        for (let i = 0; i < proposal.choices.length; i++) {
+            const score = proposal.scores[i];
+            const choice = proposal.choices[i];
+            const percentage = score / proposal.scores_total;
+
+            results.push({ choice, score, percentage });
+        }
+
+        console.log(
+            table(
+                results.map(({ choice, score, percentage }) => [
+                    choice,
+                    score,
+                    `${percentage > 0.005 ? "\x1b[32m" : "\x1b[31m"} ${(percentage * 100).toFixed(2)} \x1b[0m`,
+                ]),
+            ),
+        );
+    });
