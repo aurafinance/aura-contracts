@@ -28,7 +28,8 @@
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
-        "convex-platform": "file:convex-platform/contracts"
+        "convex-platform": "file:convex-platform/contracts",
+        "lodash": "^4.17.21"
     },
     "devDependencies": {
         "@balancer-labs/balancer-js": "^1.0.1",
