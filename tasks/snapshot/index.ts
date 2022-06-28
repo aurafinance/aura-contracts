@@ -5,7 +5,6 @@ import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import snapshot from "@snapshot-labs/snapshot.js";
 import { Wallet } from "ethers";
-import isEqual from "lodash/isEqual";
 import { request, gql } from "graphql-request";
 import { table } from "table";
 
@@ -19,7 +18,7 @@ const configs = {
     },
     test: {
         hub: "https://testnet.snapshot.org",
-        space: "4231423142314321432.eth",
+        space: "",
     },
 };
 
@@ -84,7 +83,9 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
 
 task("snapshot:result:legacy", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
-    .setAction(async function (taskArgs: TaskArguments, _: HardhatRuntime) {
+    .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+        const { ethers } = hre;
+
         const query = gql`
             query Proposal($proposal: String) {
                 proposal(id: $proposal) {
@@ -113,14 +114,40 @@ task("snapshot:result:legacy", "Get results for the first proposal that uses non
             results.push({ choice, score, percentage, address: resp?.address });
         }
 
-        console.log(
-            table(
-                results
-                    .map(
-                        ({ choice, score, percentage, address }) =>
-                            percentage > 0.005 && [choice, score, (percentage * 100).toFixed(2) + "%", address],
-                    )
-                    .filter(Boolean),
-            ),
-        );
+        const successfulGauges = results
+            .filter(({ percentage }) => percentage > 0.005)
+            .sort((a, b) => b.percentage - a.percentage);
+
+        const totalVotes = 10000;
+        const sumOfPercentages = successfulGauges.reduce((acc, x) => acc + x.percentage, 0);
+        const gauges = successfulGauges.map(gauge => gauge.address);
+        const weights = successfulGauges.map(gauge => Math.floor((totalVotes * gauge.percentage) / sumOfPercentages));
+        const totalWeightBefore = weights.reduce((acc, x) => acc + x, 0);
+
+        const voteDelta = totalVotes - totalWeightBefore;
+        weights[0] += voteDelta;
+
+        const totalWeightAfter = weights.reduce((acc, x) => acc + x, 0);
+
+        if (totalWeightAfter !== totalVotes) {
+            console.log("Total weight is not equal to total votes.");
+            return;
+        }
+
+        console.log("Successfull gauge votes");
+        const tableData = successfulGauges.map(({ choice, score, percentage, address }, i) => [
+            choice,
+            score,
+            (percentage * 100).toFixed(2) + "%",
+            address,
+            weights[i],
+        ]);
+        console.log(table(tableData));
+
+        // encode function data
+        const boosterAddress = "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10";
+        const boosterAbi = ["function voteGaugeWeight(address[] _gauge, uint256[] _weight) external returns(bool)"];
+        const booster = new ethers.Contract(boosterAddress, boosterAbi);
+        const encoded = await booster.interface.encodeFunctionData("voteGaugeWeight", [gauges, weights]);
+        console.log(encoded);
     });
