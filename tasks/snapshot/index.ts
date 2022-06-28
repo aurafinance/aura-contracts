@@ -4,12 +4,9 @@ import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import snapshot from "@snapshot-labs/snapshot.js";
-import { Wallet } from "ethers";
 import { request, gql } from "graphql-request";
 import { table } from "table";
-
-const wallet = new Wallet(process.env.PRIV_KEY);
-const account = wallet.address;
+import { Wallet } from "ethers";
 
 const configs = {
     main: {
@@ -23,6 +20,9 @@ const configs = {
 };
 
 task("snapshot:create").setAction(async function (_: TaskArguments, hre: HardhatRuntime) {
+    const wallet = new Wallet(process.env.PRIVATE_KEY);
+    const account = wallet.address;
+
     const { ethers } = hre;
 
     // get gauges

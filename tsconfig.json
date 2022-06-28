@@ -18,7 +18,8 @@
         "strictNullChecks": false,
         "strict": true,
         "target": "es6",
-        "outDir": "./dist/"
+        "outDir": "./dist/",
+        "skipLibCheck": true
     },
     "exclude": ["node_modules"],
     "include": [
