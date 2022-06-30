@@ -9,6 +9,12 @@ interface IFeeDistributor {
     function claimTokens(address user, IERC20[] calldata tokens) external returns (uint256[] memory);
 
     function getTokenTimeCursor(IERC20 token) external view returns (uint256);
+
+    function checkpointUser(address user) external;
+
+    function getUserTimeCursor(address user) external view returns (uint256);
+
+    function getTimeCursor() external view returns (uint256);
 }
 
 // @dev - Must be funded by transferring crv to this contract post deployment, as opposed to minting directly
@@ -46,4 +52,10 @@ contract MockFeeDistributor is IFeeDistributor {
     ) external pure returns (uint256) {
         return 1;
     }
+
+    function checkpointUser(address user) external {}
+
+    function getUserTimeCursor(address user) external view returns (uint256) {}
+
+    function getTimeCursor() external view returns (uint256) {}
 }
