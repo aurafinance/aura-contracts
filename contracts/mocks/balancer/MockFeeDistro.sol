@@ -15,6 +15,8 @@ interface IFeeDistributor {
     function getUserTimeCursor(address user) external view returns (uint256);
 
     function getTimeCursor() external view returns (uint256);
+
+    function depositToken(IERC20 token, uint256 amount) external;
 }
 
 // @dev - Must be funded by transferring crv to this contract post deployment, as opposed to minting directly
@@ -58,4 +60,6 @@ contract MockFeeDistributor is IFeeDistributor {
     function getUserTimeCursor(address user) external view returns (uint256) {}
 
     function getTimeCursor() external view returns (uint256) {}
+
+    function depositToken(IERC20 token, uint256 amount) external {}
 }
