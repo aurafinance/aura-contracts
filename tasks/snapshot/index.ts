@@ -1,12 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
-import { task } from "hardhat/config";
-import { TaskArguments } from "hardhat/types";
-import { HardhatRuntime } from "../utils/networkAddressFactory";
-import snapshot from "@snapshot-labs/snapshot.js";
-import { request, gql } from "graphql-request";
 import { table } from "table";
 import { Wallet } from "ethers";
+import { task } from "hardhat/config";
+import { createInterface } from "readline";
+import { TaskArguments } from "hardhat/types";
+import { request, gql } from "graphql-request";
+import snapshot from "@snapshot-labs/snapshot.js";
+import { HardhatRuntime } from "../utils/networkAddressFactory";
 
 const configs = {
     main: {
@@ -15,8 +16,26 @@ const configs = {
     },
     test: {
         hub: "https://testnet.snapshot.org",
-        space: "",
+        space: "432423532464535344321.eth",
     },
+};
+
+const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+
+const networkLabels = { 137: "p", 42161: "a" };
+
+const parseLabel = (gauge: any) => {
+    const networkStr = networkLabels[gauge.network] ? `${networkLabels[gauge.network]}-` : "";
+    const weightStr =
+        gauge.pool.poolType === "Weighted"
+            ? gauge.pool.tokens.map(token => Math.floor(Number(token.weight) * 100)).join("/")
+            : gauge.pool.poolType;
+
+    const tokenStr = gauge.pool.tokens.map(token => token.symbol).join("/");
+    return [networkStr, weightStr, " ", tokenStr].join("");
 };
 
 task("snapshot:create").setAction(async function (_: TaskArguments, hre: HardhatRuntime) {
@@ -25,10 +44,20 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
 
     const { ethers } = hre;
 
+    const networkName = hre.network.name;
+    if (networkName !== "mainnet") {
+        console.log(`Invalid network ID. Found ${networkName} Expecting mainnet`);
+        return;
+    }
+
     // get gauges
     console.log("Getting gauges from gauge controller");
     const savePath = path.resolve(__dirname, "gauge_snapshot.json");
-    const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+    let gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+    const validNetworks = [1, 42161, 137];
+    gaugeList = gaugeList.filter(gauge => validNetworks.includes(gauge.network));
+    console.log("Gauge list:");
+    gaugeList.forEach((gauge, i) => console.log(`${i + 1}) ${parseLabel(gauge)} (chain:${gauge.network})`));
 
     // create proposal
     console.log("Creating proposal on snapshot");
@@ -41,6 +70,10 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
     const localDate = new Date();
 
     const startDate = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()));
+    const dayCurr = startDate.getDay();
+    const dayTarget = 4; // Thursday
+    const dayDelta = dayTarget - dayCurr;
+    startDate.setDate(startDate.getDate() + dayDelta);
     startDate.setUTCHours(12);
     startDate.setUTCMinutes(0);
 
@@ -50,8 +83,9 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
         console.log("Voting should start on a Thursday");
         return;
     }
+    console.log("Start date:", startDate.toUTCString());
 
-    const endDate = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()));
+    const endDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
     endDate.setUTCDate(endDate.getUTCDate() + 5);
     endDate.setUTCHours(12);
     endDate.setUTCMinutes(0);
@@ -62,23 +96,72 @@ task("snapshot:create").setAction(async function (_: TaskArguments, hre: Hardhat
         console.log("Voting should end on a Tuesday");
         return;
     }
+    console.log("End date:", endDate.toUTCString());
+    console.log(`Snapshot: ${latestBlock}`);
+    console.log(`Space: ${space}`);
+    console.log(`Account: ${account}`);
+    console.log(`Hub: ${config.hub}`);
 
-    const receipt = await client.proposal(wallet, account, {
-        space,
-        type: "weighted",
-        title: "Title",
-        body: "Body",
-        choices: gaugeList.map(choice => choice.pool.symbol),
-        start: startDate.getTime(),
-        end: endDate.getTime(),
-        snapshot: latestBlock,
-        network: "1",
-        strategies: JSON.stringify({}),
-        plugins: JSON.stringify({}),
-        metadata: JSON.stringify({}),
+    const months = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    const title = `Gauge Weight for Week of ${
+        months[startDate.getUTCMonth()]
+    } ${startDate.getUTCDate()} ${startDate.getUTCFullYear()}`;
+    console.log(`Title: ${title}`);
+
+    const body =
+        "Please read gauge voting rules before voting: https://docs.aura.finance/aura/governance/gauge-voting#gauge-voting-rules-and-information\n\nBe sure to also consult the voting dashboard for gauge voting insights: https://app.aura.finance/#/lock";
+    console.log("Body:", body);
+
+    await new Promise(res => {
+        readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
+            if (answer.toLowerCase() === "y") {
+                console.log("Submitting to snapshot hub");
+                try {
+                    const proposal = {
+                        space,
+                        type: "weighted",
+                        title,
+                        body,
+                        discussion: "",
+                        choices: gaugeList.map(gauge => parseLabel(gauge)),
+                        start: Math.floor(startDate.getTime() / 1000),
+                        end: Math.floor(endDate.getTime() / 1000),
+                        snapshot: latestBlock,
+                        network: "1",
+                        strategies: JSON.stringify({}),
+                        plugins: JSON.stringify({}),
+                        metadata: JSON.stringify({}),
+                    };
+                    console.log("Proposal:", JSON.stringify(proposal));
+                    const receipt = await client.proposal(wallet, account, proposal);
+
+                    console.log(receipt);
+                } catch (error) {
+                    console.log("Submitting failed");
+                    console.log(error);
+                }
+                readline.close();
+                res(null);
+            } else {
+                console.log("Cancelled");
+                readline.close();
+                res(null);
+            }
+        });
     });
-
-    console.log(receipt);
 });
 
 task("snapshot:result:legacy", "Get results for the first proposal that uses non standard labels")
