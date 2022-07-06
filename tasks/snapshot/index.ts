@@ -28,6 +28,8 @@ const readline = createInterface({
 const networkLabels = { 137: "p", 42161: "a" };
 
 const parseLabel = (gauge: any) => {
+    if (gauge.pool.symbol === "veBAL") return "veBAL";
+
     const networkStr = networkLabels[gauge.network] ? `${networkLabels[gauge.network]}-` : "";
     const weightStr =
         gauge.pool.poolType === "Weighted"
@@ -38,131 +40,171 @@ const parseLabel = (gauge: any) => {
     return [networkStr, weightStr, " ", tokenStr].join("");
 };
 
-task("snapshot:create").setAction(async function (_: TaskArguments, hre: HardhatRuntime) {
-    const wallet = new Wallet(process.env.PRIVATE_KEY);
-    const account = wallet.address;
-
-    const { ethers } = hre;
-
-    const networkName = hre.network.name;
-    if (networkName !== "mainnet") {
-        console.log(`Invalid network ID. Found ${networkName} Expecting mainnet`);
-        return;
+const ordinalSuffix = (i: number) => {
+    const j = i % 10;
+    const k = i % 100;
+    if (j == 1 && k != 11) {
+        return i + "st";
     }
-
-    // get gauges
-    console.log("Getting gauges from gauge controller");
-    const savePath = path.resolve(__dirname, "gauge_snapshot.json");
-    let gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
-    const validNetworks = [1, 42161, 137];
-    gaugeList = gaugeList.filter(gauge => validNetworks.includes(gauge.network));
-    console.log("Gauge list:");
-    gaugeList.forEach((gauge, i) => console.log(`${i + 1}) ${parseLabel(gauge)} (chain:${gauge.network})`));
-
-    // create proposal
-    console.log("Creating proposal on snapshot");
-    const latestBlock = await ethers.provider.getBlockNumber();
-    const config = configs.test;
-    const client = new snapshot.Client712(config.hub);
-
-    const space = config.space;
-
-    const localDate = new Date();
-
-    const startDate = new Date(Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()));
-    const dayCurr = startDate.getDay();
-    const dayTarget = 4; // Thursday
-    const dayDelta = dayTarget - dayCurr;
-    startDate.setDate(startDate.getDate() + dayDelta);
-    startDate.setUTCHours(12);
-    startDate.setUTCMinutes(0);
-
-    const validStartDate = startDate.toUTCString().startsWith("Thu");
-    if (!validStartDate) {
-        console.log("Invalid start date:", startDate.toUTCString());
-        console.log("Voting should start on a Thursday");
-        return;
+    if (j == 2 && k != 12) {
+        return i + "nd";
     }
-    console.log("Start date:", startDate.toUTCString());
-
-    const endDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
-    endDate.setUTCDate(endDate.getUTCDate() + 5);
-    endDate.setUTCHours(12);
-    endDate.setUTCMinutes(0);
-
-    const validEndDate = endDate.toUTCString().startsWith("Tue");
-    if (!validEndDate) {
-        console.log("Invalid end date:", endDate.toUTCString());
-        console.log("Voting should end on a Tuesday");
-        return;
+    if (j == 3 && k != 13) {
+        return i + "rd";
     }
-    console.log("End date:", endDate.toUTCString());
-    console.log(`Snapshot: ${latestBlock}`);
-    console.log(`Space: ${space}`);
-    console.log(`Account: ${account}`);
-    console.log(`Hub: ${config.hub}`);
+    return i + "th";
+};
 
-    const months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-    const title = `Gauge Weight for Week of ${
-        months[startDate.getUTCMonth()]
-    } ${startDate.getUTCDate()} ${startDate.getUTCFullYear()}`;
-    console.log(`Title: ${title}`);
+task("snapshot:create")
+    .addParam("snapshot", "The block to snapshot")
+    .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+        const wallet = new Wallet(process.env.PRIVATE_KEY);
+        const account = wallet.address;
 
-    const body =
-        "Please read gauge voting rules before voting: https://docs.aura.finance/aura/governance/gauge-voting#gauge-voting-rules-and-information\n\nBe sure to also consult the voting dashboard for gauge voting insights: https://app.aura.finance/#/lock";
-    console.log("Body:", body);
+        const networkName = hre.network.name;
+        if (networkName !== "mainnet") {
+            console.log(`Invalid network ID. Found ${networkName} Expecting mainnet`);
+            return;
+        }
 
-    await new Promise(res => {
-        readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
-            if (answer.toLowerCase() === "y") {
-                console.log("Submitting to snapshot hub");
-                try {
-                    const proposal = {
-                        space,
-                        type: "weighted",
-                        title,
-                        body,
-                        discussion: "",
-                        choices: gaugeList.map(gauge => parseLabel(gauge)),
-                        start: Math.floor(startDate.getTime() / 1000),
-                        end: Math.floor(endDate.getTime() / 1000),
-                        snapshot: latestBlock,
-                        network: "1",
-                        strategies: JSON.stringify({}),
-                        plugins: JSON.stringify({}),
-                        metadata: JSON.stringify({}),
-                    };
-                    console.log("Proposal:", JSON.stringify(proposal));
-                    const receipt = await client.proposal(wallet, account, proposal);
-
-                    console.log(receipt);
-                } catch (error) {
-                    console.log("Submitting failed");
-                    console.log(error);
-                }
-                readline.close();
-                res(null);
-            } else {
-                console.log("Cancelled");
-                readline.close();
-                res(null);
+        // get gauges
+        console.log("Getting gauges from gauge controller");
+        const savePath = path.resolve(__dirname, "gauge_snapshot.json");
+        let gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+        const validNetworks = [1, 42161, 137];
+        gaugeList = gaugeList.filter(
+            gauge => validNetworks.includes(gauge.network) && gauge.pool.poolType !== "Element",
+        );
+        gaugeList = gaugeList.map(gauge => {
+            // Deal with stable pools
+            if (gauge.pool.tokens[0].weight === "null") {
+                return gauge;
             }
+
+            // Deal with WETH 50/50 pools
+            const hasWeth = gauge.pool.tokens.some(token => token.symbol === "WETH");
+            const is5050 = gauge.pool.tokens.filter(token => token.weight === "0.5").length == 2;
+            if (hasWeth && is5050) {
+                const tokens = gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1));
+                return { ...gauge, pool: { ...gauge.pool, tokens } };
+            }
+
+            // Sort all other pools by descending weight eg 80/20
+            const tokens = gauge.pool.tokens.sort((a, b) => Number(b.weight) - Number(a.weight));
+            return { ...gauge, pool: { ...gauge.pool, tokens } };
+        });
+        console.log("Gauge list:");
+        gaugeList.forEach((gauge, i) => console.log(`${i + 1}) ${parseLabel(gauge)} (chain:${gauge.network})`));
+
+        // create proposal
+        console.log("Creating proposal on snapshot");
+        const latestBlock = taskArgs.snapshot;
+        if (!latestBlock) {
+            console.log(`Invalid snashot provided. Found ${snapshot}`);
+        }
+        const config = configs.test;
+        const client = new snapshot.Client712(config.hub);
+
+        const space = config.space;
+
+        const localDate = new Date();
+
+        const startDate = new Date(
+            Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()),
+        );
+        const dayCurr = startDate.getDay();
+        const dayTarget = 4; // Thursday
+        const dayDelta = dayTarget - dayCurr;
+        startDate.setDate(startDate.getDate() + dayDelta);
+        startDate.setUTCHours(2);
+        startDate.setUTCMinutes(0);
+
+        const validStartDate = startDate.toUTCString().startsWith("Thu");
+        if (!validStartDate) {
+            console.log("Invalid start date:", startDate.toUTCString());
+            console.log("Voting should start on a Thursday");
+            return;
+        }
+        console.log("Start date:", startDate.toUTCString());
+
+        const endDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+        endDate.setUTCDate(endDate.getUTCDate() + 5);
+        endDate.setUTCHours(2);
+        endDate.setUTCMinutes(0);
+
+        const validEndDate = endDate.toUTCString().startsWith("Tue");
+        if (!validEndDate) {
+            console.log("Invalid end date:", endDate.toUTCString());
+            console.log("Voting should end on a Tuesday");
+            return;
+        }
+        console.log("End date:", endDate.toUTCString());
+        console.log(`Snapshot: ${latestBlock}`);
+        console.log(`Space: ${space}`);
+        console.log(`Account: ${account}`);
+        console.log(`Hub: ${config.hub}`);
+
+        const months = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ];
+        const title = `Gauge Weight for Week of ${ordinalSuffix(startDate.getUTCDate())} ${
+            months[startDate.getUTCMonth()]
+        } ${startDate.getUTCFullYear()}`;
+        console.log(`Title: ${title}`);
+
+        const body =
+            "Please read gauge voting rules before voting: https://docs.aura.finance/aura/governance/gauge-voting#gauge-voting-rules-and-information\n\nBe sure to also consult the voting dashboard for gauge voting insights: https://app.aura.finance/#/lock";
+        console.log("Body:", body);
+
+        await new Promise(res => {
+            readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
+                if (answer.toLowerCase() === "y") {
+                    console.log("Submitting to snapshot hub");
+                    try {
+                        const proposal = {
+                            space,
+                            type: "weighted",
+                            title,
+                            body,
+                            discussion: "",
+                            choices: gaugeList.map(gauge => parseLabel(gauge)),
+                            start: Math.floor(startDate.getTime() / 1000),
+                            end: Math.floor(endDate.getTime() / 1000),
+                            snapshot: Number(latestBlock),
+                            network: "1",
+                            strategies: JSON.stringify({}),
+                            plugins: JSON.stringify({}),
+                            metadata: JSON.stringify({}),
+                        };
+                        console.log("Proposal:", JSON.stringify(proposal));
+                        const receipt = await client.proposal(wallet, account, proposal);
+
+                        console.log(receipt);
+                    } catch (error) {
+                        console.log("Submitting failed");
+                        console.log(error);
+                    }
+                    readline.close();
+                    res(null);
+                } else {
+                    console.log("Cancelled");
+                    readline.close();
+                    res(null);
+                }
+            });
         });
     });
-});
 
 task("snapshot:result:legacy", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
