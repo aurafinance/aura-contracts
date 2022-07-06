@@ -12,7 +12,7 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 const configs = {
     main: {
         hub: "https://hub.snapshot.org",
-        space: "",
+        space: "aurafinance.eth",
     },
     test: {
         hub: "https://testnet.snapshot.org",
@@ -37,6 +37,10 @@ const parseLabel = (gauge: any) => {
             : gauge.pool.poolType;
 
     const tokenStr = gauge.pool.tokens.map(token => token.symbol).join("/");
+    if (gauge.pool.poolType === "StablePhantom") {
+        return [networkStr, tokenStr].join("");
+    }
+
     return [networkStr, weightStr, " ", tokenStr].join("");
 };
 
@@ -102,7 +106,7 @@ task("snapshot:create")
         if (!latestBlock) {
             console.log(`Invalid snashot provided. Found ${snapshot}`);
         }
-        const config = configs.test;
+        const config = configs.main;
         const client = new snapshot.Client712(config.hub);
 
         const space = config.space;
