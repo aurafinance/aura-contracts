@@ -872,7 +872,7 @@ async function deployPhase2(
 
     // If Mainnet or Kovan, create LBP
     let lbpBpt: BalancerPoolDeployed;
-    if (chain == Chain.mainnet || chain == Chain.kovan) {
+    if (chain == Chain.mainnet || chain == Chain.kovan || chain == Chain.goerli) {
         const { tknAmount, wethAmount } = distroList.lbp;
         const [poolTokens, weights, initialBalances] = balHelper.sortTokens(
             [cvx.address, config.weth],
