@@ -3,6 +3,7 @@ export enum Chain {
     rinkeby,
     kovan,
     local,
+    goerli,
 }
 
 export interface Token {
