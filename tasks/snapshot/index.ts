@@ -44,6 +44,27 @@ const parseLabel = (gauge: any) => {
     return [networkStr, weightStr, " ", tokenStr].join("");
 };
 
+const sortGaugeList = (gaugeList: any) => {
+    return gaugeList.map(gauge => {
+        // Deal with stable pools
+        if (gauge.pool.tokens[0].weight === "null") {
+            return gauge;
+        }
+
+        // Deal with WETH 50/50 pools
+        const hasWeth = gauge.pool.tokens.some(token => token.symbol === "WETH");
+        const is5050 = gauge.pool.tokens.filter(token => token.weight === "0.5").length == 2;
+        if (hasWeth && is5050) {
+            const tokens = gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1));
+            return { ...gauge, pool: { ...gauge.pool, tokens } };
+        }
+
+        // Sort all other pools by descending weight eg 80/20
+        const tokens = gauge.pool.tokens.sort((a, b) => Number(b.weight) - Number(a.weight));
+        return { ...gauge, pool: { ...gauge.pool, tokens } };
+    });
+};
+
 const ordinalSuffix = (i: number) => {
     const j = i % 10;
     const k = i % 100;
@@ -79,24 +100,7 @@ task("snapshot:create")
         gaugeList = gaugeList.filter(
             gauge => validNetworks.includes(gauge.network) && gauge.pool.poolType !== "Element",
         );
-        gaugeList = gaugeList.map(gauge => {
-            // Deal with stable pools
-            if (gauge.pool.tokens[0].weight === "null") {
-                return gauge;
-            }
-
-            // Deal with WETH 50/50 pools
-            const hasWeth = gauge.pool.tokens.some(token => token.symbol === "WETH");
-            const is5050 = gauge.pool.tokens.filter(token => token.weight === "0.5").length == 2;
-            if (hasWeth && is5050) {
-                const tokens = gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1));
-                return { ...gauge, pool: { ...gauge.pool, tokens } };
-            }
-
-            // Sort all other pools by descending weight eg 80/20
-            const tokens = gauge.pool.tokens.sort((a, b) => Number(b.weight) - Number(a.weight));
-            return { ...gauge, pool: { ...gauge.pool, tokens } };
-        });
+        gaugeList = sortGaugeList(gaugeList);
         console.log("Gauge list:");
         gaugeList.forEach((gauge, i) => console.log(`${i + 1}) ${parseLabel(gauge)} (chain:${gauge.network})`));
 
@@ -210,7 +214,7 @@ task("snapshot:create")
         });
     });
 
-task("snapshot:result:legacy", "Get results for the first proposal that uses non standard labels")
+task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const { ethers } = hre;
@@ -222,6 +226,7 @@ task("snapshot:result:legacy", "Get results for the first proposal that uses non
                     scores_total
                     scores
                     choices
+                    scores_state
                 }
             }
         `;
@@ -230,7 +235,14 @@ task("snapshot:result:legacy", "Get results for the first proposal that uses non
         const proposalId = taskArgs.proposal;
         const data = await request(`${config.hub}/graphql`, query, { proposal: proposalId });
         const proposal = data.proposal;
-        const labels = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./labels.json"), "utf-8"));
+        if (proposal.scores_state !== "final") {
+            console.log("Scores not final");
+            console.log("Exiting...");
+            return;
+        }
+
+        let gaugeList = JSON.parse(fs.readFileSync(path.resolve(__dirname, "./gauge_snapshot.json"), "utf-8"));
+        gaugeList = sortGaugeList(gaugeList);
 
         const results: { choice: string; score: number; percentage: number; address: string }[] = [];
 
@@ -238,7 +250,7 @@ task("snapshot:result:legacy", "Get results for the first proposal that uses non
             const score = proposal.scores[i];
             const choice = proposal.choices[i];
             const percentage = score / proposal.scores_total;
-            const resp = labels.find(({ label }) => label.toLowerCase() === choice.toLowerCase());
+            const resp = gaugeList.find(gauge => parseLabel(gauge) === choice);
 
             results.push({ choice, score, percentage, address: resp?.address });
         }
@@ -260,6 +272,7 @@ task("snapshot:result:legacy", "Get results for the first proposal that uses non
 
         if (totalWeightAfter !== totalVotes) {
             console.log("Total weight is not equal to total votes.");
+            console.log("Exiting...");
             return;
         }
 
