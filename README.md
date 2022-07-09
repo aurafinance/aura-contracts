@@ -179,3 +179,9 @@ yarn task timeTravel --duration 69420 --network forking
 |                         | [0x700C22100691ae23498d2182F317A7bC2829043a](https://kovan.etherscan.io/address/0x700C22100691ae23498d2182F317A7bC2829043a) |
 | drops                   | [0xBe227b7851570a9f5adFB923E9a2d4583EB6630F](https://kovan.etherscan.io/address/0xBe227b7851570a9f5adFB923E9a2d4583EB6630F) |
 |                         | [0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6](https://kovan.etherscan.io/address/0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6) |
+
+### Goerli (5)
+
+| Contract                | Address                                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| voterProxy              | [0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9](https://goerli.etherscan.io/address/0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9) |
