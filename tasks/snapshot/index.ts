@@ -216,6 +216,7 @@ task("snapshot:create")
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
+    .addParam("debug", "Debug mode")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const { ethers } = hre;
 
@@ -233,9 +234,10 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
 
         const config = configs.main;
         const proposalId = taskArgs.proposal;
+        const debug = taskArgs.debug === "true";
         const data = await request(`${config.hub}/graphql`, query, { proposal: proposalId });
         const proposal = data.proposal;
-        if (proposal.scores_state !== "final") {
+        if (proposal.scores_state !== "final" && !debug) {
             console.log("Scores not final");
             console.log("Exiting...");
             return;
