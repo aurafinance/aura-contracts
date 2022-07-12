@@ -352,6 +352,6 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // const booster = new ethers.Contract(boosterAddress, boosterAbi);
         // const encoded = await booster.interface.encodeFunctionData("voteGaugeWeight", [gauges, weights]);
         // console.log(encoded);
-        console.log(votes.map(v => v.gauge.address));
-        console.log(votes.map(v => v.voteWeight));
+        console.log(JSON.stringify(votes.map(v => v.gauge.address)));
+        console.log(JSON.stringify(votes.map(v => v.voteWeight)));
     });
