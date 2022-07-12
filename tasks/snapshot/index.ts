@@ -220,7 +220,6 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
     .addParam("proposal", "The proposal ID of the snapshot")
     .addParam("debug", "Debug mode")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
-        const { ethers } = hre;
         const signer = await getSigner(hre);
 
         const query = gql`
@@ -288,7 +287,6 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
 
         const totalVotes = 10000;
         const sumOfPercentages = successfulGauges.reduce((acc, x) => acc + x.percentage, 0);
-        const gauges = successfulGauges.map(gauge => gauge.address);
         const weights = successfulGauges.map(gauge => Math.floor((totalVotes * gauge.percentage) / sumOfPercentages));
         const totalWeightBefore = weights.reduce((acc, x) => acc + x, 0);
 
@@ -312,7 +310,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         let votes: any[] = [];
         for (const gauge of gaugesWithExistingWeights) {
             const idx = successfulGauges.findIndex(g => gauge.address === g.address);
-            if (!!~idx) {
+            if (~idx) {
                 // Gauge that we want to cast a vote for this time
                 const voteWeight = weights[idx];
                 const voteGauge = successfulGauges[idx];
@@ -327,7 +325,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
 
         // sort votes by lowest delta first
         votes = votes.sort((a, b) => a.voteDelta - b.voteDelta);
-        votes = votes.sort((a, b) => (a.voteWeight === 0 ? -1 : 1));
+        votes = votes.sort(a => (a.voteWeight === 0 ? -1 : 1));
 
         // ----------------------------------------------------------
         // Processing
