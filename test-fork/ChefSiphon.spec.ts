@@ -6,6 +6,10 @@ import {
     ERC20__factory,
     SiphonToken,
     SiphonToken__factory,
+    ChefForwarder,
+    ChefForwarder__factory,
+    MasterChefRewardHook,
+    MasterChefRewardHook__factory,
 } from "../types/generated";
 import { advanceBlock, impersonateAccount } from "../test-utils";
 import { BigNumberish, Signer } from "ethers";
@@ -13,13 +17,15 @@ import { deployContract } from "../tasks/utils";
 
 const debug = false;
 
+const auraToken = "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF";
 const masterChefAdress = "0x1ab80F7Fb46B25b7e0B2cfAC23Fc88AC37aaf4e9";
 const chefAdminAddress = "0x5fea4413e3cc5cf3a29a49db41ac0c24850417a0";
-const muleAddress = "0x3000d9B2c0E6B9F97f30ABE379eaAa8A85A04afC";
+const briberAddress = "0x3000d9B2c0E6B9F97f30ABE379eaAa8A85A04afC";
+const stashAddress = "there is no pool yet";
 
 describe("ChefSiphon", () => {
     let chefAdmin: Signer;
-    let mule: Signer;
+    let briber: Signer;
     let masterChef: ConvexMasterChef;
 
     before(async () => {
@@ -38,50 +44,82 @@ describe("ChefSiphon", () => {
         await impersonateAccount(chefAdminAddress);
         chefAdmin = await ethers.getSigner(chefAdminAddress);
 
-        await impersonateAccount(muleAddress);
-        mule = await ethers.getSigner(muleAddress);
+        await impersonateAccount(briberAddress);
+        briber = await ethers.getSigner(briberAddress);
 
         masterChef = ConvexMasterChef__factory.connect(masterChefAdress, chefAdmin);
     });
 
     describe("divert chef rewards", () => {
-        let siphonToken: SiphonToken;
-        let pid: BigNumberish;
+        const mintAmount = 1;
 
-        it("deploy chef siphon token", async () => {
-            const mintAmount = 1;
-            const factory = new SiphonToken__factory(mule);
-            siphonToken = await deployContract<SiphonToken>(
+        let pids: BigNumberish[] = [];
+        let siphonTokens: SiphonToken[] = [];
+        let masterChefRewardHook: MasterChefRewardHook;
+        let chefForwarder: ChefForwarder;
+
+        const rewardHandlers = [masterChefRewardHook, chefForwarder];
+
+        it("deploy ChefForwarder", async () => {
+            chefForwarder = await deployContract<ChefForwarder>(
                 hre,
-                factory,
-                "SiphonToken",
-                [muleAddress, mintAmount],
-                {},
-                debug,
+                new ChefForwarder__factory(chefAdmin),
+                "ChefForwarder",
+                [masterChefAdress],
             );
-            const balance = await siphonToken.balanceOf(muleAddress);
-            expect(balance).eq(mintAmount);
+            await chefForwarder.setBriber(briberAddress);
+        });
+        it("deploy MasterChefRewardHook", async () => {
+            masterChefRewardHook = await deployContract<MasterChefRewardHook>(
+                hre,
+                new MasterChefRewardHook__factory(chefAdmin),
+                "MasterChefRewardHook",
+                [stashAddress, masterChefAdress, auraToken],
+            );
+        });
+        it("deploy chef siphon tokens", async () => {
+            for (const rewardHandler of rewardHandlers) {
+                const factory = new SiphonToken__factory(chefAdmin);
+                const token = await deployContract<SiphonToken>(
+                    hre,
+                    factory,
+                    "SiphonTokenBribes",
+                    [rewardHandler.address, mintAmount],
+                    {},
+                    debug,
+                );
+                const balance = await token.balanceOf(rewardHandler.address);
+                expect(balance).eq(mintAmount);
+                siphonTokens.push(token);
+            }
         });
         it("add siphon token to chef", async () => {
             const totalAllocPoint = await masterChef.totalAllocPoint();
+            const poolAllocPoint = totalAllocPoint.div(2);
             const rewarder = "0x0000000000000000000000000000000000000000";
-            pid = await masterChef.poolLength();
-            await masterChef.add(totalAllocPoint, siphonToken.address, rewarder);
-            expect(await masterChef.isAddedPool(siphonToken.address)).eq(true);
+            for (let i = 0; i < siphonTokens.length; i++) {
+                const pid = await masterChef.poolLength();
+                pids.push(pid);
+                await masterChef.add(poolAllocPoint, siphonTokens[i].address, rewarder);
+                expect(await masterChef.isAddedPool(siphonTokens[i].address)).eq(true);
+            }
         });
         it("deposit tokens", async () => {
-            const balance = await siphonToken.balanceOf(muleAddress);
-            await siphonToken.approve(masterChef.address, balance);
-            await masterChef.connect(mule).deposit(pid, balance);
+            for (let i = 0; i < siphonTokens.length; i++) {
+                await rewardHandlers[i].deposit(siphonTokens[i].address);
+            }
         });
-        it("claim rewards", async () => {
+        it("claim rewards for ChefForwarder", async () => {
             const rewardTokenAddress = await masterChef.cvx();
-            const rewardToken = ERC20__factory.connect(rewardTokenAddress, mule);
-            const balanceBefore = await rewardToken.balanceOf(muleAddress);
+            const rewardToken = ERC20__factory.connect(rewardTokenAddress, briber);
+            const balanceBefore = await rewardToken.balanceOf(chefForwarder.address);
             await advanceBlock();
-            await masterChef.claim(pid, muleAddress);
-            const balanceAfter = await rewardToken.balanceOf(muleAddress);
+            await chefForwarder.connect(briber).claim(rewardTokenAddress);
+            const balanceAfter = await rewardToken.balanceOf(chefForwarder.address);
             expect(balanceAfter).gt(balanceBefore);
+        });
+        xit("claim rewards for MasterChefRewardHook", async () => {
+            // TODO:
         });
     });
 });
