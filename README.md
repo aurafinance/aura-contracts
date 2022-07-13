@@ -145,7 +145,7 @@ yarn task timeTravel --duration 69420 --network forking
 | drops                     | [0x45EB1A004373b1D8457134A2C04a42d69D287724](https://etherscan.io/address/0x45EB1A004373b1D8457134A2C04a42d69D287724) |
 |                           | [0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB](https://etherscan.io/address/0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB) |
 | auraClaimZap              | [0x623B83755a39B12161A63748f3f595A530917Ab2](https://etherscan.io/address/0x623B83755a39B12161A63748f3f595A530917Ab2) |
-| claimFeesHelper           | [0x999dBcE0A18F721F04E793f916C30e72A9D0f56E](https://etherscan.io/address/0x999dBcE0A18F721F04E793f916C30e72A9D0f56E) |
+| claimFeesHelper           | [0xa96CCC5B7f04c7Ab74a43F81e07C342fb9808cF1](https://etherscan.io/address/0xa96CCC5B7f04c7Ab74a43F81e07C342fb9808cF1) |
 | rewardPoolDepositWrapper  | [0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59](https://etherscan.io/address/0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59) |
 
 ### Kovan (42)
