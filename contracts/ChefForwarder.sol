@@ -30,12 +30,16 @@ contract ChefForwarder is Ownable {
     function deposit(address siphonToken) external onlyOwner {
         IERC20(siphonToken).approve(chef, type(uint256).max);
         uint256 bal = IERC20(siphonToken).balanceOf(address(this));
+        require(bal > 0, "!bal");
         IChef(chef).deposit(pid, bal);
     }
 
     function claim(address token) external {
         require(msg.sender == briber, "!briber");
+        IChef(chef).claim(pid, address(this));
         uint256 bal = IERC20(token).balanceOf(address(this));
-        IERC20(token).transfer(briber, bal);
+        if (bal > 0) {
+            IERC20(token).transfer(briber, bal);
+        }
     }
 }
