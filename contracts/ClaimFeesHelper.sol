@@ -57,13 +57,8 @@ contract ClaimFeesHelper {
             uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
             require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
 
-            uint256 bal = IERC20(_token).balanceOf(voterProxy);
-            feeDistro.claimToken(voterProxy, _token);
-
-            // Loop through until something is transferred
-            while (IERC20(_token).balanceOf(voterProxy) <= bal) {
-                feeDistro.claimToken(voterProxy, _token);
-            }
+            uint256 claimed = feeDistro.claimToken(voterProxy, _token);
+            require(claimed > 0);
 
             booster.earmarkFees(address(_token));
             lastTokenTimes[address(_token)] = tokenTime;
