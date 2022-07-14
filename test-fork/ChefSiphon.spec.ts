@@ -60,7 +60,7 @@ describe("ChefSiphon", () => {
     describe("divert chef rewards", () => {
         const mintAmount = 1;
 
-        let siphonTokens: SiphonToken[] = [];
+        const siphonTokens: SiphonToken[] = [];
         let masterChefRewardHook: MasterChefRewardHook;
         let chefForwarder: ChefForwarder;
 
