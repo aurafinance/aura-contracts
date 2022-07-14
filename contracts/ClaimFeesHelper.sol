@@ -38,21 +38,30 @@ contract ClaimFeesHelper {
     }
 
     /**
-     * @dev Claims fees from fee claimer, and pings the booster to distribute
+     * @dev Claims fees from fee claimer, and pings the booster to distribute.
+     * @param _tokens Token address to claim fees for.
+     * @param _checkpoints Number of checkpoints required previous to claim fees.
      */
-    function claimFees(IERC20 _token) external {
-        uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
-        require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
+    function claimFees(IERC20[] memory _tokens, uint256 _checkpoints) external {
+        uint256 len = _tokens.length;
+        require(len > 0, "!_tokens");
 
-        uint256 bal = IERC20(_token).balanceOf(voterProxy);
-        feeDistro.claimToken(voterProxy, _token);
-
-        // Loop through until something is transferred
-        while (IERC20(_token).balanceOf(voterProxy) <= bal) {
-            feeDistro.claimToken(voterProxy, _token);
+        // Checkpoint user n times before claiming fees
+        for (uint256 i = 0; i < _checkpoints; i++) {
+            feeDistro.checkpointUser(voterProxy);
         }
 
-        booster.earmarkFees(address(_token));
-        lastTokenTimes[address(_token)] = tokenTime;
+        for (uint256 i = 0; i < len; i++) {
+            // Validate if the token should be claimed
+            IERC20 _token = _tokens[i];
+            uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
+            require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
+
+            uint256 claimed = feeDistro.claimToken(voterProxy, _token);
+            require(claimed > 0);
+
+            booster.earmarkFees(address(_token));
+            lastTokenTimes[address(_token)] = tokenTime;
+        }
     }
 }
