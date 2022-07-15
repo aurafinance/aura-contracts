@@ -114,6 +114,7 @@ const addresses: ExtSystemConfig = {
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
+    protocolDAO: "0x5fea4413e3cc5cf3a29a49db41ac0c24850417a0",
 };
 
 const naming = {

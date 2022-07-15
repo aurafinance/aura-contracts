@@ -141,6 +141,7 @@ interface ExtSystemConfig {
     ldo?: string;
     ldoWhale?: string;
     stEthGaugeLdoDepositor?: string;
+    protocolDAO?: string;
 }
 
 interface NamingConfig {
