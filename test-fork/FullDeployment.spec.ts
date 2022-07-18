@@ -38,11 +38,12 @@ import { deployContract, waitForTx } from "../tasks/utils";
 import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../test-utils/time";
 import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { Account } from "./../types/common";
-import { config } from "../tasks/deploy/mainnet-config";
+import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
+import { config as goerliConfig } from "../tasks/deploy/goerli-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
 
-const debug = false;
+const debug = true;
 
 const merkleDropRootHashes = ["0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78", ZERO_KEY];
 
@@ -52,6 +53,10 @@ const testAccounts = {
     eoa: "0x0000000000000000000000000000000000000004",
     staker: "0x0000000000000000000000000000000000000006",
 };
+
+const networkName = process.env.NODE_URL?.includes("goerli") ? "goerli" : "mainnet";
+const blockNumber = networkName === "goerli" ? 7193000 : 14932468;
+const config = networkName === "goerli" ? goerliConfig : mainnetConfig;
 
 describe("Full Deployment", () => {
     let deployer: Signer;
@@ -68,12 +73,15 @@ describe("Full Deployment", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 14932468,
+                        blockNumber: blockNumber,
                     },
                 },
             ],
         });
-        deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
+        deployerAddress =
+            networkName === "goerli"
+                ? "0x30019eB135532bDdF2Da17659101cc000C73c8e4"
+                : "0xA28ea848801da877E1844F954FF388e857d405e5";
         deployer = await impersonate(deployerAddress);
     });
 
@@ -559,7 +567,7 @@ describe("Full Deployment", () => {
             });
         });
 
-        describe("POST-Phase 2", () => {
+        describe.skip("POST-Phase 2", () => {
             let lbp: ILBP;
             let launchSigner: Account;
             let currentTime: BN;
@@ -589,7 +597,7 @@ describe("Full Deployment", () => {
             });
         });
 
-        describe("TEST-Phase 2", () => {
+        describe.skip("TEST-Phase 2", () => {
             let treasurySigner: Account;
             let daoSigner: Account;
             let balancerVault: IVault;
@@ -775,7 +783,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe("Phase 3", () => {
+    describe.skip("Phase 3", () => {
         describe("PRE-Phase 3", () => {
             let treasurySigner: Account;
             let balancerVault: IVault;
@@ -1160,7 +1168,7 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe("Phase 4", () => {
+    describe.skip("Phase 4", () => {
         describe("PRE-Phase 4", () => {
             it("only allows daoMultisig to set protect pool to false", async () => {
                 await expect(phase3.poolManager.connect(deployer).setProtectPool(false)).to.be.revertedWith("!auth");
@@ -1819,7 +1827,7 @@ describe("Full Deployment", () => {
             });
         });
     });
-    describe("Phase X", () => {
+    describe.skip("Phase X", () => {
         let stakerAddress: string;
         let staker: Account;
 

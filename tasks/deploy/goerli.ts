@@ -15,16 +15,13 @@ import {
 } from "../../scripts/deploySystem";
 import { getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { simpleToExactAmount } from "./../../test-utils/math";
-import {
-    VoterProxy__factory,
-    ERC20__factory,
-} from "../../types/generated";
+import { VoterProxy__factory, ERC20__factory } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const goerliBalancerConfig: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
     token: "0xfA8449189744799aD2AcE7e0EBAC8BB7575eff47",
-    tokenBpt: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00",
+    tokenBpt: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00",
     minter: "0xdf0399539A72E2689B8B2DD53C3C2A0883879fDd",
     votingEscrow: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
     voteOwnership: ZERO_ADDRESS,
@@ -33,7 +30,7 @@ const goerliBalancerConfig: ExtSystemConfig = {
     gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
     gauges: [],
     balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
-    balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
+    balancerPoolId: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00000200000000000000000060",
     balancerMinOutBps: "9975",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
@@ -148,7 +145,7 @@ async function deployGoerli234(
     // ~~~~~~~~~~~~~~~
 
     // PRE-PHASE-4
-    let tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
+    const tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
     await waitForTx(tx, true, waitForBlocks);
 
     const phase4 = await deployPhase4(hre, deployer, phase3, goerliBalancerConfig, true, waitForBlocks);
