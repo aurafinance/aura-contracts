@@ -14,18 +14,15 @@ import {
     BoosterOwner,
     Booster,
 } from "../types/generated";
-import { advanceBlock, impersonateAccount } from "../test-utils";
+import { advanceBlock, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 import { deployContract } from "../tasks/utils";
-import { parseUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { Phase2Deployed } from "scripts/deploySystem";
 
 const debug = false;
 
-const protocolMultisig = "0x5fea4413e3cc5cf3a29a49db41ac0c24850417a0";
 const eoaAddress = "0x3000d9B2c0E6B9F97f30ABE379eaAa8A85A04afC";
 const stashAddress = "0xF801a238a1Accc7A63b429E8c343B198d51fbbb9";
-const zeroAddress = "0x0000000000000000000000000000000000000000";
 const auraBalPid = 19;
 
 describe("ChefSiphon", () => {
@@ -51,8 +48,8 @@ describe("ChefSiphon", () => {
             ],
         });
 
-        await impersonateAccount(protocolMultisig);
-        protocolDao = await ethers.getSigner(protocolMultisig);
+        await impersonateAccount(config.multisigs.daoMultisig);
+        protocolDao = await ethers.getSigner(config.multisigs.daoMultisig);
 
         await impersonateAccount(eoaAddress);
         eoa = await ethers.getSigner(eoaAddress);
@@ -75,7 +72,7 @@ describe("ChefSiphon", () => {
         // EOA will perform these actions
         // -------------------------------------------------------------------
 
-        const mintAmount = parseUnits("1");
+        const mintAmount = simpleToExactAmount("1");
 
         it("deploy ChefForwarder", async () => {
             chefForwarder = await deployContract<ChefForwarder>(hre, new ChefForwarder__factory(eoa), "ChefForwarder", [
@@ -116,8 +113,8 @@ describe("ChefSiphon", () => {
             expect(balance).eq(mintAmount);
         });
         it("transfer ownership of reward contracts to protocolMultisig", async () => {
-            await masterChefRewardHook.transferOwnership(protocolMultisig);
-            await chefForwarder.transferOwnership(protocolMultisig);
+            await masterChefRewardHook.transferOwnership(config.multisigs.daoMultisig);
+            await chefForwarder.transferOwnership(config.multisigs.daoMultisig);
 
             masterChefRewardHook = masterChefRewardHook.connect(protocolDao);
             chefForwarder = chefForwarder.connect(protocolDao);
@@ -127,23 +124,22 @@ describe("ChefSiphon", () => {
         // Protocol DAO will perform these actions
         // -------------------------------------------------------------------
         const poolAllocPoint = "1000";
-        const rewarder = zeroAddress;
 
         it("add siphon token for masterChefRewardHook", async () => {
             const pid = await masterChef.poolLength();
             await masterChefRewardHook.setPid(pid);
-            await masterChef.add(poolAllocPoint, masterChefRewardHookSiphonToken.address, rewarder);
+            await masterChef.add(poolAllocPoint, masterChefRewardHookSiphonToken.address, ZERO_ADDRESS);
             expect(await masterChef.isAddedPool(masterChefRewardHookSiphonToken.address)).eq(true);
         });
         it("add siphon token for chefForwarder", async () => {
             const pid = await masterChef.poolLength();
             await chefForwarder.setPid(pid);
-            await masterChef.add(poolAllocPoint, chefForwarderSiphonToken.address, rewarder);
+            await masterChef.add(poolAllocPoint, chefForwarderSiphonToken.address, ZERO_ADDRESS);
             expect(await masterChef.isAddedPool(chefForwarderSiphonToken.address)).eq(true);
         });
         it("set rewards for pid 0 and 1 to 0", async () => {
-            await masterChef.set(0, 0, zeroAddress, false);
-            await masterChef.set(1, 0, zeroAddress, false);
+            await masterChef.set(0, 0, ZERO_ADDRESS, false);
+            await masterChef.set(1, 0, ZERO_ADDRESS, false);
         });
         it("deposit tokens for chefForwarder and masterChefRewardHook", async () => {
             await chefForwarder.deposit(chefForwarderSiphonToken.address);

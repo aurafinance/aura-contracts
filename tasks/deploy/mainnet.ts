@@ -112,7 +112,7 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     const signer = await getSigner(hre);
     const phase2 = await config.getPhase2(signer);
 
-    const protocolMultisig = config.addresses.protocolDAO;
+    const protocolMultisig = config.multisigs.daoMultisig;
     // auraBAL reward stash address
     const stashAddress = "0xF801a238a1Accc7A63b429E8c343B198d51fbbb9";
 

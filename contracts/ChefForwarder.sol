@@ -11,9 +11,9 @@ interface IChef {
 }
 
 contract ChefForwarder is Ownable {
-    uint256 pid;
-    address briber;
-    address chef;
+    uint256 public pid;
+    address public briber;
+    address public immutable chef;
 
     constructor(address _chef) {
         chef = _chef;

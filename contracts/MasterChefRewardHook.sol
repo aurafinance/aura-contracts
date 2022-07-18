@@ -11,10 +11,10 @@ interface IChef {
 }
 
 contract MasterChefRewardHook is Ownable {
-    uint256 pid;
-    address stash;
-    address chef;
-    address rewardToken;
+    uint256 public pid;
+    address public immutable stash;
+    address public immutable chef;
+    address public immutable rewardToken;
 
     constructor(
         address _stash,
