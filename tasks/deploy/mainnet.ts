@@ -6,7 +6,8 @@ import { getSigner } from "../utils";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { deployContract } from "../utils";
+import { simpleToExactAmount } from "../../test-utils/math";
+import { waitForTx, deployContract } from "../utils";
 import {
     ChefForwarder,
     ChefForwarder__factory,
@@ -15,7 +16,6 @@ import {
     MasterChefRewardHook,
     MasterChefRewardHook__factory,
 } from "../../types/generated";
-import { parseUnits } from "ethers/lib/utils";
 
 task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -107,7 +107,8 @@ task("mainnet:getStashes").setAction(async function (taskArguments: TaskArgument
 
 task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     const debug = true;
-    const mintAmount = parseUnits("1");
+    const waitForBlocks = 3;
+    const mintAmount = simpleToExactAmount("1");
 
     const signer = await getSigner(hre);
     const phase2 = await config.getPhase2(signer);
@@ -122,6 +123,9 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
         new ChefForwarder__factory(signer),
         "ChefForwarder",
         [phase2.chef.address],
+        {},
+        debug,
+        waitForBlocks,
     );
 
     // deploy chef forwarded siphon token
@@ -132,6 +136,7 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
         [chefForwarder.address, mintAmount],
         {},
         debug,
+        waitForBlocks,
     );
 
     // deploy master chef reward hook
@@ -140,6 +145,9 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
         new MasterChefRewardHook__factory(signer),
         "MasterChefRewardHook",
         [stashAddress, phase2.chef.address, phase2.cvx.address],
+        {},
+        debug,
+        waitForBlocks,
     );
 
     // deploy master chef reward hook siphon token
@@ -150,9 +158,12 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
         [masterChefRewardHook.address, mintAmount],
         {},
         debug,
+        waitForBlocks,
     );
 
     // transfer ownership to protocolDAO
-    await chefForwarder.transferOwnership(protocolMultisig);
-    await masterChefRewardHook.transferOwnership(protocolMultisig);
+    let tx = await chefForwarder.transferOwnership(protocolMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+    tx = await masterChefRewardHook.transferOwnership(protocolMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
 });
