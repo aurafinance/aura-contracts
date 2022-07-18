@@ -292,7 +292,7 @@ const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({
 const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
     ...(await getPhase3(deployer)),
     claimZap: await AuraClaimZap__factory.connect("0x623B83755a39B12161A63748f3f595A530917Ab2", deployer),
-    feeCollector: await ClaimFeesHelper__factory.connect("0x999dBcE0A18F721F04E793f916C30e72A9D0f56E", deployer),
+    feeCollector: await ClaimFeesHelper__factory.connect("0xa96CCC5B7f04c7Ab74a43F81e07C342fb9808cF1", deployer),
     rewardDepositWrapper: await RewardPoolDepositWrapper__factory.connect(
         "0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59",
         deployer,
