@@ -126,7 +126,7 @@ task("snapshot:create")
         const dayTarget = 4; // Thursday
         const dayDelta = dayTarget - dayCurr;
         startDate.setDate(startDate.getDate() + dayDelta);
-        startDate.setUTCHours(2);
+        startDate.setUTCHours(8);
         startDate.setUTCMinutes(0);
 
         const validStartDate = startDate.toUTCString().startsWith("Thu");
