@@ -57,9 +57,6 @@ contract ClaimFeesHelper {
             uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
             require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
 
-            uint256 claimed = feeDistro.claimToken(voterProxy, _token);
-            require(claimed > 0);
-
             booster.earmarkFees(address(_token));
             lastTokenTimes[address(_token)] = tokenTime;
         }
