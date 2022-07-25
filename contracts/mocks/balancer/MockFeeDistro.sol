@@ -17,6 +17,14 @@ interface IFeeDistributor {
     function getTimeCursor() external view returns (uint256);
 
     function depositToken(IERC20 token, uint256 amount) external;
+
+    function getNextNonce(address) external view returns (uint256);
+
+    function setOnlyCallerCheckWithSignature(
+        address,
+        bool,
+        bytes memory
+    ) external;
 }
 
 // @dev - Must be funded by transferring crv to this contract post deployment, as opposed to minting directly
@@ -68,4 +76,14 @@ contract MockFeeDistributor is IFeeDistributor {
     }
 
     function depositToken(IERC20 token, uint256 amount) external {}
+
+    function getNextNonce(address) external view returns (uint256) {
+        return 0;
+    }
+
+    function setOnlyCallerCheckWithSignature(
+        address,
+        bool,
+        bytes memory
+    ) external {}
 }
