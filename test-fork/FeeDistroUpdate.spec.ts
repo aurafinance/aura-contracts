@@ -9,7 +9,7 @@ import {
     IFeeDistributor__factory,
     VoterProxy,
 } from "../types/generated";
-import { impersonateAccount, simpleToExactAmount } from "../test-utils";
+import { impersonateAccount, increaseTime, ONE_DAY, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 import { Signer } from "ethers";
 import { config } from "../tasks/deploy/mainnet-config";
 import { _TypedDataEncoder } from "ethers/lib/utils";
@@ -32,7 +32,7 @@ describe("FeeDistroUpdate", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 15178682,
+                        blockNumber: 15210600,
                     },
                 },
             ],
@@ -73,45 +73,22 @@ describe("FeeDistroUpdate", () => {
             await boosterOwner.setFeeInfo(config.addresses.token, newFeeDistro);
             await boosterOwner.setFeeInfo(config.addresses.feeToken, newFeeDistro);
         });
-        it("set hash on voter proxy for claim", async () => {
-            const domain = {
-                name: "FeeDistributor",
-                version: "1",
-                chainId: (await distributor.provider.getNetwork()).chainId,
-                verifyingContract: distributor.address,
-            };
-
-            const types = {
-                SetOnlyCallerCheck: [
-                    { name: "user", type: "address" },
-                    { name: "enabled", type: "bool" },
-                    { name: "nonce", type: "uint256" },
-                ],
-            };
-
-            const values = {
-                user: voterProxy.address,
-                enabled: true,
-                nonce: (await distributor.getNextNonce(voterProxy.address)).toString(),
-            };
-
-            const voteDelegateAddress = await booster.voteDelegate();
-            await impersonateAccount(voteDelegateAddress);
-            const voteDelegate = await ethers.getSigner(voteDelegateAddress);
-
-            const hash = _TypedDataEncoder.hash(domain, types, values);
-            await booster.connect(voteDelegate).setVote(hash, true);
-
-            const isValid = await voterProxy.isValidSignature(hash, "0x");
-            expect(isValid).eq("0x1626ba7e");
-
-            await distributor.setOnlyCallerCheckWithSignature(voterProxy.address, true, "0x");
+        it("fast forward 1 week", async () => {
+            await increaseTime(ONE_WEEK);
         });
-        xit("add rewards to fee distro and fast forward 1 week", async () => {});
-        xit("only voter proxy can claim rewards", async () => {
+        it("only voter proxy can claim rewards", async () => {
             const resp = distributor.claimToken(voterProxy.address, config.addresses.token);
-            expect(resp).to.be.revertedWith("fucked");
+            await expect(resp).to.be.revertedWith("BAL#401");
         });
-        xit("claim rewards via earmarkRewards", async () => {});
+        it("claim rewards via earmarkRewards", async () => {
+            const feeDistro = await booster.feeTokens(bal.address);
+            const balanceBefore = await bal.balanceOf(feeDistro.rewards);
+            let balanceAfter = await bal.balanceOf(feeDistro.rewards);
+            while (balanceAfter.sub(balanceBefore).eq(0)) {
+                await booster.earmarkFees(bal.address);
+                balanceAfter = await bal.balanceOf(feeDistro.rewards);
+            }
+            expect(balanceAfter.sub(balanceBefore)).gt(0);
+        });
     });
 });
