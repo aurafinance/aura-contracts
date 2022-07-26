@@ -58,7 +58,7 @@ contract BoosterHelper {
     }
 
     /**
-     * @notice Invoke processIdleRewards for each pool
+     * @notice Invoke processIdleRewards for each pool id.
      * @param _pids Array of pool ids
      */
     function processIdleRewards(uint256[] memory _pids) external {
@@ -66,7 +66,7 @@ contract BoosterHelper {
         require(len > 0, "!pids");
 
         for (uint256 i = 0; i < len; i++) {
-            IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pids[i]);
             IBaseRewardPool baseRewardPool = IBaseRewardPool(poolInfo.crvRewards);
             baseRewardPool.processIdleRewards();
         }
