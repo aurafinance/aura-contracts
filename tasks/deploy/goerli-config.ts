@@ -38,82 +38,39 @@ import {
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
-import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 
 const addresses: ExtSystemConfig = {
+    authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
     token: "0xfA8449189744799aD2AcE7e0EBAC8BB7575eff47",
     tokenBpt: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00",
-    tokenWhale: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
+    tokenWhale: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
     minter: "0xdf0399539A72E2689B8B2DD53C3C2A0883879fDd",
-    votingEscrow: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
-    feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9",
+    votingEscrow: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
+    feeDistribution: ZERO_ADDRESS,
     gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
-    gauges: [
-        "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac",
-        "0x605eA53472A496c3d483869Fe8F355c12E861e19",
-        "0x4ca6AC0509E6381Ca7CD872a6cdC0Fbf00600Fa1",
-        "0x5F4d57fd9Ca75625e4B7520c71c02948A48595d0",
-        "0x79eF6103A513951a3b25743DB509E267685726B7",
-        "0x5A481455E62D5825429C8c416f3B8D2938755B64",
-        "0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE",
-        "0xb154d9D7f6C5d618c08D276f94239c03CFBF4575",
-        "0xdB7D7C535B4081Bb8B719237bdb7DB9f23Cc0b83",
-        "0xaB5ea78c8323212cC5736bfe4874557Bc778Bfbf",
-        "0x8F4a5C19A74D7111bC0e1486640F0aAB537dE5A1",
-        "0xD61dc7452C852B866c0Ae49F4e87C38884AE231d",
-        "0xC5f8B1de80145e3a74524a3d1a772a31eD2B50cc",
-        "0x7A89f34E976285b7b885b32b2dE566389C2436a0",
-        "0x68d019f64A7aa97e2D4e7363AEE42251D08124Fb",
-        "0x78DF155d6d75Ca2a1b1B2027f37414Ac1e7A1Ed8",
-        "0xc43d32BC349cea7e0fe829F53E26096c184756fa",
-        "0x4f9463405F5bC7b4C1304222c1dF76EFbD81a407",
-        "0x9AB7B0C7b154f626451c9e8a68dC04f58fb6e5Ce",
-        "0xE273d4aCC555A245a80cB494E9E0dE5cD18Ed530",
-        "0x4e311e207CEAaaed421F17E909DA16527565Daef",
-        "0x4E3c048BE671852277Ad6ce29Fd5207aA12fabff",
-        "0x055d483D00b0FFe0c1123c96363889Fb03fa13a4",
-        "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
-        "0xbeC2d02008Dc64A6AD519471048CF3D3aF5ca0C5",
-        "0x31e7F53D27BFB324656FACAa69Fe440169522E1C",
-        "0xD6E4d70bdA78FBa018c2429e1b84153b9284298e",
-        "0x78259f2e946B11a0bE404d29d3cc017eCddE84C6",
-        "0xAFc28B2412B343574E8673D4fb6b220473677602",
-        "0xCB664132622f29943f67FA56CCfD1e24CC8B4995",
-        "0xf4339872Ad09B34a29Be76EE81D4F30BCf7dbf9F",
-        "0x57d40FF4cF7441A04A05628911F57bb940B6C238",
-        "0xa57453737849A4029325dfAb3F6034656644E104",
-        "0xA6468eca7633246Dcb24E5599681767D27d1F978",
-        "0x158772F59Fe0d3b75805fC11139b46CBc89F70e5",
-        "0x852CF729dEF9beB9De2f18c97a0ea6bf93a7dF8B",
-        "0x40AC67ea5bD1215D99244651CC71a03468bce6c0",
-        "0xbD0DAe90cb4a0e08f1101929C2A01eB165045660",
-        "0x86EC8Bd97622dc80B4a7346bc853760d99D14C7F",
-        "0xe3A3Ca91794a995fe0bB24060987e73931B15f3D",
-        "0x7CDc9dC877b69328ca8b1Ff11ebfBe2a444Cf350",
-        "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2",
-        "0xAF50825B010Ae4839Ac444f6c12D44b96819739B",
-    ],
+    gauges: [],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-    balancerPoolId: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00000200000000000000000060",
-    balancerMinOutBps: "9950",
-    balancerPoolOwner: "0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B",
+    balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
+    balancerMinOutBps: "9975", // mainnet is 9950
+    // balancerPoolOwner: "0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
-        stablePool: "0x8df6EfEc5547e31B0eb7d1291B511FF8a2bf987c",
-        bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
+        stablePool: "0xD360B8afb3d7463bE823bE1Ec3c33aA173EbE86e",
+        bootstrappingPool: "0xb48Cc42C45d262534e46d5965a9Ac496F1B7a830",
     },
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
-    wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
-    treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
+    // wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
+    // treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
     // keeper: "0xc3f4D7b4EF10Dfe1dFfc4Ac2EC4D3Ee29CBF67aE",
-    staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
-    staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
-    feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
-    ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
-    ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
-    stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
+    // staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
+    // staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
+    // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
+    // ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
+    // ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
+    // stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
 };
 
 const naming = {
@@ -124,6 +81,7 @@ const naming = {
     cvxCrvName: "Slipknot BUL",
     cvxCrvSymbol: "slkBUL",
     tokenFactoryNamePostfix: " Slipknot rope",
+    tokenFactoryNamePrefix: "slk",
 };
 
 const multisigs = {
@@ -230,8 +188,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     arbitratorVault: await ArbitratorVault__factory.connect("0xc2939C598e2D044A87C8E22a90A9e36b9579F197", deployer),
     cvxCrv: await CvxCrvToken__factory.connect("0xf80D3083b18fe3f11196E57438258330Ba4f15Ec", deployer),
     cvxCrvBpt: {
-        poolId: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249",
-        address: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd",
+        poolId: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249", // TODO
+        address: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd", //TODO Balancer auraBAL Stable Pool (B-auraBAL...)
     },
     cvxCrvRewards: await BaseRewardPool__factory.connect("0x09421e5D9C2B11f502482DcE2B718b037fD10a25", deployer),
     initialCvxCrvStaking: await AuraBalRewardPool__factory.connect(
@@ -251,24 +209,24 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     ),
     cvxLocker: await AuraLocker__factory.connect("0x1e5B33222977642Bf64EC80846BBF83A016727A0", deployer),
     cvxStakingProxy: await AuraStakingProxy__factory.connect("0x1A8bB30F2AfF498ef026D2BCCc8971a30144b93C", deployer),
-    chef: await ConvexMasterChef__factory.connect("0x1ab80F7Fb46B25b7e0B2cfAC23Fc88AC37aaf4e9", deployer),
+    chef: await ConvexMasterChef__factory.connect("0xa3fCaFCa8150636C3B736A16Cd73d49cC8A7E10E", deployer),
     vestedEscrows: [
         await AuraVestedEscrow__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
         await AuraVestedEscrow__factory.connect("0x6FC5a70BC896645D529CD9CAfa1D3755438E7D83", deployer),
         await AuraVestedEscrow__factory.connect("0xdEB339E69e87A010Cab637f922d270A981A37891", deployer),
         await AuraVestedEscrow__factory.connect("0x8F2cE52277b2bC044Ca0B2e26B9b5d230067c6f4", deployer),
-        await AuraVestedEscrow__factory.connect("0x43B17088503F4CE1AED9fB302ED6BB51aD6694Fa", deployer),
+        await AuraVestedEscrow__factory.connect("0x43B17088503F4CE1AED9fB302ED6BB51aD6694Fa", deployer), // TODO
     ],
     drops: [
-        await AuraMerkleDrop__factory.connect("0x45EB1A004373b1D8457134A2C04a42d69D287724", deployer),
-        await AuraMerkleDrop__factory.connect("0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB", deployer),
+        await AuraMerkleDrop__factory.connect("0x45EB1A004373b1D8457134A2C04a42d69D287724", deployer), // TODO
+        await AuraMerkleDrop__factory.connect("0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB", deployer), // TODO
     ],
     lbpBpt: {
         poolId: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee000200000000000000000235",
-        address: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee",
+        address: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee", // TODO  Balancer AURA WETH LBP (B-AURA-WE...)
     },
     balLiquidityProvider: await BalLiquidityProvider__factory.connect(
-        "0xa7429af4DeB16827dAd0e71D8AEEa9C2bF70e32c",
+        "0xa7429af4DeB16827dAd0e71D8AEEa9C2bF70e32c", // TODO BalLiquidityProvider
         deployer,
     ),
     penaltyForwarder: await AuraPenaltyForwarder__factory.connect(
@@ -289,6 +247,7 @@ const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({
     },
 });
 
+// TODO
 const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
     ...(await getPhase3(deployer)),
     claimZap: await AuraClaimZap__factory.connect("0x623B83755a39B12161A63748f3f595A530917Ab2", deployer),

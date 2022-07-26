@@ -8,7 +8,6 @@ import {
     deployPhase3,
     deployPhase4,
     DistroList,
-    ExtSystemConfig,
     MultisigConfig,
     NamingConfig,
     Phase1Deployed,
@@ -17,28 +16,7 @@ import { getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { simpleToExactAmount } from "./../../test-utils/math";
 import { VoterProxy__factory, ERC20__factory } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-
-const goerliBalancerConfig: ExtSystemConfig = {
-    authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
-    token: "0xfA8449189744799aD2AcE7e0EBAC8BB7575eff47",
-    tokenBpt: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00",
-    minter: "0xdf0399539A72E2689B8B2DD53C3C2A0883879fDd",
-    votingEscrow: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
-    voteOwnership: ZERO_ADDRESS,
-    voteParameter: ZERO_ADDRESS,
-    feeDistribution: ZERO_ADDRESS,
-    gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
-    gauges: [],
-    balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
-    balancerPoolId: "0xf8a0623ab66F985EfFc1C69D05F1af4BaDB01b00000200000000000000000060",
-    balancerMinOutBps: "9975",
-    balancerPoolFactories: {
-        weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
-        stablePool: "0xD360B8afb3d7463bE823bE1Ec3c33aA173EbE86e",
-        bootstrappingPool: "0xb48Cc42C45d262534e46d5965a9Ac496F1B7a830",
-    },
-    weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
-};
+import { config } from "./goerli-config";
 
 const forking = false;
 const waitForBlocks = forking ? undefined : 3;
@@ -48,7 +26,7 @@ task("deploy:goerli:1").setAction(async function (taskArguments: TaskArguments, 
     const deployerAddress = await deployer.getAddress();
     console.log(deployerAddress);
 
-    const phase1 = await deployPhase1(hre, deployer, goerliBalancerConfig, false, true, waitForBlocks);
+    const phase1 = await deployPhase1(hre, deployer, config.addresses, false, true, waitForBlocks);
     console.log(phase1.voterProxy.address);
 });
 
@@ -90,10 +68,8 @@ task("deploy:goerli:234").setAction(async function (taskArguments: TaskArguments
     tx = await contracts.booster.earmarkRewards(0);
     await waitForTx(tx, true, waitForBlocks);
 
-    const tokenBptBal = await ERC20__factory.connect(goerliBalancerConfig.tokenBpt, deployer).balanceOf(
-        deployerAddress,
-    );
-    tx = await ERC20__factory.connect(goerliBalancerConfig.tokenBpt, deployer).approve(
+    const tokenBptBal = await ERC20__factory.connect(config.addresses.tokenBpt, deployer).balanceOf(deployerAddress);
+    tx = await ERC20__factory.connect(config.addresses.tokenBpt, deployer).approve(
         contracts.crvDepositor.address,
         tokenBptBal,
     );
@@ -127,7 +103,7 @@ async function deployGoerli234(
         distroList,
         multisigs,
         naming,
-        goerliBalancerConfig,
+        config.addresses,
         true,
         waitForBlocks,
     );
@@ -136,7 +112,7 @@ async function deployGoerli234(
     // ~~~ PHASE 3 ~~~
     // ~~~~~~~~~~~~~~~
 
-    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, goerliBalancerConfig, true, waitForBlocks);
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, config.addresses, true, waitForBlocks);
 
     // POST-PHASE-3
 
@@ -148,6 +124,6 @@ async function deployGoerli234(
     const tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
     await waitForTx(tx, true, waitForBlocks);
 
-    const phase4 = await deployPhase4(hre, deployer, phase3, goerliBalancerConfig, true, waitForBlocks);
+    const phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, true, waitForBlocks);
     return phase4;
 }
