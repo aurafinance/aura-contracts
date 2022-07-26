@@ -151,7 +151,7 @@ yarn task timeTravel --duration 69420 --network forking
 | ChefForwarderSiphonToken        | [0xc9307D63B3709F537D2158F43199a69682Ff0967](https://etherscan.io/address/0xc9307D63B3709F537D2158F43199a69682Ff0967) |
 | MasterChefRewardHook            | [0x6a29cFd8A5F666A7D69da9437CD4c46616326815](https://etherscan.io/address/0x6a29cFd8A5F666A7D69da9437CD4c46616326815) |
 | MasterChefRewardHookSiphonToken | [0xbB7A6Ec509D42177C100273b4cd785816daF8e4f](https://etherscan.io/address/0xbB7A6Ec509D42177C100273b4cd785816daF8e4f) |
-
+| BoosterHelper                   | [0x64b8A7f32b928cB87E05804b112aD55DD7297e20](https://etherscan.io/address/0x64b8A7f32b928cB87E05804b112aD55DD7297e20) |
 
 ### Kovan (42)
 
