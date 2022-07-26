@@ -925,6 +925,7 @@ async function deployPhase2(
         lbpBpt = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
         tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
         await waitForTx(tx, debug, waitForBlocks);
+        // TODO - it failed here  GOERLI deployment
         tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
         await waitForTx(tx, debug, waitForBlocks);
     }

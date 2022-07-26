@@ -215,11 +215,11 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
         await AuraVestedEscrow__factory.connect("0x6FC5a70BC896645D529CD9CAfa1D3755438E7D83", deployer),
         await AuraVestedEscrow__factory.connect("0xdEB339E69e87A010Cab637f922d270A981A37891", deployer),
         await AuraVestedEscrow__factory.connect("0x8F2cE52277b2bC044Ca0B2e26B9b5d230067c6f4", deployer),
-        await AuraVestedEscrow__factory.connect("0x43B17088503F4CE1AED9fB302ED6BB51aD6694Fa", deployer), // TODO
+        // await AuraVestedEscrow__factory.connect("0x43B17088503F4CE1AED9fB302ED6BB51aD6694Fa", deployer), // TODO
     ],
     drops: [
-        await AuraMerkleDrop__factory.connect("0x45EB1A004373b1D8457134A2C04a42d69D287724", deployer), // TODO
-        await AuraMerkleDrop__factory.connect("0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB", deployer), // TODO
+        await AuraMerkleDrop__factory.connect("0x89f67f3054bFD662971854190Dbc18dcaBb416f6", deployer),
+        await AuraMerkleDrop__factory.connect("0x29d1f271D823b4989416E1d2076d0CE666f8fC16", deployer),
     ],
     lbpBpt: {
         poolId: "0x6fc73b9d624b543f8b6b88fc3ce627877ff169ee000200000000000000000235",
