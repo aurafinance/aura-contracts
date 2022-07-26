@@ -111,6 +111,7 @@ const addresses: ExtSystemConfig = {
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
     feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
+    feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
