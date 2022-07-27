@@ -90,85 +90,6 @@ const multisigs = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
 };
 
-const distroList = {
-    miningRewards: simpleToExactAmount(50, 24),
-    lpIncentives: simpleToExactAmount(10, 24),
-    cvxCrvBootstrap: simpleToExactAmount(2, 24),
-    lbp: {
-        tknAmount: simpleToExactAmount(2.2, 24),
-        wethAmount: simpleToExactAmount(100),
-        matching: simpleToExactAmount(2.8, 24),
-    },
-    airdrops: [
-        {
-            merkleRoot: "0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78",
-            startDelay: ONE_WEEK,
-            length: ONE_WEEK.mul(4),
-            amount: simpleToExactAmount(2.5, 24),
-        },
-        {
-            merkleRoot: ZERO_KEY,
-            startDelay: ONE_WEEK.mul(26),
-            length: ONE_WEEK.mul(26),
-            amount: simpleToExactAmount(1, 24),
-        },
-    ],
-    immutableVesting: [
-        {
-            period: ONE_WEEK.mul(104),
-            recipients: [
-                { address: addresses.treasury, amount: simpleToExactAmount(2, 24) }, // Partner Treasury
-            ],
-        },
-        {
-            period: ONE_WEEK.mul(208),
-            recipients: [
-                { address: multisigs.treasuryMultisig, amount: simpleToExactAmount(17.5, 24) }, // Treasury
-            ],
-        },
-    ],
-    vesting: [
-        // 4 MONTHS - 0.016%
-        {
-            period: ONE_WEEK.mul(16),
-            recipients: [
-                { address: "0xb64f3884ceed18594bd707122988e913fa26f4bf", amount: simpleToExactAmount(0.008, 24) }, // Temp
-                { address: "0x498f95A7b752A6FcF97559C815914cE4777b2390", amount: simpleToExactAmount(0.008, 24) }, // Temp
-            ],
-        },
-        // 6 MONTHS - 0.0825% + 1.4515% future team
-        {
-            period: ONE_WEEK.mul(26),
-            recipients: [
-                { address: "0x33c7B2c7Bf017FA8BF31A4a412A36f39124411d8", amount: simpleToExactAmount(0.0675, 24) }, // Temp
-                { address: "0x337F8f3316E1326B3188E534913F759460bd57CB", amount: simpleToExactAmount(0.015, 24) }, // Temp
-                { address: multisigs.vestingMultisig, amount: simpleToExactAmount(1.4515, 24) }, // Vesting dao - future team
-            ],
-        },
-        // 24 MONTHS - 8.45%
-        {
-            period: ONE_WEEK.mul(104),
-            recipients: [
-                { address: "0xe3B6c287C1369C6A4fa8d4e857813695C52948EF", amount: simpleToExactAmount(0.275, 24) }, // Core team
-                { address: "0x023320e0C9Ac45644c3305cE574360E901c7f582", amount: simpleToExactAmount(0.5, 24) }, // Core team
-                { address: "0xB1f881f47baB744E7283851bC090bAA626df931d", amount: simpleToExactAmount(3.5, 24) }, // Core team
-                { address: "0xE4b32828B558F17BcaF5efD52f0C067dba38833c", amount: simpleToExactAmount(0.45, 24) }, // Core team
-                { address: "0xcc6548f1b572968f9539d604ec9ff4b933c1be74", amount: simpleToExactAmount(0.075, 24) }, // Core team
-                { address: "0x51d63958a63a31eb4028917f049ce477c8dd07bb", amount: simpleToExactAmount(0.5, 24) }, // Core team
-                { address: "0x3078c3b436511152d86675f9cbfd89ec1672f804", amount: simpleToExactAmount(0.3, 24) }, // Core team
-                { address: "0x3000d9b2c0e6b9f97f30abe379eaaa8a85a04afc", amount: simpleToExactAmount(0.325, 24) }, // Core team
-                { address: "0x3CBFFF3E75881c1619eaa82DC724BDEE6fF6ED19", amount: simpleToExactAmount(0.06, 24) }, // Core team
-                { address: "0xaf3824e8401299B25C4D59a8a035Cf9312a3B454", amount: simpleToExactAmount(0.175, 24) }, // Core team
-                { address: "0x738175DB2C999581f29163e6D4D3516Ad4aF8834", amount: simpleToExactAmount(0.125, 24) }, // Core team
-                { address: "0x0d9A5678E73e5BbC0ee09FAF8e550B196c76fDad", amount: simpleToExactAmount(0.5, 24) }, // Core team
-                { address: "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1", amount: simpleToExactAmount(1.5, 24) }, // Core team
-                { address: "0xbee5a45271cc66a5b0e9dc4164a4f9df196d94fa", amount: simpleToExactAmount(0.125, 24) }, // Core team
-                { address: "0x2fB09D2fD9e4Ca5C0597c6F81CDa7ed537469aaA", amount: simpleToExactAmount(0.04, 24) }, // Core team
-            ],
-        },
-    ],
-};
-
 const getPhase1 = async (deployer: Signer): Promise<Phase1Deployed> => ({
     voterProxy: await VoterProxy__factory.connect("0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9", deployer),
 });
@@ -262,7 +183,7 @@ export const config = {
     addresses,
     naming,
     multisigs,
-    distroList,
+    distroList: undefined,
     getPhase1,
     getPhase2,
     getPhase3,
