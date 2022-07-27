@@ -29,7 +29,21 @@ const readline = createInterface({
 
 const networkLabels = { 137: "p", 42161: "a" };
 
-const parseLabel = (gauge: any) => {
+type Token = {
+    weight: string;
+    symbol: string;
+};
+type Pool = {
+    symbol: string;
+    poolType: string;
+    tokens: Token[];
+};
+interface Gauge {
+    pool: Pool;
+    network: string;
+}
+
+const parseLabel = (gauge: Gauge) => {
     if (gauge.pool.symbol === "veBAL") return "veBAL";
 
     const networkStr = networkLabels[gauge.network] ? `${networkLabels[gauge.network]}-` : "";
@@ -46,7 +60,7 @@ const parseLabel = (gauge: any) => {
     return [networkStr, weightStr, " ", tokenStr].join("");
 };
 
-const sortGaugeList = (gaugeList: any) => {
+const sortGaugeList = (gaugeList: Gauge[]) => {
     return gaugeList.map(gauge => {
         // Deal with stable pools
         if (gauge.pool.tokens[0].weight === "null") {

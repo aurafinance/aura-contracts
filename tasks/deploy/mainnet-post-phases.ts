@@ -4,7 +4,12 @@ import { deployContract } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
-import { ClaimFeesHelper, ClaimFeesHelper__factory } from "../../types/generated";
+import {
+    BoosterHelper,
+    BoosterHelper__factory,
+    ClaimFeesHelper,
+    ClaimFeesHelper__factory,
+} from "../../types/generated";
 
 const waitForBlocks = 0;
 const debug = true;
@@ -25,4 +30,22 @@ task("mainnet:deploy:feeCollector").setAction(async function (taskArguments: Tas
     );
 
     console.log("update claimFeesHelper address to:", claimFeesHelper.address);
+});
+
+task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { getPhase2, addresses } = config;
+
+    const phase2: Phase2Deployed = await getPhase2(deployer);
+    const boosterHelper = await deployContract<BoosterHelper>(
+        hre,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [phase2.booster.address, addresses.token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update boosterHelper address to:", boosterHelper.address);
 });

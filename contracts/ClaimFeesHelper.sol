@@ -5,7 +5,15 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IFeeDistributor } from "./mocks/balancer/MockFeeDistro.sol";
 
 interface IBooster {
+    struct FeeDistro {
+        address distro;
+        address rewards;
+        bool active;
+    }
+
     function earmarkFees(address _feeDistro) external returns (bool);
+
+    function feeTokens(address _token) external returns (FeeDistro memory);
 }
 
 /**
@@ -25,7 +33,7 @@ contract ClaimFeesHelper {
     /**
      * @param _booster      Booster.sol, e.g. 0xF403C135812408BFbE8713b5A23a04b3D48AAE31
      * @param _voterProxy   CVX VoterProxy e.g. 0x989AEb4d175e16225E39E87d0D97A3360524AD80
-     * @param _feeDistro    FeeDistro e.g. 0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc
+     * @param _feeDistro    FeeDistro e.g. 0xD3cf852898b21fc233251427c2DC93d3d604F3BB
      */
     constructor(
         address _booster,
@@ -53,15 +61,19 @@ contract ClaimFeesHelper {
 
         for (uint256 i = 0; i < len; i++) {
             // Validate if the token should be claimed
-            IERC20 _token = _tokens[i];
-            uint256 tokenTime = feeDistro.getTokenTimeCursor(_token);
-            require(tokenTime > lastTokenTimes[address(_token)], "not time yet");
+            IERC20 token = _tokens[i];
+            uint256 tokenTime = feeDistro.getTokenTimeCursor(token);
+            require(tokenTime > lastTokenTimes[address(token)], "not time yet");
 
-            uint256 claimed = feeDistro.claimToken(voterProxy, _token);
-            require(claimed > 0);
+            IBooster.FeeDistro memory feeDist = booster.feeTokens(address(token));
+            uint256 balanceBefore = token.balanceOf(feeDist.rewards);
 
-            booster.earmarkFees(address(_token));
-            lastTokenTimes[address(_token)] = tokenTime;
+            booster.earmarkFees(address(token));
+
+            uint256 balanceAfter = token.balanceOf(feeDist.rewards);
+            require((balanceAfter - balanceBefore) > 0, "nothing claimed");
+
+            lastTokenTimes[address(token)] = tokenTime;
         }
     }
 }
