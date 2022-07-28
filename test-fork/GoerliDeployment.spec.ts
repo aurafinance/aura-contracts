@@ -1,18 +1,12 @@
 import { network } from "hardhat";
 import { expect } from "chai";
-import {
-    IERC20__factory,
-    IVault__factory,
-    IBalancerPool__factory,
-    ExtraRewardStashV3__factory,
-} from "../types/generated";
+import { ExtraRewardStashV3__factory } from "../types/generated";
 import {
     impersonate,
     ZERO_ADDRESS,
     BN,
     ONE_WEEK,
     assertBNClosePercent,
-    assertBNClose,
     simpleToExactAmount,
     ZERO_KEY,
 } from "../test-utils";
@@ -20,8 +14,6 @@ import { Signer } from "ethers";
 import { getTimestamp, latestBlock } from "./../test-utils/time";
 import { Phase2Deployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/goerli-config";
-
-const merkleDropRootHashes = ["0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78", ZERO_KEY];
 
 describe("Full Deployment", () => {
     let deployer: Signer;
