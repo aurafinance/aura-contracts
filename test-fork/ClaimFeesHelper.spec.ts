@@ -13,13 +13,10 @@ import { impersonate, impersonateAccount, increaseTime, ONE_DAY, ZERO } from "..
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../test-utils/math";
 
-const ALCHEMY_API_KEY = process.env.NODE_URL;
-
 const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
 const voterProxyAddress = "0xaf52695e1bb01a16d33d7194c28c42b10e0dbec2";
 const boosterAddress = "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10";
-const feeDistributorAddress = "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9";
-// const claimFeesHelperAddress = "0x999dBcE0A18F721F04E793f916C30e72A9D0f56E"; // to remove references to this old version after deployment.
+const feeDistributorAddress = "0xD3cf852898b21fc233251427c2DC93d3d604F3BB";
 const balAddress = "0xba100000625a3754423978a60c9317c58a424e3D";
 const bbausdAddress = "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2";
 
@@ -43,8 +40,8 @@ describe("ClaimFeesHelper", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
-                        blockNumber: 15134000,
+                        jsonRpcUrl: process.env.NODE_URL,
+                        blockNumber: 15225000,
                     },
                 },
             ],
@@ -99,7 +96,7 @@ describe("ClaimFeesHelper", () => {
         expect(bbausdAfter).to.be.gt(bbausdBefore);
     });
 
-    it("validates that it cannot claim the same tokens again", async () => {
+    xit("validates that it cannot claim the same tokens again", async () => {
         // deposit rewards
         const bals = await feeDistributor.callStatic.claimToken(voterProxyAddress, balAddress);
         const bbusds = await feeDistributor.callStatic.claimToken(voterProxyAddress, bbausdAddress);

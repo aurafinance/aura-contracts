@@ -62,6 +62,7 @@
         "commitizen": "^4.2.4",
         "cross-env": "^7.0.3",
         "cz-conventional-changelog": "^3.3.0",
+        "defender-relay-client": "^1.26.1",
         "dotenv": "^10.0.0",
         "eslint": "^8.3.0",
         "eslint-config-prettier": "^8.3.0",

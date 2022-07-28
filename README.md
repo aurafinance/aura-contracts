@@ -145,13 +145,13 @@ yarn task timeTravel --duration 69420 --network forking
 | drops                           | [0x45EB1A004373b1D8457134A2C04a42d69D287724](https://etherscan.io/address/0x45EB1A004373b1D8457134A2C04a42d69D287724) |
 |                                 | [0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB](https://etherscan.io/address/0x1a661CF8D8cd69dD2A423F3626A461A24280a8fB) |
 | auraClaimZap                    | [0x623B83755a39B12161A63748f3f595A530917Ab2](https://etherscan.io/address/0x623B83755a39B12161A63748f3f595A530917Ab2) |
-| claimFeesHelper                 | [0x999dBcE0A18F721F04E793f916C30e72A9D0f56E](https://etherscan.io/address/0x999dBcE0A18F721F04E793f916C30e72A9D0f56E) |
+| claimFeesHelper                 | [0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf](https://etherscan.io/address/0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf) |
 | rewardPoolDepositWrapper        | [0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59](https://etherscan.io/address/0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59) |
 | ChefForwarder                   | [0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9](https://etherscan.io/address/0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9) |
 | ChefForwarderSiphonToken        | [0xc9307D63B3709F537D2158F43199a69682Ff0967](https://etherscan.io/address/0xc9307D63B3709F537D2158F43199a69682Ff0967) |
 | MasterChefRewardHook            | [0x6a29cFd8A5F666A7D69da9437CD4c46616326815](https://etherscan.io/address/0x6a29cFd8A5F666A7D69da9437CD4c46616326815) |
 | MasterChefRewardHookSiphonToken | [0xbB7A6Ec509D42177C100273b4cd785816daF8e4f](https://etherscan.io/address/0xbB7A6Ec509D42177C100273b4cd785816daF8e4f) |
-| BoosterHelper                   | [0x64b8A7f32b928cB87E05804b112aD55DD7297e20](https://etherscan.io/address/0x64b8A7f32b928cB87E05804b112aD55DD7297e20) |
+| BoosterHelper                   | [0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c](https://etherscan.io/address/0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c) |
 
 ### Kovan (42)
 

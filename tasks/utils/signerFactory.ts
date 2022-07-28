@@ -1,3 +1,6 @@
+import { Speed } from "defender-relay-client";
+import { DefenderRelayProvider, DefenderRelaySigner } from "defender-relay-client/lib/ethers";
+
 import { Signer, Wallet } from "ethers";
 import { ethereumAddress, privateKey } from "../../test-utils/regex";
 import { impersonate } from "../../test-utils/fork";
@@ -6,7 +9,27 @@ import { getChain, getChainAddress, HardhatRuntime, resolveAddress } from "./net
 
 let signerInstance: Signer;
 
-export const getSigner = async (hre: HardhatRuntime = {}, useCache = true, key?: string): Promise<Signer> => {
+export const getDefenderSigner = async (speed: Speed = "fast"): Promise<Signer> => {
+    if (!process.env.DEFENDER_API_KEY || !process.env.DEFENDER_API_SECRET) {
+        console.error(`Defender env vars DEFENDER_API_KEY and/or DEFENDER_API_SECRET have not been set`);
+        process.exit(1);
+    }
+    if (!["safeLow", "average", "fast", "fastest"].includes(speed)) {
+        console.error(
+            `Defender Relay Speed param must be either 'safeLow', 'average', 'fast' or 'fastest'. Not "${speed}"`,
+        );
+        process.exit(2);
+    }
+    const credentials = {
+        apiKey: process.env.DEFENDER_API_KEY,
+        apiSecret: process.env.DEFENDER_API_SECRET,
+    };
+    const provider = new DefenderRelayProvider(credentials);
+    const signer = new DefenderRelaySigner(credentials, provider, { speed });
+    return signer;
+};
+
+export const getSigner = async (hre: HardhatRuntime = {}, useCache = false, key?: string): Promise<Signer> => {
     // If already initiated a signer, just return the singleton instance
     if (useCache && signerInstance) return signerInstance;
 
@@ -44,6 +67,12 @@ export const getSigner = async (hre: HardhatRuntime = {}, useCache = true, key?:
         // Return a random account with no Ether
         signerInstance = Wallet.createRandom().connect(hre.ethers.provider);
         console.log(`Impersonating random account ${await signerInstance.getAddress()}`);
+        return signerInstance;
+    }
+    // If using Defender Relay and not a forked chain
+    // this will work against test networks like Ropsten
+    if (process.env.DEFENDER_API_KEY && process.env.DEFENDER_API_SECRET) {
+        signerInstance = await getDefenderSigner("fast");
         return signerInstance;
     }
 
