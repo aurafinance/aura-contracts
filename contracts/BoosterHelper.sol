@@ -5,7 +5,22 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 interface IBooster {
+    struct PoolInfo {
+        address lptoken;
+        address token;
+        address gauge;
+        address crvRewards;
+        address stash;
+        bool shutdown;
+    }
+
     function earmarkRewards(uint256 _pid) external returns (bool);
+
+    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+}
+
+interface IBaseRewardPool {
+    function processIdleRewards() external;
 }
 
 /**
@@ -40,5 +55,20 @@ contract BoosterHelper {
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         IERC20(crv).safeTransfer(msg.sender, crvBal);
         return crvBal;
+    }
+
+    /**
+     * @notice Invoke processIdleRewards for each pool id.
+     * @param _pids Array of pool ids
+     */
+    function processIdleRewards(uint256[] memory _pids) external {
+        uint256 len = _pids.length;
+        require(len > 0, "!pids");
+
+        for (uint256 i = 0; i < len; i++) {
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pids[i]);
+            IBaseRewardPool baseRewardPool = IBaseRewardPool(poolInfo.crvRewards);
+            baseRewardPool.processIdleRewards();
+        }
     }
 }

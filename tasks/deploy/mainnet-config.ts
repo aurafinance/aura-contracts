@@ -111,6 +111,7 @@ const addresses: ExtSystemConfig = {
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
     feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
+    feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
@@ -293,7 +294,7 @@ const getPhase3 = async (deployer: Signer): Promise<Phase3Deployed> => ({
 const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
     ...(await getPhase3(deployer)),
     claimZap: await AuraClaimZap__factory.connect("0x623B83755a39B12161A63748f3f595A530917Ab2", deployer),
-    feeCollector: await ClaimFeesHelper__factory.connect("0x999dBcE0A18F721F04E793f916C30e72A9D0f56E", deployer),
+    feeCollector: await ClaimFeesHelper__factory.connect("0xa96CCC5B7f04c7Ab74a43F81e07C342fb9808cF1", deployer),
     rewardDepositWrapper: await RewardPoolDepositWrapper__factory.connect(
         "0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59",
         deployer,
