@@ -32,11 +32,13 @@ import {
     simpleToExactAmount,
     ONE_DAY,
     ZERO_KEY,
+    DEAD_ADDRESS,
 } from "../test-utils";
 import { Signer } from "ethers";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../test-utils/time";
 import {
+    BalancerPoolDeployed,
     deployPhase2,
     deployPhase3,
     deployPhase4,
@@ -51,7 +53,7 @@ import { config as goerliConfig } from "../tasks/deploy/goerli-config";
 import { AssetHelpers, SwapKind, WeightedPoolExitKind } from "@balancer-labs/balancer-js";
 import { ethers } from "ethers";
 
-const debug = true;
+const debug = false;
 
 const merkleDropRootHashes = ["0xdbfebc726c41a2647b8cf9ad7a770535e1fc3b8900e752147f7e14848720fe78", ZERO_KEY];
 
@@ -75,15 +77,13 @@ const mainnetEnv = {
 };
 const goerliEnv = {
     networkName: "goerli",
-    blockNumber: 7191313, //7193000, 7242627
+    blockNumber: 7191313,
     config: goerliConfig,
-    phase2Timestamp: BN.from(1657282100), //5400 604800, 1657883700  1657284300
+    phase2Timestamp: BN.from(1657282100),
     deployerAddress: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     cvxCrvBptAddress: "0xac98c986d8318ff08109ae6f4e7043468da9d0a2",
     deployPhase2: false,
     isFullTest: false,
-    // AssertionError: Expected "1657883701" to be greater than 1658477102
-    // expect(await initialCvxCrvStaking.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
 };
 const networkEnv = networkName === "goerli" ? goerliEnv : mainnetEnv;
 const config = networkEnv.config;
@@ -202,15 +202,12 @@ describe("Full Deployment", () => {
                     expect(await cvx.minter()).eq(minter.address);
                     expect(await cvx.totalSupply()).eq(simpleToExactAmount(50000000));
                 });
-                it("Contracts have correct Aura balance", async () => {
-                    const { cvx, initialCvxCrvStaking, balLiquidityProvider, drops, vestedEscrows, chef } = phase2;
-                    const { addresses, distroList } = config;
+                it("Contracts have correct Aura balance 1/2", async () => {
+                    const { cvx, initialCvxCrvStaking, drops, vestedEscrows, chef } = phase2;
+                    const { distroList } = config;
                     expect(await cvx.totalSupply()).eq(simpleToExactAmount(50, 24));
                     expect(await cvx.balanceOf(chef.address)).eq(distroList.lpIncentives);
                     expect(await cvx.balanceOf(initialCvxCrvStaking.address)).eq(distroList.cvxCrvBootstrap);
-
-                    // expect(await cvx.balanceOf(addresses.balancerVault)).eq(distroList.lbp.tknAmount); // TODO - fails on goerli
-                    // expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(distroList.lbp.matching); // TODO - fails on goerli
 
                     const dropBalances = await Promise.all(drops.map(a => cvx.balanceOf(a.address)));
                     const airdropSum = distroList.airdrops.reduce((p, c) => p.add(c.amount), BN.from(0));
@@ -224,6 +221,15 @@ describe("Full Deployment", () => {
                             BN.from(0),
                         );
                     expect(vestingBalances.reduce((p, c) => p.add(c), BN.from(0))).eq(vestingSum);
+                });
+                it("Contracts have correct Aura balance 2/2", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+
+                    const { cvx, balLiquidityProvider } = phase2;
+                    const { addresses, distroList } = config;
+
+                    expect(await cvx.balanceOf(addresses.balancerVault)).eq(distroList.lbp.tknAmount);
+                    expect(await cvx.balanceOf(balLiquidityProvider.address)).eq(distroList.lbp.matching);
                 });
                 it("Aura Minter has correct config", async () => {
                     const { minter, cvx } = phase2;
@@ -443,118 +449,120 @@ describe("Full Deployment", () => {
                     expect(await chef.endBlock()).gt(expectedEnd.sub(10000));
                     expect(await chef.endBlock()).lt(expectedEnd.add(10000));
                 });
-                if (networkEnv.isFullTest) {
-                    it("VestedEscrows have correct config", async () => {
-                        const { vestedEscrows } = phase2;
-                        expect(vestedEscrows.length).eq(5);
+                it("VestedEscrows have correct config", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
 
-                        // [ 0 ] = 16 weeks
-                        const escrow0 = vestedEscrows[0];
-                        expect(await escrow0.rewardToken()).eq(phase2.cvx.address);
-                        expect(await escrow0.admin()).eq(config.multisigs.vestingMultisig);
-                        expect(await escrow0.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await escrow0.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await escrow0.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await escrow0.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(17)).sub(5400));
-                        expect(await escrow0.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(17)).add(5400));
-                        expect(await escrow0.totalTime()).eq(ONE_WEEK.mul(16));
-                        expect(await escrow0.initialised()).eq(true);
-                        expect(await escrow0.remaining("0xb64f3884ceed18594bd707122988e913fa26f4bf")).eq(
-                            simpleToExactAmount(0.008, 24),
-                        );
-                        // [ 1 ] = 26 weeks
-                        const escrow1 = vestedEscrows[1];
-                        expect(await escrow1.rewardToken()).eq(phase2.cvx.address);
-                        expect(await escrow1.admin()).eq(config.multisigs.vestingMultisig);
-                        expect(await escrow1.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await escrow1.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await escrow1.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await escrow1.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(27)).sub(5400));
-                        expect(await escrow1.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(27)).add(5400));
-                        expect(await escrow1.totalTime()).eq(ONE_WEEK.mul(26));
-                        expect(await escrow1.initialised()).eq(true);
-                        expect(await escrow1.remaining(config.multisigs.vestingMultisig)).eq(
-                            simpleToExactAmount(1.4515, 24),
-                        );
-                        // [ 2 ] = 104 weeks
-                        const escrow2 = vestedEscrows[2];
-                        expect(await escrow2.rewardToken()).eq(phase2.cvx.address);
-                        expect(await escrow2.admin()).eq(config.multisigs.vestingMultisig);
-                        expect(await escrow2.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await escrow2.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await escrow2.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await escrow2.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
-                        expect(await escrow2.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
-                        expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
-                        expect(await escrow2.initialised()).eq(true);
-                        expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
-                            simpleToExactAmount(3.5, 24),
-                        );
-                        // [ 3 ] = 104 weeks, 2%
-                        const escrow3 = vestedEscrows[3];
-                        expect(await escrow3.rewardToken()).eq(phase2.cvx.address);
-                        expect(await escrow3.admin()).eq(ZERO_ADDRESS);
-                        expect(await escrow3.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await escrow3.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await escrow3.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await escrow3.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
-                        expect(await escrow3.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
-                        expect(await escrow3.totalTime()).eq(ONE_WEEK.mul(104));
-                        expect(await escrow3.initialised()).eq(true);
-                        expect(await escrow3.remaining(config.addresses.treasury)).eq(simpleToExactAmount(2, 24));
-                        // [ 4 ] = 208 weeks, 17.5%
-                        const escrow4 = vestedEscrows[4];
-                        expect(await escrow4.rewardToken()).eq(phase2.cvx.address);
-                        expect(await escrow4.admin()).eq(ZERO_ADDRESS);
-                        expect(await escrow4.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await escrow4.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await escrow4.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await escrow4.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(209)).sub(5400));
-                        expect(await escrow4.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(209)).add(5400));
-                        expect(await escrow4.totalTime()).eq(ONE_WEEK.mul(208));
-                        expect(await escrow4.initialised()).eq(true);
-                        expect(await escrow4.remaining(config.multisigs.treasuryMultisig)).eq(
-                            simpleToExactAmount(17.5, 24),
-                        );
-                    });
-                    it("Drops have correct config", async () => {
-                        const { drops } = phase2;
-                        const { multisigs } = config;
-                        const [rootHashOne, rootHashTwo] = merkleDropRootHashes;
+                    const { vestedEscrows } = phase2;
+                    expect(vestedEscrows.length).eq(5);
 
-                        expect(drops.length).eq(2);
+                    // [ 0 ] = 16 weeks
+                    const escrow0 = vestedEscrows[0];
+                    expect(await escrow0.rewardToken()).eq(phase2.cvx.address);
+                    expect(await escrow0.admin()).eq(config.multisigs.vestingMultisig);
+                    expect(await escrow0.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await escrow0.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow0.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow0.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(17)).sub(5400));
+                    expect(await escrow0.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(17)).add(5400));
+                    expect(await escrow0.totalTime()).eq(ONE_WEEK.mul(16));
+                    expect(await escrow0.initialised()).eq(true);
+                    expect(await escrow0.remaining("0xb64f3884ceed18594bd707122988e913fa26f4bf")).eq(
+                        simpleToExactAmount(0.008, 24),
+                    );
+                    // [ 1 ] = 26 weeks
+                    const escrow1 = vestedEscrows[1];
+                    expect(await escrow1.rewardToken()).eq(phase2.cvx.address);
+                    expect(await escrow1.admin()).eq(config.multisigs.vestingMultisig);
+                    expect(await escrow1.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await escrow1.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow1.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow1.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(27)).sub(5400));
+                    expect(await escrow1.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(27)).add(5400));
+                    expect(await escrow1.totalTime()).eq(ONE_WEEK.mul(26));
+                    expect(await escrow1.initialised()).eq(true);
+                    expect(await escrow1.remaining(config.multisigs.vestingMultisig)).eq(
+                        simpleToExactAmount(1.4515, 24),
+                    );
+                    // [ 2 ] = 104 weeks
+                    const escrow2 = vestedEscrows[2];
+                    expect(await escrow2.rewardToken()).eq(phase2.cvx.address);
+                    expect(await escrow2.admin()).eq(config.multisigs.vestingMultisig);
+                    expect(await escrow2.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await escrow2.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow2.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow2.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
+                    expect(await escrow2.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
+                    expect(await escrow2.totalTime()).eq(ONE_WEEK.mul(104));
+                    expect(await escrow2.initialised()).eq(true);
+                    expect(await escrow2.remaining("0xB1f881f47baB744E7283851bC090bAA626df931d")).eq(
+                        simpleToExactAmount(3.5, 24),
+                    );
+                    // [ 3 ] = 104 weeks, 2%
+                    const escrow3 = vestedEscrows[3];
+                    expect(await escrow3.rewardToken()).eq(phase2.cvx.address);
+                    expect(await escrow3.admin()).eq(ZERO_ADDRESS);
+                    expect(await escrow3.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await escrow3.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow3.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow3.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(105)).sub(5400));
+                    expect(await escrow3.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(105)).add(5400));
+                    expect(await escrow3.totalTime()).eq(ONE_WEEK.mul(104));
+                    expect(await escrow3.initialised()).eq(true);
+                    expect(await escrow3.remaining(config.addresses.treasury)).eq(simpleToExactAmount(2, 24));
+                    // [ 4 ] = 208 weeks, 17.5%
+                    const escrow4 = vestedEscrows[4];
+                    expect(await escrow4.rewardToken()).eq(phase2.cvx.address);
+                    expect(await escrow4.admin()).eq(ZERO_ADDRESS);
+                    expect(await escrow4.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await escrow4.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await escrow4.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await escrow4.endTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(209)).sub(5400));
+                    expect(await escrow4.endTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(209)).add(5400));
+                    expect(await escrow4.totalTime()).eq(ONE_WEEK.mul(208));
+                    expect(await escrow4.initialised()).eq(true);
+                    expect(await escrow4.remaining(config.multisigs.treasuryMultisig)).eq(
+                        simpleToExactAmount(17.5, 24),
+                    );
+                });
+                it("Drops have correct config", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
 
-                        // [ 0 ] = 2.5m, 4 weeks
-                        const drop = drops[0];
-                        expect(await drop.dao()).eq(multisigs.treasuryMultisig);
-                        expect(await drop.merkleRoot()).eq(rootHashOne);
-                        expect(await drop.aura()).eq(phase2.cvx.address);
-                        expect(await drop.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await drop.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
-                        expect(await drop.pendingPenalty()).eq(0);
-                        expect(await drop.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
-                        expect(await drop.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
-                        expect(await drop.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(5)).sub(5400));
-                        expect(await drop.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(5)).add(5400));
-                        expect(await phase2.cvx.balanceOf(drop.address)).eq(simpleToExactAmount(2.5, 24));
-                        // [ 1 ] = 1m, 26 weeks
-                        const drop1 = drops[1];
-                        expect(await drop1.dao()).eq(multisigs.treasuryMultisig);
-                        expect(await drop1.merkleRoot()).eq(rootHashTwo);
-                        expect(await drop1.aura()).eq(phase2.cvx.address);
-                        expect(await drop1.auraLocker()).eq(phase2.cvxLocker.address);
-                        expect(await drop1.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
-                        expect(await drop1.pendingPenalty()).eq(0);
-                        expect(await drop1.startTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(26)).sub(5400));
-                        expect(await drop1.startTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(26)).add(5400));
-                        expect(await drop1.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(52)).sub(5400));
-                        expect(await drop1.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(52)).add(5400));
-                        expect(await phase2.cvx.balanceOf(drop1.address)).eq(simpleToExactAmount(1, 24));
-                    });
-                }
+                    const { drops } = phase2;
+                    const { multisigs } = config;
+                    const [rootHashOne, rootHashTwo] = merkleDropRootHashes;
 
-                // TODO - fails on goerli
-                it.skip("LbpBPT has correct config", async () => {
+                    expect(drops.length).eq(2);
+
+                    // [ 0 ] = 2.5m, 4 weeks
+                    const drop = drops[0];
+                    expect(await drop.dao()).eq(multisigs.treasuryMultisig);
+                    expect(await drop.merkleRoot()).eq(rootHashOne);
+                    expect(await drop.aura()).eq(phase2.cvx.address);
+                    expect(await drop.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await drop.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
+                    expect(await drop.pendingPenalty()).eq(0);
+                    expect(await drop.startTime()).gt(phase2Timestamp.add(ONE_WEEK).sub(5400));
+                    expect(await drop.startTime()).lt(phase2Timestamp.add(ONE_WEEK).add(5400));
+                    expect(await drop.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(5)).sub(5400));
+                    expect(await drop.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(5)).add(5400));
+                    expect(await phase2.cvx.balanceOf(drop.address)).eq(simpleToExactAmount(2.5, 24));
+                    // [ 1 ] = 1m, 26 weeks
+                    const drop1 = drops[1];
+                    expect(await drop1.dao()).eq(multisigs.treasuryMultisig);
+                    expect(await drop1.merkleRoot()).eq(rootHashTwo);
+                    expect(await drop1.aura()).eq(phase2.cvx.address);
+                    expect(await drop1.auraLocker()).eq(phase2.cvxLocker.address);
+                    expect(await drop1.penaltyForwarder()).eq(phase2.penaltyForwarder.address);
+                    expect(await drop1.pendingPenalty()).eq(0);
+                    expect(await drop1.startTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(26)).sub(5400));
+                    expect(await drop1.startTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(26)).add(5400));
+                    expect(await drop1.expiryTime()).gt(phase2Timestamp.add(ONE_WEEK.mul(52)).sub(5400));
+                    expect(await drop1.expiryTime()).lt(phase2Timestamp.add(ONE_WEEK.mul(52)).add(5400));
+                    expect(await phase2.cvx.balanceOf(drop1.address)).eq(simpleToExactAmount(1, 24));
+                });
+                it("LbpBPT has correct config", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+
                     const { cvx, lbpBpt } = phase2;
                     // Token amounts
                     // Weights
@@ -585,8 +593,9 @@ describe("Full Deployment", () => {
                         (await poolERC20.totalSupply()).sub(simpleToExactAmount(1, 6)),
                     );
                 });
-                // TODO - fails on goerli it was not deployed
-                it.skip("balLiquidityProvider has correct config", async () => {
+                it("balLiquidityProvider has correct config", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+
                     const { balLiquidityProvider, cvx } = phase2;
                     const { multisigs, addresses } = config;
 
@@ -653,41 +662,41 @@ describe("Full Deployment", () => {
                 daoSigner = await impersonateAccount(config.multisigs.daoMultisig);
                 balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
             });
-            if (networkEnv.isFullTest) {
-                // TODO - fails on goerli, there are no gauges
-                it("doesn't allow dao to set more than 10k votes on gaugeController", async () => {
-                    const { booster } = phase2;
-                    const { addresses } = config;
-                    await expect(
-                        booster
-                            .connect(daoSigner.signer)
-                            .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
-                    ).to.be.revertedWith("Used too much power");
-                });
-                it("allows dao to vote on gauge weights", async () => {
-                    const { booster, voterProxy } = phase2;
-                    const { addresses } = config;
-                    await booster
+            it("doesn't allow dao to set more than 10k votes on gaugeController", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
                         .connect(daoSigner.signer)
-                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5000, 5000]);
-                    const gaugeController = MockVoting__factory.connect(addresses.gaugeController, deployer);
-                    expect((await gaugeController.vote_user_slopes(voterProxy.address, addresses.gauges[0])).power).eq(
-                        5000,
-                    );
-                    expect(await gaugeController.vote_user_power(voterProxy.address)).eq(10000);
-                    expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[1])).gt(0);
-                    expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[2])).eq(0);
-                });
-                it("doesn't allow dao to set votes again so quickly on gaugeController", async () => {
-                    const { booster } = phase2;
-                    const { addresses } = config;
-                    await expect(
-                        booster
-                            .connect(daoSigner.signer)
-                            .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
-                    ).to.be.revertedWith("Cannot vote so often");
-                });
-            }
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Used too much power");
+            });
+            it("allows dao to vote on gauge weights", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+                const { booster, voterProxy } = phase2;
+                const { addresses } = config;
+                await booster
+                    .connect(daoSigner.signer)
+                    .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5000, 5000]);
+                const gaugeController = MockVoting__factory.connect(addresses.gaugeController, deployer);
+                expect((await gaugeController.vote_user_slopes(voterProxy.address, addresses.gauges[0])).power).eq(
+                    5000,
+                );
+                expect(await gaugeController.vote_user_power(voterProxy.address)).eq(10000);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[1])).gt(0);
+                expect(await gaugeController.last_user_vote(voterProxy.address, addresses.gauges[2])).eq(0);
+            });
+            it("doesn't allow dao to set votes again so quickly on gaugeController", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+                const { booster } = phase2;
+                const { addresses } = config;
+                await expect(
+                    booster
+                        .connect(daoSigner.signer)
+                        .voteGaugeWeight([addresses.gauges[0], addresses.gauges[1]], [5001, 5000]),
+                ).to.be.revertedWith("Cannot vote so often");
+            });
             it("allows dao to setVotes for Snapshot", async () => {
                 const eip1271MagicValue = "0x1626ba7e";
                 const msg = "message";
@@ -700,17 +709,16 @@ describe("Full Deployment", () => {
                 const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
                 expect(isValid).to.equal(eip1271MagicValue);
             });
-            if (networkEnv.isFullTest) {
-                // TODO - fails on goerli, there are no gauges
-                it("doesn't allow pools to be added or rewards earmarked", async () => {
-                    const { poolManager, booster } = phase2;
-                    const { addresses } = config;
+            it("doesn't allow pools to be added or rewards earmarked", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
 
-                    await expect(poolManager["addPool(address)"](addresses.gauges[0])).to.be.revertedWith("!auth");
+                const { poolManager, booster } = phase2;
+                const { addresses } = config;
 
-                    await expect(booster.earmarkRewards(0)).to.be.reverted;
-                });
-            }
+                await expect(poolManager["addPool(address)"](addresses.gauges[0])).to.be.revertedWith("!auth");
+
+                await expect(booster.earmarkRewards(0)).to.be.reverted;
+            });
             it("doesn't add feeInfo to Booster", async () => {
                 const { booster } = phase2;
                 const { addresses } = config;
@@ -748,8 +756,9 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             };
             // T = 0 -> 5
-            // TODO - fails on goerli
-            it.skip("executes some swaps", async () => {
+            it("executes some swaps", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+
                 const swapper = await impersonateAccount(testAccounts.swapper);
                 await getEth(testAccounts.swapper);
                 await getWeth(testAccounts.swapper, simpleToExactAmount(600));
@@ -817,8 +826,9 @@ describe("Full Deployment", () => {
                 // t = 5
                 await swapEthForAura(swapper, simpleToExactAmount(100));
             });
-            // TODO - fails on goerli
-            it.skip("allows AURA holders to stake in vlAURA", async () => {
+            it("allows AURA holders to stake in vlAURA", async function () {
+                if (!networkEnv.isFullTest) return this.skip(); // TODO - FIX
+
                 const { cvxLocker, cvx } = phase2;
 
                 const swapper = await impersonateAccount(testAccounts.swapper);
@@ -851,7 +861,9 @@ describe("Full Deployment", () => {
                 aura = phase2.cvx.connect(treasurySigner.signer);
                 bpt = MockERC20__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
             });
-            it.skip("allows treasuryDAO to withdraw LBP units", async () => {
+            it("allows treasuryDAO to withdraw LBP units", async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+
                 const wethBalBefore = await weth.balanceOf(treasurySigner.address);
                 const auraBalBefore = await aura.balanceOf(treasurySigner.address);
                 const lpBalBefore = await bpt.balanceOf(treasurySigner.address);
@@ -894,14 +906,22 @@ describe("Full Deployment", () => {
                 await waitForTx(tx, debug);
             });
         });
-        describe.skip("DEPLOY-Phase 3", () => {
-            before(async () => {
-                // TODO - fails on goerli therefore all the test
-                // PHASE 3
-                phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
+        describe("DEPLOY-Phase 3", () => {
+            before(async function () {
+                if (!networkEnv.isFullTest) {
+                    const pool: BalancerPoolDeployed = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
+                    phase3 = { ...phase2, pool8020Bpt: pool };
+                } else {
+                    // PHASE 3
+                    phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, debug);
+                }
+
                 await increaseTime(ONE_HOUR.mul(48));
             });
             describe("verifying config", () => {
+                before(async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+                });
                 it("creates the 8020 pool successfully", async () => {
                     const { pool8020Bpt, cvx, balLiquidityProvider } = phase3;
 
@@ -943,17 +963,17 @@ describe("Full Deployment", () => {
                 });
             });
         });
-        describe.skip("POST-Phase 3", () => {
+        describe("POST-Phase 3", () => {
             it("allows initial auraBAL rewards to be initialised", async () => {
                 const tx = await phase3.initialCvxCrvStaking.initialiseRewards();
                 await waitForTx(tx, debug);
             });
         });
-        describe.skip("TEST-Phase 3", () => {
+        describe("TEST-Phase 3", () => {
             let alice: Account;
             let crv: ERC20;
             let crvBpt: ERC20;
-            before(async () => {
+            before(async function () {
                 alice = await impersonateAccount(testAccounts.alice);
                 crv = MockERC20__factory.connect(config.addresses.token, alice.signer);
                 crvBpt = MockERC20__factory.connect(config.addresses.tokenBpt, alice.signer);
@@ -974,7 +994,8 @@ describe("Full Deployment", () => {
                     const balance = await phase3.cvxCrv.balanceOf(alice.address);
                     expect(balance).eq(simpleToExactAmount(500));
                 });
-                it("allows users to wrap crv via the crvDepositorWrapper", async () => {
+                it("allows users to wrap crv via the crvDepositorWrapper", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
                     let tx = await crv.approve(phase3.crvDepositorWrapper.address, simpleToExactAmount(500));
                     await waitForTx(tx, debug);
 
@@ -1103,7 +1124,8 @@ describe("Full Deployment", () => {
                     },
                 };
 
-                before(async () => {
+                before(async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
                     treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
                     if ((await phase3.drops[0].merkleRoot()) == ZERO_KEY) {
                         await phase3.drops[0].connect(treasurySigner.signer).setRoot(merkleDropRootHashes[0]);
@@ -1152,6 +1174,10 @@ describe("Full Deployment", () => {
                 });
             });
             describe("vesting", () => {
+                before(async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+                });
+
                 it("allows users to claim vesting", async () => {
                     const { vestedEscrows, cvx } = phase3;
                     const escrow = vestedEscrows[2];
@@ -1220,8 +1246,11 @@ describe("Full Deployment", () => {
         });
     });
 
-    describe.skip("Phase 4", () => {
+    describe("Phase 4", () => {
         describe("PRE-Phase 4", () => {
+            before(async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+            });
             it("only allows daoMultisig to set protect pool to false", async () => {
                 await expect(phase3.poolManager.connect(deployer).setProtectPool(false)).to.be.revertedWith("!auth");
 
@@ -1293,7 +1322,9 @@ describe("Full Deployment", () => {
                     expect(await claimZap.locker()).eq(cvxLocker.address);
                     expect(await claimZap.owner()).eq(deployerAddress);
                 });
-                it("adds the pools", async () => {
+                it("adds the pools", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
+
                     const { booster, voterProxy, factories } = phase4;
                     const { addresses } = config;
 
@@ -1320,7 +1351,8 @@ describe("Full Deployment", () => {
                     await expect(stash.tokenList(0)).to.be.reverted;
                 });
                 // check for a gauge with a stash and make sure it has been added
-                it("extraRewardsStash has correct config", async () => {
+                it("extraRewardsStash has correct config", async function () {
+                    if (!networkEnv.isFullTest) return this.skip();
                     // Pool id 6 (0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE) has a reward token of LDO
                     // Let's check it's being processed correctly and is claimable by users
                     const { booster, factories, voterProxy } = phase4;
@@ -1354,7 +1386,9 @@ describe("Full Deployment", () => {
             let stakerAddress: string;
             let staker: Account;
 
-            before(async () => {
+            before(async function () {
+                if (!networkEnv.isFullTest) return this.skip();
+
                 stakerAddress = testAccounts.staker;
                 staker = await impersonateAccount(stakerAddress);
             });
@@ -1879,11 +1913,13 @@ describe("Full Deployment", () => {
             });
         });
     });
-    describe.skip("Phase X", () => {
+    describe("Phase X", () => {
         let stakerAddress: string;
         let staker: Account;
 
-        before(async () => {
+        before(async function () {
+            if (!networkEnv.isFullTest) return this.skip();
+
             stakerAddress = testAccounts.staker;
             staker = await impersonateAccount(stakerAddress);
         });

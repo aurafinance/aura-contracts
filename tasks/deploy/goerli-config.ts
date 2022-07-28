@@ -37,8 +37,8 @@ import {
     RewardPoolDepositWrapper__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
-import { simpleToExactAmount } from "../../test-utils/math";
-import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { getMockDistro } from "../../scripts/deployMocks";
 
 const addresses: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
@@ -89,6 +89,8 @@ const multisigs = {
     treasuryMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
 };
+
+const distroList = getMockDistro();
 
 const getPhase1 = async (deployer: Signer): Promise<Phase1Deployed> => ({
     voterProxy: await VoterProxy__factory.connect("0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9", deployer),
@@ -183,7 +185,7 @@ export const config = {
     addresses,
     naming,
     multisigs,
-    distroList: undefined,
+    distroList,
     getPhase1,
     getPhase2,
     getPhase3,
