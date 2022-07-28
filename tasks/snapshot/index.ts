@@ -9,7 +9,7 @@ import { request, gql } from "graphql-request";
 import snapshot from "@snapshot-labs/snapshot.js";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
-import { IGaugeController__factory } from "../../types/generated";
+import { IGaugeController__factory, MockCurveGauge__factory } from "../../types/generated";
 
 const configs = {
     main: {
@@ -369,3 +369,30 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         console.log(JSON.stringify(votes.map(v => v.gauge.address)));
         console.log(JSON.stringify(votes.map(v => v.voteWeight)));
     });
+
+task("snapshot:clean", "Clean up expired gauges").setAction(async function (
+    taskArgs: TaskArguments,
+    hre: HardhatRuntime,
+) {
+    const signer = await getSigner(hre);
+    console.log("Getting gauges");
+    const savePath = path.resolve(__dirname, "gauge_snapshot.json");
+    const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+
+    const list = await Promise.all(
+        gaugeList.map(async g => {
+            if ([1, 137, 42161].includes(g.network)) {
+                const gauge = MockCurveGauge__factory.connect(g.address, signer);
+                if (await gauge.is_killed()) {
+                    return false;
+                } else {
+                    return g;
+                }
+            } else {
+                return g;
+            }
+        }),
+    );
+
+    fs.writeFileSync(savePath, JSON.stringify(list.filter(Boolean), null, 2));
+});
