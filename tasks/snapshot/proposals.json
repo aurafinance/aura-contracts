@@ -1,0 +1,23 @@
+[
+    {
+        "id": "0x9a21d743bbdf54f2505f022564686c0431d5e95771318f2b67c807960ae4bd8d",
+        "title": "Gauge Weight for Week of 21st July 2022",
+        "start": 1658390400,
+        "end": 1658800800,
+        "snapshot": 15184638
+    },
+    {
+        "id": "0x515649bddfb0e0d637745e8654616b03b371bb444f90f327064e7eee6052aff8",
+        "title": "Gauge Weight for Week of 7th July 2022",
+        "start": 1657159200,
+        "end": 1657591200,
+        "snapshot": 15092750
+    },
+    {
+        "id": "0xabaf9275ae0533ce991059e8b5664225bf54bae81b9305ae60b48198db180ad9",
+        "title": "Gauge Weight for Week of 23rd June 2022",
+        "start": 1655956800,
+        "end": 1656378000,
+        "snapshot": 15010750
+    }
+]
