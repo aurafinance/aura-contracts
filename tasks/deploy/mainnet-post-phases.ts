@@ -11,7 +11,7 @@ import {
     ClaimFeesHelper__factory,
 } from "../../types/generated";
 
-const waitForBlocks = 0;
+const waitForBlocks = 1;
 const debug = true;
 // Deployments after the initial deployment script
 task("mainnet:deploy:feeCollector").setAction(async function (taskArguments: TaskArguments, hre) {
