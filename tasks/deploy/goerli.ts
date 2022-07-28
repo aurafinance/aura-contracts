@@ -15,10 +15,7 @@ import {
 } from "../../scripts/deploySystem";
 import { getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { simpleToExactAmount } from "./../../test-utils/math";
-import {
-    VoterProxy__factory,
-    ERC20__factory,
-} from "../../types/generated";
+import { VoterProxy__factory, ERC20__factory } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const goerliBalancerConfig: ExtSystemConfig = {
@@ -148,7 +145,7 @@ async function deployGoerli234(
     // ~~~~~~~~~~~~~~~
 
     // PRE-PHASE-4
-    let tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
+    const tx = await phase3.poolManager.connect(deployer).setProtectPool(false);
     await waitForTx(tx, true, waitForBlocks);
 
     const phase4 = await deployPhase4(hre, deployer, phase3, goerliBalancerConfig, true, waitForBlocks);
