@@ -9,7 +9,7 @@ import { request, gql } from "graphql-request";
 import snapshot from "@snapshot-labs/snapshot.js";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
-import { IGaugeController__factory } from "../../types/generated";
+import { IGaugeController__factory, MockCurveGauge__factory } from "../../types/generated";
 
 const configs = {
     main: {
@@ -140,7 +140,7 @@ task("snapshot:create")
         const dayTarget = 4; // Thursday
         const dayDelta = dayTarget - dayCurr;
         startDate.setDate(startDate.getDate() + dayDelta);
-        startDate.setUTCHours(8);
+        startDate.setUTCHours(2);
         startDate.setUTCMinutes(0);
 
         const validStartDate = startDate.toUTCString().startsWith("Thu");
@@ -196,6 +196,10 @@ task("snapshot:create")
                 if (answer.toLowerCase() === "y") {
                     console.log("Submitting to snapshot hub");
                     try {
+                        const start = Math.floor(startDate.getTime() / 1000);
+                        const end = Math.floor(endDate.getTime() / 1000);
+                        const snapshot = Number(latestBlock);
+
                         const proposal = {
                             space,
                             type: "weighted",
@@ -203,16 +207,34 @@ task("snapshot:create")
                             body,
                             discussion: "",
                             choices: gaugeList.map(gauge => parseLabel(gauge)),
-                            start: Math.floor(startDate.getTime() / 1000),
-                            end: Math.floor(endDate.getTime() / 1000),
-                            snapshot: Number(latestBlock),
+                            start,
+                            end,
+                            snapshot,
                             network: "1",
                             strategies: JSON.stringify({}),
                             plugins: JSON.stringify({}),
                             metadata: JSON.stringify({}),
                         };
                         console.log("Proposal:", JSON.stringify(proposal));
-                        const receipt = await client.proposal(wallet, account, proposal);
+                        const receipt: any = await client.proposal(wallet, account, proposal);
+
+                        console.log(receipt);
+
+                        // Save the proposal receipt to proposal.json file
+                        const savedProposalPath = path.resolve(__dirname, "./proposals.json");
+                        const saved = fs.readFileSync(savedProposalPath, "utf8");
+                        const savedJSON = JSON.parse(saved);
+                        const newSaved = [
+                            {
+                                id: receipt.id,
+                                title,
+                                start,
+                                end,
+                                snapshot,
+                            },
+                            ...savedJSON,
+                        ];
+                        fs.writeFileSync(savedProposalPath, JSON.stringify(newSaved));
 
                         console.log(receipt);
                     } catch (error) {
@@ -349,7 +371,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         const tableData = [
             ["Gauge", "voteDelta", "percentage", "address", "weight"],
             ...votes.map(({ gauge, voteDelta, voteWeight, percentage }) => [
-                gauge.pool.symbol,
+                parseLabel(gauge),
                 voteDelta,
                 (percentage * 100).toFixed(2) + "%",
                 gauge.address,
@@ -358,12 +380,33 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         ];
         console.log(table(tableData));
 
-        // encode function data
-        // const boosterAddress = "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10";
-        // const boosterAbi = ["function voteGaugeWeight(address[] _gauge, uint256[] _weight) external returns(bool)"];
-        // const booster = new ethers.Contract(boosterAddress, boosterAbi);
-        // const encoded = await booster.interface.encodeFunctionData("voteGaugeWeight", [gauges, weights]);
-        // console.log(encoded);
         console.log(JSON.stringify(votes.map(v => v.gauge.address)));
         console.log(JSON.stringify(votes.map(v => v.voteWeight)));
     });
+
+task("snapshot:clean", "Clean up expired gauges").setAction(async function (
+    taskArgs: TaskArguments,
+    hre: HardhatRuntime,
+) {
+    const signer = await getSigner(hre);
+    console.log("Getting gauges");
+    const savePath = path.resolve(__dirname, "gauge_snapshot.json");
+    const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+
+    const list = await Promise.all(
+        gaugeList.map(async g => {
+            if ([1, 137, 42161].includes(g.network)) {
+                const gauge = MockCurveGauge__factory.connect(g.address, signer);
+                if (await gauge.is_killed()) {
+                    return false;
+                } else {
+                    return g;
+                }
+            } else {
+                return g;
+            }
+        }),
+    );
+
+    fs.writeFileSync(savePath, JSON.stringify(list.filter(Boolean), null, 2));
+});

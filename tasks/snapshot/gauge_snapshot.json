@@ -448,32 +448,6 @@
         }
     },
     {
-        "address": "0x78DF155d6d75Ca2a1b1B2027f37414Ac1e7A1Ed8",
-        "network": 1,
-        "pool": {
-            "id": "0x7edde0cb05ed19e03a9a47cd5e53fc57fde1c80c0002000000000000000000c8",
-            "address": "0x7Edde0CB05ED19e03A9a47CD5E53fC57FDe1c80c",
-            "poolType": "Element",
-            "symbol": "LPePyvUSDC-29APR22",
-            "tokens": [
-                {
-                    "address": "0x52C9886d5D87B0f06EbACBEff750B5Ffad5d17d9",
-                    "weight": "null",
-                    "symbol": "ePyvUSDC-29APR22"
-                },
-                {
-                    "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-                    "weight": "null",
-                    "symbol": "USDC"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0x52C9886d5D87B0f06EbACBEff750B5Ffad5d17d9": "",
-            "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png"
-        }
-    },
-    {
         "address": "0xc43d32BC349cea7e0fe829F53E26096c184756fa",
         "network": 1,
         "pool": {
@@ -757,32 +731,6 @@
         "tokenLogoURIs": {
             "0x408e41876cCCDC0F92210600ef50372656052a38": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x408e41876cCCDC0F92210600ef50372656052a38/logo.png",
             "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
-        }
-    },
-    {
-        "address": "0x78259f2e946B11a0bE404d29d3cc017eCddE84C6",
-        "network": 1,
-        "pool": {
-            "id": "0xedf085f65b4f6c155e13155502ef925c9a756003000200000000000000000123",
-            "address": "0xEdf085f65b4F6c155e13155502Ef925c9a756003",
-            "poolType": "Element",
-            "symbol": "LPePyvDAI-29APR22",
-            "tokens": [
-                {
-                    "address": "0x2c72692E94E757679289aC85d3556b2c0f717E0E",
-                    "weight": "null",
-                    "symbol": "ePyvDAI-29APR22"
-                },
-                {
-                    "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-                    "weight": "null",
-                    "symbol": "DAI"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0x2c72692E94E757679289aC85d3556b2c0f717E0E": "",
-            "0x6B175474E89094C44Da98b954EedeAC495271d0F": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png"
         }
     },
     {
@@ -1107,32 +1055,6 @@
         "tokenLogoURIs": {
             "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
             "0xf203Ca1769ca8e9e8FE1DA9D147DB68B6c919817": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xf203ca1769ca8e9e8fe1da9d147db68b6c919817.png"
-        }
-    },
-    {
-        "address": "0x9F65d476DD77E24445A48b4FeCdeA81afAA63480",
-        "network": 1,
-        "pool": {
-            "id": "0x85370d9e3bb111391cc89f6de344e801760461830002000000000000000001ef",
-            "address": "0x85370D9e3bb111391cc89F6DE344E80176046183",
-            "poolType": "Weighted",
-            "symbol": "CREAM_ETH",
-            "tokens": [
-                {
-                    "address": "0x2ba592F78dB6436527729929AAf6c908497cB200",
-                    "weight": "0.8",
-                    "symbol": "CREAM"
-                },
-                {
-                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-                    "weight": "0.2",
-                    "symbol": "WETH"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0x2ba592F78dB6436527729929AAf6c908497cB200": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2ba592F78dB6436527729929AAf6c908497cB200/logo.png",
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
         }
     },
     {
