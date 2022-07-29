@@ -47,7 +47,7 @@ const addresses: ExtSystemConfig = {
     tokenWhale: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
     minter: "0xdf0399539A72E2689B8B2DD53C3C2A0883879fDd",
     votingEscrow: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
-    feeDistribution: ZERO_ADDRESS,
+    feeDistribution: "0x42B67611B208E2e9b4CC975F6D74c87b865aE066",
     gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
