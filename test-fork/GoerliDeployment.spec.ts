@@ -1,21 +1,13 @@
 import { network } from "hardhat";
 import { expect } from "chai";
 import { ExtraRewardStashV3__factory } from "../types/generated";
-import {
-    impersonate,
-    ZERO_ADDRESS,
-    BN,
-    ONE_WEEK,
-    assertBNClosePercent,
-    simpleToExactAmount,
-    ZERO_KEY,
-} from "../test-utils";
+import { impersonate, ZERO_ADDRESS, BN, ONE_WEEK, assertBNClosePercent, simpleToExactAmount } from "../test-utils";
 import { Signer } from "ethers";
 import { getTimestamp, latestBlock } from "./../test-utils/time";
 import { Phase2Deployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/goerli-config";
 
-describe("Full Deployment", () => {
+describe.skip("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
     const phase2Timestamp = BN.from(1657282100);
