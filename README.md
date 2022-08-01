@@ -184,3 +184,33 @@ yarn task timeTravel --duration 69420 --network forking
 |                         | [0x700C22100691ae23498d2182F317A7bC2829043a](https://kovan.etherscan.io/address/0x700C22100691ae23498d2182F317A7bC2829043a) |
 | drops                   | [0xBe227b7851570a9f5adFB923E9a2d4583EB6630F](https://kovan.etherscan.io/address/0xBe227b7851570a9f5adFB923E9a2d4583EB6630F) |
 |                         | [0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6](https://kovan.etherscan.io/address/0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6) |
+
+### Goerli (5)
+
+| Contract                 | Address                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| voterProxy               | [0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9](https://goerli.etherscan.io/address/0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9) |
+| aura                     | [0xFf3653ee692F541efB7c2214D72FE05A7A6EC01f](https://goerli.etherscan.io/address/0xFf3653ee692F541efB7c2214D72FE05A7A6EC01f) |
+| minter                   | [0x3366EfDdc7d268759a1A1273740aE5C626b2DFbA](https://goerli.etherscan.io/address/0x3366EfDdc7d268759a1A1273740aE5C626b2DFbA) |
+| booster                  | [0x2ad214dA65effA92159057957E50994440E99A1b](https://goerli.etherscan.io/address/0x2ad214dA65effA92159057957E50994440E99A1b) |
+| boosterOwner             | [0x6931835d072f50d98D7a7BF7B2C4faFdA86628d7](https://goerli.etherscan.io/address/0x6931835d072f50d98D7a7BF7B2C4faFdA86628d7) |
+| auraBAL                  | [0xf80D3083b18fe3f11196E57438258330Ba4f15Ec](https://goerli.etherscan.io/address/0xf80D3083b18fe3f11196E57438258330Ba4f15Ec) |
+| auraBALBpt               | [0xAc98C986d8318ff08109AE6F4E7043468dA9d0a2](https://goerli.etherscan.io/address/0xAc98C986d8318ff08109AE6F4E7043468dA9d0a2) |
+| cvxCrvRewards            | [0x09421e5d9c2b11f502482dce2b718b037fd10a25](https://goerli.etherscan.io/address/0x09421e5d9c2b11f502482dce2b718b037fd10a25) |
+| initialCvxCrvStaking     | N/A                                                                                                                          |
+| crvDepositor             | [0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1](https://goerli.etherscan.io/address/0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1) |
+| crvDepositorWrapper      | [0x4AC5c047CfA39b14fb06564DEC7D85e6fA2b045a](https://goerli.etherscan.io/address/0x4AC5c047CfA39b14fb06564DEC7D85e6fA2b045a) |
+| poolManager              | [0x0B4566B619Dc12381E386564E45df62316259E71](https://goerli.etherscan.io/address/0x0B4566B619Dc12381E386564E45df62316259E71) |
+| auraLocker               | [0x1e5B33222977642Bf64EC80846BBF83A016727A0](https://goerli.etherscan.io/address/0x1e5B33222977642Bf64EC80846BBF83A016727A0) |
+| cvxStakingProxy          | [0x1a8bb30f2aff498ef026d2bccc8971a30144b93c](https://goerli.etherscan.io/address/0x1a8bb30f2aff498ef026d2bccc8971a30144b93c) |
+| chef                     | [0xa3fCaFCa8150636C3B736A16Cd73d49cC8A7E10E](https://goerli.etherscan.io/address/0xa3fCaFCa8150636C3B736A16Cd73d49cC8A7E10E) |
+| lbpBpt                   | N/A                                                                                                                          |
+| balLiquidityProvider     | N/A                                                                                                                          |
+| penaltyForwarder         | N/A                                                                                                                          |
+| extraRewardsDistributor  | [0xbdfFBBD7Ac592a53405AE152B6D23CF3F6B8a738](https://goerli.etherscan.io/address/0xbdfFBBD7Ac592a53405AE152B6D23CF3F6B8a738) |
+| pool8020Bpt              | [0xf8a0623ab66f985effc1c69d05f1af4badb01b00](https://goerli.etherscan.io/address/0xf8a0623ab66f985effc1c69d05f1af4badb01b00) |
+| claimZap                 | [0x9Ba88Cb931B46a6E646B9bd0ba677D375647EB23](https://goerli.etherscan.io/address/0x9Ba88Cb931B46a6E646B9bd0ba677D375647EB23) |
+| vestedEscrows            | N/A                                                                                                                          |
+| drops                    | N/A                                                                                                                          |
+| claimFeesHelper          | [0xDc2f8293f7f3E49a949df6A1FB1bCb9200eC3982](https://goerli.etherscan.io/address/0xDc2f8293f7f3E49a949df6A1FB1bCb9200eC3982) |
+| rewardPoolDepositWrapper | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://goerli.etherscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
