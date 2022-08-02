@@ -1110,32 +1110,6 @@
         }
     },
     {
-        "address": "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2",
-        "network": 1,
-        "pool": {
-            "id": "0x2d011adf89f0576c9b722c28269fcb5d50c2d17900020000000000000000024d",
-            "address": "0x2d011aDf89f0576C9B722c28269FcB5D50C2d179",
-            "poolType": "Stable",
-            "symbol": "B-sdBAL-STABLE",
-            "tokens": [
-                {
-                    "address": "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
-                    "weight": "null",
-                    "symbol": "B-80BAL-20WETH"
-                },
-                {
-                    "address": "0xF24d8651578a55b0C119B9910759a351A3458895",
-                    "weight": "null",
-                    "symbol": "sdBal"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0x5c6ee304399dbdb9c8ef030ab642b10820db8f56.png",
-            "0xF24d8651578a55b0C119B9910759a351A3458895": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xf24d8651578a55b0c119b9910759a351a3458895.png"
-        }
-    },
-    {
         "address": "0xDD4Db3ff8A37FE418dB6FF34fC316655528B6bbC",
         "network": 1,
         "pool": {
