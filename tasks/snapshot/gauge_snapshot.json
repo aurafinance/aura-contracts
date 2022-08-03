@@ -2334,32 +2334,6 @@
         }
     },
     {
-        "address": "0xcF5938cA6d9F19C73010c7493e19c02AcFA8d24D",
-        "network": 137,
-        "pool": {
-            "id": "0xb797adfb7b268faeaa90cadbfed464c76ee599cd0002000000000000000005ba",
-            "address": "0xB797AdfB7b268faeaA90CAdBfEd464C76ee599Cd",
-            "poolType": "Stable",
-            "symbol": "tetuBAL-BALWETH",
-            "tokens": [
-                {
-                    "address": "0x3d468AB2329F296e1b9d8476Bb54Dd77D8c2320f",
-                    "weight": "null",
-                    "symbol": "20WETH-80BAL"
-                },
-                {
-                    "address": "0x7fC9E0Aa043787BFad28e29632AdA302C790Ce33",
-                    "weight": "null",
-                    "symbol": "tetuBAL"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0x3d468AB2329F296e1b9d8476Bb54Dd77D8c2320f": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x3d468ab2329f296e1b9d8476bb54dd77d8c2320f.png",
-            "0x7fC9E0Aa043787BFad28e29632AdA302C790Ce33": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x7fc9e0aa043787bfad28e29632ada302c790ce33.png"
-        }
-    },
-    {
         "address": "0xD13A839BB48d69A296a1fa6D615B6C39B170096B",
         "network": 137,
         "pool": {
