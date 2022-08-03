@@ -1,0 +1,54 @@
+pragma solidity 0.8.11;
+
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+
+
+interface IDeposit{
+    function isShutdown() external view returns(bool);
+    function balanceOf(address _account) external view returns(uint256);
+    function totalSupply() external view returns(uint256);
+    function poolInfo(uint256) external view returns(address,address,address,address,address, bool);
+    function rewardClaimed(uint256,address,uint256) external;
+    function withdrawTo(uint256,uint256,address) external;
+    function claimRewards(uint256,address) external returns(bool);
+    function rewardArbitrator() external returns(address);
+    function setGaugeRedirect(uint256 _pid) external returns(bool);
+    function owner() external returns(address);
+    function deposit(uint256 _pid, uint256 _amount, bool _stake) external returns(bool);
+}
+
+contract DummyDepositor {
+
+    using SafeERC20 for IERC20;
+
+    IERC20 immutable lpToken;
+    mapping(address => uint256) private _balances;
+
+
+    constructor(IERC20 _lpToken) {
+        lpToken = _lpToken;
+    }
+
+    function deposit(uint256 _amount) external {
+        lpToken.safeTransferFrom(msg.sender, address(this), _amount);
+        _balances[msg.sender] += _amount;
+    }
+
+    function balanceOf(address _account) external view returns (uint256) {
+      return _balances[_account];
+    }
+
+    function withdraw(uint256 _amount) external {
+        _balances[msg.sender] -= _amount;
+        lpToken.safeTransfer(msg.sender, _amount);
+    }
+
+    function claim_rewards() external {}
+
+    function reward_tokens(uint256) external view returns(address) { return address(0); }
+
+    function rewarded_token() external view returns(address) { return address(0); }
+
+    function lp_token() external view returns(address) { return address(lpToken); }
+}
