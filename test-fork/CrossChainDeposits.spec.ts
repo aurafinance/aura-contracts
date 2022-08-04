@@ -1,3 +1,5 @@
+import { BaseRewardPool4626__factory } from "./../types/generated/factories/BaseRewardPool4626__factory";
+import { increaseTime } from "./../test-utils/time";
 import { MockERC20 } from "./../types/generated/MockERC20";
 import { network } from "hardhat";
 import { expect } from "chai";
@@ -8,7 +10,7 @@ import {
     SiphonToken,
     SiphonToken__factory,
 } from "../types/generated";
-import { impersonate, impersonateAccount, simpleToExactAmount, ONE_DAY, ZERO_KEY } from "../test-utils";
+import { impersonate, impersonateAccount, simpleToExactAmount, ONE_DAY, ZERO_KEY, BN, ONE_WEEK } from "../test-utils";
 import { Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
 import { SystemDeployed } from "../scripts/deploySystem";
@@ -23,6 +25,7 @@ describe("Full Deployment", () => {
     let dummyGauge: DummyGauge;
     let dummyToken: SiphonToken;
     let crvToken: MockERC20;
+    let pid: BN;
 
     before(async () => {
         await network.provider.request({
@@ -45,6 +48,8 @@ describe("Full Deployment", () => {
 
         await getCrv(deployerAddress, simpleToExactAmount(5000));
         crvToken = await MockERC20__factory.connect(config.addresses.token, deployer);
+
+        pid = await phase4.booster.poolLength();
     });
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
@@ -67,7 +72,6 @@ describe("Full Deployment", () => {
     it("adds the gauge", async () => {
         const admin = await impersonate(config.multisigs.daoMultisig);
 
-        const pid = await phase4.booster.poolLength();
         await phase4.poolManager.connect(admin).forceAddPool(dummyToken.address, dummyGauge.address, 3);
 
         await crvToken.transfer(phase4.booster.address, simpleToExactAmount(5000));
@@ -79,5 +83,22 @@ describe("Full Deployment", () => {
         const balanceAfter = await crvToken.balanceOf(poolInfo.crvRewards);
 
         expect(balanceAfter.sub(balanceBefore)).eq(simpleToExactAmount(5000).mul(805).div(1000));
+    });
+    it("allows deposits and claiming", async () => {
+        await dummyToken.approve(phase4.booster.address, simpleToExactAmount(1));
+        await phase4.booster.deposit(pid, simpleToExactAmount(1), true);
+
+        await increaseTime(ONE_WEEK);
+
+        const poolInfo = await phase4.booster.poolInfo(pid);
+
+        const crvBefore = await crvToken.balanceOf(deployerAddress);
+        const cvxBefore = await phase4.cvx.balanceOf(deployerAddress);
+        await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, deployer)["getReward()"]();
+        const crvAfter = await crvToken.balanceOf(deployerAddress);
+        const cvxAfter = await phase4.cvx.balanceOf(deployerAddress);
+
+        expect(crvAfter.sub(crvBefore)).gt(simpleToExactAmount(5000).mul(800).div(1000));
+        expect(cvxAfter.sub(cvxBefore)).gt(0);
     });
 });
