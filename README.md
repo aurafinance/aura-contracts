@@ -1,5 +1,7 @@
 # Aura Finance
 
+[![Test Coverage](https://github.com/aurafinance/aura-contracts/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/aurafinance/aura-contracts/actions/workflows/test-coverage.yaml)
+
 ## Security
 
 Smart contract security is a top priority for Aura, [see Security documentation](https://docs.aura.finance/aura/security) .
