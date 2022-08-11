@@ -12,7 +12,7 @@ interface IStaker {
  * @title   AuraToken
  * @notice  Basically an ERC20 with minting functionality operated by the "operator" of the VoterProxy (Booster).
  * @dev     The minting schedule is based on the amount of CRV earned through staking and is
- *          distirbuted along a supply curve (cliffs etc). Fork of ConvexToken.
+ *          distributed along a supply curve (cliffs etc). Fork of ConvexToken.
  */
 contract AuraToken is ERC20 {
     using AuraMath for uint256;
