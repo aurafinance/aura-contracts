@@ -34,7 +34,7 @@ contract ExtraRewardsDistributor is ReentrancyGuard, IExtraRewardsDistributor, O
     event RewardForfeited(address indexed user, address indexed token, uint256 index);
 
     /**
-     * @dev Simple constructoor
+     * @dev Simple constructor
      * @param _auraLocker Aura Locker address
      */
     constructor(address _auraLocker) Ownable() {
