@@ -27,7 +27,7 @@ const readline = createInterface({
     output: process.stdout,
 });
 
-const networkLabels = { 137: "p", 42161: "a" };
+const networkLabels = { 137: "p", 42161: "a", 10: "o" };
 
 type Token = {
     weight: string;
