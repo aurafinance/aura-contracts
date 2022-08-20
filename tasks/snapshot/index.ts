@@ -27,7 +27,7 @@ const readline = createInterface({
     output: process.stdout,
 });
 
-const networkLabels = { 137: "p", 42161: "a" };
+const networkLabels = { 137: "p", 42161: "a", 10: "o" };
 
 type Token = {
     weight: string;
@@ -112,7 +112,7 @@ task("snapshot:create")
         console.log("Getting gauges from gauge controller");
         const savePath = path.resolve(__dirname, "gauge_snapshot.json");
         let gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
-        const validNetworks = [1, 42161, 137];
+        const validNetworks = [1, 10, 42161, 137];
         gaugeList = gaugeList.filter(
             gauge => validNetworks.includes(gauge.network) && gauge.pool.poolType !== "Element",
         );
