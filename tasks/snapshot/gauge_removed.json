@@ -664,6 +664,37 @@
             "0x3d468AB2329F296e1b9d8476Bb54Dd77D8c2320f": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x3d468ab2329f296e1b9d8476bb54dd77d8c2320f.png",
             "0x7fC9E0Aa043787BFad28e29632AdA302C790Ce33": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x7fc9e0aa043787bfad28e29632ada302c790ce33.png"
         }
+    },
+    {
+        "address": "0x5204f813cF58a4722E481b3b1cDfBBa45088fE36",
+        "network": 1,
+        "pool": {
+            "id": "0x8eb6c82c3081bbbd45dcac5afa631aac53478b7c000100000000000000000270",
+            "address": "0x8eB6c82C3081bBBd45DcAC5afA631aaC53478b7C",
+            "poolType": "Weighted",
+            "symbol": "40WBTC-40DIGG-20graviAURA",
+            "tokens": [
+                {
+                    "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+                    "weight": "0.4",
+                    "symbol": "WBTC"
+                },
+                {
+                    "address": "0x798D1bE841a82a273720CE31c822C61a67a601C3",
+                    "weight": "0.4",
+                    "symbol": "DIGG"
+                },
+                {
+                    "address": "0xBA485b556399123261a5F9c95d413B4f93107407",
+                    "weight": "0.2",
+                    "symbol": "graviAURA"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+            "0x798D1bE841a82a273720CE31c822C61a67a601C3": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x798D1bE841a82a273720CE31c822C61a67a601C3/logo.png",
+            "0xBA485b556399123261a5F9c95d413B4f93107407": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xba485b556399123261a5f9c95d413b4f93107407.png"
+        }
     }
 ]
-

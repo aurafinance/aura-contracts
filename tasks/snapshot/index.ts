@@ -254,7 +254,7 @@ task("snapshot:create")
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
-    .addParam("debug", "Debug mode")
+    .addOptionalParam("debug", "Debug mode", "false")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
 
@@ -307,11 +307,13 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Look up the existing vote weight that was previous given to all the gauges
         // ----------------------------------------------------------
 
+        const removedGaugesPath = path.resolve(__dirname, "./gauge_removed.json");
+        const removedGauges = JSON.parse(fs.readFileSync(removedGaugesPath, "utf8"));
         const voterProxyAddress = "0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2";
         const gaugeControllerAddress = "0xc128468b7ce63ea702c1f104d55a2566b13d3abd";
         const gaugeController = IGaugeController__factory.connect(gaugeControllerAddress, signer);
         const gaugesWithExistingWeights = await Promise.all(
-            gaugeList.map(async gauge => {
+            [...gaugeList, ...removedGauges].map(async gauge => {
                 const [, power] = await gaugeController.vote_user_slopes(voterProxyAddress, gauge.address);
                 return { ...gauge, existingWeight: power };
             }),
