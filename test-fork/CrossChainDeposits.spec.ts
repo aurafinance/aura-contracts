@@ -69,20 +69,30 @@ describe("Full Deployment", () => {
         });
     };
 
+    const amount = simpleToExactAmount(1);
+
     it("adds the gauge", async () => {
         const admin = await impersonate(config.multisigs.daoMultisig);
-
+        const length = await phase4.booster.poolLength();
         await phase4.poolManager.connect(admin).forceAddPool(dummyToken.address, dummyGauge.address, 3);
+        const pool = await phase4.booster.poolInfo(length);
 
-        await crvToken.transfer(phase4.booster.address, simpleToExactAmount(5000));
-
+        expect(pool.gauge).eq(dummyGauge.address);
+        expect(pool.lptoken).eq(dummyToken.address);
+    });
+    it("earmarkRewards on gauge", async () => {
         const poolInfo = await phase4.booster.poolInfo(pid);
 
-        const balanceBefore = await crvToken.balanceOf(poolInfo.crvRewards);
-        await phase4.booster.earmarkRewards(pid);
-        const balanceAfter = await crvToken.balanceOf(poolInfo.crvRewards);
+        // Transfer CRV to the booster for when earmarkRewards is called
+        for (let i = 0; i < 5; i++) {
+            await crvToken.transfer(phase4.booster.address, amount);
 
-        expect(balanceAfter.sub(balanceBefore)).eq(simpleToExactAmount(5000).mul(805).div(1000));
+            const balanceBefore = await crvToken.balanceOf(poolInfo.crvRewards);
+            await phase4.booster.earmarkRewards(pid);
+            const balanceAfter = await crvToken.balanceOf(poolInfo.crvRewards);
+
+            expect(balanceAfter.sub(balanceBefore)).eq(amount.mul(805).div(1000));
+        }
     });
     it("allows deposits and claiming", async () => {
         await dummyToken.approve(phase4.booster.address, simpleToExactAmount(1));
@@ -98,7 +108,7 @@ describe("Full Deployment", () => {
         const crvAfter = await crvToken.balanceOf(deployerAddress);
         const cvxAfter = await phase4.cvx.balanceOf(deployerAddress);
 
-        expect(crvAfter.sub(crvBefore)).gt(simpleToExactAmount(5000).mul(800).div(1000));
+        expect(crvAfter.sub(crvBefore)).gt(amount.mul(800).div(1000));
         expect(cvxAfter.sub(cvxBefore)).gt(0);
     });
 });
