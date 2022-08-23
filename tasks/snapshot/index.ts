@@ -393,11 +393,14 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     const savePath = path.resolve(__dirname, "gauge_snapshot.json");
     const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
 
+    const removedGauges = [];
+
     const list = await Promise.all(
         gaugeList.map(async g => {
             if ([1, 137, 42161].includes(g.network)) {
                 const gauge = MockCurveGauge__factory.connect(g.address, signer);
                 if (await gauge.is_killed()) {
+                    removedGauges.push(g);
                     return false;
                 } else {
                     return g;
@@ -409,4 +412,7 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     );
 
     fs.writeFileSync(savePath, JSON.stringify(list.filter(Boolean), null, 2));
+    const removePath = path.resolve(__dirname, "gauge_removed.json");
+    const removed = JSON.parse(fs.readFileSync(removePath, "utf8"));
+    fs.writeFileSync(removePath, JSON.stringify([...removed, ...removedGauges], null, 2));
 });
