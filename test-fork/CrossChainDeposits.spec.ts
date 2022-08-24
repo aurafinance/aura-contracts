@@ -1,31 +1,39 @@
-import { BaseRewardPool4626__factory } from "./../types/generated/factories/BaseRewardPool4626__factory";
 import { increaseTime } from "./../test-utils/time";
 import { MockERC20 } from "./../types/generated/MockERC20";
 import { network } from "hardhat";
 import { expect } from "chai";
 import {
-    DummyGauge__factory,
-    DummyGauge,
+    BaseRewardPool,
+    SiphonGauge__factory,
+    SiphonGauge,
+    SiphonDepositor,
+    SiphonDepositor__factory,
     MockERC20__factory,
     SiphonToken,
     SiphonToken__factory,
+    BaseRewardPool__factory,
 } from "../types/generated";
-import { impersonate, impersonateAccount, simpleToExactAmount, ONE_DAY, ZERO_KEY, BN, ONE_WEEK } from "../test-utils";
-import { Signer } from "ethers";
+import { BigNumberish, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
-import { SystemDeployed } from "../scripts/deploySystem";
+import { Phase2Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
+import { impersonate, impersonateAccount, simpleToExactAmount, ONE_WEEK } from "../test-utils";
+import { formatUnits } from "ethers/lib/utils";
 
 const debug = true;
 
 describe("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
+    let phase2: Phase2Deployed;
     let phase4: SystemDeployed;
-    let dummyGauge: DummyGauge;
-    let dummyToken: SiphonToken;
+    let siphonGauge: SiphonGauge;
+    let siphonToken: SiphonToken;
+    let siphonDepositor: SiphonDepositor;
     let crvToken: MockERC20;
-    let pid: BN;
+    let pid: BigNumberish;
+    let crvRewards: BaseRewardPool;
+    let totalIncentiveAmount: BigNumberish;
 
     before(async () => {
         await network.provider.request({
@@ -42,12 +50,13 @@ describe("Full Deployment", () => {
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         deployer = await impersonate(deployerAddress);
         phase4 = await config.getPhase4(deployer);
-
-        dummyToken = await new SiphonToken__factory(deployer).deploy(deployerAddress, simpleToExactAmount(1));
-        dummyGauge = await new DummyGauge__factory(deployer).deploy(dummyToken.address);
+        phase2 = await config.getPhase2(deployer);
 
         await getCrv(deployerAddress, simpleToExactAmount(5000));
-        crvToken = await MockERC20__factory.connect(config.addresses.token, deployer);
+        crvToken = MockERC20__factory.connect(config.addresses.token, deployer);
+
+        siphonToken = await new SiphonToken__factory(deployer).deploy(deployerAddress, simpleToExactAmount(1));
+        siphonGauge = await new SiphonGauge__factory(deployer).deploy(siphonToken.address);
 
         pid = await phase4.booster.poolLength();
     });
@@ -74,41 +83,80 @@ describe("Full Deployment", () => {
     it("adds the gauge", async () => {
         const admin = await impersonate(config.multisigs.daoMultisig);
         const length = await phase4.booster.poolLength();
-        await phase4.poolManager.connect(admin).forceAddPool(dummyToken.address, dummyGauge.address, 3);
-        const pool = await phase4.booster.poolInfo(length);
+        await phase4.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
 
-        expect(pool.gauge).eq(dummyGauge.address);
-        expect(pool.lptoken).eq(dummyToken.address);
+        expect(length).eq(pid);
+
+        const pool = await phase4.booster.poolInfo(pid);
+
+        // save pool rewards
+        crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
+
+        expect(pool.gauge).eq(siphonGauge.address);
+        expect(pool.lptoken).eq(siphonToken.address);
     });
-    it("earmarkRewards on gauge", async () => {
-        const poolInfo = await phase4.booster.poolInfo(pid);
-
-        // Transfer CRV to the booster for when earmarkRewards is called
-        for (let i = 0; i < 5; i++) {
-            await crvToken.transfer(phase4.booster.address, amount);
-
-            const balanceBefore = await crvToken.balanceOf(poolInfo.crvRewards);
-            await phase4.booster.earmarkRewards(pid);
-            const balanceAfter = await crvToken.balanceOf(poolInfo.crvRewards);
-
-            expect(balanceAfter.sub(balanceBefore)).eq(amount.mul(805).div(1000));
-        }
+    it("deploy the siphonDepositor", async () => {
+        siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
+            siphonToken.address,
+            crvToken.address,
+            phase4.booster.address,
+            pid,
+        );
+        // send it the siphon token
+        await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
     });
-    it("allows deposits and claiming", async () => {
-        await dummyToken.approve(phase4.booster.address, simpleToExactAmount(1));
-        await phase4.booster.deposit(pid, simpleToExactAmount(1), true);
+    it("deposit LP tokens into the pool", async () => {
+        const bal = await siphonToken.balanceOf(siphonDepositor.address);
+        await siphonDepositor.deposit();
+        const rewardBal = await crvRewards.balanceOf(siphonDepositor.address);
+        expect(rewardBal).eq(bal);
+    });
+    it("fund the siphonDepositor with BAL", async () => {
+        const balance = await crvToken.balanceOf(config.multisigs.treasuryMultisig);
+        console.log("Treasury CRV balance:", formatUnits(balance));
 
+        const treasury = await impersonateAccount(config.multisigs.treasuryMultisig);
+        await crvToken.connect(treasury.signer).transfer(siphonDepositor.address, balance);
+
+        const siphonBalance = await crvToken.balanceOf(siphonDepositor.address);
+        console.log("SiphonDepositor CRV balance:", formatUnits(siphonBalance));
+        expect(siphonBalance).eq(balance);
+    });
+    it("siphon CVX", async () => {
+        const FEE_DENOMINATOR = await phase4.booster.FEE_DENOMINATOR();
+        const earmarkIncentive = await phase4.booster.earmarkIncentive();
+        const stakerIncentive = await phase4.booster.stakerIncentive();
+        const lockIncentive = await phase4.booster.lockIncentive();
+
+        const siphonBalanceBefore = await crvToken.balanceOf(siphonDepositor.address);
+        const earmarkIncentiveAmount = siphonBalanceBefore.mul(earmarkIncentive).div(FEE_DENOMINATOR);
+        const stakerIncentiveAmount = siphonBalanceBefore.mul(stakerIncentive).div(FEE_DENOMINATOR);
+        const lockIncentiveAmount = siphonBalanceBefore.mul(lockIncentive).div(FEE_DENOMINATOR);
+        totalIncentiveAmount = earmarkIncentiveAmount.add(stakerIncentiveAmount).add(lockIncentiveAmount);
+
+        await siphonDepositor.siphon();
+        const siphonBalance = await crvToken.balanceOf(siphonDepositor.address);
+        expect(siphonBalance).eq(earmarkIncentiveAmount);
+
+        const rewardBalance = await crvToken.balanceOf(crvRewards.address);
+        expect(rewardBalance).eq(siphonBalanceBefore.sub(totalIncentiveAmount));
+    });
+    it("claim CVX and CRV into siphonDepositor", async () => {
         await increaseTime(ONE_WEEK);
 
-        const poolInfo = await phase4.booster.poolInfo(pid);
+        const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
+        const cvxBalBefore = await phase2.cvx.balanceOf(siphonDepositor.address);
 
-        const crvBefore = await crvToken.balanceOf(deployerAddress);
-        const cvxBefore = await phase4.cvx.balanceOf(deployerAddress);
-        await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, deployer)["getReward()"]();
-        const crvAfter = await crvToken.balanceOf(deployerAddress);
-        const cvxAfter = await phase4.cvx.balanceOf(deployerAddress);
+        await siphonDepositor.getReward();
 
-        expect(crvAfter.sub(crvBefore)).gt(amount.mul(800).div(1000));
-        expect(cvxAfter.sub(cvxBefore)).gt(0);
+        const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
+        const cvxBalAfter = await phase2.cvx.balanceOf(siphonDepositor.address);
+
+        const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+        const crvBal = crvBalAfter.sub(crvBalBefore);
+
+        console.log("CVX balance:", formatUnits(cvxBal));
+        console.log("CRV balance:", formatUnits(crvBal));
+        console.log("CRV debt:", formatUnits(totalIncentiveAmount));
     });
 });
