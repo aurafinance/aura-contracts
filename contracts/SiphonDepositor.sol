@@ -2,6 +2,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { AuraMath } from "./AuraMath.sol";
 
 // prettier-ignore
 interface IDeposit{
@@ -30,23 +31,40 @@ interface IBaseRewardPool {
     function getReward(address _account, bool _claimExtras) external returns(bool);
 }
 
+// prettier-ignore
+interface ICvx is IERC20 {
+    function totalSupply() external view returns (uint256);
+    function INIT_MINT_AMOUNT() external view returns (uint256);
+    function minterMinted() external view returns (uint256);
+    function reductionPerCliff() external view returns (uint256);
+    function totalCliffs() external view returns (uint256);
+    function EMISSIONS_MAX_SUPPLY() external view returns (uint256);
+}
+
 contract SiphonDepositor {
+    using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public immutable lpToken;
     IERC20 public immutable crv;
     IBooster public immutable booster;
+    ICvx public immutable cvx;
+    IERC20 public immutable rCvx;
     uint256 public immutable pid;
 
     constructor(
         IERC20 _lpToken,
         IERC20 _crv,
         IBooster _booster,
+        ICvx _cvx,
+        IERC20 _rCvx,
         uint256 _pid
     ) {
         lpToken = _lpToken;
         crv = _crv;
         booster = _booster;
+        cvx = _cvx;
+        rCvx = _rCvx;
         pid = _pid;
     }
 
@@ -86,5 +104,41 @@ contract SiphonDepositor {
         (, , , address crvRewards, , ) = booster.poolInfo(pid);
         IBaseRewardPool(crvRewards).getReward(address(this), false);
     }
-}
 
+    /**
+     * @dev How much AURA you will get for rAURA
+     */
+    function getAmountOut(uint256 _amount) public view returns (uint256) {
+        uint256 totalSupply = cvx.totalSupply();
+        uint256 INIT_MINT_AMOUNT = cvx.INIT_MINT_AMOUNT();
+        // TODO: this is internal on the Aura token...
+        uint256 minterMinted = 0;
+        uint256 reductionPerCliff = cvx.reductionPerCliff();
+        uint256 totalCliffs = cvx.totalCliffs();
+        uint256 EMISSIONS_MAX_SUPPLY = cvx.EMISSIONS_MAX_SUPPLY();
+
+        uint256 emissionsMinted = totalSupply - INIT_MINT_AMOUNT - minterMinted;
+        uint256 cliff = emissionsMinted.div(reductionPerCliff);
+
+        uint256 amount;
+        if (cliff < totalCliffs) {
+            uint256 reduction = totalCliffs.sub(cliff).mul(5).div(2).add(700);
+            amount = _amount.mul(reduction).div(totalCliffs);
+            uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(emissionsMinted);
+            if (amount > amtTillMax) {
+                amount = amtTillMax;
+            }
+        }
+        return amount;
+    }
+
+    /**
+     * @dev Convert rAURA for AURA at the pro rata rate
+     */
+    function convert(uint256 _amount, bool _lock) external {
+        // TODO: implement lock functionality and penalty
+        uint256 amountOut = getAmountOut(_amount);
+        rCvx.transferFrom(msg.sender, address(this), _amount);
+        cvx.transfer(msg.sender, amountOut);
+    }
+}

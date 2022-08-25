@@ -13,7 +13,7 @@ import {
     SiphonToken__factory,
     BaseRewardPool__factory,
 } from "../types/generated";
-import { BigNumberish, Signer } from "ethers";
+import { BigNumberish, ethers, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
 import { Phase2Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
@@ -34,6 +34,7 @@ describe("Full Deployment", () => {
     let pid: BigNumberish;
     let crvRewards: BaseRewardPool;
     let totalIncentiveAmount: BigNumberish;
+    let rCvx: MockERC20;
 
     before(async () => {
         await network.provider.request({
@@ -57,6 +58,13 @@ describe("Full Deployment", () => {
 
         siphonToken = await new SiphonToken__factory(deployer).deploy(deployerAddress, simpleToExactAmount(1));
         siphonGauge = await new SiphonGauge__factory(deployer).deploy(siphonToken.address);
+        rCvx = await new MockERC20__factory(deployer).deploy(
+            "rAURA",
+            "rAURA",
+            18,
+            deployerAddress,
+            simpleToExactAmount(1000),
+        );
 
         pid = await phase4.booster.poolLength();
     });
@@ -78,8 +86,6 @@ describe("Full Deployment", () => {
         });
     };
 
-    const amount = simpleToExactAmount(1);
-
     it("adds the gauge", async () => {
         const admin = await impersonate(config.multisigs.daoMultisig);
         const length = await phase4.booster.poolLength();
@@ -100,6 +106,8 @@ describe("Full Deployment", () => {
             siphonToken.address,
             crvToken.address,
             phase4.booster.address,
+            phase2.cvx.address,
+            rCvx.address,
             pid,
         );
         // send it the siphon token
@@ -158,5 +166,20 @@ describe("Full Deployment", () => {
         console.log("CVX balance:", formatUnits(cvxBal));
         console.log("CRV balance:", formatUnits(crvBal));
         console.log("CRV debt:", formatUnits(totalIncentiveAmount));
+    });
+    it("convert rAURA to AURA", async () => {
+        const amountIn = simpleToExactAmount(100);
+        const amountOut = await siphonDepositor.getAmountOut(amountIn);
+        console.log("rCVX Amount In:", formatUnits(amountIn));
+        console.log("CVX Amount out:", formatUnits(amountOut));
+
+        await rCvx.approve(siphonDepositor.address, ethers.constants.MaxUint256);
+        await siphonDepositor.convert(amountIn, false);
+
+        const rCvxBal = await rCvx.balanceOf(siphonDepositor.address);
+        const cvxBal = await phase2.cvx.balanceOf(deployerAddress);
+
+        expect(rCvxBal).eq(amountIn);
+        expect(cvxBal).eq(amountOut);
     });
 });
