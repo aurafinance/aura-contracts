@@ -86,8 +86,8 @@ describe("AuraLiquidityMigrator", () => {
             .connect(account.signer)
             .migrateUniswapV2AndJoinPool(
                 fromLPToken.address,
-                underlyingTokens,
                 account.address,
+                underlyingTokens,
                 0,
                 toLPToken.address,
                 rewardPool.address,

@@ -5,6 +5,8 @@ import { getSigner } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import {
+    AuraLiquidityMigrator,
+    AuraLiquidityMigrator__factory,
     BoosterHelper,
     BoosterHelper__factory,
     ClaimFeesHelper,
@@ -48,4 +50,21 @@ task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: Ta
     );
 
     console.log("update boosterHelper address to:", boosterHelper.address);
+});
+
+task("mainnet:deploy:auraLiquidityMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { addresses } = config;
+    const constructorArguments = [addresses.balancerPoolFactories.weightedPoolFactory, addresses.balancerVault];
+    const auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
+        hre,
+        new AuraLiquidityMigrator__factory(deployer),
+        "AuraLiquidityMigrator",
+        constructorArguments,
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update auraLiquidityMigrator address to:", auraLiquidityMigrator.address);
 });

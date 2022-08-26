@@ -19,11 +19,24 @@ interface IWeightedPoolFactory {
     ) external returns (address);
 }
 
+/**
+ * @title   AuraLiquidityMigrator
+ * @notice  Migrates liquidity positions from Sushiswap or Uniswap v2
+ * @dev     Given a "fromLPToken", it removes the liquidity from Sushiswap/Uniswap,
+ *          then it creates or join to a balancer pool, adds liquidity to the pool.
+ *          Finally if the pool already existed it stakes the liquidity in an aura reward pool.
+ */
 contract AuraLiquidityMigrator {
     using SafeERC20 for IERC20;
-    IWeightedPoolFactory public immutable BALANCER_POOL_FACTORY; // 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9
-    IVault public immutable BALANCER_VAULT; //0xBA12222222228d8Ba445958a75a0704d566BF2C8
+    /// @dev Balancer pool factory
+    IWeightedPoolFactory public immutable BALANCER_POOL_FACTORY; // ie 0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9
+    /// @dev Balancer vault
+    IVault public immutable BALANCER_VAULT; // ie 0xBA12222222228d8Ba445958a75a0704d566BF2C8
 
+    /**
+     * @param _weightedPoolFactory The pool factory address
+     * @param _balancerVault The balancer vault address
+     */
     constructor(address _weightedPoolFactory, address _balancerVault) {
         BALANCER_POOL_FACTORY = IWeightedPoolFactory(_weightedPoolFactory);
         BALANCER_VAULT = IVault(_balancerVault);
@@ -31,6 +44,19 @@ contract AuraLiquidityMigrator {
 
     event PoolCreated(address indexed pool);
 
+    /**
+     * @dev Migrates a liquidity position, deploys a new `WeightedPool` and adds liquidity to the pool.
+     *      The created pool has a weight of 50/50.
+     *
+     * @param fromLpToken The LP token to migrate
+     * @param user The owner of the lp position
+     * @param name The name of the new pool
+     * @param symbol The symbol of the new pool
+     * @param tokens The underlying tokens of the pool.
+     * @param swapFeePercentage The swap fee percentage
+     * @param owner The owner of the pool
+     * @param minOut The min amount of bpt
+     */
     function migrateUniswapV2AndCreatePool(
         address fromLpToken, //Uniswap LP token
         address user,
@@ -58,10 +84,20 @@ contract AuraLiquidityMigrator {
         emit PoolCreated(pool);
     }
 
+    /**
+     * @dev Migrates a liquidity position, adds liquidity to the pool, and stake the BPT
+     *
+     * @param fromLpToken The LP token to migrate
+     * @param user The owner of the lp position
+     * @param tokens The underlying tokens of the pool.
+     * @param minOut The min amount of bpt
+     * @param pool The pool address to add liquidity
+     * @param rewardPoolAddress The aura reward pool address
+     */
     function migrateUniswapV2AndJoinPool(
-        address fromLpToken, //Uniswap LP token
-        IERC20[] memory tokens,
+        address fromLpToken,
         address user,
+        IERC20[] memory tokens,
         uint256 minOut,
         address pool,
         address rewardPoolAddress
