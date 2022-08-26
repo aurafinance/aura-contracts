@@ -12,6 +12,8 @@ import {
     SiphonToken,
     SiphonToken__factory,
     BaseRewardPool__factory,
+    RAura__factory,
+    RAura,
 } from "../types/generated";
 import { BigNumberish, ethers, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
@@ -34,7 +36,7 @@ describe("Full Deployment", () => {
     let pid: BigNumberish;
     let crvRewards: BaseRewardPool;
     let totalIncentiveAmount: BigNumberish;
-    let rCvx: MockERC20;
+    let rCvx: RAura;
 
     before(async () => {
         await network.provider.request({
@@ -58,13 +60,7 @@ describe("Full Deployment", () => {
 
         siphonToken = await new SiphonToken__factory(deployer).deploy(deployerAddress, simpleToExactAmount(1));
         siphonGauge = await new SiphonGauge__factory(deployer).deploy(siphonToken.address);
-        rCvx = await new MockERC20__factory(deployer).deploy(
-            "rAURA",
-            "rAURA",
-            18,
-            deployerAddress,
-            simpleToExactAmount(1000),
-        );
+        rCvx = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
 
         pid = await phase4.booster.poolLength();
     });
@@ -116,6 +112,11 @@ describe("Full Deployment", () => {
         // send it the siphon token
         await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
     });
+    it("transfer ownership of rCVX to siphonDepositor", async () => {
+        await rCvx.transferOwnership(siphonDepositor.address);
+        const newOwner = await rCvx.owner();
+        expect(newOwner).eq(siphonDepositor.address);
+    });
     it("deposit LP tokens into the pool", async () => {
         const bal = await siphonToken.balanceOf(siphonDepositor.address);
         await siphonDepositor.deposit();
@@ -151,6 +152,9 @@ describe("Full Deployment", () => {
 
         const rewardBalance = await crvToken.balanceOf(crvRewards.address);
         expect(rewardBalance).eq(siphonBalanceBefore.sub(totalIncentiveAmount));
+
+        const rCvxBalance = await rCvx.balanceOf(siphonDepositor.address);
+        expect(rCvxBalance).eq(siphonBalanceBefore);
     });
     it("claim CVX and CRV into siphonDepositor", async () => {
         await increaseTime(ONE_WEEK);
@@ -165,24 +169,37 @@ describe("Full Deployment", () => {
 
         const cvxBal = cvxBalAfter.sub(cvxBalBefore);
         const crvBal = crvBalAfter.sub(crvBalBefore);
+        const farmedTotal = await siphonDepositor.farmedTotal();
 
         console.log("CVX balance:", formatUnits(cvxBal));
+        console.log("farmedTotal:", formatUnits(farmedTotal));
+        expect(farmedTotal).eq(cvxBal);
+
         console.log("CRV balance:", formatUnits(crvBal));
         console.log("CRV debt:", formatUnits(totalIncentiveAmount));
     });
+    it('send rCVX to the "bridge"', async () => {
+        // TODO: total supply of rAURA should decrease
+        const amount = simpleToExactAmount(10);
+        const balBefore = await rCvx.balanceOf(deployerAddress);
+        await siphonDepositor.transferTokens(rCvx.address, deployerAddress, amount);
+        const balAfter = await rCvx.balanceOf(deployerAddress);
+        expect(balAfter.sub(balBefore)).eq(amount);
+    });
     it("convert rAURA to AURA", async () => {
-        const amountIn = simpleToExactAmount(100);
+        const amountIn = simpleToExactAmount(10);
         const amountOut = await siphonDepositor.getAmountOut(amountIn);
         console.log("rCVX Amount In:", formatUnits(amountIn));
         console.log("CVX Amount out:", formatUnits(amountOut));
 
+        const rCvxTotalBefore = await rCvx.totalSupply();
         await rCvx.approve(siphonDepositor.address, ethers.constants.MaxUint256);
         await siphonDepositor.convert(amountIn, false);
+        const rCvxTotalAfter = await rCvx.totalSupply();
 
-        const rCvxBal = await rCvx.balanceOf(siphonDepositor.address);
         const cvxBal = await phase2.cvx.balanceOf(deployerAddress);
 
-        expect(rCvxBal).eq(amountIn);
+        expect(rCvxTotalBefore.sub(rCvxTotalAfter)).eq(amountIn);
         expect(cvxBal).eq(amountOut);
     });
 });

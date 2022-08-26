@@ -2,6 +2,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { AuraMath } from "./AuraMath.sol";
 import { IAuraLocker } from "./Interfaces.sol";
 
@@ -34,7 +35,6 @@ interface IBaseRewardPool {
 
 // prettier-ignore
 interface ICvx is IERC20 {
-    function totalSupply() external view returns (uint256);
     function INIT_MINT_AMOUNT() external view returns (uint256);
     function minterMinted() external view returns (uint256);
     function reductionPerCliff() external view returns (uint256);
@@ -42,7 +42,13 @@ interface ICvx is IERC20 {
     function EMISSIONS_MAX_SUPPLY() external view returns (uint256);
 }
 
-contract SiphonDepositor {
+// prettier-ignore
+interface IrCvx is IERC20 {
+    function mint(address,uint256) external; 
+    function burn(address,uint256) external; 
+}
+
+contract SiphonDepositor is Ownable {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
     using SafeERC20 for ICvx;
@@ -51,17 +57,26 @@ contract SiphonDepositor {
     IERC20 public immutable crv;
     IBooster public immutable booster;
     ICvx public immutable cvx;
-    IERC20 public immutable rCvx;
+    IrCvx public immutable rCvx;
     IAuraLocker public immutable auraLocker;
     uint256 public immutable pid;
+
+    /**
+     * @dev Penalty basis points 250 == 25%
+     */
     uint256 public immutable penaltyBp;
+
+    /**
+     * @dev total amount of farmed CVX (AURA) tokens
+     */
+    uint256 public farmedTotal;
 
     constructor(
         IERC20 _lpToken,
         IERC20 _crv,
         IBooster _booster,
         ICvx _cvx,
-        IERC20 _rCvx,
+        IrCvx _rCvx,
         IAuraLocker _auraLocker,
         uint256 _pid,
         uint256 _penaltyBp
@@ -100,6 +115,8 @@ contract SiphonDepositor {
     function siphon() external {
         uint256 bal = crv.balanceOf(address(this));
         crv.transfer(address(booster), bal);
+        // Mint rCvx at a rate of 1:1 rAURA:BALRewards
+        rCvx.mint(address(this), bal);
         booster.earmarkRewards(pid);
     }
 
@@ -109,35 +126,33 @@ contract SiphonDepositor {
      *      Along with a pro rata amount of AURA tokens
      */
     function getReward() external {
+        uint256 balBefore = cvx.balanceOf(address(this));
         (, , , address crvRewards, , ) = booster.poolInfo(pid);
         IBaseRewardPool(crvRewards).getReward(address(this), false);
+        uint256 balAfter = cvx.balanceOf(address(this));
+        // Increment total farmed amount
+        farmedTotal += (balAfter - balBefore);
     }
 
     /**
      * @dev How much AURA you will get for rAURA
+     *      rAURA can be redeemed at a rate determined by the totalSupply
+     *      of rAURA and totalAmount of AURA the depositor has farmed.
      */
     function getAmountOut(uint256 _amount) public view returns (uint256) {
-        uint256 totalSupply = cvx.totalSupply();
-        uint256 INIT_MINT_AMOUNT = cvx.INIT_MINT_AMOUNT();
-        // TODO: this is internal on the Aura token...
-        uint256 minterMinted = 0;
-        uint256 reductionPerCliff = cvx.reductionPerCliff();
-        uint256 totalCliffs = cvx.totalCliffs();
-        uint256 EMISSIONS_MAX_SUPPLY = cvx.EMISSIONS_MAX_SUPPLY();
+        uint256 totalSupply = rCvx.totalSupply();
+        return (_amount * farmedTotal) / totalSupply;
+    }
 
-        uint256 emissionsMinted = totalSupply - INIT_MINT_AMOUNT - minterMinted;
-        uint256 cliff = emissionsMinted.div(reductionPerCliff);
-
-        uint256 amount;
-        if (cliff < totalCliffs) {
-            uint256 reduction = totalCliffs.sub(cliff).mul(5).div(2).add(700);
-            amount = _amount.mul(reduction).div(totalCliffs);
-            uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(emissionsMinted);
-            if (amount > amtTillMax) {
-                amount = amtTillMax;
-            }
-        }
-        return amount;
+    /**
+     * @dev Transfer ERC20 tokens to recipient
+     */
+    function transferTokens(
+        address token,
+        address recipient,
+        uint256 amount
+    ) external onlyOwner {
+        IERC20(token).transfer(recipient, amount);
     }
 
     /**
@@ -152,10 +167,11 @@ contract SiphonDepositor {
             auraLocker.lock(msg.sender, amountOut);
         } else {
             // If there is an address for auraLocker, and not locking, apply a penalty
-            uint256 penalty = amountOut * penaltyBp / 1000;
+            uint256 penalty = (amountOut * penaltyBp) / 1000;
             uint256 amountWithPenalty = amountOut - penalty;
-            rCvx.transferFrom(msg.sender, address(this), _amount);
             cvx.transfer(msg.sender, amountWithPenalty);
         }
+
+        rCvx.burn(msg.sender, _amount);
     }
 }
