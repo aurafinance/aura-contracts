@@ -112,6 +112,16 @@ interface IAsset {
     // solhint-disable-previous-line no-empty-blocks
 }
 
+interface IBalancerPool {
+    function getPoolId() external view returns (bytes32);
+
+    function totalSupply() external view returns (uint256);
+}
+
+interface RewardPool {
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+}
+
 interface IAuraLocker {
     function lock(address _account, uint256 _amount) external;
 
@@ -143,4 +153,17 @@ interface ICrvDepositorWrapper {
         bool,
         address _stakeAddress
     ) external;
+}
+
+// Uniswap/Sushi Interfaces
+interface IUniswapV2Pair {
+    function balanceOf(address owner) external view returns (uint256);
+
+    function burn(address to) external returns (uint256 amount0, uint256 amount1);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 }
