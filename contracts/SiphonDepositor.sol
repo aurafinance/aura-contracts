@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { AuraMath } from "./AuraMath.sol";
+import { IAuraLocker } from "./Interfaces.sol";
 
 // prettier-ignore
 interface IDeposit{
@@ -44,13 +45,16 @@ interface ICvx is IERC20 {
 contract SiphonDepositor {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
+    using SafeERC20 for ICvx;
 
     IERC20 public immutable lpToken;
     IERC20 public immutable crv;
     IBooster public immutable booster;
     ICvx public immutable cvx;
     IERC20 public immutable rCvx;
+    IAuraLocker public immutable auraLocker;
     uint256 public immutable pid;
+    uint256 public immutable penaltyBp;
 
     constructor(
         IERC20 _lpToken,
@@ -58,14 +62,18 @@ contract SiphonDepositor {
         IBooster _booster,
         ICvx _cvx,
         IERC20 _rCvx,
-        uint256 _pid
+        IAuraLocker _auraLocker,
+        uint256 _pid,
+        uint256 _penaltyBp
     ) {
         lpToken = _lpToken;
         crv = _crv;
         booster = _booster;
         cvx = _cvx;
         rCvx = _rCvx;
+        auraLocker = _auraLocker;
         pid = _pid;
+        penaltyBp = _penaltyBp;
     }
 
     /**
@@ -136,9 +144,18 @@ contract SiphonDepositor {
      * @dev Convert rAURA for AURA at the pro rata rate
      */
     function convert(uint256 _amount, bool _lock) external {
-        // TODO: implement lock functionality and penalty
         uint256 amountOut = getAmountOut(_amount);
-        rCvx.transferFrom(msg.sender, address(this), _amount);
-        cvx.transfer(msg.sender, amountOut);
+
+        if (_lock) {
+            cvx.safeApprove(address(auraLocker), 0);
+            cvx.safeApprove(address(auraLocker), amountOut);
+            auraLocker.lock(msg.sender, amountOut);
+        } else {
+            // If there is an address for auraLocker, and not locking, apply a penalty
+            uint256 penalty = amountOut * penaltyBp / 1000;
+            uint256 amountWithPenalty = amountOut - penalty;
+            rCvx.transferFrom(msg.sender, address(this), _amount);
+            cvx.transfer(msg.sender, amountWithPenalty);
+        }
     }
 }

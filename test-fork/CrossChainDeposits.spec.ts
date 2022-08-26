@@ -102,13 +102,16 @@ describe("Full Deployment", () => {
         expect(pool.lptoken).eq(siphonToken.address);
     });
     it("deploy the siphonDepositor", async () => {
+        const penalty = 0;
         siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
             siphonToken.address,
             crvToken.address,
             phase4.booster.address,
             phase2.cvx.address,
             rCvx.address,
+            phase4.cvxLocker.address,
             pid,
+            penalty,
         );
         // send it the siphon token
         await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
