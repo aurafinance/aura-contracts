@@ -130,7 +130,7 @@ contract AuraLiquidityMigrator {
         IUniswapV2Pair pair = IUniswapV2Pair(lpToken);
 
         uint256 liquidity = pair.balanceOf(user);
-        require(pair.transferFrom(msg.sender, address(pair), liquidity));
+        require(pair.transferFrom(msg.sender, address(pair), liquidity), "!liquidity");
 
         (amount0, amount1) = pair.burn(address(this));
     }
