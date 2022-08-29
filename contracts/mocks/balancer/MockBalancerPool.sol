@@ -11,4 +11,6 @@ interface IBalancerPool {
     function getSwapEnabled() external view returns (bool);
 
     function getOwner() external view returns (address);
+
+    function totalSupply() external view returns (uint256);
 }

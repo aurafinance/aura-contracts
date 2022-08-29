@@ -279,7 +279,6 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             balancerVault: balancerVault.address,
             balancerPoolFactories: {
                 weightedPool2Tokens: ZERO_ADDRESS,
-                weightedPoolFactory: ZERO_ADDRESS,
                 stablePool: ZERO_ADDRESS,
                 bootstrappingPool: ZERO_ADDRESS,
             },

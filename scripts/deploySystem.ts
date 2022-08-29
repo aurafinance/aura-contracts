@@ -111,7 +111,6 @@ interface DistroList {
 }
 interface BalancerPoolFactories {
     weightedPool2Tokens: string;
-    weightedPoolFactory?: string;
     stablePool: string;
     bootstrappingPool: string;
 }
