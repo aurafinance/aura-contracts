@@ -82,6 +82,10 @@ describe("CrvDepositorWrapperWithFee", () => {
         await system.cvxStakingProxy.setApprovals();
     });
 
+    it("updates overall fees", async () => {
+        await system.booster.connect(protocolDao).setFees(1500, 950, 50, 0);
+    });
+
     it("only lets protocolDAO update the feeRatio", async () => {
         await expect(crvDepositorWrapperWithFee.setFeeRatio(5000)).to.be.revertedWith(
             "Ownable: caller is not the owner",
