@@ -1,4 +1,4 @@
-import { simpleToExactAmount } from "./../test-utils/math";
+import { simpleToExactAmount } from "../test-utils/math";
 import hre, { network } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
@@ -107,6 +107,8 @@ describe("CrvDepositorWrapperWithFee", () => {
         const balAfter = await bal.balanceOf(stakingProxy.address);
         expect(balBefore).gt(0);
         expect(balAfter).eq(0);
+
+        expect(await bal.balanceOf(crvDepositorWrapperWithFee.address)).eq(0);
     });
 
     it("distributes 57.89% to fee contract", async () => {
@@ -114,10 +116,14 @@ describe("CrvDepositorWrapperWithFee", () => {
 
         await bal.transfer(stakingProxy.address, simpleToExactAmount(1000));
 
+        const auraBal = system.cvxCrv;
+        const auraBalBefore = await auraBal.balanceOf(system.cvxLocker.address);
         const balBefore = await bal.balanceOf(balReward.rewards);
         await stakingProxy.connect(keeper)["distribute()"]();
+        const auraBalAfter = await auraBal.balanceOf(system.cvxLocker.address);
         const balAfter = await bal.balanceOf(balReward.rewards);
 
+        expect(auraBalAfter).gt(auraBalBefore);
         expect(balAfter.sub(balBefore)).eq(simpleToExactAmount(578.9));
     });
 });
