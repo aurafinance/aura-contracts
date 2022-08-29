@@ -11,7 +11,7 @@ interface IBooster {
         bool active;
     }
 
-    function earmarkFees(address _feeDistro) external returns (bool);
+    function earmarkFees(address _feeToken) external returns (bool);
 
     function feeTokens(address _token) external returns (FeeDistro memory);
 }
