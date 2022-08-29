@@ -3,18 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IFeeDistributor } from "./mocks/balancer/MockFeeDistro.sol";
-
-interface IBooster {
-    struct FeeDistro {
-        address distro;
-        address rewards;
-        bool active;
-    }
-
-    function earmarkFees(address _feeToken) external returns (bool);
-
-    function feeTokens(address _token) external returns (FeeDistro memory);
-}
+import { IBooster } from "./Interfaces.sol";
 
 /**
  * @title   ClaimFeesHelper

@@ -3,22 +3,9 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { IVault, ICrvDepositorWrapper } from "./Interfaces.sol";
+import { IVault, ICrvDepositor, ICrvDepositorWrapper, IBooster } from "./Interfaces.sol";
 import { BalInvestor } from "./BalInvestor.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
-
-interface IBooster {
-    function earmarkFees(address _feeToken) external returns (bool);
-}
-
-interface ICrvDepositor {
-    function depositFor(
-        address to,
-        uint256 _amount,
-        bool _lock,
-        address _stakeAddress
-    ) external;
-}
 
 /**
  * @title   CrvDepositorWrapperWithFee
@@ -53,7 +40,7 @@ contract CrvDepositorWrapperWithFee is ICrvDepositorWrapper, BalInvestor, Ownabl
 
     function setApprovals() external {
         _setApprovals();
-        require(IERC20(BALANCER_POOL_TOKEN).approve(address(crvDepositor), type(uint256).max), "!approval");
+        IERC20(BALANCER_POOL_TOKEN).safeApprove(address(crvDepositor), type(uint256).max);
     }
 
     /**
@@ -95,7 +82,7 @@ contract CrvDepositorWrapperWithFee is ICrvDepositorWrapper, BalInvestor, Ownabl
     }
 
     function _applyFee(uint256 _input) internal view returns (uint256 newInput, uint256 feeAmount) {
-        uint256 fee = (_input * feeRatio) / 10000;
-        return (_input - fee, fee);
+        feeAmount = (_input * feeRatio) / 10000;
+        newInput = _input - feeAmount;
     }
 }
