@@ -134,6 +134,15 @@ interface IExtraRewardsDistributor {
     function addReward(address _token, uint256 _amount) external;
 }
 
+interface ICrvDepositor {
+    function depositFor(
+        address to,
+        uint256 _amount,
+        bool _lock,
+        address _stakeAddress
+    ) external;
+}
+
 interface ICrvDepositorWrapper {
     function getMinOut(uint256, uint256) external view returns (uint256);
 
@@ -154,10 +163,17 @@ interface IBooster {
         address stash;
         bool shutdown;
     }
-
+    struct FeeDistro {
+        address distro;
+        address rewards;
+        bool active;
+    }
     function earmarkRewards(uint256 _pid) external returns (bool);
 
     function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+
+    function feeTokens(address _token) external returns (FeeDistro memory);
+
 }
 
 interface IBaseRewardPool4626 {
