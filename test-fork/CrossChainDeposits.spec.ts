@@ -140,21 +140,22 @@ describe("Full Deployment", () => {
         const stakerIncentive = await phase4.booster.stakerIncentive();
         const lockIncentive = await phase4.booster.lockIncentive();
 
-        const siphonBalanceBefore = await crvToken.balanceOf(siphonDepositor.address);
-        const earmarkIncentiveAmount = siphonBalanceBefore.mul(earmarkIncentive).div(FEE_DENOMINATOR);
-        const stakerIncentiveAmount = siphonBalanceBefore.mul(stakerIncentive).div(FEE_DENOMINATOR);
-        const lockIncentiveAmount = siphonBalanceBefore.mul(lockIncentive).div(FEE_DENOMINATOR);
+        // Siphon amount is the amount of incentives paid on L2
+        const incentivesPaidOnL2 = simpleToExactAmount(10);
+        const siphonAmount = incentivesPaidOnL2.mul(10000).div(2500);
+
+        const earmarkIncentiveAmount = siphonAmount.mul(earmarkIncentive).div(FEE_DENOMINATOR);
+        const stakerIncentiveAmount = siphonAmount.mul(stakerIncentive).div(FEE_DENOMINATOR);
+        const lockIncentiveAmount = siphonAmount.mul(lockIncentive).div(FEE_DENOMINATOR);
         totalIncentiveAmount = earmarkIncentiveAmount.add(stakerIncentiveAmount).add(lockIncentiveAmount);
 
-        await siphonDepositor.siphon();
-        const siphonBalance = await crvToken.balanceOf(siphonDepositor.address);
-        expect(siphonBalance).eq(earmarkIncentiveAmount);
+        await siphonDepositor.siphon(incentivesPaidOnL2);
 
         const rewardBalance = await crvToken.balanceOf(crvRewards.address);
-        expect(rewardBalance).eq(siphonBalanceBefore.sub(totalIncentiveAmount));
+        expect(rewardBalance).eq(siphonAmount.sub(totalIncentiveAmount));
 
         const rCvxBalance = await rCvx.balanceOf(siphonDepositor.address);
-        expect(rCvxBalance).eq(siphonBalanceBefore);
+        expect(rCvxBalance).eq(siphonAmount);
     });
     it("claim CVX and CRV into siphonDepositor", async () => {
         await increaseTime(ONE_WEEK);
@@ -179,7 +180,6 @@ describe("Full Deployment", () => {
         console.log("CRV debt:", formatUnits(totalIncentiveAmount));
     });
     it('send rCVX to the "bridge"', async () => {
-        // TODO: total supply of rAURA should decrease
         const amount = simpleToExactAmount(10);
         const balBefore = await rCvx.balanceOf(deployerAddress);
         await siphonDepositor.transferTokens(rCvx.address, deployerAddress, amount);

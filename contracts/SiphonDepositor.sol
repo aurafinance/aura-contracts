@@ -111,12 +111,20 @@ contract SiphonDepositor is Ownable {
      * @dev Siphon AURA tokens by depositing BAL into the Booster
      *      and then calling earmark rewards which will send the BAL
      *      to the siphon pools BaseRewardPool
+     * @param _amount Amount of BAL that is being bridged from the L2 to cover the
+     *                Incentive amount that was paid out.
+     *                We assume the total incentives that have been paid out are equal
+     *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
-    function siphon() external {
+    function siphon(uint256 _amount) external {
+        uint256 amount = _amount * 10000 / 2500;
         uint256 bal = crv.balanceOf(address(this));
-        crv.transfer(address(booster), bal);
+        require(bal >= amount, "!balance");
+
+        crv.transfer(address(booster), amount);
         // Mint rCvx at a rate of 1:1 rAURA:BALRewards
-        rCvx.mint(address(this), bal);
+        rCvx.mint(address(this), amount);
+
         booster.earmarkRewards(pid);
     }
 
