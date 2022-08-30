@@ -2,17 +2,8 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import { IVault, ICrvDepositorWrapper } from "./Interfaces.sol";
+import { IVault, ICrvDepositor, ICrvDepositorWrapper } from "./Interfaces.sol";
 import { BalInvestor } from "./BalInvestor.sol";
-
-interface ICrvDepositor {
-    function depositFor(
-        address to,
-        uint256 _amount,
-        bool _lock,
-        address _stakeAddress
-    ) external;
-}
 
 /**
  * @title   CrvDepositorWrapper

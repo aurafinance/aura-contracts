@@ -134,6 +134,15 @@ interface IExtraRewardsDistributor {
     function addReward(address _token, uint256 _amount) external;
 }
 
+interface ICrvDepositor {
+    function depositFor(
+        address to,
+        uint256 _amount,
+        bool _lock,
+        address _stakeAddress
+    ) external;
+}
+
 interface ICrvDepositorWrapper {
     function getMinOut(uint256, uint256) external view returns (uint256);
 
@@ -143,4 +152,16 @@ interface ICrvDepositorWrapper {
         bool,
         address _stakeAddress
     ) external;
+}
+
+interface IBooster {
+    struct FeeDistro {
+        address distro;
+        address rewards;
+        bool active;
+    }
+
+    function feeTokens(address _token) external returns (FeeDistro memory);
+
+    function earmarkFees(address _feeToken) external returns (bool);
 }
