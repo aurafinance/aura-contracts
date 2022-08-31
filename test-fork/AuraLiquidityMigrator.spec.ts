@@ -2,11 +2,12 @@ import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { ERC20__factory, ERC20, AuraLiquidityMigrator, AuraLiquidityMigrator__factory } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { impersonateAccount, impersonate } from "../test-utils";
+import { impersonateAccount, impersonate, ZERO_ADDRESS } from "../test-utils";
 import { Signer } from "ethers";
 import { Account } from "types";
 import { config } from "../tasks/deploy/mainnet-config";
 import { CreatePoolRequestStruct, JoinPoolRequestStruct } from "types/generated/AuraLiquidityMigrator";
+import { AssetHelpers } from "@balancer-labs/balancer-js";
 
 const debug = false;
 
@@ -16,10 +17,19 @@ const balWbtcWethLPTokenAddress = "0xa6f548df93de924d73be7d25dc02554c6bd66db5";
 const sushiWbtcWethLPTokenAddress = "0xceff51756c56ceffca006cd410b03ffc46dd3a58";
 const uniV2WbtcWethLPTokenAddress = "0xbb2b8038a1640196fbe3e38816f3e67cba72d940";
 const auraWbtcWethRewardPoolAddress = "0xbdadc814dec8f76832f43a44073be8354398e9c6";
+const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+const wbtcAddress = "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599";
+const feiAddress = "0x956f47f50a910163d8bf957cf5846d573e7f87ca";
+const tribeAddress = "0xc7283b66eb1eb5fb86327f08e1b5816b0720212b";
+const ohmAddress = "0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5";
+const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
+
+const balHelper = new AssetHelpers(wethAddress);
 
 interface PoolData {
     name: string;
     symbol: string;
+    tokens: Array<string>;
     swapFeePercentage: number;
     oracleEnabled: boolean;
     owner: string;
@@ -61,7 +71,7 @@ describe("AuraLiquidityMigrator", () => {
         const { addresses } = config;
         const { weightedPool2Tokens } = addresses.balancerPoolFactories;
 
-        const constructorArguments = [weightedPool2Tokens, addresses.balancerVault];
+        const constructorArguments = [weightedPool2Tokens, addresses.balancerVault, addresses.balancerGaugeFactory];
         auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
             hre,
             new AuraLiquidityMigrator__factory(signer),
@@ -84,6 +94,7 @@ describe("AuraLiquidityMigrator", () => {
 
     const expectMigrateUniswapV2AndJoinPool = async (
         account: Account,
+        tokens: Array<string>,
         fromLPToken: ERC20,
         toLPToken: ERC20,
         rewardPool: ERC20,
@@ -93,12 +104,13 @@ describe("AuraLiquidityMigrator", () => {
         const rewardPoolBalanceBefore = await rewardPool.balanceOf(account.address);
 
         expect(fromLPPositionBefore, "from position").to.gt(0);
+        const [tokensSorted] = balHelper.sortTokens(tokens);
 
         await fromLPToken.connect(account.signer).approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
 
         await auraLiquidityMigrator
             .connect(account.signer)
-            .migrateUniswapV2AndJoinPool(fromLPToken.address, 0, toLPToken.address, rewardPool.address);
+            .migrateUniswapV2AndJoinPool(fromLPToken.address, 0, tokensSorted, toLPToken.address, rewardPool.address);
 
         // after joining to the pool the balance is staked on aura therefore the following expectations
         const fromLPPositionAfter = await fromLPToken.balanceOf(account.address);
@@ -111,6 +123,8 @@ describe("AuraLiquidityMigrator", () => {
     };
     const expectMigrateUniswapV2AndCreatePool = async (account: Account, fromLPToken: ERC20, poolData: PoolData) => {
         const fromLPPositionBefore = await fromLPToken.balanceOf(account.address);
+        const [tokensSorted] = balHelper.sortTokens(poolData.tokens);
+
         expect(fromLPPositionBefore, "from position").to.gt(0);
 
         await fromLPToken.connect(account.signer).approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
@@ -121,6 +135,7 @@ describe("AuraLiquidityMigrator", () => {
                 fromLPToken.address,
                 poolData.name,
                 poolData.symbol,
+                tokensSorted,
                 poolData.swapFeePercentage,
                 poolData.oracleEnabled,
                 poolData.owner,
@@ -131,6 +146,7 @@ describe("AuraLiquidityMigrator", () => {
         const event = receipt.events.find(e => e.event === "PoolCreated");
         expect(event.args.pool).to.not.be.undefined;
         const poolAddress = event.args.pool;
+        const gaugeAddress = event.args.gauge;
 
         const toLPToken = ERC20__factory.connect(poolAddress, account.signer);
         const fromLPPositionAfter = await fromLPToken.balanceOf(account.address);
@@ -138,6 +154,7 @@ describe("AuraLiquidityMigrator", () => {
 
         expect(fromLPPositionAfter, "from position").to.eq(0);
         expect(toLPPositionAfter, "balancer position").to.gt(0);
+        expect(gaugeAddress, "balancer gauge").to.not.eq(ZERO_ADDRESS);
         return poolAddress;
     };
     const expectMigrateUniswapV2MultiCall = async (
@@ -206,6 +223,7 @@ describe("AuraLiquidityMigrator", () => {
             await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, sushiOhmDaiLPToken, {
                 name: "50ohm-50dai",
                 symbol: "50ohm-50dai",
+                tokens: [ohmAddress, daiAddress],
                 swapFeePercentage: 3000000000000000, // 0.3%
                 oracleEnabled: true,
                 owner: config.addresses.balancerPoolOwner,
@@ -217,6 +235,7 @@ describe("AuraLiquidityMigrator", () => {
 
             await expectMigrateUniswapV2AndJoinPool(
                 sushiWbtcWethLPHolder,
+                [wethAddress, wbtcAddress],
                 sushiWbtcWethLPToken,
                 balWbtcWethLPToken,
                 auraRewardPool,
@@ -228,6 +247,7 @@ describe("AuraLiquidityMigrator", () => {
             await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, uniV2FeiTribeLPToken, {
                 name: "50fei-50tribe",
                 symbol: "50fei-50tribe",
+                tokens: [feiAddress, tribeAddress],
                 swapFeePercentage: 3000000000000000, // 0.3%
                 oracleEnabled: true,
                 owner: config.addresses.balancerPoolOwner,
@@ -239,6 +259,7 @@ describe("AuraLiquidityMigrator", () => {
 
             await expectMigrateUniswapV2AndJoinPool(
                 uniV2WbtcWethLPHolder,
+                [wethAddress, wbtcAddress],
                 uniV2WbtcWethLPToken,
                 balWbtcWethLPToken,
                 auraRewardPool,
@@ -284,6 +305,7 @@ describe("AuraLiquidityMigrator", () => {
                     fromLpToken: sushiOhmDaiLPToken.address,
                     name: "50ohm-50dai",
                     symbol: "50ohm-50dai",
+                    tokens: balHelper.sortTokens([daiAddress, ohmAddress])[0],
                     swapFeePercentage: 3000000000000000, // 0.3%
                     oracleEnabled: true,
                     owner: config.addresses.balancerPoolOwner,
@@ -293,6 +315,7 @@ describe("AuraLiquidityMigrator", () => {
                     fromLpToken: uniV2FeiTribeLPToken.address,
                     name: "50fei-50tribe",
                     symbol: "50fei-50tribe",
+                    tokens: balHelper.sortTokens([tribeAddress, feiAddress])[0],
                     swapFeePercentage: 3000000000000000, // 0.3%
                     oracleEnabled: true,
                     owner: config.addresses.balancerPoolOwner,
@@ -304,12 +327,14 @@ describe("AuraLiquidityMigrator", () => {
                 {
                     fromLpToken: sushiWbtcWethLPToken.address,
                     minOut: 0,
+                    tokens: balHelper.sortTokens([wbtcAddress, wethAddress])[0],
                     pool: balWbtcWethLPToken.address,
                     rewardPool: auraWbtcWethRewardPoolAddress,
                 },
                 {
                     fromLpToken: uniV2WbtcWethLPToken.address,
                     minOut: 0,
+                    tokens: balHelper.sortTokens([wethAddress, wbtcAddress])[0],
                     pool: balWbtcWethLPToken.address,
                     rewardPool: auraWbtcWethRewardPoolAddress,
                 },
@@ -318,11 +343,13 @@ describe("AuraLiquidityMigrator", () => {
             await expectMigrateUniswapV2MultiCall(sushiOhmDaiLPHolder, createPoolRequestStruct, joinPoolRequests);
         });
         it("multiple creations only", async () => {
+            // console.log(balHelper.sortTokens([ohmAddress, daiAddress]))
             const createPoolRequestStruct = [
                 {
-                    fromLpToken: sushiWbtcWethLPToken.address,
+                    fromLpToken: sushiOhmDaiLPToken.address,
                     name: "50ohm-50dai",
                     symbol: "50ohm-50dai",
+                    tokens: balHelper.sortTokens([ohmAddress, daiAddress])[0],
                     swapFeePercentage: 3000000000000000, // 0.3%
                     oracleEnabled: true,
                     owner: config.addresses.balancerPoolOwner,
@@ -332,6 +359,7 @@ describe("AuraLiquidityMigrator", () => {
                     fromLpToken: uniV2FeiTribeLPToken.address,
                     name: "50fei-50tribe",
                     symbol: "50fei-50tribe",
+                    tokens: balHelper.sortTokens([feiAddress, tribeAddress])[0],
                     swapFeePercentage: 3000000000000000, // 0.3%
                     oracleEnabled: true,
                     owner: config.addresses.balancerPoolOwner,
@@ -348,12 +376,14 @@ describe("AuraLiquidityMigrator", () => {
                 {
                     fromLpToken: sushiWbtcWethLPToken.address,
                     minOut: 0,
+                    tokens: balHelper.sortTokens([wbtcAddress.toLowerCase(), wethAddress])[0],
                     pool: balWbtcWethLPToken.address,
                     rewardPool: auraWbtcWethRewardPoolAddress,
                 },
                 {
                     fromLpToken: uniV2WbtcWethLPToken.address,
                     minOut: 0,
+                    tokens: balHelper.sortTokens([wethAddress.toLowerCase(), wbtcAddress])[0],
                     pool: balWbtcWethLPToken.address,
                     rewardPool: auraWbtcWethRewardPoolAddress,
                 },

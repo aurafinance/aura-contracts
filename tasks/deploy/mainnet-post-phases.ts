@@ -55,7 +55,11 @@ task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: Ta
 task("mainnet:deploy:auraLiquidityMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
-    const constructorArguments = [addresses.balancerPoolFactories.weightedPool2Tokens, addresses.balancerVault];
+    const constructorArguments = [
+        addresses.balancerPoolFactories.weightedPool2Tokens,
+        addresses.balancerVault,
+        addresses.balancerGaugeFactory,
+    ];
     const auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
         hre,
         new AuraLiquidityMigrator__factory(deployer),
