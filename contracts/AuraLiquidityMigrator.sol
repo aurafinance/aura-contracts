@@ -70,7 +70,7 @@ contract AuraLiquidityMigrator {
      * @param fromLpToken The LP token to migrate
      * @param name The name of the new pool
      * @param symbol The symbol of the new pool
-     * @param tokens The underlying tokens of the balancer pool, need to be sorted in the order expected by balancer vault.
+     * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
      * @param swapFeePercentage The swap fee percentage
      * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source.
      * @param owner The owner of the pool
@@ -111,7 +111,7 @@ contract AuraLiquidityMigrator {
      *
      * @param fromLpToken The LP token to migrate
      * @param minOut The min amount of bpt
-     * @param tokens The underlying tokens of the balancer pool, need to be sorted in the order expected by balancer vault.
+     * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
      * @param pool The pool address to add liquidity
      * @param rewardPool The aura reward pool address
      */
