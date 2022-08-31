@@ -19,9 +19,9 @@ import { IUniswapV2Pair } from "../contracts/mocks/uniswap/MockUniswapV2Pair.sol
 contract AuraLiquidityMigrator {
     using SafeERC20 for IERC20;
     /// @dev Balancer pool factory
-    IWeightedPool2TokensFactory public immutable bWeightedPool2PoolFactory; // ie 0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0
+    IWeightedPool2TokensFactory public immutable bWeightedPool2PoolFactory;
     /// @dev Balancer vault
-    IVault public immutable bVault; // ie 0xBA12222222228d8Ba445958a75a0704d566BF2C8
+    IVault public immutable bVault;
 
     struct JoinPoolRequest {
         address fromLpToken;
@@ -143,7 +143,7 @@ contract AuraLiquidityMigrator {
         createdPools = new address[](creationsLen);
         for (uint256 i = 0; i < creationsLen; i++) {
             CreatePoolRequest memory request = createPoolRequests[i];
-            createdPools[0] = migrateUniswapV2AndCreatePool(
+            createdPools[i] = migrateUniswapV2AndCreatePool(
                 request.fromLpToken,
                 request.name,
                 request.symbol,
@@ -154,7 +154,7 @@ contract AuraLiquidityMigrator {
             );
         }
         // Joins
-        for (uint256 i = 0; i < creationsLen; i++) {
+        for (uint256 i = 0; i < joinsLen; i++) {
             JoinPoolRequest memory request = joinPoolRequests[i];
             migrateUniswapV2AndJoinPool(request.fromLpToken, request.minOut, request.pool, request.rewardPool);
         }

@@ -6,6 +6,7 @@ import { impersonateAccount, impersonate } from "../test-utils";
 import { Signer } from "ethers";
 import { Account } from "types";
 import { config } from "../tasks/deploy/mainnet-config";
+import { CreatePoolRequestStruct, JoinPoolRequestStruct } from "types/generated/AuraLiquidityMigrator";
 
 const debug = false;
 
@@ -15,8 +16,6 @@ const balWbtcWethLPTokenAddress = "0xa6f548df93de924d73be7d25dc02554c6bd66db5";
 const sushiWbtcWethLPTokenAddress = "0xceff51756c56ceffca006cd410b03ffc46dd3a58";
 const uniV2WbtcWethLPTokenAddress = "0xbb2b8038a1640196fbe3e38816f3e67cba72d940";
 const auraWbtcWethRewardPoolAddress = "0xbdadc814dec8f76832f43a44073be8354398e9c6";
-// const wbtcAddress = "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599";
-// const wethAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 interface PoolData {
     name: string;
@@ -28,9 +27,15 @@ interface PoolData {
 }
 describe("AuraLiquidityMigrator", () => {
     let sushiWbtcWethLPHolder: Account;
+    let sushiOhmDaiLPHolder: Account;
+    let uniV2FeiTribeLPHolder: Account;
+    let uniV2WbtcWethLPHolder: Account;
     let signer: Signer;
     let sushiWbtcWethLPToken: ERC20;
     let balWbtcWethLPToken: ERC20;
+    let uniV2FeiTribeLPToken: ERC20;
+    let uniV2WbtcWethLPToken: ERC20;
+    let sushiOhmDaiLPToken: ERC20;
 
     let auraLiquidityMigrator: AuraLiquidityMigrator;
 
@@ -48,7 +53,11 @@ describe("AuraLiquidityMigrator", () => {
         });
 
         sushiWbtcWethLPHolder = await impersonateAccount(sushiLPWbtcWethHolderAddress);
+        sushiOhmDaiLPHolder = await impersonateAccount("0x9a315bdf513367c0377fb36545857d12e85813ef");
+        uniV2FeiTribeLPHolder = await impersonateAccount("0x2ef97e5ce736bf81703c4f5c7d5273238b8688eb");
+        uniV2WbtcWethLPHolder = await impersonateAccount("0xe8e5f5c4eb430c517c5f266ef9d18994321f1521");
         signer = await impersonate(keeperAddress);
+
         const { addresses } = config;
         const { weightedPool2Tokens } = addresses.balancerPoolFactories;
 
@@ -64,6 +73,9 @@ describe("AuraLiquidityMigrator", () => {
 
         sushiWbtcWethLPToken = ERC20__factory.connect(sushiWbtcWethLPTokenAddress, signer);
         balWbtcWethLPToken = ERC20__factory.connect(balWbtcWethLPTokenAddress, signer);
+        uniV2FeiTribeLPToken = ERC20__factory.connect("0x9928e4046d7c6513326ccea028cd3e7a91c7590a", signer);
+        uniV2WbtcWethLPToken = ERC20__factory.connect(uniV2WbtcWethLPTokenAddress, signer);
+        sushiOhmDaiLPToken = ERC20__factory.connect("0x055475920a8c93cffb64d039a8205f7acc7722d3", signer);
     }
 
     before(async () => {
@@ -128,13 +140,69 @@ describe("AuraLiquidityMigrator", () => {
         expect(toLPPositionAfter, "balancer position").to.gt(0);
         return poolAddress;
     };
+    const expectMigrateUniswapV2MultiCall = async (
+        account: Account,
+        createPoolRequests: Array<CreatePoolRequestStruct>,
+        joinPoolRequests: Array<JoinPoolRequestStruct>,
+    ) => {
+        // approve all tx before the migration
+        await Promise.all(
+            createPoolRequests.map(async request => {
+                const fromLPTkn = ERC20__factory.connect(request.fromLpToken, signer);
+                await fromLPTkn
+                    .connect(account.signer)
+                    .approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
+                return fromLPTkn;
+            }),
+        );
+
+        await Promise.all(
+            joinPoolRequests.map(async request => {
+                const fromLPTkn = ERC20__factory.connect(request.fromLpToken, signer);
+                await fromLPTkn
+                    .connect(account.signer)
+                    .approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
+                return fromLPTkn;
+            }),
+        );
+
+        const tx = await auraLiquidityMigrator
+            .connect(account.signer)
+            .migrateUniswapV2MultiCall(createPoolRequests, joinPoolRequests);
+
+        // Expectations for creations
+        const receipt = await (await tx).wait();
+        const events = receipt.events.filter(
+            e => e.event === "PoolCreated" && e.address.toLowerCase() == auraLiquidityMigrator.address.toLowerCase(),
+        );
+
+        expect(events.length, "PoolCreated events").to.be.eq(createPoolRequests.length);
+
+        for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+            const toLPToken = ERC20__factory.connect(event.args.pool, account.signer);
+            const toLPPositionAfter = await toLPToken.balanceOf(account.address);
+            expect(toLPPositionAfter, "balancer position").to.gt(0);
+            const fromLPToken = ERC20__factory.connect(createPoolRequests[i].fromLpToken, signer);
+
+            const fromLPPositionAfter = await fromLPToken.balanceOf(account.address);
+            expect(fromLPPositionAfter, "from position").to.eq(0);
+        }
+
+        // Expectations for joins
+        for (let i = 0; i < joinPoolRequests.length; i++) {
+            const request = joinPoolRequests[i];
+            const toLPToken = ERC20__factory.connect(request.rewardPool, account.signer);
+            const toLPPositionAfter = await toLPToken.balanceOf(account.address);
+            expect(toLPPositionAfter, "balancer position").to.gt(0);
+
+            const fromLPToken = ERC20__factory.connect(request.fromLpToken, signer);
+            const fromLPPositionAfter = await fromLPToken.balanceOf(account.address);
+            expect(fromLPPositionAfter, "from position").to.eq(0);
+        }
+    };
     describe("Migrate Sushi Position", () => {
         it("migrates and creates a new pool", async () => {
-            const sushiOhmDaiLPToken = ERC20__factory.connect("0x055475920a8c93cffb64d039a8205f7acc7722d3", signer);
-            // const ohmAddress = "0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5";
-            // const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
-            const sushiOhmDaiLPHolder: Account = await impersonateAccount("0x9a315bdf513367c0377fb36545857d12e85813ef");
-
             await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, sushiOhmDaiLPToken, {
                 name: "50ohm-50dai",
                 symbol: "50ohm-50dai",
@@ -157,16 +225,9 @@ describe("AuraLiquidityMigrator", () => {
     });
     describe("Migrate UniswapV2 Position", () => {
         it("migrates and creates a new pool", async () => {
-            const uniV2FeiTribeLPToken = ERC20__factory.connect("0x9928e4046d7c6513326ccea028cd3e7a91c7590a", signer);
-            // const feiAddress = "0x956f47f50a910163d8bf957cf5846d573e7f87ca";
-            // const tribeAddress = "0xc7283b66eb1eb5fb86327f08e1b5816b0720212b";
-            const uniV2FeiTribeLPHolder: Account = await impersonateAccount(
-                "0x2ef97e5ce736bf81703c4f5c7d5273238b8688eb",
-            );
-
             await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, uniV2FeiTribeLPToken, {
-                name: "50wise-50tribe",
-                symbol: "50wise-50tribe",
+                name: "50fei-50tribe",
+                symbol: "50fei-50tribe",
                 swapFeePercentage: 3000000000000000, // 0.3%
                 oracleEnabled: true,
                 owner: config.addresses.balancerPoolOwner,
@@ -174,10 +235,6 @@ describe("AuraLiquidityMigrator", () => {
             });
         });
         it("migrates join to an existing pool", async () => {
-            const uniV2WbtcWethLPToken = ERC20__factory.connect(uniV2WbtcWethLPTokenAddress, signer);
-            const uniV2WbtcWethLPHolder: Account = await impersonateAccount(
-                "0xe8e5f5c4eb430c517c5f266ef9d18994321f1521",
-            );
             const auraRewardPool = ERC20__factory.connect(auraWbtcWethRewardPoolAddress, signer);
 
             await expectMigrateUniswapV2AndJoinPool(
@@ -186,6 +243,123 @@ describe("AuraLiquidityMigrator", () => {
                 balWbtcWethLPToken,
                 auraRewardPool,
             );
+        });
+    });
+    describe("Migrates via multicall", () => {
+        beforeEach(async () => {
+            await setup();
+            // Send Lpt tokens to the same account
+            // Prepare Liquidity  for Create
+            await sushiWbtcWethLPToken
+                .connect(sushiWbtcWethLPHolder.signer)
+                .transfer(
+                    sushiOhmDaiLPHolder.address,
+                    await sushiWbtcWethLPToken.balanceOf(sushiWbtcWethLPHolder.address),
+                );
+            await uniV2FeiTribeLPToken
+                .connect(uniV2FeiTribeLPHolder.signer)
+                .transfer(
+                    sushiOhmDaiLPHolder.address,
+                    await uniV2FeiTribeLPToken.balanceOf(uniV2FeiTribeLPHolder.address),
+                );
+
+            // Prepare Liquidity  for Joins
+            await sushiWbtcWethLPToken
+                .connect(sushiWbtcWethLPHolder.signer)
+                .transfer(
+                    sushiOhmDaiLPHolder.address,
+                    await sushiWbtcWethLPToken.balanceOf(sushiWbtcWethLPHolder.address),
+                );
+            await uniV2WbtcWethLPToken
+                .connect(uniV2WbtcWethLPHolder.signer)
+                .transfer(
+                    sushiOhmDaiLPHolder.address,
+                    await uniV2WbtcWethLPToken.balanceOf(uniV2WbtcWethLPHolder.address),
+                );
+        });
+        it("multiple creations and joins", async () => {
+            // Given that sushiOhmDaiLPHolder has 4 LP Tokens
+            const createPoolRequestStruct = [
+                {
+                    fromLpToken: sushiOhmDaiLPToken.address,
+                    name: "50ohm-50dai",
+                    symbol: "50ohm-50dai",
+                    swapFeePercentage: 3000000000000000, // 0.3%
+                    oracleEnabled: true,
+                    owner: config.addresses.balancerPoolOwner,
+                    minOut: 0,
+                },
+                {
+                    fromLpToken: uniV2FeiTribeLPToken.address,
+                    name: "50fei-50tribe",
+                    symbol: "50fei-50tribe",
+                    swapFeePercentage: 3000000000000000, // 0.3%
+                    oracleEnabled: true,
+                    owner: config.addresses.balancerPoolOwner,
+                    minOut: 0,
+                },
+            ];
+
+            const joinPoolRequests = [
+                {
+                    fromLpToken: sushiWbtcWethLPToken.address,
+                    minOut: 0,
+                    pool: balWbtcWethLPToken.address,
+                    rewardPool: auraWbtcWethRewardPoolAddress,
+                },
+                {
+                    fromLpToken: uniV2WbtcWethLPToken.address,
+                    minOut: 0,
+                    pool: balWbtcWethLPToken.address,
+                    rewardPool: auraWbtcWethRewardPoolAddress,
+                },
+            ];
+            // When multicall is invoked
+            await expectMigrateUniswapV2MultiCall(sushiOhmDaiLPHolder, createPoolRequestStruct, joinPoolRequests);
+        });
+        it("multiple creations only", async () => {
+            const createPoolRequestStruct = [
+                {
+                    fromLpToken: sushiWbtcWethLPToken.address,
+                    name: "50ohm-50dai",
+                    symbol: "50ohm-50dai",
+                    swapFeePercentage: 3000000000000000, // 0.3%
+                    oracleEnabled: true,
+                    owner: config.addresses.balancerPoolOwner,
+                    minOut: 0,
+                },
+                {
+                    fromLpToken: uniV2FeiTribeLPToken.address,
+                    name: "50fei-50tribe",
+                    symbol: "50fei-50tribe",
+                    swapFeePercentage: 3000000000000000, // 0.3%
+                    oracleEnabled: true,
+                    owner: config.addresses.balancerPoolOwner,
+                    minOut: 0,
+                },
+            ];
+            const joinPoolRequests = [];
+            // When multicall is invoked
+            await expectMigrateUniswapV2MultiCall(sushiOhmDaiLPHolder, createPoolRequestStruct, joinPoolRequests);
+        });
+        it("multiple joins only", async () => {
+            const createPoolRequestStruct = [];
+            const joinPoolRequests = [
+                {
+                    fromLpToken: sushiWbtcWethLPToken.address,
+                    minOut: 0,
+                    pool: balWbtcWethLPToken.address,
+                    rewardPool: auraWbtcWethRewardPoolAddress,
+                },
+                {
+                    fromLpToken: uniV2WbtcWethLPToken.address,
+                    minOut: 0,
+                    pool: balWbtcWethLPToken.address,
+                    rewardPool: auraWbtcWethRewardPoolAddress,
+                },
+            ];
+            // When multicall is invoked
+            await expectMigrateUniswapV2MultiCall(sushiOhmDaiLPHolder, createPoolRequestStruct, joinPoolRequests);
         });
     });
 });
