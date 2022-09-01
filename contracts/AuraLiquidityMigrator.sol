@@ -24,7 +24,7 @@ contract AuraLiquidityMigrator {
     /// @dev Balancer vault
     IVault public immutable bVault;
     /// @dev Balancer liquidity gauge factory
-    ILiquidityGaugeFactory public immutable gaugeFactory;
+    ILiquidityGaugeFactory public immutable bGaugeFactory;
 
     struct JoinPoolRequest {
         address fromLpToken;
@@ -48,16 +48,16 @@ contract AuraLiquidityMigrator {
     /**
      * @param _bWeightedPool2PoolFactory The pool factory address
      * @param _bVault The balancer vault address
-     * @param _gaugeFactory The balancer liquidity gauge facotory address
+     * @param _bGaugeFactory The balancer liquidity gauge facotory address
      */
     constructor(
         address _bWeightedPool2PoolFactory,
         address _bVault,
-        address _gaugeFactory
+        address _bGaugeFactory
     ) {
         bWeightedPool2PoolFactory = IWeightedPool2TokensFactory(_bWeightedPool2PoolFactory);
         bVault = IVault(_bVault);
-        gaugeFactory = ILiquidityGaugeFactory(_gaugeFactory);
+        bGaugeFactory = ILiquidityGaugeFactory(_bGaugeFactory);
     }
 
     /// @dev Event emmited when a new balancer pool is created.
@@ -101,7 +101,7 @@ contract AuraLiquidityMigrator {
         // 3. Deposit to balancer pool
         _addLiquidityBalancer(pool, tokens, maxAmountsIn, msg.sender, minOut);
 
-        gauge = gaugeFactory.create(pool);
+        gauge = bGaugeFactory.create(pool);
 
         emit PoolCreated(pool, gauge);
     }
