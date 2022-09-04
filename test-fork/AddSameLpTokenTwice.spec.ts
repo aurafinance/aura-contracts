@@ -91,6 +91,7 @@ describe("Add same LP Token twice", () => {
         });
         it("depsit lp tokens", async () => {
             const amount = await lpToken.balanceOf(lpWhale.address);
+            expect(amount).gt(0);
             await lpToken.approve(phase2.booster.address, amount);
 
             await phase2.booster.connect(lpWhale.signer).deposit(pid, amount, true);
@@ -98,7 +99,12 @@ describe("Add same LP Token twice", () => {
             const depositTokenBalance = await crvRewards.balanceOf(lpWhale.address);
             expect(depositTokenBalance).eq(amount);
         });
-        xit("claim rewards", async () => {});
+        it("claim rewards", async () => {
+            // const balBefore = await phase2.cvx.balanceOf(lpWhale.address);
+            await crvRewards["getReward()"]();
+            // const balAfter = await phase2.cvx.balanceOf(lpWhale.address);
+            // expect(balAfter).gt(balBefore); // TODO - add rewards
+        });
         it("widthdraw lp tokens", async () => {
             const amount = await crvRewards.balanceOf(lpWhale.address);
             await crvRewards.withdraw(amount, true);
