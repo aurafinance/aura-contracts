@@ -3,20 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-
-interface IRewardPool4626 {
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256 shares);
-
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
-
-    function asset() external view returns (address);
-
-    function balanceOf(address account) external view returns (uint256);
-}
+import { IBaseRewardPool4626, IBooster } from "./Interfaces.sol";
 
 /**
  * @title   LPMigrator
@@ -25,13 +12,24 @@ interface IRewardPool4626 {
 contract LPMigrator {
     using SafeERC20 for IERC20;
 
-    function migrate(IRewardPool4626 _from, IRewardPool4626 _to) external {
-        uint256 balance = _from.balanceOf(msg.sender);
-        IERC20 asset = IERC20(_from.asset());
+    IBooster public immutable booster;
 
-        _from.withdraw(balance, address(this), msg.sender);
+    constructor(address _booster) {
+        booster = IBooster(_booster);
+    }
 
-        asset.safeApprove(address(_to), balance);
-        _to.deposit(balance, msg.sender);
+    function migrate(uint256 _fromPid, uint256 _toPid) external {
+        require(_fromPid != _toPid, "Invalid pids");
+
+        IBooster.PoolInfo memory fromPool = booster.poolInfo(_fromPid);
+
+        uint256 balance = IBaseRewardPool4626(fromPool.crvRewards).balanceOf(msg.sender);
+        IERC20 asset = IERC20(fromPool.lptoken);
+        IBaseRewardPool4626(fromPool.crvRewards).withdraw(balance, address(this), msg.sender);
+
+        IBooster.PoolInfo memory toPool = booster.poolInfo(_toPid);
+
+        asset.safeApprove(toPool.crvRewards, balance);
+        IBaseRewardPool4626(toPool.crvRewards).deposit(balance, msg.sender);
     }
 }

@@ -3,25 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-
-interface IBooster {
-    struct PoolInfo {
-        address lptoken;
-        address token;
-        address gauge;
-        address crvRewards;
-        address stash;
-        bool shutdown;
-    }
-
-    function earmarkRewards(uint256 _pid) external returns (bool);
-
-    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
-}
-
-interface IBaseRewardPool {
-    function processIdleRewards() external;
-}
+import { IBaseRewardPool4626, IBooster } from "./Interfaces.sol";
 
 /**
  * @title   BoosterHelper
@@ -67,7 +49,7 @@ contract BoosterHelper {
 
         for (uint256 i = 0; i < len; i++) {
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pids[i]);
-            IBaseRewardPool baseRewardPool = IBaseRewardPool(poolInfo.crvRewards);
+            IBaseRewardPool4626 baseRewardPool = IBaseRewardPool4626(poolInfo.crvRewards);
             baseRewardPool.processIdleRewards();
         }
     }

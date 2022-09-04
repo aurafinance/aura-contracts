@@ -144,3 +144,34 @@ interface ICrvDepositorWrapper {
         address _stakeAddress
     ) external;
 }
+
+interface IBooster {
+    struct PoolInfo {
+        address lptoken;
+        address token;
+        address gauge;
+        address crvRewards;
+        address stash;
+        bool shutdown;
+    }
+
+    function earmarkRewards(uint256 _pid) external returns (bool);
+
+    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+}
+
+interface IBaseRewardPool4626 {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external returns (uint256 shares);
+
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+
+    function asset() external view returns (address);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function processIdleRewards() external;
+}
