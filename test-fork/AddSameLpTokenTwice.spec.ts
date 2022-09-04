@@ -1,5 +1,5 @@
 import hre, { ethers, network } from "hardhat";
-import { Signer } from "ethers";
+import { BigNumberish, Signer } from "ethers";
 import { impersonateAccount } from "../test-utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
@@ -7,7 +7,12 @@ import {
     MockCurveGauge,
     MockCurveGauge__factory,
     MockGaugeController__factory,
+    IERC20__factory,
     PoolManagerV3__factory,
+    Account,
+    IERC20,
+    BaseRewardPool__factory,
+    BaseRewardPool,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { Phase2Deployed } from "../scripts/deploySystem";
@@ -16,10 +21,15 @@ const debug = false;
 
 describe("Add same LP Token twice", () => {
     let protocolDao: Signer;
-    let lpToken: string;
     let gauge: string;
     let phase2: Phase2Deployed;
     let mockGauge: MockCurveGauge;
+    let pid: BigNumberish;
+
+    let depositToken: IERC20;
+    let lpWhale: Account;
+    let lpToken: IERC20;
+    let crvRewards: BaseRewardPool;
 
     before(async () => {
         await network.provider.request({
@@ -37,12 +47,15 @@ describe("Add same LP Token twice", () => {
         await impersonateAccount(config.multisigs.daoMultisig);
         protocolDao = await ethers.getSigner(config.multisigs.daoMultisig);
         phase2 = await config.getPhase2(protocolDao);
+
+        const lpWhaleAddress = "0xf346592803eb47cb8d8fa9f90b0ef17a82f877e0";
+        lpWhale = await impersonateAccount(lpWhaleAddress);
     });
 
     describe("PoolManager", () => {
         it("get existing LP token", async () => {
             const resp = await phase2.booster.poolInfo(0);
-            lpToken = resp.lptoken;
+            lpToken = IERC20__factory.connect(resp.lptoken, lpWhale.signer);
             gauge = resp.gauge;
         });
         it("mock gauge controller", async () => {
@@ -57,7 +70,7 @@ describe("Add same LP Token twice", () => {
                 hre,
                 new MockCurveGauge__factory(protocolDao),
                 "MockCurveGauge",
-                ["MockCurveGauge", "MockCurveGauge", lpToken, []],
+                ["MockCurveGauge", "MockCurveGauge", lpToken.address, []],
                 {},
                 debug,
             );
@@ -66,10 +79,35 @@ describe("Add same LP Token twice", () => {
             const poolManager = PoolManagerV3__factory.connect(phase2.poolManager.address, protocolDao);
             await poolManager["addPool(address)"](mockGauge.address);
             const poolSize = await phase2.booster.poolLength();
-            const resp = await phase2.booster.poolInfo(poolSize.sub(1));
 
-            expect(resp.lptoken).eq(lpToken);
+            pid = poolSize.sub(1);
+            const resp = await phase2.booster.poolInfo(pid);
+
+            expect(resp.lptoken).eq(lpToken.address);
             expect(resp.gauge).not.eq(gauge);
+
+            depositToken = IERC20__factory.connect(resp.token, lpWhale.signer);
+            crvRewards = BaseRewardPool__factory.connect(resp.crvRewards, lpWhale.signer);
+        });
+        it("depsit lp tokens", async () => {
+            const amount = await lpToken.balanceOf(lpWhale.address);
+            await lpToken.approve(phase2.booster.address, amount);
+
+            await phase2.booster.connect(lpWhale.signer).deposit(pid, amount, true);
+
+            const depositTokenBalance = await crvRewards.balanceOf(lpWhale.address);
+            expect(depositTokenBalance).eq(amount);
+        });
+        xit("claim rewards", async () => {});
+        it("widthdraw lp tokens", async () => {
+            const amount = await crvRewards.balanceOf(lpWhale.address);
+            await crvRewards.withdraw(amount, true);
+            await depositToken.approve(phase2.booster.address, amount);
+
+            await phase2.booster.connect(lpWhale.signer).withdraw(pid, amount);
+
+            const lpTokenBalance = await lpToken.balanceOf(lpWhale.address);
+            expect(lpTokenBalance).eq(amount);
         });
     });
 });
