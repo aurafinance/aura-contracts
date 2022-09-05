@@ -1,6 +1,6 @@
 import hre, { ethers, network } from "hardhat";
 import { BigNumberish, Signer } from "ethers";
-import { impersonateAccount } from "../test-utils";
+import { impersonateAccount, simpleToExactAmount } from "../test-utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
 import {
@@ -13,6 +13,7 @@ import {
     IERC20,
     BaseRewardPool__factory,
     BaseRewardPool,
+    MockERC20__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { Phase2Deployed } from "../scripts/deploySystem";
@@ -100,10 +101,16 @@ describe("Add same LP Token twice", () => {
             expect(depositTokenBalance).eq(amount);
         });
         it("claim rewards", async () => {
-            // const balBefore = await phase2.cvx.balanceOf(lpWhale.address);
+            const balWhale = await impersonateAccount("0xff052381092420b7f24cc97fded9c0c17b2cbbb9");
+            const bal = await MockERC20__factory.connect(config.addresses.token, balWhale.signer);
+
+            await bal.transfer(phase2.booster.address, simpleToExactAmount(100));
+            await phase2.booster.earmarkRewards(pid);
+
+            const balBefore = await phase2.cvx.balanceOf(lpWhale.address);
             await crvRewards["getReward()"]();
-            // const balAfter = await phase2.cvx.balanceOf(lpWhale.address);
-            // expect(balAfter).gt(balBefore); // TODO - add rewards
+            const balAfter = await phase2.cvx.balanceOf(lpWhale.address);
+            expect(balAfter).gt(balBefore);
         });
         it("widthdraw lp tokens", async () => {
             const amount = await crvRewards.balanceOf(lpWhale.address);
