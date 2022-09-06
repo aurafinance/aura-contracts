@@ -24,7 +24,7 @@ import { formatUnits } from "ethers/lib/utils";
 
 const debug = true;
 
-describe("Full Deployment", () => {
+describe("Cross Chain Deposits", () => {
     let deployer: Signer;
     let deployerAddress: string;
     let phase2: Phase2Deployed;
