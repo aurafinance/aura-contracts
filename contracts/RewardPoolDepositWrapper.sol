@@ -51,7 +51,10 @@ contract RewardPoolDepositWrapper {
         require(minted > 0, "!mint");
 
         uint256 inputBalAfter = _inputToken.balanceOf(address(this));
-        require(inputBalAfter == 0, "!input");
+        if (inputBalAfter != 0) {
+            // Refund any amount left in the contract
+            _inputToken.transfer(msg.sender, inputBalAfter);
+        }
 
         // 3. Deposit to reward pool
         IERC20(pool).approve(_rewardPoolAddress, minted);
