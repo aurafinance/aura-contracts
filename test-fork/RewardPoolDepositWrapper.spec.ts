@@ -59,7 +59,7 @@ describe("RewardPoolDepositWrapper", () => {
 
         usdc = ERC20__factory.connect(usdcAddress, staker);
 
-        await getUSDC(stakerAddress, simpleToExactAmount(100, 6));
+        await getUSDC(stakerAddress, simpleToExactAmount(101, 6));
     });
 
     const getUSDC = async (recipient: string, amount = simpleToExactAmount(10)) => {
@@ -103,7 +103,7 @@ describe("RewardPoolDepositWrapper", () => {
     it("allow deposit into pool via Booster", async () => {
         const { rewardDepositWrapper } = phase4;
         const poolInfo = await phase4.booster.poolInfo(0);
-        const crvRewards = await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker);
+        const crvRewards = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker);
 
         const vault = IVault__factory.connect(config.addresses.balancerVault, staker);
         const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063";
@@ -120,6 +120,8 @@ describe("RewardPoolDepositWrapper", () => {
         };
 
         const balBefore = await crvRewards.balanceOf(stakerAddress);
+
+        await usdc.transfer(rewardDepositWrapper.address, simpleToExactAmount(1, 6));
 
         let tx = await usdc.approve(rewardDepositWrapper.address, simpleToExactAmount(100, 6));
         await waitForTx(tx, debug);
