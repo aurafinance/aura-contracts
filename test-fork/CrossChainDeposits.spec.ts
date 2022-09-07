@@ -15,8 +15,8 @@ import {
     RAura,
     VoterProxy,
     VoterProxy__factory,
-    Booster__factory,
-    Booster,
+    BoosterLite__factory,
+    BoosterLite,
     MockERC20__factory,
     RewardFactory__factory,
     RewardFactory,
@@ -28,17 +28,13 @@ import {
     ProxyFactory,
     ExtraRewardStashV3,
     StashFactoryV2,
-    PoolManagerProxy__factory,
-    PoolManagerSecondaryProxy__factory,
-    PoolManagerV3__factory,
-    PoolManagerSecondaryProxy,
-    PoolManagerV3,
-    PoolManagerProxy,
     MockCurveVoteEscrow__factory,
     MockCurveVoteEscrow,
     SmartWalletChecker__factory,
-    MockVoting,
-    MockVoting__factory,
+    IERC20__factory,
+    IERC20,
+    RAuraDepositor,
+    RAuraDepositor__factory,
 } from "../types/generated";
 import { BigNumberish, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
@@ -46,6 +42,7 @@ import { Phase2Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { impersonate, impersonateAccount, simpleToExactAmount, ONE_WEEK } from "../test-utils";
 import { formatUnits } from "ethers/lib/utils";
+import { Account } from "types";
 
 const debug = true;
 
@@ -230,23 +227,27 @@ describe("Cross Chain", () => {
         });
     });
 
-    describe("L2 Booster", () => {
+    describe("L2 Booster/VoterProxy", () => {
+        // TODO:
+        const treasury = "0x0000000000000000000000000000000000000001";
+
         let deployer: Signer;
         let deployerAddress: string;
+        let lpWhale: Account;
 
         let voterProxy: VoterProxy;
-        let rAura: MockERC20;
-        let booster: Booster;
+        let rAuraDepositor: RAuraDepositor;
+        let booster: BoosterLite;
         let rewardFactory: RewardFactory;
         let tokenFactory: TokenFactory;
         let proxyFactory: ProxyFactory;
         let stashFactory: StashFactoryV2;
         let stash: ExtraRewardStashV3;
-        let poolManagerProxy: PoolManagerProxy;
-        let poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
-        let poolManagerV3: PoolManagerV3;
         let veToken: MockCurveVoteEscrow;
-        let gaugeController: MockVoting;
+        let lpToken: IERC20;
+        let crvRewards: BaseRewardPool;
+        let depositToken: IERC20;
+        let rAura: MockERC20;
 
         before(async () => {
             await network.provider.request({
@@ -264,6 +265,9 @@ describe("Cross Chain", () => {
             const signers = await ethers.getSigners();
             deployer = signers[0];
             deployerAddress = await deployer.getAddress();
+
+            const lpWhaleAddress = "0xf346592803eb47cb8d8fa9f90b0ef17a82f877e0";
+            lpWhale = await impersonateAccount(lpWhaleAddress);
         });
 
         describe("deployment", () => {
@@ -274,8 +278,6 @@ describe("Cross Chain", () => {
                     smartWalletChecker.address,
                     config.addresses.tokenBpt,
                 );
-
-                gaugeController = await new MockVoting__factory(deployer).deploy();
             });
             it("deploy L2 rAURA", async () => {
                 rAura = await new MockERC20__factory(deployer).deploy(
@@ -285,20 +287,21 @@ describe("Cross Chain", () => {
                     deployerAddress,
                     simpleToExactAmount(1_000_000),
                 );
+                rAuraDepositor = await new RAuraDepositor__factory(deployer).deploy();
             });
             it("deploy voter proxy", async () => {
                 voterProxy = await new VoterProxy__factory(deployer).deploy(
-                    ethers.constants.AddressZero,
+                    config.addresses.minter,
                     rAura.address,
                     config.addresses.tokenBpt,
                     veToken.address,
-                    gaugeController.address,
+                    config.addresses.gaugeController,
                 );
             });
             it("deploy booster", async () => {
-                booster = await new Booster__factory(deployer).deploy(
+                booster = await new BoosterLite__factory(deployer).deploy(
                     voterProxy.address,
-                    rAura.address,
+                    rAuraDepositor.address,
                     config.addresses.token,
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
@@ -323,33 +326,61 @@ describe("Cross Chain", () => {
                 // StashV3
                 stash = await new ExtraRewardStashV3__factory(deployer).deploy(config.addresses.token);
             });
-            it("deploy pool managers", async () => {
-                // PoolManagerProxy
-                poolManagerProxy = await new PoolManagerProxy__factory(deployer).deploy(
-                    booster.address,
-                    deployerAddress,
-                );
-                // PoolManagerSecondaryProxy
-                poolManagerSecondaryProxy = await new PoolManagerSecondaryProxy__factory(deployer).deploy(
-                    gaugeController.address,
-                    poolManagerProxy.address,
-                    booster.address,
-                    deployerAddress,
-                );
-                // PoolManagerV3
-                poolManagerV3 = await new PoolManagerV3__factory(deployer).deploy(
-                    poolManagerSecondaryProxy.address,
-                    gaugeController.address,
-                    deployerAddress,
+            it("setup", async () => {
+                await voterProxy.setOperator(booster.address);
+                await booster.setPoolManager(deployerAddress);
+                await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+                await booster.setFees(550, 1100, 50, 0);
+                await booster.setOwner(deployerAddress);
+                await booster.setRewardContracts(treasury, treasury);
+                await stashFactory.setImplementation(
+                    ethers.constants.AddressZero,
+                    ethers.constants.AddressZero,
+                    stash.address,
                 );
             });
-        });
+            it("add a pool", async () => {
+                const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
+                const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
 
-        describe("add pool", () => {
-            it("add a pool");
-            it("deposit LP tokens");
-            it("claim rewards");
-            it("widthdraw LP tokens");
+                await booster.addPool(lpTokenAddress, gaugeAddress, 3);
+                const info = await booster.poolInfo(0);
+
+                lpToken = IERC20__factory.connect(info.lptoken, lpWhale.signer);
+                crvRewards = BaseRewardPool__factory.connect(info.crvRewards, lpWhale.signer);
+                depositToken = IERC20__factory.connect(info.token, lpWhale.signer);
+            });
+            it("depsit lp tokens", async () => {
+                const amount = await lpToken.balanceOf(lpWhale.address);
+                expect(amount).gt(0);
+                await lpToken.approve(booster.address, amount);
+
+                await booster.connect(lpWhale.signer).deposit(0, amount, true);
+
+                const depositTokenBalance = await crvRewards.balanceOf(lpWhale.address);
+                expect(depositTokenBalance).eq(amount);
+            });
+            it("claim rewards", async () => {
+                const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
+                const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
+
+                await bal.transfer(booster.address, simpleToExactAmount(100));
+                await booster.earmarkRewards(0);
+                // const balBefore = await phase2.cvx.balanceOf(lpWhale.address);
+                // await crvRewards["getReward()"]();
+                // const balAfter = await phase2.cvx.balanceOf(lpWhale.address);
+                // expect(balAfter).gt(balBefore);
+            });
+            it("widthdraw lp tokens", async () => {
+                const amount = await crvRewards.balanceOf(lpWhale.address);
+                await crvRewards.withdraw(amount, true);
+                await depositToken.approve(booster.address, amount);
+
+                await booster.connect(lpWhale.signer).withdraw(0, amount);
+
+                const lpTokenBalance = await lpToken.balanceOf(lpWhale.address);
+                expect(lpTokenBalance).eq(amount);
+            });
         });
     });
 });

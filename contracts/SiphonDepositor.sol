@@ -117,7 +117,7 @@ contract SiphonDepositor is Ownable {
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
     function siphon(uint256 _amount) external {
-        uint256 amount = _amount * 10000 / 2500;
+        uint256 amount = (_amount * 10000) / 2500;
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
 
