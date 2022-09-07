@@ -38,7 +38,7 @@ import {
 } from "../types/generated";
 import { BigNumberish, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
-import { Phase2Deployed, SystemDeployed } from "../scripts/deploySystem";
+import { SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { impersonate, impersonateAccount, simpleToExactAmount, ONE_WEEK } from "../test-utils";
 import { formatUnits } from "ethers/lib/utils";
@@ -50,8 +50,7 @@ describe("Cross Chain", () => {
     describe("Deposits", () => {
         let deployer: Signer;
         let deployerAddress: string;
-        let phase2: Phase2Deployed;
-        let phase4: SystemDeployed;
+        let contracts: SystemDeployed;
         let siphonGauge: SiphonGauge;
         let siphonToken: SiphonToken;
         let siphonDepositor: SiphonDepositor;
@@ -75,8 +74,7 @@ describe("Cross Chain", () => {
             });
             deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
             deployer = await impersonate(deployerAddress);
-            phase4 = await config.getPhase4(deployer);
-            phase2 = await config.getPhase2(deployer);
+            contracts = await config.getPhase4(deployer);
 
             await getCrv(deployerAddress, simpleToExactAmount(5000));
             crvToken = MockERC20__factory.connect(config.addresses.token, deployer);
@@ -85,7 +83,7 @@ describe("Cross Chain", () => {
             siphonGauge = await new SiphonGauge__factory(deployer).deploy(siphonToken.address);
             rCvx = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
 
-            pid = await phase4.booster.poolLength();
+            pid = await contracts.booster.poolLength();
         });
 
         const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
@@ -107,12 +105,12 @@ describe("Cross Chain", () => {
 
         it("adds the gauge", async () => {
             const admin = await impersonate(config.multisigs.daoMultisig);
-            const length = await phase4.booster.poolLength();
-            await phase4.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
+            const length = await contracts.booster.poolLength();
+            await contracts.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
 
             expect(length).eq(pid);
 
-            const pool = await phase4.booster.poolInfo(pid);
+            const pool = await contracts.booster.poolInfo(pid);
 
             // save pool rewards
             crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
@@ -125,10 +123,10 @@ describe("Cross Chain", () => {
             siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
                 siphonToken.address,
                 crvToken.address,
-                phase4.booster.address,
-                phase2.cvx.address,
+                contracts.booster.address,
+                contracts.cvx.address,
                 rCvx.address,
-                phase4.cvxLocker.address,
+                contracts.cvxLocker.address,
                 pid,
                 penalty,
             );
@@ -158,10 +156,10 @@ describe("Cross Chain", () => {
             expect(siphonBalance).eq(balance);
         });
         it("siphon CVX", async () => {
-            const FEE_DENOMINATOR = await phase4.booster.FEE_DENOMINATOR();
-            const earmarkIncentive = await phase4.booster.earmarkIncentive();
-            const stakerIncentive = await phase4.booster.stakerIncentive();
-            const lockIncentive = await phase4.booster.lockIncentive();
+            const FEE_DENOMINATOR = await contracts.booster.FEE_DENOMINATOR();
+            const earmarkIncentive = await contracts.booster.earmarkIncentive();
+            const stakerIncentive = await contracts.booster.stakerIncentive();
+            const lockIncentive = await contracts.booster.lockIncentive();
 
             // Siphon amount is the amount of incentives paid on L2
             const incentivesPaidOnL2 = simpleToExactAmount(10);
@@ -184,16 +182,16 @@ describe("Cross Chain", () => {
             await increaseTime(ONE_WEEK);
 
             const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
-            const cvxBalBefore = await phase2.cvx.balanceOf(siphonDepositor.address);
+            const cvxBalBefore = await contracts.cvx.balanceOf(siphonDepositor.address);
 
             await siphonDepositor.getReward();
 
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
-            const cvxBalAfter = await phase2.cvx.balanceOf(siphonDepositor.address);
+            const cvxBalAfter = await contracts.cvx.balanceOf(siphonDepositor.address);
 
             const cvxBal = cvxBalAfter.sub(cvxBalBefore);
             const crvBal = crvBalAfter.sub(crvBalBefore);
-            const farmedTotal = await siphonDepositor.farmedTotal();
+            const farmedTotal = await contracts.cvx.balanceOf(siphonDepositor.address);
 
             console.log("CVX balance:", formatUnits(cvxBal));
             console.log("farmedTotal:", formatUnits(farmedTotal));
@@ -220,7 +218,7 @@ describe("Cross Chain", () => {
             await siphonDepositor.convert(amountIn, false);
             const rCvxTotalAfter = await rCvx.totalSupply();
 
-            const cvxBal = await phase2.cvx.balanceOf(deployerAddress);
+            const cvxBal = await contracts.cvx.balanceOf(deployerAddress);
 
             expect(rCvxTotalBefore.sub(rCvxTotalAfter)).eq(amountIn);
             expect(cvxBal).eq(amountOut);
@@ -366,9 +364,9 @@ describe("Cross Chain", () => {
 
                 await bal.transfer(booster.address, simpleToExactAmount(100));
                 await booster.earmarkRewards(0);
-                // const balBefore = await phase2.cvx.balanceOf(lpWhale.address);
+                // const balBefore = await contracts.cvx.balanceOf(lpWhale.address);
                 // await crvRewards["getReward()"]();
-                // const balAfter = await phase2.cvx.balanceOf(lpWhale.address);
+                // const balAfter = await contracts.cvx.balanceOf(lpWhale.address);
                 // expect(balAfter).gt(balBefore);
             });
             it("widthdraw lp tokens", async () => {

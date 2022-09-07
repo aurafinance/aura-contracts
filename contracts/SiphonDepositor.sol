@@ -62,14 +62,9 @@ contract SiphonDepositor is Ownable {
     uint256 public immutable pid;
 
     /**
-     * @dev Penalty basis points 250 == 25%
+     * @dev Penalty basis points 2500 == 25%
      */
     uint256 public immutable penaltyBp;
-
-    /**
-     * @dev total amount of farmed CVX (AURA) tokens
-     */
-    uint256 public farmedTotal;
 
     constructor(
         IERC20 _lpToken,
@@ -138,8 +133,6 @@ contract SiphonDepositor is Ownable {
         (, , , address crvRewards, , ) = booster.poolInfo(pid);
         IBaseRewardPool(crvRewards).getReward(address(this), false);
         uint256 balAfter = cvx.balanceOf(address(this));
-        // Increment total farmed amount
-        farmedTotal += (balAfter - balBefore);
     }
 
     /**
@@ -149,6 +142,7 @@ contract SiphonDepositor is Ownable {
      */
     function getAmountOut(uint256 _amount) public view returns (uint256) {
         uint256 totalSupply = rCvx.totalSupply();
+        uint256 farmedTotal = cvx.balanceOf(address(this));
         return (_amount * farmedTotal) / totalSupply;
     }
 
@@ -160,6 +154,8 @@ contract SiphonDepositor is Ownable {
         address recipient,
         uint256 amount
     ) external onlyOwner {
+        // TODO: this needs to have more advanced logic to transfer rAURA tokens to
+        // the bridge contracts
         IERC20(token).transfer(recipient, amount);
     }
 
@@ -175,7 +171,7 @@ contract SiphonDepositor is Ownable {
             auraLocker.lock(msg.sender, amountOut);
         } else {
             // If there is an address for auraLocker, and not locking, apply a penalty
-            uint256 penalty = (amountOut * penaltyBp) / 1000;
+            uint256 penalty = (amountOut * penaltyBp) / 10000;
             uint256 amountWithPenalty = amountOut - penalty;
             cvx.transfer(msg.sender, amountWithPenalty);
         }
