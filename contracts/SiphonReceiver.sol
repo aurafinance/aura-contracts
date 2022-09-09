@@ -27,14 +27,14 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
     /// @dev rCVX contract
     IrCvx public rCvx;
 
+    /// @dev Siphon depositor on L1
+    address public l1SiphonDepositor;
+
     /// @dev Layer Zero endpoint
     ILayerZeroEndpoint public lzEndpoint;
 
     /// @dev Destination chain ID used by Layer Zero
     uint16 public immutable dstChainId;
-
-    /// @dev Siphon depositor on L1
-    address public l1SiphonDepositor;
 
     /* -------------------------------------------------------------------
       Events 
@@ -51,9 +51,9 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
     ------------------------------------------------------------------- */
 
     constructor(
-        ILayerZeroEndpoint _lzEndpoint,
-        address _l1SiphonDepositor,
         IrCvx _rCvx,
+        address _l1SiphonDepositor,
+        ILayerZeroEndpoint _lzEndpoint,
         uint16 _dstChainId
     ) {
         lzEndpoint = _lzEndpoint;

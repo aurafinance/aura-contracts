@@ -70,15 +70,15 @@ contract SiphonDepositor is Ownable {
 
     constructor(
         IERC20 _lpToken,
-        IERC20 _crv,
+        uint256 _pid,
         IBooster _booster,
+        IAuraLocker _auraLocker,
+        IERC20 _crv,
         ICvx _cvx,
         IrCvx _rCvx,
-        IAuraLocker _auraLocker,
         ILayerZeroEndpoint _lzEndpoint,
-        uint256 _pid,
-        uint256 _penaltyBp,
-        uint16 _dstChainId
+        uint16 _dstChainId,
+        uint256 _penaltyBp
     ) {
         lpToken = _lpToken;
         crv = _crv;

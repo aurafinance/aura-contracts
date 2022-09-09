@@ -61,7 +61,7 @@ describe("Cross Chain Deposits", () => {
     // L2 contracts
     let siphonReceiver: SiphonReceiver;
     let L2_booster: Booster;
-    let L2_rAura: RAura;
+    let L2_rCvx: RAura;
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
         await getEth(config.addresses.balancerVault);
@@ -141,15 +141,15 @@ describe("Cross Chain Deposits", () => {
             const penalty = 0;
             siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
                 siphonToken.address,
-                crvToken.address,
+                pid,
                 contracts.booster.address,
+                contracts.cvxLocker.address,
+                crvToken.address,
                 contracts.cvx.address,
                 L1_rCvx.address,
-                contracts.cvxLocker.address,
                 lzEndpoint.address,
-                pid,
-                penalty,
                 DST_CHAIN_ID,
+                penalty,
             );
             // send it the siphon token
             await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
@@ -193,15 +193,15 @@ describe("Cross Chain Deposits", () => {
             );
         });
         it("[L2] deploy rAURA", async () => {
-            L2_rAura = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
+            L2_rCvx = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
             siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(
-                lzEndpoint.address,
+                L2_rCvx.address,
                 siphonDepositor.address,
-                L2_rAura.address,
+                lzEndpoint.address,
                 DST_CHAIN_ID,
             );
             await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
-            await L2_rAura.transferOwnership(siphonReceiver.address);
+            await L2_rCvx.transferOwnership(siphonReceiver.address);
         });
         it("[L2] deploy booster and voter proxy", async () => {
             const voterProxy = await new VoterProxy__factory(deployer).deploy(
@@ -302,11 +302,11 @@ describe("Cross Chain Deposits", () => {
             // We will have to prefarm some amount of rAURA to kickstart
             // the reward pool for initial depositors. But finally siphon
             // will just be called from the L2 SiphonReceiver.
-            const rCvxBalBefore = await L2_rAura.balanceOf(siphonReceiver.address);
+            const rCvxBalBefore = await L2_rCvx.balanceOf(siphonReceiver.address);
             const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
             console.log("Incentives paid on L2:", formatUnits(incentivesPaidOnL2));
             await siphonDepositor.siphon(incentivesPaidOnL2);
-            const rCvxBalAfter = await L2_rAura.balanceOf(siphonReceiver.address);
+            const rCvxBalAfter = await L2_rCvx.balanceOf(siphonReceiver.address);
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
 
             const rCvxBal = rCvxBalAfter.sub(rCvxBalBefore);
@@ -363,9 +363,9 @@ describe("Cross Chain Deposits", () => {
             const pool = await L2_booster.poolInfo(0);
             const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
 
-            const balBefore = await L2_rAura.balanceOf(lpWhale.address);
+            const balBefore = await L2_rCvx.balanceOf(lpWhale.address);
             await crvRewards.connect(lpWhale.signer)["getReward()"]();
-            const balAfter = await L2_rAura.balanceOf(lpWhale.address);
+            const balAfter = await L2_rCvx.balanceOf(lpWhale.address);
             const rCvxBal = balAfter.sub(balBefore);
             expect(rCvxBal).gt(0);
 
@@ -377,14 +377,14 @@ describe("Cross Chain Deposits", () => {
             console.log("rCVX Amount In:", formatUnits(amountIn));
             console.log("CVX Amount out:", formatUnits(amountOut));
 
-            const L2rAuraTotalSupplyBefore = await L2_rAura.totalSupply();
+            const L2rAuraTotalSupplyBefore = await L2_rCvx.totalSupply();
             console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyBefore));
             const cvxBalBefore = await contracts.cvx.balanceOf(lpWhale.address);
 
-            await L2_rAura.approve(siphonDepositor.address, ethers.constants.MaxUint256);
+            await L2_rCvx.approve(siphonDepositor.address, ethers.constants.MaxUint256);
             await siphonReceiver.connect(lpWhale.signer).convert(amountIn, false);
 
-            const L2rAuraTotalSupplyAfter = await L2_rAura.totalSupply();
+            const L2rAuraTotalSupplyAfter = await L2_rCvx.totalSupply();
             console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyAfter));
             const cvxBalAfter = await contracts.cvx.balanceOf(lpWhale.address);
 
