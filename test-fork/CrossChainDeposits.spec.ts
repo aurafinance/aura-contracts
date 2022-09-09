@@ -30,6 +30,8 @@ import {
     SiphonReceiver__factory,
     Booster__factory,
     Booster,
+    LZEndpointMock,
+    LZEndpointMock__factory,
 } from "../types/generated";
 import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
@@ -43,6 +45,9 @@ describe("Cross Chain Deposits", () => {
     let lpWhale: Account;
 
     let totalIncentiveAmount: BigNumberish;
+
+    // Bridge contract
+    let lzEndpoint: LZEndpointMock;
 
     // L1 contracts
     let siphonGauge: SiphonGauge;
@@ -102,6 +107,13 @@ describe("Cross Chain Deposits", () => {
         lpWhale = await impersonateAccount(lpWhaleAddress);
     });
 
+    describe("deploy mock LZ endpoint", () => {
+        it("deploy", async () => {
+            const CHAIN_ID = 123;
+            lzEndpoint = await new LZEndpointMock__factory(deployer).deploy(CHAIN_ID);
+        });
+    });
+
     describe("Create siphon pool on L1", () => {
         let pid: BigNumberish;
         let crvRewards: BaseRewardPool;
@@ -134,6 +146,7 @@ describe("Cross Chain Deposits", () => {
                 contracts.cvx.address,
                 L1_rCvx.address,
                 contracts.cvxLocker.address,
+                lzEndpoint.address,
                 pid,
                 penalty,
             );
@@ -187,7 +200,7 @@ describe("Cross Chain Deposits", () => {
                     deployerAddress,
                     simpleToExactAmount(1_000_000),
                 );
-                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy();
+                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(lzEndpoint.address);
             });
             it("deploy booster and voter proxy", async () => {
                 const voterProxy = await new VoterProxy__factory(deployer).deploy(
@@ -274,10 +287,6 @@ describe("Cross Chain Deposits", () => {
                 expect(lpTokenBalance).eq(amount);
             });
         });
-    });
-
-    describe("deploy mock LZ endpoint", () => {
-        it("deploy", async () => {});
     });
 
     describe("Siphon rAURA to L2", () => {

@@ -5,6 +5,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { AuraMath } from "./AuraMath.sol";
 import { IAuraLocker } from "./Interfaces.sol";
+import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
 
 // prettier-ignore
 interface IDeposit{
@@ -59,6 +60,7 @@ contract SiphonDepositor is Ownable {
     ICvx public immutable cvx;
     IrCvx public immutable rCvx;
     IAuraLocker public immutable auraLocker;
+    ILayerZeroEndpoint public lzEndpoint;
     uint256 public immutable pid;
 
     /**
@@ -73,6 +75,7 @@ contract SiphonDepositor is Ownable {
         ICvx _cvx,
         IrCvx _rCvx,
         IAuraLocker _auraLocker,
+        ILayerZeroEndpoint _lzEndpoint,
         uint256 _pid,
         uint256 _penaltyBp
     ) {
@@ -82,6 +85,7 @@ contract SiphonDepositor is Ownable {
         cvx = _cvx;
         rCvx = _rCvx;
         auraLocker = _auraLocker;
+        lzEndpoint = _lzEndpoint;
         pid = _pid;
         penaltyBp = _penaltyBp;
     }

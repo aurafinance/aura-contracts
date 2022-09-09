@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
 
 /**
  * @title SiphonReciever
@@ -10,6 +11,12 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
  *      When rewardClaimed is called on the Booster
  */
 contract SiphonReceiver {
+    ILayerZeroEndpoint public lzEndpoint;
+
+    constructor(ILayerZeroEndpoint _lzEndpoint) {
+        lzEndpoint = _lzEndpoint;
+    }
+
     function queueRAura(uint256) external {
         // TODO:
         // Only callable from the L1 (via lzEndpoint)
