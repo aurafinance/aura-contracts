@@ -37,7 +37,7 @@ import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
-import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
+import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 
 describe("Cross Chain Deposits", () => {
     let deployer: Signer;
@@ -122,7 +122,7 @@ describe("Cross Chain Deposits", () => {
             pid = await contracts.booster.poolLength();
         });
 
-        it("adds the gauge", async () => {
+        it("[L1] adds the gauge", async () => {
             const admin = await impersonate(config.multisigs.daoMultisig);
             const length = await contracts.booster.poolLength();
             await contracts.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
@@ -137,7 +137,7 @@ describe("Cross Chain Deposits", () => {
             expect(pool.gauge).eq(siphonGauge.address);
             expect(pool.lptoken).eq(siphonToken.address);
         });
-        it("deploy the siphonDepositor", async () => {
+        it("[L1] deploy the siphonDepositor", async () => {
             const penalty = 0;
             siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
                 siphonToken.address,
@@ -153,18 +153,18 @@ describe("Cross Chain Deposits", () => {
             // send it the siphon token
             await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
         });
-        it("transfer ownership of rCVX to siphonDepositor", async () => {
+        it("[L1] transfer ownership of rCVX to siphonDepositor", async () => {
             await L1_rCvx.transferOwnership(siphonDepositor.address);
             const newOwner = await L1_rCvx.owner();
             expect(newOwner).eq(siphonDepositor.address);
         });
-        it("deposit LP tokens into the pool", async () => {
+        it("[L1] deposit LP tokens into the pool", async () => {
             const bal = await siphonToken.balanceOf(siphonDepositor.address);
             await siphonDepositor.deposit();
             const rewardBal = await crvRewards.balanceOf(siphonDepositor.address);
             expect(rewardBal).eq(bal);
         });
-        it("fund the siphonDepositor with BAL", async () => {
+        it("[L1] fund the siphonDepositor with BAL", async () => {
             const balance = await crvToken.balanceOf(config.multisigs.treasuryMultisig);
             console.log("Treasury CRV balance:", formatUnits(balance));
 
@@ -183,118 +183,117 @@ describe("Cross Chain Deposits", () => {
         let crvRewards: BaseRewardPool;
         let depositToken: IERC20;
 
-        describe("deployment", () => {
-            it("deploy mocks", async () => {
-                const smartWalletChecker = await new SmartWalletChecker__factory(deployer).deploy();
+        it("[L2] deploy mocks", async () => {
+            const smartWalletChecker = await new SmartWalletChecker__factory(deployer).deploy();
 
-                veToken = await new MockCurveVoteEscrow__factory(deployer).deploy(
-                    smartWalletChecker.address,
-                    config.addresses.tokenBpt,
-                );
-            });
-            it("deploy L2 rAURA", async () => {
-                L2_rAura = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
-                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(
-                    lzEndpoint.address,
-                    siphonDepositor.address,
-                    L2_rAura.address,
-                );
-                await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
-                await L2_rAura.transferOwnership(siphonReceiver.address);
-            });
-            it("deploy booster and voter proxy", async () => {
-                const voterProxy = await new VoterProxy__factory(deployer).deploy(
-                    config.addresses.minter,
-                    siphonReceiver.address,
-                    config.addresses.tokenBpt,
-                    veToken.address,
-                    config.addresses.gaugeController,
-                );
+            veToken = await new MockCurveVoteEscrow__factory(deployer).deploy(
+                smartWalletChecker.address,
+                config.addresses.tokenBpt,
+            );
+        });
+        it("[L2] deploy rAURA", async () => {
+            L2_rAura = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
+            siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(
+                lzEndpoint.address,
+                siphonDepositor.address,
+                L2_rAura.address,
+            );
+            await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
+            await L2_rAura.transferOwnership(siphonReceiver.address);
+        });
+        it("[L2] deploy booster and voter proxy", async () => {
+            const voterProxy = await new VoterProxy__factory(deployer).deploy(
+                config.addresses.minter,
+                config.addresses.token,
+                config.addresses.tokenBpt,
+                veToken.address,
+                config.addresses.gaugeController,
+            );
 
-                L2_booster = await new Booster__factory(deployer).deploy(
-                    voterProxy.address,
-                    siphonReceiver.address,
-                    config.addresses.token,
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                );
-                // Setup
-                await voterProxy.setOperator(L2_booster.address);
-                await L2_booster.setPoolManager(deployerAddress);
-                await L2_booster.setFees(550, 1100, 50, 0);
-                await L2_booster.setOwner(deployerAddress);
-                await L2_booster.setRewardContracts(siphonReceiver.address, siphonReceiver.address);
-            });
-            it("deploy factories", async () => {
-                // RewardFactory
-                const rewardFactory = await new RewardFactory__factory(deployer).deploy(
-                    L2_booster.address,
-                    config.addresses.token,
-                );
-                // TokenFactory
-                const tokenFactory = await new TokenFactory__factory(deployer).deploy(
-                    L2_booster.address,
-                    "postFix",
-                    "rAURA",
-                );
-                // ProxyFactory
-                const proxyFactory = await new ProxyFactory__factory(deployer).deploy();
-                // StashFactory
-                const stashFactory = await new StashFactoryV2__factory(deployer).deploy(
-                    L2_booster.address,
-                    rewardFactory.address,
-                    proxyFactory.address,
-                );
-                // StashV3
-                const stash = await new ExtraRewardStashV3__factory(deployer).deploy(config.addresses.token);
-                // Setup
-                await L2_booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
-                await stashFactory.setImplementation(
-                    ethers.constants.AddressZero,
-                    ethers.constants.AddressZero,
-                    stash.address,
-                );
-            });
-            it("add a pool", async () => {
-                const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
-                const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
+            L2_booster = await new Booster__factory(deployer).deploy(
+                voterProxy.address,
+                siphonReceiver.address,
+                config.addresses.token,
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
+            );
+            // Setup
+            await voterProxy.setOperator(L2_booster.address);
+            await L2_booster.setPoolManager(deployerAddress);
+            await L2_booster.setFees(550, 1100, 50, 0);
+            await L2_booster.setOwner(deployerAddress);
+            await L2_booster.setRewardContracts(siphonReceiver.address, siphonReceiver.address);
+            await siphonReceiver.setBooster(L2_booster.address);
+        });
+        it("[L2] deploy factories", async () => {
+            // RewardFactory
+            const rewardFactory = await new RewardFactory__factory(deployer).deploy(
+                L2_booster.address,
+                config.addresses.token,
+            );
+            // TokenFactory
+            const tokenFactory = await new TokenFactory__factory(deployer).deploy(
+                L2_booster.address,
+                "postFix",
+                "rAURA",
+            );
+            // ProxyFactory
+            const proxyFactory = await new ProxyFactory__factory(deployer).deploy();
+            // StashFactory
+            const stashFactory = await new StashFactoryV2__factory(deployer).deploy(
+                L2_booster.address,
+                rewardFactory.address,
+                proxyFactory.address,
+            );
+            // StashV3
+            const stash = await new ExtraRewardStashV3__factory(deployer).deploy(config.addresses.token);
+            // Setup
+            await L2_booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+            await stashFactory.setImplementation(
+                ethers.constants.AddressZero,
+                ethers.constants.AddressZero,
+                stash.address,
+            );
+        });
+        it("[L2] add a pool", async () => {
+            const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
+            const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
 
-                await L2_booster.addPool(lpTokenAddress, gaugeAddress, 3);
-                const info = await L2_booster.poolInfo(0);
+            await L2_booster.addPool(lpTokenAddress, gaugeAddress, 3);
+            const info = await L2_booster.poolInfo(0);
 
-                lpToken = IERC20__factory.connect(info.lptoken, lpWhale.signer);
-                crvRewards = BaseRewardPool__factory.connect(info.crvRewards, lpWhale.signer);
-                depositToken = IERC20__factory.connect(info.token, lpWhale.signer);
-            });
-            it("depsit lp tokens", async () => {
-                const amount = await lpToken.balanceOf(lpWhale.address);
-                expect(amount).gt(0);
-                await lpToken.approve(L2_booster.address, amount);
+            lpToken = IERC20__factory.connect(info.lptoken, lpWhale.signer);
+            crvRewards = BaseRewardPool__factory.connect(info.crvRewards, lpWhale.signer);
+            depositToken = IERC20__factory.connect(info.token, lpWhale.signer);
+        });
+        it("[L2] depsit lp tokens", async () => {
+            const amount = await lpToken.balanceOf(lpWhale.address);
+            expect(amount).gt(0);
+            await lpToken.approve(L2_booster.address, amount);
 
-                await L2_booster.connect(lpWhale.signer).deposit(0, amount, true);
+            await L2_booster.connect(lpWhale.signer).deposit(0, amount, true);
 
-                const depositTokenBalance = await crvRewards.balanceOf(lpWhale.address);
-                expect(depositTokenBalance).eq(amount);
-            });
-            it("widthdraw lp tokens", async () => {
-                const amount = simpleToExactAmount(1);
-                await crvRewards.withdraw(amount, true);
-                await depositToken.approve(L2_booster.address, amount);
+            const depositTokenBalance = await crvRewards.balanceOf(lpWhale.address);
+            expect(depositTokenBalance).eq(amount);
+        });
+        it("[L2] widthdraw lp tokens", async () => {
+            const amount = simpleToExactAmount(1);
+            await crvRewards.withdraw(amount, true);
+            await depositToken.approve(L2_booster.address, amount);
 
-                await L2_booster.connect(lpWhale.signer).withdraw(0, amount);
+            await L2_booster.connect(lpWhale.signer).withdraw(0, amount);
 
-                const lpTokenBalance = await lpToken.balanceOf(lpWhale.address);
-                expect(lpTokenBalance).eq(amount);
-            });
+            const lpTokenBalance = await lpToken.balanceOf(lpWhale.address);
+            expect(lpTokenBalance).eq(amount);
         });
     });
 
     describe("Siphon rAURA to L2", () => {
-        it("setup lzEndpoint mock", async () => {
+        it("[L1] setup lzEndpoint mock", async () => {
             await lzEndpoint.setDestLzEndpoint(siphonDepositor.address, lzEndpoint.address);
             await lzEndpoint.setDestLzEndpoint(siphonReceiver.address, lzEndpoint.address);
         });
-        it("siphon CVX", async () => {
+        it("[L1] siphon CVX", async () => {
             // Siphon amount is the amount of incentives paid on L2
             // We will have to prefarm some amount of rAURA to kickstart
             // the reward pool for initial depositors. But finally siphon
@@ -305,7 +304,7 @@ describe("Cross Chain Deposits", () => {
             const balAfter = await L2_rAura.balanceOf(siphonReceiver.address);
             expect(balAfter.sub(balBefore)).gt(0);
         });
-        // it("claim CVX and CRV into siphonDepositor", async () => {
+        // it("[L1] claim CVX and CRV rewards", async () => {
         //     await increaseTime(ONE_WEEK);
         //     const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
         //     const cvxBalBefore = await contracts.cvx.balanceOf(siphonDepositor.address);
@@ -321,7 +320,7 @@ describe("Cross Chain Deposits", () => {
         //     console.log("CRV balance:", formatUnits(crvBal));
         //     console.log("CRV debt:", formatUnits(totalIncentiveAmount));
         // });
-        // it('send rCVX to the "bridge"', async () => {
+        // it('[L2] send rCVX to the "bridge"', async () => {
         //     const amount = simpleToExactAmount(10);
         //     const balBefore = await L1_rCvx.balanceOf(deployerAddress);
         //     await siphonDepositor.transferTokens(L1_rCvx.address, deployerAddress, amount);
@@ -331,16 +330,24 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Claim rAura rewards and convert to L1 Aura", () => {
-        // it("claim rAURA rewards", async () => {
-        //     const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
-        //     const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
-        //     await bal.transfer(L2_booster.address, simpleToExactAmount(100));
-        //     await L2_booster.earmarkRewards(0);
-        //     // const balBefore = await contracts.cvx.balanceOf(lpWhale.address);
-        //     // await crvRewards["getReward()"]();
-        //     // const balAfter = await contracts.cvx.balanceOf(lpWhale.address);
-        //     // expect(balAfter).gt(balBefore);
-        // });
+        it("claim rAURA rewards", async () => {
+            // Transfer BAL rewards to the booster
+            const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
+            const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
+            await bal.transfer(L2_booster.address, simpleToExactAmount(1));
+
+            // Earmark booster rewards
+            await L2_booster.earmarkRewards(0);
+            await increaseTime(ONE_WEEK);
+
+            const pool = await L2_booster.poolInfo(0);
+            const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
+
+            const balBefore = await L2_rAura.balanceOf(lpWhale.address);
+            await crvRewards.connect(lpWhale.signer)["getReward()"]();
+            const balAfter = await L2_rAura.balanceOf(lpWhale.address);
+            expect(balAfter).gt(balBefore);
+        });
         // it("convert rAURA to AURA", async () => {
         //     const amountIn = simpleToExactAmount(10);
         //     const amountOut = await siphonDepositor.getAmountOut(amountIn);

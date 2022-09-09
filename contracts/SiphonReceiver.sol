@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import { IrCvx } from "./interfaces/IrCvx.sol";
 import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
@@ -13,10 +14,13 @@ import { ILayerZeroReceiver } from "./interfaces/ILayerZeroReceiver.sol";
  * @dev Takes rAURA deposits from rAURA on L1 and distributes them
  *      When rewardClaimed is called on the Booster
  */
-contract SiphonReceiver is ILayerZeroReceiver {
+contract SiphonReceiver is ILayerZeroReceiver, Ownable {
+    using SafeERC20 for IrCvx;
+
     ILayerZeroEndpoint public lzEndpoint;
     address public l1SiphonDepositor;
     IrCvx public rCvx;
+    address public booster;
 
     constructor(
         ILayerZeroEndpoint _lzEndpoint,
@@ -28,9 +32,19 @@ contract SiphonReceiver is ILayerZeroReceiver {
         rCvx = _rCvx;
     }
 
-    function mint(address, uint256) external {
-        // TODO: transfer rAura to caller
-        // Only callable by the Boosters rewardClaimed
+    function setBooster(address _booster) external onlyOwner {
+        booster = _booster;
+    }
+
+    /**
+     * @dev "Mint" function called by Booster.rewardClaimed. Sends rCvx
+     *      to the defined address
+     * @param _to     Address to send rCvx to
+     * @param _amount Amount of rCvx to send
+     */
+    function mint(address _to, uint256 _amount) external {
+        require(msg.sender == booster, "!booster");
+        rCvx.safeTransfer(_to, _amount);
     }
 
     function queueNewRewards(uint256) external {
