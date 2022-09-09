@@ -342,7 +342,7 @@ describe("Cross Chain Deposits", () => {
                         .add(await contracts.booster.platformFee()),
                 )
                 .sub(incentivesPaidOnL2);
-            console.log("Total incentives:", formatUnits(expectedCrvBalance));
+            console.log("Expected CRV from incentives:", formatUnits(expectedCrvBalance));
             expect(Math.round(Number(expectedCrvBalance.div(1e9).toString()))).eq(
                 Math.round(Number(crvBal.div(1e9).toString())),
             );
