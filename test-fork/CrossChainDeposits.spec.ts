@@ -61,7 +61,7 @@ describe("Cross Chain Deposits", () => {
     // L2 contracts
     let siphonReceiver: SiphonReceiver;
     let L2_booster: Booster;
-    let L2_rAura: MockERC20;
+    let L2_rAura: RAura;
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
         await getEth(config.addresses.balancerVault);
@@ -193,19 +193,19 @@ describe("Cross Chain Deposits", () => {
                 );
             });
             it("deploy L2 rAURA", async () => {
-                L2_rAura = await new MockERC20__factory(deployer).deploy(
-                    "name",
-                    "symbol",
-                    18,
-                    deployerAddress,
-                    simpleToExactAmount(1_000_000),
+                L2_rAura = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
+                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(
+                    lzEndpoint.address,
+                    siphonDepositor.address,
+                    L2_rAura.address,
                 );
-                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(lzEndpoint.address);
+                await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
+                await L2_rAura.transferOwnership(siphonReceiver.address);
             });
             it("deploy booster and voter proxy", async () => {
                 const voterProxy = await new VoterProxy__factory(deployer).deploy(
                     config.addresses.minter,
-                    L2_rAura.address,
+                    siphonReceiver.address,
                     config.addresses.tokenBpt,
                     veToken.address,
                     config.addresses.gaugeController,
@@ -290,24 +290,21 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Siphon rAURA to L2", () => {
-        // it("siphon CVX", async () => {
-        //     const FEE_DENOMINATOR = await contracts.booster.FEE_DENOMINATOR();
-        //     const earmarkIncentive = await contracts.booster.earmarkIncentive();
-        //     const stakerIncentive = await contracts.booster.stakerIncentive();
-        //     const lockIncentive = await contracts.booster.lockIncentive();
-        //     // Siphon amount is the amount of incentives paid on L2
-        //     const incentivesPaidOnL2 = simpleToExactAmount(10);
-        //     const siphonAmount = incentivesPaidOnL2.mul(10000).div(2500);
-        //     const earmarkIncentiveAmount = siphonAmount.mul(earmarkIncentive).div(FEE_DENOMINATOR);
-        //     const stakerIncentiveAmount = siphonAmount.mul(stakerIncentive).div(FEE_DENOMINATOR);
-        //     const lockIncentiveAmount = siphonAmount.mul(lockIncentive).div(FEE_DENOMINATOR);
-        //     totalIncentiveAmount = earmarkIncentiveAmount.add(stakerIncentiveAmount).add(lockIncentiveAmount);
-        //     await siphonDepositor.siphon(incentivesPaidOnL2);
-        //     const rewardBalance = await crvToken.balanceOf(crvRewards.address);
-        //     expect(rewardBalance).eq(siphonAmount.sub(totalIncentiveAmount));
-        //     const L1RCvxBalance = await L1_rCvx.balanceOf(siphonDepositor.address);
-        //     expect(L1RCvxBalance).eq(siphonAmount);
-        // });
+        it("setup lzEndpoint mock", async () => {
+            await lzEndpoint.setDestLzEndpoint(siphonDepositor.address, lzEndpoint.address);
+            await lzEndpoint.setDestLzEndpoint(siphonReceiver.address, lzEndpoint.address);
+        });
+        it("siphon CVX", async () => {
+            // Siphon amount is the amount of incentives paid on L2
+            // We will have to prefarm some amount of rAURA to kickstart
+            // the reward pool for initial depositors. But finally siphon
+            // will just be called from the L2 SiphonReceiver.
+            const balBefore = await L2_rAura.balanceOf(siphonReceiver.address);
+            const incentivesPaidOnL2 = simpleToExactAmount(10);
+            await siphonDepositor.siphon(incentivesPaidOnL2);
+            const balAfter = await L2_rAura.balanceOf(siphonReceiver.address);
+            expect(balAfter.sub(balBefore)).gt(0);
+        });
         // it("claim CVX and CRV into siphonDepositor", async () => {
         //     await increaseTime(ONE_WEEK);
         //     const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);

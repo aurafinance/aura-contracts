@@ -61,6 +61,7 @@ contract SiphonDepositor is Ownable {
     IrCvx public immutable rCvx;
     IAuraLocker public immutable auraLocker;
     ILayerZeroEndpoint public lzEndpoint;
+    address public l2SiphonReceiver;
     uint256 public immutable pid;
 
     /**
@@ -90,6 +91,10 @@ contract SiphonDepositor is Ownable {
         penaltyBp = _penaltyBp;
     }
 
+    function setL2SiphonReceiver(address _l2SiphonReceiver) external onlyOwner {
+        l2SiphonReceiver = _l2SiphonReceiver;
+    }
+
     /**
      * @dev deposit "lpTokens" into the booster
      */
@@ -106,6 +111,10 @@ contract SiphonDepositor is Ownable {
         booster.withdraw(pid, _amount);
     }
 
+    function siphon(uint256 _amount) external onlyOwner {
+        _siphon(_amount);
+    }
+
     /**
      * @dev Siphon AURA tokens by depositing BAL into the Booster
      *      and then calling earmark rewards which will send the BAL
@@ -115,9 +124,7 @@ contract SiphonDepositor is Ownable {
      *                We assume the total incentives that have been paid out are equal
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
-    function siphon(uint256 _amount) external {
-        // TODO: only callable by admin or lzEndpoint
-
+    function _siphon(uint256 _amount) internal {
         uint256 amount = (_amount * 10000) / 2500;
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
@@ -129,6 +136,15 @@ contract SiphonDepositor is Ownable {
         // Mint rCvx at a rate of 1:1 rAURA:BALRewards
         // TODO: send rAURA to the lzEndpoint (L2)
         rCvx.mint(address(this), amount);
+
+        lzEndpoint.send{ value: msg.value }(
+            123, // _dstChainId,
+            abi.encodePacked(l2SiphonReceiver, address(this)), // _lzRemoteLookup[_dstChainId],
+            bytes(abi.encode(amount)), // _payload,
+            payable(msg.sender), // _refundAddress,
+            address(0), // _zroPaymentAddress,
+            bytes("") // _adapterParams
+        );
     }
 
     /**
