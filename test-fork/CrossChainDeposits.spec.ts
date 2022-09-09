@@ -37,14 +37,14 @@ import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
-import { increaseTime, impersonate, impersonateAccount, simpleToExactAmount, ONE_WEEK } from "../test-utils";
+import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
 
 describe("Cross Chain Deposits", () => {
     let deployer: Signer;
     let deployerAddress: string;
     let lpWhale: Account;
 
-    let totalIncentiveAmount: BigNumberish;
+    // let totalIncentiveAmount: BigNumberish;
 
     // Bridge contract
     let lzEndpoint: LZEndpointMock;
