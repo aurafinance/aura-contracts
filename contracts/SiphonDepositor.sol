@@ -24,11 +24,17 @@ contract SiphonDepositor is Ownable {
     /// @dev siphon LP token
     IERC20 public immutable lpToken;
 
-    /// @dev CRV token contract
-    IERC20 public immutable crv;
+    /// @dev Pool ID
+    uint256 public immutable pid;
 
     /// @dev Booster contract
     IBooster public immutable booster;
+
+    /// @dev Aura Locker contract
+    IAuraLocker public immutable auraLocker;
+
+    /// @dev CRV token contract
+    IERC20 public immutable crv;
 
     /// @dev CVX token contract
     ICvx public immutable cvx;
@@ -36,20 +42,14 @@ contract SiphonDepositor is Ownable {
     /// @dev rCVX token contract
     IrCvx public immutable rCvx;
 
-    /// @dev Aura Locker contract
-    IAuraLocker public immutable auraLocker;
-
     /// @dev Layer Zero endpoint contract
     ILayerZeroEndpoint public lzEndpoint;
 
-    /// @dev Siphon Reciever on L2
-    address public l2SiphonReceiver;
-
-    /// @dev Pool ID
-    uint256 public immutable pid;
-
     /// @dev Destination chain ID
     uint16 public immutable dstChainId;
+
+    /// @dev Siphon Reciever on L2
+    address public l2SiphonReceiver;
 
     /// @dev Penalty basis points 2500 == 25%
     uint256 public immutable penaltyBp;
@@ -208,7 +208,7 @@ contract SiphonDepositor is Ownable {
     }
 
     /* -------------------------------------------------------------------
-      Layer Zero functions 
+      Layer Zero functions L1 -> L2 
     ------------------------------------------------------------------- */
 
     /**

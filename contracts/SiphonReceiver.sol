@@ -21,20 +21,20 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
       Storage 
     ------------------------------------------------------------------- */
 
-    /// @dev Layer Zero endpoint
-    ILayerZeroEndpoint public lzEndpoint;
-
-    /// @dev Siphon depositor on L1
-    address public l1SiphonDepositor;
+    /// @dev Booster contract
+    address public booster;
 
     /// @dev rCVX contract
     IrCvx public rCvx;
 
-    /// @dev Booster contract
-    address public booster;
+    /// @dev Layer Zero endpoint
+    ILayerZeroEndpoint public lzEndpoint;
 
     /// @dev Destination chain ID used by Layer Zero
     uint16 public immutable dstChainId;
+
+    /// @dev Siphon depositor on L1
+    address public l1SiphonDepositor;
 
     /* -------------------------------------------------------------------
       Events 
