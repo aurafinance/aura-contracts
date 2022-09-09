@@ -104,13 +104,6 @@ contract SiphonDepositor is Ownable {
         booster.deposit(pid, bal, true);
     }
 
-    /**
-     * @dev withdraw "lpTokens" from the booster
-     */
-    function withdraw(uint256 _amount) external {
-        booster.withdraw(pid, _amount);
-    }
-
     function siphon(uint256 _amount) external onlyOwner {
         _siphon(_amount);
     }
@@ -125,7 +118,7 @@ contract SiphonDepositor is Ownable {
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
     function _siphon(uint256 _amount) internal {
-        uint256 amount = (_amount * 10000) / 2500;
+        uint256 amount = _getIncentives(_amount);
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
 
@@ -145,6 +138,14 @@ contract SiphonDepositor is Ownable {
             address(0), // _zroPaymentAddress,
             bytes("") // _adapterParams
         );
+    }
+
+    function _getIncentives(uint256 _amount) internal returns (uint256) {
+        uint256 totalIncentives = booster.lockIncentive() +
+            booster.stakerIncentive() +
+            booster.earmarkIncentive() +
+            booster.platformFee();
+        return (_amount * booster.FEE_DENOMINATOR()) / totalIncentives;
     }
 
     /**
