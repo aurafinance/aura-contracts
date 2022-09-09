@@ -15,8 +15,6 @@ import {
     RAura,
     VoterProxy,
     VoterProxy__factory,
-    BoosterLite__factory,
-    BoosterLite,
     MockERC20__factory,
     RewardFactory__factory,
     RewardFactory,
@@ -33,8 +31,10 @@ import {
     SmartWalletChecker__factory,
     IERC20__factory,
     IERC20,
-    RAuraDepositor,
-    RAuraDepositor__factory,
+    SiphonReceiver,
+    SiphonReceiver__factory,
+    Booster__factory,
+    Booster,
 } from "../types/generated";
 import { BigNumberish, Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
@@ -226,16 +226,13 @@ describe("Cross Chain", () => {
     });
 
     describe("L2 Booster/VoterProxy", () => {
-        // TODO:
-        const treasury = "0x0000000000000000000000000000000000000001";
-
         let deployer: Signer;
         let deployerAddress: string;
         let lpWhale: Account;
 
         let voterProxy: VoterProxy;
-        let rAuraDepositor: RAuraDepositor;
-        let booster: BoosterLite;
+        let siphonReceiver: SiphonReceiver;
+        let booster: Booster;
         let rewardFactory: RewardFactory;
         let tokenFactory: TokenFactory;
         let proxyFactory: ProxyFactory;
@@ -285,7 +282,7 @@ describe("Cross Chain", () => {
                     deployerAddress,
                     simpleToExactAmount(1_000_000),
                 );
-                rAuraDepositor = await new RAuraDepositor__factory(deployer).deploy();
+                siphonReceiver = await new SiphonReceiver__factory(deployer).deploy();
             });
             it("deploy voter proxy", async () => {
                 voterProxy = await new VoterProxy__factory(deployer).deploy(
@@ -297,9 +294,9 @@ describe("Cross Chain", () => {
                 );
             });
             it("deploy booster", async () => {
-                booster = await new BoosterLite__factory(deployer).deploy(
+                booster = await new Booster__factory(deployer).deploy(
                     voterProxy.address,
-                    rAuraDepositor.address,
+                    siphonReceiver.address,
                     config.addresses.token,
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
@@ -330,7 +327,7 @@ describe("Cross Chain", () => {
                 await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
                 await booster.setFees(550, 1100, 50, 0);
                 await booster.setOwner(deployerAddress);
-                await booster.setRewardContracts(treasury, treasury);
+                await booster.setRewardContracts(siphonReceiver.address, siphonReceiver.address);
                 await stashFactory.setImplementation(
                     ethers.constants.AddressZero,
                     ethers.constants.AddressZero,
