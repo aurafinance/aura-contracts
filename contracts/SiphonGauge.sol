@@ -3,15 +3,6 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
-// prettier-ignore
-interface ICurveGauge {
-    function deposit(uint256) external;
-    function balanceOf(address) external view returns (uint256);
-    function withdraw(uint256) external;
-    function claim_rewards() external;
-    function lp_token() external view returns (address);
-}
-
 contract SiphonGauge {
     using SafeERC20 for IERC20;
 

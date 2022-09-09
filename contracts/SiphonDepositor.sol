@@ -3,51 +3,14 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+
 import { AuraMath } from "./AuraMath.sol";
+import { ICvx } from "./interfaces/ICvx.sol";
 import { IAuraLocker } from "./Interfaces.sol";
+import { IrCvx } from "./interfaces/IrCvx.sol";
+import { IBooster } from "./interfaces/IBooster.sol";
+import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
 import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
-
-// prettier-ignore
-interface IDeposit{
-    function isShutdown() external view returns(bool);
-    function balanceOf(address _account) external view returns(uint256);
-    function totalSupply() external view returns(uint256);
-    function rewardClaimed(uint256,address,uint256) external;
-    function withdrawTo(uint256,uint256,address) external;
-    function claimRewards(uint256,address) external returns(bool);
-    function rewardArbitrator() external returns(address);
-    function setGaugeRedirect(uint256 _pid) external returns(bool);
-    function owner() external returns(address);
-    function deposit(uint256 _pid, uint256 _amount, bool _stake) external returns(bool);
-}
-
-// prettier-ignore
-interface IBooster {
-    function earmarkRewards(uint256 _pid) external returns (bool);
-    function deposit(uint256 _pid, uint256 _amount, bool _stake) external returns(bool);
-    function withdraw(uint256 _pid, uint256 _amount) external returns(bool);
-    function poolInfo(uint256) external view returns(address,address,address,address,address, bool);
-}
-
-// prettier-ignore
-interface IBaseRewardPool {
-    function getReward(address _account, bool _claimExtras) external returns(bool);
-}
-
-// prettier-ignore
-interface ICvx is IERC20 {
-    function INIT_MINT_AMOUNT() external view returns (uint256);
-    function minterMinted() external view returns (uint256);
-    function reductionPerCliff() external view returns (uint256);
-    function totalCliffs() external view returns (uint256);
-    function EMISSIONS_MAX_SUPPLY() external view returns (uint256);
-}
-
-// prettier-ignore
-interface IrCvx is IERC20 {
-    function mint(address,uint256) external; 
-    function burn(address,uint256) external; 
-}
 
 contract SiphonDepositor is Ownable {
     using AuraMath for uint256;

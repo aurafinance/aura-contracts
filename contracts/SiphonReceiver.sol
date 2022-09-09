@@ -3,14 +3,10 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+
+import { IrCvx } from "./interfaces/IrCvx.sol";
 import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
 import { ILayerZeroReceiver } from "./interfaces/ILayerZeroReceiver.sol";
-
-// prettier-ignore
-interface IrCvx is IERC20 {
-    function mint(address,uint256) external; 
-    function burn(address,uint256) external; 
-}
 
 /**
  * @title SiphonReciever
