@@ -129,10 +129,8 @@ contract SiphonDepositor is Ownable {
      *      Along with a pro rata amount of AURA tokens
      */
     function getReward() external {
-        uint256 balBefore = cvx.balanceOf(address(this));
         (, , , address crvRewards, , ) = booster.poolInfo(pid);
         IBaseRewardPool(crvRewards).getReward(address(this), false);
-        uint256 balAfter = cvx.balanceOf(address(this));
     }
 
     /**
