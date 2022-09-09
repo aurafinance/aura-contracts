@@ -112,15 +112,19 @@ contract SiphonDepositor is Ownable {
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
     function siphon(uint256 _amount) external {
+        // TODO: only callable by admin or lzEndpoint
+
         uint256 amount = (_amount * 10000) / 2500;
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
 
+        // Transfer CRV to the booster and earmarkRewards
         crv.transfer(address(booster), amount);
-        // Mint rCvx at a rate of 1:1 rAURA:BALRewards
-        rCvx.mint(address(this), amount);
-
         booster.earmarkRewards(pid);
+
+        // Mint rCvx at a rate of 1:1 rAURA:BALRewards
+        // TODO: send rAURA to the lzEndpoint (L2)
+        rCvx.mint(address(this), amount);
     }
 
     /**
@@ -152,8 +156,7 @@ contract SiphonDepositor is Ownable {
         address recipient,
         uint256 amount
     ) external onlyOwner {
-        // TODO: this needs to have more advanced logic to transfer rAURA tokens to
-        // the bridge contracts
+        // TODO: remove this function
         IERC20(token).transfer(recipient, amount);
     }
 
@@ -161,6 +164,9 @@ contract SiphonDepositor is Ownable {
      * @dev Convert rAURA for AURA at the pro rata rate
      */
     function convert(uint256 _amount, bool _lock) external {
+        // TODO: only callable by the lzEndpoint
+        // called from the L2 via lzEndpoint
+
         uint256 amountOut = getAmountOut(_amount);
 
         if (_lock) {
