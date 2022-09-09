@@ -21,15 +21,18 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
     address public l1SiphonDepositor;
     IrCvx public rCvx;
     address public booster;
+    uint16 public immutable dstChainId;
 
     constructor(
         ILayerZeroEndpoint _lzEndpoint,
         address _l1SiphonDepositor,
-        IrCvx _rCvx
+        IrCvx _rCvx,
+        uint16 _dstChainId
     ) {
         lzEndpoint = _lzEndpoint;
         l1SiphonDepositor = _l1SiphonDepositor;
         rCvx = _rCvx;
+        dstChainId = _dstChainId;
     }
 
     function setBooster(address _booster) external onlyOwner {
@@ -55,9 +58,17 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
         // sent back to the L1 (via lzEndpoint)
     }
 
-    function convert(uint256 _amount, bool _lock) external {
-        // TODO:
-        // Calls L1 SiphonDepositor convert function (via lzEndpoint)
+    function convert(uint256 _amount, bool _lock) external payable {
+        rCvx.burn(msg.sender, _amount);
+
+        lzEndpoint.send{ value: msg.value }(
+            dstChainId, // _dstChainId,
+            abi.encodePacked(l1SiphonDepositor, address(this)), // _lzRemoteLookup[_dstChainId],
+            bytes(abi.encode(msg.sender, _amount, _lock)), // _payload,
+            payable(msg.sender), // _refundAddress,
+            address(0), // _zroPaymentAddress,
+            bytes("") // _adapterParams
+        );
     }
 
     function lzReceive(

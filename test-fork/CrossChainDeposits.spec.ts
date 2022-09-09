@@ -40,11 +40,11 @@ import { SystemDeployed } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 
 describe("Cross Chain Deposits", () => {
+    const DST_CHAIN_ID = 123;
+
     let deployer: Signer;
     let deployerAddress: string;
     let lpWhale: Account;
-
-    // let totalIncentiveAmount: BigNumberish;
 
     // Bridge contract
     let lzEndpoint: LZEndpointMock;
@@ -149,6 +149,7 @@ describe("Cross Chain Deposits", () => {
                 lzEndpoint.address,
                 pid,
                 penalty,
+                DST_CHAIN_ID,
             );
             // send it the siphon token
             await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
@@ -197,6 +198,7 @@ describe("Cross Chain Deposits", () => {
                 lzEndpoint.address,
                 siphonDepositor.address,
                 L2_rAura.address,
+                DST_CHAIN_ID,
             );
             await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
             await L2_rAura.transferOwnership(siphonReceiver.address);
@@ -289,48 +291,66 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Siphon rAURA to L2", () => {
+        const incentivesPaidOnL2 = simpleToExactAmount(10);
+
         it("[L1] setup lzEndpoint mock", async () => {
             await lzEndpoint.setDestLzEndpoint(siphonDepositor.address, lzEndpoint.address);
             await lzEndpoint.setDestLzEndpoint(siphonReceiver.address, lzEndpoint.address);
         });
-        it("[L1] siphon CVX", async () => {
+        it("[LZ] siphon CVX", async () => {
             // Siphon amount is the amount of incentives paid on L2
             // We will have to prefarm some amount of rAURA to kickstart
             // the reward pool for initial depositors. But finally siphon
             // will just be called from the L2 SiphonReceiver.
-            const balBefore = await L2_rAura.balanceOf(siphonReceiver.address);
-            const incentivesPaidOnL2 = simpleToExactAmount(10);
+            const rCvxBalBefore = await L2_rAura.balanceOf(siphonReceiver.address);
+            const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
+            console.log("Incentives paid on L2:", formatUnits(incentivesPaidOnL2));
             await siphonDepositor.siphon(incentivesPaidOnL2);
-            const balAfter = await L2_rAura.balanceOf(siphonReceiver.address);
-            expect(balAfter.sub(balBefore)).gt(0);
+            const rCvxBalAfter = await L2_rAura.balanceOf(siphonReceiver.address);
+            const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
+
+            const rCvxBal = rCvxBalAfter.sub(rCvxBalBefore);
+            console.log("rCVX balance of siphonReceiver:", formatUnits(rCvxBal));
+            expect(rCvxBal).gt(0);
+
+            const crvBal = crvBalAfter.sub(crvBalBefore);
+            console.log("CRV balance of siphonReceiver:", formatUnits(crvBal));
         });
-        // it("[L1] claim CVX and CRV rewards", async () => {
-        //     await increaseTime(ONE_WEEK);
-        //     const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
-        //     const cvxBalBefore = await contracts.cvx.balanceOf(siphonDepositor.address);
-        //     await siphonDepositor.getReward();
-        //     const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
-        //     const cvxBalAfter = await contracts.cvx.balanceOf(siphonDepositor.address);
-        //     const cvxBal = cvxBalAfter.sub(cvxBalBefore);
-        //     const crvBal = crvBalAfter.sub(crvBalBefore);
-        //     const farmedTotal = await contracts.cvx.balanceOf(siphonDepositor.address);
-        //     console.log("CVX balance:", formatUnits(cvxBal));
-        //     console.log("farmedTotal:", formatUnits(farmedTotal));
-        //     expect(farmedTotal).eq(cvxBal);
-        //     console.log("CRV balance:", formatUnits(crvBal));
-        //     console.log("CRV debt:", formatUnits(totalIncentiveAmount));
-        // });
-        // it('[L2] send rCVX to the "bridge"', async () => {
-        //     const amount = simpleToExactAmount(10);
-        //     const balBefore = await L1_rCvx.balanceOf(deployerAddress);
-        //     await siphonDepositor.transferTokens(L1_rCvx.address, deployerAddress, amount);
-        //     const balAfter = await L1_rCvx.balanceOf(deployerAddress);
-        //     expect(balAfter.sub(balBefore)).eq(amount);
-        // });
+        it("[L1] claim CVX and CRV rewards", async () => {
+            await increaseTime(ONE_WEEK);
+
+            const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
+            const cvxBalBefore = await contracts.cvx.balanceOf(siphonDepositor.address);
+            await siphonDepositor.getReward();
+            const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
+            const cvxBalAfter = await contracts.cvx.balanceOf(siphonDepositor.address);
+
+            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+            const crvBal = crvBalAfter.sub(crvBalBefore);
+
+            console.log("CVX balance:", formatUnits(cvxBal));
+            console.log("CRV balance:", formatUnits(crvBal));
+
+            // Calculate the expected amount of CRV we should receive
+            // as rewards based on the amount of incentives paid
+            const expectedCrvBalance = incentivesPaidOnL2
+                .mul(await contracts.booster.FEE_DENOMINATOR())
+                .div(
+                    (await contracts.booster.lockIncentive())
+                        .add(await contracts.booster.stakerIncentive())
+                        .add(await contracts.booster.earmarkIncentive())
+                        .add(await contracts.booster.platformFee()),
+                )
+                .sub(incentivesPaidOnL2);
+            console.log("Total incentives:", formatUnits(expectedCrvBalance));
+            expect(Math.round(Number(expectedCrvBalance.div(1e9).toString()))).eq(
+                Math.round(Number(crvBal.div(1e9).toString())),
+            );
+        });
     });
 
     describe("Claim rAura rewards and convert to L1 Aura", () => {
-        it("claim rAURA rewards", async () => {
+        it("[L2] claim rAURA rewards", async () => {
             // Transfer BAL rewards to the booster
             const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
             const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
@@ -346,20 +366,33 @@ describe("Cross Chain Deposits", () => {
             const balBefore = await L2_rAura.balanceOf(lpWhale.address);
             await crvRewards.connect(lpWhale.signer)["getReward()"]();
             const balAfter = await L2_rAura.balanceOf(lpWhale.address);
-            expect(balAfter).gt(balBefore);
+            const rCvxBal = balAfter.sub(balBefore);
+            expect(rCvxBal).gt(0);
+
+            console.log("rCVX balance:", formatUnits(rCvxBal));
         });
-        // it("convert rAURA to AURA", async () => {
-        //     const amountIn = simpleToExactAmount(10);
-        //     const amountOut = await siphonDepositor.getAmountOut(amountIn);
-        //     console.log("rCVX Amount In:", formatUnits(amountIn));
-        //     console.log("CVX Amount out:", formatUnits(amountOut));
-        //     const L1RCvxTotalBefore = await L1_rCvx.totalSupply();
-        //     await L1_rCvx.approve(siphonDepositor.address, ethers.constants.MaxUint256);
-        //     await siphonDepositor.convert(amountIn, false);
-        //     const L1RCvxTotalAfter = await L1_rCvx.totalSupply();
-        //     const cvxBal = await contracts.cvx.balanceOf(deployerAddress);
-        //     expect(L1RCvxTotalBefore.sub(L1RCvxTotalAfter)).eq(amountIn);
-        //     expect(cvxBal).eq(amountOut);
-        // });
+        it("[LZ] convert rAURA to AURA", async () => {
+            const amountIn = simpleToExactAmount(10);
+            const amountOut = await siphonDepositor.getAmountOut(amountIn);
+            console.log("rCVX Amount In:", formatUnits(amountIn));
+            console.log("CVX Amount out:", formatUnits(amountOut));
+
+            const L2rAuraTotalSupplyBefore = await L2_rAura.totalSupply();
+            console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyBefore));
+            const cvxBalBefore = await contracts.cvx.balanceOf(lpWhale.address);
+
+            await L2_rAura.approve(siphonDepositor.address, ethers.constants.MaxUint256);
+            await siphonReceiver.connect(lpWhale.signer).convert(amountIn, false);
+
+            const L2rAuraTotalSupplyAfter = await L2_rAura.totalSupply();
+            console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyAfter));
+            const cvxBalAfter = await contracts.cvx.balanceOf(lpWhale.address);
+
+            expect(L2rAuraTotalSupplyBefore.sub(L2rAuraTotalSupplyAfter)).eq(amountIn);
+
+            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+            expect(cvxBal).eq(amountOut);
+            console.log("CVX rewards:", formatUnits(cvxBal));
+        });
     });
 });

@@ -26,6 +26,7 @@ contract SiphonDepositor is Ownable {
     ILayerZeroEndpoint public lzEndpoint;
     address public l2SiphonReceiver;
     uint256 public immutable pid;
+    uint16 public immutable dstChainId;
 
     /**
      * @dev Penalty basis points 2500 == 25%
@@ -41,7 +42,8 @@ contract SiphonDepositor is Ownable {
         IAuraLocker _auraLocker,
         ILayerZeroEndpoint _lzEndpoint,
         uint256 _pid,
-        uint256 _penaltyBp
+        uint256 _penaltyBp,
+        uint16 _dstChainId
     ) {
         lpToken = _lpToken;
         crv = _crv;
@@ -52,6 +54,7 @@ contract SiphonDepositor is Ownable {
         lzEndpoint = _lzEndpoint;
         pid = _pid;
         penaltyBp = _penaltyBp;
+        dstChainId = _dstChainId;
     }
 
     function setL2SiphonReceiver(address _l2SiphonReceiver) external onlyOwner {
@@ -67,7 +70,7 @@ contract SiphonDepositor is Ownable {
         booster.deposit(pid, bal, true);
     }
 
-    function siphon(uint256 _amount) external onlyOwner {
+    function siphon(uint256 _amount) external payable onlyOwner {
         _siphon(_amount);
     }
 
@@ -91,10 +94,11 @@ contract SiphonDepositor is Ownable {
 
         // Mint rCvx at a rate of 1:1 rAURA:BALRewards
         // TODO: send rAURA to the lzEndpoint (L2)
+        // TODO: do we actually need a token on L1?
         rCvx.mint(address(this), amount);
 
         lzEndpoint.send{ value: msg.value }(
-            123, // _dstChainId,
+            dstChainId, // _dstChainId,
             abi.encodePacked(l2SiphonReceiver, address(this)), // _lzRemoteLookup[_dstChainId],
             bytes(abi.encode(amount)), // _payload,
             payable(msg.sender), // _refundAddress,
@@ -133,37 +137,39 @@ contract SiphonDepositor is Ownable {
     }
 
     /**
-     * @dev Transfer ERC20 tokens to recipient
-     */
-    function transferTokens(
-        address token,
-        address recipient,
-        uint256 amount
-    ) external onlyOwner {
-        // TODO: remove this function
-        IERC20(token).transfer(recipient, amount);
-    }
-
-    /**
      * @dev Convert rAURA for AURA at the pro rata rate
      */
-    function convert(uint256 _amount, bool _lock) external {
-        // TODO: only callable by the lzEndpoint
-        // called from the L2 via lzEndpoint
-
+    function _convert(
+        address _to,
+        uint256 _amount,
+        bool _lock
+    ) internal {
         uint256 amountOut = getAmountOut(_amount);
 
         if (_lock) {
             cvx.safeApprove(address(auraLocker), 0);
             cvx.safeApprove(address(auraLocker), amountOut);
-            auraLocker.lock(msg.sender, amountOut);
+            auraLocker.lock(_to, amountOut);
         } else {
             // If there is an address for auraLocker, and not locking, apply a penalty
             uint256 penalty = (amountOut * penaltyBp) / 10000;
             uint256 amountWithPenalty = amountOut - penalty;
-            cvx.transfer(msg.sender, amountWithPenalty);
+            cvx.transfer(_to, amountWithPenalty);
         }
 
-        rCvx.burn(msg.sender, _amount);
+        rCvx.burn(address(this), _amount);
+    }
+
+    function lzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes calldata _payload
+    ) external {
+        require(msg.sender == address(lzEndpoint), "!lzEndpoint");
+        require(keccak256(_srcAddress) == keccak256(abi.encodePacked(l2SiphonReceiver)), "!srcAddress");
+
+        (address to, uint256 amount, bool lock) = abi.decode(_payload, (address, uint256, bool));
+        _convert(to, amount, lock);
     }
 }
