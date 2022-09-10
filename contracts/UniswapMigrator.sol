@@ -112,8 +112,8 @@ contract UniswapMigrator {
      * @param request.symbol The symbol of the new pool
      * @param request.fromLpToken The lp Token address
      * @param request.liquidity The amount of liquidity to remove (lpToken amount)
-     * @param request.tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
-     * @param request.amountsMin The minimum amount of tokens that must be received for the transaction not to revert.
+     * @param request.tokens The underlying tokens, tokens have to be sorted as expected by balancer vault.
+     * @param request.amountsMin The minimum amount of tokens that must be received.
      * @param request.deadline Unix timestamp after which the transaction will revert.
      * @param request.swapFeePercentage The swap fee percentage
      * @param request.oracleEnabled Indcates if the pool should be enabled to be an oracle source.
@@ -165,8 +165,8 @@ contract UniswapMigrator {
      *
      * @param request.fromLpToken The lp Token address
      * @param request.liquidity The amount of liquidity to remove (lpToken amount)
-     * @param request.tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
-     * @param request.amountsMin The minimum amount of tokens that must be received from uniswap for the transaction not to revert.
+     * @param request.tokens The underlying tokens, tokens have to be sorted as expected by balancer vault.
+     * @param request.amountsMin The minimum amount of tokens that must be received from uniswap.
      * @param request.deadline Unix timestamp after which the transaction will revert.
      * @param request.pool The pool address to add liquidity
      * @param request.rewardPool The aura reward pool address
@@ -257,8 +257,10 @@ contract UniswapMigrator {
      * @param symbol The symbol of the new pool
      * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
      * @param swapFeePercentage The swap fee percentage
-     * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source, only use when balancerFactory = WEIGHTED_POOL
-     * @param amplificationParameter The amplification parameter to use, only use when balancerFactory = STABLE_POOL
+     * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source,
+     * it is only use when balancerFactory = WEIGHTED_POOL
+     * @param amplificationParameter The amplification parameter to use,
+     * it is only use when balancerFactory = STABLE_POOL
      */
     function _createBalancerPool(
         BalancerFactory balancerFactory,
