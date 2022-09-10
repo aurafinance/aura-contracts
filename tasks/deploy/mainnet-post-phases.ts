@@ -5,8 +5,8 @@ import { getSigner } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import {
-    AuraLiquidityMigrator,
-    AuraLiquidityMigrator__factory,
+    UniswapMigrator,
+    UniswapMigrator__factory,
     BoosterHelper,
     BoosterHelper__factory,
     ClaimFeesHelper,
@@ -52,7 +52,7 @@ task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: Ta
     console.log("update boosterHelper address to:", boosterHelper.address);
 });
 
-task("mainnet:deploy:auraLiquidityMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+task("mainnet:deploy:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
     const constructorArguments = [
@@ -64,15 +64,15 @@ task("mainnet:deploy:auraLiquidityMigrator").setAction(async function (taskArgum
         addresses.sushiswapRouter,
         addresses.balancerPoolOwner,
     ];
-    const auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
+    const uniswapMigrator = await deployContract<UniswapMigrator>(
         hre,
-        new AuraLiquidityMigrator__factory(deployer),
-        "AuraLiquidityMigrator",
+        new UniswapMigrator__factory(deployer),
+        "UniswapMigrator",
         constructorArguments,
         {},
         debug,
         waitForBlocks,
     );
 
-    console.log("update auraLiquidityMigrator address to:", auraLiquidityMigrator.address);
+    console.log("update uniswapMigrator address to:", uniswapMigrator.address);
 });

@@ -1,6 +1,6 @@
 import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { ERC20__factory, ERC20, AuraLiquidityMigrator, AuraLiquidityMigrator__factory } from "../types/generated";
+import { ERC20__factory, ERC20, UniswapMigrator, UniswapMigrator__factory } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { impersonateAccount, impersonate, ZERO_ADDRESS, getTimestamp, ONE_HOUR, BN } from "../test-utils";
 import { Signer } from "ethers";
@@ -35,7 +35,7 @@ interface PoolData {
     amplificationParameter?: number;
     minOut: number;
 }
-describe("AuraLiquidityMigrator", () => {
+describe("UniswapMigrator", () => {
     let sushiWbtcWethLPHolder: Account;
     let sushiOhmDaiLPHolder: Account;
     let uniV2FeiTribeLPHolder: Account;
@@ -47,7 +47,7 @@ describe("AuraLiquidityMigrator", () => {
     let uniV2WbtcWethLPToken: ERC20;
     let sushiOhmDaiLPToken: ERC20;
 
-    let auraLiquidityMigrator: AuraLiquidityMigrator;
+    let uniswapMigrator: UniswapMigrator;
 
     async function setup() {
         await network.provider.request({
@@ -80,10 +80,10 @@ describe("AuraLiquidityMigrator", () => {
             addresses.sushiswapRouter,
             addresses.balancerPoolOwner,
         ];
-        auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
+        uniswapMigrator = await deployContract<UniswapMigrator>(
             hre,
-            new AuraLiquidityMigrator__factory(signer),
-            "AuraLiquidityMigrator",
+            new UniswapMigrator__factory(signer),
+            "UniswapMigrator",
             constructorArguments,
             {},
             debug,
@@ -120,9 +120,9 @@ describe("AuraLiquidityMigrator", () => {
         const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(tokens, amountsMin);
         const amountMinOut = 1;
 
-        await fromLPToken.connect(account.signer).approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
+        await fromLPToken.connect(account.signer).approve(uniswapMigrator.address, ethers.constants.MaxUint256);
 
-        await auraLiquidityMigrator.connect(account.signer).migrateUniswapV2AndJoinPool({
+        await uniswapMigrator.connect(account.signer).migrateUniswapV2AndJoinPool({
             source,
             fromLpToken: fromLPToken.address,
             liquidity: fromLPPositionBefore,
@@ -158,11 +158,11 @@ describe("AuraLiquidityMigrator", () => {
 
         expect(fromLPPositionBefore, "from position").to.gt(0);
 
-        await fromLPToken.connect(account.signer).approve(auraLiquidityMigrator.address, ethers.constants.MaxUint256);
+        await fromLPToken.connect(account.signer).approve(uniswapMigrator.address, ethers.constants.MaxUint256);
         const amountsMin = [1, 1];
         const deadline = (await getTimestamp()).add(ONE_HOUR);
         const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(poolData.tokens, amountsMin);
-        const tx = await auraLiquidityMigrator.connect(account.signer).migrateUniswapV2AndCreatePool({
+        const tx = await uniswapMigrator.connect(account.signer).migrateUniswapV2AndCreatePool({
             balancerFactory: poolData.balancerFactory,
             name: poolData.name,
             symbol: poolData.symbol,

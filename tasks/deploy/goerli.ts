@@ -15,12 +15,7 @@ import {
 } from "../../scripts/deploySystem";
 import { getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { simpleToExactAmount } from "./../../test-utils/math";
-import {
-    VoterProxy__factory,
-    ERC20__factory,
-    AuraLiquidityMigrator,
-    AuraLiquidityMigrator__factory,
-} from "../../types/generated";
+import { VoterProxy__factory, ERC20__factory, UniswapMigrator, UniswapMigrator__factory } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { config } from "./goerli-config";
 const debug = true;
@@ -158,7 +153,7 @@ async function deployGoerli234(
     return phase4;
 }
 
-task("goerli:deploy:auraLiquidityMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+task("goerli:deploy:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
     const constructorArguments = [
@@ -170,15 +165,15 @@ task("goerli:deploy:auraLiquidityMigrator").setAction(async function (taskArgume
         addresses.sushiswapRouter,
         addresses.balancerPoolOwner,
     ];
-    const auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
+    const uniswapMigrator = await deployContract<UniswapMigrator>(
         hre,
-        new AuraLiquidityMigrator__factory(deployer),
-        "AuraLiquidityMigrator",
+        new UniswapMigrator__factory(deployer),
+        "UniswapMigrator",
         constructorArguments,
         {},
         debug,
         waitForBlocks,
     );
 
-    console.log("update auraLiquidityMigrator address to:", auraLiquidityMigrator.address);
+    console.log("update uniswapMigrator address to:", uniswapMigrator.address);
 });

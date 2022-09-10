@@ -13,13 +13,13 @@ import { IUniswapV2Pair } from "../contracts/mocks/uniswap/MockUniswapV2Pair.sol
 import { IUniswapV2Router02 } from "../contracts/mocks/uniswap/MockUniswapV2Router02.sol";
 
 /**
- * @title   AuraLiquidityMigrator
+ * @title   UniswapMigrator
  * @notice  Migrates liquidity positions from Sushiswap or Uniswap v2
  * @dev     Given a "fromLPToken", it removes the liquidity from Sushiswap/Uniswap,
  *          then it creates or join to a balancer pool, adds liquidity to the pool.
  *          Finally if the pool already existed it stakes the liquidity in an aura reward pool.
  */
-contract AuraLiquidityMigrator {
+contract UniswapMigrator {
     using SafeERC20 for IERC20;
     /// @dev Balancer weighted pool factory
     IWeightedPool2TokensFactory public immutable bWeightedPool2PoolFactory;
