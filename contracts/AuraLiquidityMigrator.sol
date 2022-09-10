@@ -5,10 +5,12 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 
 import { IVault, IPriceOracle, IAsset } from "./Interfaces.sol";
 import { IWeightedPool2TokensFactory } from "../contracts/mocks/balancer/MockWeightedPool2TokensFactory.sol";
+import { IStablePoolFactory } from "../contracts/mocks/balancer/MockStablePoolFactory.sol";
 import { IBalancerPool } from "../contracts/mocks/balancer/MockBalancerPool.sol";
 import { ILiquidityGaugeFactory } from "../contracts/mocks/balancer/MockLiquidityGaugeFactory.sol";
 import { IRewardPool } from "../contracts/mocks/balancer/MockRewardPool.sol";
 import { IUniswapV2Pair } from "../contracts/mocks/uniswap/MockUniswapV2Pair.sol";
+import { IUniswapV2Router02 } from "../contracts/mocks/uniswap/MockUniswapV2Router02.sol";
 
 /**
  * @title   AuraLiquidityMigrator
@@ -19,45 +21,84 @@ import { IUniswapV2Pair } from "../contracts/mocks/uniswap/MockUniswapV2Pair.sol
  */
 contract AuraLiquidityMigrator {
     using SafeERC20 for IERC20;
-    /// @dev Balancer pool factory
+    /// @dev Balancer weighted pool factory
     IWeightedPool2TokensFactory public immutable bWeightedPool2PoolFactory;
+    /// @dev Balancer stable pool factory
+    IStablePoolFactory public immutable bStablePoolFactory;
     /// @dev Balancer vault
     IVault public immutable bVault;
     /// @dev Balancer liquidity gauge factory
     ILiquidityGaugeFactory public immutable bGaugeFactory;
+    /// @dev Uniswap router
+    IUniswapV2Router02 public immutable uniswapRouter;
+    /// @dev Sushiswap router
+    IUniswapV2Router02 public immutable sushiswapRouter;
 
+    address private immutable poolOwner;
+
+    uint256 private constant WEIGHT_50 = 500000000000000000; // 50%
+    uint256 private constant GAUGE_WEIGHT_CAP = 20000000000000000; // 2%
+
+    enum LpSource {
+        UNISWAP,
+        SUSHISWAP
+    }
+    enum BalancerFactory {
+        WEIGHTED_POOL,
+        STABLE_POOL
+    }
     struct JoinPoolRequest {
+        LpSource source;
         address fromLpToken;
-        uint256 minOut;
-        address pool;
+        uint256 liquidity;
         IERC20[] tokens;
+        uint256[] amountsMin;
+        uint256 deadline;
+        address pool;
         address rewardPool;
+        uint256 amountMinOut;
     }
 
     struct CreatePoolRequest {
-        address fromLpToken;
+        BalancerFactory balancerFactory;
         string name;
         string symbol;
+        LpSource source;
+        address fromLpToken;
+        uint256 liquidity;
         IERC20[] tokens;
+        uint256[] amountsMin;
+        uint256 deadline;
         uint256 swapFeePercentage;
         bool oracleEnabled;
-        address owner;
-        uint256 minOut;
+        uint256 amplificationParameter;
     }
 
     /**
      * @param _bWeightedPool2PoolFactory The pool factory address
+     * @param _bStablePoolFactory The pool factory address
      * @param _bVault The balancer vault address
-     * @param _bGaugeFactory The balancer liquidity gauge facotory address
+     * @param _bGaugeFactory The balancer liquidity gauge factory address
+     * @param _uniswapRouter The uniswap router address
+     * @param _sushiwapRouter The sushiswap router address
+     * @param _poolOwner The onwer address of created poools.
      */
     constructor(
         address _bWeightedPool2PoolFactory,
+        address _bStablePoolFactory,
         address _bVault,
-        address _bGaugeFactory
+        address _bGaugeFactory,
+        address _uniswapRouter,
+        address _sushiwapRouter,
+        address _poolOwner
     ) {
         bWeightedPool2PoolFactory = IWeightedPool2TokensFactory(_bWeightedPool2PoolFactory);
+        bStablePoolFactory = IStablePoolFactory(_bStablePoolFactory);
         bVault = IVault(_bVault);
         bGaugeFactory = ILiquidityGaugeFactory(_bGaugeFactory);
+        uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        sushiswapRouter = IUniswapV2Router02(_sushiwapRouter);
+        poolOwner = _poolOwner;
     }
 
     /// @dev Event emmited when a new balancer pool is created.
@@ -67,41 +108,54 @@ contract AuraLiquidityMigrator {
      * @dev Migrates a liquidity position, deploys a new `WeightedPool` and adds liquidity to the pool.
      *      The created pool has a weight of 50/50.
      *
-     * @param fromLpToken The LP token to migrate
-     * @param name The name of the new pool
-     * @param symbol The symbol of the new pool
-     * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
-     * @param swapFeePercentage The swap fee percentage
-     * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source.
-     * @param owner The owner of the pool
-     * @param minOut The min amount of bpt
+     * @param request.name The name of the new pool
+     * @param request.symbol The symbol of the new pool
+     * @param request.fromLpToken The lp Token address
+     * @param request.liquidity The amount of liquidity to remove (lpToken amount)
+     * @param request.tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
+     * @param request.amountsMin The minimum amount of tokens that must be received for the transaction not to revert.
+     * @param request.deadline Unix timestamp after which the transaction will revert.
+     * @param request.swapFeePercentage The swap fee percentage
+     * @param request.oracleEnabled Indcates if the pool should be enabled to be an oracle source.
      */
-    function migrateUniswapV2AndCreatePool(
-        address fromLpToken, //Uniswap LP token
-        string memory name,
-        string memory symbol,
-        IERC20[] memory tokens,
-        uint256 swapFeePercentage,
-        bool oracleEnabled,
-        address owner,
-        uint256 minOut
-    ) public returns (address pool, address gauge) {
-        require(tokens.length == 2, "only token pairs");
+    function migrateUniswapV2AndCreatePool(CreatePoolRequest memory request)
+        public
+        returns (address pool, address gauge)
+    {
+        require(request.tokens.length == 2 && request.amountsMin.length == 2, "only token pairs");
+
         // 1. Remove liquidity
-        (address token0, uint256 amount0, address token1, uint256 amount1) = _removeLiquidityUniswapV2(fromLpToken);
+        (address token0, uint256 amount0, , uint256 amount1) = _removeLiquidityUniswapV2(
+            request.source,
+            request.fromLpToken,
+            request.liquidity,
+            request.tokens,
+            request.amountsMin,
+            request.deadline
+        );
+
         uint256[] memory maxAmountsIn = new uint256[](2);
 
-        // sort amounts
-        maxAmountsIn[0] = address(tokens[0]) == token0 ? amount0 : amount1;
-        maxAmountsIn[1] = address(tokens[1]) == token1 ? amount1 : amount0;
+        // sort from uniswap order to balancer order
+        (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
+            ? (amount0, amount1)
+            : (amount1, amount0);
 
         // 2. Create balancer pool
-        pool = _createBalancerPool(name, symbol, tokens, swapFeePercentage, oracleEnabled, owner);
+        pool = _createBalancerPool(
+            request.balancerFactory,
+            request.name,
+            request.symbol,
+            request.tokens,
+            request.swapFeePercentage,
+            request.oracleEnabled,
+            request.amplificationParameter
+        );
 
         // 3. Deposit to balancer pool
-        _addLiquidityBalancer(pool, tokens, maxAmountsIn, msg.sender, minOut);
+        _addLiquidityBalancer(pool, request.tokens, maxAmountsIn, msg.sender, 0);
 
-        gauge = bGaugeFactory.create(pool);
+        gauge = bGaugeFactory.create(pool, GAUGE_WEIGHT_CAP);
 
         emit PoolCreated(pool, gauge);
     }
@@ -109,82 +163,58 @@ contract AuraLiquidityMigrator {
     /**
      * @dev Migrates a liquidity position, adds liquidity to the pool, and stake the BPT
      *
-     * @param fromLpToken The LP token to migrate
-     * @param minOut The min amount of bpt
-     * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
-     * @param pool The pool address to add liquidity
-     * @param rewardPool The aura reward pool address
+     * @param request.fromLpToken The lp Token address
+     * @param request.liquidity The amount of liquidity to remove (lpToken amount)
+     * @param request.tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
+     * @param request.amountsMin The minimum amount of tokens that must be received from uniswap for the transaction not to revert.
+     * @param request.deadline Unix timestamp after which the transaction will revert.
+     * @param request.pool The pool address to add liquidity
+     * @param request.rewardPool The aura reward pool address
+     * @param request.amountMinOut The min amount of liquidity added to the balancer pool.
      */
-    function migrateUniswapV2AndJoinPool(
-        address fromLpToken,
-        uint256 minOut,
-        IERC20[] memory tokens,
-        address pool,
-        address rewardPool
-    ) public {
-        require(tokens.length == 2, "only token pairs");
+    function migrateUniswapV2AndJoinPool(JoinPoolRequest memory request) public {
+        require(request.tokens.length == 2 && request.amountsMin.length == 2, "only token pairs");
         // 1. Remove liquidity
-        (address token0, uint256 amount0, address token1, uint256 amount1) = _removeLiquidityUniswapV2(fromLpToken);
-        // sort amounts
-        uint256[] memory maxAmountsIn = new uint256[](2);
-        maxAmountsIn[0] = address(tokens[0]) == token0 ? amount0 : amount1;
-        maxAmountsIn[1] = address(tokens[1]) == token1 ? amount1 : amount0;
-        // 2. Deposit to balancer pool
-        _addLiquidityBalancer(pool, tokens, maxAmountsIn, address(this), minOut);
+        (address token0, uint256 amount0, , uint256 amount1) = _removeLiquidityUniswapV2(
+            request.source,
+            request.fromLpToken,
+            request.liquidity,
+            request.tokens,
+            request.amountsMin,
+            request.deadline
+        );
 
-        uint256 minted = IERC20(pool).balanceOf(address(this));
-        require(minted > 0, "!mint");
+        // sort amounts for balancer pool
+        uint256[] memory maxAmountsIn = new uint256[](2);
+        (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
+            ? (amount0, amount1)
+            : (amount1, amount0);
+
+        // 2. Deposit to balancer pool
+        _addLiquidityBalancer(request.pool, request.tokens, maxAmountsIn, address(this), request.amountMinOut);
+
+        uint256 minted = IERC20(request.pool).balanceOf(address(this));
+        require(minted > 0 && request.amountMinOut > 0, "!mint");
 
         // 3. Deposit to reward pool
-        IERC20(pool).safeIncreaseAllowance(rewardPool, minted);
-        IRewardPool(rewardPool).deposit(minted, msg.sender);
-    }
-
-    /**
-     * @dev Migrates multiple liquidity position, adds liquidity to the pool, and stake the BPT
-     *
-     * @param createPoolRequests Array of creation of pools requests
-     * @param joinPoolRequests Array of join pools requests.
-     */
-    function migrateUniswapV2MultiCall(
-        CreatePoolRequest[] memory createPoolRequests,
-        JoinPoolRequest[] memory joinPoolRequests
-    ) external returns (address[] memory createdPools, address[] memory createdGauge) {
-        // Creations
-        uint256 creationsLen = createPoolRequests.length;
-        uint256 joinsLen = joinPoolRequests.length;
-        require(creationsLen > 0 || joinsLen > 0, "!Input");
-
-        createdPools = new address[](creationsLen);
-        createdGauge = new address[](creationsLen);
-
-        for (uint256 i = 0; i < creationsLen; i++) {
-            CreatePoolRequest memory request = createPoolRequests[i];
-            (createdPools[i], createdGauge[i]) = migrateUniswapV2AndCreatePool(
-                request.fromLpToken,
-                request.name,
-                request.symbol,
-                request.tokens,
-                request.swapFeePercentage,
-                request.oracleEnabled,
-                request.owner,
-                request.minOut
-            );
-        }
-        // Joins
-        for (uint256 i = 0; i < joinsLen; i++) {
-            JoinPoolRequest memory request = joinPoolRequests[i];
-            migrateUniswapV2AndJoinPool(
-                request.fromLpToken,
-                request.minOut,
-                request.tokens,
-                request.pool,
-                request.rewardPool
-            );
+        if (request.rewardPool != address(0)) {
+            IERC20(request.pool).safeIncreaseAllowance(request.rewardPool, minted);
+            IRewardPool(request.rewardPool).deposit(minted, msg.sender);
+        } else {
+            IERC20(request.pool).safeTransfer(msg.sender, minted);
         }
     }
 
-    function _removeLiquidityUniswapV2(address lpToken)
+    // uniswap-migrator
+    // gauge-migrator
+    function _removeLiquidityUniswapV2(
+        LpSource source,
+        address fromLpToken,
+        uint256 liquidity,
+        IERC20[] memory tokens,
+        uint256[] memory amountsMin,
+        uint256 deadline
+    )
         internal
         returns (
             address token0,
@@ -193,36 +223,75 @@ contract AuraLiquidityMigrator {
             uint256 amount1
         )
     {
-        // Remove liquidity position from IUniswapV2
-        IUniswapV2Pair pair = IUniswapV2Pair(lpToken);
+        token0 = IUniswapV2Pair(fromLpToken).token0();
+        token1 = IUniswapV2Pair(fromLpToken).token1();
 
-        uint256 liquidity = pair.balanceOf(msg.sender);
-        require(pair.transferFrom(msg.sender, address(pair), liquidity), "!liquidity");
-        token0 = pair.token0();
-        token1 = pair.token1();
-        (amount0, amount1) = pair.burn(address(this));
+        // Sort tokens and amounts for Uniswap router
+        (uint256 amount0Min, uint256 amount1Min) = address(tokens[0]) == token0
+            ? (amountsMin[0], amountsMin[1])
+            : (amountsMin[1], amountsMin[0]);
+
+        // Sender needs to approve uniswapRouter at least for liquidity,
+        IUniswapV2Router02 router = source == LpSource.UNISWAP ? uniswapRouter : sushiswapRouter;
+
+        require(IUniswapV2Pair(fromLpToken).transferFrom(msg.sender, address(this), liquidity), "!liquidity");
+        require(IUniswapV2Pair(fromLpToken).approve(address(router), liquidity), "!approval");
+
+        // routers reverts if min amounts are not met, no need to check the output.
+        (amount0, amount1) = router.removeLiquidity(
+            token0,
+            token1,
+            liquidity,
+            amount0Min,
+            amount1Min,
+            address(this),
+            deadline
+        );
     }
 
+    /**
+     * Creates a balancer pool, it could be either a Stable Pool  or a Weighted Pool
+     *
+     * @param balancerFactory The type of balancer factory to  create the pool, WEIGHTED_POOL = 0 or STABLE_POOL = 1
+     * @param name The name of the new pool
+     * @param symbol The symbol of the new pool
+     * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
+     * @param swapFeePercentage The swap fee percentage
+     * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source, only use when balancerFactory = WEIGHTED_POOL
+     * @param amplificationParameter The amplification parameter to use, only use when balancerFactory = STABLE_POOL
+     */
     function _createBalancerPool(
+        BalancerFactory balancerFactory,
         string memory name,
         string memory symbol,
         IERC20[] memory tokens,
         uint256 swapFeePercentage,
         bool oracleEnabled,
-        address owner
+        uint256 amplificationParameter
     ) internal returns (address pool) {
-        uint256[] memory weights = new uint256[](2);
-        weights[0] = 500000000000000000; // 50%
-        weights[1] = 500000000000000000; // 50%
-        pool = IWeightedPool2TokensFactory(bWeightedPool2PoolFactory).create(
-            name,
-            symbol,
-            tokens,
-            weights,
-            swapFeePercentage,
-            oracleEnabled,
-            owner
-        );
+        if (balancerFactory == BalancerFactory.WEIGHTED_POOL) {
+            uint256[] memory weights = new uint256[](2);
+            weights[0] = WEIGHT_50;
+            weights[1] = WEIGHT_50;
+            pool = bWeightedPool2PoolFactory.create(
+                name,
+                symbol,
+                tokens,
+                weights,
+                swapFeePercentage,
+                oracleEnabled,
+                poolOwner
+            );
+        } else {
+            pool = bStablePoolFactory.create(
+                name,
+                symbol,
+                tokens,
+                amplificationParameter,
+                swapFeePercentage,
+                poolOwner
+            );
+        }
     }
 
     function _addLiquidityBalancer(
@@ -230,7 +299,7 @@ contract AuraLiquidityMigrator {
         IERC20[] memory tokens,
         uint256[] memory maxAmountsIn,
         address recipient,
-        uint256 minOut
+        uint256 amountMinOut
     ) internal {
         // add liquidity to balancer pool
         bytes32 poolId = IBalancerPool(pool).getPoolId();
@@ -246,7 +315,7 @@ contract AuraLiquidityMigrator {
             // Initialise pool
             userData = abi.encode(IVault.JoinKind.INIT, maxAmountsIn);
         } else {
-            userData = abi.encode(IVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, minOut);
+            userData = abi.encode(IVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, amountMinOut);
         }
 
         bVault.joinPool(

@@ -143,6 +143,8 @@ interface ExtSystemConfig {
     ldo?: string;
     ldoWhale?: string;
     stEthGaugeLdoDepositor?: string;
+    uniswapRouter?: string;
+    sushiswapRouter?: string;
 }
 
 interface NamingConfig {

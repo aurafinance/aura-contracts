@@ -163,8 +163,12 @@ task("goerli:deploy:auraLiquidityMigrator").setAction(async function (taskArgume
     const { addresses } = config;
     const constructorArguments = [
         addresses.balancerPoolFactories.weightedPool2Tokens,
+        addresses.balancerPoolFactories.stablePool,
         addresses.balancerVault,
         addresses.balancerGaugeFactory,
+        addresses.uniswapRouter,
+        addresses.sushiswapRouter,
+        addresses.balancerPoolOwner,
     ];
     const auraLiquidityMigrator = await deployContract<AuraLiquidityMigrator>(
         hre,

@@ -104,7 +104,7 @@ const addresses: ExtSystemConfig = {
         stablePool: "0x8df6EfEc5547e31B0eb7d1291B511FF8a2bf987c",
         bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
     },
-    balancerGaugeFactory: "0x4E7bBd911cf1EFa442BC1b2e9Ea01ffE785412EC",
+    balancerGaugeFactory: "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65",
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
@@ -116,6 +116,8 @@ const addresses: ExtSystemConfig = {
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
+    uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
 };
 
 const naming = {
