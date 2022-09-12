@@ -299,7 +299,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         }
 
         const successfulGauges = results
-            .filter(({ percentage }) => percentage > 0.005)
+            .filter(({ percentage }) => percentage > 0.002)
             .sort((a, b) => b.percentage - a.percentage);
 
         // ----------------------------------------------------------
