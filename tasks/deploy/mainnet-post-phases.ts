@@ -9,6 +9,8 @@ import {
     BoosterHelper__factory,
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
+    GaugeMigrator,
+    GaugeMigrator__factory,
 } from "../../types/generated";
 
 const waitForBlocks = 1;
@@ -48,4 +50,22 @@ task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: Ta
     );
 
     console.log("update boosterHelper address to:", boosterHelper.address);
+});
+
+task("mainnet:deploy:gaugeMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { getPhase2 } = config;
+    const phase2: Phase2Deployed = await getPhase2(deployer);
+    const constructorArguments = [phase2.booster.address];
+    const gaugeMigrator = await deployContract<GaugeMigrator>(
+        hre,
+        new GaugeMigrator__factory(deployer),
+        "GaugeMigrator",
+        constructorArguments,
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update gaugeMigrator address to:", gaugeMigrator.address);
 });
