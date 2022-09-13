@@ -1,8 +1,8 @@
-import { simpleToExactAmount } from "./../test-utils/math";
+import { simpleToExactAmount } from "../../test-utils/math";
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     Booster,
     ERC20__factory,
@@ -10,11 +10,11 @@ import {
     BaseRewardPool4626,
     MockERC20,
     MockERC20__factory,
-} from "../types/generated";
+} from "../../types/generated";
 import { Signer } from "ethers";
-import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
-import { deployContract } from "../tasks/utils";
-import { impersonateAccount } from "../test-utils/fork";
+import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
+import { deployContract } from "../../tasks/utils";
+import { impersonateAccount } from "../../test-utils/fork";
 
 type Pool = {
     lptoken: string;

@@ -1,7 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     Booster,
     BoosterOwner,
@@ -10,12 +10,12 @@ import {
     MockFeeDistributor__factory,
     MockERC20__factory,
     MockERC20,
-} from "../types/generated";
+} from "../../types/generated";
 import { Signer } from "ethers";
-import { increaseTime, increaseTimeTo } from "../test-utils/time";
-import { simpleToExactAmount } from "../test-utils/math";
-import { DEAD_ADDRESS, ZERO_ADDRESS } from "../test-utils/constants";
-import { deployContract } from "../tasks/utils";
+import { increaseTime, increaseTimeTo } from "../../test-utils/time";
+import { simpleToExactAmount } from "../../test-utils/math";
+import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
+import { deployContract } from "../../tasks/utils";
 
 type Pool = {
     lptoken: string;

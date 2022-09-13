@@ -1,8 +1,8 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import { deployPhase1, deployPhase2, deployPhase3, MultisigConfig } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, MultisigConfig } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     CrvDepositor,
     VoterProxy,
@@ -11,10 +11,10 @@ import {
     ERC20,
     CrvDepositorWrapper,
     BaseRewardPool,
-} from "../types/generated";
-import { getTimestamp, increaseTime } from "../test-utils/time";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { simpleToExactAmount } from "./../test-utils/math";
+} from "../../types/generated";
+import { getTimestamp, increaseTime } from "../../test-utils/time";
+import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { simpleToExactAmount } from "../../test-utils/math";
 
 describe("CrvDepositor", () => {
     let accounts: Signer[];

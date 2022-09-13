@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
-import { impersonateAccount } from "../test-utils/fork";
-import { AuraLocker, AuraToken } from "../types/generated";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { BN, getTimestamp, increaseTime, ONE_WEEK, simpleToExactAmount } from "../../test-utils";
+import { impersonateAccount } from "../../test-utils/fork";
+import { AuraLocker, AuraToken } from "../../types/generated";
 import balanceData from "./auraLockerBalanceData.json";
 
 enum UserName {

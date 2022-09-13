@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     deployPhase1,
     deployPhase2,
@@ -9,8 +9,8 @@ import {
     deployPhase4,
     DistroList,
     SystemDeployed,
-} from "../scripts/deploySystem";
-import { deployContract } from "../tasks/utils";
+} from "../../scripts/deploySystem";
+import { deployContract } from "../../tasks/utils";
 import {
     advanceBlock,
     assertBNClosePercent,
@@ -21,9 +21,9 @@ import {
     ONE_YEAR,
     simpleToExactAmount,
     ZERO_ADDRESS,
-} from "../test-utils";
-import { assertBNClose } from "../test-utils/assertions";
-import { AuraToken, ConvexMasterChef, MockERC20, MockERC20__factory } from "../types/generated";
+} from "../../test-utils";
+import { assertBNClose } from "../../test-utils/assertions";
+import { AuraToken, ConvexMasterChef, MockERC20, MockERC20__factory } from "../../types/generated";
 
 interface PoolInfo {
     lpToken: string;

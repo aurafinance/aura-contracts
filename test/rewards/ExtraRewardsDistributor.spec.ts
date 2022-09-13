@@ -1,13 +1,13 @@
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraLocker, MockERC20, MockERC20__factory, ExtraRewardsDistributor } from "../types/generated";
-import { impersonateAccount } from "../test-utils/fork";
-import { ONE_WEEK } from "../test-utils/constants";
-import { increaseTime, getTimestamp } from "../test-utils/time";
-import { simpleToExactAmount, BN } from "../test-utils/math";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { AuraLocker, MockERC20, MockERC20__factory, ExtraRewardsDistributor } from "../../types/generated";
+import { impersonateAccount } from "../../test-utils/fork";
+import { ONE_WEEK } from "../../test-utils/constants";
+import { increaseTime, getTimestamp } from "../../test-utils/time";
+import { simpleToExactAmount, BN } from "../../test-utils/math";
 import { Account } from "types";
 
 describe("ExtraRewardsDistributor", () => {

@@ -1,16 +1,16 @@
-import { assertBNClose } from "./../test-utils/assertions";
+import { assertBNClose } from "../../test-utils/assertions";
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
 import { MerkleTree } from "merkletreejs";
-import { deployPhase1, deployPhase2, DistroList, Phase2Deployed } from "../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraLocker, ERC20, AuraMerkleDrop__factory, AuraMerkleDrop } from "../types/generated";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { getTimestamp, increaseTime } from "../test-utils/time";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { impersonateAccount } from "../test-utils/fork";
-import { createTreeWithAccounts, getAccountBalanceProof } from "../test-utils/merkle";
+import { deployPhase1, deployPhase2, DistroList, Phase2Deployed } from "../../scripts/deploySystem";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { AuraLocker, ERC20, AuraMerkleDrop__factory, AuraMerkleDrop } from "../../types/generated";
+import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { getTimestamp, increaseTime } from "../../test-utils/time";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { impersonateAccount } from "../../test-utils/fork";
+import { createTreeWithAccounts, getAccountBalanceProof } from "../../test-utils/merkle";
 
 describe("AuraMerkleDrop", () => {
     let accounts: Signer[];

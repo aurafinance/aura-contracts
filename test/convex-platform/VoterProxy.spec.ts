@@ -1,7 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     Booster,
     VoterProxy,
@@ -16,15 +16,15 @@ import {
     PoolManagerSecondaryProxy,
     PoolManagerV3,
     ERC20__factory,
-} from "../types/generated";
+} from "../../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
 import { version } from "@snapshot-labs/snapshot.js/src/constants.json";
-import { deployContract } from "../tasks/utils";
-import { increaseTime, increaseTimeTo } from "../test-utils/time";
-import { simpleToExactAmount } from "../test-utils/math";
-import { ZERO_ADDRESS, ZERO } from "../test-utils/constants";
-import { impersonateAccount } from "../test-utils/fork";
+import { deployContract } from "../../tasks/utils";
+import { increaseTime, increaseTimeTo } from "../../test-utils/time";
+import { simpleToExactAmount } from "../../test-utils/math";
+import { ZERO_ADDRESS, ZERO } from "../../test-utils/constants";
+import { impersonateAccount } from "../../test-utils/fork";
 
 const eip1271MagicValue = "0x1626ba7e";
 

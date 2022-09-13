@@ -1,9 +1,9 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockMultisigs, getMockDistro } from "../scripts/deployMocks";
-import { Booster, MockCurveGauge__factory, PoolManagerV3, MockCurveGauge } from "../types/generated";
-import { deployContract } from "../tasks/utils";
+import { deployPhase1, deployPhase2, deployPhase3 } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockMultisigs, getMockDistro } from "../../scripts/deployMocks";
+import { Booster, MockCurveGauge__factory, PoolManagerV3, MockCurveGauge } from "../../types/generated";
+import { deployContract } from "../../tasks/utils";
 import { Signer } from "ethers";
 
 describe("PoolManagerV3", () => {
