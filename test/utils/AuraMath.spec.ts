@@ -1,8 +1,8 @@
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { MockAuraMath, MockAuraMath__factory } from "../types/generated";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { MockAuraMath, MockAuraMath__factory } from "../../types/generated";
 
 const MaxUint224 = BN.from(2).pow(224).sub(1);
 const MaxUint128 = BN.from(2).pow(128).sub(1);

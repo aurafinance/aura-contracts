@@ -1,11 +1,11 @@
 import hre, { ethers } from "hardhat";
 import { BigNumberish, Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { Booster, VoterProxy, AuraToken, AuraMinter, AuraToken__factory } from "../types/generated";
-import { DEAD_ADDRESS, simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
-import { impersonateAccount } from "../test-utils/fork";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { Booster, VoterProxy, AuraToken, AuraMinter, AuraToken__factory } from "../../types/generated";
+import { DEAD_ADDRESS, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import { impersonateAccount } from "../../test-utils/fork";
 import { Account } from "types";
 
 const EMISSIONS_MAX_SUPPLY = 50000000;
