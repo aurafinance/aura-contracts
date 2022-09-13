@@ -57,7 +57,7 @@ describe("Add same LP Token twice", () => {
         lpWhale = await impersonateAccount(lpWhaleAddress);
     };
 
-    describe.skip("PoolManager", () => {
+    describe("PoolManager", () => {
         const oldPid = 0;
 
         before(() => setup());
@@ -204,22 +204,19 @@ describe("Add same LP Token twice", () => {
         });
         context("add new pool", async () => {
             it("mock gauge controller", async () => {
-                gaugeControllerByteCode = await ethers.provider.getCode(config.addresses.gaugeController, "latest");
                 // Mock gauge controller with one that returns 1 when you query the weight
                 await network.provider.send("hardhat_setCode", [
                     config.addresses.gaugeController,
                     MockGaugeController__factory.bytecode,
                 ]);
-            });
-            it("deploy fake gauge with old LP Token", async () => {
-                mockGauge = await deployContract<MockCurveGauge>(
-                    hre,
-                    new MockCurveGauge__factory(protocolDao),
-                    "MockCurveGauge",
-                    ["MockCurveGauge", "MockCurveGauge", lpToken.address, []],
-                    {},
-                    debug,
-                );
+                await network.provider.send("hardhat_setCode", [gauge, MockCurveGauge__factory.bytecode]);
+
+                // When trying to deposit to existingPid , the following error
+                // Error: Transaction reverted without a reason string
+                // at <UnrecognizedContract>.<unknown> (0x34f33cdaed8ba0e1ceece80e5f4a73bcf234cfac)
+                // at <UnrecognizedContract>.<unknown> (0x34f33cdaed8ba0e1ceece80e5f4a73bcf234cfac)
+                // at VoterProxy.deposit (convex-platform/contracts/contracts/VoterProxy.sol:178)
+                // at Booster.deposit (convex-platform/contracts/contracts/Booster.sol:410)
             });
             it("add old lp token pool", async () => {
                 const poolManager = PoolManagerV3__factory.connect(phase2.poolManager.address, protocolDao);
@@ -231,12 +228,6 @@ describe("Add same LP Token twice", () => {
 
                 expect(resp.lptoken).eq(lpToken.address);
                 expect(resp.gauge, "new gauge != gauge ").not.eq(gauge);
-            });
-            it("reverts mock gauge controller", async () => {
-                await network.provider.send("hardhat_setCode", [
-                    config.addresses.gaugeController,
-                    gaugeControllerByteCode,
-                ]);
             });
             it("migrates full lp position oldPid => newPid", async () => {
                 await assertGaugeMigration(lpWhale, oldPid, newPid);
