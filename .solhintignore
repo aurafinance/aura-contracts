@@ -1,4 +1,4 @@
 # directories
 **/artifacts
 **/node_modules
-contracts/mocks
+contracts/_mocks
