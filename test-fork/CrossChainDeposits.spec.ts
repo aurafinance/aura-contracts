@@ -1,16 +1,13 @@
 import { expect } from "chai";
-import { network, ethers } from "hardhat";
+import hre, { network, ethers } from "hardhat";
 import { BigNumberish, Signer } from "ethers";
 
 import {
     MockERC20,
     BaseRewardPool,
-    SiphonGauge__factory,
     SiphonGauge,
     SiphonDepositor,
-    SiphonDepositor__factory,
     SiphonToken,
-    SiphonToken__factory,
     BaseRewardPool__factory,
     RAura__factory,
     RAura,
@@ -37,7 +34,10 @@ import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
+import { deployCrossChainL1 } from "../scripts/deployCrossChain";
 import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
+
+const debug = false;
 
 describe("Cross Chain Deposits", () => {
     const DST_CHAIN_ID = 123;
@@ -96,12 +96,9 @@ describe("Cross Chain Deposits", () => {
         deployer = await impersonate(deployerAddress);
 
         contracts = await config.getPhase4(deployer);
-        crvToken = MockERC20__factory.connect(config.addresses.token, deployer);
-        siphonToken = await new SiphonToken__factory(deployer).deploy(deployerAddress, simpleToExactAmount(1));
-        siphonGauge = await new SiphonGauge__factory(deployer).deploy(siphonToken.address);
-        L1_rCvx = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
 
         await getCrv(deployerAddress, simpleToExactAmount(5000));
+        crvToken = MockERC20__factory.connect(config.addresses.token, deployer);
 
         const lpWhaleAddress = "0xf346592803eb47cb8d8fa9f90b0ef17a82f877e0";
         lpWhale = await impersonateAccount(lpWhaleAddress);
@@ -120,6 +117,29 @@ describe("Cross Chain Deposits", () => {
 
         before(async () => {
             pid = await contracts.booster.poolLength();
+
+            const crossChainL1 = await deployCrossChainL1(
+                {
+                    siphondepositor: { pid },
+                    rAura: { symbol: "rAURA" },
+                    booster: contracts.booster.address,
+                    cvxLocker: contracts.cvxLocker.address,
+                    crvToken: crvToken.address,
+                    cvx: contracts.cvx.address,
+                    lzEndpoint: lzEndpoint.address,
+                    dstChainId: DST_CHAIN_ID,
+                    penalty: 0,
+                },
+                deployer,
+                hre,
+                debug,
+                0,
+            );
+
+            siphonToken = crossChainL1.siphonToken;
+            siphonGauge = crossChainL1.siphonGauge;
+            L1_rCvx = crossChainL1.rAura;
+            siphonDepositor = crossChainL1.siphonDepositor;
         });
 
         it("[L1] adds the gauge", async () => {
@@ -137,25 +157,7 @@ describe("Cross Chain Deposits", () => {
             expect(pool.gauge).eq(siphonGauge.address);
             expect(pool.lptoken).eq(siphonToken.address);
         });
-        it("[L1] deploy the siphonDepositor", async () => {
-            const penalty = 0;
-            siphonDepositor = await new SiphonDepositor__factory(deployer).deploy(
-                siphonToken.address,
-                pid,
-                contracts.booster.address,
-                contracts.cvxLocker.address,
-                crvToken.address,
-                contracts.cvx.address,
-                L1_rCvx.address,
-                lzEndpoint.address,
-                DST_CHAIN_ID,
-                penalty,
-            );
-            // send it the siphon token
-            await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
-        });
         it("[L1] transfer ownership of rCVX to siphonDepositor", async () => {
-            await L1_rCvx.transferOwnership(siphonDepositor.address);
             const newOwner = await L1_rCvx.owner();
             expect(newOwner).eq(siphonDepositor.address);
         });
