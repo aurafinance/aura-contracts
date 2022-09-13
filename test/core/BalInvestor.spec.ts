@@ -1,10 +1,10 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../types/generated";
-import { deployContract } from "../tasks/utils";
-import { fullScale } from "../test-utils";
+import { MockBalInvestor, MockBalInvestor__factory, ERC20__factory, ERC20 } from "../../types/generated";
+import { deployContract } from "../../tasks/utils";
+import { fullScale } from "../../test-utils";
 import { Signer } from "ethers";
-import { deployMocks } from "../scripts/deployMocks";
+import { deployMocks } from "../../scripts/deployMocks";
 
 const debug = false;
 

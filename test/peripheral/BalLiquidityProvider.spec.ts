@@ -8,8 +8,8 @@ import {
     deployPhase4,
     SystemDeployed,
     MultisigConfig,
-} from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
+} from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     BalLiquidityProvider,
     MockERC20__factory,
@@ -17,10 +17,10 @@ import {
     MockBalancerPoolToken__factory,
     MockBalancerVault__factory,
     BalLiquidityProvider__factory,
-} from "../types/generated";
-import { JoinPoolRequestStruct } from "../types/generated/BalLiquidityProvider";
-import { simpleToExactAmount, ZERO_ADDRESS, ZERO_KEY } from "../test-utils";
-import { impersonateAccount } from "../test-utils/fork";
+} from "../../types/generated";
+import { JoinPoolRequestStruct } from "../../types/generated/BalLiquidityProvider";
+import { simpleToExactAmount, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils";
+import { impersonateAccount } from "../../test-utils/fork";
 import { Account } from "types";
 
 describe("BalLiquidityProvider", () => {
