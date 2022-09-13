@@ -1,11 +1,11 @@
 import hre, { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { impersonateAccount, increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../test-utils";
-import { deployContract } from "../tasks/utils";
-import { MockERC20, MockERC20__factory } from "../types";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { impersonateAccount, increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
+import { deployContract } from "../../tasks/utils";
+import { MockERC20, MockERC20__factory } from "../../types";
 
 describe("AuraStakingProxy", () => {
     let accounts: Signer[];

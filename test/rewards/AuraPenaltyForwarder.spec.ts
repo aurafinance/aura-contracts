@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../scripts/deploySystem";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { impersonateAccount } from "../test-utils/fork";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { getTimestamp, increaseTime } from "../test-utils/time";
-import { AuraPenaltyForwarder, AuraToken, ExtraRewardsDistributor } from "../types/generated";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
+import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { impersonateAccount } from "../../test-utils/fork";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { getTimestamp, increaseTime } from "../../test-utils/time";
+import { AuraPenaltyForwarder, AuraToken, ExtraRewardsDistributor } from "../../types/generated";
 
 describe("AuraPenaltyForwarder", () => {
     let accounts: Signer[];

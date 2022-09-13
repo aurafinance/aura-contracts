@@ -1,10 +1,10 @@
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraToken, AuraMinter } from "../types/generated";
-import { simpleToExactAmount, getTimestamp, increaseTime, ONE_WEEK } from "../test-utils";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { AuraToken, AuraMinter } from "../../types/generated";
+import { simpleToExactAmount, getTimestamp, increaseTime, ONE_WEEK } from "../../test-utils";
 
 describe("AuraMinter", () => {
     let accounts: Signer[];

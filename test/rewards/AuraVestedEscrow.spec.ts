@@ -1,13 +1,13 @@
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, Phase2Deployed } from "../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraLocker, AuraVestedEscrow, AuraVestedEscrow__factory, ERC20 } from "../types/generated";
-import { ONE_HOUR, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { getTimestamp, increaseTime } from "../test-utils/time";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { impersonateAccount } from "../test-utils/fork";
+import { deployPhase1, deployPhase2, Phase2Deployed } from "../../scripts/deploySystem";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { AuraLocker, AuraVestedEscrow, AuraVestedEscrow__factory, ERC20 } from "../../types/generated";
+import { ONE_HOUR, ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { getTimestamp, increaseTime } from "../../test-utils/time";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { impersonateAccount } from "../../test-utils/fork";
 
 const debug = false;
 describe("AuraVestedEscrow", () => {

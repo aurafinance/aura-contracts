@@ -8,13 +8,13 @@ import {
     deployPhase4,
     MultisigConfig,
     SystemDeployed,
-} from "../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { AuraBalRewardPool, AuraBalRewardPool__factory, ERC20 } from "../types/generated";
-import { DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { increaseTime, getTimestamp } from "../test-utils/time";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { assertBNClose, assertBNClosePercent } from "../test-utils/assertions";
+} from "../../scripts/deploySystem";
+import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { AuraBalRewardPool, AuraBalRewardPool__factory, ERC20 } from "../../types/generated";
+import { DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { increaseTime, getTimestamp } from "../../test-utils/time";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { assertBNClose, assertBNClosePercent } from "../../test-utils/assertions";
 
 describe("AuraBalRewardPool", () => {
     let accounts: Signer[];

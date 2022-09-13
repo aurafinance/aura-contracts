@@ -1,12 +1,12 @@
 import hre, { ethers } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { SystemDeployed, deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { increaseTime } from "../test-utils/time";
-import { ONE_WEEK, ZERO_ADDRESS } from "../test-utils/constants";
-import { simpleToExactAmount } from "../test-utils/math";
-import { BaseRewardPool__factory } from "../types/generated";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { SystemDeployed, deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { increaseTime } from "../../test-utils/time";
+import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { simpleToExactAmount } from "../../test-utils/math";
+import { BaseRewardPool__factory } from "../../types/generated";
 
 describe("AuraClaimZap", () => {
     let accounts: Signer[];

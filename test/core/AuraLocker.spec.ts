@@ -2,9 +2,9 @@ import { expect } from "chai";
 import { ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../scripts/deployMocks";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../scripts/deploySystem";
-import { deployContract } from "../tasks/utils";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
+import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import { deployContract } from "../../tasks/utils";
 import {
     BN,
     getTimestamp,
@@ -14,8 +14,8 @@ import {
     simpleToExactAmount,
     ZERO,
     ZERO_ADDRESS,
-} from "../test-utils";
-import { impersonateAccount } from "../test-utils/fork";
+} from "../../test-utils";
+import { impersonateAccount } from "../../test-utils/fork";
 import {
     AuraLocker,
     AuraStakingProxy,
@@ -28,7 +28,7 @@ import {
     MockAuraLocker__factory,
     MockERC20,
     MockERC20__factory,
-} from "../types/generated";
+} from "../../types/generated";
 interface UserLock {
     amount: BN;
     unlockTime: number;
