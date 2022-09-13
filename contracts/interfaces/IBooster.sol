@@ -2,7 +2,6 @@
 pragma solidity 0.8.11;
 
 interface IBooster {
-<<<<<<< HEAD
     struct FeeDistro {
         address distro;
         address rewards;
@@ -22,10 +21,8 @@ interface IBooster {
         bool shutdown;
     }
 
-    function earmarkRewards(uint256 _pid) external returns (bool);
-
     function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
-=======
+
     function earmarkRewards(uint256 _pid) external returns (bool);
 
     function deposit(
@@ -36,18 +33,6 @@ interface IBooster {
 
     function withdraw(uint256 _pid, uint256 _amount) external returns (bool);
 
-    function poolInfo(uint256)
-        external
-        view
-        returns (
-            address,
-            address,
-            address,
-            address,
-            address,
-            bool
-        );
-
     function lockIncentive() external view returns (uint256);
 
     function stakerIncentive() external view returns (uint256);
@@ -57,5 +42,4 @@ interface IBooster {
     function platformFee() external view returns (uint256);
 
     function FEE_DENOMINATOR() external view returns (uint256);
->>>>>>> ed76911 (feat: move interfaces to seperate files)
 }

@@ -4,13 +4,13 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
-import { AuraMath } from "./AuraMath.sol";
-import { ICvx } from "./interfaces/ICvx.sol";
-import { IAuraLocker } from "./Interfaces.sol";
-import { IrCvx } from "./interfaces/IrCvx.sol";
-import { IBooster } from "./interfaces/IBooster.sol";
-import { IBaseRewardPool } from "./interfaces/IBaseRewardPool.sol";
-import { ILayerZeroEndpoint } from "./interfaces/ILayerZeroEndpoint.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
+import { ICvx } from "../interfaces/ICvx.sol";
+import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
+import { IrCvx } from "../interfaces/IrCvx.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
+import { IBaseRewardPool } from "../interfaces/IBaseRewardPool.sol";
+import { ILayerZeroEndpoint } from "../interfaces/ILayerZeroEndpoint.sol";
 
 contract SiphonDepositor is Ownable {
     using AuraMath for uint256;
@@ -173,8 +173,8 @@ contract SiphonDepositor is Ownable {
      *      Along with a pro rata amount of AURA tokens
      */
     function getReward() external onlyOwner {
-        (, , , address crvRewards, , ) = booster.poolInfo(pid);
-        IBaseRewardPool(crvRewards).getReward(address(this), false);
+        IBooster.PoolInfo memory info = booster.poolInfo(pid);
+        IBaseRewardPool(info.crvRewards).getReward(address(this), false);
     }
 
     /* -------------------------------------------------------------------
