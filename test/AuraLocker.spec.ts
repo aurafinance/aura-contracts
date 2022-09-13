@@ -24,8 +24,8 @@ import {
     Booster,
     CrvDepositor,
     CvxCrvToken,
-    MockAuraLockor,
-    MockAuraLockor__factory,
+    MockAuraLocker,
+    MockAuraLocker__factory,
     MockERC20,
     MockERC20__factory,
 } from "../types/generated";
@@ -494,11 +494,11 @@ describe("AuraLocker", () => {
     });
 
     context("smart contract deposits", () => {
-        let lockor: MockAuraLockor;
+        let lockor: MockAuraLocker;
         before(async () => {
-            lockor = await deployContract<MockAuraLockor>(
+            lockor = await deployContract<MockAuraLocker>(
                 hre,
-                new MockAuraLockor__factory(deployer),
+                new MockAuraLocker__factory(deployer),
                 "Lockor",
                 [cvx.address, auraLocker.address],
                 {},

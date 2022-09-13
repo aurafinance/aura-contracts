@@ -6,8 +6,8 @@ import {
     ILBP,
     ILBP__factory,
     MockERC20__factory,
-    IVault,
-    IVault__factory,
+    IBalancerVault,
+    IBalancerVault__factory,
     ERC20,
     ERC20__factory,
     IBalancerPool__factory,
@@ -506,7 +506,7 @@ describe("Full Deployment", () => {
                     // Weights
                     // Swap = false
                     // Balance = treasuryDAO
-                    const balancerVault = IVault__factory.connect(config.addresses.balancerVault, deployer);
+                    const balancerVault = IBalancerVault__factory.connect(config.addresses.balancerVault, deployer);
                     const balances = await balancerVault.getPoolTokens(lbpBpt.poolId);
                     const pool = IBalancerPool__factory.connect(lbpBpt.address, deployer);
                     const weights = await pool.getNormalizedWeights();
@@ -592,11 +592,11 @@ describe("Full Deployment", () => {
         describe("TEST-Phase 2", () => {
             let treasurySigner: Account;
             let daoSigner: Account;
-            let balancerVault: IVault;
+            let balancerVault: IBalancerVault;
             before(async () => {
                 treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
                 daoSigner = await impersonateAccount(config.multisigs.daoMultisig);
-                balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+                balancerVault = IBalancerVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
             });
 
             it("doesn't allow dao to set more than 10k votes on gaugeController", async () => {
@@ -778,13 +778,13 @@ describe("Full Deployment", () => {
     describe("Phase 3", () => {
         describe("PRE-Phase 3", () => {
             let treasurySigner: Account;
-            let balancerVault: IVault;
+            let balancerVault: IBalancerVault;
             let weth: ERC20;
             let aura: ERC20;
             let bpt: ERC20;
             before(async () => {
                 treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                balancerVault = IVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
+                balancerVault = IBalancerVault__factory.connect(config.addresses.balancerVault, treasurySigner.signer);
                 weth = MockERC20__factory.connect(config.addresses.weth, treasurySigner.signer);
                 aura = phase2.cvx.connect(treasurySigner.signer);
                 bpt = MockERC20__factory.connect(phase2.lbpBpt.address, treasurySigner.signer);
@@ -843,7 +843,7 @@ describe("Full Deployment", () => {
                     const { pool8020Bpt, cvx, balLiquidityProvider } = phase3;
 
                     const treasurySigner = await impersonateAccount(config.multisigs.treasuryMultisig);
-                    const balancerVault = IVault__factory.connect(
+                    const balancerVault = IBalancerVault__factory.connect(
                         config.addresses.balancerVault,
                         treasurySigner.signer,
                     );
