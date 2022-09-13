@@ -34,7 +34,7 @@ import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
-import { deployCrossChainL1 } from "../scripts/deployCrossChain";
+import { deployCrossChainL1, deployCrossChainL2, setUpCrossChainL2 } from "../scripts/deployCrossChain";
 import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 
 const debug = false;
@@ -124,7 +124,7 @@ describe("Cross Chain Deposits", () => {
                     rAura: { symbol: "rAURA" },
                     booster: contracts.booster.address,
                     cvxLocker: contracts.cvxLocker.address,
-                    crvToken: crvToken.address,
+                    token: crvToken.address,
                     cvx: contracts.cvx.address,
                     lzEndpoint: lzEndpoint.address,
                     dstChainId: DST_CHAIN_ID,
@@ -186,78 +186,45 @@ describe("Cross Chain Deposits", () => {
         let crvRewards: BaseRewardPool;
         let depositToken: IERC20;
 
-        it("[L2] deploy mocks", async () => {
+        before(async () => {
+            // deploy mocks
             const smartWalletChecker = await new SmartWalletChecker__factory(deployer).deploy();
 
             veToken = await new MockCurveVoteEscrow__factory(deployer).deploy(
                 smartWalletChecker.address,
                 config.addresses.tokenBpt,
             );
-        });
-        it("[L2] deploy rAURA", async () => {
-            L2_rCvx = await new RAura__factory(deployer).deploy("rAURA", "rAURA");
-            siphonReceiver = await new SiphonReceiver__factory(deployer).deploy(
-                L2_rCvx.address,
-                siphonDepositor.address,
-                lzEndpoint.address,
-                DST_CHAIN_ID,
-            );
-            await siphonDepositor.setL2SiphonReceiver(siphonReceiver.address);
-            await L2_rCvx.transferOwnership(siphonReceiver.address);
-        });
-        it("[L2] deploy booster and voter proxy", async () => {
-            const voterProxy = await new VoterProxy__factory(deployer).deploy(
-                config.addresses.minter,
-                config.addresses.token,
-                config.addresses.tokenBpt,
-                veToken.address,
-                config.addresses.gaugeController,
+
+            const crossChainL2 = await deployCrossChainL2(
+                {
+                    siphonDepositor: siphonDepositor.address,
+                    rAura: { symbol: "rAURA" },
+                    lzEndpoint: lzEndpoint.address,
+                    dstChainId: DST_CHAIN_ID,
+                    minter: config.addresses.minter,
+                    token: crvToken.address,
+                    tokenBpt: config.addresses.tokenBpt,
+                    votingEscrow: veToken.address,
+                    gaugeController: config.addresses.gaugeController,
+                    cvx: contracts.cvx.address,
+                    voteOwnership: ethers.constants.AddressZero,
+                    voteParameter: ethers.constants.AddressZero,
+                    naming: {
+                        tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
+                        cvxSymbol: config.naming.cvxSymbol,
+                    },
+                },
+                deployer,
+                hre,
+                debug,
+                0,
             );
 
-            L2_booster = await new Booster__factory(deployer).deploy(
-                voterProxy.address,
-                siphonReceiver.address,
-                config.addresses.token,
-                ethers.constants.AddressZero,
-                ethers.constants.AddressZero,
-            );
-            // Setup
-            await voterProxy.setOperator(L2_booster.address);
-            await L2_booster.setPoolManager(deployerAddress);
-            await L2_booster.setFees(550, 1100, 50, 0);
-            await L2_booster.setOwner(deployerAddress);
-            await L2_booster.setRewardContracts(siphonReceiver.address, siphonReceiver.address);
-            await siphonReceiver.setBooster(L2_booster.address);
-        });
-        it("[L2] deploy factories", async () => {
-            // RewardFactory
-            const rewardFactory = await new RewardFactory__factory(deployer).deploy(
-                L2_booster.address,
-                config.addresses.token,
-            );
-            // TokenFactory
-            const tokenFactory = await new TokenFactory__factory(deployer).deploy(
-                L2_booster.address,
-                "postFix",
-                "rAURA",
-            );
-            // ProxyFactory
-            const proxyFactory = await new ProxyFactory__factory(deployer).deploy();
-            // StashFactory
-            const stashFactory = await new StashFactoryV2__factory(deployer).deploy(
-                L2_booster.address,
-                rewardFactory.address,
-                proxyFactory.address,
-            );
-            // StashV3
-            const stash = await new ExtraRewardStashV3__factory(deployer).deploy(config.addresses.token);
-            // Setup
-            await L2_booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
-            await stashFactory.setImplementation(
-                ethers.constants.AddressZero,
-                ethers.constants.AddressZero,
-                stash.address,
-            );
+            L2_rCvx = crossChainL2.rAura;
+            siphonReceiver = crossChainL2.siphonReceiver;
+            L2_booster = crossChainL2.booster;
+
+            await setUpCrossChainL2({ siphonReceiver, siphonDepositor });
         });
         it("[L2] add a pool", async () => {
             const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";

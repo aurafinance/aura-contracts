@@ -1,28 +1,65 @@
-import { BigNumberish, Signer } from "ethers";
+import { ethers, BigNumberish, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract } from "../tasks/utils";
 import { simpleToExactAmount } from "../test-utils";
 import {
+    Booster,
+    Booster__factory,
+    ExtraRewardStashV3,
+    ExtraRewardStashV3__factory,
+    ProxyFactory,
+    ProxyFactory__factory,
     RAura,
     RAura__factory,
+    RewardFactory,
+    RewardFactory__factory,
     SiphonDepositor,
     SiphonDepositor__factory,
     SiphonGauge,
     SiphonGauge__factory,
+    SiphonReceiver,
+    SiphonReceiver__factory,
     SiphonToken,
     SiphonToken__factory,
+    StashFactoryV2,
+    StashFactoryV2__factory,
+    TokenFactory,
+    TokenFactory__factory,
+    VoterProxy,
+    VoterProxy__factory,
 } from "../types";
 
-export interface CrossChainDeploymentConfig {
+// Layer 1 deployment config
+export interface CrossChainL1DeploymentConfig {
     siphondepositor: { pid: BigNumberish };
     rAura: { symbol: string };
     booster: string;
     cvxLocker: string;
-    crvToken: string;
+    token: string;
     cvx: string;
     lzEndpoint: string;
     dstChainId: BigNumberish;
     penalty: BigNumberish;
+}
+
+// Layer 2 deployment config
+export interface CrossChainL2DeploymentConfig {
+    siphonDepositor: string;
+    rAura: { symbol: string };
+    lzEndpoint: string;
+    dstChainId: BigNumberish;
+    minter: string;
+    token: string;
+    tokenBpt: string;
+    votingEscrow: string;
+    gaugeController: string;
+    cvx: string;
+    voteOwnership: string;
+    voteParameter: string;
+    naming: {
+        tokenFactoryNamePostfix: string;
+        cvxSymbol: string;
+    };
 }
 
 export interface CrossChainL1Deployment {
@@ -30,6 +67,18 @@ export interface CrossChainL1Deployment {
     siphonGauge: SiphonGauge;
     rAura: RAura;
     siphonDepositor: SiphonDepositor;
+}
+
+export interface CrossChainL2Deployment {
+    rAura: RAura;
+    siphonReceiver: SiphonReceiver;
+    voterProxy: VoterProxy;
+    booster: Booster;
+    rewardFactory: RewardFactory;
+    tokenFactory: TokenFactory;
+    proxyFactory: ProxyFactory;
+    stashFactory: StashFactoryV2;
+    stash: ExtraRewardStashV3;
 }
 
 /**
@@ -41,7 +90,7 @@ export interface CrossChainL1Deployment {
  * - siphonDepositor: The contract in charge or coordinating everything
  */
 export async function deployCrossChainL1(
-    config: CrossChainDeploymentConfig,
+    config: CrossChainL1DeploymentConfig,
     signer: Signer,
     hre: HardhatRuntimeEnvironment,
     debug: boolean = true,
@@ -92,7 +141,7 @@ export async function deployCrossChainL1(
             config.siphondepositor.pid,
             config.booster,
             config.cvxLocker,
-            config.crvToken,
+            config.token,
             config.cvx,
             rAura.address,
             config.lzEndpoint,
@@ -117,21 +166,164 @@ export async function deployCrossChainL1(
     };
 }
 
-export async function deployCrossChainL2() {
+/**
+ * Deploy the layer 2 part of the Cross Chain deployment
+ *
+ * - rAURA: wrapped AURA token
+ * - siphonReceiver: receives rAURA from L1 and distributes as rewards
+ * - voterProxy: L2 voter proxy
+ * - booster: L2 booster
+ * - factories:
+ *   - rewardFactory
+ *   - tokenFactory
+ *   - proxyFactory
+ *   - stashFactory
+ * - stash: extra reward stash v3
+ */
+export async function deployCrossChainL2(
+    config: CrossChainL2DeploymentConfig,
+    signer: Signer,
+    hre: HardhatRuntimeEnvironment,
+    debug: boolean = true,
+    waitForBlocks: number,
+): Promise<CrossChainL2Deployment> {
+    const signerAddress = await signer.getAddress();
+
     // deploy rAURA
+    const rAura = await deployContract<RAura>(
+        hre,
+        new RAura__factory(signer),
+        "rAura",
+        [config.rAura.symbol, config.rAura.symbol],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     // deploy siphon receiver
+    const siphonReceiver = await deployContract<SiphonReceiver>(
+        hre,
+        new SiphonReceiver__factory(signer),
+        "SiphonReceiver",
+        [rAura.address, config.siphonDepositor, config.lzEndpoint, config.dstChainId],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     // transfer ownership of rAURA to siphon receiver
+    await rAura.transferOwnership(siphonReceiver.address);
+
     /* ---------------------------------------------------
-       Deploy Aura System
+       Deploy Voter Proxy 
     --------------------------------------------------- */
+
     // deploy voter proxy
+    const voterProxy = await deployContract<VoterProxy>(
+        hre,
+        new VoterProxy__factory(signer),
+        "VoterProxy",
+        [config.minter, config.token, config.tokenBpt, config.votingEscrow, config.gaugeController],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    /* ---------------------------------------------------
+       Deploy Booster 
+    --------------------------------------------------- */
+
     // deploy booster
-    // setup booster/vp
-    // set booster on siphon receiver
+    const booster = await deployContract<Booster>(
+        hre,
+        new Booster__factory(signer),
+        "Booster",
+        [voterProxy.address, siphonReceiver.address, config.token, config.voteOwnership, config.voteParameter],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    // booster setup
+    await voterProxy.setOperator(booster.address);
+    await siphonReceiver.setBooster(booster.address);
+    await booster.setPoolManager(signerAddress);
+    await booster.setFees(550, 1100, 50, 0);
+    await booster.setOwner(signerAddress);
+    await booster.setRewardContracts(siphonReceiver.address, siphonReceiver.address);
+
     // deploy factories
-    // set factories on the Booster
+    const rewardFactory = await deployContract<RewardFactory>(
+        hre,
+        new RewardFactory__factory(signer),
+        "RewardFactory",
+        [booster.address, config.token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const tokenFactory = await deployContract<TokenFactory>(
+        hre,
+        new TokenFactory__factory(signer),
+        "TokenFactory",
+        [booster.address, config.naming.tokenFactoryNamePostfix, config.naming.cvxSymbol.toLowerCase()],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const proxyFactory = await deployContract<ProxyFactory>(
+        hre,
+        new ProxyFactory__factory(signer),
+        "ProxyFactory",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const stashFactory = await deployContract<StashFactoryV2>(
+        hre,
+        new StashFactoryV2__factory(signer),
+        "StashFactory",
+        [booster.address, rewardFactory.address, proxyFactory.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const stash = await deployContract<ExtraRewardStashV3>(
+        hre,
+        new ExtraRewardStashV3__factory(signer),
+        "ExtraRewardStashV3",
+        [config.token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    // booster setup
+    await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+    await stashFactory.setImplementation(ethers.constants.AddressZero, ethers.constants.AddressZero, stash.address);
+
+    return {
+        rAura,
+        siphonReceiver,
+        voterProxy,
+        booster,
+        rewardFactory,
+        tokenFactory,
+        proxyFactory,
+        stashFactory,
+        stash,
+    };
 }
 
-export async function setUpCrossChainL2() {
+export async function setUpCrossChainL2(contracts: {
+    siphonDepositor: SiphonDepositor;
+    siphonReceiver: SiphonReceiver;
+}) {
     // set siphon receiver on L1 siphon depositor
+    await contracts.siphonDepositor.setL2SiphonReceiver(contracts.siphonReceiver.address);
 }
