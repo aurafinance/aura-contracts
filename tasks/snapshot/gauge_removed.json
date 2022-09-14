@@ -666,35 +666,29 @@
         }
     },
     {
-        "address": "0x5204f813cF58a4722E481b3b1cDfBBa45088fE36",
+        "address": "0x4f9463405F5bC7b4C1304222c1dF76EFbD81a407",
         "network": 1,
         "pool": {
-            "id": "0x8eb6c82c3081bbbd45dcac5afa631aac53478b7c000100000000000000000270",
-            "address": "0x8eB6c82C3081bBBd45DcAC5afA631aaC53478b7C",
+            "id": "0x90291319f1d4ea3ad4db0dd8fe9e12baf749e84500020000000000000000013c",
+            "address": "0x90291319F1D4eA3ad4dB0Dd8fe9E12BAF749E845",
             "poolType": "Weighted",
-            "symbol": "40WBTC-40DIGG-20graviAURA",
+            "symbol": "B-30FEI-70WETH",
             "tokens": [
                 {
-                    "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-                    "weight": "0.4",
-                    "symbol": "WBTC"
+                    "address": "0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
+                    "weight": "0.3",
+                    "symbol": "FEI"
                 },
                 {
-                    "address": "0x798D1bE841a82a273720CE31c822C61a67a601C3",
-                    "weight": "0.4",
-                    "symbol": "DIGG"
-                },
-                {
-                    "address": "0xBA485b556399123261a5F9c95d413B4f93107407",
-                    "weight": "0.2",
-                    "symbol": "graviAURA"
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.7",
+                    "symbol": "WETH"
                 }
             ]
         },
         "tokenLogoURIs": {
-            "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
-            "0x798D1bE841a82a273720CE31c822C61a67a601C3": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x798D1bE841a82a273720CE31c822C61a67a601C3/logo.png",
-            "0xBA485b556399123261a5F9c95d413B4f93107407": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xba485b556399123261a5f9c95d413b4f93107407.png"
+            "0x956F47F50A910163D8BF957Cf5846D573E7f87CA": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x956F47F50A910163D8BF957Cf5846D573E7f87CA/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
         }
     }
 ]
