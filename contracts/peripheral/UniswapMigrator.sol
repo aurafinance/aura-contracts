@@ -3,7 +3,8 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
-import { IBalancerVault, IPriceOracle, IAsset, IBalancerPool, IWeightedPool2TokensFactory, IStablePoolFactory } from "../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerVault, IPriceOracle, IWeightedPool2TokensFactory } from "../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerPool, IAsset, IStablePoolFactory } from "../interfaces/balancer/IBalancerCore.sol";
 import { ILiquidityGaugeFactory } from "../_mocks/balancer/MockLiquidityGaugeFactory.sol";
 import { IRewardPool } from "../_mocks/balancer/MockRewardPool.sol";
 import { IUniswapV2Pair } from "../_mocks/uniswap/MockUniswapV2Pair.sol";
