@@ -1,0 +1,210 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.11;
+
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+
+interface IPriceOracle {
+    struct OracleAverageQuery {
+        Variable variable;
+        uint256 secs;
+        uint256 ago;
+    }
+    enum Variable {
+        PAIR_PRICE,
+        BPT_PRICE,
+        INVARIANT
+    }
+
+    function getTimeWeightedAverage(OracleAverageQuery[] memory queries)
+        external
+        view
+        returns (uint256[] memory results);
+}
+
+interface IBalancerVault {
+    enum PoolSpecialization {
+        GENERAL,
+        MINIMAL_SWAP_INFO,
+        TWO_TOKEN
+    }
+    enum JoinKind {
+        INIT,
+        EXACT_TOKENS_IN_FOR_BPT_OUT,
+        TOKEN_IN_FOR_EXACT_BPT_OUT,
+        ALL_TOKENS_IN_FOR_EXACT_BPT_OUT
+    }
+
+    enum SwapKind {
+        GIVEN_IN,
+        GIVEN_OUT
+    }
+
+    struct SingleSwap {
+        bytes32 poolId;
+        SwapKind kind;
+        IAsset assetIn;
+        IAsset assetOut;
+        uint256 amount;
+        bytes userData;
+    }
+
+    struct FundManagement {
+        address sender;
+        bool fromInternalBalance;
+        address payable recipient;
+        bool toInternalBalance;
+    }
+
+    struct JoinPoolRequest {
+        IAsset[] assets;
+        uint256[] maxAmountsIn;
+        bytes userData;
+        bool fromInternalBalance;
+    }
+
+    function getPool(bytes32 poolId) external view returns (address, PoolSpecialization);
+
+    function getPoolTokens(bytes32 poolId)
+        external
+        view
+        returns (
+            address[] memory tokens,
+            uint256[] memory balances,
+            uint256 lastChangeBlock
+        );
+
+    function joinPool(
+        bytes32 poolId,
+        address sender,
+        address recipient,
+        JoinPoolRequest memory request
+    ) external payable;
+
+    function swap(
+        SingleSwap memory singleSwap,
+        FundManagement memory funds,
+        uint256 limit,
+        uint256 deadline
+    ) external returns (uint256 amountCalculated);
+
+    function exitPool(
+        bytes32 poolId,
+        address sender,
+        address payable recipient,
+        ExitPoolRequest memory request
+    ) external;
+
+    function getInternalBalance(address user, address[] memory tokens) external view returns (uint256[] memory);
+
+    struct ExitPoolRequest {
+        IAsset[] assets;
+        uint256[] minAmountsOut;
+        bytes userData;
+        bool toInternalBalance;
+    }
+    enum ExitKind {
+        EXACT_BPT_IN_FOR_ONE_TOKEN_OUT,
+        EXACT_BPT_IN_FOR_TOKENS_OUT,
+        BPT_IN_FOR_EXACT_TOKENS_OUT,
+        MANAGEMENT_FEE_TOKENS_OUT // for ManagedPool
+    }
+}
+
+interface IAsset {
+    // solhint-disable-previous-line no-empty-blocks
+}
+
+interface IBalancerPool {
+    function getPoolId() external view returns (bytes32);
+
+    function getNormalizedWeights() external view returns (uint256[] memory);
+
+    function getSwapEnabled() external view returns (bool);
+
+    function getOwner() external view returns (address);
+}
+
+interface ILBPFactory {
+    function create(
+        string memory name,
+        string memory symbol,
+        IERC20[] memory tokens,
+        uint256[] memory weights,
+        uint256 swapFeePercentage,
+        address owner,
+        bool swapEnabledOnStart
+    ) external returns (address);
+}
+
+interface ILBP {
+    function setSwapEnabled(bool swapEnabled) external;
+
+    function updateWeightsGradually(
+        uint256 startTime,
+        uint256 endTime,
+        uint256[] memory endWeights
+    ) external;
+
+    function getGradualWeightUpdateParams()
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256[] memory endWeights
+        );
+}
+
+interface IStablePoolFactory {
+    function create(
+        string memory name,
+        string memory symbol,
+        IERC20[] memory tokens,
+        uint256 amplificationParameter,
+        uint256 swapFeePercentage,
+        address owner
+    ) external returns (address);
+}
+
+interface IWeightedPool2TokensFactory {
+    function create(
+        string memory name,
+        string memory symbol,
+        IERC20[] memory tokens,
+        uint256[] memory weights,
+        uint256 swapFeePercentage,
+        bool oracleEnabled,
+        address owner
+    ) external returns (address);
+}
+
+interface IBooster {
+    struct PoolInfo {
+        address lptoken;
+        address token;
+        address gauge;
+        address crvRewards;
+        address stash;
+        bool shutdown;
+    }
+
+    function earmarkRewards(uint256 _pid) external returns (bool);
+
+    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+}
+
+interface IBaseRewardPool4626 {
+    function withdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external returns (uint256 shares);
+
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+
+    function asset() external view returns (address);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function processIdleRewards() external;
+}

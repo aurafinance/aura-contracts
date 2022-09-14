@@ -1,13 +1,13 @@
 import { BaseRewardPool4626__factory } from "./../types/generated/factories/BaseRewardPool4626__factory";
 import hre, { ethers, network } from "hardhat";
-import { ERC20, ERC20__factory, IVault__factory, MockERC20__factory } from "../types/generated";
+import { ERC20, ERC20__factory, IBalancerVault__factory, MockERC20__factory } from "../types/generated";
 import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
 import { Signer } from "ethers";
 import { waitForTx } from "../tasks/utils";
 import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
 import { config } from "../tasks/deploy/mainnet-config";
 import { expect } from "chai";
-import { JoinPoolRequestStruct } from "types/generated/IVault";
+import { JoinPoolRequestStruct } from "types/generated/IBalancerVault";
 
 const debug = false;
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -59,7 +59,7 @@ describe("RewardPoolDepositWrapper", () => {
 
         usdc = ERC20__factory.connect(usdcAddress, staker);
 
-        await getUSDC(stakerAddress, simpleToExactAmount(100, 6));
+        await getUSDC(stakerAddress, simpleToExactAmount(101, 6));
     });
 
     const getUSDC = async (recipient: string, amount = simpleToExactAmount(10)) => {
@@ -103,9 +103,9 @@ describe("RewardPoolDepositWrapper", () => {
     it("allow deposit into pool via Booster", async () => {
         const { rewardDepositWrapper } = phase4;
         const poolInfo = await phase4.booster.poolInfo(0);
-        const crvRewards = await BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker);
+        const crvRewards = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker);
 
-        const vault = IVault__factory.connect(config.addresses.balancerVault, staker);
+        const vault = IBalancerVault__factory.connect(config.addresses.balancerVault, staker);
         const poolId = "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063";
         const poolTokens = (await vault.getPoolTokens(poolId)).tokens;
 
@@ -120,6 +120,8 @@ describe("RewardPoolDepositWrapper", () => {
         };
 
         const balBefore = await crvRewards.balanceOf(stakerAddress);
+
+        await usdc.transfer(rewardDepositWrapper.address, simpleToExactAmount(1, 6));
 
         let tx = await usdc.approve(rewardDepositWrapper.address, simpleToExactAmount(100, 6));
         await waitForTx(tx, debug);
