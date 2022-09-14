@@ -3,7 +3,8 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { IBaseRewardPool4626, IBooster } from "./Interfaces.sol";
+import { IRewardPool4626 } from "../interfaces/IRewardPool4626.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
 
 /**
  * @title   GaugeMigrator
@@ -28,12 +29,12 @@ contract GaugeMigrator {
 
         require(fromPool.lptoken == toPool.lptoken, "Invalid lptokens");
 
-        // IBaseRewardPool4626 shares:asset ratio is 1:1
-        uint256 balance = IBaseRewardPool4626(fromPool.crvRewards).balanceOf(msg.sender);
+        // IRewardPool4626 shares:asset ratio is 1:1
+        uint256 balance = IRewardPool4626(fromPool.crvRewards).balanceOf(msg.sender);
         IERC20 asset = IERC20(fromPool.lptoken);
-        IBaseRewardPool4626(fromPool.crvRewards).withdraw(balance, address(this), msg.sender);
+        IRewardPool4626(fromPool.crvRewards).withdraw(balance, address(this), msg.sender);
 
         asset.safeApprove(toPool.crvRewards, balance);
-        IBaseRewardPool4626(toPool.crvRewards).deposit(balance, msg.sender);
+        IRewardPool4626(toPool.crvRewards).deposit(balance, msg.sender);
     }
 }
