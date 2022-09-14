@@ -93,17 +93,29 @@ contract SiphonReceiver is ILayerZeroReceiver, Ownable {
         emit Mint(msg.sender, _to, _amount);
     }
 
+    /**
+     * @dev The Booster calls this function when earmarking rewards.
+     *      Instead of having to make changes to the Booster we just
+     *      implement the method interface so it can be called silently
+     */
     function queueNewRewards(uint256) external {
-        // TODO:
-        // Potential idea:
-        // only callable by the Booster
-        // Every 2nd call could trigger the incentives to be
-        // sent back to the L1 (via lzEndpoint)
+        // Silence is golden
     }
 
     /* -------------------------------------------------------------------
       LZ functions L2 -> L1
     ------------------------------------------------------------------- */
+
+    /**
+     * @dev Send BAL rewards tokens from L2 to L1
+     */
+    function flush() external onlyOwner {
+        // TODO:
+        // Send BAL from L2 -> L1. We may want to consider making this
+        // functionality upgradable. If a bridge stop supporting BAL
+        // or liquidity dries up we could end up stuck. We could also
+        // consider writing a fallback to the native bridge
+    }
 
     /**
      * @dev Convert L2 rCVX tokens to CVX tokens on L1 via Layer Zero
