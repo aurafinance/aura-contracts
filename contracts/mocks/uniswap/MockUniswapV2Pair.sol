@@ -6,6 +6,8 @@ interface IUniswapV2Pair {
 
     function balanceOf(address owner) external view returns (uint256);
 
+    function totalSupply() external view returns (uint256);
+
     function burn(address to) external returns (uint256 amount0, uint256 amount1);
 
     function transferFrom(
@@ -17,4 +19,13 @@ interface IUniswapV2Pair {
     function token0() external view returns (address);
 
     function token1() external view returns (address);
+
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 _reserve0,
+            uint112 _reserve1,
+            uint32 _blockTimestampLast
+        );
 }

@@ -13,4 +13,6 @@ interface IBalancerPool {
     function getOwner() external view returns (address);
 
     function totalSupply() external view returns (uint256);
+
+    function balanceOf(address account) external view returns (uint256);
 }

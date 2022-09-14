@@ -132,6 +132,7 @@ interface ExtSystemConfig {
     balancerMinOutBps: string;
     balancerPoolOwner?: string;
     balancerGaugeFactory?: string;
+    balancerHelpers?: string;
     weth: string;
     wethWhale?: string;
     treasury?: string;

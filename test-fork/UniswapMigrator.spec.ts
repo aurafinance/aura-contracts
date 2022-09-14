@@ -1,12 +1,37 @@
 import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { ERC20__factory, ERC20, UniswapMigrator, UniswapMigrator__factory } from "../types/generated";
-import { deployContract } from "../tasks/utils";
-import { impersonateAccount, impersonate, ZERO_ADDRESS, getTimestamp, ONE_HOUR, BN } from "../test-utils";
-import { Signer } from "ethers";
+import { AssetHelpers, WeightedPoolEncoder } from "@balancer-labs/balancer-js";
+import {
+    ERC20__factory,
+    ERC20,
+    UniswapMigrator,
+    UniswapMigrator__factory,
+    IUniswapV2Router02__factory,
+    IUniswapV2Router02,
+    IUniswapV2Pair,
+    IUniswapV2Pair__factory,
+    IBalancerVault,
+    IBalancerVault__factory,
+    IBalancerHelpers,
+    IBalancerHelpers__factory,
+    IBalancerPool,
+    IBalancerPool__factory,
+} from "../types/generated";
+import { deployContract, waitForTx } from "../tasks/utils";
+import {
+    impersonateAccount,
+    impersonate,
+    ZERO_ADDRESS,
+    getTimestamp,
+    ONE_HOUR,
+    BN,
+    simpleToExactAmount,
+} from "../test-utils";
+import { FixedNumber, Signer } from "ethers";
 import { Account } from "types";
 import { config } from "../tasks/deploy/mainnet-config";
-import { AssetHelpers } from "@balancer-labs/balancer-js";
+import { JoinPoolRequestStruct } from "../types/generated/IBalancerVault";
+import { getAddress } from "ethers/lib/utils";
 
 const debug = false;
 
@@ -25,29 +50,42 @@ const daiAddress = "0x6b175474e89094c44da98b954eedeac495271d0f";
 
 const balHelper = new AssetHelpers(wethAddress);
 
+enum MigratorSource {
+    Uniswap,
+    Sushiswap,
+}
+
+enum BalancerFactory {
+    Weighted,
+    Stable,
+}
+
 interface PoolData {
-    balancerFactory: number; // WEIGHTED = 0 , STABLE = 1
+    balancerFactory: BalancerFactory;
     name: string;
     symbol: string;
     tokens: Array<string>;
     swapFeePercentage: number;
     oracleEnabled?: boolean;
     amplificationParameter?: number;
-    minOut: number;
 }
+
 describe("UniswapMigrator", () => {
     let sushiWbtcWethLPHolder: Account;
     let sushiOhmDaiLPHolder: Account;
     let uniV2FeiTribeLPHolder: Account;
     let uniV2WbtcWethLPHolder: Account;
     let signer: Signer;
-    let sushiWbtcWethLPToken: ERC20;
-    let balWbtcWethLPToken: ERC20;
-    let uniV2FeiTribeLPToken: ERC20;
-    let uniV2WbtcWethLPToken: ERC20;
-    let sushiOhmDaiLPToken: ERC20;
 
+    let sushiWbtcWethLPToken: IUniswapV2Pair;
+    let uniV2FeiTribeLPToken: IUniswapV2Pair;
+    let uniV2WbtcWethLPToken: IUniswapV2Pair;
+    let sushiOhmDaiLPToken: IUniswapV2Pair;
+    let balWbtcWethLPToken: IBalancerPool;
+    let balancerVault: IBalancerVault;
+    let balancerHelpers: IBalancerHelpers;
     let uniswapMigrator: UniswapMigrator;
+    let uniswapRouter: IUniswapV2Router02;
 
     async function setup() {
         await network.provider.request({
@@ -56,7 +94,7 @@ describe("UniswapMigrator", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 15400000,
+                        blockNumber: 15527000,
                     },
                 },
             ],
@@ -89,25 +127,74 @@ describe("UniswapMigrator", () => {
             debug,
         );
 
-        sushiWbtcWethLPToken = ERC20__factory.connect(sushiWbtcWethLPTokenAddress, signer);
-        balWbtcWethLPToken = ERC20__factory.connect(balWbtcWethLPTokenAddress, signer);
-        uniV2FeiTribeLPToken = ERC20__factory.connect("0x9928e4046d7c6513326ccea028cd3e7a91c7590a", signer);
-        uniV2WbtcWethLPToken = ERC20__factory.connect(uniV2WbtcWethLPTokenAddress, signer);
-        sushiOhmDaiLPToken = ERC20__factory.connect("0x055475920a8c93cffb64d039a8205f7acc7722d3", signer);
+        uniV2FeiTribeLPToken = IUniswapV2Pair__factory.connect("0x9928e4046d7c6513326ccea028cd3e7a91c7590a", signer);
+        uniV2WbtcWethLPToken = IUniswapV2Pair__factory.connect(uniV2WbtcWethLPTokenAddress, signer);
+
+        sushiWbtcWethLPToken = IUniswapV2Pair__factory.connect(sushiWbtcWethLPTokenAddress, signer);
+        sushiOhmDaiLPToken = IUniswapV2Pair__factory.connect("0x055475920a8c93cffb64d039a8205f7acc7722d3", signer);
+
+        balWbtcWethLPToken = IBalancerPool__factory.connect(balWbtcWethLPTokenAddress, signer);
+
+        uniswapRouter = IUniswapV2Router02__factory.connect(addresses.uniswapRouter, signer);
+
+        balancerVault = IBalancerVault__factory.connect(addresses.balancerVault, signer);
+        balancerHelpers = IBalancerHelpers__factory.connect(addresses.balancerHelpers, signer);
     }
 
     beforeEach(async () => {
         await setup();
     });
 
-    const expectMigrateUniswapV2AndJoinPool = async (
+    async function getAmountsMin(
         account: Account,
-        source: number,
-        tokens: Array<string>,
-        fromLPToken: ERC20,
-        toLPToken: ERC20,
+        source: MigratorSource,
+        tokens: string[],
+        fromLPToken: IUniswapV2Pair,
+        slippageBips: number,
+    ) {
+        const totalSupply = await fromLPToken.totalSupply();
+        const balance = await fromLPToken.balanceOf(account.address);
+        const reserves = (await fromLPToken.getReserves()).slice(0, 2);
+        const token0 = await fromLPToken.token0();
+
+        const amountsMin = reserves.map(reserve => {
+            const share = balance.mul(simpleToExactAmount(1)).div(simpleToExactAmount(0.5));
+            const amount = share.mul(reserve).div(totalSupply);
+            return amount.sub(amount.mul(10_000 - slippageBips).div(10_000));
+        });
+
+        // Reorder amountsMin to tokens order
+        return getAddress(token0) === getAddress(tokens[0]) ? amountsMin : amountsMin.reverse();
+    }
+
+    async function getAmountMinOut(
+        pool: IBalancerPool,
+        assets: string[],
+        maxAmountsIn: BN[],
+        sender: string,
+        recipient: string,
+    ) {
+        // Use a minimumBPT of 1 because we need to call queryJoin with amounts in to get the BPT amount out
+        const userData = WeightedPoolEncoder.joinExactTokensInForBPTOut(maxAmountsIn, 1);
+        const joinPoolRequest: JoinPoolRequestStruct = {
+            assets,
+            maxAmountsIn,
+            userData,
+            fromInternalBalance: false,
+        };
+        const poolId = await pool.getPoolId();
+        const [bptOut] = await balancerHelpers.callStatic.queryJoin(poolId, sender, recipient, joinPoolRequest);
+        return bptOut;
+    }
+
+    async function expectMigrateUniswapV2AndJoinPool(
+        account: Account,
+        source: MigratorSource,
+        tokens: string[],
+        fromLPToken: IUniswapV2Pair,
+        toLPToken: IBalancerPool,
         rewardPool: ERC20,
-    ) => {
+    ) {
         const isRewardPool = rewardPool.address !== ZERO_ADDRESS;
 
         const fromLPPositionBefore = await fromLPToken.balanceOf(account.address);
@@ -115,10 +202,18 @@ describe("UniswapMigrator", () => {
         const rewardPoolBalanceBefore = isRewardPool ? await rewardPool.balanceOf(account.address) : BN.from(0);
 
         expect(fromLPPositionBefore, "from position").to.gt(0);
-        const amountsMin = [1, 1];
+        const amountsMin = await getAmountsMin(account, source, tokens, fromLPToken, 50);
         const deadline = (await getTimestamp()).add(ONE_HOUR);
-        const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(tokens, amountsMin);
-        const amountMinOut = 1;
+
+        const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(tokens, amountsMin) as [string[], BN[]];
+
+        const amountMinOut = await getAmountMinOut(
+            toLPToken,
+            tokensSorted,
+            amountsMinSorted,
+            account.address,
+            account.address,
+        );
 
         await fromLPToken.connect(account.signer).approve(uniswapMigrator.address, ethers.constants.MaxUint256);
 
@@ -127,11 +222,11 @@ describe("UniswapMigrator", () => {
             fromLpToken: fromLPToken.address,
             liquidity: fromLPPositionBefore,
             tokens: tokensSorted,
-            amountsMin: amountsMinSorted as BN[],
-            deadline: deadline,
+            amountsMin: amountsMinSorted,
+            deadline,
             pool: toLPToken.address,
             rewardPool: rewardPool.address,
-            amountMinOut: amountMinOut,
+            amountMinOut,
         });
 
         // after joining to the pool the balance is staked on aura therefore the following expectations
@@ -143,25 +238,29 @@ describe("UniswapMigrator", () => {
         if (isRewardPool) {
             const rewardPoolBalanceAfter = await rewardPool.balanceOf(account.address);
             expect(rewardPoolBalanceAfter, "reward pool balance increases").to.gt(rewardPoolBalanceBefore);
+            expect(rewardPoolBalanceAfter, "reward pool balance is over min amount out").to.gte(amountMinOut);
             expect(toLPPositionAfter, "balancer position does not change").to.eq(toLPPositionBefore);
         } else {
-            expect(toLPPositionAfter, "balancer position increases change").to.gt(toLPPositionBefore);
+            expect(toLPPositionAfter, "balancer position increases").to.gt(toLPPositionBefore);
+            expect(toLPPositionAfter, "balancer position is over min amount out").to.gte(amountMinOut);
         }
-    };
-    const expectMigrateUniswapV2AndCreatePool = async (
+    }
+
+    async function expectMigrateUniswapV2AndCreatePool(
         account: Account,
-        source: number,
-        fromLPToken: ERC20,
+        source: MigratorSource,
+        fromLPToken: IUniswapV2Pair,
         poolData: PoolData,
-    ) => {
+    ) {
         const fromLPPositionBefore = await fromLPToken.balanceOf(account.address);
 
         expect(fromLPPositionBefore, "from position").to.gt(0);
 
         await fromLPToken.connect(account.signer).approve(uniswapMigrator.address, ethers.constants.MaxUint256);
-        const amountsMin = [1, 1];
+        const amountsMin = await getAmountsMin(account, source, poolData.tokens, fromLPToken, 50);
         const deadline = (await getTimestamp()).add(ONE_HOUR);
-        const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(poolData.tokens, amountsMin);
+        const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(poolData.tokens, amountsMin) as [string[], BN[]];
+
         const tx = await uniswapMigrator.connect(account.signer).migrateUniswapV2AndCreatePool({
             balancerFactory: poolData.balancerFactory,
             name: poolData.name,
@@ -170,14 +269,14 @@ describe("UniswapMigrator", () => {
             fromLpToken: fromLPToken.address,
             liquidity: fromLPPositionBefore,
             tokens: tokensSorted,
-            amountsMin: amountsMinSorted as BN[],
-            deadline: deadline,
+            amountsMin: amountsMinSorted,
+            deadline,
             swapFeePercentage: poolData.swapFeePercentage,
             oracleEnabled: poolData.oracleEnabled,
             amplificationParameter: poolData.amplificationParameter,
         });
 
-        const receipt = await tx.wait();
+        const receipt = await waitForTx(tx, debug);
         const event = receipt.events.find(e => e.event === "PoolCreated");
         expect(event.args.pool).to.not.be.undefined;
         const poolAddress = event.args.pool;
@@ -191,33 +290,32 @@ describe("UniswapMigrator", () => {
         expect(toLPPositionAfter, "balancer position").to.gt(0);
         expect(gaugeAddress, "balancer gauge").to.not.eq(ZERO_ADDRESS);
         return poolAddress;
-    };
+    }
+
     describe("Migrate Sushi Position", () => {
-        const source = 1; // sushi = 1
+        const source = MigratorSource.Sushiswap;
         it("migrates and creates a new pool - weighted", async () => {
             await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, source, sushiOhmDaiLPToken, {
-                balancerFactory: 0,
-                name: "50ohm-50dai",
-                symbol: "50ohm-50dai",
+                balancerFactory: BalancerFactory.Weighted,
+                name: "50OHM-50DAI",
+                symbol: "50OHM-50DAI",
                 tokens: [ohmAddress, daiAddress],
                 swapFeePercentage: 3000000000000000, // 0.3%
                 amplificationParameter: 0,
                 oracleEnabled: true,
-                minOut: 1,
             });
         });
         it("migrates and creates a new pool - stable", async () => {
             await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, source, sushiOhmDaiLPToken, {
-                balancerFactory: 1,
-                name: "50ohm-50dai",
-                symbol: "50ohm-50dai",
+                balancerFactory: BalancerFactory.Stable,
+                name: "50OHM-50DAI",
+                symbol: "50OHM-50DAI",
                 tokens: [ohmAddress, daiAddress],
                 swapFeePercentage: 3000000000000000, // 0.3%
                 amplificationParameter: 25,
-                minOut: 1,
             });
         });
-        it("migrates join to an existing pool", async () => {
+        it("migrates join to an existing pool - weighted", async () => {
             const auraRewardPool = ERC20__factory.connect(auraWbtcWethRewardPoolAddress, signer);
 
             await expectMigrateUniswapV2AndJoinPool(
@@ -229,7 +327,7 @@ describe("UniswapMigrator", () => {
                 auraRewardPool,
             );
         });
-        it("migrates join to an existing pool without rewards", async () => {
+        it("migrates join to an existing pool without rewards - weighted", async () => {
             const auraRewardPool = ERC20__factory.connect(ZERO_ADDRESS, signer);
 
             await expectMigrateUniswapV2AndJoinPool(
@@ -243,32 +341,30 @@ describe("UniswapMigrator", () => {
         });
     });
     describe("Migrate UniswapV2 Position", () => {
-        const source = 0; // sushi = 1
+        const source = MigratorSource.Uniswap;
 
         it("migrates and creates a new pool - weighted", async () => {
             await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, source, uniV2FeiTribeLPToken, {
-                balancerFactory: 0,
-                name: "50fei-50tribe",
-                symbol: "50fei-50tribe",
+                balancerFactory: BalancerFactory.Weighted,
+                name: "50FEI-50TRIBE",
+                symbol: "50FEI-50TRIBE",
                 tokens: [feiAddress, tribeAddress],
                 swapFeePercentage: 3000000000000000,
                 oracleEnabled: true,
                 amplificationParameter: 0,
-                minOut: 1,
             });
         });
         it("migrates and creates a new pool - stable", async () => {
             await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, source, uniV2FeiTribeLPToken, {
-                balancerFactory: 1,
-                name: "50fei-50tribe",
-                symbol: "50fei-50tribe",
+                balancerFactory: BalancerFactory.Stable,
+                name: "50FEI-50TRIBE",
+                symbol: "50FEI-50TRIBE",
                 tokens: [feiAddress, tribeAddress],
                 swapFeePercentage: 3000000000000000,
                 amplificationParameter: 25,
-                minOut: 1,
             });
         });
-        it("migrates join to an existing pool", async () => {
+        it("migrates join to an existing pool - weighted", async () => {
             const auraRewardPool = ERC20__factory.connect(auraWbtcWethRewardPoolAddress, signer);
 
             await expectMigrateUniswapV2AndJoinPool(
