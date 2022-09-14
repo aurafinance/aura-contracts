@@ -113,6 +113,7 @@ interface BalancerPoolFactories {
     weightedPool2Tokens: string;
     stablePool: string;
     bootstrappingPool: string;
+    weightedPool?: string;
 }
 interface ExtSystemConfig {
     authorizerAdapter?: string;

@@ -3,8 +3,8 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
-import { IBalancerVault, IPriceOracle, IWeightedPool2TokensFactory } from "../interfaces/balancer/IBalancerCore.sol";
-import { IBalancerPool, IAsset, IStablePoolFactory } from "../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerVault, IPriceOracle, IWeightedPoolFactory } from "../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerPool, IAsset, IRateProvider } from "../interfaces/balancer/IBalancerCore.sol";
 import { ILiquidityGaugeFactory } from "../_mocks/balancer/MockLiquidityGaugeFactory.sol";
 import { IRewardPool } from "../_mocks/balancer/MockRewardPool.sol";
 import { IUniswapV2Pair } from "../_mocks/uniswap/MockUniswapV2Pair.sol";
@@ -20,9 +20,7 @@ import { IUniswapV2Router02 } from "../_mocks/uniswap/MockUniswapV2Router02.sol"
 contract UniswapMigrator {
     using SafeERC20 for IERC20;
     /// @dev Balancer weighted pool factory
-    IWeightedPool2TokensFactory public immutable bWeightedPool2PoolFactory;
-    /// @dev Balancer stable pool factory
-    IStablePoolFactory public immutable bStablePoolFactory;
+    IWeightedPoolFactory public immutable bWeightedPoolFactory;
     /// @dev Balancer vault
     IBalancerVault public immutable bVault;
     /// @dev Balancer liquidity gauge factory
@@ -41,10 +39,6 @@ contract UniswapMigrator {
         UNISWAP,
         SUSHISWAP
     }
-    enum BalancerFactory {
-        WEIGHTED_POOL,
-        STABLE_POOL
-    }
     struct JoinPoolRequest {
         LpSource source;
         address fromLpToken;
@@ -58,23 +52,20 @@ contract UniswapMigrator {
     }
 
     struct CreatePoolRequest {
-        BalancerFactory balancerFactory;
         string name;
         string symbol;
         LpSource source;
         address fromLpToken;
         uint256 liquidity;
         IERC20[] tokens;
+        IRateProvider[] rateProviders;
         uint256[] amountsMin;
         uint256 deadline;
         uint256 swapFeePercentage;
-        bool oracleEnabled;
-        uint256 amplificationParameter;
     }
 
     /**
-     * @param _bWeightedPool2PoolFactory The pool factory address
-     * @param _bStablePoolFactory The pool factory address
+     * @param _bWeightedPoolFactory The pool factory address
      * @param _bVault The balancer vault address
      * @param _bGaugeFactory The balancer liquidity gauge factory address
      * @param _uniswapRouter The uniswap router address
@@ -82,16 +73,14 @@ contract UniswapMigrator {
      * @param _poolOwner The onwer address of created poools.
      */
     constructor(
-        address _bWeightedPool2PoolFactory,
-        address _bStablePoolFactory,
+        address _bWeightedPoolFactory,
         address _bVault,
         address _bGaugeFactory,
         address _uniswapRouter,
         address _sushiwapRouter,
         address _poolOwner
     ) {
-        bWeightedPool2PoolFactory = IWeightedPool2TokensFactory(_bWeightedPool2PoolFactory);
-        bStablePoolFactory = IStablePoolFactory(_bStablePoolFactory);
+        bWeightedPoolFactory = IWeightedPoolFactory(_bWeightedPoolFactory);
         bVault = IBalancerVault(_bVault);
         bGaugeFactory = ILiquidityGaugeFactory(_bGaugeFactory);
         uniswapRouter = IUniswapV2Router02(_uniswapRouter);
@@ -111,10 +100,10 @@ contract UniswapMigrator {
      * @param request.fromLpToken The lp Token address
      * @param request.liquidity The amount of liquidity to remove (lpToken amount)
      * @param request.tokens The underlying tokens, tokens have to be sorted as expected by balancer vault.
+     * @param request.rateProviders The underlying tokens rate providers
      * @param request.amountsMin The minimum amount of tokens that must be received.
      * @param request.deadline Unix timestamp after which the transaction will revert.
      * @param request.swapFeePercentage The swap fee percentage
-     * @param request.oracleEnabled Indcates if the pool should be enabled to be an oracle source.
      */
     function migrateUniswapV2AndCreatePool(CreatePoolRequest memory request)
         public
@@ -141,13 +130,11 @@ contract UniswapMigrator {
 
         // 2. Create balancer pool
         pool = _createBalancerPool(
-            request.balancerFactory,
             request.name,
             request.symbol,
             request.tokens,
-            request.swapFeePercentage,
-            request.oracleEnabled,
-            request.amplificationParameter
+            request.rateProviders,
+            request.swapFeePercentage
         );
 
         // 3. Deposit to balancer pool
@@ -250,48 +237,31 @@ contract UniswapMigrator {
     /**
      * Creates a balancer pool, it could be either a Stable Pool  or a Weighted Pool
      *
-     * @param balancerFactory The type of balancer factory to  create the pool, WEIGHTED_POOL = 0 or STABLE_POOL = 1
      * @param name The name of the new pool
      * @param symbol The symbol of the new pool
      * @param tokens The underlying tokens of the balancer pool, have to be sorted as expected by balancer vault.
+     * @param rateProviders The underlying tokens rate providers
      * @param swapFeePercentage The swap fee percentage
-     * @param oracleEnabled Indcates if the pool should be enabled to be an oracle source,
-     * it is only use when balancerFactory = WEIGHTED_POOL
-     * @param amplificationParameter The amplification parameter to use,
-     * it is only use when balancerFactory = STABLE_POOL
      */
     function _createBalancerPool(
-        BalancerFactory balancerFactory,
         string memory name,
         string memory symbol,
         IERC20[] memory tokens,
-        uint256 swapFeePercentage,
-        bool oracleEnabled,
-        uint256 amplificationParameter
+        IRateProvider[] memory rateProviders,
+        uint256 swapFeePercentage
     ) internal returns (address pool) {
-        if (balancerFactory == BalancerFactory.WEIGHTED_POOL) {
-            uint256[] memory weights = new uint256[](2);
-            weights[0] = WEIGHT_50;
-            weights[1] = WEIGHT_50;
-            pool = bWeightedPool2PoolFactory.create(
-                name,
-                symbol,
-                tokens,
-                weights,
-                swapFeePercentage,
-                oracleEnabled,
-                poolOwner
-            );
-        } else {
-            pool = bStablePoolFactory.create(
-                name,
-                symbol,
-                tokens,
-                amplificationParameter,
-                swapFeePercentage,
-                poolOwner
-            );
-        }
+        uint256[] memory normalizedWeights = new uint256[](2);
+        normalizedWeights[0] = WEIGHT_50;
+        normalizedWeights[1] = WEIGHT_50;
+        pool = bWeightedPoolFactory.create(
+            name,
+            symbol,
+            tokens,
+            normalizedWeights,
+            rateProviders,
+            swapFeePercentage,
+            poolOwner
+        );
     }
 
     function _addLiquidityBalancer(

@@ -51,19 +51,12 @@ enum MigratorSource {
     Sushiswap,
 }
 
-enum BalancerFactory {
-    Weighted,
-    Stable,
-}
-
 interface PoolData {
-    balancerFactory: BalancerFactory;
     name: string;
     symbol: string;
     tokens: Array<string>;
     swapFeePercentage: number;
-    oracleEnabled?: boolean;
-    amplificationParameter?: number;
+    minOut: number;
 }
 
 describe("UniswapMigrator", () => {
@@ -88,7 +81,7 @@ describe("UniswapMigrator", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 15527000,
+                        blockNumber: 15530000,
                     },
                 },
             ],
@@ -101,11 +94,10 @@ describe("UniswapMigrator", () => {
         signer = await impersonate(keeperAddress);
 
         const { addresses } = config;
-        const { weightedPool2Tokens, stablePool } = addresses.balancerPoolFactories;
+        const { weightedPool } = addresses.balancerPoolFactories;
 
         const constructorArguments = [
-            weightedPool2Tokens,
-            stablePool,
+            weightedPool,
             addresses.balancerVault,
             addresses.balancerGaugeFactory,
             addresses.uniswapRouter,
@@ -138,7 +130,6 @@ describe("UniswapMigrator", () => {
 
     async function getAmountsMin(
         account: Account,
-        source: MigratorSource,
         tokens: string[],
         fromLPToken: IUniswapV2Pair,
         slippageBips: number,
@@ -193,7 +184,7 @@ describe("UniswapMigrator", () => {
         const rewardPoolBalanceBefore = isRewardPool ? await rewardPool.balanceOf(account.address) : BN.from(0);
 
         expect(fromLPPositionBefore, "from position").to.gt(0);
-        const amountsMin = await getAmountsMin(account, source, tokens, fromLPToken, 50);
+        const amountsMin = await getAmountsMin(account, tokens, fromLPToken, 50);
         const deadline = (await getTimestamp()).add(ONE_HOUR);
 
         const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(tokens, amountsMin) as [string[], BN[]];
@@ -248,23 +239,21 @@ describe("UniswapMigrator", () => {
         expect(fromLPPositionBefore, "from position").to.gt(0);
 
         await fromLPToken.connect(account.signer).approve(uniswapMigrator.address, ethers.constants.MaxUint256);
-        const amountsMin = await getAmountsMin(account, source, poolData.tokens, fromLPToken, 50);
+        const amountsMin = await getAmountsMin(account, poolData.tokens, fromLPToken, 50);
         const deadline = (await getTimestamp()).add(ONE_HOUR);
         const [tokensSorted, amountsMinSorted] = balHelper.sortTokens(poolData.tokens, amountsMin) as [string[], BN[]];
-
+        const rateProviders = [ZERO_ADDRESS, ZERO_ADDRESS];
         const tx = await uniswapMigrator.connect(account.signer).migrateUniswapV2AndCreatePool({
-            balancerFactory: poolData.balancerFactory,
             name: poolData.name,
             symbol: poolData.symbol,
             source,
             fromLpToken: fromLPToken.address,
             liquidity: fromLPPositionBefore,
             tokens: tokensSorted,
+            rateProviders,
             amountsMin: amountsMinSorted,
             deadline,
             swapFeePercentage: poolData.swapFeePercentage,
-            oracleEnabled: poolData.oracleEnabled,
-            amplificationParameter: poolData.amplificationParameter,
         });
 
         const receipt = await waitForTx(tx, debug);
@@ -287,23 +276,11 @@ describe("UniswapMigrator", () => {
         const source = MigratorSource.Sushiswap;
         it("migrates and creates a new pool - weighted", async () => {
             await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, source, sushiOhmDaiLPToken, {
-                balancerFactory: BalancerFactory.Weighted,
                 name: "50OHM-50DAI",
                 symbol: "50OHM-50DAI",
                 tokens: [ohmAddress, daiAddress],
                 swapFeePercentage: 3000000000000000, // 0.3%
-                amplificationParameter: 0,
-                oracleEnabled: true,
-            });
-        });
-        it("migrates and creates a new pool - stable", async () => {
-            await expectMigrateUniswapV2AndCreatePool(sushiOhmDaiLPHolder, source, sushiOhmDaiLPToken, {
-                balancerFactory: BalancerFactory.Stable,
-                name: "50OHM-50DAI",
-                symbol: "50OHM-50DAI",
-                tokens: [ohmAddress, daiAddress],
-                swapFeePercentage: 3000000000000000, // 0.3%
-                amplificationParameter: 25,
+                minOut: 1,
             });
         });
         it("migrates join to an existing pool - weighted", async () => {
@@ -336,23 +313,11 @@ describe("UniswapMigrator", () => {
 
         it("migrates and creates a new pool - weighted", async () => {
             await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, source, uniV2FeiTribeLPToken, {
-                balancerFactory: BalancerFactory.Weighted,
                 name: "50FEI-50TRIBE",
                 symbol: "50FEI-50TRIBE",
                 tokens: [feiAddress, tribeAddress],
                 swapFeePercentage: 3000000000000000,
-                oracleEnabled: true,
-                amplificationParameter: 0,
-            });
-        });
-        it("migrates and creates a new pool - stable", async () => {
-            await expectMigrateUniswapV2AndCreatePool(uniV2FeiTribeLPHolder, source, uniV2FeiTribeLPToken, {
-                balancerFactory: BalancerFactory.Stable,
-                name: "50FEI-50TRIBE",
-                symbol: "50FEI-50TRIBE",
-                tokens: [feiAddress, tribeAddress],
-                swapFeePercentage: 3000000000000000,
-                amplificationParameter: 25,
+                minOut: 1,
             });
         });
         it("migrates join to an existing pool - weighted", async () => {

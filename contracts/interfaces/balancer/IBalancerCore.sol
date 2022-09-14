@@ -181,3 +181,22 @@ interface IWeightedPool2TokensFactory {
         address owner
     ) external returns (address);
 }
+
+interface IRateProvider {
+    function getRate() external view returns (uint256);
+}
+
+interface IWeightedPoolFactory {
+    /**
+     * @dev Deploys a new `WeightedPool`.
+     */
+    function create(
+        string memory name,
+        string memory symbol,
+        IERC20[] memory tokens,
+        uint256[] memory normalizedWeights,
+        IRateProvider[] memory rateProviders,
+        uint256 swapFeePercentage,
+        address owner
+    ) external returns (address);
+}

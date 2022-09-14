@@ -157,8 +157,7 @@ task("goerli:deploy:uniswapMigrator").setAction(async function (taskArguments: T
     const deployer = await getSigner(hre);
     const { addresses } = config;
     const constructorArguments = [
-        addresses.balancerPoolFactories.weightedPool2Tokens,
-        addresses.balancerPoolFactories.stablePool,
+        addresses.balancerPoolFactories.weightedPool,
         addresses.balancerVault,
         addresses.balancerGaugeFactory,
         addresses.uniswapRouter,
