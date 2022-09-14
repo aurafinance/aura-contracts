@@ -6,12 +6,8 @@ import {
     ERC20,
     UniswapMigrator,
     UniswapMigrator__factory,
-    IUniswapV2Router02__factory,
-    IUniswapV2Router02,
     IUniswapV2Pair,
     IUniswapV2Pair__factory,
-    IBalancerVault,
-    IBalancerVault__factory,
     IBalancerHelpers,
     IBalancerHelpers__factory,
     IBalancerPool,
@@ -27,7 +23,7 @@ import {
     BN,
     simpleToExactAmount,
 } from "../test-utils";
-import { FixedNumber, Signer } from "ethers";
+import { Signer } from "ethers";
 import { Account } from "types";
 import { config } from "../tasks/deploy/mainnet-config";
 import { JoinPoolRequestStruct } from "../types/generated/IBalancerVault";
@@ -82,10 +78,8 @@ describe("UniswapMigrator", () => {
     let uniV2WbtcWethLPToken: IUniswapV2Pair;
     let sushiOhmDaiLPToken: IUniswapV2Pair;
     let balWbtcWethLPToken: IBalancerPool;
-    let balancerVault: IBalancerVault;
     let balancerHelpers: IBalancerHelpers;
     let uniswapMigrator: UniswapMigrator;
-    let uniswapRouter: IUniswapV2Router02;
 
     async function setup() {
         await network.provider.request({
@@ -135,9 +129,6 @@ describe("UniswapMigrator", () => {
 
         balWbtcWethLPToken = IBalancerPool__factory.connect(balWbtcWethLPTokenAddress, signer);
 
-        uniswapRouter = IUniswapV2Router02__factory.connect(addresses.uniswapRouter, signer);
-
-        balancerVault = IBalancerVault__factory.connect(addresses.balancerVault, signer);
         balancerHelpers = IBalancerHelpers__factory.connect(addresses.balancerHelpers, signer);
     }
 
