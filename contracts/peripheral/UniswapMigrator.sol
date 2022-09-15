@@ -190,8 +190,6 @@ contract UniswapMigrator {
         }
     }
 
-    // uniswap-migrator
-    // gauge-migrator
     function _removeLiquidityUniswapV2(
         LpSource source,
         address fromLpToken,
