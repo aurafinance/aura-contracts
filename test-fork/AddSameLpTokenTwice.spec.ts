@@ -233,7 +233,6 @@ describe("Add same LP Token twice", () => {
                 expect(resp.gauge, "new gauge != gauge ").not.eq(gauge);
             });
             it("reverts mock gauge controller", async () => {
-                // Mock gauge controller with one that returns 1 when you query the weight
                 await network.provider.send("hardhat_setCode", [
                     config.addresses.gaugeController,
                     gaugeControllerByteCode,
