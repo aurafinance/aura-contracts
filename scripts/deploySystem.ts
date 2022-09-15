@@ -113,6 +113,7 @@ interface BalancerPoolFactories {
     weightedPool2Tokens: string;
     stablePool: string;
     bootstrappingPool: string;
+    weightedPool?: string;
 }
 interface ExtSystemConfig {
     authorizerAdapter?: string;
@@ -131,6 +132,8 @@ interface ExtSystemConfig {
     balancerPoolId: string;
     balancerMinOutBps: string;
     balancerPoolOwner?: string;
+    balancerGaugeFactory?: string;
+    balancerHelpers?: string;
     weth: string;
     wethWhale?: string;
     treasury?: string;
@@ -142,6 +145,8 @@ interface ExtSystemConfig {
     ldo?: string;
     ldoWhale?: string;
     stEthGaugeLdoDepositor?: string;
+    uniswapRouter?: string;
+    sushiswapRouter?: string;
 }
 
 interface NamingConfig {

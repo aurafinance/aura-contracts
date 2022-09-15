@@ -4,7 +4,7 @@ module.exports = {
         mnemonic: process.env.MNEMONIC,
     },
     skipFiles: [
-        "mocks",
+        "_mocks",
         "test",
         "convex-platform/contracts/contracts/interfaces",
         "BoosterHelper.sol",
