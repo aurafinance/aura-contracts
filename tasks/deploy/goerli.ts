@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { getSigner } from "../utils";
-import { logContracts, waitForTx } from "./../utils/deploy-utils";
+import { deployContract, logContracts, waitForTx } from "./../utils/deploy-utils";
 import {
     deployPhase1,
     deployPhase2,
@@ -15,9 +15,10 @@ import {
 } from "../../scripts/deploySystem";
 import { getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { simpleToExactAmount } from "./../../test-utils/math";
-import { VoterProxy__factory, ERC20__factory } from "../../types/generated";
+import { VoterProxy__factory, ERC20__factory, UniswapMigrator, UniswapMigrator__factory } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-
+import { config } from "./goerli-config";
+const debug = true;
 const goerliBalancerConfig: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
     token: "0xfA8449189744799aD2AcE7e0EBAC8BB7575eff47",
@@ -151,3 +152,27 @@ async function deployGoerli234(
     const phase4 = await deployPhase4(hre, deployer, phase3, goerliBalancerConfig, true, waitForBlocks);
     return phase4;
 }
+
+task("goerli:deploy:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { addresses } = config;
+    const constructorArguments = [
+        addresses.balancerPoolFactories.weightedPool,
+        addresses.balancerVault,
+        addresses.balancerGaugeFactory,
+        addresses.uniswapRouter,
+        addresses.sushiswapRouter,
+        addresses.balancerPoolOwner,
+    ];
+    const uniswapMigrator = await deployContract<UniswapMigrator>(
+        hre,
+        new UniswapMigrator__factory(deployer),
+        "UniswapMigrator",
+        constructorArguments,
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update uniswapMigrator address to:", uniswapMigrator.address);
+});

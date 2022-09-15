@@ -216,6 +216,7 @@ task("snapshot:create")
                             metadata: JSON.stringify({}),
                         };
                         console.log("Proposal:", JSON.stringify(proposal));
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const receipt: any = await client.proposal(wallet, account, proposal);
 
                         console.log(receipt);
@@ -345,6 +346,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // gauges that have decreased in vote weight have to be sent first
         // ----------------------------------------------------------
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let votes: any[] = [];
         for (const gauge of gaugesWithExistingWeights) {
             const idx = successfulGauges.findIndex(g => gauge.address === g.address);

@@ -5,6 +5,8 @@ import { getSigner } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import {
+    UniswapMigrator,
+    UniswapMigrator__factory,
     BoosterHelper,
     BoosterHelper__factory,
     ClaimFeesHelper,
@@ -68,4 +70,27 @@ task("mainnet:deploy:gaugeMigrator").setAction(async function (taskArguments: Ta
     );
 
     console.log("update gaugeMigrator address to:", gaugeMigrator.address);
+});
+task("mainnet:deploy:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { addresses } = config;
+    const constructorArguments = [
+        addresses.balancerPoolFactories.weightedPool,
+        addresses.balancerVault,
+        addresses.balancerGaugeFactory,
+        addresses.uniswapRouter,
+        addresses.sushiswapRouter,
+        addresses.balancerPoolOwner,
+    ];
+    const uniswapMigrator = await deployContract<UniswapMigrator>(
+        hre,
+        new UniswapMigrator__factory(deployer),
+        "UniswapMigrator",
+        constructorArguments,
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update uniswapMigrator address to:", uniswapMigrator.address);
 });
