@@ -28,6 +28,7 @@ describe("Add same LP Token twice", () => {
     let gauge: string;
     let phase2: Phase2Deployed;
     let newPid: BigNumberish;
+    let gaugeControllerByteCode: string;
     let mockGauge: MockCurveGauge;
     let gaugeMigrator: GaugeMigrator;
     let depositToken: IERC20;
@@ -56,7 +57,7 @@ describe("Add same LP Token twice", () => {
         lpWhale = await impersonateAccount(lpWhaleAddress);
     };
 
-    describe("PoolManager", () => {
+    describe.skip("PoolManager", () => {
         const oldPid = 0;
 
         before(() => setup());
@@ -203,16 +204,12 @@ describe("Add same LP Token twice", () => {
         });
         context("add new pool", async () => {
             it("mock gauge controller", async () => {
+                gaugeControllerByteCode = await ethers.provider.getCode(config.addresses.gaugeController, "latest");
                 // Mock gauge controller with one that returns 1 when you query the weight
                 await network.provider.send("hardhat_setCode", [
                     config.addresses.gaugeController,
                     MockGaugeController__factory.bytecode,
                 ]);
-                await network.provider.send("hardhat_setCode", [gauge, MockCurveGauge__factory.bytecode]);
-
-                // Send some tokens to voter proxy to avoid calling the gauge while withdrawing, the curve gauge mock has an issue.
-                const voterProxy = "0xaf52695e1bb01a16d33d7194c28c42b10e0dbec2";
-                await lpToken.transfer(voterProxy, simpleToExactAmount(200));
             });
             it("deploy fake gauge with old LP Token", async () => {
                 mockGauge = await deployContract<MockCurveGauge>(
@@ -234,6 +231,13 @@ describe("Add same LP Token twice", () => {
 
                 expect(resp.lptoken).eq(lpToken.address);
                 expect(resp.gauge, "new gauge != gauge ").not.eq(gauge);
+            });
+            it("reverts mock gauge controller", async () => {
+                // Mock gauge controller with one that returns 1 when you query the weight
+                await network.provider.send("hardhat_setCode", [
+                    config.addresses.gaugeController,
+                    gaugeControllerByteCode,
+                ]);
             });
             it("migrates full lp position oldPid => newPid", async () => {
                 await assertGaugeMigration(lpWhale, oldPid, newPid);
