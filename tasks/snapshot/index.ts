@@ -100,6 +100,8 @@ const ordinalSuffix = (i: number) => {
 task("snapshot:create")
     .addParam("snapshot", "The block to snapshot")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+        const config = configs.main;
+
         const wallet = new Wallet(process.env.PRIVATE_KEY);
         const account = wallet.address;
 
@@ -127,7 +129,6 @@ task("snapshot:create")
         if (!latestBlock) {
             console.log(`Invalid snashot provided. Found ${snapshot}`);
         }
-        const config = configs.main;
         const client = new snapshot.Client712(config.hub);
 
         const space = config.space;
