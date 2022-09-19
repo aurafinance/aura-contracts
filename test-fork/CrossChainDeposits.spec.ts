@@ -9,24 +9,15 @@ import {
     SiphonDepositor,
     SiphonToken,
     BaseRewardPool__factory,
-    RAura__factory,
     RAura,
-    VoterProxy__factory,
     MockERC20__factory,
-    RewardFactory__factory,
-    TokenFactory__factory,
-    ProxyFactory__factory,
-    StashFactoryV2__factory,
-    ExtraRewardStashV3__factory,
     MockCurveVoteEscrow__factory,
     MockCurveVoteEscrow,
     SmartWalletChecker__factory,
     IERC20__factory,
     IERC20,
     SiphonReceiver,
-    SiphonReceiver__factory,
-    Booster__factory,
-    Booster,
+    BoosterLite,
     LZEndpointMock,
     LZEndpointMock__factory,
 } from "../types/generated";
@@ -60,7 +51,7 @@ describe("Cross Chain Deposits", () => {
 
     // L2 contracts
     let siphonReceiver: SiphonReceiver;
-    let L2_booster: Booster;
+    let L2_booster: BoosterLite;
     let L2_rCvx: RAura;
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
@@ -180,7 +171,7 @@ describe("Cross Chain Deposits", () => {
         });
     });
 
-    describe("deploy L2 Booster/VoterProxy", () => {
+    describe("deploy L2 BoosterLite/VoterProxy", () => {
         let veToken: MockCurveVoteEscrow;
         let lpToken: IERC20;
         let crvRewards: BaseRewardPool;

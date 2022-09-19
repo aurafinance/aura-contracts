@@ -3,8 +3,8 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract } from "../tasks/utils";
 import { simpleToExactAmount } from "../test-utils";
 import {
-    Booster,
-    Booster__factory,
+    BoosterLite,
+    BoosterLite__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
     ProxyFactory,
@@ -25,8 +25,8 @@ import {
     StashFactoryV2__factory,
     TokenFactory,
     TokenFactory__factory,
-    VoterProxy,
-    VoterProxy__factory,
+    VoterProxyLite,
+    VoterProxyLite__factory,
 } from "../types";
 
 // Layer 1 deployment config
@@ -72,8 +72,8 @@ export interface CrossChainL1Deployment {
 export interface CrossChainL2Deployment {
     rAura: RAura;
     siphonReceiver: SiphonReceiver;
-    voterProxy: VoterProxy;
-    booster: Booster;
+    voterProxy: VoterProxyLite;
+    booster: BoosterLite;
     rewardFactory: RewardFactory;
     tokenFactory: TokenFactory;
     proxyFactory: ProxyFactory;
@@ -219,10 +219,10 @@ export async function deployCrossChainL2(
     --------------------------------------------------- */
 
     // deploy voter proxy
-    const voterProxy = await deployContract<VoterProxy>(
+    const voterProxy = await deployContract<VoterProxyLite>(
         hre,
-        new VoterProxy__factory(signer),
-        "VoterProxy",
+        new VoterProxyLite__factory(signer),
+        "VoterProxyLite",
         [config.minter, config.token, config.tokenBpt, config.votingEscrow, config.gaugeController],
         {},
         debug,
@@ -230,15 +230,15 @@ export async function deployCrossChainL2(
     );
 
     /* ---------------------------------------------------
-       Deploy Booster 
+       Deploy BoosterLite 
     --------------------------------------------------- */
 
     // deploy booster
-    const booster = await deployContract<Booster>(
+    const booster = await deployContract<BoosterLite>(
         hre,
-        new Booster__factory(signer),
-        "Booster",
-        [voterProxy.address, siphonReceiver.address, config.token, config.voteOwnership, config.voteParameter],
+        new BoosterLite__factory(signer),
+        "BoosterLite",
+        [voterProxy.address, siphonReceiver.address, config.token],
         {},
         debug,
         waitForBlocks,
