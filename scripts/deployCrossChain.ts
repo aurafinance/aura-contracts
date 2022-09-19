@@ -27,14 +27,10 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
-    PoolManagerProxy,
-    PoolManagerProxy__factory,
-    PoolManagerSecondaryProxy,
-    PoolManagerSecondaryProxy__factory,
-    PoolManagerV3,
-    PoolManagerV3__factory,
     BoosterOwner,
     BoosterOwner__factory,
+    PoolManagerLite,
+    PoolManagerLite__factory,
 } from "../types";
 
 // Layer 1 deployment config
@@ -87,10 +83,8 @@ export interface CrossChainL2Deployment {
     proxyFactory: ProxyFactory;
     stashFactory: StashFactoryV2;
     stash: ExtraRewardStashV3;
-    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
-    poolManagerProxy: PoolManagerProxy;
-    poolManager: PoolManagerV3;
     boosterOwner: BoosterOwner;
+    poolManager: PoolManagerLite;
 }
 
 /**
@@ -240,7 +234,7 @@ export async function deployCrossChainL2(
         hre,
         new VoterProxyLite__factory(signer),
         "VoterProxyLite",
-        [config.minter, config.token, config.tokenBpt, config.votingEscrow, config.gaugeController],
+        [config.minter, config.token, config.tokenBpt, config.votingEscrow],
         {},
         debug,
         waitForBlocks,
@@ -266,9 +260,6 @@ export async function deployCrossChainL2(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.setBooster(booster.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await booster.setPoolManager(signerAddress);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFees(550, 1100, 50, 0);
@@ -346,31 +337,11 @@ export async function deployCrossChainL2(
        Deploy Booster Owner/Pool Managers 
     --------------------------------------------------- */
 
-    const poolManagerProxy = await deployContract<PoolManagerProxy>(
+    const poolManager = await deployContract<PoolManagerLite>(
         hre,
-        new PoolManagerProxy__factory(signer),
-        "PoolManagerProxy",
+        new PoolManagerLite__factory(signer),
+        "PoolManagerLite",
         [booster.address, signerAddress],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
-        hre,
-        new PoolManagerSecondaryProxy__factory(signer),
-        "PoolManagerProxy",
-        [config.gaugeController, poolManagerProxy.address, booster.address, signerAddress],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const poolManager = await deployContract<PoolManagerV3>(
-        hre,
-        new PoolManagerV3__factory(signer),
-        "PoolManagerV3",
-        [poolManagerSecondaryProxy.address, config.gaugeController, signerAddress],
         {},
         debug,
         waitForBlocks,
@@ -380,7 +351,7 @@ export async function deployCrossChainL2(
         hre,
         new BoosterOwner__factory(signer),
         "BoosterOwner",
-        [signerAddress, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
+        [signerAddress, poolManager.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
         {},
         debug,
         waitForBlocks,
@@ -389,19 +360,7 @@ export async function deployCrossChainL2(
     tx = await booster.setOwner(boosterOwner.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await booster.setPoolManager(poolManagerProxy.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerProxy.setOwner(ZERO_ADDRESS);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerSecondaryProxy.setOwner(signerAddress);
+    tx = await booster.setPoolManager(poolManager.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     return {
@@ -414,10 +373,8 @@ export async function deployCrossChainL2(
         proxyFactory,
         stashFactory,
         stash,
-        poolManagerSecondaryProxy,
-        poolManagerProxy,
-        poolManager,
         boosterOwner,
+        poolManager,
     };
 }
 

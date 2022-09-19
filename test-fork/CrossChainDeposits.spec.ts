@@ -20,7 +20,7 @@ import {
     BoosterLite,
     LZEndpointMock,
     LZEndpointMock__factory,
-    PoolManagerV3,
+    PoolManagerLite,
 } from "../types/generated";
 import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
@@ -177,7 +177,7 @@ describe("Cross Chain Deposits", () => {
         let lpToken: IERC20;
         let crvRewards: BaseRewardPool;
         let depositToken: IERC20;
-        let L2_poolManager: PoolManagerV3;
+        let L2_poolManager: PoolManagerLite;
 
         before(async () => {
             // deploy mocks
@@ -222,8 +222,6 @@ describe("Cross Chain Deposits", () => {
         });
         it("[L2] add a pool", async () => {
             const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
-            // const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
-
             await L2_poolManager["addPool(address)"](gaugeAddress);
             const info = await L2_booster.poolInfo(0);
 
