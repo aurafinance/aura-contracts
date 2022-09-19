@@ -1,6 +1,6 @@
-import { ethers, BigNumberish, Signer } from "ethers";
+import { ethers, BigNumberish, Signer, ContractTransaction } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { deployContract } from "../tasks/utils";
+import { deployContract, waitForTx } from "../tasks/utils";
 import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 import {
     BoosterLite,
@@ -108,6 +108,7 @@ export async function deployCrossChainL1(
     debug: boolean = true,
     waitForBlocks: number,
 ): Promise<CrossChainL1Deployment> {
+    let tx: ContractTransaction;
     const signerAddress = await signer.getAddress();
 
     // deploy siphon token (lp token)
@@ -166,9 +167,11 @@ export async function deployCrossChainL1(
     );
 
     // send siphon token to depositor
-    await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
+    tx = await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
+    await waitForTx(tx, debug, waitForBlocks);
     // transfer ownership of rAURA to siphon depositor
-    await rAura.transferOwnership(siphonDepositor.address);
+    tx = await rAura.transferOwnership(siphonDepositor.address);
+    await waitForTx(tx, debug, waitForBlocks);
 
     return {
         siphonToken,
@@ -199,6 +202,7 @@ export async function deployCrossChainL2(
     debug: boolean = true,
     waitForBlocks: number,
 ): Promise<CrossChainL2Deployment> {
+    let tx: ContractTransaction;
     const signerAddress = await signer.getAddress();
 
     // deploy rAURA
@@ -224,7 +228,8 @@ export async function deployCrossChainL2(
     );
 
     // transfer ownership of rAURA to siphon receiver
-    await rAura.transferOwnership(l2Coordinator.address);
+    tx = await rAura.transferOwnership(l2Coordinator.address);
+    await waitForTx(tx, debug, waitForBlocks);
 
     /* ---------------------------------------------------
        Deploy Voter Proxy 
@@ -257,12 +262,23 @@ export async function deployCrossChainL2(
     );
 
     // booster setup
-    await voterProxy.setOperator(booster.address);
-    await l2Coordinator.setBooster(booster.address);
-    await booster.setPoolManager(signerAddress);
-    await booster.setFees(550, 1100, 50, 0);
-    await booster.setOwner(signerAddress);
-    await booster.setRewardContracts(l2Coordinator.address, l2Coordinator.address);
+    tx = await voterProxy.setOperator(booster.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l2Coordinator.setBooster(booster.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setPoolManager(signerAddress);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFees(550, 1100, 50, 0);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setOwner(signerAddress);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setRewardContracts(l2Coordinator.address, l2Coordinator.address);
+    await waitForTx(tx, debug, waitForBlocks);
 
     // deploy factories
     const rewardFactory = await deployContract<RewardFactory>(
@@ -316,8 +332,15 @@ export async function deployCrossChainL2(
     );
 
     // booster setup
-    await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
-    await stashFactory.setImplementation(ethers.constants.AddressZero, ethers.constants.AddressZero, stash.address);
+    tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await stashFactory.setImplementation(
+        ethers.constants.AddressZero,
+        ethers.constants.AddressZero,
+        stash.address,
+    );
+    await waitForTx(tx, debug, waitForBlocks);
 
     /* ---------------------------------------------------
        Deploy Booster Owner/Pool Managers 
@@ -363,12 +386,23 @@ export async function deployCrossChainL2(
         waitForBlocks,
     );
 
-    await booster.setOwner(boosterOwner.address);
-    await booster.setPoolManager(poolManagerProxy.address);
-    await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
-    await poolManagerProxy.setOwner(ZERO_ADDRESS);
-    await poolManagerSecondaryProxy.setOperator(poolManager.address);
-    await poolManagerSecondaryProxy.setOwner(signerAddress);
+    tx = await booster.setOwner(boosterOwner.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setPoolManager(poolManagerProxy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerProxy.setOwner(ZERO_ADDRESS);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerSecondaryProxy.setOwner(signerAddress);
+    await waitForTx(tx, debug, waitForBlocks);
 
     return {
         rAura,
@@ -387,7 +421,12 @@ export async function deployCrossChainL2(
     };
 }
 
-export async function setUpCrossChainL2(contracts: { siphonDepositor: SiphonDepositor; l2Coordinator: L2Coordinator }) {
+export async function setUpCrossChainL2(
+    contracts: { siphonDepositor: SiphonDepositor; l2Coordinator: L2Coordinator },
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+) {
     // set siphon receiver on L1 siphon depositor
-    await contracts.siphonDepositor.setL2SiphonReceiver(contracts.l2Coordinator.address);
+    const tx = await contracts.siphonDepositor.setL2SiphonReceiver(contracts.l2Coordinator.address);
+    await waitForTx(tx, debug, waitForBlocks);
 }
