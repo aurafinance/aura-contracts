@@ -20,6 +20,7 @@ import {
     BoosterLite,
     LZEndpointMock,
     LZEndpointMock__factory,
+    PoolManagerV3,
 } from "../types/generated";
 import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
@@ -176,6 +177,7 @@ describe("Cross Chain Deposits", () => {
         let lpToken: IERC20;
         let crvRewards: BaseRewardPool;
         let depositToken: IERC20;
+        let L2_poolManager: PoolManagerV3;
 
         before(async () => {
             // deploy mocks
@@ -214,14 +216,15 @@ describe("Cross Chain Deposits", () => {
             L2_rCvx = crossChainL2.rAura;
             l2Coordinator = crossChainL2.l2Coordinator;
             L2_booster = crossChainL2.booster;
+            L2_poolManager = crossChainL2.poolManager;
 
             await setUpCrossChainL2({ l2Coordinator, siphonDepositor });
         });
         it("[L2] add a pool", async () => {
             const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
-            const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
+            // const lpTokenAddress = "0x06Df3b2bbB68adc8B0e302443692037ED9f91b42";
 
-            await L2_booster.addPool(lpTokenAddress, gaugeAddress, 3);
+            await L2_poolManager["addPool(address)"](gaugeAddress);
             const info = await L2_booster.poolInfo(0);
 
             lpToken = IERC20__factory.connect(info.lptoken, lpWhale.signer);

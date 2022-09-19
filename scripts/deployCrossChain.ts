@@ -1,7 +1,7 @@
 import { ethers, BigNumberish, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract } from "../tasks/utils";
-import { simpleToExactAmount } from "../test-utils";
+import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
 import {
     BoosterLite,
     BoosterLite__factory,
@@ -27,6 +27,14 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
+    PoolManagerProxy,
+    PoolManagerProxy__factory,
+    PoolManagerSecondaryProxy,
+    PoolManagerSecondaryProxy__factory,
+    PoolManagerV3,
+    PoolManagerV3__factory,
+    BoosterOwner,
+    BoosterOwner__factory,
 } from "../types";
 
 // Layer 1 deployment config
@@ -79,6 +87,10 @@ export interface CrossChainL2Deployment {
     proxyFactory: ProxyFactory;
     stashFactory: StashFactoryV2;
     stash: ExtraRewardStashV3;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
+    poolManagerProxy: PoolManagerProxy;
+    poolManager: PoolManagerV3;
+    boosterOwner: BoosterOwner;
 }
 
 /**
@@ -307,6 +319,57 @@ export async function deployCrossChainL2(
     await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
     await stashFactory.setImplementation(ethers.constants.AddressZero, ethers.constants.AddressZero, stash.address);
 
+    /* ---------------------------------------------------
+       Deploy Booster Owner/Pool Managers 
+    --------------------------------------------------- */
+
+    const poolManagerProxy = await deployContract<PoolManagerProxy>(
+        hre,
+        new PoolManagerProxy__factory(signer),
+        "PoolManagerProxy",
+        [booster.address, signerAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
+        hre,
+        new PoolManagerSecondaryProxy__factory(signer),
+        "PoolManagerProxy",
+        [config.gaugeController, poolManagerProxy.address, booster.address, signerAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolManager = await deployContract<PoolManagerV3>(
+        hre,
+        new PoolManagerV3__factory(signer),
+        "PoolManagerV3",
+        [poolManagerSecondaryProxy.address, config.gaugeController, signerAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const boosterOwner = await deployContract<BoosterOwner>(
+        hre,
+        new BoosterOwner__factory(signer),
+        "BoosterOwner",
+        [signerAddress, poolManagerSecondaryProxy.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    await booster.setOwner(boosterOwner.address);
+    await booster.setPoolManager(poolManagerProxy.address);
+    await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
+    await poolManagerProxy.setOwner(ZERO_ADDRESS);
+    await poolManagerSecondaryProxy.setOperator(poolManager.address);
+    await poolManagerSecondaryProxy.setOwner(signerAddress);
+
     return {
         rAura,
         l2Coordinator,
@@ -317,6 +380,10 @@ export async function deployCrossChainL2(
         proxyFactory,
         stashFactory,
         stash,
+        poolManagerSecondaryProxy,
+        poolManagerProxy,
+        poolManager,
+        boosterOwner,
     };
 }
 
