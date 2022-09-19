@@ -10,11 +10,11 @@ import { ILayerZeroEndpoint } from "../interfaces/ILayerZeroEndpoint.sol";
 import { ILayerZeroReceiver } from "../interfaces/ILayerZeroReceiver.sol";
 
 /**
- * @title SiphonReciever
+ * @title L2Coordinator
  * @dev Takes rAURA deposits from rAURA on L1 and distributes them
  *      When rewardClaimed is called on the Booster
  */
-contract SiphonReceiver is ILayerZeroReceiver, Ownable {
+contract L2Coordinator is ILayerZeroReceiver, Ownable {
     using SafeERC20 for IrCvx;
 
     /* -------------------------------------------------------------------
