@@ -10,7 +10,7 @@ import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IrCvx } from "../interfaces/IrCvx.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { IBaseRewardPool } from "../interfaces/IBaseRewardPool.sol";
-import { ILayerZeroEndpoint } from "../interfaces/ILayerZeroEndpoint.sol";
+import { ILayerZeroEndpoint } from "./layer-zero/interfaces/ILayerZeroEndpoint.sol";
 
 contract SiphonDepositor is Ownable {
     using AuraMath for uint256;

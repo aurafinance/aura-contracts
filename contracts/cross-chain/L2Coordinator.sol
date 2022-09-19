@@ -6,8 +6,8 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import { IrCvx } from "../interfaces/IrCvx.sol";
-import { ILayerZeroEndpoint } from "../interfaces/ILayerZeroEndpoint.sol";
-import { ILayerZeroReceiver } from "../interfaces/ILayerZeroReceiver.sol";
+import { ILayerZeroEndpoint } from "./layer-zero/interfaces/ILayerZeroEndpoint.sol";
+import { ILayerZeroReceiver } from "./layer-zero/interfaces/ILayerZeroReceiver.sol";
 
 /**
  * @title L2Coordinator
