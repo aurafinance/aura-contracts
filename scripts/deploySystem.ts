@@ -70,6 +70,12 @@ import {
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
     RewardPoolDepositWrapper__factory,
+    BoosterHelper,
+    BoosterHelper__factory,
+    GaugeMigrator,
+    GaugeMigrator__factory,
+    UniswapMigrator,
+    UniswapMigrator__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -218,12 +224,21 @@ interface Phase2Deployed extends Phase1Deployed {
 interface Phase3Deployed extends Phase2Deployed {
     pool8020Bpt: BalancerPoolDeployed;
 }
+// Phase 4
 interface SystemDeployed extends Phase3Deployed {
     claimZap: AuraClaimZap;
     feeCollector: ClaimFeesHelper;
     rewardDepositWrapper: RewardPoolDepositWrapper;
 }
 
+// Alias of phase 4 is the core system deployed.
+type Phase4Deployed = SystemDeployed;
+
+interface Phase5Deployed extends Phase4Deployed {
+    boosterHelper: BoosterHelper;
+    gaugeMigrator: GaugeMigrator;
+    uniswapMigrator: UniswapMigrator;
+}
 function getPoolAddress(utils, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
     return utils.hexZeroPad(utils.hexStripZeros(event.topics[1]), 20);
@@ -1143,7 +1158,71 @@ async function deployPhase4(
 
     return { ...deployment, claimZap, feeCollector, rewardDepositWrapper };
 }
+async function deployPhase5(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    deployment: Phase4Deployed,
+    config: ExtSystemConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<Phase5Deployed> {
+    const deployer = signer;
 
+    const {
+        token,
+        balancerPoolFactories,
+        balancerVault,
+        balancerGaugeFactory,
+        uniswapRouter,
+        sushiswapRouter,
+        balancerPoolOwner,
+    } = config;
+    const { booster } = deployment;
+
+    // -----------------------------
+    // 5. Helpers
+    //     - boosterHelper
+    //     - gaugeMigrator
+    //     - uniswapMigrator
+    // -----------------------------
+    const boosterHelper = await deployContract<BoosterHelper>(
+        hre,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [booster.address, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const gaugeMigrator = await deployContract<GaugeMigrator>(
+        hre,
+        new GaugeMigrator__factory(deployer),
+        "GaugeMigrator",
+        [booster.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    const uniswapMigrator = await deployContract<UniswapMigrator>(
+        hre,
+        new UniswapMigrator__factory(deployer),
+        "UniswapMigrator",
+        [
+            balancerPoolFactories.weightedPool,
+            balancerVault,
+            balancerGaugeFactory,
+            uniswapRouter,
+            sushiswapRouter,
+            balancerPoolOwner,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { ...deployment, boosterHelper, gaugeMigrator, uniswapMigrator };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1158,4 +1237,7 @@ export {
     Phase3Deployed,
     deployPhase4,
     SystemDeployed,
+    Phase4Deployed,
+    deployPhase5,
+    Phase5Deployed,
 };

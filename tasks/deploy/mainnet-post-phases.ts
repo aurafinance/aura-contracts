@@ -18,7 +18,7 @@ import {
 const waitForBlocks = 1;
 const debug = true;
 // Deployments after the initial deployment script
-task("mainnet:deploy:feeCollector").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:feeCollector").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { getPhase2, addresses } = config;
 
@@ -36,7 +36,7 @@ task("mainnet:deploy:feeCollector").setAction(async function (taskArguments: Tas
     console.log("update claimFeesHelper address to:", claimFeesHelper.address);
 });
 
-task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:boosterHelper").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { getPhase2, addresses } = config;
 
@@ -54,7 +54,7 @@ task("mainnet:deploy:boosterHelper").setAction(async function (taskArguments: Ta
     console.log("update boosterHelper address to:", boosterHelper.address);
 });
 
-task("mainnet:deploy:gaugeMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:gaugeMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { getPhase2 } = config;
     const phase2: Phase2Deployed = await getPhase2(deployer);
@@ -71,7 +71,7 @@ task("mainnet:deploy:gaugeMigrator").setAction(async function (taskArguments: Ta
 
     console.log("update gaugeMigrator address to:", gaugeMigrator.address);
 });
-task("mainnet:deploy:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
     const constructorArguments = [
