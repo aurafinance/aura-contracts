@@ -129,6 +129,7 @@ describe("Cross Chain Deposits", () => {
                     naming: {
                         tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                         cvxSymbol: config.naming.cvxSymbol,
+                        cvxName: config.naming.cvxName,
                     },
                 },
                 deployer,

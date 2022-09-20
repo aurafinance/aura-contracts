@@ -34,8 +34,11 @@ contract L2Coordinator is OFT {
       Constructor 
     ------------------------------------------------------------------- */
 
-    // TODO: pass in aura symbol and name
-    constructor(address _lzEndpoint) OFT("AURA", "AURA", _lzEndpoint) {}
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _lzEndpoint
+    ) OFT(_name, _symbol, _lzEndpoint) {}
 
     /* -------------------------------------------------------------------
       Setter functions 

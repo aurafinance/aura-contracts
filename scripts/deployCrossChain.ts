@@ -56,6 +56,7 @@ export interface CrossChainL2DeploymentConfig {
     naming: {
         tokenFactoryNamePostfix: string;
         cvxSymbol: string;
+        cvxName: string;
     };
 }
 
@@ -176,7 +177,7 @@ export async function deployCrossChainL2(
         hre,
         new L2Coordinator__factory(signer),
         "L2Coordinator",
-        [config.lzEndpoint],
+        [config.naming.cvxName, config.naming.cvxSymbol, config.lzEndpoint],
         {},
         debug,
         waitForBlocks,

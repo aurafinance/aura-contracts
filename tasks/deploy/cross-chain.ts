@@ -60,6 +60,7 @@ task("deploy:crosschain:l2").setAction(async function (_: TaskArguments, _hre: H
     //         naming: {
     //             tokenFactoryNamePostfix: mainnetConfig.naming.tokenFactoryNamePostfix,
     //             cvxSymbol: mainnetConfig.naming.cvxSymbol,
+    //             cvxName: mainnetConfig.naming.cvxName,
     //         },
     //     },
     //     deployer,
