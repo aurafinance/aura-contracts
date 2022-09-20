@@ -109,7 +109,7 @@ contract SiphonDepositor is OFTCore {
         booster.earmarkRewards(pid);
 
         uint256 cvxAmountOut = _getAmountOut(amount);
-        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), cvxAmountOut);
+        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), cvxAmountOut, amount);
         // TODO: need to modify this to also send the AURA rate
         // so that the L2Coordinator has the most up to date rate
         // when L2Coordinator.mint() is called from the L2Booster

@@ -19,8 +19,14 @@ contract L2Coordinator is OFT {
       Storage 
     ------------------------------------------------------------------- */
 
+    // Scale multiplier
+    uint256 internal constant WAD = 10**18;
+
     /// @dev Booster contract
     address public booster;
+
+    /// @dev Rate to send CVX on mint
+    uint256 public mintRate;
 
     /* -------------------------------------------------------------------
       Events 
@@ -63,12 +69,13 @@ contract L2Coordinator is OFT {
      *      when rewardClaimed is called on the booster rCVX tokens are sent
      *      to the sender.
      * @param _to     Address to send rCvx to
-     * @param _amount Amount of rCvx to send
+     * @param _amount Amount of CRV rewardClaimed was called with
      */
     function mint(address _to, uint256 _amount) external {
         require(msg.sender == booster, "!booster");
-        _transfer(address(this), _to, _amount);
-        emit Mint(msg.sender, _to, _amount);
+        uint256 amount = (_amount * mintRate) / WAD;
+        _transfer(address(this), _to, amount);
+        emit Mint(msg.sender, _to, amount);
     }
 
     /* -------------------------------------------------------------------
@@ -84,5 +91,26 @@ contract L2Coordinator is OFT {
         // functionality upgradable. If a bridge stop supporting BAL
         // or liquidity dries up we could end up stuck. We could also
         // consider writing a fallback to the native bridge
+    }
+
+    function _nonblockingLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) internal virtual override {
+        if (_payload.length > 128) {
+            // The length of the payload is greater than the length of abi.encode(addressBytes, amount)
+            // which is always 128 so we can assume this call is being sent from SiphonDepositor.siphon
+            // which also sends the CRV:CVX reward rate as a third encoded paramater.
+            (bytes memory a, uint256 cvxAmount, uint256 crvAmount) = abi.decode(_payload, (bytes, uint256, uint256));
+            mintRate = (cvxAmount * WAD) / crvAmount;
+            // Continue with LZ flow with crvAmount removed from payload
+            _payload = abi.encode(a, cvxAmount);
+            super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+        } else {
+            // Continue with the normal flow for an OFT transfer
+            super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+        }
     }
 }
