@@ -9,8 +9,6 @@ import {
     ExtraRewardStashV3__factory,
     ProxyFactory,
     ProxyFactory__factory,
-    RAura,
-    RAura__factory,
     RewardFactory,
     RewardFactory__factory,
     SiphonDepositor,
@@ -35,23 +33,18 @@ import {
 
 // Layer 1 deployment config
 export interface CrossChainL1DeploymentConfig {
+    l2Coordinator: string;
     siphondepositor: { pid: BigNumberish };
-    rAura: { symbol: string };
     booster: string;
     cvxLocker: string;
     token: string;
     cvx: string;
     lzEndpoint: string;
-    dstChainId: BigNumberish;
-    penalty: BigNumberish;
 }
 
 // Layer 2 deployment config
 export interface CrossChainL2DeploymentConfig {
-    siphonDepositor: string;
-    rAura: { symbol: string };
     lzEndpoint: string;
-    dstChainId: BigNumberish;
     minter: string;
     token: string;
     tokenBpt: string;
@@ -69,12 +62,10 @@ export interface CrossChainL2DeploymentConfig {
 export interface CrossChainL1Deployment {
     siphonToken: SiphonToken;
     siphonGauge: SiphonGauge;
-    rAura: RAura;
     siphonDepositor: SiphonDepositor;
 }
 
 export interface CrossChainL2Deployment {
-    rAura: RAura;
     l2Coordinator: L2Coordinator;
     voterProxy: VoterProxyLite;
     booster: BoosterLite;
@@ -92,7 +83,6 @@ export interface CrossChainL2Deployment {
  *
  * - SiphonToken: dummy lpToken used to siphon AURA rewards
  * - SiphonGauge: dummy gauge used to siphon AURA rewards
- * - rAURA: the wrapped AURA token bridge to L2 and given our as a reward
  * - siphonDepositor: The contract in charge or coordinating everything
  */
 export async function deployCrossChainL1(
@@ -127,17 +117,6 @@ export async function deployCrossChainL1(
         waitForBlocks,
     );
 
-    // deploy rAURA
-    const rAura = await deployContract<RAura>(
-        hre,
-        new RAura__factory(signer),
-        "rAura",
-        [config.rAura.symbol, config.rAura.symbol],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
     // deploy siphon depositor
     const siphonDepositor = await deployContract<SiphonDepositor>(
         hre,
@@ -150,10 +129,8 @@ export async function deployCrossChainL1(
             config.cvxLocker,
             config.token,
             config.cvx,
-            rAura.address,
+            config.l2Coordinator,
             config.lzEndpoint,
-            config.dstChainId,
-            config.penalty,
         ],
         {},
         debug,
@@ -163,14 +140,10 @@ export async function deployCrossChainL1(
     // send siphon token to depositor
     tx = await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
     await waitForTx(tx, debug, waitForBlocks);
-    // transfer ownership of rAURA to siphon depositor
-    tx = await rAura.transferOwnership(siphonDepositor.address);
-    await waitForTx(tx, debug, waitForBlocks);
 
     return {
         siphonToken,
         siphonGauge,
-        rAura,
         siphonDepositor,
     };
 }
@@ -178,8 +151,7 @@ export async function deployCrossChainL1(
 /**
  * Deploy the layer 2 part of the Cross Chain deployment
  *
- * - rAURA: wrapped AURA token
- * - l2Coordinator: receives rAURA from L1 and distributes as rewards
+ * - l2Coordinator: receives AURA from L1 and distributes as rewards
  * - voterProxy: L2 voter proxy
  * - booster: L2 booster
  * - factories:
@@ -199,31 +171,16 @@ export async function deployCrossChainL2(
     let tx: ContractTransaction;
     const signerAddress = await signer.getAddress();
 
-    // deploy rAURA
-    const rAura = await deployContract<RAura>(
-        hre,
-        new RAura__factory(signer),
-        "rAura",
-        [config.rAura.symbol, config.rAura.symbol],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
     // deploy siphon receiver
     const l2Coordinator = await deployContract<L2Coordinator>(
         hre,
         new L2Coordinator__factory(signer),
         "L2Coordinator",
-        [rAura.address, config.siphonDepositor, config.lzEndpoint, config.dstChainId],
+        [config.lzEndpoint],
         {},
         debug,
         waitForBlocks,
     );
-
-    // transfer ownership of rAURA to siphon receiver
-    tx = await rAura.transferOwnership(l2Coordinator.address);
-    await waitForTx(tx, debug, waitForBlocks);
 
     /* ---------------------------------------------------
        Deploy Voter Proxy 
@@ -364,7 +321,6 @@ export async function deployCrossChainL2(
     await waitForTx(tx, debug, waitForBlocks);
 
     return {
-        rAura,
         l2Coordinator,
         voterProxy,
         booster,
@@ -376,14 +332,4 @@ export async function deployCrossChainL2(
         boosterOwner,
         poolManager,
     };
-}
-
-export async function setUpCrossChainL2(
-    contracts: { siphonDepositor: SiphonDepositor; l2Coordinator: L2Coordinator },
-    debug: boolean = false,
-    waitForBlocks: number = 0,
-) {
-    // set siphon receiver on L1 siphon depositor
-    const tx = await contracts.siphonDepositor.setL2SiphonReceiver(contracts.l2Coordinator.address);
-    await waitForTx(tx, debug, waitForBlocks);
 }

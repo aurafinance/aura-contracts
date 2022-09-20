@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 import { IrCvx } from "../interfaces/IrCvx.sol";
-import { ILayerZeroEndpoint } from "./layer-zero/interfaces/ILayerZeroEndpoint.sol";
-import { ILayerZeroReceiver } from "./layer-zero/interfaces/ILayerZeroReceiver.sol";
+import { OFT } from "./layer-zero/token/oft/OFT.sol";
 
 /**
  * @title L2Coordinator
  * @dev Takes rAURA deposits from rAURA on L1 and distributes them
  *      When rewardClaimed is called on the Booster
  */
-contract L2Coordinator is ILayerZeroReceiver, Ownable {
+contract L2Coordinator is OFT {
     using SafeERC20 for IrCvx;
 
     /* -------------------------------------------------------------------
@@ -24,18 +22,6 @@ contract L2Coordinator is ILayerZeroReceiver, Ownable {
     /// @dev Booster contract
     address public booster;
 
-    /// @dev rCVX contract
-    IrCvx public rCvx;
-
-    /// @dev Siphon depositor on L1
-    address public l1SiphonDepositor;
-
-    /// @dev Layer Zero endpoint
-    ILayerZeroEndpoint public lzEndpoint;
-
-    /// @dev Destination chain ID used by Layer Zero
-    uint16 public immutable dstChainId;
-
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
@@ -44,23 +30,12 @@ contract L2Coordinator is ILayerZeroReceiver, Ownable {
 
     event Mint(address sender, address to, uint256 amount);
 
-    event Convert(address sender, uint256 amount, bool lock);
-
     /* -------------------------------------------------------------------
       Constructor 
     ------------------------------------------------------------------- */
 
-    constructor(
-        IrCvx _rCvx,
-        address _l1SiphonDepositor,
-        ILayerZeroEndpoint _lzEndpoint,
-        uint16 _dstChainId
-    ) {
-        lzEndpoint = _lzEndpoint;
-        l1SiphonDepositor = _l1SiphonDepositor;
-        rCvx = _rCvx;
-        dstChainId = _dstChainId;
-    }
+    // TODO: pass in aura symbol and name
+    constructor(address _lzEndpoint) OFT("AURA", "AURA", _lzEndpoint) {}
 
     /* -------------------------------------------------------------------
       Setter functions 
@@ -89,17 +64,8 @@ contract L2Coordinator is ILayerZeroReceiver, Ownable {
      */
     function mint(address _to, uint256 _amount) external {
         require(msg.sender == booster, "!booster");
-        rCvx.safeTransfer(_to, _amount);
+        _transfer(address(this), _to, _amount);
         emit Mint(msg.sender, _to, _amount);
-    }
-
-    /**
-     * @dev The Booster calls this function when earmarking rewards.
-     *      Instead of having to make changes to the Booster we just
-     *      implement the method interface so it can be called silently
-     */
-    function queueNewRewards(uint256) external {
-        // Silence is golden
     }
 
     /* -------------------------------------------------------------------
@@ -115,52 +81,5 @@ contract L2Coordinator is ILayerZeroReceiver, Ownable {
         // functionality upgradable. If a bridge stop supporting BAL
         // or liquidity dries up we could end up stuck. We could also
         // consider writing a fallback to the native bridge
-    }
-
-    /**
-     * @dev Convert L2 rCVX tokens to CVX tokens on L1 via Layer Zero
-     * @param _amount Amount of rCVX tokens to convert
-     * @param _lock   If the received CVX tokens should be locked on L1
-     */
-    function convert(uint256 _amount, bool _lock) external payable {
-        rCvx.burn(msg.sender, _amount);
-
-        lzEndpoint.send{ value: msg.value }(
-            // destination chain
-            dstChainId,
-            // remote address packed with local address
-            abi.encodePacked(l1SiphonDepositor, address(this)),
-            // payload
-            bytes(abi.encode(msg.sender, _amount, _lock)),
-            // refund address
-            payable(msg.sender),
-            // ZRO payment address,
-            address(0),
-            // adapter params
-            bytes("")
-        );
-
-        emit Convert(msg.sender, _amount, _lock);
-    }
-
-    /**
-     * @dev LZ Receive function
-     *      L1 calls this contract with an amount of rCVX tokens to mint
-     * @param _srcChainId The source chain ID this transaction came from
-     * @param _srcAddress The source address that sent this transaction
-     * @param _nonce      Number used once
-     * @param _payload    The transaction payload
-     */
-    function lzReceive(
-        uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
-        bytes calldata _payload
-    ) external {
-        require(msg.sender == address(lzEndpoint), "!lzEndpoint");
-        require(keccak256(_srcAddress) == keccak256(abi.encodePacked(l1SiphonDepositor)), "!srcAddress");
-
-        uint256 rCvxAmount = abi.decode(_payload, (uint256));
-        rCvx.mint(address(this), rCvxAmount);
     }
 }

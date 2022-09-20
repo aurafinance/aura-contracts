@@ -9,7 +9,6 @@ import {
     SiphonDepositor,
     SiphonToken,
     BaseRewardPool__factory,
-    RAura,
     MockERC20__factory,
     MockCurveVoteEscrow__factory,
     MockCurveVoteEscrow,
@@ -26,13 +25,13 @@ import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
-import { deployCrossChainL1, deployCrossChainL2, setUpCrossChainL2 } from "../scripts/deployCrossChain";
+import { deployCrossChainL1, deployCrossChainL2 } from "../scripts/deployCrossChain";
 import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 
 const debug = false;
 
 describe("Cross Chain Deposits", () => {
-    const DST_CHAIN_ID = 123;
+    const CHAIN_ID = 123;
 
     let deployer: Signer;
     let deployerAddress: string;
@@ -48,12 +47,10 @@ describe("Cross Chain Deposits", () => {
 
     let contracts: SystemDeployed;
     let crvToken: MockERC20;
-    let L1_rCvx: RAura;
 
     // L2 contracts
     let l2Coordinator: L2Coordinator;
     let L2_booster: BoosterLite;
-    let L2_rCvx: RAura;
 
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
         await getEth(config.addresses.balancerVault);
@@ -98,77 +95,7 @@ describe("Cross Chain Deposits", () => {
 
     describe("deploy mock LZ endpoint", () => {
         it("deploy", async () => {
-            const CHAIN_ID = 123;
             lzEndpoint = await new LZEndpointMock__factory(deployer).deploy(CHAIN_ID);
-        });
-    });
-
-    describe("Create siphon pool on L1", () => {
-        let pid: BigNumberish;
-        let crvRewards: BaseRewardPool;
-
-        before(async () => {
-            pid = await contracts.booster.poolLength();
-
-            const crossChainL1 = await deployCrossChainL1(
-                {
-                    siphondepositor: { pid },
-                    rAura: { symbol: "rAURA" },
-                    booster: contracts.booster.address,
-                    cvxLocker: contracts.cvxLocker.address,
-                    token: crvToken.address,
-                    cvx: contracts.cvx.address,
-                    lzEndpoint: lzEndpoint.address,
-                    dstChainId: DST_CHAIN_ID,
-                    penalty: 0,
-                },
-                deployer,
-                hre,
-                debug,
-                0,
-            );
-
-            siphonToken = crossChainL1.siphonToken;
-            siphonGauge = crossChainL1.siphonGauge;
-            L1_rCvx = crossChainL1.rAura;
-            siphonDepositor = crossChainL1.siphonDepositor;
-        });
-
-        it("[L1] adds the gauge", async () => {
-            const admin = await impersonate(config.multisigs.daoMultisig);
-            const length = await contracts.booster.poolLength();
-            await contracts.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
-
-            expect(length).eq(pid);
-
-            const pool = await contracts.booster.poolInfo(pid);
-
-            // save pool rewards
-            crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
-
-            expect(pool.gauge).eq(siphonGauge.address);
-            expect(pool.lptoken).eq(siphonToken.address);
-        });
-        it("[L1] transfer ownership of rCVX to siphonDepositor", async () => {
-            const newOwner = await L1_rCvx.owner();
-            expect(newOwner).eq(siphonDepositor.address);
-        });
-        it("[L1] deposit LP tokens into the pool", async () => {
-            const bal = await siphonToken.balanceOf(siphonDepositor.address);
-            await siphonDepositor.deposit();
-            const rewardBal = await crvRewards.balanceOf(siphonDepositor.address);
-            expect(rewardBal).eq(bal);
-        });
-        it("[L1] fund the siphonDepositor with BAL", async () => {
-            const balance = await crvToken.balanceOf(config.multisigs.treasuryMultisig);
-            console.log("Treasury CRV balance:", formatUnits(balance));
-
-            const treasury = await impersonateAccount(config.multisigs.treasuryMultisig);
-            await crvToken.connect(treasury.signer).transfer(siphonDepositor.address, balance);
-
-            const siphonBalance = await crvToken.balanceOf(siphonDepositor.address);
-            console.log("SiphonDepositor CRV balance:", formatUnits(siphonBalance));
-            expect(siphonBalance).eq(balance);
         });
     });
 
@@ -190,10 +117,7 @@ describe("Cross Chain Deposits", () => {
 
             const crossChainL2 = await deployCrossChainL2(
                 {
-                    siphonDepositor: siphonDepositor.address,
-                    rAura: { symbol: "rAURA" },
                     lzEndpoint: lzEndpoint.address,
-                    dstChainId: DST_CHAIN_ID,
                     minter: config.addresses.minter,
                     token: crvToken.address,
                     tokenBpt: config.addresses.tokenBpt,
@@ -213,12 +137,9 @@ describe("Cross Chain Deposits", () => {
                 0,
             );
 
-            L2_rCvx = crossChainL2.rAura;
             l2Coordinator = crossChainL2.l2Coordinator;
             L2_booster = crossChainL2.booster;
             L2_poolManager = crossChainL2.poolManager;
-
-            await setUpCrossChainL2({ l2Coordinator, siphonDepositor });
         });
         it("[L2] add a pool", async () => {
             const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
@@ -251,28 +172,93 @@ describe("Cross Chain Deposits", () => {
         });
     });
 
-    describe("Siphon rAURA to L2", () => {
-        const incentivesPaidOnL2 = simpleToExactAmount(10);
+    describe("Create siphon pool on L1", () => {
+        let pid: BigNumberish;
+        let crvRewards: BaseRewardPool;
 
-        it("[L1] setup lzEndpoint mock", async () => {
+        before(async () => {
+            pid = await contracts.booster.poolLength();
+
+            const crossChainL1 = await deployCrossChainL1(
+                {
+                    l2Coordinator: l2Coordinator.address,
+                    siphondepositor: { pid },
+                    booster: contracts.booster.address,
+                    cvxLocker: contracts.cvxLocker.address,
+                    token: crvToken.address,
+                    cvx: contracts.cvx.address,
+                    lzEndpoint: lzEndpoint.address,
+                },
+                deployer,
+                hre,
+                debug,
+                0,
+            );
+
+            siphonToken = crossChainL1.siphonToken;
+            siphonGauge = crossChainL1.siphonGauge;
+            siphonDepositor = crossChainL1.siphonDepositor;
+        });
+
+        it("[LZ] set up trusted remotes", async () => {
+            await siphonDepositor.setTrustedRemote(CHAIN_ID, l2Coordinator.address);
+            await l2Coordinator.setTrustedRemote(CHAIN_ID, siphonDepositor.address);
+
             await lzEndpoint.setDestLzEndpoint(siphonDepositor.address, lzEndpoint.address);
             await lzEndpoint.setDestLzEndpoint(l2Coordinator.address, lzEndpoint.address);
         });
+
+        it("[L1] adds the gauge", async () => {
+            const admin = await impersonate(config.multisigs.daoMultisig);
+            const length = await contracts.booster.poolLength();
+            await contracts.poolManager.connect(admin).forceAddPool(siphonToken.address, siphonGauge.address, 3);
+
+            expect(length).eq(pid);
+
+            const pool = await contracts.booster.poolInfo(pid);
+
+            // save pool rewards
+            crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
+
+            expect(pool.gauge).eq(siphonGauge.address);
+            expect(pool.lptoken).eq(siphonToken.address);
+        });
+        it("[L1] deposit LP tokens into the pool", async () => {
+            const bal = await siphonToken.balanceOf(siphonDepositor.address);
+            await siphonDepositor.deposit();
+            const rewardBal = await crvRewards.balanceOf(siphonDepositor.address);
+            expect(rewardBal).eq(bal);
+        });
+        it("[L1] fund the siphonDepositor with BAL", async () => {
+            const balance = await crvToken.balanceOf(config.multisigs.treasuryMultisig);
+            console.log("Treasury CRV balance:", formatUnits(balance));
+
+            const treasury = await impersonateAccount(config.multisigs.treasuryMultisig);
+            await crvToken.connect(treasury.signer).transfer(siphonDepositor.address, balance);
+
+            const siphonBalance = await crvToken.balanceOf(siphonDepositor.address);
+            console.log("SiphonDepositor CRV balance:", formatUnits(siphonBalance));
+            expect(siphonBalance).eq(balance);
+        });
+    });
+
+    describe("Siphon AURA to L2", () => {
+        const incentivesPaidOnL2 = simpleToExactAmount(10);
         it("[LZ] siphon CVX", async () => {
             // Siphon amount is the amount of incentives paid on L2
-            // We will have to prefarm some amount of rAURA to kickstart
+            // We will have to prefarm some amount of AURA to kickstart
             // the reward pool for initial depositors. But finally siphon
             // will just be called from the L2 L2Coordinator.
-            const rCvxBalBefore = await L2_rCvx.balanceOf(l2Coordinator.address);
+            const cvxBalBefore = await l2Coordinator.balanceOf(l2Coordinator.address);
             const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
             console.log("Incentives paid on L2:", formatUnits(incentivesPaidOnL2));
-            await siphonDepositor.siphon(incentivesPaidOnL2);
-            const rCvxBalAfter = await L2_rCvx.balanceOf(l2Coordinator.address);
+            await siphonDepositor.siphon(incentivesPaidOnL2, CHAIN_ID);
+            const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
 
-            const rCvxBal = rCvxBalAfter.sub(rCvxBalBefore);
-            console.log("rCVX balance of l2Coordinator:", formatUnits(rCvxBal));
-            expect(rCvxBal).gt(0);
+            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+            console.log("CVX balance of l2Coordinator:", formatUnits(cvxBal));
+            expect(cvxBal).gt(0);
 
             const crvBal = crvBalAfter.sub(crvBalBefore);
             console.log("CRV balance of l2Coordinator:", formatUnits(crvBal));
@@ -310,8 +296,8 @@ describe("Cross Chain Deposits", () => {
         });
     });
 
-    describe("Claim rAura rewards and convert to L1 Aura", () => {
-        it("[L2] claim rAURA rewards", async () => {
+    describe("Claim Aura rewards and convert to L1 Aura", () => {
+        it("[L2] claim AURA rewards", async () => {
             // Transfer BAL rewards to the booster
             const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
             const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
@@ -324,36 +310,15 @@ describe("Cross Chain Deposits", () => {
             const pool = await L2_booster.poolInfo(0);
             const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
 
-            const balBefore = await L2_rCvx.balanceOf(lpWhale.address);
+            const balBefore = await l2Coordinator.balanceOf(lpWhale.address);
             await crvRewards.connect(lpWhale.signer)["getReward()"]();
-            const balAfter = await L2_rCvx.balanceOf(lpWhale.address);
-            const rCvxBal = balAfter.sub(balBefore);
-            expect(rCvxBal).gt(0);
+            const balAfter = await l2Coordinator.balanceOf(lpWhale.address);
+            const cvxBal = balAfter.sub(balBefore);
+            expect(cvxBal).gt(0);
 
-            console.log("rCVX balance:", formatUnits(rCvxBal));
+            console.log("CVX balance:", formatUnits(cvxBal));
         });
-        it("[LZ] convert rAURA to AURA", async () => {
-            const amountIn = simpleToExactAmount(10);
-            const amountOut = await siphonDepositor.getAmountOut(amountIn);
-            console.log("rCVX Amount In:", formatUnits(amountIn));
-            console.log("CVX Amount out:", formatUnits(amountOut));
-
-            const L2rAuraTotalSupplyBefore = await L2_rCvx.totalSupply();
-            console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyBefore));
-            const cvxBalBefore = await contracts.cvx.balanceOf(lpWhale.address);
-
-            await L2_rCvx.approve(siphonDepositor.address, ethers.constants.MaxUint256);
-            await l2Coordinator.connect(lpWhale.signer).convert(amountIn, false);
-
-            const L2rAuraTotalSupplyAfter = await L2_rCvx.totalSupply();
-            console.log("L2rCVX total supply:", formatUnits(L2rAuraTotalSupplyAfter));
-            const cvxBalAfter = await contracts.cvx.balanceOf(lpWhale.address);
-
-            expect(L2rAuraTotalSupplyBefore.sub(L2rAuraTotalSupplyAfter)).eq(amountIn);
-
-            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
-            expect(cvxBal).eq(amountOut);
-            console.log("CVX rewards:", formatUnits(cvxBal));
-        });
+        it("bridge back to the L1");
+        it("lock back to the L1");
     });
 });

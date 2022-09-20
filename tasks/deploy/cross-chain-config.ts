@@ -1,5 +1,6 @@
 export const config = {
-    penalty: 0,
+    // TODO:
+    l2Coordinator: "",
     lz: {
         1: {
             lzEndpoint: "0x0000000000000000000000000000000000000000",

@@ -2,17 +2,15 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
 import { AuraMath } from "../utils/AuraMath.sol";
 import { ICvx } from "../interfaces/ICvx.sol";
-import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
-import { IrCvx } from "../interfaces/IrCvx.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
+import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IBaseRewardPool } from "../interfaces/IBaseRewardPool.sol";
-import { ILayerZeroEndpoint } from "./layer-zero/interfaces/ILayerZeroEndpoint.sol";
+import { OFTCore } from "./layer-zero/token/oft/OFTCore.sol";
 
-contract SiphonDepositor is Ownable {
+contract SiphonDepositor is OFTCore {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
     using SafeERC20 for ICvx;
@@ -39,20 +37,8 @@ contract SiphonDepositor is Ownable {
     /// @dev CVX token contract
     ICvx public immutable cvx;
 
-    /// @dev rCVX token contract
-    IrCvx public immutable rCvx;
-
-    /// @dev Layer Zero endpoint contract
-    ILayerZeroEndpoint public lzEndpoint;
-
-    /// @dev Destination chain ID
-    uint16 public immutable dstChainId;
-
-    /// @dev Siphon Reciever on L2
-    address public l2SiphonReceiver;
-
-    /// @dev Penalty basis points 2500 == 25%
-    uint256 public immutable penaltyBp;
+    /// @dev l2Coordinator contract
+    address public immutable l2Coordinator;
 
     /* -------------------------------------------------------------------
       Events 
@@ -62,7 +48,7 @@ contract SiphonDepositor is Ownable {
 
     event Deposit(address sender, uint256 amount);
 
-    event Siphon(address sender, uint256 amount);
+    event Siphon(address sender, uint256 dstChainId, address toAddress, uint256 amount);
 
     /* -------------------------------------------------------------------
       Constructor 
@@ -75,34 +61,16 @@ contract SiphonDepositor is Ownable {
         IAuraLocker _auraLocker,
         IERC20 _crv,
         ICvx _cvx,
-        IrCvx _rCvx,
-        ILayerZeroEndpoint _lzEndpoint,
-        uint16 _dstChainId,
-        uint256 _penaltyBp
-    ) {
+        address _l2Coordinator,
+        address _lzEndpoint
+    ) OFTCore(_lzEndpoint) {
         lpToken = _lpToken;
         crv = _crv;
         booster = _booster;
         cvx = _cvx;
-        rCvx = _rCvx;
         auraLocker = _auraLocker;
-        lzEndpoint = _lzEndpoint;
         pid = _pid;
-        penaltyBp = _penaltyBp;
-        dstChainId = _dstChainId;
-    }
-
-    /* -------------------------------------------------------------------
-      Setter functions 
-    ------------------------------------------------------------------- */
-
-    /**
-     * @dev Set the L2 siphonReciever contract address
-     * @param _l2SiphonReceiver The address of the siphonReciever on L2
-     */
-    function setL2SiphonReceiver(address _l2SiphonReceiver) external onlyOwner {
-        l2SiphonReceiver = _l2SiphonReceiver;
-        emit SetSiphonReceiver(msg.sender, _l2SiphonReceiver);
+        l2Coordinator = _l2Coordinator;
     }
 
     /* -------------------------------------------------------------------
@@ -130,15 +98,7 @@ contract SiphonDepositor is Ownable {
      *                We assume the total incentives that have been paid out are equal
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
-    function siphon(uint256 _amount) external payable onlyOwner {
-        _siphon(_amount);
-        emit Siphon(msg.sender, _amount);
-    }
-
-    /**
-     * @dev See SiphonDepositor.siphon
-     */
-    function _siphon(uint256 _amount) internal {
+    function siphon(uint256 _amount, uint16 _dstChainId) external payable onlyOwner {
         uint256 amount = _getRewardsBasedOnIncentives(_amount);
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
@@ -147,24 +107,24 @@ contract SiphonDepositor is Ownable {
         crv.transfer(address(booster), amount);
         booster.earmarkRewards(pid);
 
-        // TODO: send rCVX to the lzEndpoint (L2)
-        // TODO: do we actually need a token on L1?
-        rCvx.mint(address(this), amount);
-
-        lzEndpoint.send{ value: msg.value }(
+        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), amount);
+        // TODO: need to modify this to also send the AURA rate
+        // so that the L2Coordinator has the most up to date rate
+        // when L2Coordinator.mint() is called from the L2Booster
+        _lzSend(
             // destination chain
-            dstChainId,
-            // remote address packed with local address
-            abi.encodePacked(l2SiphonReceiver, address(this)),
-            // payload
-            bytes(abi.encode(amount)),
+            _dstChainId,
+            // to address packed with amount
+            _payload,
             // refund address
             payable(msg.sender),
-            // ZRO payment address,
+            // ZRO payment address
             address(0),
             // adapter params
             bytes("")
         );
+
+        emit Siphon(msg.sender, _dstChainId, l2Coordinator, _amount);
     }
 
     /**
@@ -181,6 +141,10 @@ contract SiphonDepositor is Ownable {
       View functions 
     ------------------------------------------------------------------- */
 
+    function circulatingSupply() external view override returns (uint256) {
+        return cvx.totalSupply() - cvx.balanceOf(address(this));
+    }
+
     /**
      * @dev Get amount of BAL that was claimed based on the incentives
      *      That were paid out
@@ -195,68 +159,36 @@ contract SiphonDepositor is Ownable {
         return ((_amount * booster.FEE_DENOMINATOR()) / totalIncentives);
     }
 
-    /**
-     * @dev How much CVX you will get for rCVX
-     *      rCVX can be redeemed at a rate determined by the totalSupply
-     *      of rCVX and totalAmount of CVX the depositor has farmed.
-     */
-    function getAmountOut(uint256 _amount) public view returns (uint256) {
-        // TODO: add a limit to the max rate
-        uint256 totalSupply = rCvx.totalSupply();
-        uint256 farmedTotal = cvx.balanceOf(address(this));
-        return (_amount * farmedTotal) / totalSupply;
-    }
-
     /* -------------------------------------------------------------------
-      Layer Zero functions L1 -> L2 
+      Layer Zero functions
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Convert rCVX for CVX at the pro rata rate
-     * @param _to     Address that is converting rCVX to CVX
-     * @param _amount Amount of rCVX to convert to CVX
-     * @param _lock   If the CVX should be locked
+     * @dev Handle tokens being sent from `_from`. Called when _send is called
+     * @param _from The address to whom you are receiving tokens from on the source chain
+     * @param _amount The amounts of the tokens to transfer
      */
-    function _convert(
-        address _to,
-        uint256 _amount,
-        bool _lock
-    ) internal {
-        uint256 amountOut = getAmountOut(_amount);
-
-        if (_lock || address(auraLocker) == address(0)) {
-            cvx.safeApprove(address(auraLocker), 0);
-            cvx.safeApprove(address(auraLocker), amountOut);
-            auraLocker.lock(_to, amountOut);
-        } else {
-            // If there is an address for auraLocker, and not locking, apply a penalty
-            uint256 penalty = (amountOut * penaltyBp) / 10000;
-            uint256 amountWithPenalty = amountOut - penalty;
-            cvx.transfer(_to, amountWithPenalty);
-        }
-
-        rCvx.burn(address(this), _amount);
+    function _debitFrom(
+        address _from,
+        uint16, // _dstChainId The L0 defined chain id the tokens were sent to
+        bytes memory, // _toAddress The address to whom you are sending tokens to on the dstChain
+        uint256 _amount
+    ) internal virtual override {
+        // TODO: if tokens are being sent to L1 AuraLocker contract then call lock on AuraLocker
+        require(_from == _msgSender(), "ProxyOFT: owner is not send caller");
+        cvx.safeTransferFrom(_from, address(this), _amount);
     }
 
     /**
-     * @dev LZ Receive function
-     *      L2 calls this contract with an amount of rCVX tokens to convert
-     *      to CVX
-     * @param _srcChainId The source chain ID this transaction came from
-     * @param _srcAddress The source address that sent this transaction
-     * @param _nonce      Number used once
-     * @param _payload    The transaction payload
+     * @dev Handle tokens being recieved to `_toAddress` called by lzReceive
+     * @param _toAddress The address to whom you are sending tokens to on the dstChain
+     * @param _amount The amounts of the tokens to transfer
      */
-    function lzReceive(
-        uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
-        bytes calldata _payload
-    ) external {
-        require(msg.sender == address(lzEndpoint), "!lzEndpoint");
-        require(keccak256(_srcAddress) == keccak256(abi.encodePacked(l2SiphonReceiver)), "!srcAddress");
-
-        (address to, uint256 amount, bool lock) = abi.decode(_payload, (address, uint256, bool));
-        _convert(to, amount, lock);
+    function _creditTo(
+        uint16, // _srcChainId The L0 defined chain id the tokens were sent from
+        address _toAddress,
+        uint256 _amount
+    ) internal virtual override {
+        cvx.safeTransfer(_toAddress, _amount);
     }
 }
