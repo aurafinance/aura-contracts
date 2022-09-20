@@ -100,6 +100,7 @@ contract SiphonDepositor is OFTCore {
      */
     function siphon(uint256 _amount, uint16 _dstChainId) external payable onlyOwner {
         uint256 amount = _getRewardsBasedOnIncentives(_amount);
+
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= amount, "!balance");
 
@@ -107,7 +108,8 @@ contract SiphonDepositor is OFTCore {
         crv.transfer(address(booster), amount);
         booster.earmarkRewards(pid);
 
-        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), amount);
+        uint256 cvxAmountOut = _getAmountOut(amount);
+        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), cvxAmountOut);
         // TODO: need to modify this to also send the AURA rate
         // so that the L2Coordinator has the most up to date rate
         // when L2Coordinator.mint() is called from the L2Booster
@@ -130,7 +132,7 @@ contract SiphonDepositor is OFTCore {
     /**
      * @dev Call getReward on the BaseRewardPool which will return the
      *      BAL we previously depoisted minus the incentives that were paid
-     *      Along with a pro rata amount of AURA tokens
+     *      Along with a pro rata amount of CVX tokens
      */
     function getReward() external onlyOwner {
         IBooster.PoolInfo memory info = booster.poolInfo(pid);
@@ -157,6 +159,35 @@ contract SiphonDepositor is OFTCore {
             booster.earmarkIncentive() +
             booster.platformFee();
         return ((_amount * booster.FEE_DENOMINATOR()) / totalIncentives);
+    }
+
+    /**
+     * @dev Get expected amount out of CVX tokens based on CRV input
+     * @param _amount CRV amount in
+     * @return The total amount of CVX out
+     */
+    function _getAmountOut(uint256 _amount) internal view returns (uint256) {
+        uint256 totalSupply = cvx.totalSupply();
+        uint256 INIT_MINT_AMOUNT = cvx.INIT_MINT_AMOUNT();
+        // TODO: this is internal on the Aura token...
+        uint256 minterMinted = 0;
+        uint256 reductionPerCliff = cvx.reductionPerCliff();
+        uint256 totalCliffs = cvx.totalCliffs();
+        uint256 EMISSIONS_MAX_SUPPLY = cvx.EMISSIONS_MAX_SUPPLY();
+
+        uint256 emissionsMinted = totalSupply - INIT_MINT_AMOUNT - minterMinted;
+        uint256 cliff = emissionsMinted.div(reductionPerCliff);
+
+        uint256 amount;
+        if (cliff < totalCliffs) {
+            uint256 reduction = totalCliffs.sub(cliff).mul(5).div(2).add(700);
+            amount = _amount.mul(reduction).div(totalCliffs);
+            uint256 amtTillMax = EMISSIONS_MAX_SUPPLY.sub(emissionsMinted);
+            if (amount > amtTillMax) {
+                amount = amtTillMax;
+            }
+        }
+        return amount;
     }
 
     /* -------------------------------------------------------------------
