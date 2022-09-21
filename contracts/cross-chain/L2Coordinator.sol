@@ -108,20 +108,37 @@ contract L2Coordinator is OFT, CrossChainMessages {
         // consider writing a fallback to the native bridge
     }
 
-    function queueNewRewards() external {
-        // TODO:
-        // only callable by the booster
-        // triggers a new siphon on L1
+    /**
+     * @dev Called by the booster.earmarkRewards to siphon rewards from L1
+     * @param _crvAmount Amount of CRV that was received as rewards
+     */
+    function queueNewRewards(uint256 _crvAmount) external {
+        require(msg.sender == booster, "!booster");
+
+        bytes memory _payload = _encode(address(0), 0, _crvAmount, MessageType.SIPHON);
+
+        _lzSend(
+            // destination chain
+            canonicalChainId,
+            // to address packed with crvAmount
+            _payload,
+            // refund address
+            payable(msg.sender),
+            // ZRO payment address
+            address(0),
+            // adapter params
+            bytes("")
+        );
     }
 
     /**
      * @dev Lock AURA on the L1 chain
-     * @param _amount Amount of AURA to lock for vlAURA on L1
+     * @param _cvxAmount Amount of AURA to lock for vlAURA on L1
      */
-    function lock(uint256 _amount) external {
-        _debitFrom(msg.sender, canonicalChainId, bytes(""), _amount);
+    function lock(uint256 _cvxAmount) external {
+        _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
-        bytes memory payload = _encode(msg.sender, address(0), _amount, MessageType.LOCK);
+        bytes memory payload = _encode(msg.sender, address(0), _cvxAmount, MessageType.LOCK);
 
         _lzSend(
             // destination chain
@@ -136,13 +153,17 @@ contract L2Coordinator is OFT, CrossChainMessages {
             bytes("")
         );
 
-        emit Lock(msg.sender, canonicalChainId, _amount);
+        emit Lock(msg.sender, canonicalChainId, _cvxAmount);
     }
 
     /* -------------------------------------------------------------------
       Layer Zero functions L1 -> L2
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Overrite the default OFT lzReceive function logic to
+     *      Support siphoning
+     */
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,

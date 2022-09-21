@@ -252,22 +252,17 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Siphon AURA to L2", () => {
-        const incentivesPaidOnL2 = simpleToExactAmount(10);
+        const farmAmount = simpleToExactAmount(100);
+
         it("[LZ] siphon CVX", async () => {
             // Siphon amount is the amount of incentives paid on L2
             // We will have to prefarm some amount of AURA to kickstart
             // the reward pool for initial depositors. But finally siphon
             // will just be called from the L2 L2Coordinator.
-            const cvxBalBefore = await l2Coordinator.balanceOf(l2Coordinator.address);
             const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
-            console.log("Incentives paid on L2:", formatUnits(incentivesPaidOnL2));
-            await siphonDepositor.siphon(incentivesPaidOnL2, CHAIN_ID);
-            const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
+            console.log("Farming CRV amount:", formatUnits(farmAmount));
+            await siphonDepositor.farm(farmAmount);
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
-
-            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
-            console.log("CVX balance of l2Coordinator:", formatUnits(cvxBal));
-            expect(cvxBal).gt(0);
 
             const crvBal = crvBalAfter.sub(crvBalBefore);
             console.log("CRV balance of l2Coordinator:", formatUnits(crvBal));
@@ -287,20 +282,19 @@ describe("Cross Chain Deposits", () => {
             console.log("CVX balance:", formatUnits(cvxBal));
             console.log("CRV balance:", formatUnits(crvBal));
 
-            // Calculate the expected amount of CRV we should receive
-            // as rewards based on the amount of incentives paid
-            const expectedCrvBalance = incentivesPaidOnL2
-                .mul(await contracts.booster.FEE_DENOMINATOR())
-                .div(
+            const incentives = farmAmount
+                .mul(
                     (await contracts.booster.lockIncentive())
                         .add(await contracts.booster.stakerIncentive())
                         .add(await contracts.booster.earmarkIncentive())
                         .add(await contracts.booster.platformFee()),
                 )
-                .sub(incentivesPaidOnL2);
-            console.log("Expected CRV from incentives:", formatUnits(expectedCrvBalance));
-            expect(Math.round(Number(expectedCrvBalance.div(1e9).toString()))).eq(
-                Math.round(Number(crvBal.div(1e9).toString())),
+                .div(await contracts.booster.FEE_DENOMINATOR());
+
+            const expecteCrvBal = farmAmount.sub(incentives);
+
+            expect(Math.round(Number(expecteCrvBal.div("1000000000000000000").toString()))).eq(
+                Math.round(Number(crvBal.div("1000000000000000000").toString())),
             );
         });
     });

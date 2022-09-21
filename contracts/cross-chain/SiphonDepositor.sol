@@ -51,6 +51,8 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
     event Siphon(address sender, uint256 dstChainId, address toAddress, uint256 amount);
 
+    event Lock(address from, uint16 dstChainId, uint256 amount);
+
     /* -------------------------------------------------------------------
       Constructor 
     ------------------------------------------------------------------- */
@@ -90,42 +92,12 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     }
 
     /**
-     * @dev Siphon CVX tokens by depositing BAL into the Booster
-     *      and then calling earmark rewards which will send the BAL
-     *      to the siphon pools BaseRewardPool
-     *      Only callable by the owner
-     * @param _amount Amount of BAL that is being bridged from the L2 to cover the
-     *                Incentive amount that was paid out.
-     *                We assume the total incentives that have been paid out are equal
-     *                to the MaxFees on the Booster which is 2500/10000 (25%)
+     * @dev Pre farm CVX tokens from the booster so that when the first siphon
+     *      Is called there are already CVX tokens in this contract ready to be claimed
+     * @param _amount Amount of BAL to send to Booster before calling earmarkRewards
      */
-    function siphon(uint256 _amount, uint16 _dstChainId) external payable onlyOwner {
-        uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
-
-        uint256 bal = crv.balanceOf(address(this));
-        require(bal >= crvAmount, "!balance");
-
-        // Transfer CRV to the booster and earmarkRewards
-        crv.transfer(address(booster), crvAmount);
-        booster.earmarkRewards(pid);
-
-        uint256 cvxAmountOut = _getAmountOut(crvAmount);
-        bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
-
-        _lzSend(
-            // destination chain
-            _dstChainId,
-            // to address packed with crvAmount
-            _payload,
-            // refund address
-            payable(msg.sender),
-            // ZRO payment address
-            address(0),
-            // adapter params
-            bytes("")
-        );
-
-        emit Siphon(msg.sender, _dstChainId, l2Coordinator, _amount);
+    function farm(uint256 _amount) external onlyOwner {
+        _earmarkRewards(_amount);
     }
 
     /**
@@ -136,6 +108,19 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     function getReward() external onlyOwner {
         IBooster.PoolInfo memory info = booster.poolInfo(pid);
         IBaseRewardPool(info.crvRewards).getReward(address(this), false);
+    }
+
+    /**
+     * @dev Earmark rewards and siphon reward tokens
+     * @param _amount Amount of CRV to send to booster to siphon CVX
+     */
+    function _earmarkRewards(uint256 _amount) internal {
+        uint256 bal = crv.balanceOf(address(this));
+        require(bal >= _amount, "!balance");
+
+        // Transfer CRV to the booster and earmarkRewards
+        crv.transfer(address(booster), _amount);
+        booster.earmarkRewards(pid);
     }
 
     /* -------------------------------------------------------------------
@@ -204,7 +189,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         bytes memory, // _toAddress The address to whom you are sending tokens to on the dstChain
         uint256 _amount
     ) internal virtual override {
-        // TODO: if tokens are being sent to L1 AuraLocker contract then call lock on AuraLocker
         require(_from == _msgSender(), "ProxyOFT: owner is not send caller");
         cvx.safeTransferFrom(_from, address(this), _amount);
     }
@@ -226,6 +210,62 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
       Layer Zero functions L2 -> L1 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Siphon CVX tokens by depositing BAL into the Booster
+     *      and then calling earmark rewards which will send the BAL
+     *      to the siphon pools BaseRewardPool
+     *      Only callable by the owner
+     * @param _amount Amount of BAL that is being bridged from the L2 to cover the
+     *                Incentive amount that was paid out.
+     *                We assume the total incentives that have been paid out are equal
+     *                to the MaxFees on the Booster which is 2500/10000 (25%)
+     */
+    function _siphon(uint256 _amount, uint16 _dstChainId) internal {
+        // TODO: should this call getReward?
+        uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
+        _earmarkRewards(crvAmount);
+
+        // TODO: keep track of debt owed by contract that is being sent the tokens to
+        uint256 cvxAmountOut = _getAmountOut(crvAmount);
+        bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
+
+        _lzSend(
+            // destination chain
+            _dstChainId,
+            // to address packed with crvAmount
+            _payload,
+            // refund address
+            payable(msg.sender),
+            // ZRO payment address
+            address(0),
+            // adapter params
+            bytes("")
+        );
+
+        emit Siphon(msg.sender, _dstChainId, l2Coordinator, _amount);
+    }
+
+    /**
+     * @dev Lock tokens in the Locker contract
+     * @param _fromAddress  Address that is locking
+     * @param _cvxAmount    Amount to lock
+     * @param _srcChainId   Source chain ID
+     */
+    function _lock(
+        address _fromAddress,
+        uint256 _cvxAmount,
+        uint16 _srcChainId
+    ) internal {
+        cvx.approve(address(auraLocker), _cvxAmount);
+        auraLocker.lock(_fromAddress, _cvxAmount);
+
+        emit Lock(_fromAddress, _srcChainId, _cvxAmount);
+    }
+
+    /**
+     * @dev Overrite the default OFT lzReceive function logic to
+     *      Support locking and siphoning
+     */
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -237,9 +277,12 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
             if (messageType == MessageType.LOCK) {
                 // Approve the locker, decode the payload and lock
-                (address fromAddress, , uint256 amount, ) = _decodeLock(_payload);
-                cvx.approve(address(auraLocker), amount);
-                auraLocker.lock(fromAddress, amount);
+                (address fromAddress, , uint256 cvxAmount, ) = _decodeLock(_payload);
+                _lock(fromAddress, cvxAmount, _srcChainId);
+            } else if (messageType == MessageType.SIPHON) {
+                // Called when Booster.earmarkRewards calls l2Coordinator.queueNewRewards
+                (, , uint256 crvAmount, ) = _decodeSiphon(_payload);
+                _siphon(crvAmount, _srcChainId);
             }
         } else {
             // Continue with the normal flow for an OFT transfer
