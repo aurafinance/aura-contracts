@@ -41,6 +41,9 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     /// @dev l2Coordinator contract
     address public immutable l2Coordinator;
 
+    /// @dev source destinations mapped to CRV debt
+    mapping(uint16 => uint256) public debts;
+
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
@@ -215,17 +218,24 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      *      and then calling earmark rewards which will send the BAL
      *      to the siphon pools BaseRewardPool
      *      Only callable by the owner
-     * @param _amount Amount of BAL that is being bridged from the L2 to cover the
-     *                Incentive amount that was paid out.
-     *                We assume the total incentives that have been paid out are equal
-     *                to the MaxFees on the Booster which is 2500/10000 (25%)
+     * @param _amount       Amount of BAL that is being bridged from the L2 to cover the
+     *                      Incentive amount that was paid out.
+     *                      We assume the total incentives that have been paid out are equal
+     *                      to the MaxFees on the Booster which is 2500/10000 (25%)
+     * @param _dstChainId   The destination chain ID (L2) that called this L1 function which calls
+     *                      back to the L2 chain
      */
     function _siphon(uint256 _amount, uint16 _dstChainId) internal {
         // TODO: should this call getReward?
         uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
         _earmarkRewards(crvAmount);
 
-        // TODO: keep track of debt owed by contract that is being sent the tokens to
+        // Siphon is called by the L2 booster.earmarkRewards which calls l2Coordinator.queueNewRewards
+        // We need to track the amount of CRV incentives that have been paid on the L1 to siphon the CVX
+        // and make sure when the L2 finally bridges the CRV incentives back to the L1 that these debts
+        // are repaid
+        debts[_dstChainId] += _amount;
+
         uint256 cvxAmountOut = _getAmountOut(crvAmount);
         bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
 

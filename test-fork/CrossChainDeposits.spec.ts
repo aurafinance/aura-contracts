@@ -300,7 +300,7 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Claim Aura rewards and convert to L1 Aura", () => {
-        it("[L2] claim AURA rewards", async () => {
+        it("[LZ] claim AURA rewards", async () => {
             // Transfer BAL rewards to the booster
             const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
             const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
@@ -320,6 +320,10 @@ describe("Cross Chain Deposits", () => {
             expect(cvxBal).gt(0);
 
             console.log("CVX balance:", formatUnits(cvxBal));
+
+            const debt = await siphonDepositor.debts(CHAIN_ID);
+            console.log("CRV debt:", formatUnits(debt));
+            expect(debt).gt(0);
         });
         it("bridge back to the L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
