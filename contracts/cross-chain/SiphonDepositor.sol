@@ -9,8 +9,9 @@ import { IBooster } from "../interfaces/IBooster.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IBaseRewardPool } from "../interfaces/IBaseRewardPool.sol";
 import { OFTCore } from "./layer-zero/token/oft/OFTCore.sol";
+import { CrossChainMessages } from "./CrossChainMessages.sol";
 
-contract SiphonDepositor is OFTCore {
+contract SiphonDepositor is OFTCore, CrossChainMessages {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
     using SafeERC20 for ICvx;
@@ -99,24 +100,22 @@ contract SiphonDepositor is OFTCore {
      *                to the MaxFees on the Booster which is 2500/10000 (25%)
      */
     function siphon(uint256 _amount, uint16 _dstChainId) external payable onlyOwner {
-        uint256 amount = _getRewardsBasedOnIncentives(_amount);
+        uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
 
         uint256 bal = crv.balanceOf(address(this));
-        require(bal >= amount, "!balance");
+        require(bal >= crvAmount, "!balance");
 
         // Transfer CRV to the booster and earmarkRewards
-        crv.transfer(address(booster), amount);
+        crv.transfer(address(booster), crvAmount);
         booster.earmarkRewards(pid);
 
-        uint256 cvxAmountOut = _getAmountOut(amount);
-        bytes memory _payload = abi.encode(abi.encodePacked(l2Coordinator), cvxAmountOut, amount);
-        // TODO: need to modify this to also send the AURA rate
-        // so that the L2Coordinator has the most up to date rate
-        // when L2Coordinator.mint() is called from the L2Booster
+        uint256 cvxAmountOut = _getAmountOut(crvAmount);
+        bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
+
         _lzSend(
             // destination chain
             _dstChainId,
-            // to address packed with amount
+            // to address packed with crvAmount
             _payload,
             // refund address
             payable(msg.sender),

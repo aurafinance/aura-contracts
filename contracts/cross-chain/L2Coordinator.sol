@@ -6,13 +6,14 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 
 import { IrCvx } from "../interfaces/IrCvx.sol";
 import { OFT } from "./layer-zero/token/oft/OFT.sol";
+import { CrossChainMessages } from "./CrossChainMessages.sol";
 
 /**
  * @title L2Coordinator
  * @dev Takes rAURA deposits from rAURA on L1 and distributes them
  *      When rewardClaimed is called on the Booster
  */
-contract L2Coordinator is OFT {
+contract L2Coordinator is OFT, CrossChainMessages {
     using SafeERC20 for IrCvx;
 
     /* -------------------------------------------------------------------
@@ -99,15 +100,23 @@ contract L2Coordinator is OFT {
         uint64 _nonce,
         bytes memory _payload
     ) internal virtual override {
-        if (_payload.length > 128) {
-            // The length of the payload is greater than the length of abi.encode(addressBytes, amount)
-            // which is always 128 so we can assume this call is being sent from SiphonDepositor.siphon
-            // which also sends the CRV:CVX reward rate as a third encoded paramater.
-            (bytes memory a, uint256 cvxAmount, uint256 crvAmount) = abi.decode(_payload, (bytes, uint256, uint256));
-            mintRate = (cvxAmount * WAD) / crvAmount;
-            // Continue with LZ flow with crvAmount removed from payload
-            _payload = abi.encode(a, cvxAmount);
-            super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+        if (_isCustomMessage(_payload)) {
+            MessageType messageType = _getMessageType(_payload);
+
+            if (messageType == MessageType.SIPHON) {
+                // The message type is SIPHON which means the message was sent by
+                // SiphonDepositor.siphon.
+                (address toAddress, uint256 cvxAmount, uint256 crvAmount, ) = _decodeSiphon(_payload);
+
+                // The mint rate is the amount of CVX we mint for 1 CRV received
+                // It is sent over each time siphon is called on the L1 to try and keep
+                // the L2 rate as close as possible to the L1 rate
+                mintRate = (cvxAmount * WAD) / crvAmount;
+
+                // Continue with LZ flow with crvAmount removed from payload
+                _payload = abi.encode(abi.encodePacked(toAddress), cvxAmount);
+                super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+            }
         } else {
             // Continue with the normal flow for an OFT transfer
             super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
