@@ -44,6 +44,7 @@ export interface CrossChainL1DeploymentConfig {
 
 // Layer 2 deployment config
 export interface CrossChainL2DeploymentConfig {
+    canonicalChainId: BigNumberish;
     lzEndpoint: string;
     minter: string;
     token: string;
@@ -177,7 +178,7 @@ export async function deployCrossChainL2(
         hre,
         new L2Coordinator__factory(signer),
         "L2Coordinator",
-        [config.naming.cvxName, config.naming.cvxSymbol, config.lzEndpoint],
+        [config.naming.cvxName, config.naming.cvxSymbol, config.lzEndpoint, config.canonicalChainId],
         {},
         debug,
         waitForBlocks,

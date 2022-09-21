@@ -29,6 +29,9 @@ contract L2Coordinator is OFT, CrossChainMessages {
     /// @dev Rate to send CVX on mint
     uint256 public mintRate;
 
+    /// @dev canonical chain ID
+    uint16 public canonicalChainId;
+
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
@@ -37,15 +40,26 @@ contract L2Coordinator is OFT, CrossChainMessages {
 
     event Mint(address sender, address to, uint256 amount);
 
+    event Lock(address from, uint16 dstChainId, uint256 amount);
+
     /* -------------------------------------------------------------------
       Constructor 
     ------------------------------------------------------------------- */
 
+    /**
+     * @param _name               Token name
+     * @param _symbol             Token symbol
+     * @param _lzEndpoint         Layer Zero endpoint address
+     * @param _canonicalChainId   The canonical chain ID
+     */
     constructor(
         string memory _name,
         string memory _symbol,
-        address _lzEndpoint
-    ) OFT(_name, _symbol, _lzEndpoint) {}
+        address _lzEndpoint,
+        uint16 _canonicalChainId
+    ) OFT(_name, _symbol, _lzEndpoint) {
+        canonicalChainId = _canonicalChainId;
+    }
 
     /* -------------------------------------------------------------------
       Setter functions 
@@ -80,7 +94,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
     }
 
     /* -------------------------------------------------------------------
-      LZ functions L2 -> L1
+      Layer Zero functions L2 -> L1
     ------------------------------------------------------------------- */
 
     /**
@@ -93,6 +107,41 @@ contract L2Coordinator is OFT, CrossChainMessages {
         // or liquidity dries up we could end up stuck. We could also
         // consider writing a fallback to the native bridge
     }
+
+    function queueNewRewards() external {
+        // TODO:
+        // only callable by the booster
+        // triggers a new siphon on L1
+    }
+
+    /**
+     * @dev Lock AURA on the L1 chain
+     * @param _amount Amount of AURA to lock for vlAURA on L1
+     */
+    function lock(uint256 _amount) external {
+        _debitFrom(msg.sender, canonicalChainId, bytes(""), _amount);
+
+        bytes memory payload = _encode(msg.sender, address(0), _amount, MessageType.LOCK);
+
+        _lzSend(
+            // destination chain
+            canonicalChainId,
+            // to address packed with crvAmount
+            payload,
+            // refund address
+            payable(msg.sender),
+            // ZRO payment address
+            address(0),
+            // adapter params
+            bytes("")
+        );
+
+        emit Lock(msg.sender, canonicalChainId, _amount);
+    }
+
+    /* -------------------------------------------------------------------
+      Layer Zero functions L1 -> L2
+    ------------------------------------------------------------------- */
 
     function _nonblockingLzReceive(
         uint16 _srcChainId,

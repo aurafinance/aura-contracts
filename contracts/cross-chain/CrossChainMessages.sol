@@ -31,6 +31,15 @@ contract CrossChainMessages {
         return abi.encode(x, y, c, messageType, MAGIC_BYTES);
     }
 
+    function _encode(
+        address x,
+        address y,
+        uint256 c,
+        MessageType messageType
+    ) internal view returns (bytes memory) {
+        return abi.encode(x, y, c, messageType, MAGIC_BYTES);
+    }
+
     function _decodeSiphon(bytes memory payload)
         internal
         view
@@ -44,6 +53,22 @@ contract CrossChainMessages {
         (toAddress, cvxAmount, crvAmount, messageType, ) = abi.decode(
             payload,
             (address, uint256, uint256, MessageType, bytes4)
+        );
+    }
+
+    function _decodeLock(bytes memory payload)
+        internal
+        view
+        returns (
+            address fromAddress,
+            address toAddress,
+            uint256 amount,
+            MessageType messageType
+        )
+    {
+        (fromAddress, toAddress, amount, messageType, ) = abi.decode(
+            payload,
+            (address, address, uint256, MessageType, bytes4)
         );
     }
 

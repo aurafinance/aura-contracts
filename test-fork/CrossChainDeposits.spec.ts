@@ -26,7 +26,14 @@ import { formatUnits } from "ethers/lib/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "../scripts/deploySystem";
 import { deployCrossChainL1, deployCrossChainL2 } from "../scripts/deployCrossChain";
-import { impersonate, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
+import {
+    impersonate,
+    impersonateAccount,
+    increaseTime,
+    ONE_WEEK,
+    simpleToExactAmount,
+    ZERO_ADDRESS,
+} from "../test-utils";
 
 const debug = false;
 
@@ -117,6 +124,7 @@ describe("Cross Chain Deposits", () => {
 
             const crossChainL2 = await deployCrossChainL2(
                 {
+                    canonicalChainId: CHAIN_ID,
                     lzEndpoint: lzEndpoint.address,
                     minter: config.addresses.minter,
                     token: crvToken.address,
@@ -319,7 +327,30 @@ describe("Cross Chain Deposits", () => {
 
             console.log("CVX balance:", formatUnits(cvxBal));
         });
-        it("bridge back to the L1");
-        it("lock back to the L1");
+        it("bridge back to the L1", async () => {
+            const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
+            const sendAmount = l2balBefore.mul(100).div(1000);
+            const toAddress = "0x0000000000000000000000000000000000000020";
+            await l2Coordinator
+                .connect(lpWhale.signer)
+                .sendFrom(lpWhale.address, CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, []);
+            const l1bal = await contracts.cvx.balanceOf(toAddress);
+            expect(l1bal).eq(sendAmount);
+
+            const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
+            expect(l2balBefore.sub(l2balAfter)).eq(sendAmount);
+        });
+        it("[LZ] lock back to the L1", async () => {
+            const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
+            const lockAmount = l2balBefore.mul(100).div(1000);
+            await l2Coordinator.connect(lpWhale.signer).lock(lockAmount);
+            expect(await l2Coordinator.balanceOf(lpWhale.address)).eq(l2balBefore.sub(lockAmount));
+
+            const lock = await contracts.cvxLocker.userLocks(lpWhale.address, 0);
+            expect(lock.amount).eq(lockAmount);
+
+            const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
+            expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
+        });
     });
 });

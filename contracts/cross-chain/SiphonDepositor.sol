@@ -190,7 +190,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     }
 
     /* -------------------------------------------------------------------
-      Layer Zero functions
+      OFT functions
     ------------------------------------------------------------------- */
 
     /**
@@ -220,5 +220,30 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         uint256 _amount
     ) internal virtual override {
         cvx.safeTransfer(_toAddress, _amount);
+    }
+
+    /* -------------------------------------------------------------------
+      Layer Zero functions L2 -> L1 
+    ------------------------------------------------------------------- */
+
+    function _nonblockingLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64 _nonce,
+        bytes memory _payload
+    ) internal virtual override {
+        if (_isCustomMessage(_payload)) {
+            MessageType messageType = _getMessageType(_payload);
+
+            if (messageType == MessageType.LOCK) {
+                // Approve the locker, decode the payload and lock
+                (address fromAddress, , uint256 amount, ) = _decodeLock(_payload);
+                cvx.approve(address(auraLocker), amount);
+                auraLocker.lock(fromAddress, amount);
+            }
+        } else {
+            // Continue with the normal flow for an OFT transfer
+            super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
+        }
     }
 }
