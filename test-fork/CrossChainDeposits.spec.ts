@@ -350,5 +350,35 @@ describe("Cross Chain Deposits", () => {
             const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
         });
+        it("[LZ] retry failed lock back to the L1", async () => {
+            const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
+            const lockAmount = l2balBefore.mul(100).div(1000);
+            const lockBefore = await contracts.cvxLocker.userLocks(lpWhale.address, 0);
+
+            // Force the transaction to fail by changing the code stored at cvxLocker
+            // and then reset it afterwards so we can process the retry
+            const code = await network.provider.send("eth_getCode", [contracts.cvxLocker.address]);
+            await network.provider.send("hardhat_setCode", [contracts.cvxLocker.address, MockERC20__factory.bytecode]);
+            const tx = await l2Coordinator.connect(lpWhale.signer).lock(lockAmount);
+            await network.provider.send("hardhat_setCode", [contracts.cvxLocker.address, code]);
+
+            const resp = await tx.wait();
+            const event = resp.events.find(event => event.event === "MessageFailed");
+
+            await siphonDepositor.retryMessage(
+                event.args._srcChainId,
+                event.args._srcAddress,
+                event.args._nonce,
+                event.args._payload,
+            );
+
+            expect(await l2Coordinator.balanceOf(lpWhale.address)).eq(l2balBefore.sub(lockAmount));
+
+            const lockAfter = await contracts.cvxLocker.userLocks(lpWhale.address, 0);
+            expect(lockAfter.amount.sub(lockBefore.amount)).eq(lockAmount);
+
+            const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
+            expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
+        });
     });
 });
