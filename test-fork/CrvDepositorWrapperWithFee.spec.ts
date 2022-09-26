@@ -14,7 +14,7 @@ import { deployContract } from "../tasks/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "scripts/deploySystem";
 
-const debug = true;
+const debug = false;
 const balWhaleAddress = "0xff052381092420b7f24cc97fded9c0c17b2cbbb9";
 const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
 
