@@ -28,6 +28,7 @@ __metadata:
     "@typechain/hardhat": ^3.0.0
     "@types/chai": ^4.2.22
     "@types/fs-extra": ^9.0.13
+    "@types/lodash": ^4.14.185
     "@types/mocha": ^9.0.0
     "@types/node": ^16.11.10
     "@typescript-eslint/eslint-plugin": ^5.4.0
@@ -1775,6 +1776,13 @@ __metadata:
     "@types/level-errors": "*"
     "@types/node": "*"
   checksum: 04969bb805035960b8d6650e8f76893be7ba70267bb7012f6f00d67a0cf096ada552355629791b3f5925e9cdb6912d3fe08892c33c3c583e8fd02099b573bdd7
+  languageName: node
+  linkType: hard
+
+"@types/lodash@npm:^4.14.185":
+  version: 4.14.185
+  resolution: "@types/lodash@npm:4.14.185"
+  checksum: f81d13da5ecab110ca9c5c7cc2bedc3c9802a6acf668576aecd1b8f4b134ed81d06c15f1e600fb08f05975098280a0d97d30cddfc2cb39ec1c6b56e971ca53b3
   languageName: node
   linkType: hard
 
