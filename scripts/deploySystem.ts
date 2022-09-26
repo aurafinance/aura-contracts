@@ -76,6 +76,8 @@ import {
     GaugeMigrator__factory,
     UniswapMigrator,
     UniswapMigrator__factory,
+    CrvDepositorWrapperWithFee,
+    CrvDepositorWrapperWithFee__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -238,6 +240,7 @@ interface Phase5Deployed extends Phase4Deployed {
     boosterHelper: BoosterHelper;
     gaugeMigrator: GaugeMigrator;
     uniswapMigrator: UniswapMigrator;
+    crvDepositorWrapperWithFee: CrvDepositorWrapperWithFee;
 }
 function getPoolAddress(utils, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
@@ -1162,6 +1165,7 @@ async function deployPhase5(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     deployment: Phase4Deployed,
+    multisigs: MultisigConfig,
     config: ExtSystemConfig,
     debug = false,
     waitForBlocks = 0,
@@ -1177,7 +1181,7 @@ async function deployPhase5(
         sushiswapRouter,
         balancerPoolOwner,
     } = config;
-    const { booster } = deployment;
+    const { booster, crvDepositor, voterProxy } = deployment;
 
     // -----------------------------
     // 5. Helpers
@@ -1220,8 +1224,27 @@ async function deployPhase5(
         debug,
         waitForBlocks,
     );
-
-    return { ...deployment, boosterHelper, gaugeMigrator, uniswapMigrator };
+    const crvDepositorWrapperWithFee = await deployContract<CrvDepositorWrapperWithFee>(
+        hre,
+        new CrvDepositorWrapperWithFee__factory(deployer),
+        "CrvDepositorWrapperWithFee",
+        [
+            crvDepositor.address,
+            config.balancerVault,
+            config.token,
+            config.weth,
+            config.balancerPoolId,
+            booster.address,
+            voterProxy.address,
+            multisigs.daoMultisig,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    const tx = await crvDepositorWrapperWithFee.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+    return { ...deployment, boosterHelper, gaugeMigrator, uniswapMigrator, crvDepositorWrapperWithFee };
 }
 export {
     DistroList,

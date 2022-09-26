@@ -47,7 +47,7 @@ describe("GaugeMigrator", () => {
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
         await phase3.poolManager.setProtectPool(false);
         const phase4 = await deployPhase4(hre, deployer, phase3, mocks.addresses);
-        contracts = await deployPhase5(hre, deployer, phase4, mocks.addresses);
+        contracts = await deployPhase5(hre, deployer, phase4, multisigs, mocks.addresses);
         gaugeMigrator = contracts.gaugeMigrator;
     });
 
