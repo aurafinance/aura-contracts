@@ -20,6 +20,8 @@ import {
     LZEndpointMock,
     LZEndpointMock__factory,
     PoolManagerLite,
+    DummyBridge,
+    DummyBridge__factory,
 } from "../types/generated";
 import { Account } from "../types";
 import { formatUnits } from "ethers/lib/utils";
@@ -34,6 +36,7 @@ import {
     simpleToExactAmount,
     ZERO_ADDRESS,
 } from "../test-utils";
+import { deployContract } from "../tasks/utils";
 
 const debug = false;
 
@@ -302,9 +305,8 @@ describe("Cross Chain Deposits", () => {
     describe("Claim Aura rewards and convert to L1 Aura", () => {
         it("[LZ] claim AURA rewards", async () => {
             // Transfer BAL rewards to the booster
-            const balWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
-            const bal = MockERC20__factory.connect(config.addresses.token, balWhale.signer);
-            await bal.transfer(L2_booster.address, simpleToExactAmount(1));
+            const crvWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
+            await crvToken.connect(crvWhale.signer).transfer(L2_booster.address, simpleToExactAmount(1));
 
             // Earmark booster rewards
             await L2_booster.earmarkRewards(0);
@@ -379,6 +381,38 @@ describe("Cross Chain Deposits", () => {
 
             const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
+        });
+    });
+
+    describe("Bridge BAL to L1 to repay debt", () => {
+        let dummyBridge: DummyBridge;
+        // Deploy a dummy bridge to bridge the BAL back to the L1
+        // contract. SiphonDepositor will receive the BAL and settle
+        // the debt for that l2
+        it("Deploy dummy bridge", async () => {
+            dummyBridge = await deployContract(hre, new DummyBridge__factory(deployer), "DummyBridge", [
+                siphonDepositor.address,
+                crvToken.address,
+                CHAIN_ID,
+            ]);
+
+            await l2Coordinator.setBridgeDelegate(dummyBridge.address);
+            await siphonDepositor.setBridgeDelegate(CHAIN_ID, dummyBridge.address);
+        });
+        it("Bridge BAL to L1 to repay debt", async () => {
+            const debtBefore = await siphonDepositor.debts(CHAIN_ID);
+            console.log("Debt before:", formatUnits(debtBefore));
+
+            const crvBalBefore = await crvToken.balanceOf(l2Coordinator.address);
+            console.log("CRV balance:", formatUnits(crvBalBefore));
+
+            await l2Coordinator.flush();
+            await dummyBridge.repayDebt();
+
+            const debtAfter = await siphonDepositor.debts(CHAIN_ID);
+            console.log("Debt after:", formatUnits(debtAfter));
+
+            expect(debtBefore.sub(debtAfter)).eq(crvBalBefore);
         });
     });
 });

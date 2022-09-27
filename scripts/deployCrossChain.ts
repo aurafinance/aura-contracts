@@ -178,7 +178,7 @@ export async function deployCrossChainL2(
         hre,
         new L2Coordinator__factory(signer),
         "L2Coordinator",
-        [config.naming.cvxName, config.naming.cvxSymbol, config.lzEndpoint, config.canonicalChainId],
+        [config.naming.cvxName, config.naming.cvxSymbol, config.lzEndpoint, config.canonicalChainId, config.token],
         {},
         debug,
         waitForBlocks,

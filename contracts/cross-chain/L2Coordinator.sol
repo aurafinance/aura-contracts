@@ -32,6 +32,12 @@ contract L2Coordinator is OFT, CrossChainMessages {
     /// @dev canonical chain ID
     uint16 public canonicalChainId;
 
+    /// @dev CRV Token address
+    address public crv;
+
+    /// @dev Contract in charge of bridging crv back to the L1
+    address public bridgeDelegate;
+
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
@@ -41,6 +47,8 @@ contract L2Coordinator is OFT, CrossChainMessages {
     event Mint(address sender, address to, uint256 amount);
 
     event Lock(address from, uint16 dstChainId, uint256 amount);
+
+    event UpdateBridgeDelegate(address bridgeDelegate);
 
     /* -------------------------------------------------------------------
       Constructor 
@@ -56,9 +64,11 @@ contract L2Coordinator is OFT, CrossChainMessages {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        uint16 _canonicalChainId
+        uint16 _canonicalChainId,
+        address _crv
     ) OFT(_name, _symbol, _lzEndpoint) {
         canonicalChainId = _canonicalChainId;
+        crv = _crv;
     }
 
     /* -------------------------------------------------------------------
@@ -72,6 +82,15 @@ contract L2Coordinator is OFT, CrossChainMessages {
     function setBooster(address _booster) external onlyOwner {
         booster = _booster;
         emit UpdateBooster(msg.sender, _booster);
+    }
+
+    /**
+     * @dev Set the bridge delegate
+     * @param _bridgeDelegate Bridge delegate address
+     */
+    function setBridgeDelegate(address _bridgeDelegate) external onlyOwner {
+        bridgeDelegate = _bridgeDelegate;
+        emit UpdateBridgeDelegate(_bridgeDelegate);
     }
 
     /* -------------------------------------------------------------------
@@ -101,11 +120,8 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @dev Send BAL rewards tokens from L2 to L1
      */
     function flush() external onlyOwner {
-        // TODO:
-        // Send BAL from L2 -> L1. We may want to consider making this
-        // functionality upgradable. If a bridge stop supporting BAL
-        // or liquidity dries up we could end up stuck. We could also
-        // consider writing a fallback to the native bridge
+        uint256 bal = IERC20(crv).balanceOf(address(this));
+        IERC20(crv).transfer(bridgeDelegate, bal);
     }
 
     /**
