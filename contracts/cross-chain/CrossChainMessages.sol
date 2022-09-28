@@ -15,7 +15,7 @@ contract CrossChainMessages {
         SIPHON
     }
 
-    function _isCustomMessage(bytes memory _payload) internal view returns (bool) {
+    function _isCustomMessage(bytes memory _payload) internal pure returns (bool) {
         // Custom message payloads have the shape abi.encode(bytes32, bytes32, bytes32, MessageType, bytes4);
         // The length of this is 160. The OFT messages all have a length of 128 so we can assume that if the
         // length is 160 it is a custom message
@@ -27,7 +27,7 @@ contract CrossChainMessages {
         uint256 y,
         uint256 c,
         MessageType messageType
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(x, y, c, messageType, MAGIC_BYTES);
     }
 
@@ -36,13 +36,13 @@ contract CrossChainMessages {
         address y,
         uint256 c,
         MessageType messageType
-    ) internal view returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(x, y, c, messageType, MAGIC_BYTES);
     }
 
     function _decodeSiphon(bytes memory payload)
         internal
-        view
+        pure
         returns (
             address toAddress,
             uint256 cvxAmount,
@@ -58,7 +58,7 @@ contract CrossChainMessages {
 
     function _decodeLock(bytes memory payload)
         internal
-        view
+        pure
         returns (
             address fromAddress,
             address toAddress,
@@ -72,7 +72,7 @@ contract CrossChainMessages {
         );
     }
 
-    function _getMessageType(bytes memory payload) internal view returns (MessageType) {
+    function _getMessageType(bytes memory payload) internal pure returns (MessageType) {
         (, , , MessageType messageType, ) = abi.decode(payload, (bytes32, bytes32, bytes32, MessageType, bytes4));
         return messageType;
     }

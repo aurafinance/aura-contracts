@@ -194,7 +194,7 @@ describe("Cross Chain Deposits", () => {
             const crossChainL1 = await deployCrossChainL1(
                 {
                     l2Coordinator: l2Coordinator.address,
-                    siphondepositor: { pid },
+                    siphonDepositor: { pid },
                     booster: contracts.booster.address,
                     cvxLocker: contracts.cvxLocker.address,
                     token: crvToken.address,

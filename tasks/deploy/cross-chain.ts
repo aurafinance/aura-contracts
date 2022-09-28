@@ -25,7 +25,7 @@ task("deploy:crosschain:l1").setAction(async function (_: TaskArguments, hre: Ha
     await deployCrossChainL1(
         {
             l2Coordinator: crossChainConfig.l2Coordinator,
-            siphondepositor: { pid },
+            siphonDepositor: { pid },
             booster: contracts.booster.address,
             cvxLocker: contracts.cvxLocker.address,
             token: mainnetConfig.addresses.token,

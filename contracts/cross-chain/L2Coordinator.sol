@@ -41,7 +41,6 @@ contract L2Coordinator is OFT, CrossChainMessages {
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
-
     event UpdateBooster(address sender, address booster);
 
     event Mint(address sender, address to, uint256 amount);
@@ -80,6 +79,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @param _booster Booster address
      */
     function setBooster(address _booster) external onlyOwner {
+        require(_booster != address(0), "Invalid address");
         booster = _booster;
         emit UpdateBooster(msg.sender, _booster);
     }
@@ -89,6 +89,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @param _bridgeDelegate Bridge delegate address
      */
     function setBridgeDelegate(address _bridgeDelegate) external onlyOwner {
+        require(_bridgeDelegate != address(0), "Invalid address");
         bridgeDelegate = _bridgeDelegate;
         emit UpdateBridgeDelegate(_bridgeDelegate);
     }
@@ -120,18 +121,24 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @dev Send BAL rewards tokens from L2 to L1
      */
     function flush() external onlyOwner {
+        // when and how ofthen this need to be called ?  by adding `onlyOwner` will not allow us to automate this if needed, could you please confirm it is by design ?
+        // bridgeDelegate can be zero, so to add a required here or make sure that at never bridgeDelegate is zero
         uint256 bal = IERC20(crv).balanceOf(address(this));
+        require(bridgeDelegate != address(0), "Invalid bridgeDelegate");
         IERC20(crv).transfer(bridgeDelegate, bal);
     }
 
     /**
      * @dev Called by the booster.earmarkRewards to siphon rewards from L1
-     * @param _crvAmount Amount of CRV that was received as rewards
+     * @param _rewards Amount of CRV that was received as rewards
      */
-    function queueNewRewards(uint256 _crvAmount) external {
+    function queueNewRewards(uint256 _rewards) external {
+        // operator ?
         require(msg.sender == booster, "!booster");
+        // require(msg.sender == operator, "!authorized");
+        // to keep consitancy with the other queueNewRewards change param nanme to _rewards
 
-        bytes memory _payload = _encode(address(0), 0, _crvAmount, MessageType.SIPHON);
+        bytes memory _payload = _encode(address(0), 0, _rewards, MessageType.SIPHON);
 
         _lzSend(
             // destination chain
@@ -154,6 +161,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
     function lock(uint256 _cvxAmount) external {
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
+        //  why the second param of _encode is an address instead of uint256 as defined on the function?  is this by design or an issue?
         bytes memory payload = _encode(msg.sender, address(0), _cvxAmount, MessageType.LOCK);
 
         _lzSend(
@@ -171,6 +179,8 @@ contract L2Coordinator is OFT, CrossChainMessages {
 
         emit Lock(msg.sender, canonicalChainId, _cvxAmount);
     }
+
+    // Do we want to support function lockFor(address _for, uint256 _amount) external ?
 
     /* -------------------------------------------------------------------
       Layer Zero functions L1 -> L2
