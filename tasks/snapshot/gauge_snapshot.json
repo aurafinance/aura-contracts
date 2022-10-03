@@ -127,33 +127,7 @@
             "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0x5c6ee304399dbdb9c8ef030ab642b10820db8f56.png"
         }
     },
-    {
-        "address": "0xe42382D005A620FaaA1B82543C9c04ED79Db03bA",
-        "network": 137,
-        "relativeWeightCap": "null",
-        "pool": {
-            "id": "0x726e324c29a1e49309672b244bdc4ff62a270407000200000000000000000702",
-            "address": "0x726E324c29a1e49309672b244bdC4Ff62A270407",
-            "poolType": "FX",
-            "symbol": "XSGD-USDC",
-            "tokens": [
-                {
-                    "address": "0xDC3326e71D45186F113a2F448984CA0e8D201995",
-                    "weight": "null",
-                    "symbol": "XSGD"
-                },
-                {
-                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-                    "weight": "null",
-                    "symbol": "USDC"
-                }
-            ]
-        },
-        "tokenLogoURIs": {
-            "0xDC3326e71D45186F113a2F448984CA0e8D201995": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x70e8dE73cE538DA2bEEd35d14187F6959a8ecA96/logo.png",
-            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174/logo.png"
-        }
-    },
+
     {
         "address": "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac",
         "network": 1,
@@ -1298,6 +1272,62 @@
         }
     },
     {
+        "address": "0x87ae77A8270F223656D9dC40AD51aabfAB424b30",
+        "network": 42161,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664196539,
+        "pool": {
+            "id": "0x178e029173417b1f9c8bc16dcec6f697bc323746000200000000000000000158",
+            "address": "0x178E029173417b1F9C8bC16DCeC6f697bC323746",
+            "poolType": "Weighted",
+            "symbol": "50WSTETH-50USDC",
+            "tokens": [
+                {
+                    "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+                    "weight": "0.5",
+                    "symbol": "wstETH"
+                },
+                {
+                    "address": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+                    "weight": "0.5",
+                    "symbol": "USDC"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x5979D7b546E38E414F7E9822514be443A4800529": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x5979d7b546e38e414f7e9822514be443a4800529.png",
+            "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8/logo.png"
+        }
+    },
+    {
+        "address": "0x6f825C8bbf67eBb6bc35cf2071daCD2864C3258E",
+        "network": 42161,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664196539,
+        "pool": {
+            "id": "0xfb5e6d0c1dfed2ba000fbc040ab8df3615ac329c000000000000000000000159",
+            "address": "0xFB5e6d0c1DfeD2BA000fBC040Ab8DF3615AC329c",
+            "poolType": "ComposableStable",
+            "symbol": "B-stETH-Stable",
+            "tokens": [
+                {
+                    "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+                    "weight": "null",
+                    "symbol": "wstETH"
+                },
+                {
+                    "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                    "weight": "null",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x5979D7b546E38E414F7E9822514be443A4800529": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x5979d7b546e38e414f7e9822514be443a4800529.png",
+            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x82aF49447D8a07e3bd95BD0d56f35241523fBab1/logo.png"
+        }
+    },
+    {
         "address": "0xc77E5645Dbe48d54afC06655e39D3Fe17eB76C1c",
         "network": 42161,
         "relativeWeightCap": "null",
@@ -1568,6 +1598,33 @@
             "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1/logo.png",
             "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9/logo.png",
             "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8/logo.png"
+        }
+    },
+    {
+        "address": "0xe42382D005A620FaaA1B82543C9c04ED79Db03bA",
+        "network": 137,
+        "relativeWeightCap": "null",
+        "pool": {
+            "id": "0x726e324c29a1e49309672b244bdc4ff62a270407000200000000000000000702",
+            "address": "0x726E324c29a1e49309672b244bdC4Ff62A270407",
+            "poolType": "FX",
+            "symbol": "XSGD-USDC",
+            "tokens": [
+                {
+                    "address": "0xDC3326e71D45186F113a2F448984CA0e8D201995",
+                    "weight": "null",
+                    "symbol": "XSGD"
+                },
+                {
+                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "weight": "null",
+                    "symbol": "USDC"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0xDC3326e71D45186F113a2F448984CA0e8D201995": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x70e8dE73cE538DA2bEEd35d14187F6959a8ecA96/logo.png",
+            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174/logo.png"
         }
     },
     {
