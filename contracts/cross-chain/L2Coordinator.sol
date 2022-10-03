@@ -118,20 +118,23 @@ contract L2Coordinator is OFT, CrossChainMessages {
 
     /**
      * @dev Send BAL rewards tokens from L2 to L1
+     * Only callable by the owner and a manual process as we want to
+     * control the flow of funds into the bridge delegate
      */
     function flush() external onlyOwner {
         uint256 bal = IERC20(crv).balanceOf(address(this));
+        require(bridgeDelegate != address(0), "bridgeDelegate invalid");
         IERC20(crv).transfer(bridgeDelegate, bal);
     }
 
     /**
      * @dev Called by the booster.earmarkRewards to siphon rewards from L1
-     * @param _crvAmount Amount of CRV that was received as rewards
+     * @param _rewards Amount of CRV that was received as rewards
      */
-    function queueNewRewards(uint256 _crvAmount) external {
+    function queueNewRewards(uint256 _rewards) external {
         require(msg.sender == booster, "!booster");
 
-        bytes memory _payload = _encode(address(0), 0, _crvAmount, MessageType.SIPHON);
+        bytes memory _payload = _encode(address(0), 0, _rewards, MessageType.SIPHON);
 
         _lzSend(
             // destination chain

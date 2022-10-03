@@ -194,7 +194,7 @@ describe("Cross Chain Deposits", () => {
             const crossChainL1 = await deployCrossChainL1(
                 {
                     l2Coordinator: l2Coordinator.address,
-                    siphondepositor: { pid },
+                    siphonDepositor: { pid },
                     booster: contracts.booster.address,
                     cvxLocker: contracts.cvxLocker.address,
                     token: crvToken.address,
@@ -236,6 +236,7 @@ describe("Cross Chain Deposits", () => {
             expect(pool.lptoken).eq(siphonToken.address);
         });
         it("[L1] deposit LP tokens into the pool", async () => {
+            await siphonDepositor.setApprovals();
             const bal = await siphonToken.balanceOf(siphonDepositor.address);
             await siphonDepositor.deposit();
             const rewardBal = await crvRewards.balanceOf(siphonDepositor.address);

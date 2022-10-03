@@ -6,10 +6,14 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 contract SiphonGauge {
     using SafeERC20 for IERC20;
 
+    /// @dev Siphon LP token
     IERC20 immutable lpToken;
 
     mapping(address => uint256) private _balances;
 
+    /**
+     * @param _lpToken Siphon LP token contract
+     */
     constructor(IERC20 _lpToken) {
         lpToken = _lpToken;
     }

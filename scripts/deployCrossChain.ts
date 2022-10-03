@@ -34,7 +34,7 @@ import {
 // Layer 1 deployment config
 export interface CrossChainL1DeploymentConfig {
     l2Coordinator: string;
-    siphondepositor: { pid: BigNumberish };
+    siphonDepositor: { pid: BigNumberish };
     booster: string;
     cvxLocker: string;
     token: string;
@@ -91,8 +91,8 @@ export async function deployCrossChainL1(
     config: CrossChainL1DeploymentConfig,
     signer: Signer,
     hre: HardhatRuntimeEnvironment,
-    debug: boolean = true,
-    waitForBlocks: number,
+    debug = true,
+    waitForBlocks = 0,
 ): Promise<CrossChainL1Deployment> {
     let tx: ContractTransaction;
     const signerAddress = await signer.getAddress();
@@ -126,7 +126,7 @@ export async function deployCrossChainL1(
         "SiphonDepositor",
         [
             siphonToken.address,
-            config.siphondepositor.pid,
+            config.siphonDepositor.pid,
             config.booster,
             config.cvxLocker,
             config.token,

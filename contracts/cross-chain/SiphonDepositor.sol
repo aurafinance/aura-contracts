@@ -67,6 +67,16 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
       Constructor 
     ------------------------------------------------------------------- */
 
+    /**
+     * @param _lpToken          Siphon LP token contract
+     * @param _pid              The pool Id
+     * @param _booster          Booster contract
+     * @param _auraLocker       Aura locker contract
+     * @param _crv              CRV token contract
+     * @param _cvx              CRV token contract
+     * @param _l2Coordinator    l2Coordinator contract
+     * @param _lzEndpoint       LayerZeroEndpoint contract
+     */
     constructor(
         IERC20 _lpToken,
         uint256 _pid,
@@ -91,11 +101,17 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     ------------------------------------------------------------------- */
 
     /**
+     * @dev Approve booster to spend LP token
+     */
+    function setApprovals() external {
+        lpToken.safeApprove(address(booster), type(uint256).max);
+    }
+
+    /**
      * @dev Deposit siphon lpTokens into the booster
      *      Only callable by the owner
      */
     function deposit() external onlyOwner {
-        lpToken.approve(address(booster), type(uint256).max);
         uint256 bal = lpToken.balanceOf(address(this));
         booster.deposit(pid, bal, true);
         emit Deposit(msg.sender, bal);
@@ -104,7 +120,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     /**
      * @dev Pre farm CVX tokens from the booster so that when the first siphon
      *      Is called there are already CVX tokens in this contract ready to be claimed
-     * @param _amount Amount of BAL to send to Booster before calling earmarkRewards
+     * @param _amount Amount of CRV to send to Booster before calling earmarkRewards
      */
     function farm(uint256 _amount) external onlyOwner {
         _earmarkRewards(_amount);
@@ -112,7 +128,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
     /**
      * @dev Call getReward on the BaseRewardPool which will return the
-     *      BAL we previously depoisted minus the incentives that were paid
+     *      CRV we previously depoisted minus the incentives that were paid
      *      Along with a pro rata amount of CVX tokens
      */
     function getReward() external onlyOwner {
@@ -129,7 +145,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         require(bal >= _amount, "!balance");
 
         // Transfer CRV to the booster and earmarkRewards
-        crv.transfer(address(booster), _amount);
+        crv.safeTransfer(address(booster), _amount);
         booster.earmarkRewards(pid);
     }
 
@@ -159,7 +175,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
         debts[_srcChainId] -= _amount;
 
-        IERC20(crv).transferFrom(bridgeDelegate, address(this), _amount);
+        IERC20(crv).safeTransferFrom(bridgeDelegate, address(this), _amount);
 
         emit RepayDebt(msg.sender, _srcChainId, _amount);
     }
@@ -173,12 +189,12 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     }
 
     /**
-     * @dev Get amount of BAL that was claimed based on the incentives
+     * @dev Get amount of CRV that was claimed based on the incentives
      *      That were paid out
      * @param _amount The amount of incentives paid
      * @return The total rewards paid out
      */
-    function _getRewardsBasedOnIncentives(uint256 _amount) internal returns (uint256) {
+    function _getRewardsBasedOnIncentives(uint256 _amount) internal view returns (uint256) {
         uint256 totalIncentives = booster.lockIncentive() +
             booster.stakerIncentive() +
             booster.earmarkIncentive() +
@@ -252,11 +268,11 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Siphon CVX tokens by depositing BAL into the Booster
-     *      and then calling earmark rewards which will send the BAL
+     * @dev Siphon CVX tokens by depositing CRV into the Booster
+     *      and then calling earmark rewards which will send the CRV
      *      to the siphon pools BaseRewardPool
      *      Only callable by the owner
-     * @param _amount       Amount of BAL that is being bridged from the L2 to cover the
+     * @param _amount       Amount of CRV that is being bridged from the L2 to cover the
      *                      Incentive amount that was paid out.
      *                      We assume the total incentives that have been paid out are equal
      *                      to the MaxFees on the Booster which is 2500/10000 (25%)
@@ -307,7 +323,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         uint256 _cvxAmount,
         uint16 _srcChainId
     ) internal {
-        cvx.approve(address(auraLocker), _cvxAmount);
+        cvx.safeIncreaseAllowance(address(auraLocker), _cvxAmount);
         auraLocker.lock(_fromAddress, _cvxAmount);
 
         emit Lock(_fromAddress, _srcChainId, _cvxAmount);
