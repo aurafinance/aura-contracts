@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x50f8e76b64188af61aec0fe6a3877f0a16bb683490acefd2ea0359e166098b96",
+        "title": "Gauge Weight for Week of 29th September 2022",
+        "start": 1664416800,
+        "end": 1664848800,
+        "snapshot": 15635887
+    },
+    {
         "id": "0xa8aad15bcc32c7bfd10f3d88f255dff66ebf33088b094e2ea5a7900e58777fbb",
         "title": "Gauge Weight for Week of 15th September 2022",
         "start": 1663207200,
