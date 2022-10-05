@@ -158,38 +158,6 @@ yarn task timeTravel --duration 69420 --network forking
 | GaugeMigrator                   | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
 | UniswapMigrator                 | [0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6](https://etherscan.io/address/0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6) |
 
-### Kovan (42)
-
-| Contract                | Address                                                                                                                     |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| voterProxy              | [0xAf133908d1B435e1B58C91316AF3f17688a47A50](https://kovan.etherscan.io/address/0xAf133908d1B435e1B58C91316AF3f17688a47A50) |
-| aura                    | [0xfA0C33c6BAeFE4a41F68039d24CA116a4E4B49DE](https://kovan.etherscan.io/address/0xfA0C33c6BAeFE4a41F68039d24CA116a4E4B49DE) |
-| minter                  | [0xE86f1e7fAaD932E071Fd37Ec5dA3A2877a31c51F](https://kovan.etherscan.io/address/0xE86f1e7fAaD932E071Fd37Ec5dA3A2877a31c51F) |
-| booster                 | [0xAF4AAf0559187aBd973dD60d2F44513aF3a2490d](https://kovan.etherscan.io/address/0xAF4AAf0559187aBd973dD60d2F44513aF3a2490d) |
-| boosterOwner            | [0xC586a417a512BC234a7327112E41284F2E98B953](https://kovan.etherscan.io/address/0xC586a417a512BC234a7327112E41284F2E98B953) |
-| auraBAL                 | [0xe7cA8d829ff4f644b0E312536770630Fa63EdAab](https://kovan.etherscan.io/address/0xe7cA8d829ff4f644b0E312536770630Fa63EdAab) |
-| auraBALBpt              | [0x0ba216e69a1289be9090dfe88cb37d8a542cb74b](https://kovan.etherscan.io/address/0x0ba216e69a1289be9090dfe88cb37d8a542cb74b) |
-| cvxCrvRewards           | [0x676CBbdc03D5547B519290B03b3d0a865eE2fE10](https://kovan.etherscan.io/address/0x676CBbdc03D5547B519290B03b3d0a865eE2fE10) |
-| initialCvxCrvStaking    | [0xe66f0579Fb7FCccED6e18E9a0e610493811Bfe79](https://kovan.etherscan.io/address/0xe66f0579Fb7FCccED6e18E9a0e610493811Bfe79) |
-| crvDepositor            | [0xd2902C5c9632Fa6638465e4D2DE5AcDcCf8Ca673](https://kovan.etherscan.io/address/0xd2902C5c9632Fa6638465e4D2DE5AcDcCf8Ca673) |
-| crvDepositorWrapper     | [0x6b6e02E5B62257f12efd0098C9C836D31E21eB6F](https://kovan.etherscan.io/address/0x6b6e02E5B62257f12efd0098C9C836D31E21eB6F) |
-| poolManager             | [0x2F2C0D5a60914FfD62d2BB48d189b1cd87BedE61](https://kovan.etherscan.io/address/0x2F2C0D5a60914FfD62d2BB48d189b1cd87BedE61) |
-| auraLocker              | [0x4890af9a0DF624AaCaF8537F6F9caC56A723cb2F](https://kovan.etherscan.io/address/0x4890af9a0DF624AaCaF8537F6F9caC56A723cb2F) |
-| cvxStakingProxy         | [0x3a38c699e2B464D21A13Efbd35cC71021994b032](https://kovan.etherscan.io/address/0x3a38c699e2B464D21A13Efbd35cC71021994b032) |
-| chef                    | [0x0422a859FeCF2576e2201209AE02eFff916AfCF4](https://kovan.etherscan.io/address/0x0422a859FeCF2576e2201209AE02eFff916AfCF4) |
-| lbpBpt                  | [0x8ea94258c47efe0c56af6b0f529e05298f5aca64](https://kovan.etherscan.io/address/0x8ea94258c47efe0c56af6b0f529e05298f5aca64) |
-| balLiquidityProvider    | [0x179ae0B233bf0D14Fb9d87f3Ad2BF7625aF96623](https://kovan.etherscan.io/address/0x179ae0B233bf0D14Fb9d87f3Ad2BF7625aF96623) |
-| penaltyForwarder        | [0x3E1dCA7a5CcE431e0Bd0fA5ddb4C3575E20A07C4](https://kovan.etherscan.io/address/0x3E1dCA7a5CcE431e0Bd0fA5ddb4C3575E20A07C4) |
-| extraRewardsDistributor | [0x4742c75CEc81B0ee80e3e1c8e8E7Cd5aeB218F41](https://kovan.etherscan.io/address/0x4742c75CEc81B0ee80e3e1c8e8E7Cd5aeB218F41) |
-| pool8020Bpt             | [0x4bddf01cbc15f3a2e78570c5bed14c67a16327f6](https://kovan.etherscan.io/address/0x4bddf01cbc15f3a2e78570c5bed14c67a16327f6) |
-| claimZap                | [0x57d174f436d7950FaA1F91d9E9f40716E199B28c](https://kovan.etherscan.io/address/0x57d174f436d7950FaA1F91d9E9f40716E199B28c) |
-| vestedEscrows           | [0x0e0837C8DA3C1931831Cc9aC2c19265AAa16cF97](https://kovan.etherscan.io/address/0x0e0837C8DA3C1931831Cc9aC2c19265AAa16cF97) |
-|                         | [0x1fad8b2Af546f6F56115A5F17aB7A6e6946A771a](https://kovan.etherscan.io/address/0x1fad8b2Af546f6F56115A5F17aB7A6e6946A771a) |
-|                         | [0x156c44B88FBA5B65083758e7D1634c9fD27F0a31](https://kovan.etherscan.io/address/0x156c44B88FBA5B65083758e7D1634c9fD27F0a31) |
-|                         | [0x700C22100691ae23498d2182F317A7bC2829043a](https://kovan.etherscan.io/address/0x700C22100691ae23498d2182F317A7bC2829043a) |
-| drops                   | [0xBe227b7851570a9f5adFB923E9a2d4583EB6630F](https://kovan.etherscan.io/address/0xBe227b7851570a9f5adFB923E9a2d4583EB6630F) |
-|                         | [0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6](https://kovan.etherscan.io/address/0xEC1a6e61f7c4864Cf8bfcf5BcEEFeE6259D6A2B6) |
-
 ### Goerli (5)
 
 | Contract                 | Address                                                                                                                      |
