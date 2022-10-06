@@ -7,6 +7,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { IrCvx } from "../interfaces/IrCvx.sol";
 import { OFT } from "./layer-zero/token/oft/OFT.sol";
 import { CrossChainMessages } from "./CrossChainMessages.sol";
+import { IBridgeDelegate } from "../interfaces/IBridgeDelegate.sol";
 
 /**
  * @title L2Coordinator
@@ -28,6 +29,9 @@ contract L2Coordinator is OFT, CrossChainMessages {
 
     /// @dev Rate to send CVX on mint
     uint256 public mintRate;
+
+    /// @dev Total amount of rewards received
+    uint256 public totalRewards;
 
     /// @dev canonical chain ID
     uint16 public canonicalChainId;
@@ -117,25 +121,23 @@ contract L2Coordinator is OFT, CrossChainMessages {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Send BAL rewards tokens from L2 to L1
+     * @dev Send CRV rewards tokens from L2 to L1 via the bridge delegate
+     * Also notify the L1 via LZ about the reward incentives so that it
+     * sends AURA to the L2
      * Only callable by the owner and a manual process as we want to
      * control the flow of funds into the bridge delegate
      */
-    function flush() external onlyOwner {
-        uint256 bal = IERC20(crv).balanceOf(address(this));
+    function flush(uint256 amount) external onlyOwner {
         require(bridgeDelegate != address(0), "bridgeDelegate invalid");
-        IERC20(crv).transfer(bridgeDelegate, bal);
-    }
+        require(amount <= totalRewards, "amount>totalRewards");
 
-    /**
-     * @dev Called by the booster.earmarkRewards to siphon rewards from L1
-     * @param _rewards Amount of CRV that was received as rewards
-     */
-    function queueNewRewards(uint256 _rewards) external {
-        require(msg.sender == booster, "!booster");
+        totalRewards -= amount;
 
-        bytes memory _payload = _encode(address(0), 0, _rewards, MessageType.SIPHON);
+        // Send a message to the L1 Siphon depositor to notify it out
+        // new rewards debt and send AURA to the L2
+        bytes memory _payload = _encode(address(0), 0, amount, MessageType.SIPHON);
 
+        // Send via Layer Zero
         _lzSend(
             // destination chain
             canonicalChainId,
@@ -148,6 +150,22 @@ contract L2Coordinator is OFT, CrossChainMessages {
             // adapter params
             bytes("")
         );
+
+        // Transfer the CRV amount to the bridge delegate and then trigger
+        // a bridge event by calling bridge(uint)
+        IERC20(crv).transfer(bridgeDelegate, amount);
+        IBridgeDelegate(bridgeDelegate).bridge(amount);
+    }
+
+    /**
+     * @dev Called by the booster.earmarkRewards to siphon rewards from L1
+     * @param _rewards Amount of CRV that was received as rewards
+     */
+    function queueNewRewards(uint256 _rewards) external {
+        require(msg.sender == booster, "!booster");
+        // Update total rewards with the latest amount of incentives
+        // that have been earned from calling Booster.earmarkRewards
+        totalRewards += _rewards;
     }
 
     /**

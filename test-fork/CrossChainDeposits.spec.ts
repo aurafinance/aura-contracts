@@ -39,7 +39,33 @@ import {
 import { deployContract } from "../tasks/utils";
 
 const debug = false;
-
+/**
+ * How all this hangs together?
+ *
+ * 1.   Set up Siphon pools on the L1 Booster
+ * 1.1. Create a pool with a fake gauge and fake lp token
+ * 1.2. Deposit fake lp token from SiphonDepositor into pool
+ * 1.3. Fund the siphon depositor with BAL tokens
+ *
+ * 2.   Pre farm AURA from the L1 and send it the the L2
+ * 2.1  Call farm on SiphonDepositor. This sends BAL to the Booster and calls
+ *      earmarkRewars to queue up a prorata rate of AURA
+ * 2.2  After the reward period has passed call getRewards to return BAL - incentives
+ *      and the prorata rate of AURA
+ *
+ * 3.   Claim AURA rewards on the L2
+ * 3.1  Earmark rewards is called to queue AURA and BAL rewards
+ * 3.2  The BAL incentives are sent to the L2 coordinator
+ * 3.3  Flush is called on the L2 coordinator which triggers:
+ *      - BAL rewards to be send to the bridge delegate and then trigger the bridge
+ *        to send them back to L1
+ *      - Siphon message sent back to the L1 to trigger AURA tokens to be sent back to
+ *        The L2 to conver the new pending rewards there.
+ *
+ * 4.   User can Bridge/Lock back to the L1
+ * 4.1  Calling lock on l2 coordinator locks your AURA on L1
+ * 4.2  Calling sendFrom on l2 coordinator sends your AURA to L1
+ */
 describe("Cross Chain Deposits", () => {
     const CHAIN_ID = 123;
 
@@ -269,7 +295,7 @@ describe("Cross Chain Deposits", () => {
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
 
             const crvBal = crvBalAfter.sub(crvBalBefore);
-            console.log("CRV balance of l2Coordinator:", formatUnits(crvBal));
+            console.log("CRV balance of siphonDepositor:", formatUnits(crvBal));
         });
         it("[L1] claim CVX and CRV rewards", async () => {
             await increaseTime(ONE_WEEK);
@@ -304,7 +330,21 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Claim Aura rewards and convert to L1 Aura", () => {
-        it("[LZ] claim AURA rewards", async () => {
+        let dummyBridge: DummyBridge;
+        // Deploy a dummy bridge to bridge the BAL back to the L1
+        // contract. SiphonDepositor will receive the BAL and settle
+        // the debt for that l2
+        it("Deploy dummy bridge", async () => {
+            dummyBridge = await deployContract(hre, new DummyBridge__factory(deployer), "DummyBridge", [
+                siphonDepositor.address,
+                crvToken.address,
+                CHAIN_ID,
+            ]);
+
+            await l2Coordinator.setBridgeDelegate(dummyBridge.address);
+            await siphonDepositor.setBridgeDelegate(CHAIN_ID, dummyBridge.address);
+        });
+        it("Earmark rewards", async () => {
             // Transfer BAL rewards to the booster
             const crvWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
             await crvToken.connect(crvWhale.signer).transfer(L2_booster.address, simpleToExactAmount(1));
@@ -312,7 +352,22 @@ describe("Cross Chain Deposits", () => {
             // Earmark booster rewards
             await L2_booster.earmarkRewards(0);
             await increaseTime(ONE_WEEK);
+        });
+        it("Bridge BAL to L1 to repay debt", async () => {
+            // TODO: check L1 siphonDepositor now has CRV
+            const crvBalBefore = await crvToken.balanceOf(l2Coordinator.address);
+            console.log("CRV balance (before):", formatUnits(crvBalBefore));
 
+            const totalRewards = await l2Coordinator.totalRewards();
+            console.log("Total rewards:", formatUnits(totalRewards));
+            await l2Coordinator.flush(totalRewards);
+
+            const crvBalAfter = await crvToken.balanceOf(l2Coordinator.address);
+            console.log("CRV balance (after):", formatUnits(crvBalBefore));
+
+            expect(crvBalBefore.sub(crvBalAfter)).eq(totalRewards);
+        });
+        it("[LZ] claim AURA rewards", async () => {
             const pool = await L2_booster.poolInfo(0);
             const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, deployer);
 
@@ -323,10 +378,6 @@ describe("Cross Chain Deposits", () => {
             expect(cvxBal).gt(0);
 
             console.log("CVX balance:", formatUnits(cvxBal));
-
-            const debt = await siphonDepositor.debts(CHAIN_ID);
-            console.log("CRV debt:", formatUnits(debt));
-            expect(debt).gt(0);
         });
         it("bridge back to the L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
@@ -382,38 +433,6 @@ describe("Cross Chain Deposits", () => {
 
             const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
-        });
-    });
-
-    describe("Bridge BAL to L1 to repay debt", () => {
-        let dummyBridge: DummyBridge;
-        // Deploy a dummy bridge to bridge the BAL back to the L1
-        // contract. SiphonDepositor will receive the BAL and settle
-        // the debt for that l2
-        it("Deploy dummy bridge", async () => {
-            dummyBridge = await deployContract(hre, new DummyBridge__factory(deployer), "DummyBridge", [
-                siphonDepositor.address,
-                crvToken.address,
-                CHAIN_ID,
-            ]);
-
-            await l2Coordinator.setBridgeDelegate(dummyBridge.address);
-            await siphonDepositor.setBridgeDelegate(CHAIN_ID, dummyBridge.address);
-        });
-        it("Bridge BAL to L1 to repay debt", async () => {
-            const debtBefore = await siphonDepositor.debts(CHAIN_ID);
-            console.log("Debt before:", formatUnits(debtBefore));
-
-            const crvBalBefore = await crvToken.balanceOf(l2Coordinator.address);
-            console.log("CRV balance:", formatUnits(crvBalBefore));
-
-            await l2Coordinator.flush();
-            await dummyBridge.repayDebt();
-
-            const debtAfter = await siphonDepositor.debts(CHAIN_ID);
-            console.log("Debt after:", formatUnits(debtAfter));
-
-            expect(debtBefore.sub(debtAfter)).eq(crvBalBefore);
         });
     });
 });

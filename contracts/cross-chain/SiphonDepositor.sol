@@ -41,9 +41,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     /// @dev l2Coordinator contract
     address public immutable l2Coordinator;
 
-    /// @dev source destinations mapped to CRV debt
-    mapping(uint16 => uint256) public debts;
-
     /// @dev source chain id mapped to bridge delegate contracts
     mapping(uint16 => address) public bridgeDelegates;
 
@@ -163,23 +160,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         emit UpdateBridgeDelegate(_srcChainId, _bridgeDelegate);
     }
 
-    /**
-     * @dev Repay incentives debt that is owed from the L2
-     * @param _srcChainId   The source chain ID
-     * @param _amount       Amount to repay
-     */
-    function repayDebt(uint16 _srcChainId, uint256 _amount) external {
-        address bridgeDelegate = bridgeDelegates[_srcChainId];
-        require(msg.sender == bridgeDelegate, "!bridgeDelegate");
-        require(_amount <= debts[_srcChainId], "amount > debt");
-
-        debts[_srcChainId] -= _amount;
-
-        IERC20(crv).safeTransferFrom(bridgeDelegate, address(this), _amount);
-
-        emit RepayDebt(msg.sender, _srcChainId, _amount);
-    }
-
     /* -------------------------------------------------------------------
       View functions 
     ------------------------------------------------------------------- */
@@ -283,15 +263,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         // TODO: should this call getReward?
         uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
         _earmarkRewards(crvAmount);
-
-        // Siphon is called by the L2 booster.earmarkRewards which calls l2Coordinator.queueNewRewards
-        // We need to track the amount of CRV incentives that have been paid on the L1 to siphon the CVX
-        // and make sure when the L2 finally bridges the CRV incentives back to the L1 that these debts
-        // are repaid.
-        //
-        // NOTE: _dstChainId is actually _srcChainId because this function is called by the L2 calling
-        // LzReceive and then this L1 calling back to the L2.
-        debts[_dstChainId] += _amount;
 
         uint256 cvxAmountOut = _getAmountOut(crvAmount);
         bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
