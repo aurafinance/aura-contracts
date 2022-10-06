@@ -227,7 +227,7 @@ export async function deployCrossChainL2(
     tx = await booster.setOwner(signerAddress);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await booster.setRewardContracts(l2Coordinator.address, l2Coordinator.address);
+    tx = await booster.setRewardContracts(l2Coordinator.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     // deploy factories
