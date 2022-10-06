@@ -284,11 +284,12 @@ describe("Cross Chain Deposits", () => {
     describe("Siphon AURA to L2", () => {
         const farmAmount = simpleToExactAmount(100);
 
-        it("[LZ] siphon CVX", async () => {
-            // Siphon amount is the amount of incentives paid on L2
-            // We will have to prefarm some amount of AURA to kickstart
-            // the reward pool for initial depositors. But finally siphon
-            // will just be called from the L2 L2Coordinator.
+        it("[LZ] farm CVX", async () => {
+            expect(await crvToken.balanceOf(contracts.booster.address)).eq(0);
+
+            // Initially farm CVX from the Booster by depositing a farmAmount of
+            // CRV tokens into the Booster while calling earmarkRewards to mint a
+            // pro rata rate of CVX tokens and queue them for rewards
             const crvBalBefore = await crvToken.balanceOf(siphonDepositor.address);
             console.log("Farming CRV amount:", formatUnits(farmAmount));
             await siphonDepositor.farm(farmAmount);
@@ -310,22 +311,32 @@ describe("Cross Chain Deposits", () => {
             console.log("CVX balance:", formatUnits(cvxBal));
             console.log("CRV balance:", formatUnits(crvBal));
 
+            // The CVX Bal we receive should be based on the pro rata rate
+            // Given we know the amount of CRV that is received we can calculate
+            // the expected amount of CVX we should have received with getAmountOut
             expect(cvxBal).eq(await siphonDepositor.getAmountOut(crvBal));
 
-            const incentives = farmAmount
-                .mul(
-                    (await contracts.booster.lockIncentive())
-                        .add(await contracts.booster.stakerIncentive())
-                        .add(await contracts.booster.earmarkIncentive())
-                        .add(await contracts.booster.platformFee()),
-                )
+            const lockIncentive = farmAmount
+                .mul(await contracts.booster.lockIncentive())
+                .div(await contracts.booster.FEE_DENOMINATOR());
+            const stakerIncentive = farmAmount
+                .mul(await contracts.booster.stakerIncentive())
+                .div(await contracts.booster.FEE_DENOMINATOR());
+            const earmarkIncentive = farmAmount
+                .mul(await contracts.booster.earmarkIncentive())
+                .div(await contracts.booster.FEE_DENOMINATOR());
+            const platformFee = farmAmount
+                .mul(await contracts.booster.platformFee())
                 .div(await contracts.booster.FEE_DENOMINATOR());
 
-            const expecteCrvBal = farmAmount.sub(incentives);
+            const incentives = lockIncentive.add(stakerIncentive).add(earmarkIncentive).add(platformFee);
+            // Some dust gets left in the BaseRewardPool when calculating the reward rate
+            // It will get picked up next reward period but we just account for the difference
+            // here when making the balance assertions
+            const missingDust = await crvToken.balanceOf(crvRewards.address);
 
-            expect(Math.round(Number(expecteCrvBal.div("1000000000000000000").toString()))).eq(
-                Math.round(Number(crvBal.div("1000000000000000000").toString())),
-            );
+            const expectedCrvBal = farmAmount.sub(incentives).sub(missingDust);
+            expect(expectedCrvBal).eq(crvBal);
         });
     });
 
@@ -356,16 +367,22 @@ describe("Cross Chain Deposits", () => {
             await L2_booster.earmarkRewards(0);
             await increaseTime(ONE_WEEK);
         });
-        it("Bridge BAL to L1 to repay debt", async () => {
+        it("Flush CRV incentives back to L1", async () => {
             const crvBalBefore = await crvToken.balanceOf(l2Coordinator.address);
             console.log("CRV balance (before):", formatUnits(crvBalBefore));
 
             const cvxBalBefore = await l2Coordinator.balanceOf(l2Coordinator.address);
             const totalRewards = await l2Coordinator.totalRewards();
             console.log("Total rewards:", formatUnits(totalRewards));
+
+            // Flush sends the CRV back to L1 via the bridge delegate
+            // In order to settle the incentives debt on L1
             await l2Coordinator.flush(totalRewards);
             const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
 
+            // Calling flush triggers the L1 to send back the pro rata CVX
+            // based on the actual amount of CRV that was earned derived from
+            // the amount of incentives that were paid
             const cvxBal = cvxBalAfter.sub(cvxBalBefore);
             const expectedRewards = await siphonDepositor.getRewardsBasedOnIncentives(totalRewards);
             const expectedCvx = await siphonDepositor.getAmountOut(expectedRewards);

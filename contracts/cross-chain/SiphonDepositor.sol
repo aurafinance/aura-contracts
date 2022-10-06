@@ -182,6 +182,9 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         return ((_amount * booster.FEE_DENOMINATOR()) / totalIncentives);
     }
 
+    /**
+     * @dev Public view function of _getRewardsBasedOnIncentives
+     */
     function getRewardsBasedOnIncentives(uint256 _amount) external view returns (uint256) {
         return _getRewardsBasedOnIncentives(_amount);
     }
@@ -215,6 +218,9 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         return amount;
     }
 
+    /**
+     * @dev Public view function of _getAmountOut
+     */
     function getAmountOut(uint256 _amount) external view returns (uint256) {
         return _getAmountOut(_amount);
     }
