@@ -83,6 +83,7 @@ describe("Cross Chain Deposits", () => {
 
     let contracts: SystemDeployed;
     let crvToken: MockERC20;
+    let crvRewards: BaseRewardPool;
 
     // L2 contracts
     let l2Coordinator: L2Coordinator;
@@ -212,7 +213,6 @@ describe("Cross Chain Deposits", () => {
 
     describe("Create siphon pool on L1", () => {
         let pid: BigNumberish;
-        let crvRewards: BaseRewardPool;
 
         before(async () => {
             pid = await contracts.booster.poolLength();
@@ -293,9 +293,7 @@ describe("Cross Chain Deposits", () => {
             console.log("Farming CRV amount:", formatUnits(farmAmount));
             await siphonDepositor.farm(farmAmount);
             const crvBalAfter = await crvToken.balanceOf(siphonDepositor.address);
-
-            const crvBal = crvBalAfter.sub(crvBalBefore);
-            console.log("CRV balance of siphonDepositor:", formatUnits(crvBal));
+            expect(crvBalAfter).lt(crvBalBefore);
         });
         it("[L1] claim CVX and CRV rewards", async () => {
             await increaseTime(ONE_WEEK);
@@ -311,6 +309,8 @@ describe("Cross Chain Deposits", () => {
 
             console.log("CVX balance:", formatUnits(cvxBal));
             console.log("CRV balance:", formatUnits(crvBal));
+
+            expect(cvxBal).eq(await siphonDepositor.getAmountOut(crvBal));
 
             const incentives = farmAmount
                 .mul(
@@ -343,6 +343,9 @@ describe("Cross Chain Deposits", () => {
 
             await l2Coordinator.setBridgeDelegate(dummyBridge.address);
             await siphonDepositor.setBridgeDelegate(CHAIN_ID, dummyBridge.address);
+
+            expect(await siphonDepositor.bridgeDelegates(CHAIN_ID)).eq(dummyBridge.address);
+            expect(await l2Coordinator.bridgeDelegate()).eq(dummyBridge.address);
         });
         it("Earmark rewards", async () => {
             // Transfer BAL rewards to the booster
@@ -354,13 +357,19 @@ describe("Cross Chain Deposits", () => {
             await increaseTime(ONE_WEEK);
         });
         it("Bridge BAL to L1 to repay debt", async () => {
-            // TODO: check L1 siphonDepositor now has CRV
             const crvBalBefore = await crvToken.balanceOf(l2Coordinator.address);
             console.log("CRV balance (before):", formatUnits(crvBalBefore));
 
+            const cvxBalBefore = await l2Coordinator.balanceOf(l2Coordinator.address);
             const totalRewards = await l2Coordinator.totalRewards();
             console.log("Total rewards:", formatUnits(totalRewards));
             await l2Coordinator.flush(totalRewards);
+            const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
+
+            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+            const expectedRewards = await siphonDepositor.getRewardsBasedOnIncentives(totalRewards);
+            const expectedCvx = await siphonDepositor.getAmountOut(expectedRewards);
+            expect(expectedCvx).eq(cvxBal);
 
             const crvBalAfter = await crvToken.balanceOf(l2Coordinator.address);
             console.log("CRV balance (after):", formatUnits(crvBalBefore));
@@ -375,10 +384,13 @@ describe("Cross Chain Deposits", () => {
             await crvRewards.connect(lpWhale.signer)["getReward()"]();
             const balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             const cvxBal = balAfter.sub(balBefore);
-            expect(cvxBal).gt(0);
 
             console.log("CVX balance:", formatUnits(cvxBal));
+            expect(cvxBal).gt(0);
         });
+    });
+
+    describe("Bridge and Lock back to the L1", () => {
         it("bridge back to the L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
             const sendAmount = l2balBefore.mul(100).div(1000);

@@ -182,6 +182,10 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         return ((_amount * booster.FEE_DENOMINATOR()) / totalIncentives);
     }
 
+    function getRewardsBasedOnIncentives(uint256 _amount) external view returns (uint256) {
+        return _getRewardsBasedOnIncentives(_amount);
+    }
+
     /**
      * @dev Get expected amount out of CVX tokens based on CRV input
      * @param _amount CRV amount in
@@ -209,6 +213,10 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
             }
         }
         return amount;
+    }
+
+    function getAmountOut(uint256 _amount) external view returns (uint256) {
+        return _getAmountOut(_amount);
     }
 
     /* -------------------------------------------------------------------
