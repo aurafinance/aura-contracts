@@ -33,7 +33,7 @@ import {
 
 // Layer 1 deployment config
 export interface CrossChainL1DeploymentConfig {
-    l2Coordinator: string;
+    l2Coordinators: { chainId: number; address: string }[];
     siphonDepositor: { pid: BigNumberish };
     booster: string;
     cvxLocker: string;
@@ -131,7 +131,6 @@ export async function deployCrossChainL1(
             config.cvxLocker,
             config.token,
             config.cvx,
-            config.l2Coordinator,
             config.lzEndpoint,
         ],
         {},
@@ -142,6 +141,11 @@ export async function deployCrossChainL1(
     // send siphon token to depositor
     tx = await siphonToken.transfer(siphonDepositor.address, simpleToExactAmount(1));
     await waitForTx(tx, debug, waitForBlocks);
+
+    for (const l2Coordinator of config.l2Coordinators) {
+        tx = await siphonDepositor.setL2Coordinator(l2Coordinator.chainId, l2Coordinator.address);
+        await waitForTx(tx, debug, waitForBlocks);
+    }
 
     return {
         siphonToken,

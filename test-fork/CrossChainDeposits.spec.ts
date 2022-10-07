@@ -67,19 +67,23 @@ const debug = false;
  * 4.2  Calling sendFrom on l2 coordinator sends your AURA to L1
  */
 describe("Cross Chain Deposits", () => {
-    const CHAIN_ID = 123;
+    const L1_CHAIN_ID = 111;
+    const L2_CHAIN_ID = 222;
 
     let deployer: Signer;
     let deployerAddress: string;
     let lpWhale: Account;
 
     // Bridge contract
-    let lzEndpoint: LZEndpointMock;
+    let l1LzEndpoint: LZEndpointMock;
+    let l2LzEndpoint: LZEndpointMock;
 
     // L1 contracts
     let siphonGauge: SiphonGauge;
     let siphonToken: SiphonToken;
     let siphonDepositor: SiphonDepositor;
+    let veToken: MockCurveVoteEscrow;
+    let dummyBridge: DummyBridge;
 
     let contracts: SystemDeployed;
     let crvToken: MockERC20;
@@ -132,12 +136,12 @@ describe("Cross Chain Deposits", () => {
 
     describe("deploy mock LZ endpoint", () => {
         it("deploy", async () => {
-            lzEndpoint = await new LZEndpointMock__factory(deployer).deploy(CHAIN_ID);
+            l1LzEndpoint = await new LZEndpointMock__factory(deployer).deploy(L1_CHAIN_ID);
+            l2LzEndpoint = await new LZEndpointMock__factory(deployer).deploy(L2_CHAIN_ID);
         });
     });
 
     describe("deploy L2 BoosterLite/VoterProxy", () => {
-        let veToken: MockCurveVoteEscrow;
         let lpToken: IERC20;
         let crvRewards: BaseRewardPool;
         let depositToken: IERC20;
@@ -154,8 +158,8 @@ describe("Cross Chain Deposits", () => {
 
             const crossChainL2 = await deployCrossChainL2(
                 {
-                    canonicalChainId: CHAIN_ID,
-                    lzEndpoint: lzEndpoint.address,
+                    canonicalChainId: L1_CHAIN_ID,
+                    lzEndpoint: l2LzEndpoint.address,
                     minter: config.addresses.minter,
                     token: crvToken.address,
                     tokenBpt: config.addresses.tokenBpt,
@@ -219,13 +223,13 @@ describe("Cross Chain Deposits", () => {
 
             const crossChainL1 = await deployCrossChainL1(
                 {
-                    l2Coordinator: l2Coordinator.address,
+                    l2Coordinators: [{ chainId: L2_CHAIN_ID, address: l2Coordinator.address }],
                     siphonDepositor: { pid },
                     booster: contracts.booster.address,
                     cvxLocker: contracts.cvxLocker.address,
                     token: crvToken.address,
                     cvx: contracts.cvx.address,
-                    lzEndpoint: lzEndpoint.address,
+                    lzEndpoint: l1LzEndpoint.address,
                 },
                 deployer,
                 hre,
@@ -239,11 +243,11 @@ describe("Cross Chain Deposits", () => {
         });
 
         it("[LZ] set up trusted remotes", async () => {
-            await siphonDepositor.setTrustedRemote(CHAIN_ID, l2Coordinator.address);
-            await l2Coordinator.setTrustedRemote(CHAIN_ID, siphonDepositor.address);
+            await siphonDepositor.setTrustedRemote(L2_CHAIN_ID, l2Coordinator.address);
+            await l2Coordinator.setTrustedRemote(L1_CHAIN_ID, siphonDepositor.address);
 
-            await lzEndpoint.setDestLzEndpoint(siphonDepositor.address, lzEndpoint.address);
-            await lzEndpoint.setDestLzEndpoint(l2Coordinator.address, lzEndpoint.address);
+            await l2LzEndpoint.setDestLzEndpoint(siphonDepositor.address, l1LzEndpoint.address);
+            await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
         });
 
         it("[L1] adds the gauge", async () => {
@@ -341,7 +345,6 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Claim Aura rewards and convert to L1 Aura", () => {
-        let dummyBridge: DummyBridge;
         // Deploy a dummy bridge to bridge the BAL back to the L1
         // contract. SiphonDepositor will receive the BAL and settle
         // the debt for that l2
@@ -349,13 +352,13 @@ describe("Cross Chain Deposits", () => {
             dummyBridge = await deployContract(hre, new DummyBridge__factory(deployer), "DummyBridge", [
                 siphonDepositor.address,
                 crvToken.address,
-                CHAIN_ID,
+                L1_CHAIN_ID,
             ]);
 
             await l2Coordinator.setBridgeDelegate(dummyBridge.address);
-            await siphonDepositor.setBridgeDelegate(CHAIN_ID, dummyBridge.address);
+            await siphonDepositor.setBridgeDelegate(L2_CHAIN_ID, dummyBridge.address);
 
-            expect(await siphonDepositor.bridgeDelegates(CHAIN_ID)).eq(dummyBridge.address);
+            expect(await siphonDepositor.bridgeDelegates(L2_CHAIN_ID)).eq(dummyBridge.address);
             expect(await l2Coordinator.bridgeDelegate()).eq(dummyBridge.address);
         });
         it("Earmark rewards", async () => {
@@ -414,7 +417,7 @@ describe("Cross Chain Deposits", () => {
             const toAddress = "0x0000000000000000000000000000000000000020";
             await l2Coordinator
                 .connect(lpWhale.signer)
-                .sendFrom(lpWhale.address, CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, []);
+                .sendFrom(lpWhale.address, L1_CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, []);
             const l1bal = await contracts.cvx.balanceOf(toAddress);
             expect(l1bal).eq(sendAmount);
 
@@ -462,6 +465,85 @@ describe("Cross Chain Deposits", () => {
 
             const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
+        });
+    });
+
+    describe("Add a second L2 deployment to the siphonDepositor", () => {
+        let secondL2Coordinator: L2Coordinator;
+        let secondL2LzEndpoint: LZEndpointMock;
+        let L22_booster: BoosterLite;
+        let L22_poolManager: PoolManagerLite;
+
+        const L22_CHAIN_ID = 444;
+
+        before(async () => {
+            secondL2LzEndpoint = await new LZEndpointMock__factory(deployer).deploy(L22_CHAIN_ID);
+
+            const crossChainL2 = await deployCrossChainL2(
+                {
+                    canonicalChainId: L1_CHAIN_ID,
+                    lzEndpoint: secondL2LzEndpoint.address,
+                    minter: config.addresses.minter,
+                    token: crvToken.address,
+                    tokenBpt: config.addresses.tokenBpt,
+                    votingEscrow: veToken.address,
+                    gaugeController: config.addresses.gaugeController,
+                    cvx: contracts.cvx.address,
+                    voteOwnership: ethers.constants.AddressZero,
+                    voteParameter: ethers.constants.AddressZero,
+                    naming: {
+                        tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
+                        cvxSymbol: config.naming.cvxSymbol,
+                        cvxName: config.naming.cvxName,
+                    },
+                },
+                deployer,
+                hre,
+                debug,
+                0,
+            );
+
+            secondL2Coordinator = crossChainL2.l2Coordinator;
+            L22_booster = crossChainL2.booster;
+            L22_poolManager = crossChainL2.poolManager;
+        });
+
+        it("deploy l2Coordinator", async () => {
+            expect(!!secondL2Coordinator.address).to.be.true;
+            await siphonDepositor.setL2Coordinator(L22_CHAIN_ID, secondL2Coordinator.address);
+        });
+        it("[LZ] set up trusted remotes", async () => {
+            await siphonDepositor.setTrustedRemote(L22_CHAIN_ID, secondL2Coordinator.address);
+            await secondL2Coordinator.setTrustedRemote(L1_CHAIN_ID, siphonDepositor.address);
+
+            await secondL2LzEndpoint.setDestLzEndpoint(siphonDepositor.address, l1LzEndpoint.address);
+            await l1LzEndpoint.setDestLzEndpoint(secondL2Coordinator.address, secondL2LzEndpoint.address);
+
+            await secondL2Coordinator.setBridgeDelegate(dummyBridge.address);
+            await siphonDepositor.setBridgeDelegate(L22_CHAIN_ID, dummyBridge.address);
+        });
+        it("Earmark rewards", async () => {
+            const gaugeAddress = "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac";
+            await L22_poolManager["addPool(address)"](gaugeAddress);
+
+            // Transfer BAL rewards to the booster
+            const crvWhale = await impersonateAccount("0x5a52e96bacdabb82fd05763e25335261b270efcb");
+            await crvToken.connect(crvWhale.signer).transfer(L22_booster.address, simpleToExactAmount(1));
+
+            // Earmark booster rewards
+            await L22_booster.earmarkRewards(0);
+            await increaseTime(ONE_WEEK);
+
+            // Flush rewards from L2 and recieve CVX from the L1
+            const totalRewards = await secondL2Coordinator.totalRewards();
+            const cvxBalBefore = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
+            await secondL2Coordinator.flush(totalRewards);
+            const cvxBalAfter = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
+            const cvxBal = cvxBalAfter.sub(cvxBalBefore);
+
+            const expectedRewards = await siphonDepositor.getRewardsBasedOnIncentives(totalRewards);
+            const expectedCvx = await siphonDepositor.getAmountOut(expectedRewards);
+            expect(expectedCvx).eq(cvxBal);
         });
     });
 });

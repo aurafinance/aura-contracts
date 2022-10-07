@@ -38,8 +38,8 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     /// @dev CVX token contract
     ICvx public immutable cvx;
 
-    /// @dev l2Coordinator contract
-    address public immutable l2Coordinator;
+    /// @dev chainID to l2Coordinator contracts
+    mapping(uint16 => address) public l2Coordinators;
 
     /// @dev source chain id mapped to bridge delegate contracts
     mapping(uint16 => address) public bridgeDelegates;
@@ -60,6 +60,8 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
     event RepayDebt(address sender, uint16 srcChainId, uint256 amount);
 
+    event UpdateL2Coordinator(uint16 chainId, address l2Coordinator);
+
     /* -------------------------------------------------------------------
       Constructor 
     ------------------------------------------------------------------- */
@@ -71,7 +73,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      * @param _auraLocker       Aura locker contract
      * @param _crv              CRV token contract
      * @param _cvx              CRV token contract
-     * @param _l2Coordinator    l2Coordinator contract
      * @param _lzEndpoint       LayerZeroEndpoint contract
      */
     constructor(
@@ -81,7 +82,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         IAuraLocker _auraLocker,
         IERC20 _crv,
         ICvx _cvx,
-        address _l2Coordinator,
         address _lzEndpoint
     ) OFTCore(_lzEndpoint) {
         lpToken = _lpToken;
@@ -90,7 +90,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         cvx = _cvx;
         auraLocker = _auraLocker;
         pid = _pid;
-        l2Coordinator = _l2Coordinator;
     }
 
     /* -------------------------------------------------------------------
@@ -147,7 +146,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     }
 
     /* -------------------------------------------------------------------
-      Repay Debt Functions 
+      Setter Functions 
     ------------------------------------------------------------------- */
 
     /**
@@ -158,6 +157,16 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     function setBridgeDelegate(uint16 _srcChainId, address _bridgeDelegate) external onlyOwner {
         bridgeDelegates[_srcChainId] = _bridgeDelegate;
         emit UpdateBridgeDelegate(_srcChainId, _bridgeDelegate);
+    }
+
+    /**
+     * @dev Set l2 coordinator
+     * @param _chainId        The chain ID
+     * @param _l2Coordinator  The L2 coordinator address
+     */
+    function setL2Coordinator(uint16 _chainId, address _l2Coordinator) external onlyOwner {
+        l2Coordinators[_chainId] = _l2Coordinator;
+        emit UpdateL2Coordinator(_chainId, _l2Coordinator);
     }
 
     /* -------------------------------------------------------------------
@@ -277,6 +286,8 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         // TODO: should this call getReward?
         uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
         _earmarkRewards(crvAmount);
+
+        address l2Coordinator = l2Coordinators[_dstChainId];
 
         uint256 cvxAmountOut = _getAmountOut(crvAmount);
         bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
