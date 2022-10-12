@@ -1272,6 +1272,54 @@
         }
     },
     {
+        "address": "0x610f1569045041Af6212be048Bc43e8DC6a07b55",
+        "network": 1,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1665429443,
+        "pool": {
+            "id": "0x5b3240b6be3e7487d61cd1afdfc7fe4fa1d81e6400000000000000000000037b",
+            "address": "0x5b3240B6BE3E7487d61cd1AFdFC7Fe4Fa1D81e64",
+            "poolType": "ComposableStable",
+            "symbol": "DOLA BSP",
+            "tokens": [
+                {
+                    "address": "0x865377367054516e17014CcdED1e7d814EDC9ce4",
+                    "weight": "null",
+                    "symbol": "DOLA"
+                },
+                {
+                    "address": "0xA13a9247ea42D743238089903570127DdA72fE44",
+                    "weight": "null",
+                    "symbol": "bb-a-USD"
+                }
+            ]
+        }
+    },
+    {
+        "address": "0x9C0f4144D037688e0AdA74B22a9aAb7c14c58e6C",
+        "network": 1,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664866055,
+        "pool": {
+            "id": "0x496ff26b76b8d23bbc6cf1df1eee4a48795490f7000200000000000000000377",
+            "address": "0x496ff26B76b8d23bbc6cF1Df1eeE4a48795490F7",
+            "poolType": "Weighted",
+            "symbol": "50COMP-50WSTETH",
+            "tokens": [
+                {
+                    "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+                    "weight": "0.5",
+                    "symbol": "wstETH"
+                },
+                {
+                    "address": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
+                    "weight": "0.5",
+                    "symbol": "COMP"
+                }
+            ]
+        }
+    },
+    {
         "address": "0x87ae77A8270F223656D9dC40AD51aabfAB424b30",
         "network": 42161,
         "relativeWeightCap": "null",
@@ -2162,6 +2210,83 @@
         "tokenLogoURIs": {
             "0x4200000000000000000000000000000000000006": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x4200000000000000000000000000000000000006/logo.png",
             "0x9Bcef72be871e61ED4fBbc7630889beE758eb81D": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x9Bcef72be871e61ED4fBbc7630889beE758eb81D/logo.png"
+        }
+    },
+    {
+        "address": "0x8F5F5b412dA3cB958c4d26444D9FA7ED11fD3F27",
+        "network": 10,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664866055,
+        "pool": {
+            "id": "0x479a7d1fcdd71ce0c2ed3184bfbe9d23b92e8337000000000000000000000049",
+            "address": "0x479A7d1fcDD71ce0C2ED3184bfbe9d23B92E8337",
+            "poolType": "ComposableStable",
+            "symbol": "bb-rf-aUSD-asUSD",
+            "tokens": [
+                {
+                    "address": "0x6222ae1d2a9f6894dA50aA25Cb7b303497f9BEbd",
+                    "weight": "null",
+                    "symbol": "bb-rf-aUSD"
+                },
+                {
+                    "address": "0xC0d7013A05860271a1EDB52415CF74BC85B2AcE7",
+                    "weight": "null",
+                    "symbol": "bb-rf-asUSD"
+                }
+            ]
+        }
+    },
+    {
+        "address": "0xa26B3523227e300Ff8eCA69CD3b0bdcbd2Db0313",
+        "network": 10,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664866055,
+        "pool": {
+            "id": "0x981fb05b738e981ac532a99e77170ecb4bc27aef00010000000000000000004b",
+            "address": "0x981Fb05B738e981aC532a99e77170ECb4Bc27AEF",
+            "poolType": "Weighted",
+            "symbol": "bb-YELLOW",
+            "tokens": [
+                {
+                    "address": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+                    "weight": "0.5",
+                    "symbol": "wstETH"
+                },
+                {
+                    "address": "0x6222ae1d2a9f6894dA50aA25Cb7b303497f9BEbd",
+                    "weight": "0.25",
+                    "symbol": "bb-rf-aUSD"
+                },
+                {
+                    "address": "0xA1a77E5d7D769BFBB790a08EC976dc738bF795B9",
+                    "weight": "0.25",
+                    "symbol": "bb-rf-aWBTC"
+                }
+            ]
+        }
+    },
+    {
+        "address": "0x74CE2247eC3f0b87BA0737497e3Db8873c184267",
+        "network": 10,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1664866055,
+        "pool": {
+            "id": "0xde45f101250f2ca1c0f8adfc172576d10c12072d00000000000000000000003f",
+            "address": "0xde45F101250f2ca1c0f8adFC172576d10c12072D",
+            "poolType": "ComposableStable",
+            "symbol": "bb-wstETH",
+            "tokens": [
+                {
+                    "address": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+                    "weight": "null",
+                    "symbol": "wstETH"
+                },
+                {
+                    "address": "0xDD89C7cd0613C1557B2DaAC6Ae663282900204f1",
+                    "weight": "null",
+                    "symbol": "bb-rf-aWETH"
+                }
+            ]
         }
     }
 ]
