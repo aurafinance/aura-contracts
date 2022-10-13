@@ -51,8 +51,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
       Events 
     ------------------------------------------------------------------- */
 
-    event SetSiphonReceiver(address sender, address siphonReciever);
-
     event Deposit(address sender, uint256 amount);
 
     event Siphon(address sender, uint256 dstChainId, address toAddress, uint256 amount);
@@ -60,8 +58,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     event Lock(address from, uint16 dstChainId, uint256 amount);
 
     event UpdateBridgeDelegate(uint16 srcChainId, address bridgeDelegate);
-
-    event RepayDebt(address sender, uint16 srcChainId, uint256 amount);
 
     event UpdateL2Coordinator(uint16 chainId, address l2Coordinator);
 
