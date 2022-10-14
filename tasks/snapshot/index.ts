@@ -10,6 +10,7 @@ import snapshot from "@snapshot-labs/snapshot.js";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory, MockCurveGauge__factory } from "../../types/generated";
+import uniqBy from "lodash/uniqBy";
 
 const configs = {
     main: {
@@ -99,6 +100,8 @@ const ordinalSuffix = (i: number) => {
 task("snapshot:create")
     .addParam("snapshot", "The block to snapshot")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+        const config = configs.main;
+
         const wallet = new Wallet(process.env.PRIVATE_KEY);
         const account = wallet.address;
 
@@ -126,7 +129,6 @@ task("snapshot:create")
         if (!latestBlock) {
             console.log(`Invalid snashot provided. Found ${snapshot}`);
         }
-        const config = configs.main;
         const client = new snapshot.Client712(config.hub);
 
         const space = config.space;
@@ -216,6 +218,7 @@ task("snapshot:create")
                             metadata: JSON.stringify({}),
                         };
                         console.log("Proposal:", JSON.stringify(proposal));
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const receipt: any = await client.proposal(wallet, account, proposal);
 
                         console.log(receipt);
@@ -345,6 +348,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // gauges that have decreased in vote weight have to be sent first
         // ----------------------------------------------------------
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let votes: any[] = [];
         for (const gauge of gaugesWithExistingWeights) {
             const idx = successfulGauges.findIndex(g => gauge.address === g.address);
@@ -395,13 +399,47 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     const savePath = path.resolve(__dirname, "gauge_snapshot.json");
     const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
 
+    // Gauges that have been removed because of the new 2% cap gauges
+    // but they haven't been killed yet so we just manually remove them
+    const removeNotKilled = [
+        "0xA6468eca7633246Dcb24E5599681767D27d1F978",
+        "0x158772F59Fe0d3b75805fC11139b46CBc89F70e5",
+        "0x055d483D00b0FFe0c1123c96363889Fb03fa13a4",
+        "0x397649FF00de6d90578144103768aaA929EF683d",
+        "0xC6FB8C72d3BD24fC4891C51c2cb3a13F49c11335",
+        "0x7DfaDb8c3230890a81Dc9593110b63Bc088740d4",
+        "0xEad3C3b6c829d54ad0a4c18762c567F728eF0535",
+        "0xD13A839BB48d69A296a1fa6D615B6C39B170096B",
+        "0xAF50825B010Ae4839Ac444f6c12D44b96819739B",
+        "0xC5f8B1de80145e3a74524a3d1a772a31eD2B50cc",
+        "0x7CDc9dC877b69328ca8b1Ff11ebfBe2a444Cf350",
+        "0x6cb1A77AB2e54d4560fda893E9c738ad770da0B0",
+        "0xE273d4aCC555A245a80cB494E9E0dE5cD18Ed530",
+        "0xb154d9D7f6C5d618c08D276f94239c03CFBF4575",
+        "0x5204f813cF58a4722E481b3b1cDfBBa45088fE36",
+        "0x86EC8Bd97622dc80B4a7346bc853760d99D14C7F",
+        "0x40AC67ea5bD1215D99244651CC71a03468bce6c0",
+        "0xa57453737849A4029325dfAb3F6034656644E104",
+        "0xe3A3Ca91794a995fe0bB24060987e73931B15f3D",
+        "0xbD0DAe90cb4a0e08f1101929C2A01eB165045660",
+        "0x5A481455E62D5825429C8c416f3B8D2938755B64",
+        "0xc43d32BC349cea7e0fe829F53E26096c184756fa",
+        "0x899F737750db562b88c1E412eE1902980D3a4844",
+        "0xACFDA9Fd773C23c01f5d0CAE304CBEbE6b449677",
+        "0x68d019f64A7aa97e2D4e7363AEE42251D08124Fb",
+        "0xc3bB46B8196C3F188c6A373a6C4Fde792CA78653",
+        "0xf01541837CF3A64BC957F53678b0AB113e92911b",
+        "0xB0de49429fBb80c635432bbAD0B3965b28560177",
+    ].map(x => x.toLowerCase());
+
     const removedGauges = [];
 
     const list = await Promise.all(
         gaugeList.map(async g => {
             if ([1, 137, 42161].includes(g.network)) {
                 const gauge = MockCurveGauge__factory.connect(g.address, signer);
-                if (await gauge.is_killed()) {
+                if ((await gauge.is_killed()) || removeNotKilled.includes(g.address.toLowerCase())) {
+                    console.log("Gauge killed:", g.pool.symbol, g.address);
                     removedGauges.push(g);
                     return false;
                 } else {
@@ -416,5 +454,5 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     fs.writeFileSync(savePath, JSON.stringify(list.filter(Boolean), null, 2));
     const removePath = path.resolve(__dirname, "gauge_removed.json");
     const removed = JSON.parse(fs.readFileSync(removePath, "utf8"));
-    fs.writeFileSync(removePath, JSON.stringify([...removed, ...removedGauges], null, 2));
+    fs.writeFileSync(removePath, JSON.stringify(uniqBy([...removed, ...removedGauges], "address"), null, 2));
 });

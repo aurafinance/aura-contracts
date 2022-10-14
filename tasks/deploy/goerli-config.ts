@@ -58,7 +58,10 @@ const addresses: ExtSystemConfig = {
         stablePool: "0xD360B8afb3d7463bE823bE1Ec3c33aA173EbE86e",
         bootstrappingPool: "0xb48Cc42C45d262534e46d5965a9Ac496F1B7a830",
     },
+    balancerGaugeFactory: "0x224E808FBD9e491Be8988B8A0451FBF777C81B8A",
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
+    uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    sushiswapRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
 };
 
 const naming = {

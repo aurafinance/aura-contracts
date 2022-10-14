@@ -276,8 +276,11 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
+            balancerGaugeFactory: ZERO_ADDRESS,
             balancerVault: balancerVault.address,
+            balancerPoolOwner: "0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B",
             balancerPoolFactories: {
+                weightedPool: ZERO_ADDRESS,
                 weightedPool2Tokens: ZERO_ADDRESS,
                 stablePool: ZERO_ADDRESS,
                 bootstrappingPool: ZERO_ADDRESS,
@@ -286,6 +289,8 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             balancerMinOutBps: "9975",
             weth: weth.address,
             wethWhale: deployerAddress,
+            uniswapRouter: ZERO_ADDRESS,
+            sushiswapRouter: ZERO_ADDRESS,
         },
         namingConfig: {
             cvxName: "Convex Finance",
