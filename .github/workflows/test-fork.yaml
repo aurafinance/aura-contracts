@@ -2,6 +2,7 @@ on: ["push"]
 name: Test Fork
 jobs:
     build:
+        if: ! github.event.pull_request.draft
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
