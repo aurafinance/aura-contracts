@@ -153,6 +153,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      * @param _bridgeDelegate The bridgeDelegate address
      */
     function setBridgeDelegate(uint16 _srcChainId, address _bridgeDelegate) external onlyOwner {
+        require(_bridgeDelegate != address(0), "bridgeDelegate invalid");
         bridgeDelegates[_srcChainId] = _bridgeDelegate;
         emit UpdateBridgeDelegate(_srcChainId, _bridgeDelegate);
     }

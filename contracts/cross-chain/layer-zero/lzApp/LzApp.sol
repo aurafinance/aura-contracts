@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.4;
+pragma solidity 0.8.11;
 
 import "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import "../interfaces/ILayerZeroReceiver.sol";
@@ -7,7 +7,7 @@ import "../interfaces/ILayerZeroUserApplicationConfig.sol";
 import "../interfaces/ILayerZeroEndpoint.sol";
 import "../util/BytesLib.sol";
 
-/*
+/**
  * a generic LzReceiver implementation
  */
 abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {

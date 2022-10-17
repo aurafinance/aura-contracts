@@ -8,7 +8,7 @@ contract SiphonGauge {
     using SafeERC20 for IERC20;
 
     /// @dev Siphon LP token
-    IERC20 immutable lpToken;
+    IERC20 private immutable lpToken;
 
     mapping(address => uint256) private _balances;
 

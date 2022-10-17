@@ -183,7 +183,7 @@ describe("Cross Chain Deposits", () => {
             crvRewards = BaseRewardPool__factory.connect(info.crvRewards, lpWhale.signer);
             depositToken = IERC20__factory.connect(info.token, lpWhale.signer);
         });
-        it("[L2] depsit lp tokens", async () => {
+        it("[L2] deposit lp tokens", async () => {
             const amount = await lpToken.balanceOf(lpWhale.address);
             expect(amount).gt(0);
             await lpToken.approve(L2_booster.address, amount);

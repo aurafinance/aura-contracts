@@ -120,11 +120,11 @@ export async function deployCrossChainL1(
         new SiphonDepositor__factory(signer),
         "SiphonDepositor",
         [
-            siphonToken.address,
+            siphonToken.address, //lpToken
             config.siphonDepositor.pid,
             config.booster,
             config.cvxLocker,
-            config.token,
+            config.token, // crv
             config.cvx,
             config.lzEndpoint,
         ],
