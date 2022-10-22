@@ -49,11 +49,6 @@ export interface CrossChainL2DeploymentConfig {
     minter: string;
     token: string;
     tokenBpt: string;
-    votingEscrow: string;
-    gaugeController: string;
-    cvx: string;
-    voteOwnership: string;
-    voteParameter: string;
     naming: {
         tokenFactoryNamePostfix: string;
         cvxSymbol: string;
@@ -197,7 +192,7 @@ export async function deployCrossChainL2(
         hre,
         new VoterProxyLite__factory(signer),
         "VoterProxyLite",
-        [config.minter, config.token, config.tokenBpt, config.votingEscrow],
+        [config.minter, config.token, config.tokenBpt],
         {},
         debug,
         waitForBlocks,

@@ -163,11 +163,6 @@ describe("Cross Chain Deposits", () => {
                     minter: config.addresses.minter,
                     token: crvToken.address,
                     tokenBpt: config.addresses.tokenBpt,
-                    votingEscrow: veToken.address,
-                    gaugeController: config.addresses.gaugeController,
-                    cvx: contracts.cvx.address,
-                    voteOwnership: ethers.constants.AddressZero,
-                    voteParameter: ethers.constants.AddressZero,
                     naming: {
                         tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                         cvxSymbol: config.naming.cvxSymbol,
@@ -486,11 +481,6 @@ describe("Cross Chain Deposits", () => {
                     minter: config.addresses.minter,
                     token: crvToken.address,
                     tokenBpt: config.addresses.tokenBpt,
-                    votingEscrow: veToken.address,
-                    gaugeController: config.addresses.gaugeController,
-                    cvx: contracts.cvx.address,
-                    voteOwnership: ethers.constants.AddressZero,
-                    voteParameter: ethers.constants.AddressZero,
                     naming: {
                         tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                         cvxSymbol: config.naming.cvxSymbol,
