@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import { IBridgeDelegate } from "../interfaces/IBridgeDelegate.sol";
+import { IBridgeDelegate } from "../../interfaces/IBridgeDelegate.sol";
 
 interface ISiphonDepositor {
     function repayDebt(uint16, uint256) external;

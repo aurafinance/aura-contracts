@@ -12,10 +12,10 @@ interface ICurveGauge {
     function lp_token() external view returns (address);
 }
 
-contract SiphonGauge {
+contract DummySiphonGauge {
     using SafeERC20 for IERC20;
 
-    IERC20 immutable lpToken;
+    IERC20 private immutable lpToken;
 
     mapping(address => uint256) private _balances;
 

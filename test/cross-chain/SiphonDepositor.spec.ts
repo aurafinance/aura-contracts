@@ -35,6 +35,8 @@ import {
     BaseRewardPool__factory,
     IERC20,
     IERC20__factory,
+    Booster,
+    AuraToken,
 } from "../../types/generated";
 
 import { DEAD_ADDRESS, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
@@ -42,17 +44,7 @@ import { impersonateAccount } from "../../test-utils/fork";
 import { Account } from "types";
 import { formatUnits } from "ethers/lib/utils";
 
-// event Deposit(address sender, uint256 amount);
-
-// event Siphon(address sender, uint256 dstChainId, address toAddress, uint256 amount);
-
-// event Lock(address from, uint16 dstChainId, uint256 amount);
-
-// event UpdateBridgeDelegate(uint16 srcChainId, address bridgeDelegate);
-
-// event RepayDebt(address sender, uint16 srcChainId, uint256 amount);
-//     event SetUseCustomAdapterParams(bool _useCustomAdapterParams);
-
+const ERROR_ONLY_OWNER = "Ownable: caller is not the owner";
 describe("SiphonDepositor", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
@@ -64,6 +56,8 @@ describe("SiphonDepositor", () => {
     let deployer: Signer;
     let alice: Signer;
     let aliceAddress: string;
+    let bob: Signer;
+    let bobAddress: string;
     let treasury: Account;
     let multisigs: MultisigConfig;
 
@@ -95,7 +89,9 @@ describe("SiphonDepositor", () => {
 
         deployer = accounts[0];
         alice = accounts[1];
+        bob = accounts[4];
         aliceAddress = await alice.getAddress();
+        bobAddress = await bob.getAddress();
 
         ({ mocks, multisigs, contracts } = await deployFullSystem(deployer, accounts));
 
@@ -113,7 +109,6 @@ describe("SiphonDepositor", () => {
             mocks.lptoken.address,
             [],
         );
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 116 ~ setup ~ L2_gauge", L2_gauge.address);
 
         // Deploy cross chain  L2
         crossChainL2 = await deployCrossChainL2(
@@ -141,19 +136,12 @@ describe("SiphonDepositor", () => {
         );
 
         l2Coordinator = crossChainL2.l2Coordinator;
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 144 ~ setup ~ l2Coordinator", l2Coordinator.address);
         L2_booster = crossChainL2.booster;
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 146 ~ setup ~ L2_booster", L2_booster.address);
         L2_poolManager = crossChainL2.poolManager;
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 148 ~ setup ~ L2_poolManager", L2_poolManager.address);
-
         // [L2] add a pool
         await L2_poolManager["addPool(address)"](L2_gauge.address);
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 149 ~ setup ~ L2_gauge", L2_gauge.address);
         let info = await L2_booster.poolInfo(L2_pid);
         lpToken = IERC20__factory.connect(info.lptoken, deployer);
-        // crvRewards = BaseRewardPool__factory.connect(info.crvRewards, lpWhale.signer);
-        // depositToken = IERC20__factory.connect(info.token, lpWhale.signer);
 
         // [L2] deposit lp tokens
         await lpToken.connect(deployer).transfer(aliceAddress, simpleToExactAmount(1000000));
@@ -181,9 +169,6 @@ describe("SiphonDepositor", () => {
         siphonToken = crossChainL1.siphonToken;
         siphonGauge = crossChainL1.siphonGauge;
         siphonDepositor = crossChainL1.siphonDepositor;
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 148 ~ setup ~ siphonToken", siphonToken.address);
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 148 ~ setup ~ siphonGauge", siphonGauge.address);
-        console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 148 ~ setup ~ siphonDepositor", siphonDepositor.address);
 
         // [LZ] deploy dummy bridge
         dummyBridge = await new DummyBridge__factory(deployer).deploy(
@@ -243,7 +228,6 @@ describe("SiphonDepositor", () => {
             expect((await siphonDepositor.trustedRemoteLookup(L2_CHAIN_ID)).toLowerCase(), "trustedRemoteLookup").to.eq(
                 l2Coordinator.address.toLowerCase(),
             );
-            // expect(await siphonDepositor.minDstGasLookup(CHAIN_ID), "minDstGasLookup").to.eq(simpleToExactAmount(375));
         });
         it("validates approvals for lpToken", async () => {
             const boosterAllowance = await siphonToken.allowance(siphonDepositor.address, contracts.booster.address);
@@ -257,14 +241,6 @@ describe("SiphonDepositor", () => {
     });
 
     context("full flow", async () => {
-        beforeEach("beforeEach", async () => {
-            // const circulatingSupply = await siphonDepositor.circulatingSupply();
-            // console.log(
-            //     "🚀 ~ file: SiphonDepositor.spec.ts ~ line 252 ~ it ~ circulatingSupply",
-            //     circulatingSupply.toString(),
-            // );
-        });
-
         describe("[L1] funding", () => {
             it("deposit LP tokens into the pool", async () => {
                 // Given
@@ -346,11 +322,6 @@ describe("SiphonDepositor", () => {
                 const incentives = lockIncentive.add(stakerIncentive).add(earmarkIncentive).add(platformFee);
 
                 const expectedCrvBal = farmAmount.sub(incentives);
-                console.log(
-                    "🚀 ~ file: SiphonDepositor.spec.ts ~ line 330 ~ it ~ expectedCrvBal",
-                    expectedCrvBal.toString(),
-                );
-                console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 336 ~ it ~ crvBal", crvBal.toString());
                 expect(
                     Math.round(Number(expectedCrvBal.div("1000000000000000000").toString())),
                     "siphon depositor balance after getReward",
@@ -388,9 +359,7 @@ describe("SiphonDepositor", () => {
                 // based on the actual amount of CRV that was earned derived from
                 // the amount of incentives that were paid
                 const cvxBal = cvxBalAfter.sub(cvxBalBefore);
-                console.log("ts siphonDepositor.getRewardsBasedOnIncentives");
                 const expectedRewards = await siphonDepositor.getRewardsBasedOnIncentives(totalRewards);
-                console.log("ts siphonDepositor.getAmountOut");
                 const expectedCvx = await siphonDepositor.getAmountOut(expectedRewards);
                 expect(expectedCvx).eq(cvxBal);
 
@@ -416,17 +385,9 @@ describe("SiphonDepositor", () => {
 
         describe("Bridge and Lock back to the L1", () => {
             it("bridge back to the L1", async () => {
-                console.log("ts: bridge back to the L1");
-                // TODO 'LzApp: destination chain is not a trusted source'
                 const l2balBefore = await l2Coordinator.balanceOf(aliceAddress);
                 const sendAmount = l2balBefore.mul(100).div(1000);
-                const toAddress = "0x0000000000000000000000000000000000000020";
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ l2Coordinator.address", l2Coordinator.address)
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ siphonDepositor.address", siphonDepositor.address)
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ aliceAddress.address", aliceAddress)
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ dummyBridge.address", dummyBridge.address)
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ l1LzEndpoint.address", l1LzEndpoint.address)
-                // console.log("🚀 ~ file: SiphonDepositor.spec.ts ~ line 414 ~ it ~ l2LzEndpoint.address", l2LzEndpoint.address)
+                const toAddress = bobAddress;
 
                 const tx = await l2Coordinator
                     .connect(alice)
@@ -435,7 +396,6 @@ describe("SiphonDepositor", () => {
                     .to.emit(l2Coordinator, "SendToChain")
                     .withArgs(L1_CHAIN_ID, aliceAddress, toAddress, sendAmount);
                 // await expect(tx).to.emit(siphonDepositor, "ReceiveFromChain").withArgs(L2_CHAIN_ID, l2LzEndpoint.address,toAddress, sendAmount);
-                // TODO which is the source address?
                 await expect(tx).to.emit(siphonDepositor, "ReceiveFromChain");
                 const l1bal = await contracts.cvx.balanceOf(toAddress);
                 expect(l1bal).eq(sendAmount);
@@ -444,9 +404,6 @@ describe("SiphonDepositor", () => {
                 expect(l2balBefore.sub(l2balAfter)).eq(sendAmount);
             });
             it("[LZ] lock back to the L1", async () => {
-                console.log("ts: [LZ] lock back to the L1");
-                // TODO 'LzApp: destination chain is not a trusted source'
-
                 const l2balBefore = await l2Coordinator.balanceOf(aliceAddress);
                 const lockAmount = l2balBefore.mul(100).div(1000);
                 const tx = await l2Coordinator.connect(alice).lock(lockAmount);
@@ -461,8 +418,6 @@ describe("SiphonDepositor", () => {
                 expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
             });
             it("[LZ] retry failed lock back to the L1", async () => {
-                console.log("ts: [LZ] retry failed lock back to the L1");
-
                 const l2balBefore = await l2Coordinator.balanceOf(aliceAddress);
                 const lockAmount = l2balBefore.mul(100).div(1000);
                 const lockBefore = await contracts.cvxLocker.userLocks(aliceAddress, 0);
@@ -499,42 +454,20 @@ describe("SiphonDepositor", () => {
                 expect(l2balBefore.sub(l2balAfter)).eq(lockAmount);
             });
         });
-        describe("Bridge BAL to L1 to repay debt", () => {
-            // Dummy bridge to bridge the BAL back to the L1
-            // contract. SiphonDepositor will receive the BAL and settle
-            // the debt for that l2
-            // it("Bridge BAL to L1 to repay debt", async () => {
-            //     const debtBefore = await siphonDepositor.debts(CHAIN_ID);
-            //     console.log("Debt before:", formatUnits(debtBefore));
-            //     const crvBalBefore = await mocks.crv.balanceOf(l2Coordinator.address);
-            //     console.log("CRV balance:", formatUnits(crvBalBefore));
-            //     await l2Coordinator.flush();
-            //     await dummyBridge.repayDebt();
-            //     const debtAfter = await siphonDepositor.debts(CHAIN_ID);
-            //     console.log("Debt after:", formatUnits(debtAfter));
-            //     expect(debtBefore.sub(debtAfter)).eq(crvBalBefore);
-            // });
-        });
     });
     describe("fails if", () => {
         it("deposit caller is not the owner", async () => {
-            await expect(siphonDepositor.connect(alice).deposit()).to.be.revertedWith(
-                "Ownable: caller is not the owner",
-            );
+            await expect(siphonDepositor.connect(alice).deposit()).to.be.revertedWith(ERROR_ONLY_OWNER);
         });
         it("farm caller is not the owner", async () => {
-            await expect(siphonDepositor.connect(alice).farm(ZERO)).to.be.revertedWith(
-                "Ownable: caller is not the owner",
-            );
+            await expect(siphonDepositor.connect(alice).farm(ZERO)).to.be.revertedWith(ERROR_ONLY_OWNER);
         });
         it("getReward caller is not the owner", async () => {
-            await expect(siphonDepositor.connect(alice).getReward()).to.be.revertedWith(
-                "Ownable: caller is not the owner",
-            );
+            await expect(siphonDepositor.connect(alice).getReward()).to.be.revertedWith(ERROR_ONLY_OWNER);
         });
         it("setBridgeDelegate caller is not the owner", async () => {
             await expect(siphonDepositor.connect(alice).setBridgeDelegate(ZERO, ZERO_ADDRESS)).to.be.revertedWith(
-                "Ownable: caller is not the owner",
+                ERROR_ONLY_OWNER,
             );
         });
         it("setBridgeDelegate to wrong address", async () => {
@@ -547,6 +480,17 @@ describe("SiphonDepositor", () => {
             const farmAmount = crvBal.add(simpleToExactAmount(1));
             await expect(siphonDepositor.farm(farmAmount), "farm").to.be.revertedWith("!balance");
         });
+        it("bridge to untrusted L1", async () => {
+            const l2balBefore = await l2Coordinator.balanceOf(aliceAddress);
+            const sendAmount = l2balBefore.mul(100).div(1000);
+            const L1_CHAIN_ID_WRONG = 555;
+
+            await expect(
+                l2Coordinator
+                    .connect(alice)
+                    .sendFrom(aliceAddress, L1_CHAIN_ID_WRONG, bobAddress, sendAmount, aliceAddress, ZERO_ADDRESS, []),
+            ).to.be.revertedWith("LzApp: destination chain is not a trusted source");
+        });
     });
 
     describe("owner", async () => {
@@ -555,10 +499,10 @@ describe("SiphonDepositor", () => {
             await expect(tx).to.emit(siphonDepositor, "UpdateL2Coordinator").withArgs(333, DEAD_ADDRESS);
             expect(await siphonDepositor.l2Coordinators(333), "l2Coordinator").to.be.eq(DEAD_ADDRESS);
         });
-        it("farm cvx tokens from the booster", async () => {
-            //
-            // TODO - require(bal >= _amount, "!balance"); >
-            // TODO - require(bal >= _amount, "!balance"); <
+        it("fails if farm more cvx tokens from the booster than the current balance", async () => {
+            const crvBalBefore = await mocks.crv.balanceOf(siphonDepositor.address);
+            const farmAmount = crvBalBefore.add(1);
+            await expect(siphonDepositor.farm(farmAmount)).to.be.revertedWith("!balance");
         });
     });
     describe("@method getReward", async () => {
@@ -577,52 +521,44 @@ describe("SiphonDepositor", () => {
             //
         });
     });
-    describe("@method repayDebt", async () => {
-        it("fails if caller is not the owner", async () => {
-            //
-        });
-        it("sets the bridge delegate for  a source chain id", async () => {
-            //
+
+    describe("@method getAmountOut", async () => {
+        it("calculates the correct amount of cvx to mint", async () => {
+            let expectedCvx = await siphonDepositor.getAmountOut(ZERO);
+            expect(expectedCvx, "expectedCvx").to.be.eq(ZERO);
+            expectedCvx = await siphonDepositor.getAmountOut(simpleToExactAmount(1000));
+            expectedCvx = await siphonDepositor.getAmountOut(await contracts.cvx.EMISSIONS_MAX_SUPPLY());
+            expectedCvx = await siphonDepositor.getAmountOut((await contracts.cvx.EMISSIONS_MAX_SUPPLY()).add(1));
         });
     });
     describe("OFTCore", async () => {
-        describe("@method supportsInterface", async () => {
-            it("....", async () => {
-                //
-            });
-        });
-        describe("@method estimateSendFee", async () => {
-            it("....", async () => {
-                //
-            });
-        });
         describe("@method sendFrom", async () => {
-            it("....", async () => {
-                //
-            });
-        });
-        describe("@method setUseCustomAdapterParams", async () => {
-            it("....", async () => {
-                //
-            });
-        });
-    });
-    describe("NonblockingLzApp", async () => {
-        describe("@method estimateSendFee", async () => {
-            it("....", async () => {
-                //
-            });
-        });
-    });
-    describe("LzApp", async () => {
-        describe("@method nonblockingLzReceive", async () => {
-            it("....", async () => {
-                //
-            });
-        });
-        describe("@method retryMessage", async () => {
-            it("....", async () => {
-                //
+            it("bridge from L1 to L2", async () => {
+                const fromAddress = aliceAddress;
+                const toAddress = bobAddress;
+
+                const fromAcc = alice;
+                await getCvx(contracts.booster, contracts.cvx, fromAddress, simpleToExactAmount(100000, 18));
+                const balFromBefore = await contracts.cvx.balanceOf(fromAddress);
+                const balToBefore = await l2Coordinator.balanceOf(toAddress);
+                const sendAmount = balFromBefore.mul(100).div(1000);
+                await contracts.cvx.connect(fromAcc).approve(siphonDepositor.address, sendAmount);
+
+                expect(sendAmount, "sendAmount gt 0").to.gt(0);
+
+                const tx = await siphonDepositor
+                    .connect(fromAcc)
+                    .sendFrom(fromAddress, L2_CHAIN_ID, toAddress, sendAmount, fromAddress, ZERO_ADDRESS, []);
+                await expect(tx)
+                    .to.emit(siphonDepositor, "SendToChain")
+                    .withArgs(L2_CHAIN_ID, fromAddress, toAddress, sendAmount);
+                await expect(tx).to.emit(l2Coordinator, "ReceiveFromChain");
+
+                const balToAfter = await await l2Coordinator.balanceOf(toAddress);
+                expect(balToAfter.sub(balToBefore)).eq(sendAmount);
+
+                const balFromAfter = await contracts.cvx.balanceOf(fromAddress);
+                expect(balFromBefore.sub(balFromAfter)).eq(sendAmount);
             });
         });
     });
@@ -647,3 +583,14 @@ async function deployFullSystem(deployer: Signer, accounts: Signer[]) {
     const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
     return { mocks, multisigs, contracts };
 }
+
+const getCvx = async (
+    booster: Booster,
+    cvx: AuraToken,
+    recipient: string,
+    amount = simpleToExactAmount(100000, 18),
+) => {
+    const operatorAccount = await impersonateAccount(booster.address);
+    await cvx.connect(operatorAccount.signer).mint(operatorAccount.address, amount);
+    await cvx.connect(operatorAccount.signer).transfer(recipient, amount);
+};
