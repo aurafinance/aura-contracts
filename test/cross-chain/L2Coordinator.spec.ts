@@ -12,20 +12,16 @@ import {
 
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
-    SiphonGauge,
     SiphonDepositor,
-    SiphonToken,
     L2Coordinator,
     LZEndpointMock,
     LZEndpointMock__factory,
     PoolManagerLite,
     MockCurveGauge__factory,
-    SiphonGauge__factory,
 } from "../../types/generated";
 
-import { BN, DEAD_ADDRESS, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
+import { DEAD_ADDRESS, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { impersonateAccount } from "../../test-utils/fork";
-import { Account } from "types";
 const ERROR_ONLY_OWNER = "Ownable: caller is not the owner";
 
 describe("L2Coordinator", () => {
@@ -38,14 +34,11 @@ describe("L2Coordinator", () => {
     let mocks: DeployMocksResult;
     let deployer: Signer;
     let alice: Signer;
-    let aliceAddress: string;
 
     //     CrossChain L1 contracts
     let crossChainL1: CrossChainL1Deployment;
     let crossChainL2: CrossChainL2Deployment;
     let pid: BigNumberish;
-    let siphonGauge: SiphonGauge;
-    let siphonToken: SiphonToken;
     let siphonDepositor: SiphonDepositor;
     // Bridge contract
     let l1LzEndpoint: LZEndpointMock;
@@ -54,8 +47,6 @@ describe("L2Coordinator", () => {
     // L2 contracts
     let l2Coordinator: L2Coordinator;
     let L2_poolManager: PoolManagerLite;
-    // let lpToken: IERC20;
-    let siphonDepositorAcc: Account;
     /* -- Declare shared functions -- */
 
     const setup = async () => {
@@ -63,7 +54,6 @@ describe("L2Coordinator", () => {
 
         deployer = accounts[0];
         alice = accounts[1];
-        aliceAddress = await alice.getAddress();
         ({ mocks, contracts } = await deployFullSystem(deployer, accounts));
 
         pid = await contracts.booster.poolLength();
@@ -125,14 +115,10 @@ describe("L2Coordinator", () => {
             debug,
             0,
         );
-
-        siphonToken = crossChainL1.siphonToken;
-        siphonGauge = crossChainL1.siphonGauge;
         siphonDepositor = crossChainL1.siphonDepositor;
 
         // Approvals and balances for testing
         await siphonDepositor.setApprovals();
-        siphonDepositorAcc = await impersonateAccount(siphonDepositor.address);
     };
 
     before("setup", async () => {
