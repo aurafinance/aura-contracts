@@ -1,12 +1,20 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { deployContract, getSigner } from "tasks/utils";
+import { deployContract, getSigner, waitForTx } from "tasks/utils";
 import { config as mainnetConfig } from "./mainnet-config";
 import { config as crossChainConfig } from "./cross-chain-config";
 import { deployCrossChainL1, deployCrossChainL2 } from "scripts/deployCrossChain";
-import { MockCurveMinter, MockCurveMinter__factory, MockERC20, MockERC20__factory } from "types";
+import {
+    MockCurveGauge,
+    MockCurveGauge__factory,
+    MockCurveMinter,
+    MockCurveMinter__factory,
+    MockERC20,
+    MockERC20__factory,
+} from "types";
 import { simpleToExactAmount } from "test-utils";
+import { ContractTransaction, Transaction } from "ethers";
 
 const DEBUG = true;
 
@@ -26,6 +34,10 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
 
     const contracts = await mainnetConfig.getPhase4(deployer);
 
+    /*------------------------------------------------------------------------
+     * Deployment
+     *----------------------------------------------------------------------*/
+
     // We are making the assumption that after we run this task to deploy the
     // L1 cross chain contracts we will add the siphonGauge as the next pool
     // to the booster. Therefore the PID of the siphonGauge will be pools.length
@@ -33,7 +45,7 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
 
     const config = crossChainConfig[chainId];
 
-    await deployCrossChainL1(
+    const deployment = await deployCrossChainL1(
         {
             l2Coordinators: config.l2Coordinators,
             siphonDepositor: { pid },
@@ -48,6 +60,30 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
         DEBUG,
         WAIT_FOR_BLOCKS,
     );
+
+    /*------------------------------------------------------------------------
+     * Setup
+     *----------------------------------------------------------------------*/
+
+    let tx: ContractTransaction;
+
+    // Set up trusted remote on the siphon depositor
+    for (const l2Coordinator of config.l2Coordinators) {
+        tx = await deployment.siphonDepositor.setTrustedRemote(l2Coordinator.chainId, l2Coordinator.address);
+        await waitForTx(tx);
+    }
+
+    // Add pool to Booster
+    tx = await contracts.poolManager.forceAddPool(deployment.siphonToken.address, deployment.siphonGauge.address, 3);
+    await waitForTx(tx);
+
+    // Deposit LP tokens into pool from depositor
+    tx = await deployment.siphonDepositor.setApprovals();
+    await waitForTx(tx);
+    tx = await deployment.siphonDepositor.deposit();
+    await waitForTx(tx);
+
+    // Fund siphonDepositor manually with BAL
 });
 
 task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArguments, hre: HardhatRuntimeEnvironment) {
@@ -63,11 +99,11 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
         throw new Error(`Wrong chain, expected: ${chainId}`);
     }
 
-    /* ---------------------------------------------------------------
+    /*------------------------------------------------------------------------
      * Deploy Mocks
-    --------------------------------------------------------------- */
+     *----------------------------------------------------------------------*/
 
-    // - Mock minter (BAL minter)
+    // Mock minter (BAL minter)
     const mockMinter = await deployContract<MockCurveMinter>(
         hre,
         new MockCurveMinter__factory(deployer),
@@ -78,7 +114,7 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
         WAIT_FOR_BLOCKS,
     );
 
-    // - Mock token (BAL) (sending BAL to mock minter)
+    // Mock token (BAL) (sending BAL to mock minter)
     const mockToken = await deployContract<MockERC20>(
         hre,
         new MockERC20__factory(deployer),
@@ -89,7 +125,7 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
         WAIT_FOR_BLOCKS,
     );
 
-    // - Mock tokenBpt (BAL BPT)
+    // Mock tokenBpt (Balancer Pool Token)
     const mockTokenBpt = await deployContract<MockERC20>(
         hre,
         new MockERC20__factory(deployer),
@@ -100,19 +136,29 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
         WAIT_FOR_BLOCKS,
     );
 
-    /* ---------------------------------------------------------------
-     * Deploy L2 system 
-    --------------------------------------------------------------- */
+    // Mock Gauge
+    const mockGauge = await deployContract<MockCurveGauge>(
+        hre,
+        new MockCurveGauge__factory(deployer),
+        "MockCurveGauge",
+        ["MockCurveGauge", "MCG", mockTokenBpt.address, []],
+        {},
+        DEBUG,
+        WAIT_FOR_BLOCKS,
+    );
+
+    /*------------------------------------------------------------------------
+     * Deploy L2 system
+     *----------------------------------------------------------------------*/
 
     const config = crossChainConfig[chainId];
 
-    await deployCrossChainL2(
+    const deployment = await deployCrossChainL2(
         {
             canonicalChainId: config.canonicalChainId,
             lzEndpoint: config.lzEndpoint,
             minter: mockMinter.address,
             token: mockToken.address,
-            tokenBpt: mockTokenBpt.address,
             naming: {
                 tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                 cvxSymbol: config.naming.cvxSymbol,
@@ -124,4 +170,13 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
         DEBUG,
         WAIT_FOR_BLOCKS,
     );
+
+    /*------------------------------------------------------------------------
+     * Setup
+     *----------------------------------------------------------------------*/
+
+    let tx: ContractTransaction;
+
+    tx = await deployment.poolManager["addPool(address)"](mockGauge.address);
+    await waitForTx(tx);
 });

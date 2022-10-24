@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import hre, { network, ethers } from "hardhat";
+import hre, { network } from "hardhat";
 import { BigNumberish, Signer } from "ethers";
 
 import {
@@ -10,8 +10,6 @@ import {
     SiphonToken,
     BaseRewardPool__factory,
     MockERC20__factory,
-    MockCurveVoteEscrow__factory,
-    MockCurveVoteEscrow,
     SmartWalletChecker__factory,
     IERC20__factory,
     IERC20,
@@ -82,7 +80,6 @@ describe("Cross Chain Deposits", () => {
     let siphonGauge: SiphonGauge;
     let siphonToken: SiphonToken;
     let siphonDepositor: SiphonDepositor;
-    let veToken: MockCurveVoteEscrow;
     let dummyBridge: DummyBridge;
 
     let contracts: SystemDeployed;
@@ -149,20 +146,12 @@ describe("Cross Chain Deposits", () => {
 
         before(async () => {
             // deploy mocks
-            const smartWalletChecker = await new SmartWalletChecker__factory(deployer).deploy();
-
-            veToken = await new MockCurveVoteEscrow__factory(deployer).deploy(
-                smartWalletChecker.address,
-                config.addresses.tokenBpt,
-            );
-
             const crossChainL2 = await deployCrossChainL2(
                 {
                     canonicalChainId: L1_CHAIN_ID,
                     lzEndpoint: l2LzEndpoint.address,
                     minter: config.addresses.minter,
                     token: crvToken.address,
-                    tokenBpt: config.addresses.tokenBpt,
                     naming: {
                         tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                         cvxSymbol: config.naming.cvxSymbol,
@@ -480,7 +469,6 @@ describe("Cross Chain Deposits", () => {
                     lzEndpoint: secondL2LzEndpoint.address,
                     minter: config.addresses.minter,
                     token: crvToken.address,
-                    tokenBpt: config.addresses.tokenBpt,
                     naming: {
                         tokenFactoryNamePostfix: config.naming.tokenFactoryNamePostfix,
                         cvxSymbol: config.naming.cvxSymbol,
