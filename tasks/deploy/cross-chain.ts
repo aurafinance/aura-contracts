@@ -1,10 +1,7 @@
 import { task } from "hardhat/config";
+import { ContractTransaction } from "ethers";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { deployContract, getSigner, waitForTx } from "tasks/utils";
-import { config as mainnetConfig } from "./mainnet-config";
-import { config as crossChainConfig } from "./cross-chain-config";
-import { deployCrossChainL1, deployCrossChainL2 } from "scripts/deployCrossChain";
 import {
     MockCurveGauge,
     MockCurveGauge__factory,
@@ -12,13 +9,16 @@ import {
     MockCurveMinter__factory,
     MockERC20,
     MockERC20__factory,
-} from "types";
-import { simpleToExactAmount } from "test-utils";
-import { ContractTransaction, Transaction } from "ethers";
+} from "../../types";
+import { deployContract, getSigner, waitForTx } from "../utils";
+import { config as goerliConfig } from "./goerli-config";
+import { config as crossChainConfig } from "./cross-chain-config";
+import { deployCrossChainL1, deployCrossChainL2 } from "../../scripts/deployCrossChain";
+import { simpleToExactAmount } from "../../test-utils/math";
 
 const DEBUG = true;
 
-const WAIT_FOR_BLOCKS = 4;
+const WAIT_FOR_BLOCKS = 0;
 
 task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre: HardhatRuntimeEnvironment) {
     const deployer = await getSigner(hre);
@@ -29,10 +29,10 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
     const actualChainId = network.chainId;
 
     if (actualChainId !== chainId) {
-        throw new Error(`Wrong chain, expected: ${chainId}`);
+        throw new Error(`Wrong chain, expected: ${chainId} got: ${actualChainId}`);
     }
 
-    const contracts = await mainnetConfig.getPhase4(deployer);
+    const contracts = await goerliConfig.getPhase4(deployer);
 
     /*------------------------------------------------------------------------
      * Deployment
@@ -51,7 +51,7 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
             siphonDepositor: { pid },
             booster: contracts.booster.address,
             cvxLocker: contracts.cvxLocker.address,
-            token: mainnetConfig.addresses.token,
+            token: goerliConfig.addresses.token,
             cvx: contracts.cvx.address,
             lzEndpoint: config.lzEndpoint,
         },
@@ -96,34 +96,42 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
     const actualChainId = network.chainId;
 
     if (actualChainId !== chainId) {
-        throw new Error(`Wrong chain, expected: ${chainId}`);
+        throw new Error(`Wrong chain, expected: ${chainId} got: ${actualChainId}`);
     }
+
+    let tx: ContractTransaction;
 
     /*------------------------------------------------------------------------
      * Deploy Mocks
      *----------------------------------------------------------------------*/
 
-    // Mock minter (BAL minter)
-    const mockMinter = await deployContract<MockCurveMinter>(
-        hre,
-        new MockCurveMinter__factory(deployer),
-        "MockCurveMinter",
-        [],
-        {},
-        DEBUG,
-        WAIT_FOR_BLOCKS,
-    );
+    const mintAmount = simpleToExactAmount(1000000);
 
     // Mock token (BAL) (sending BAL to mock minter)
     const mockToken = await deployContract<MockERC20>(
         hre,
         new MockERC20__factory(deployer),
         "MockToken",
-        ["MockBAL", "MockBAL", 18, mockMinter.address, simpleToExactAmount(1000000)],
+        ["MockBAL", "MockBAL", 18, deployerAddress, mintAmount],
         {},
         DEBUG,
         WAIT_FOR_BLOCKS,
     );
+
+    // Mock minter (BAL minter)
+    const mockMinter = await deployContract<MockCurveMinter>(
+        hre,
+        new MockCurveMinter__factory(deployer),
+        "MockCurveMinter",
+        [mockToken.address, simpleToExactAmount(1)],
+        {},
+        DEBUG,
+        WAIT_FOR_BLOCKS,
+    );
+
+    // Send mockToken to mockMinter
+    tx = await mockToken.transfer(mockMinter.address, mintAmount);
+    await waitForTx(tx);
 
     // Mock tokenBpt (Balancer Pool Token)
     const mockTokenBpt = await deployContract<MockERC20>(
@@ -174,8 +182,6 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
     /*------------------------------------------------------------------------
      * Setup
      *----------------------------------------------------------------------*/
-
-    let tx: ContractTransaction;
 
     tx = await deployment.poolManager["addPool(address)"](mockGauge.address);
     await waitForTx(tx);

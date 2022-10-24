@@ -1,7 +1,8 @@
 import { ethers, BigNumberish, Signer, ContractTransaction } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { simpleToExactAmount } from "../test-utils/math";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
     BoosterLite,
     BoosterLite__factory,

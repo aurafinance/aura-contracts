@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
         },
         forking: {
             url: process.env.NODE_URL || "",
+            gasPrice: 3000000000,
         },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
