@@ -280,7 +280,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      * @param _dstChainId   The destination chain ID (L2) that called this L1 function which calls
      *                      back to the L2 chain
      */
-    function siphon(uint16 _dstChainId) external payable {
+    function siphon(uint16 _dstChainId) external payable onlyOwner {
         // TODO: should this call getReward?
         uint256 _amount = pendingRewards[_dstChainId];
         uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
