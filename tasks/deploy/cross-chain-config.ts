@@ -1,7 +1,7 @@
 export const config = {
     // Goerli
     5: {
-        l2Coordinators: [{ chainId: 10143, address: "0x0000000000000000000000000000000000000000" }],
+        l2Coordinators: [{ chainId: 10143, address: "0xC83Da60A38A4163790b159345493101D72782549" }],
         booster: "0x2ad214dA65effA92159057957E50994440E99A1b",
         cvxLocker: "0x1e5B33222977642Bf64EC80846BBF83A016727A0",
         token: "0xfA8449189744799aD2AcE7e0EBAC8BB7575eff47",

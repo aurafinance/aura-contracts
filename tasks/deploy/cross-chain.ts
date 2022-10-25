@@ -18,7 +18,7 @@ import { simpleToExactAmount } from "../../test-utils/math";
 
 const DEBUG = true;
 
-const WAIT_FOR_BLOCKS = 0;
+const WAIT_FOR_BLOCKS = 4;
 
 task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre: HardhatRuntimeEnvironment) {
     const deployer = await getSigner(hre);
@@ -38,9 +38,9 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
      * Deployment
      *----------------------------------------------------------------------*/
 
-    // We are making the assumption that after we run this task to deploy the
-    // L1 cross chain contracts we will add the siphonGauge as the next pool
-    // to the booster. Therefore the PID of the siphonGauge will be pools.length
+    // We are making the assumption that nobody is going to frontrun this deployment
+    // and get in between this poolLength call and the call to add the pool
+    // Therefore the PID of the siphonGauge will be pools.length
     const pid = await contracts.booster.poolLength();
 
     const config = crossChainConfig[chainId];
@@ -69,7 +69,11 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
 
     // Set up trusted remote on the siphon depositor
     for (const l2Coordinator of config.l2Coordinators) {
-        tx = await deployment.siphonDepositor.setTrustedRemote(l2Coordinator.chainId, l2Coordinator.address);
+        const path = hre.ethers.utils.solidityPack(
+            ["address", "address"],
+            [l2Coordinator.address, deployment.siphonDepositor.address],
+        );
+        tx = await deployment.siphonDepositor.setTrustedRemote(l2Coordinator.chainId, path);
         await waitForTx(tx);
     }
 
@@ -185,4 +189,14 @@ task("deploy:crosschain:arbitrum-goerli").setAction(async function (_: TaskArgum
 
     tx = await deployment.poolManager["addPool(address)"](mockGauge.address);
     await waitForTx(tx);
+
+    // Manually need to set trusted remote
 });
+
+task("crosschain:trusted-remotes")
+    .addPositionalParam("remote")
+    .addPositionalParam("local")
+    .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const path = hre.ethers.utils.solidityPack(["address", "address"], [taskArgs.remote, taskArgs.local]);
+        console.log("Path:", path);
+    });
