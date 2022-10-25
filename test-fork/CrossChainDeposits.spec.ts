@@ -10,7 +10,6 @@ import {
     SiphonToken,
     BaseRewardPool__factory,
     MockERC20__factory,
-    SmartWalletChecker__factory,
     IERC20__factory,
     IERC20,
     L2Coordinator,
@@ -227,8 +226,14 @@ describe("Cross Chain Deposits", () => {
         });
 
         it("[LZ] set up trusted remotes", async () => {
-            await siphonDepositor.setTrustedRemote(L2_CHAIN_ID, l2Coordinator.address);
-            await l2Coordinator.setTrustedRemote(L1_CHAIN_ID, siphonDepositor.address);
+            await siphonDepositor.setTrustedRemote(
+                L2_CHAIN_ID,
+                hre.ethers.utils.solidityPack(["address", "address"], [l2Coordinator.address, siphonDepositor.address]),
+            );
+            await l2Coordinator.setTrustedRemote(
+                L1_CHAIN_ID,
+                hre.ethers.utils.solidityPack(["address", "address"], [siphonDepositor.address, l2Coordinator.address]),
+            );
 
             await l2LzEndpoint.setDestLzEndpoint(siphonDepositor.address, l1LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
@@ -364,7 +369,8 @@ describe("Cross Chain Deposits", () => {
 
             // Flush sends the CRV back to L1 via the bridge delegate
             // In order to settle the incentives debt on L1
-            await l2Coordinator.flush(totalRewards);
+            await l2Coordinator.flush(totalRewards, { value: simpleToExactAmount("0.1") });
+            await siphonDepositor.siphon(L2_CHAIN_ID, { value: simpleToExactAmount("0.1") });
             const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
 
             // Calling flush triggers the L1 to send back the pro rata CVX
@@ -401,7 +407,9 @@ describe("Cross Chain Deposits", () => {
             const toAddress = "0x0000000000000000000000000000000000000020";
             await l2Coordinator
                 .connect(lpWhale.signer)
-                .sendFrom(lpWhale.address, L1_CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, []);
+                .sendFrom(lpWhale.address, L1_CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, [], {
+                    value: simpleToExactAmount("0.1"),
+                });
             const l1bal = await contracts.cvx.balanceOf(toAddress);
             expect(l1bal).eq(sendAmount);
 
@@ -411,7 +419,10 @@ describe("Cross Chain Deposits", () => {
         it("[LZ] lock back to the L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
             const lockAmount = l2balBefore.mul(100).div(1000);
-            await l2Coordinator.connect(lpWhale.signer).lock(lockAmount);
+            expect(lockAmount).gt(0);
+            await l2Coordinator.connect(lpWhale.signer).lock(lockAmount, "3000000", {
+                value: simpleToExactAmount("0.1"),
+            });
             expect(await l2Coordinator.balanceOf(lpWhale.address)).eq(l2balBefore.sub(lockAmount));
 
             const lock = await contracts.cvxLocker.userLocks(lpWhale.address, 0);
@@ -429,7 +440,10 @@ describe("Cross Chain Deposits", () => {
             // and then reset it afterwards so we can process the retry
             const code = await network.provider.send("eth_getCode", [contracts.cvxLocker.address]);
             await network.provider.send("hardhat_setCode", [contracts.cvxLocker.address, MockERC20__factory.bytecode]);
-            const tx = await l2Coordinator.connect(lpWhale.signer).lock(lockAmount);
+            const tx = await l2Coordinator.connect(lpWhale.signer).lock(lockAmount, "3000000", {
+                gasLimit: 30000000,
+                value: simpleToExactAmount("1"),
+            });
             await network.provider.send("hardhat_setCode", [contracts.cvxLocker.address, code]);
 
             const resp = await tx.wait();
@@ -491,8 +505,20 @@ describe("Cross Chain Deposits", () => {
             await siphonDepositor.setL2Coordinator(L22_CHAIN_ID, secondL2Coordinator.address);
         });
         it("[LZ] set up trusted remotes", async () => {
-            await siphonDepositor.setTrustedRemote(L22_CHAIN_ID, secondL2Coordinator.address);
-            await secondL2Coordinator.setTrustedRemote(L1_CHAIN_ID, siphonDepositor.address);
+            await siphonDepositor.setTrustedRemote(
+                L22_CHAIN_ID,
+                hre.ethers.utils.solidityPack(
+                    ["address", "address"],
+                    [secondL2Coordinator.address, siphonDepositor.address],
+                ),
+            );
+            await secondL2Coordinator.setTrustedRemote(
+                L1_CHAIN_ID,
+                hre.ethers.utils.solidityPack(
+                    ["address", "address"],
+                    [siphonDepositor.address, secondL2Coordinator.address],
+                ),
+            );
 
             await secondL2LzEndpoint.setDestLzEndpoint(siphonDepositor.address, l1LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(secondL2Coordinator.address, secondL2LzEndpoint.address);
@@ -515,7 +541,8 @@ describe("Cross Chain Deposits", () => {
             // Flush rewards from L2 and recieve CVX from the L1
             const totalRewards = await secondL2Coordinator.totalRewards();
             const cvxBalBefore = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
-            await secondL2Coordinator.flush(totalRewards);
+            await secondL2Coordinator.flush(totalRewards, { value: simpleToExactAmount("1") });
+            await siphonDepositor.siphon(L22_CHAIN_ID, { value: simpleToExactAmount("0.1") });
             const cvxBalAfter = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
             const cvxBal = cvxBalAfter.sub(cvxBalBefore);
 

@@ -127,7 +127,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * Only callable by the owner and a manual process as we want to
      * control the flow of funds into the bridge delegate
      */
-    function flush(uint256 amount) external onlyOwner {
+    function flush(uint256 amount) external payable onlyOwner {
         require(bridgeDelegate != address(0), "bridgeDelegate invalid");
         require(amount <= totalRewards, "amount>totalRewards");
 
@@ -148,7 +148,9 @@ contract L2Coordinator is OFT, CrossChainMessages {
             // ZRO payment address
             address(0),
             // adapter params
-            bytes("")
+            bytes(""),
+            // navtive fee
+            msg.value
         );
 
         // Transfer the CRV amount to the bridge delegate and then trigger
@@ -172,10 +174,12 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @dev Lock AURA on the L1 chain
      * @param _cvxAmount Amount of AURA to lock for vlAURA on L1
      */
-    function lock(uint256 _cvxAmount) external {
+    function lock(uint256 _cvxAmount, uint256 _gasForDestinationLzReceive) external payable {
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
         bytes memory payload = _encode(msg.sender, address(0), _cvxAmount, MessageType.LOCK);
+
+        bytes memory adapterParams = abi.encodePacked(uint16(1), _gasForDestinationLzReceive);
 
         _lzSend(
             // destination chain
@@ -187,7 +191,9 @@ contract L2Coordinator is OFT, CrossChainMessages {
             // ZRO payment address
             address(0),
             // adapter params
-            bytes("")
+            adapterParams,
+            // navtive fee
+            msg.value
         );
 
         emit Lock(msg.sender, canonicalChainId, _cvxAmount);
@@ -221,7 +227,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
                 mintRate = (cvxAmount * WAD) / crvAmount;
 
                 // Continue with LZ flow with crvAmount removed from payload
-                _payload = abi.encode(abi.encodePacked(toAddress), cvxAmount);
+                _payload = abi.encode(PT_SEND, abi.encodePacked(address(0)), abi.encodePacked(toAddress), cvxAmount);
                 super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
             }
         } else {

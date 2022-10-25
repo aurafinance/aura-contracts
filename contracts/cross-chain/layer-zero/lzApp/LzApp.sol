@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-0.8/access/Ownable.sol";
-
 import "../interfaces/ILayerZeroReceiver.sol";
-import "../interfaces/ILayerZeroEndpoint.sol";
 import "../interfaces/ILayerZeroUserApplicationConfig.sol";
+import "../interfaces/ILayerZeroEndpoint.sol";
+import "../util/BytesLib.sol";
 
 /*
  * a generic LzReceiver implementation
  */
 abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicationConfig {
+    using BytesLib for bytes;
+
     ILayerZeroEndpoint public immutable lzEndpoint;
     mapping(uint16 => bytes) public trustedRemoteLookup;
-    mapping(uint16 => mapping(uint256 => uint256)) public minDstGasLookup;
+    mapping(uint16 => mapping(uint16 => uint256)) public minDstGasLookup;
+    address public precrime;
 
-    event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
-    event SetMinDstGasLookup(uint16 _dstChainId, uint256 _type, uint256 _dstGasAmount);
+    event SetPrecrime(address precrime);
+    event SetTrustedRemote(uint16 _remoteChainId, bytes _path);
+    event SetTrustedRemoteAddress(uint16 _remoteChainId, bytes _remoteAddress);
+    event SetMinDstGas(uint16 _dstChainId, uint16 _type, uint256 _minDstGas);
 
     constructor(address _endpoint) {
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
@@ -25,9 +30,9 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
 
     function lzReceive(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
+        bytes calldata _srcAddress,
         uint64 _nonce,
-        bytes memory _payload
+        bytes calldata _payload
     ) public virtual override {
         // lzReceive must be called by the endpoint for security
         require(_msgSender() == address(lzEndpoint), "LzApp: invalid endpoint caller");
@@ -35,7 +40,9 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
         require(
-            _srcAddress.length == trustedRemote.length && keccak256(_srcAddress) == keccak256(trustedRemote),
+            _srcAddress.length == trustedRemote.length &&
+                trustedRemote.length > 0 &&
+                keccak256(_srcAddress) == keccak256(trustedRemote),
             "LzApp: invalid source sending contract"
         );
 
@@ -55,11 +62,12 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         bytes memory _payload,
         address payable _refundAddress,
         address _zroPaymentAddress,
-        bytes memory _adapterParams
+        bytes memory _adapterParams,
+        uint256 _nativeFee
     ) internal virtual {
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
         require(trustedRemote.length != 0, "LzApp: destination chain is not a trusted source");
-        lzEndpoint.send{ value: msg.value }(
+        lzEndpoint.send{ value: _nativeFee }(
             _dstChainId,
             trustedRemote,
             _payload,
@@ -71,17 +79,17 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
 
     function _checkGasLimit(
         uint16 _dstChainId,
-        uint256 _type,
+        uint16 _type,
         bytes memory _adapterParams,
         uint256 _extraGas
-    ) internal view {
-        uint256 providedGasLimit = getGasLimit(_adapterParams);
+    ) internal view virtual {
+        uint256 providedGasLimit = _getGasLimit(_adapterParams);
         uint256 minGasLimit = minDstGasLookup[_dstChainId][_type] + _extraGas;
         require(minGasLimit > 0, "LzApp: minGasLimit not set");
         require(providedGasLimit >= minGasLimit, "LzApp: gas limit is too low");
     }
 
-    function getGasLimit(bytes memory _adapterParams) internal pure returns (uint256 gasLimit) {
+    function _getGasLimit(bytes memory _adapterParams) internal pure virtual returns (uint256 gasLimit) {
         require(_adapterParams.length >= 34, "LzApp: invalid adapterParams");
         assembly {
             gasLimit := mload(add(_adapterParams, 34))
@@ -120,20 +128,37 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
-    // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyOwner {
-        trustedRemoteLookup[_srcChainId] = _srcAddress;
-        emit SetTrustedRemote(_srcChainId, _srcAddress);
+    // _path = abi.encodePacked(remoteAddress, localAddress)
+    // this function set the trusted path for the cross-chain communication
+    function setTrustedRemote(uint16 _srcChainId, bytes calldata _path) external onlyOwner {
+        trustedRemoteLookup[_srcChainId] = _path;
+        emit SetTrustedRemote(_srcChainId, _path);
     }
 
-    function setMinDstGasLookup(
+    function setTrustedRemoteAddress(uint16 _remoteChainId, bytes calldata _remoteAddress) external onlyOwner {
+        trustedRemoteLookup[_remoteChainId] = abi.encodePacked(_remoteAddress, address(this));
+        emit SetTrustedRemoteAddress(_remoteChainId, _remoteAddress);
+    }
+
+    function getTrustedRemoteAddress(uint16 _remoteChainId) external view returns (bytes memory) {
+        bytes memory path = trustedRemoteLookup[_remoteChainId];
+        require(path.length != 0, "LzApp: no trusted path record");
+        return path.slice(0, path.length - 20); // the last 20 bytes should be address(this)
+    }
+
+    function setPrecrime(address _precrime) external onlyOwner {
+        precrime = _precrime;
+        emit SetPrecrime(_precrime);
+    }
+
+    function setMinDstGas(
         uint16 _dstChainId,
-        uint256 _type,
-        uint256 _dstGasAmount
+        uint16 _packetType,
+        uint256 _minGas
     ) external onlyOwner {
-        require(_dstGasAmount > 0, "LzApp: invalid _dstGasAmount");
-        minDstGasLookup[_dstChainId][_type] = _dstGasAmount;
-        emit SetMinDstGasLookup(_dstChainId, _type, _dstGasAmount);
+        require(_minGas > 0, "LzApp: invalid minGas");
+        minDstGasLookup[_dstChainId][_packetType] = _minGas;
+        emit SetMinDstGas(_dstChainId, _packetType, _minGas);
     }
 
     //--------------------------- VIEW FUNCTION ----------------------------------------

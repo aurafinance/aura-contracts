@@ -60,10 +60,7 @@ interface IOFTCore is IERC165 {
      * @dev Emitted when `_amount` tokens are received from `_srcChainId` into the `_toAddress` on the local chain.
      * `_nonce` is the inbound nonce.
      */
-    event ReceiveFromChain(
-        uint16 indexed _srcChainId,
-        bytes indexed _srcAddress,
-        address indexed _toAddress,
-        uint256 _amount
-    );
+    event ReceiveFromChain(uint16 indexed _srcChainId, bytes _fromAddress, address indexed _to, uint256 _amount);
+
+    event SetUseCustomAdapterParams(bool _useCustomAdapterParams);
 }

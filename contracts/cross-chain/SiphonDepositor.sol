@@ -44,6 +44,8 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     /// @dev source chain id mapped to bridge delegate contracts
     mapping(uint16 => address) public bridgeDelegates;
 
+    mapping(uint16 => uint256) public pendingRewards;
+
     /* -------------------------------------------------------------------
       Events 
     ------------------------------------------------------------------- */
@@ -139,7 +141,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     function _earmarkRewards(uint256 _amount) internal {
         uint256 bal = crv.balanceOf(address(this));
         require(bal >= _amount, "!balance");
-
         // Transfer CRV to the booster and earmarkRewards
         crv.safeTransfer(address(booster), _amount);
         booster.earmarkRewards(pid);
@@ -275,22 +276,25 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      *      and then calling earmark rewards which will send the CRV
      *      to the siphon pools BaseRewardPool
      *      Only callable by the owner
-     * @param _amount       Amount of CRV that is being bridged from the L2 to cover the
-     *                      Incentive amount that was paid out.
-     *                      We assume the total incentives that have been paid out are equal
-     *                      to the MaxFees on the Booster which is 2500/10000 (25%)
      * @param _dstChainId   The destination chain ID (L2) that called this L1 function which calls
      *                      back to the L2 chain
      */
-    function _siphon(uint256 _amount, uint16 _dstChainId) internal {
+    function siphon(uint16 _dstChainId) external payable {
         // TODO: should this call getReward?
+        uint256 _amount = pendingRewards[_dstChainId];
         uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
+        pendingRewards[_dstChainId] = 0;
+
         _earmarkRewards(crvAmount);
 
         address l2Coordinator = l2Coordinators[_dstChainId];
 
         uint256 cvxAmountOut = _getAmountOut(crvAmount);
         bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
+
+        uint16 version = 1;
+        uint256 gasForDestinationLzReceive = 350000;
+        bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
 
         _lzSend(
             // destination chain
@@ -302,7 +306,9 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
             // ZRO payment address
             address(0),
             // adapter params
-            bytes("")
+            adapterParams,
+            // navtive fee
+            msg.value
         );
 
         emit Siphon(msg.sender, _dstChainId, l2Coordinator, _amount);
@@ -345,7 +351,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
             } else if (messageType == MessageType.SIPHON) {
                 // Called when Booster.earmarkRewards calls l2Coordinator.queueNewRewards
                 (, , uint256 crvAmount, ) = _decodeSiphon(_payload);
-                _siphon(crvAmount, _srcChainId);
+                pendingRewards[_srcChainId] += crvAmount;
             }
         } else {
             // Continue with the normal flow for an OFT transfer
