@@ -281,17 +281,15 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      *                      back to the L2 chain
      */
     function siphon(uint16 _dstChainId) external payable onlyOwner {
-        // TODO: should this call getReward?
-        uint256 _amount = pendingRewards[_dstChainId];
-        uint256 crvAmount = _getRewardsBasedOnIncentives(_amount);
+        uint256 rewardsAmount = pendingRewards[_dstChainId];
         pendingRewards[_dstChainId] = 0;
 
-        _earmarkRewards(crvAmount);
+        _earmarkRewards(rewardsAmount);
 
         address l2Coordinator = l2Coordinators[_dstChainId];
 
-        uint256 cvxAmountOut = _getAmountOut(crvAmount);
-        bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, crvAmount, MessageType.SIPHON);
+        uint256 cvxAmountOut = _getAmountOut(rewardsAmount);
+        bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, rewardsAmount, MessageType.SIPHON);
 
         uint16 version = 1;
         uint256 gasForDestinationLzReceive = 350000;
@@ -300,7 +298,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
         _lzSend(
             // destination chain
             _dstChainId,
-            // to address packed with crvAmount
+            // to address packed with rewardsAmount
             _payload,
             // refund address
             payable(msg.sender),
@@ -312,7 +310,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
             msg.value
         );
 
-        emit Siphon(msg.sender, _dstChainId, l2Coordinator, _amount);
+        emit Siphon(msg.sender, _dstChainId, l2Coordinator, rewardsAmount);
     }
 
     /**
@@ -351,8 +349,11 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
                 _lock(fromAddress, cvxAmount, _srcChainId);
             } else if (messageType == MessageType.SIPHON) {
                 // Called when Booster.earmarkRewards calls l2Coordinator.queueNewRewards
-                (, , uint256 crvAmount, ) = _decodeSiphon(_payload);
-                pendingRewards[_srcChainId] += crvAmount;
+                (, , uint256 incentivesAmount, ) = _decodeSiphon(_payload);
+
+                // Convert to pro rata rewards amount based on incentives paid
+                uint256 rewardsAmount = _getRewardsBasedOnIncentives(incentivesAmount);
+                pendingRewards[_srcChainId] += rewardsAmount;
             }
         } else {
             // Continue with the normal flow for an OFT transfer
