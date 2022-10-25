@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.4;
 
 import "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import "../interfaces/ILayerZeroReceiver.sol";
@@ -38,7 +37,8 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         require(_msgSender() == address(lzEndpoint), "LzApp: invalid endpoint caller");
 
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
-        // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
+        // if will still block the message pathway from (srcChainId, srcAddress).
+        // should not receive message from untrusted remote.
         require(
             _srcAddress.length == trustedRemote.length &&
                 trustedRemote.length > 0 &&
@@ -49,7 +49,8 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
         _blockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
     }
 
-    // abstract function - the default behaviour of LayerZero is blocking. See: NonblockingLzApp if you dont need to enforce ordered messaging
+    // abstract function - the default behaviour of LayerZero is blocking.
+    // See: NonblockingLzApp if you dont need to enforce ordered messaging
     function _blockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
