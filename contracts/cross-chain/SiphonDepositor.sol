@@ -280,7 +280,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      * @param _dstChainId   The destination chain ID (L2) that called this L1 function which calls
      *                      back to the L2 chain
      */
-    function siphon(uint16 _dstChainId) external payable onlyOwner {
+    function siphon(uint16 _dstChainId, bytes memory adapterParams) external payable onlyOwner {
         uint256 rewardsAmount = pendingRewards[_dstChainId];
         pendingRewards[_dstChainId] = 0;
 
@@ -290,10 +290,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
         uint256 cvxAmountOut = _getAmountOut(rewardsAmount);
         bytes memory _payload = _encode(l2Coordinator, cvxAmountOut, rewardsAmount, MessageType.SIPHON);
-
-        uint16 version = 1;
-        uint256 gasForDestinationLzReceive = 350000;
-        bytes memory adapterParams = abi.encodePacked(version, gasForDestinationLzReceive);
 
         _lzSend(
             // destination chain

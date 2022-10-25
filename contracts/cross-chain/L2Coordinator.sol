@@ -127,7 +127,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * Only callable by the owner and a manual process as we want to
      * control the flow of funds into the bridge delegate
      */
-    function flush(uint256 amount) external payable onlyOwner {
+    function flush(uint256 amount, bytes memory adapterParams) external payable onlyOwner {
         require(bridgeDelegate != address(0), "bridgeDelegate invalid");
         require(amount <= totalRewards, "amount>totalRewards");
 
@@ -148,7 +148,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
             // ZRO payment address
             address(0),
             // adapter params
-            bytes(""),
+            adapterParams,
             // navtive fee
             msg.value
         );
@@ -174,12 +174,10 @@ contract L2Coordinator is OFT, CrossChainMessages {
      * @dev Lock AURA on the L1 chain
      * @param _cvxAmount Amount of AURA to lock for vlAURA on L1
      */
-    function lock(uint256 _cvxAmount, uint256 _gasForDestinationLzReceive) external payable {
+    function lock(uint256 _cvxAmount, bytes memory adapterParams) external payable {
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
         bytes memory payload = _encode(msg.sender, address(0), _cvxAmount, MessageType.LOCK);
-
-        bytes memory adapterParams = abi.encodePacked(uint16(1), _gasForDestinationLzReceive);
 
         _lzSend(
             // destination chain
