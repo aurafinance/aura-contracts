@@ -89,6 +89,13 @@ describe("Cross Chain Deposits", () => {
     let l2Coordinator: L2Coordinator;
     let L2_booster: BoosterLite;
 
+    const getCvx = async (recipient: string, amount = simpleToExactAmount(250)) => {
+        await getEth(config.multisigs.treasuryMultisig);
+
+        const tokenWhaleSigner = await impersonateAccount(config.multisigs.treasuryMultisig);
+        await contracts.cvx.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
+    };
+
     const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
         await getEth(config.addresses.balancerVault);
 
@@ -401,7 +408,7 @@ describe("Cross Chain Deposits", () => {
     });
 
     describe("Bridge and Lock back to the L1", () => {
-        it("bridge back to the L1", async () => {
+        it("bridge L2 -> L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
             const sendAmount = l2balBefore.mul(100).div(1000);
             const toAddress = "0x0000000000000000000000000000000000000020";
@@ -415,6 +422,33 @@ describe("Cross Chain Deposits", () => {
 
             const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
             expect(l2balBefore.sub(l2balAfter)).eq(sendAmount);
+        });
+        it("bridge L1 -> L2", async () => {
+            await getCvx(lpWhale.address, simpleToExactAmount(10));
+            const l1balBefore = await contracts.cvx.balanceOf(lpWhale.address);
+            const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
+            const sendAmount = l1balBefore.mul(100).div(1000);
+            await contracts.cvx.connect(lpWhale.signer).approve(siphonDepositor.address, sendAmount);
+            await siphonDepositor
+                .connect(lpWhale.signer)
+                .sendFrom(
+                    lpWhale.address,
+                    L2_CHAIN_ID,
+                    lpWhale.address,
+                    sendAmount,
+                    lpWhale.address,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: simpleToExactAmount("0.1"),
+                    },
+                );
+
+            const l2balAfter = await l2Coordinator.balanceOf(lpWhale.address);
+            expect(l2balAfter.sub(l2balBefore)).eq(sendAmount);
+
+            const l1balAfter = await contracts.cvx.balanceOf(lpWhale.address);
+            expect(l1balBefore.sub(l1balAfter)).eq(sendAmount);
         });
         it("[LZ] lock back to the L1", async () => {
             const l2balBefore = await l2Coordinator.balanceOf(lpWhale.address);
