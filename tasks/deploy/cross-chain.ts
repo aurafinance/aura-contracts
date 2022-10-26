@@ -75,6 +75,10 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
         );
         tx = await deployment.siphonDepositor.setTrustedRemote(l2Coordinator.chainId, path);
         await waitForTx(tx);
+
+        // Set min gas
+        tx = await deployment.siphonDepositor.setMinDstGas(config.l2Coordinators[0].chainId, 0, 300000);
+        await waitForTx(tx);
     }
 
     // Add pool to Booster
@@ -85,6 +89,10 @@ task("deploy:crosschain:goerli").setAction(async function (_: TaskArguments, hre
     tx = await deployment.siphonDepositor.setApprovals();
     await waitForTx(tx);
     tx = await deployment.siphonDepositor.deposit();
+    await waitForTx(tx);
+
+    // Set custom adapter params
+    tx = await deployment.siphonDepositor.setUseCustomAdapterParams(true);
     await waitForTx(tx);
 
     // Fund siphonDepositor manually with BAL

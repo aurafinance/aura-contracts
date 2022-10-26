@@ -189,25 +189,25 @@ yarn task timeTravel --duration 69420 --network forking
 | rewardPoolDepositWrapper | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://goerli.etherscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | GaugeMigrator            | [0x432d9d821ed4a6fc29f41631e27ba91d4800f081](https://goerli.etherscan.io/address/0x432d9d821ed4a6fc29f41631e27ba91d4800f081) |
 | sushiSwapMigrator        | [0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58](https://goerli.etherscan.io/address/0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58) |
-| SiphonLpToken            | [0xB4e5FD87F3092F271F51ca416f311513D958CB4E](https://goerli.etherscan.io/address/0xB4e5FD87F3092F271F51ca416f311513D958CB4E) |
-| SiphonGauge              | [0x7D557B41EC6E6A05BF53ee044caFfa3940ad3CAC](https://goerli.etherscan.io/address/0x7D557B41EC6E6A05BF53ee044caFfa3940ad3CAC) |
-| SiphonDepositor          | [0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF](https://goerli.etherscan.io/address/0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF) |
+| SiphonLpToken            | [0x421DbF836b903b15Ba09C40553AD305d22275482](https://goerli.etherscan.io/address/0x421DbF836b903b15Ba09C40553AD305d22275482) |
+| SiphonGauge              | [0x86b4D60631bECa10B3aE88197583677A91564313](https://goerli.etherscan.io/address/0x86b4D60631bECa10B3aE88197583677A91564313) |
+| SiphonDepositor          | [0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76](https://goerli.etherscan.io/address/0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76) |
 
 ### Arbitrum Goerli (421613)
 
 | Contract              | Address                                                                                                                     |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| MockToken (BAL)       | [0xc9307D63B3709F537D2158F43199a69682Ff0967](https://goerli.arbiscan.io/address/0xc9307D63B3709F537D2158F43199a69682Ff0967) |
-| MockCurveMinter       | [0x6a29cFd8A5F666A7D69da9437CD4c46616326815](https://goerli.arbiscan.io/address/0x6a29cFd8A5F666A7D69da9437CD4c46616326815) |
-| MockToken (Gauge BPT) | [0x8D803f7f7e26E586ee90E5A872cf7830e21f7727](https://goerli.arbiscan.io/address/0x8D803f7f7e26E586ee90E5A872cf7830e21f7727) |
-| MockCurveGauge        | [0x0451255563e2acA170b2552111837572E7A0BAcD](https://goerli.arbiscan.io/address/0x0451255563e2acA170b2552111837572E7A0BAcD) |
-| L2Coordinator         | [0xC83Da60A38A4163790b159345493101D72782549](https://goerli.arbiscan.io/address/0xC83Da60A38A4163790b159345493101D72782549) |
-| VoterProxyLite        | [0x0cE2367495288b93bD185eC646A02691d84984d0](https://goerli.arbiscan.io/address/0x0cE2367495288b93bD185eC646A02691d84984d0) |
-| BoosterProxyLite      | [0xEc1c8a6A8655beBAa435963dB21099e97022bf3f](https://goerli.arbiscan.io/address/0xEc1c8a6A8655beBAa435963dB21099e97022bf3f) |
-| RewardFactory         | [0xA550F39d0517bB9F3eD2A2FbF88D9B4c151084F8](https://goerli.arbiscan.io/address/0xA550F39d0517bB9F3eD2A2FbF88D9B4c151084F8) |
-| TokenFactory          | [0x713E883C22fa543fb28cE96E0677aE347096fBe6](https://goerli.arbiscan.io/address/0x713E883C22fa543fb28cE96E0677aE347096fBe6) |
-| ProxyFactory          | [0x37CCfEc1Ef0ce293A751d85c0f3C336F3e942049](https://goerli.arbiscan.io/address/0x37CCfEc1Ef0ce293A751d85c0f3C336F3e942049) |
-| StashFactory          | [0xFB50aFF391D7E7F8835427085bB2078A41fB0aE3](https://goerli.arbiscan.io/address/0xFB50aFF391D7E7F8835427085bB2078A41fB0aE3) |
-| ExtraRewardStashV3    | [0xFf3653ee692F541efB7c2214D72FE05A7A6EC01f](https://goerli.arbiscan.io/address/0xFf3653ee692F541efB7c2214D72FE05A7A6EC01f) |
-| PoolManagerLite       | [0x78868AcEe480928E3A5a9e50545bf2f53903e350](https://goerli.arbiscan.io/address/0x78868AcEe480928E3A5a9e50545bf2f53903e350) |
-| BoosterOwner          | [0xFA226c6ec7d74E5a18839D3E5a2b35B9AE8d65d9](https://goerli.arbiscan.io/address/0xFA226c6ec7d74E5a18839D3E5a2b35B9AE8d65d9) |
+| MockToken (BAL)       | [0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1](https://goerli.arbiscan.io/address/0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1) |
+| MockCurveMinter       | [0x09421e5D9C2B11f502482DcE2B718b037fD10a25](https://goerli.arbiscan.io/address/0x09421e5D9C2B11f502482DcE2B718b037fD10a25) |
+| MockToken (Gauge BPT) | [0x0Fc3C95E512E44EAA12C4e5543643B17Aa20a1D6](https://goerli.arbiscan.io/address/0x0Fc3C95E512E44EAA12C4e5543643B17Aa20a1D6) |
+| MockCurveGauge        | [0x0B4566B619Dc12381E386564E45df62316259E71](https://goerli.arbiscan.io/address/0x0B4566B619Dc12381E386564E45df62316259E71) |
+| L2Coordinator         | [0x6931835d072f50d98D7a7BF7B2C4faFdA86628d7](https://goerli.arbiscan.io/address/0x6931835d072f50d98D7a7BF7B2C4faFdA86628d7) |
+| VoterProxyLite        | [0xc2939C598e2D044A87C8E22a90A9e36b9579F197](https://goerli.arbiscan.io/address/0xc2939C598e2D044A87C8E22a90A9e36b9579F197) |
+| BoosterProxyLite      | [0x1e5B33222977642Bf64EC80846BBF83A016727A0](https://goerli.arbiscan.io/address/0x1e5B33222977642Bf64EC80846BBF83A016727A0) |
+| RewardFactory         | [0xBDA47c539dD5A31943659A856D24efF7bdae67F1](https://goerli.arbiscan.io/address/0xBDA47c539dD5A31943659A856D24efF7bdae67F1) |
+| TokenFactory          | [0xFe4045B2326045c2C9E4E852ffc92721Eb61569E](https://goerli.arbiscan.io/address/0xFe4045B2326045c2C9E4E852ffc92721Eb61569E) |
+| ProxyFactory          | [0x491C07C86D46A11573B5d2d509E6BC825D41FB6e](https://goerli.arbiscan.io/address/0x491C07C86D46A11573B5d2d509E6BC825D41FB6e) |
+| StashFactory          | [0xeccD03D4cC029f341EAA1c208cFe14dc6862C67C](https://goerli.arbiscan.io/address/0xeccD03D4cC029f341EAA1c208cFe14dc6862C67C) |
+| ExtraRewardStashV3    | [0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF](https://goerli.arbiscan.io/address/0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF) |
+| PoolManagerLite       | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://goerli.arbiscan.io/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
+| BoosterOwner          | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://goerli.arbiscan.io/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
