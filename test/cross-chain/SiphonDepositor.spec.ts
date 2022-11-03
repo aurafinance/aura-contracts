@@ -117,12 +117,6 @@ describe("SiphonDepositor", () => {
                 lzEndpoint: l2LzEndpoint.address,
                 minter: contracts.minter.address,
                 token: mocks.crv.address,
-                tokenBpt: mocks.crvBpt.address,
-                votingEscrow: mocks.votingEscrow.address,
-                gaugeController: mocks.addresses.gaugeController,
-                cvx: contracts.cvx.address,
-                voteOwnership: ethers.constants.AddressZero,
-                voteParameter: ethers.constants.AddressZero,
                 naming: {
                     tokenFactoryNamePostfix: mocks.namingConfig.tokenFactoryNamePostfix,
                     cvxSymbol: mocks.namingConfig.cvxSymbol,
@@ -219,7 +213,6 @@ describe("SiphonDepositor", () => {
         });
         it("OFTCore store valid arguments", async () => {
             expect(await siphonDepositor.NO_EXTRA_GAS(), "NO_EXTRA_GAS").to.eq(0);
-            expect(await siphonDepositor.FUNCTION_TYPE_SEND(), "FUNCTION_TYPE_SEND").to.eq(1);
             expect(await siphonDepositor.useCustomAdapterParams(), "useCustomAdapterParams").to.eq(false);
         });
         it("LzApp store valid arguments", async () => {
@@ -349,7 +342,7 @@ describe("SiphonDepositor", () => {
 
                 // Flush sends the CRV back to L1 via the bridge delegate
                 // In order to settle the incentives debt on L1
-                const tx = await l2Coordinator.flush(totalRewards);
+                const tx = await l2Coordinator.flush(totalRewards, [], { value: simpleToExactAmount("1") });
                 const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
                 await expect(tx)
                     .to.emit(siphonDepositor, "Siphon")
@@ -406,7 +399,11 @@ describe("SiphonDepositor", () => {
             it("[LZ] lock back to the L1", async () => {
                 const l2balBefore = await l2Coordinator.balanceOf(aliceAddress);
                 const lockAmount = l2balBefore.mul(100).div(1000);
-                const tx = await l2Coordinator.connect(alice).lock(lockAmount);
+                const tx = await l2Coordinator
+                    .connect(alice)
+                    .lock(lockAmount, hre.ethers.utils.solidityPack(["uint16", "uint256"], [1, 500000]), {
+                        value: simpleToExactAmount("0.1"),
+                    });
                 await expect(tx).to.emit(siphonDepositor, "Lock").withArgs(aliceAddress, L2_CHAIN_ID, lockAmount);
 
                 expect(await l2Coordinator.balanceOf(aliceAddress)).eq(l2balBefore.sub(lockAmount));
@@ -429,7 +426,11 @@ describe("SiphonDepositor", () => {
                     contracts.cvxLocker.address,
                     MockERC20__factory.bytecode,
                 ]);
-                let tx = await l2Coordinator.connect(alice).lock(lockAmount);
+                let tx = await l2Coordinator
+                    .connect(alice)
+                    .lock(lockAmount, hre.ethers.utils.solidityPack(["uint16", "uint256"], [1, 500000]), {
+                        value: simpleToExactAmount("0.1"),
+                    });
 
                 await hre.network.provider.send("hardhat_setCode", [contracts.cvxLocker.address, code]);
 

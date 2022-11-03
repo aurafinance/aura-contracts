@@ -84,12 +84,6 @@ describe("SiphonGauge", () => {
                 lzEndpoint: l2LzEndpoint.address,
                 minter: contracts.minter.address,
                 token: mocks.crv.address,
-                tokenBpt: mocks.crvBpt.address,
-                votingEscrow: mocks.votingEscrow.address,
-                gaugeController: mocks.addresses.gaugeController,
-                cvx: contracts.cvx.address,
-                voteOwnership: ethers.constants.AddressZero,
-                voteParameter: ethers.constants.AddressZero,
                 naming: {
                     tokenFactoryNamePostfix: mocks.namingConfig.tokenFactoryNamePostfix,
                     cvxSymbol: mocks.namingConfig.cvxSymbol,

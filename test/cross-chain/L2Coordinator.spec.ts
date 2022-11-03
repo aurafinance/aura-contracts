@@ -75,12 +75,6 @@ describe("L2Coordinator", () => {
                 lzEndpoint: l2LzEndpoint.address,
                 minter: contracts.minter.address,
                 token: mocks.crv.address,
-                tokenBpt: mocks.crvBpt.address,
-                votingEscrow: mocks.votingEscrow.address,
-                gaugeController: mocks.addresses.gaugeController,
-                cvx: contracts.cvx.address,
-                voteOwnership: ethers.constants.AddressZero,
-                voteParameter: ethers.constants.AddressZero,
                 naming: {
                     tokenFactoryNamePostfix: mocks.namingConfig.tokenFactoryNamePostfix,
                     cvxSymbol: mocks.namingConfig.cvxSymbol,
@@ -139,20 +133,24 @@ describe("L2Coordinator", () => {
     });
     describe("fails if", () => {
         it("flush caller is not the owner", async () => {
-            await expect(l2Coordinator.connect(alice).flush(ZERO)).to.be.revertedWith(ERROR_ONLY_OWNER);
+            await expect(
+                l2Coordinator.connect(alice).flush(ZERO, [], { value: simpleToExactAmount("0.1") }),
+            ).to.be.revertedWith(ERROR_ONLY_OWNER);
         });
         it("flush when bridgeDelegate is not set", async () => {
             const bridgeDelegate = await l2Coordinator.bridgeDelegate();
             expect(bridgeDelegate, "bridgeDelegate").to.be.eq(ZERO_ADDRESS);
 
-            await expect(l2Coordinator.flush(ZERO)).to.be.revertedWith("bridgeDelegate invalid");
+            await expect(l2Coordinator.flush(ZERO, [], { value: simpleToExactAmount("1") })).to.be.revertedWith(
+                "bridgeDelegate invalid",
+            );
         });
         it("flush more thant the total rewards", async () => {
             await l2Coordinator.setBridgeDelegate(DEAD_ADDRESS);
             const totalRewards = await l2Coordinator.totalRewards();
-            await expect(l2Coordinator.flush(totalRewards.add(simpleToExactAmount(1)))).to.be.revertedWith(
-                "amount>totalRewards",
-            );
+            await expect(
+                l2Coordinator.flush(totalRewards.add(simpleToExactAmount(1)), [], { value: simpleToExactAmount("1") }),
+            ).to.be.revertedWith("amount>totalRewards");
         });
         it("setBooster caller is not the owner", async () => {
             await expect(l2Coordinator.connect(alice).setBooster(ZERO_ADDRESS)).to.be.revertedWith(ERROR_ONLY_OWNER);
