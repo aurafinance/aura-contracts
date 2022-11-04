@@ -386,7 +386,13 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         ];
         console.log(table(tableData));
 
+        console.log("\n\nGauge Labels");
+        console.log(JSON.stringify(tableData.slice(1).map(x => x[0])));
+
+        console.log("\n\nGauge Addresses");
         console.log(JSON.stringify(votes.map(v => v.gauge.address)));
+
+        console.log("\n\nVote weights");
         console.log(JSON.stringify(votes.map(v => v.voteWeight)));
     });
 
