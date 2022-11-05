@@ -63,6 +63,8 @@ const debug = false;
  * 4.1  Calling lock on l2 coordinator locks your AURA on L1
  * 4.2  Calling sendFrom on l2 coordinator sends your AURA to L1
  */
+
+const nativeFee = simpleToExactAmount("0.1");
 describe("Cross Chain Deposits", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
@@ -376,8 +378,8 @@ describe("Cross Chain Deposits", () => {
 
             // Flush sends the CRV back to L1 via the bridge delegate
             // In order to settle the incentives debt on L1
-            await l2Coordinator.flush(totalRewards, [], { value: simpleToExactAmount("0.1") });
-            await siphonDepositor.siphon(L2_CHAIN_ID, [], { value: simpleToExactAmount("0.1") });
+            await l2Coordinator.flush(totalRewards, [], { value: nativeFee });
+            await siphonDepositor.siphon(L2_CHAIN_ID, [], { value: nativeFee });
             const cvxBalAfter = await l2Coordinator.balanceOf(l2Coordinator.address);
 
             // Calling flush triggers the L1 to send back the pro rata CVX
@@ -415,7 +417,7 @@ describe("Cross Chain Deposits", () => {
             await l2Coordinator
                 .connect(lpWhale.signer)
                 .sendFrom(lpWhale.address, L1_CHAIN_ID, toAddress, sendAmount, lpWhale.address, ZERO_ADDRESS, [], {
-                    value: simpleToExactAmount("0.1"),
+                    value: nativeFee,
                 });
             const l1bal = await contracts.cvx.balanceOf(toAddress);
             expect(l1bal).eq(sendAmount);
@@ -440,7 +442,7 @@ describe("Cross Chain Deposits", () => {
                     ZERO_ADDRESS,
                     [],
                     {
-                        value: simpleToExactAmount("0.1"),
+                        value: nativeFee,
                     },
                 );
 
@@ -457,7 +459,7 @@ describe("Cross Chain Deposits", () => {
             await l2Coordinator
                 .connect(lpWhale.signer)
                 .lock(lockAmount, hre.ethers.utils.solidityPack(["uint16", "uint256"], [1, 500000]), {
-                    value: simpleToExactAmount("0.1"),
+                    value: nativeFee,
                 });
             expect(await l2Coordinator.balanceOf(lpWhale.address)).eq(l2balBefore.sub(lockAmount));
 
@@ -580,7 +582,7 @@ describe("Cross Chain Deposits", () => {
             const totalRewards = await secondL2Coordinator.totalRewards();
             const cvxBalBefore = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
             await secondL2Coordinator.flush(totalRewards, [], { value: simpleToExactAmount("1") });
-            await siphonDepositor.siphon(L22_CHAIN_ID, [], { value: simpleToExactAmount("0.1") });
+            await siphonDepositor.siphon(L22_CHAIN_ID, [], { value: nativeFee });
             const cvxBalAfter = await secondL2Coordinator.balanceOf(secondL2Coordinator.address);
             const cvxBal = cvxBalAfter.sub(cvxBalBefore);
 

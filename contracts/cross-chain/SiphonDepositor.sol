@@ -123,7 +123,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
     /**
      * @dev Call getReward on the BaseRewardPool which will return the
-     *      CRV we previously depoisted minus the incentives that were paid
+     *      CRV we previously deposited minus the incentives that were paid
      *      Along with a pro rata amount of CVX tokens
      */
     function getReward() external onlyOwner {

@@ -24,6 +24,20 @@ import { DEAD_ADDRESS, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../tes
 import { impersonateAccount } from "../../test-utils/fork";
 const ERROR_ONLY_OWNER = "Ownable: caller is not the owner";
 
+async function deployFullSystem(deployer: Signer, accounts: Signer[]) {
+    const mocks = await deployMocks(hre, deployer);
+    const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
+    const distro = getMockDistro();
+    const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
+    const phase2 = await deployPhase2(hre, deployer, phase1, distro, multisigs, mocks.namingConfig, mocks.addresses);
+    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
+
+    const protocolDAO = await impersonateAccount(multisigs.daoMultisig);
+    await phase3.poolManager.connect(protocolDAO.signer).setProtectPool(false);
+    const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
+    return { mocks, multisigs, contracts };
+}
+
 describe("L2Coordinator", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
@@ -145,7 +159,7 @@ describe("L2Coordinator", () => {
                 "bridgeDelegate invalid",
             );
         });
-        it("flush more thant the total rewards", async () => {
+        it("flush more than the total rewards", async () => {
             await l2Coordinator.setBridgeDelegate(DEAD_ADDRESS);
             const totalRewards = await l2Coordinator.totalRewards();
             await expect(
@@ -188,17 +202,3 @@ describe("L2Coordinator", () => {
         });
     });
 });
-
-async function deployFullSystem(deployer: Signer, accounts: Signer[]) {
-    const mocks = await deployMocks(hre, deployer);
-    const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
-    const distro = getMockDistro();
-    const phase1 = await deployPhase1(hre, deployer, mocks.addresses);
-    const phase2 = await deployPhase2(hre, deployer, phase1, distro, multisigs, mocks.namingConfig, mocks.addresses);
-    const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-
-    const protocolDAO = await impersonateAccount(multisigs.daoMultisig);
-    await phase3.poolManager.connect(protocolDAO.signer).setProtectPool(false);
-    const contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
-    return { mocks, multisigs, contracts };
-}

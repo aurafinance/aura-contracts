@@ -30,6 +30,6 @@ contract DummyBridge is IBridgeDelegate {
         // sending CRV to but in reality this will need to call whatever bridging
         // function would send the CRV to L1. ie If it's LZ calling the OFT sendTo
         // function
-        IERC20(crv).transfer(siphonDepositor, amount);
+        require(IERC20(crv).transfer(siphonDepositor, amount), "!transfer");
     }
 }
