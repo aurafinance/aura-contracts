@@ -42,7 +42,6 @@ import {
 import { DEAD_ADDRESS, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { impersonateAccount } from "../../test-utils/fork";
 import { Account } from "types";
-import { formatUnits } from "ethers/lib/utils";
 
 const ERROR_ONLY_OWNER = "Ownable: caller is not the owner";
 const nativeFee = simpleToExactAmount("0.1");

@@ -15,6 +15,8 @@ module.exports = {
         "peripheral/BoosterHelper.sol",
         "peripheral/ClaimFeesHelper.sol",
         "peripheral/RewardPoolDepositWrapper.sol",
+        "peripheral/UniswapMigrator.sol",
+        "cross-chain/layer-zero",
     ],
     configureYulOptimizer: true,
 };
