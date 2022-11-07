@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import { IBridgeDelegate } from "../interfaces/IBridgeDelegate.sol";
+import { IBridgeDelegate } from "../../interfaces/IBridgeDelegate.sol";
 
 interface ISiphonDepositor {
     function repayDebt(uint16, uint256) external;
@@ -30,6 +30,6 @@ contract DummyBridge is IBridgeDelegate {
         // sending CRV to but in reality this will need to call whatever bridging
         // function would send the CRV to L1. ie If it's LZ calling the OFT sendTo
         // function
-        IERC20(crv).transfer(siphonDepositor, amount);
+        require(IERC20(crv).transfer(siphonDepositor, amount), "!transfer");
     }
 }

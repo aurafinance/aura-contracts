@@ -127,7 +127,7 @@ task("snapshot:create")
         console.log("Creating proposal on snapshot");
         const latestBlock = taskArgs.snapshot;
         if (!latestBlock) {
-            console.log(`Invalid snashot provided. Found ${snapshot}`);
+            console.log(`Invalid snapshot provided. Found ${snapshot}`);
         }
         const client = new snapshot.Client712(config.hub);
 

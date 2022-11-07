@@ -16,6 +16,7 @@ import { IBridgeDelegate } from "../interfaces/IBridgeDelegate.sol";
  */
 contract L2Coordinator is OFT, CrossChainMessages {
     using SafeERC20 for IrCvx;
+    using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------
       Storage 
@@ -155,7 +156,7 @@ contract L2Coordinator is OFT, CrossChainMessages {
 
         // Transfer the CRV amount to the bridge delegate and then trigger
         // a bridge event by calling bridge(uint)
-        IERC20(crv).transfer(bridgeDelegate, amount);
+        IERC20(crv).safeTransfer(bridgeDelegate, amount);
         IBridgeDelegate(bridgeDelegate).bridge(amount);
     }
 

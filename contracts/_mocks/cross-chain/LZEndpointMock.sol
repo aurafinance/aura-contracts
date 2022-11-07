@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
-import "../cross-chain/layer-zero/interfaces/ILayerZeroReceiver.sol";
-import "../cross-chain/layer-zero/interfaces/ILayerZeroEndpoint.sol";
-import "../cross-chain/layer-zero/libraries/LzLib.sol";
+import "../../cross-chain/layer-zero/interfaces/ILayerZeroReceiver.sol";
+import "../../cross-chain/layer-zero/interfaces/ILayerZeroEndpoint.sol";
+import "../../cross-chain/layer-zero/libraries/LzLib.sol";
 
 /*
 like a real LayerZero endpoint but can be mocked, which handle message transmission, verification, and receipt.

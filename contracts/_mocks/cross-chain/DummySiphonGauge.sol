@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -12,10 +13,10 @@ interface ICurveGauge {
     function lp_token() external view returns (address);
 }
 
-contract SiphonGauge {
+contract DummySiphonGauge {
     using SafeERC20 for IERC20;
 
-    IERC20 immutable lpToken;
+    IERC20 private immutable lpToken;
 
     mapping(address => uint256) private _balances;
 

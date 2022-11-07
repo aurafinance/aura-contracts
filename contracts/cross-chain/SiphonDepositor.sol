@@ -51,8 +51,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
       Events 
     ------------------------------------------------------------------- */
 
-    event SetSiphonReceiver(address sender, address siphonReciever);
-
     event Deposit(address sender, uint256 amount);
 
     event Siphon(address sender, uint256 dstChainId, address toAddress, uint256 amount);
@@ -60,8 +58,6 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
     event Lock(address from, uint16 dstChainId, uint256 amount);
 
     event UpdateBridgeDelegate(uint16 srcChainId, address bridgeDelegate);
-
-    event RepayDebt(address sender, uint16 srcChainId, uint256 amount);
 
     event UpdateL2Coordinator(uint16 chainId, address l2Coordinator);
 
@@ -127,7 +123,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
 
     /**
      * @dev Call getReward on the BaseRewardPool which will return the
-     *      CRV we previously depoisted minus the incentives that were paid
+     *      CRV we previously deposited minus the incentives that were paid
      *      Along with a pro rata amount of CVX tokens
      */
     function getReward() external onlyOwner {
@@ -157,6 +153,7 @@ contract SiphonDepositor is OFTCore, CrossChainMessages {
      * @param _bridgeDelegate The bridgeDelegate address
      */
     function setBridgeDelegate(uint16 _srcChainId, address _bridgeDelegate) external onlyOwner {
+        require(_bridgeDelegate != address(0), "bridgeDelegate invalid");
         bridgeDelegates[_srcChainId] = _bridgeDelegate;
         emit UpdateBridgeDelegate(_srcChainId, _bridgeDelegate);
     }
