@@ -118,7 +118,7 @@ const ordinalSuffix = (i: number) => {
 task("snapshot:create")
     .addParam("snapshot", "The block to snapshot")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
-        const config = configs.test;
+        const config = configs.main;
 
         const wallet = new Wallet(process.env.PRIVATE_KEY);
         const account = wallet.address;
