@@ -54,4 +54,4 @@ async function main() {
     fs.writeFileSync("./gnosis-set-vote-hash.json", JSON.stringify(gnosisTx));
 }
 
-main();
+main().catch(() => console.error("failed"));
