@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+
 import "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import "../interfaces/IChef.sol";
 
 contract MasterChefRewardHook is Ownable {
+    using SafeERC20 for IERC20;
+
     uint256 public pid;
     address public immutable stash;
     address public immutable chef;
@@ -39,7 +43,7 @@ contract MasterChefRewardHook is Ownable {
 
         uint256 bal = IERC20(rewardToken).balanceOf(address(this));
         if (bal > 0) {
-            IERC20(rewardToken).transfer(stash, bal);
+            IERC20(rewardToken).safeTransfer(stash, bal);
         }
     }
 }

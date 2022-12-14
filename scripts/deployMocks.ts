@@ -205,7 +205,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         false,
     );
 
-    const gauges = [];
+    const gauges: MockCurveGauge[] = [];
 
     for (let i = 0; i < 3; i++) {
         const gauge = await deployContract<MockCurveGauge>(
@@ -291,6 +291,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             wethWhale: deployerAddress,
             uniswapRouter: ZERO_ADDRESS,
             sushiswapRouter: ZERO_ADDRESS,
+            auraBalGauge: gauges[0].address,
         },
         namingConfig: {
             cvxName: "Convex Finance",

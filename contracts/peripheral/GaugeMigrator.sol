@@ -8,6 +8,7 @@ import { IBooster } from "../interfaces/IBooster.sol";
 
 /**
  * @title   GaugeMigrator
+ * @author  AuraFinance
  * @notice  Migrates LP tokens from one pool to another
  */
 contract GaugeMigrator {

@@ -186,10 +186,8 @@ describe("AuraVestedEscrow", () => {
         expect(fundAdminAfter.sub(fundAdminBefore)).gt(simpleToExactAmount(42));
         expect(fundAdminAfter.sub(fundAdminBefore)).lt(simpleToExactAmount(43));
 
-        await expect(vestedEscrow.connect(bob).claim(false)).to.be.revertedWith("Arithmetic operation underflowed");
-        await expect(vestedEscrow.connect(bob).available(bobAddress)).to.be.revertedWith(
-            "Arithmetic operation underflowed",
-        );
+        await expect(vestedEscrow.connect(bob).claim(false)).to.be.revertedWith("");
+        await expect(vestedEscrow.connect(bob).available(bobAddress)).to.be.revertedWith("");
         expect(await vestedEscrow.connect(bob).remaining(bobAddress)).eq(0);
     });
     it("fails to cancel stream if recipient has no lock", async () => {

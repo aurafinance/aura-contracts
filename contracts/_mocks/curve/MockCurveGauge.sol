@@ -10,6 +10,8 @@ contract MockCurveGauge is ERC20 {
     // V2 gauge
     address[] public reward_tokens;
 
+    mapping(address => address) public rewards_receiver;
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -18,6 +20,7 @@ contract MockCurveGauge is ERC20 {
     ) ERC20(_name, _symbol) {
         lp_token = _lptoken;
         reward_tokens = _rewardTokens;
+        reward_tokens.push(address(0));
     }
 
     function deposit(uint256 amount) external {
@@ -34,7 +37,8 @@ contract MockCurveGauge is ERC20 {
         uint256 amount = balanceOf(msg.sender);
 
         for (uint256 i = 0; i < reward_tokens.length; i++) {
-            IERC20(reward_tokens[i]).transfer(msg.sender, amount);
+            if (reward_tokens[i] == address(0)) break;
+            IERC20(reward_tokens[i]).transfer(rewards_receiver[msg.sender], amount);
         }
     }
 
@@ -51,5 +55,9 @@ contract MockCurveGauge is ERC20 {
 
     function is_killed() external view returns (bool) {
         return false;
+    }
+
+    function set_rewards_receiver(address receiver) external {
+        rewards_receiver[msg.sender] = receiver;
     }
 }

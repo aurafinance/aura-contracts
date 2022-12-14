@@ -1,4 +1,4 @@
-import { BigNumber as BN, ContractReceipt, Signer } from "ethers";
+import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
     RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
@@ -78,6 +78,14 @@ import {
     UniswapMigrator__factory,
     CrvDepositorWrapperWithFee,
     CrvDepositorWrapperWithFee__factory,
+    MasterChefRewardHook,
+    MasterChefRewardHook__factory,
+    SiphonToken,
+    SiphonToken__factory,
+    TempBooster,
+    TempBooster__factory,
+    PoolMigrator,
+    PoolMigrator__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -155,6 +163,7 @@ interface ExtSystemConfig {
     stEthGaugeLdoDepositor?: string;
     uniswapRouter?: string;
     sushiswapRouter?: string;
+    auraBalGauge?: string;
 }
 
 interface NamingConfig {
@@ -242,7 +251,29 @@ interface Phase5Deployed extends Phase4Deployed {
     uniswapMigrator: UniswapMigrator;
     crvDepositorWrapperWithFee: CrvDepositorWrapperWithFee;
 }
-function getPoolAddress(utils, receipt: ContractReceipt): string {
+
+interface Phase6Deployed {
+    booster: Booster;
+    boosterOwner: BoosterOwner;
+    boosterHelper: BoosterHelper;
+    feeCollector: ClaimFeesHelper;
+    factories: Factories;
+    cvxCrvRewards: BaseRewardPool;
+    poolManager: PoolManagerV3;
+    poolManagerProxy: PoolManagerProxy;
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
+    claimZap: AuraClaimZap;
+    stashV3: ExtraRewardStashV3;
+    poolMigrator: PoolMigrator;
+}
+type PoolsSnapshot = { gauge: string; lptoken: string; shutdown: boolean; pid: number };
+
+interface Phase7Deployed {
+    masterChefRewardHook: MasterChefRewardHook;
+    siphonToken: SiphonToken;
+}
+
+function getPoolAddress(utils: any, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
     return utils.hexZeroPad(utils.hexStripZeros(event.topics[1]), 20);
 }
@@ -1032,7 +1063,7 @@ async function deployPhase3(
     // POST-3: MerkleDrops && 2% cvxCRV staking manual trigger
 
     // If Mainnet or Kovan, create LBP
-    let tx;
+    let tx: ContractTransaction;
     let pool: BalancerPoolDeployed = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
     if (chain == Chain.mainnet || chain == Chain.kovan) {
         const tknAmount = await cvx.balanceOf(balLiquidityProvider.address);
@@ -1161,6 +1192,25 @@ async function deployPhase4(
 
     return { ...deployment, claimZap, feeCollector, rewardDepositWrapper };
 }
+
+async function deployTempBooster(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<TempBooster> {
+    const deployer = signer;
+    return deployContract<TempBooster>(
+        hre,
+        new TempBooster__factory(deployer),
+        "TempBooster",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+}
+
 async function deployPhase5(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
@@ -1246,6 +1296,329 @@ async function deployPhase5(
     await waitForTx(tx, debug, waitForBlocks);
     return { ...deployment, boosterHelper, gaugeMigrator, uniswapMigrator, crvDepositorWrapperWithFee };
 }
+
+// -----------------------------
+// 6   Upgrade of booster and dependencies
+// 6.1 Core system:  Deployment
+// 6.2 Core system:  Configurations
+// -----------------------------
+async function deployPhase6(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    deployment: Phase2Deployed,
+    multisigs: MultisigConfig,
+    naming: NamingConfig,
+    extConfig: ExtSystemConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<Phase6Deployed> {
+    // -----------------------------
+    // 6.1 Core system:
+    //     - booster
+    //     - factories (reward, token, proxy, stash, stashV3)
+    //     - cvxCrvRewards
+    //     - pool management (poolManager + 2x proxies)
+    //     - boosterOwner
+    //     - helpers (boosterHelper, feeCollector, claimZap, poolMigrator)
+    // -----------------------------
+
+    const deployer = signer;
+    const deployerAddress = await deployer.getAddress();
+
+    const { token, gaugeController, voteOwnership, voteParameter, feeDistribution } = extConfig;
+
+    const {
+        arbitratorVault,
+        booster: boosterV1,
+        cvxLocker,
+        voterProxy,
+        cvx,
+        cvxCrv,
+        cvxStakingProxy,
+        crvDepositorWrapper,
+    } = deployment;
+
+    let tx: ContractTransaction;
+
+    const booster = await deployContract<Booster>(
+        hre,
+        new Booster__factory(deployer),
+        "Booster",
+        [voterProxy.address, cvx.address, token, voteOwnership, voteParameter],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const rewardFactory = await deployContract<RewardFactory>(
+        hre,
+        new RewardFactory__factory(deployer),
+        "RewardFactory",
+        [booster.address, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const tokenFactory = await deployContract<TokenFactory>(
+        hre,
+        new TokenFactory__factory(deployer),
+        "TokenFactory",
+        [booster.address, naming.tokenFactoryNamePostfix, naming.cvxSymbol.toLowerCase()],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const proxyFactory = await deployContract<ProxyFactory>(
+        hre,
+        new ProxyFactory__factory(deployer),
+        "ProxyFactory",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    const stashFactory = await deployContract<StashFactoryV2>(
+        hre,
+        new StashFactoryV2__factory(deployer),
+        "StashFactory",
+        [booster.address, rewardFactory.address, proxyFactory.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const stashV3 = await deployContract<ExtraRewardStashV3>(
+        hre,
+        new ExtraRewardStashV3__factory(deployer),
+        "ExtraRewardStashV3",
+        [token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const cvxCrvRewards = await deployContract<BaseRewardPool>(
+        hre,
+        new BaseRewardPool__factory(deployer),
+        "BaseRewardPool",
+        [0, cvxCrv.address, token, booster.address, rewardFactory.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolManagerProxy = await deployContract<PoolManagerProxy>(
+        hre,
+        new PoolManagerProxy__factory(deployer),
+        "PoolManagerProxy",
+        [booster.address, deployerAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
+        hre,
+        new PoolManagerSecondaryProxy__factory(deployer),
+        "PoolManagerProxy",
+        [gaugeController, poolManagerProxy.address, booster.address, deployerAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolManager = await deployContract<PoolManagerV3>(
+        hre,
+        new PoolManagerV3__factory(deployer),
+        "PoolManagerV3",
+        [poolManagerSecondaryProxy.address, gaugeController, multisigs.daoMultisig],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const boosterOwner = await deployContract<BoosterOwner>(
+        hre,
+        new BoosterOwner__factory(deployer),
+        "BoosterOwner",
+        [
+            multisigs.daoMultisig,
+            poolManagerSecondaryProxy.address,
+            booster.address,
+            stashFactory.address,
+            ZERO_ADDRESS,
+            true,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const boosterHelper = await deployContract<BoosterHelper>(
+        hre,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [booster.address, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const feeCollector = await deployContract<ClaimFeesHelper>(
+        hre,
+        new ClaimFeesHelper__factory(deployer),
+        "ClaimFeesHelper",
+        [booster.address, voterProxy.address, feeDistribution || ZERO_ADDRESS],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const claimZap = await deployContract<AuraClaimZap>(
+        hre,
+        new AuraClaimZap__factory(deployer),
+        "AuraClaimZap",
+        [token, cvx.address, cvxCrv.address, crvDepositorWrapper.address, cvxCrvRewards.address, cvxLocker.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const poolMigrator = await deployContract<PoolMigrator>(
+        hre,
+        new PoolMigrator__factory(deployer),
+        "PoolMigrator",
+        [boosterV1.address, booster.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    // -----------------------------
+    // 6.2: Configurations
+    //     - booster (setRewardContracts, setPoolManager, setVoteDelegate, setFees, setFeeInfo, setFeeInfo, setTreasury, setFeeManager, setOwner)
+    //     - factories (stashFactory.setImplementation)
+    //     - pool management (poolManagerProxy.setOperator poolManagerProxy.setOwner, poolManagerSecondaryProxy.setOperator,  poolManagerSecondaryProxy.setOwner)
+    // -----------------------------
+
+    tx = await claimZap.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setRewardContracts(cvxCrvRewards.address, cvxStakingProxy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setPoolManager(poolManagerProxy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerProxy.setOwner(ZERO_ADDRESS);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerSecondaryProxy.setUsedAddress([token, cvx.address]);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await poolManagerSecondaryProxy.setOwner(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setArbitrator(arbitratorVault.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setVoteDelegate(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await stashFactory.setImplementation(ZERO_ADDRESS, ZERO_ADDRESS, stashV3.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFees(2050, 400, 50, 0);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFeeInfo(extConfig.token, extConfig.feeDistribution);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    if (extConfig.feeToken) {
+        tx = await booster.setFeeInfo(extConfig.feeToken, extConfig.feeDistribution);
+        await waitForTx(tx, debug, waitForBlocks);
+    } else {
+        console.log("!warning feeToken not provided");
+    }
+
+    tx = await booster.setTreasury(multisigs.treasuryMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFeeManager(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setOwner(boosterOwner.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return {
+        booster,
+        boosterOwner,
+        boosterHelper,
+        feeCollector,
+        factories: {
+            rewardFactory,
+            stashFactory,
+            tokenFactory,
+            proxyFactory,
+        },
+        cvxCrvRewards,
+        poolManager,
+        poolManagerProxy,
+        poolManagerSecondaryProxy,
+        claimZap,
+        stashV3,
+        poolMigrator,
+    };
+}
+
+async function deployPhase7(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    phase2: Phase2Deployed,
+    auraBalStash: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<Phase7Deployed> {
+    const { chef, cvx } = phase2;
+
+    const masterChefRewardHook = await deployContract<MasterChefRewardHook>(
+        hre,
+        new MasterChefRewardHook__factory(signer),
+        "MasterChefRewardHook",
+        [auraBalStash, chef.address, cvx.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const siphonToken = await deployContract<SiphonToken>(
+        hre,
+        new SiphonToken__factory(signer),
+        "SiphonToken",
+        [masterChefRewardHook.address, simpleToExactAmount(1)],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    // -----------------------------
+    // POST-7: Setup MasterChefRewardHook (setPid, transferOwnership)
+    //  -  boosterOwner (setStashExtraReward, setStashRewardHook)
+
+    return { masterChefRewardHook, siphonToken };
+}
+
 export {
     DistroList,
     MultisigConfig,
@@ -1261,6 +1634,12 @@ export {
     deployPhase4,
     SystemDeployed,
     Phase4Deployed,
+    deployTempBooster,
     deployPhase5,
     Phase5Deployed,
+    deployPhase6,
+    Phase6Deployed,
+    deployPhase7,
+    Phase7Deployed,
+    PoolsSnapshot,
 };
