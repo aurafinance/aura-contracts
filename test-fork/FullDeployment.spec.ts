@@ -53,7 +53,7 @@ const testAccounts = {
     staker: "0x0000000000000000000000000000000000000006",
 };
 
-describe("Full Deployment", () => {
+xdescribe("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
     const phase2Timestamp = BN.from(1654772222);
