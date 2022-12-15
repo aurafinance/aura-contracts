@@ -97,19 +97,17 @@ task("deploy:mainnet:6").setAction(async function (taskArguments: TaskArguments,
     );
     logContracts(phase6 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:7")
-    .addParam("auraBalStash", "Address of the auraBalStash")
-    .setAction(async function (taskArgs: TaskArguments, hre) {
-        const deployer = await getSigner(hre);
+task("deploy:mainnet:7").setAction(async function (taskArgs: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
 
-        const phase2 = await config.getPhase2(deployer);
+    const phase2 = await config.getPhase2(deployer);
 
-        // ~~~~~~~~~~~~~~~
-        // ~~~ PHASE 7 ~~~
-        // ~~~~~~~~~~~~~~~
-        const phase7 = await deployPhase7(hre, deployer, phase2, taskArgs.auraBalStash, true, 3);
-        logContracts(phase7 as unknown as { [key: string]: { address: string } });
-    });
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 7 ~~~
+    // ~~~~~~~~~~~~~~~
+    const phase7 = await deployPhase7(hre, deployer, phase2, "0x7b3307af981F55C8D6cd22350b08C39Ec7Ec481B", true, 3);
+    logContracts(phase7 as unknown as { [key: string]: { address: string } });
+});
 
 task("deploy:mainnet:temp-booster").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);

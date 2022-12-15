@@ -4,9 +4,12 @@ import {
     Phase2Deployed,
     Phase3Deployed,
     Phase6Deployed,
+    Phase7Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
+    SiphonToken__factory,
+    MasterChefRewardHook__factory,
     VoterProxy__factory,
     AuraToken__factory,
     AuraMinter__factory,
@@ -340,6 +343,11 @@ const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
     poolMigrator: PoolMigrator__factory.connect("0x12addE99768a82871EAaecFbDB065b12C56F0578", deployer),
 });
 
+const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
+    masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
+    siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -351,4 +359,5 @@ export const config = {
     getPhase4,
     getTempBooster,
     getPhase6,
+    getPhase7,
 };

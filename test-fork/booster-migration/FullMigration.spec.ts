@@ -25,19 +25,18 @@ import {
     ZERO_ADDRESS,
 } from "../../test-utils";
 import {
-    deployPhase7,
     Phase2Deployed,
     Phase4Deployed,
     Phase6Deployed,
     Phase7Deployed,
     PoolsSnapshot,
 } from "../../scripts/deploySystem";
-import { Contract, ContractTransaction, ethers, Signer } from "ethers";
+import { Contract, ethers, Signer } from "ethers";
 import { waitForTx } from "../../tasks/utils";
 import { config } from "../../tasks/deploy/mainnet-config";
 
 const debug = false;
-const waitForBlocks = 0;
+const sta3BalV2Pid = 12;
 
 const testAccounts = {
     swapper: "0x0000000000000000000000000000000000000002",
@@ -62,8 +61,6 @@ describe("Full Migration", () => {
     let wethAuraDepositor: Account;
     const wethAuraPid = 20;
 
-    let poolsSnapshot: PoolsSnapshot[];
-
     const poolsSnapshotV2: PoolsSnapshot[] = [];
 
     before(async () => {
@@ -73,7 +70,7 @@ describe("Full Migration", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 16176413,
+                        blockNumber: 16178083,
                     },
                 },
             ],
@@ -126,116 +123,64 @@ describe("Full Migration", () => {
         });
     });
 
-    describe("Protocol DAO: System shutdown", () => {
-        it("shutdown pools", async () => {
-            const poolLength = await phase2.booster.poolLength();
-            poolsSnapshot = await Promise.all(
-                Array(poolLength.toNumber())
-                    .fill(null)
-                    .map(async (_, i) => {
-                        const poolInfo = await phase2.booster.poolInfo(i);
-                        if (!poolInfo.shutdown) {
-                            console.log("Shutting down pool ID:", i);
-                            await phase2.poolManager.shutdownPool(i);
-                            return { ...poolInfo, pid: i };
-                        }
-                    }),
-            );
-
-            poolsSnapshot = poolsSnapshot.filter(Boolean);
-        });
-
-        it("shutdown system", async () => {
-            await phase2.poolManagerSecondaryProxy.shutdownSystem();
-            await phase2.boosterOwner.shutdownSystem();
-            expect(await phase2.booster.isShutdown()).eq(true);
-        });
-        it("deploy temp booster and update operator", async () => {
-            const tempBooster = { address: "0xFfDE3F862e1397E81b140906F334De6Dd567aB22" };
-            await phase2.voterProxy.setOperator(tempBooster.address);
-            expect(await phase2.voterProxy.operator()).eq(tempBooster.address);
-
-            await phase2.cvx.updateOperator();
-            expect(await phase2.cvx.operator()).eq(tempBooster.address);
-        });
-        it("update voterproxy operator", async () => {
-            await phase2.voterProxy.setOperator(boosterV2.address);
-            expect(await phase2.voterProxy.operator()).eq(boosterV2.address);
-        });
-        it("update Aura operator", async () => {
-            await phase2.cvx.updateOperator();
-            expect(await phase2.cvx.operator()).eq(boosterV2.address);
-        });
-    });
-
     describe("Deploy Phase 7: (re-add pools)", () => {
-        let auraBalStash: string;
-
         it("re-deploy pools", async () => {
-            expect(await boosterV2.poolLength()).eq(0);
-
             let { poolManager } = phase6;
             const { booster } = phase6;
 
             poolManager = poolManager.connect(protocolDao.signer);
 
-            let pidV2 = 0;
+            const gauges = [
+                "0x7C777eEA1dC264e71E567Fcc9B6DdaA9064Eff51",
+                "0x27Fd581E9D0b2690C2f808cd40f7fe667714b575",
+                "0x57AB3b673878C3fEaB7f8FF434C40Ab004408c4c",
+                "0x610f1569045041Af6212be048Bc43e8DC6a07b55",
+                "0x9703C0144e8b68280b97d9e30aC6f979Dd6A38d7",
+                "0x47c56A900295df5224EC5e6751dC31eb900321D5",
+                "0x46804462f147fF96e9CAFB20cA35A3B2600656DF",
+                "0xb32Ae42524d38be7E7eD9E02b5F9330fCEf07f3F",
+                "0xAf3c3dab54ca15068D09C67D128344916e177cA9",
+                "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac",
+                "0x6Eb7CdCd15417ABF120FfE404B9b88141Ca952B7",
+                "0xF60B8DAF6825c9fBE5eC073D623B9d47cDa592E8",
+                "0x3F0FB52648Eb3981EA598716b7320081d1c8Ba1a",
+                "0xb0FB3e031224bd449974AB02cae369E81db58Fa6",
+                "0x75cAceBb5b4a73a530EdcdFdE7cFfbfea44c026E",
+                "0xc2c2304E163e1aB53De2eEB08820a0B592bec20B",
+                "0x605eA53472A496c3d483869Fe8F355c12E861e19",
+                "0xe2b680A8d02fbf48C7D9465398C4225d7b7A7f87",
+                "0x4E3c048BE671852277Ad6ce29Fd5207aA12fabff",
+                "0x3F29e69955E5202759208DD0C5E0BA55ff934814",
+                "0x79eF6103A513951a3b25743DB509E267685726B7",
+                "0x91A75880b07d36672f5C8DFE0F2334f086e29D47",
+                "0x2e79D6f631177F8E7f08Fbd5110e893e1b1D790A",
+                "0x4ca6AC0509E6381Ca7CD872a6cdC0Fbf00600Fa1",
+                "0x39a9E78c3b9b5B47f1f6632BD74890E2430215Cf",
+                "0xDD4Db3ff8A37FE418dB6FF34fC316655528B6bbC",
+                "0x9AB7B0C7b154f626451c9e8a68dC04f58fb6e5Ce",
+                "0xE5f24cD43f77fadF4dB33Dab44EB25774159AC66",
+                "0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE",
+                "0x1249c510e066731FF14422500466A7102603da9e",
+                "0x5F4d57fd9Ca75625e4B7520c71c02948A48595d0",
+                "0xCB664132622f29943f67FA56CCfD1e24CC8B4995",
+                "0x651361a042e0573295dd7f6A84dBD1DA56DAc9D5",
+                "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
+            ];
 
-            // Add all the pools from the old booster to the new booster by
-            // looping through all the old pools, checking if they have been shutdown.
-            // if they have been shutdown then add a dummy pool otherwise add the pool
-            // normally, this will help preserve the PID ordering from v1 -> v2
-            for (let i = 0; i < poolsSnapshot.length; i++) {
-                const poolInfo = poolsSnapshot[i];
-                let tx: ContractTransaction;
-                if (!poolInfo.shutdown) {
-                    tx = await poolManager["addPool(address)"](poolInfo.gauge);
-                    await waitForTx(tx, debug, waitForBlocks);
-
-                    const newPoolInfo = await booster.poolInfo(i);
-
-                    // Save the auraBAL pool stash to use in the MasterChefRewardHook
-                    if (newPoolInfo.gauge === config.addresses.auraBalGauge) {
-                        auraBalStash = newPoolInfo.stash;
-                    }
-                    poolsSnapshotV2.push({
-                        gauge: newPoolInfo.gauge,
-                        lptoken: newPoolInfo.lptoken,
-                        shutdown: false,
-                        pid: pidV2,
-                    });
-                    pidV2++;
-                }
+            for (const gauge of gauges) {
+                const i = await booster.poolLength();
+                await poolManager["addPool(address)"](gauge);
+                const newPoolInfo = await booster.poolInfo(i);
+                poolsSnapshotV2.push({
+                    gauge: newPoolInfo.gauge,
+                    lptoken: newPoolInfo.lptoken,
+                    shutdown: false,
+                    pid: i.toNumber(),
+                });
             }
         });
         it("deploy phase7", async () => {
-            phase7 = await deployPhase7(hre, protocolDao.signer, phase2, auraBalStash, debug, waitForBlocks);
-        });
-    });
-
-    describe("Protocol DAO: Setup", () => {
-        it("setup MasterChefRewardHook", async () => {
-            const poolAllocPoint = "100";
-            const stashAddress = await phase7.masterChefRewardHook.stash();
-
-            // Add the new masterchef pool
-            const pid = await phase2.chef.poolLength();
-            await phase7.masterChefRewardHook.setPid(pid);
-            await phase2.chef.add(poolAllocPoint, phase7.siphonToken.address, ZERO_ADDRESS);
-
-            await phase2.chef.set(3, 0, ZERO_ADDRESS, false);
-            await phase7.masterChefRewardHook.deposit(phase7.siphonToken.address);
-
-            await phase6.boosterOwner.connect(protocolDao.signer).setStashExtraReward(stashAddress, phase2.cvx.address);
-            await phase6.boosterOwner
-                .connect(protocolDao.signer)
-                .setStashRewardHook(stashAddress, phase7.masterChefRewardHook.address);
-        });
-        it("setup cvxCrvRewards", async () => {
-            const outputBps = await phase2.cvxStakingProxy.outputBps();
-            await phase2.cvxStakingProxy.setCrvDepositorWrapper(phase2.crvDepositorWrapper.address, outputBps);
-            expect(await phase2.cvxStakingProxy.crvDepositorWrapper()).eq(phase2.crvDepositorWrapper.address);
-            expect(await phase2.cvxStakingProxy.outputBps()).eq(outputBps);
+            phase7 = await config.getPhase7(deployer);
         });
     });
 
@@ -283,28 +228,6 @@ describe("Full Migration", () => {
             expect(v1BalFeeInfo.distro).eq(v2BalFeeInfo.distro);
 
             expect(await boosterV2.isShutdown()).eq(false);
-        });
-
-        it("Booster has correct pools config", async () => {
-            const poolLength = await boosterV2.poolLength();
-            const result = await Promise.all(
-                Array(poolLength.toNumber())
-                    .fill(null)
-                    .map(async (_, i) => {
-                        const poolInfo = await boosterV2.poolInfo(i);
-                        const poolInfoSnapshot = poolsSnapshot[i];
-                        return [poolInfo, poolInfoSnapshot];
-                    }),
-            );
-
-            for (const row of result) {
-                const [poolInfo, poolInfoSnapshot] = row;
-                expect(poolInfo.gauge).eq(poolInfoSnapshot.gauge);
-                expect(poolInfo.shutdown).eq(poolInfoSnapshot.shutdown);
-                if (!poolInfo.shutdown) {
-                    expect(poolInfo.lptoken).eq(poolInfoSnapshot.lptoken);
-                }
-            }
         });
 
         it("Booster Owner has correct config", async () => {
@@ -400,7 +323,7 @@ describe("Full Migration", () => {
             expect(await feeCollector.feeDistro()).eq(addresses.feeDistribution);
         });
         it("extraRewardsStash has correct config", async () => {
-            const poolId = 3;
+            const poolId = 31;
 
             const { voterProxy } = phase2;
             const { booster, factories } = phase6;
@@ -597,7 +520,7 @@ describe("Full Migration", () => {
         it("allow deposit into pool via Booster", async () => {
             await getLpToken(staker.address, simpleToExactAmount(10));
 
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
             expect(poolInfo.lptoken.toLowerCase()).eq(config.addresses.staBAL3.toLowerCase());
 
             const lptoken = ERC20__factory.connect(poolInfo.lptoken, deployer);
@@ -609,13 +532,13 @@ describe("Full Migration", () => {
 
             const stake = false;
             await lptoken.connect(staker.signer).approve(boosterV2.address, ethers.constants.MaxUint256);
-            await boosterV2.connect(staker.signer).deposit(0, lptokenBalance, stake);
+            await boosterV2.connect(staker.signer).deposit(sta3BalV2Pid, lptokenBalance, stake);
 
             const depositTokenBalanceAfter = await depositToken.balanceOf(staker.address);
             expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalance);
         });
         it("allows auraBPT deposits directly into the reward pool", async () => {
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
             const depositToken = ERC20__factory.connect(poolInfo.token, staker.signer);
             const balance = await depositToken.balanceOf(staker.address);
@@ -635,7 +558,7 @@ describe("Full Migration", () => {
         });
         it("allows BPT deposits directly into the reward pool", async () => {
             await getLpToken(staker.address, simpleToExactAmount(10));
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
 
             const lpToken = ERC20__factory.connect(poolInfo.lptoken, staker.signer);
             const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
@@ -652,7 +575,7 @@ describe("Full Migration", () => {
         });
         it("allows withdrawals directly from the pool 4626", async () => {
             const amount = simpleToExactAmount(1);
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
 
             const rewards = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, staker.signer);
             const lptoken = ERC20__factory.connect(poolInfo.lptoken, staker.signer);
@@ -671,7 +594,7 @@ describe("Full Migration", () => {
         });
         it("allows withdrawals directly from the pool normal", async () => {
             const amount = simpleToExactAmount(1);
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
 
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
             const depositToken = ERC20__factory.connect(poolInfo.token, staker.signer);
@@ -713,13 +636,13 @@ describe("Full Migration", () => {
             expect(balanceAfter).gt(balanceBefore);
         });
         it("allows earmarking of rewards", async () => {
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
             const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
             const crv = MockERC20__factory.connect(config.addresses.token, deployer);
             const balanceBefore = await crv.balanceOf(crvRewards.address);
 
             await increaseTime(ONE_HOUR);
-            await boosterV2.earmarkRewards(0);
+            await boosterV2.earmarkRewards(sta3BalV2Pid);
 
             const balanceAfter = await crv.balanceOf(crvRewards.address);
             expect(balanceAfter).gt(balanceBefore);
@@ -728,13 +651,13 @@ describe("Full Migration", () => {
             const crv = ERC20__factory.connect(config.addresses.token, deployer);
             const balanceBefore = await crv.balanceOf(staker.address);
             await increaseTime(ONE_HOUR);
-            await boosterV2.connect(staker.signer).earmarkRewards(0);
+            await boosterV2.connect(staker.signer).earmarkRewards(sta3BalV2Pid);
             const balanceAfter = await crv.balanceOf(staker.address);
             expect(balanceAfter).gt(balanceBefore);
         });
         it("allows users to earn $BAl and $AURA", async () => {
             const crv = ERC20__factory.connect(config.addresses.token, deployer);
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
             const cvxBalanceBefore = await phase2.cvx.balanceOf(staker.address);
             const crvBalanceBefore = await crv.balanceOf(staker.address);
@@ -799,7 +722,7 @@ describe("Full Migration", () => {
         // Given that all system is shutdown
         // Booster V1 information
         const pidYFIWETH = 12;
-        const pidWETHAURA = 20;
+        const pidWETHAURA = 0;
         const stakerAddress = "0x285b7EEa81a5B66B62e7276a24c1e0F83F7409c1";
         let staker: Account;
 
@@ -885,9 +808,8 @@ describe("Full Migration", () => {
             const fromPool0 = await phase2.booster.poolInfo(fromPid0);
             const toPid0 = poolsSnapshotV2.find(p => p.gauge === fromPool0.gauge).pid;
 
-            const fromPid1 = pidWETHAURA;
-            const fromPool1 = await phase2.booster.poolInfo(fromPid1);
-            const toPid1 = poolsSnapshotV2.find(p => p.gauge === fromPool1.gauge).pid;
+            const fromPid1 = 20;
+            const toPid1 = 0;
 
             const fromCrvRewards = BaseRewardPool4626__factory.connect(fromPool0.crvRewards, deployer);
             const balance = await fromCrvRewards.balanceOf(staker.address);
@@ -912,7 +834,7 @@ describe("Full Migration", () => {
             await expect(boosterV2.setRewardMultiplier(ZERO_ADDRESS, 0)).to.be.revertedWith("!auth");
         });
         it("can set reward multiplier", async () => {
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
 
             const multiplierBefore = await boosterV2.getRewardMultipliers(poolInfo.crvRewards);
             expect(multiplierBefore).eq(await boosterV2.REWARD_MULTIPLIER_DENOMINATOR());
@@ -924,15 +846,15 @@ describe("Full Migration", () => {
             await getLpToken(staker.address, simpleToExactAmount(10));
 
             // deposit into booster
-            const poolInfo = await boosterV2.poolInfo(0);
+            const poolInfo = await boosterV2.poolInfo(sta3BalV2Pid);
             const lptoken = ERC20__factory.connect(poolInfo.lptoken, deployer);
             const lptokenBalance = await lptoken.balanceOf(staker.address);
             await lptoken.connect(staker.signer).approve(boosterV2.address, ethers.constants.MaxUint256);
-            await boosterV2.connect(staker.signer).deposit(0, lptokenBalance, true);
+            await boosterV2.connect(staker.signer).deposit(sta3BalV2Pid, lptokenBalance, true);
 
             // wait for the reward period
             await increaseTime(ONE_WEEK);
-            await boosterV2.earmarkRewards(0);
+            await boosterV2.earmarkRewards(sta3BalV2Pid);
 
             // check rewards
             const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, staker.signer);
@@ -1004,7 +926,7 @@ describe("Full Migration", () => {
             expect(rewardBalanceBefore.sub(rewardBalanceInitial)).eq(crvBptBalance);
 
             // distribute rewards from booster
-            await phase6.booster.earmarkRewards(0);
+            await phase6.booster.earmarkRewards(sta3BalV2Pid);
             await increaseTime(ONE_HOUR);
             console.log("Earned:", await phase6.cvxCrvRewards.earned(staker.address));
             const bal0Before = await phase2.cvx.balanceOf(staker.address);
@@ -1013,7 +935,7 @@ describe("Full Migration", () => {
             const bal0 = bal0After.sub(bal0Before);
             console.log("Bal0:", bal0);
 
-            await phase6.booster.earmarkRewards(0);
+            await phase6.booster.earmarkRewards(sta3BalV2Pid);
             await increaseTime(ONE_HOUR);
             await phase6.booster.connect(protocolDao.signer).setRewardMultiplier(phase6.cvxCrvRewards.address, 20000);
             console.log("Earned:", await phase6.cvxCrvRewards.earned(staker.address));
@@ -1041,7 +963,7 @@ describe("Full Migration", () => {
 
             const treasury = await boosterV2.treasury();
             const balBefore = await crv.balanceOf(treasury);
-            await boosterV2.earmarkRewards(0);
+            await boosterV2.earmarkRewards(sta3BalV2Pid);
             const balAfter = await crv.balanceOf(treasury);
 
             const balance = balAfter.sub(balBefore);
@@ -1056,7 +978,7 @@ describe("Full Migration", () => {
 
             const treasury = await boosterV2.treasury();
             const balBefore = await crv.balanceOf(treasury);
-            await boosterV2.earmarkRewards(0);
+            await boosterV2.earmarkRewards(sta3BalV2Pid);
             const balAfter = await crv.balanceOf(treasury);
 
             const balance = balAfter.sub(balBefore);
