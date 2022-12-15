@@ -1385,7 +1385,7 @@ xdescribe("Full Deployment", () => {
                     expect(userBalAfter.sub(userBalBefore)).gt(0);
                 });
             });
-           
+
             describe("booster & deposits", () => {
                 it("allow deposit into pool via Booster", async () => {
                     await getLpToken(stakerAddress, simpleToExactAmount(10));
