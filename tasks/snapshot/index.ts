@@ -423,9 +423,10 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     const savePath = path.resolve(__dirname, "gauge_snapshot.json");
     const gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
 
-    const remove = ["0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2", "0xcF5938cA6d9F19C73010c7493e19c02AcFA8d24D"].map(x =>
-        x.toLowerCase(),
-    );
+    const remove = [
+        "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2", // sdBAL
+        "0xcF5938cA6d9F19C73010c7493e19c02AcFA8d24D", // tetuBAL
+    ].map(x => x.toLowerCase());
 
     const removedGauges = [];
 
