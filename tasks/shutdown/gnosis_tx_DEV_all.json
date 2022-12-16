@@ -1,0 +1,498 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1670952463897,
+    "meta": {
+        "name": "Shutdown",
+        "description": "",
+        "txBuilderVersion": "1.11.1",
+        "createdFromSafeAddress": "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        "createdFromOwnerAddress": "",
+        "checksum": "0x535dc9a33e2c5aa0b638ad6a1d80b5278dc00b69d52110b5d4c2b268c40f698b"
+    },
+    "transactions": [
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "42" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "43" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "45" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "46" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "48" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "49" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "51" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "52" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "53" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "55" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "56" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "57" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "20" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "21" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "29" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "31" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "33" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "34" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "35" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "36" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "37" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "38" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "39" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "40" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "41" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "0" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "1" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "2" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "3" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "4" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "6" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "7" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "8" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "9" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "12" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "16" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "17" }
+        },
+        {
+            "to": "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "19" }
+        },
+        {
+            "to": "0xdc274F4854831FED60f9Eca12CaCbD449134cF67",
+            "value": "0",
+            "data": null,
+            "contractMethod": { "inputs": [], "name": "shutdownSystem", "payable": false },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xFa838Af70314135159b309bf27f1DbF1F954eC34",
+            "value": "0",
+            "data": null,
+            "contractMethod": { "inputs": [], "name": "shutdownSystem", "payable": false },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "address", "name": "_operator", "type": "address" }],
+                "name": "setOperator",
+                "payable": false
+            },
+            "contractInputsValues": { "_operator": "0xA57b8d98dAE62B26Ec3bcC4a365338157060B234" }
+        },
+        {
+            "to": "0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF",
+            "value": "0",
+            "data": null,
+            "contractMethod": { "inputs": [], "name": "updateOperator", "payable": false },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xB58Eb197c35157E6F3351718C4C387D284562BE5",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "address", "name": "_gauge", "type": "address" }],
+                "name": "addPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_gauge": "0x275df57d2b23d53e20322b4bb71bf1dcb21d0a00" }
+        },
+        {
+            "to": "0xB58Eb197c35157E6F3351718C4C387D284562BE5",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "address", "name": "_gauge", "type": "address" }],
+                "name": "addPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_gauge": "0x0312aa8d0ba4a1969fddb382235870bf55f7f242" }
+        },
+        {
+            "to": "0xB58Eb197c35157E6F3351718C4C387D284562BE5",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "address", "name": "_gauge", "type": "address" }],
+                "name": "addPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_gauge": "0xa6325e799d266632d347e41265a69af111b05403" }
+        }
+    ]
+}

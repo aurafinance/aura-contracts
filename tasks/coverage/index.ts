@@ -24,11 +24,10 @@ const updatePathOnReport = async () => {
 }
 
 subtask("coverage:clean")
-    .addOptionalParam("externalSrc", "External smart contracts paths separeted by ','", "/convex-platform")
+    .addOptionalParam("externalSrc", "External smart contracts paths separated by ','", "/convex-platform")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment, _: RunSuperFunction<any>) {
         // Delete temporary external sources from code base.
         const sources = taskArgs.externalSrc.split(",");
-        console.log("🚀 ~ file: index.ts ~ line 24 ~ externalSrc", taskArgs.externalSrc)
         for (let i = 0; i < sources.length; i++) {
             fs.rmdirSync(hre.config.paths.sources + sources[i], { recursive: true });
         }

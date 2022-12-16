@@ -19,7 +19,7 @@ import { _TypedDataEncoder } from "ethers/lib/utils";
 const newFeeDistro = "0xD3cf852898b21fc233251427c2DC93d3d604F3BB";
 const balWhaleAddress = "0xcEacc82ddCdB00BFE19A9D3458db3e6b8aEF542B";
 
-describe("FeeDistroUpdate", () => {
+xdescribe("FeeDistroUpdate", () => {
     let protocolDao: Signer;
     let boosterOwner: BoosterOwner;
     let distributor: IFeeDistributor;

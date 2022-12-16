@@ -53,7 +53,7 @@ const testAccounts = {
     staker: "0x0000000000000000000000000000000000000006",
 };
 
-describe("Full Deployment", () => {
+xdescribe("Full Deployment", () => {
     let deployer: Signer;
     let deployerAddress: string;
     const phase2Timestamp = BN.from(1654772222);
@@ -632,16 +632,15 @@ describe("Full Deployment", () => {
                 ).to.be.revertedWith("Cannot vote so often");
             });
             it("allows dao to setVotes for Snapshot", async () => {
-                const eip1271MagicValue = "0x1626ba7e";
                 const msg = "message";
                 const hash = hashMessage(msg);
                 const daoMultisig = await impersonateAccount(config.multisigs.daoMultisig);
 
-                const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash, true);
-                await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, true);
+                const tx = await phase2.booster.connect(daoMultisig.signer).setVote(hash);
+                await expect(tx).to.emit(phase2.voterProxy, "VoteSet").withArgs(hash, false);
 
                 const isValid = await phase2.voterProxy.isValidSignature(hash, "0x00");
-                expect(isValid).to.equal(eip1271MagicValue);
+                expect(isValid).to.equal("0xffffffff");
             });
             it("doesn't allow pools to be added or rewards earmarked", async () => {
                 const { poolManager, booster } = phase2;
@@ -1387,58 +1386,6 @@ describe("Full Deployment", () => {
                 });
             });
 
-            describe("claimZap tests", () => {
-                it("set approval for deposits", async () => {
-                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
-                    await phase4.claimZap.setApprovals();
-                    expect(await crv.allowance(phase4.claimZap.address, phase4.crvDepositorWrapper.address)).gte(
-                        ethers.constants.MaxUint256,
-                    );
-                    expect(await phase4.cvxCrv.allowance(phase4.claimZap.address, phase4.cvxCrvRewards.address)).gte(
-                        ethers.constants.MaxUint256,
-                    );
-                    expect(await phase4.cvx.allowance(phase4.claimZap.address, phase4.cvxLocker.address)).gte(
-                        ethers.constants.MaxUint256,
-                    );
-                });
-                it("claim rewards from cvxCrvStaking", async () => {
-                    const crv = ERC20__factory.connect(config.addresses.token, deployer);
-                    const crvBpt = ERC20__factory.connect(config.addresses.tokenBpt, deployer);
-                    const rewardBalanceInitial = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
-
-                    // send crv and crvBpt to staker account
-                    await getCrvBpt(stakerAddress);
-                    await getCrv(stakerAddress);
-
-                    // stake in crvDepositor
-                    const crvBptBalance = await crvBpt.balanceOf(stakerAddress);
-                    await crvBpt.connect(staker.signer).approve(phase4.crvDepositor.address, crvBptBalance);
-                    await phase4.crvDepositor
-                        .connect(staker.signer)
-                        ["deposit(uint256,bool,address)"](crvBptBalance, true, phase4.cvxCrvRewards.address);
-
-                    const rewardBalanceBefore = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
-                    expect(rewardBalanceBefore.sub(rewardBalanceInitial)).eq(crvBptBalance);
-
-                    // distribute rewards from booster
-                    const crvBalance = await crv.balanceOf(stakerAddress);
-                    await crv.connect(staker.signer).transfer(phase4.booster.address, crvBalance);
-                    await phase4.booster.earmarkRewards(0);
-                    await increaseTime(ONE_HOUR.mul(2));
-
-                    // claim rewards from claim zap
-                    const option = 1 + 8;
-                    const expectedRewards = await phase4.cvxCrvRewards.earned(stakerAddress);
-                    const minBptAmountOut = await phase4.crvDepositorWrapper.getMinOut(expectedRewards, 9500);
-                    await crv.connect(staker.signer).approve(phase4.claimZap.address, ethers.constants.MaxUint256);
-                    await phase4.claimZap
-                        .connect(staker.signer)
-                        .claimRewards([], [], [], [], expectedRewards, minBptAmountOut, 0, option);
-
-                    const newRewardBalance = await phase4.cvxCrvRewards.balanceOf(stakerAddress);
-                    expect(newRewardBalance).gte(minBptAmountOut.add(rewardBalanceBefore));
-                });
-            });
             describe("booster & deposits", () => {
                 it("allow deposit into pool via Booster", async () => {
                     await getLpToken(stakerAddress, simpleToExactAmount(10));

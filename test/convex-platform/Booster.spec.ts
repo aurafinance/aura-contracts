@@ -1,3 +1,4 @@
+import { assertBNClosePercent } from "./../../test-utils/assertions";
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, SystemDeployed } from "../../scripts/deploySystem";
@@ -12,9 +13,9 @@ import {
     MockERC20,
 } from "../../types/generated";
 import { Signer } from "ethers";
-import { increaseTime, increaseTimeTo } from "../../test-utils/time";
+import { getTimestamp, increaseTime, increaseTimeTo } from "../../test-utils/time";
 import { simpleToExactAmount } from "../../test-utils/math";
-import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
+import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
 import { deployContract } from "../../tasks/utils";
 
 type Pool = {
@@ -112,8 +113,8 @@ describe("Booster", () => {
             const tx = await booster.connect(daoSigner).setFees(500, 300, 25, 0);
             await expect(tx).to.emit(booster, "FeesUpdated").withArgs(500, 300, 25, 0);
         });
-        it("enforces 25% upper bound", async () => {
-            await expect(booster.connect(daoSigner).setFees(1500, 1000, 50, 0)).to.be.revertedWith(">MaxFees");
+        it("enforces 40% upper bound", async () => {
+            await expect(booster.connect(daoSigner).setFees(2500, 1500, 50, 0)).to.be.revertedWith(">MaxFees");
 
             const tx = await booster.connect(daoSigner).setFees(1500, 900, 50, 0);
             await expect(tx).to.emit(booster, "FeesUpdated").withArgs(1500, 900, 50, 0);
@@ -121,10 +122,8 @@ describe("Booster", () => {
         it("enforces bounds on each fee type", async () => {
             // lockFees 300-1500
             await expect(booster.connect(daoSigner).setFees(200, 500, 50, 0)).to.be.revertedWith("!lockFees");
-            await expect(booster.connect(daoSigner).setFees(1600, 500, 50, 0)).to.be.revertedWith("!lockFees");
             // stakerFees 300-1500
             await expect(booster.connect(daoSigner).setFees(500, 200, 50, 0)).to.be.revertedWith("!stakerFees");
-            await expect(booster.connect(daoSigner).setFees(500, 1600, 50, 0)).to.be.revertedWith("!stakerFees");
             // callerFees 10-100
             await expect(booster.connect(daoSigner).setFees(500, 500, 2, 0)).to.be.revertedWith("!callerFees");
             await expect(booster.connect(daoSigner).setFees(500, 500, 110, 0)).to.be.revertedWith("!callerFees");
@@ -408,6 +407,77 @@ describe("Booster", () => {
             await crvRewards.processIdleRewards();
             const queuedRewardsAfter = await crvRewards.queuedRewards();
             expect(queuedRewardsAfter).eq(0);
+        });
+    });
+    describe("processing L2 fees", async () => {
+        let bridgeDelegate: Signer;
+        let bridgeDelegateAddress: string;
+        before(async () => {
+            await setup();
+            bridgeDelegate = accounts[8];
+            bridgeDelegateAddress = await bridgeDelegate.getAddress();
+        });
+
+        it("only lets feeManager change bridgeDelegate address", async () => {
+            const feeManager = await booster.feeManager();
+            expect(feeManager).eq(await daoSigner.getAddress());
+
+            expect(await booster.bridgeDelegate()).eq(ZERO_ADDRESS);
+            await expect(booster.connect(accounts[9]).setBridgeDelegate(DEAD_ADDRESS)).to.be.revertedWith("!auth");
+
+            await booster.connect(daoSigner).setBridgeDelegate(bridgeDelegateAddress);
+            expect(await booster.bridgeDelegate()).eq(bridgeDelegateAddress);
+        });
+        it("allows bridgedelegate to process aura", async () => {
+            await expect(booster.distributeL2Fees(simpleToExactAmount(1))).to.be.revertedWith("!auth");
+
+            await mocks.crv.transfer(bridgeDelegateAddress, simpleToExactAmount(400000));
+
+            const crvBalBefore = await mocks.crv.balanceOf(bridgeDelegateAddress);
+            const cvxBalBefore = await contracts.cvx.balanceOf(bridgeDelegateAddress);
+
+            await mocks.crv.connect(bridgeDelegate).approve(booster.address, simpleToExactAmount(400000));
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(16.5));
+
+            const crvBalAfter = await mocks.crv.balanceOf(bridgeDelegateAddress);
+            const cvxBalAfter = await contracts.cvx.balanceOf(bridgeDelegateAddress);
+
+            expect(crvBalBefore.sub(crvBalAfter)).eq(simpleToExactAmount(16.5));
+            assertBNClosePercent(cvxBalAfter.sub(cvxBalBefore), simpleToExactAmount(325.65), "0.001");
+
+            const currentTime = await getTimestamp();
+            const currentEpoch = currentTime.div(ONE_WEEK);
+            expect(await booster.l2FeesHistory(currentEpoch)).eq(simpleToExactAmount(100));
+        });
+        it("only allows 70k per week of farming", async () => {
+            await expect(
+                booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(11540)),
+            ).to.be.revertedWith("Too many L2 Fees");
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(11100));
+            await expect(booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(500))).to.be.revertedWith(
+                "Too many L2 Fees",
+            );
+
+            await increaseTime(ONE_WEEK);
+
+            await expect(
+                booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(11551)),
+            ).to.be.revertedWith("Too many L2 Fees");
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(11550));
+            await expect(booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(1))).to.be.revertedWith(
+                "Too many L2 Fees",
+            );
+
+            await increaseTime(ONE_WEEK);
+
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(250));
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(700));
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(1276));
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(3423));
+            await booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(4324));
+            await expect(
+                booster.connect(bridgeDelegate).distributeL2Fees(simpleToExactAmount(4324)),
+            ).to.be.revertedWith("Too many L2 Fees");
         });
     });
 });

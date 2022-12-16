@@ -24,7 +24,8 @@ import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
 import { BN, simpleToExactAmount } from "../../test-utils/math";
 import { assertBNClose } from "../../test-utils";
 
-describe("CrvDepositor", () => {
+// This is no longer used
+xdescribe("CrvDepositorWrapperWithFee", () => {
     let accounts: Signer[];
     let mocks: DeployMocksResult;
     let crvDepositor: CrvDepositor;

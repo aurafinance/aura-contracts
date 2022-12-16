@@ -3,7 +3,15 @@ import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4 } from "../../scripts/deploySystem";
+import {
+    deployPhase1,
+    deployPhase2,
+    deployPhase3,
+    deployPhase4,
+    deployPhase6,
+    deployPhase7,
+    deployTempBooster,
+} from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -68,6 +76,43 @@ task("deploy:mainnet:4").setAction(async function (taskArguments: TaskArguments,
     // ~~~~~~~~~~~~~~~
     const phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, true, 3);
     logContracts(phase4 as unknown as { [key: string]: { address: string } });
+});
+task("deploy:mainnet:6").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+
+    const phase2 = await config.getPhase2(deployer);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 6 ~~~
+    // ~~~~~~~~~~~~~~~
+    const phase6 = await deployPhase6(
+        hre,
+        deployer,
+        phase2,
+        config.multisigs,
+        config.naming,
+        config.addresses,
+        true,
+        3,
+    );
+    logContracts(phase6 as unknown as { [key: string]: { address: string } });
+});
+task("deploy:mainnet:7").setAction(async function (taskArgs: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+
+    const phase2 = await config.getPhase2(deployer);
+
+    // ~~~~~~~~~~~~~~~
+    // ~~~ PHASE 7 ~~~
+    // ~~~~~~~~~~~~~~~
+    const phase7 = await deployPhase7(hre, deployer, phase2, "0x7b3307af981F55C8D6cd22350b08C39Ec7Ec481B", true, 3);
+    logContracts(phase7 as unknown as { [key: string]: { address: string } });
+});
+
+task("deploy:mainnet:temp-booster").setAction(async function (taskArguments: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const tempBooster = await deployTempBooster(hre, deployer, true, 3);
+    logContracts({ tempBooster });
 });
 
 task("mainnet:getgauges").setAction(async function (taskArguments: TaskArguments, hre) {

@@ -3,9 +3,13 @@ import {
     Phase1Deployed,
     Phase2Deployed,
     Phase3Deployed,
+    Phase6Deployed,
+    Phase7Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
+    SiphonToken__factory,
+    MasterChefRewardHook__factory,
     VoterProxy__factory,
     AuraToken__factory,
     AuraMinter__factory,
@@ -35,6 +39,11 @@ import {
     AuraClaimZap__factory,
     ClaimFeesHelper__factory,
     RewardPoolDepositWrapper__factory,
+    TempBooster__factory,
+    TempBooster,
+    BoosterHelper__factory,
+    ExtraRewardStashV3__factory,
+    PoolMigrator__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -46,7 +55,8 @@ const addresses: ExtSystemConfig = {
     tokenWhale: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
     votingEscrow: "0xC128a9954e6c874eA3d62ce62B468bA073093F25",
-    feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9",
+    // feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9", // @deprecated
+    feeDistribution: "0xD3cf852898b21fc233251427c2DC93d3d604F3BB",
     gaugeController: "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
@@ -113,13 +123,15 @@ const addresses: ExtSystemConfig = {
     keeper: "0xc3f4D7b4EF10Dfe1dFfc4Ac2EC4D3Ee29CBF67aE",
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
-    feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2",
+    // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2", @deprecated
+    feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44",
     feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
+    auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
 };
 
 const naming = {
@@ -305,6 +317,37 @@ const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
     ),
 });
 
+const getTempBooster = async (deployer: Signer): Promise<TempBooster> =>
+    TempBooster__factory.connect("0xFfDE3F862e1397E81b140906F334De6Dd567aB22", deployer);
+
+const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
+    booster: Booster__factory.connect("0xA57b8d98dAE62B26Ec3bcC4a365338157060B234", deployer),
+    boosterOwner: BoosterOwner__factory.connect("0x228a142081b456a9fF803d004504955032989f04", deployer),
+    boosterHelper: BoosterHelper__factory.connect("0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0", deployer),
+    feeCollector: ClaimFeesHelper__factory.connect("0xAf824c80aA77Ae7F379DA3Dc05fea0dC1941c200", deployer),
+    factories: {
+        rewardFactory: RewardFactory__factory.connect("0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA", deployer),
+        stashFactory: StashFactoryV2__factory.connect("0x54da426EFBB93fbaB5CF81bef03F9B9F00A3E915", deployer),
+        tokenFactory: TokenFactory__factory.connect("0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba", deployer),
+        proxyFactory: ProxyFactory__factory.connect("0xf5E2cFde016bd55BEF42a5A4bAad7E21cd39720d", deployer),
+    },
+    cvxCrvRewards: BaseRewardPool__factory.connect("0x00A7BA8Ae7bca0B10A32Ea1f8e2a1Da980c6CAd2", deployer),
+    poolManager: PoolManagerV3__factory.connect("0xB58Eb197c35157E6F3351718C4C387D284562BE5", deployer),
+    poolManagerProxy: PoolManagerProxy__factory.connect("0x2c809Ec701C088099c911AF9DdfA4A1Db6110F3c", deployer),
+    poolManagerSecondaryProxy: PoolManagerSecondaryProxy__factory.connect(
+        "0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54",
+        deployer,
+    ),
+    claimZap: AuraClaimZap__factory.connect("0x2E307704EfaE244c4aae6B63B601ee8DA69E92A9", deployer),
+    stashV3: ExtraRewardStashV3__factory.connect("0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98", deployer),
+    poolMigrator: PoolMigrator__factory.connect("0x12addE99768a82871EAaecFbDB065b12C56F0578", deployer),
+});
+
+const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
+    masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
+    siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -314,4 +357,7 @@ export const config = {
     getPhase2,
     getPhase3,
     getPhase4,
+    getTempBooster,
+    getPhase6,
+    getPhase7,
 };

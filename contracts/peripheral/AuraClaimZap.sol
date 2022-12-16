@@ -31,6 +31,21 @@ contract AuraClaimZap {
     address public immutable locker;
     address public immutable owner;
 
+    /**
+     * @dev Claim rewards amounts.
+     * - depositCrvMaxAmount    The max amount of CRV to deposit if converting to crvCvx
+     * - minAmountOut           The min amount out for crv:cvxCrv swaps if swapping. Set this to zero if you
+     *                          want to use CrvDepositor instead of balancer swap
+     * - depositCvxMaxAmount    The max amount of CVX to deposit if locking CVX
+     * - depositCvxCrvMaxAmount The max amount of CVXCVR to stake.
+     */
+    struct ClaimRewardsAmounts {
+        uint256 depositCrvMaxAmount;
+        uint256 minAmountOut;
+        uint256 depositCvxMaxAmount;
+        uint256 depositCvxCrvMaxAmount;
+    }
+
     enum Options {
         ClaimCvxCrv, //1
         ClaimLockedCvx, //2
@@ -97,30 +112,26 @@ contract AuraClaimZap {
 
     /**
      * @notice Claim all the rewards
-     * @param rewardContracts       Array of addresses for LP token rewards
-     * @param extraRewardContracts  Array of addresses for extra rewards
-     * @param tokenRewardContracts  Array of addresses for token rewards e.g vlCvxExtraRewardDistribution
-     * @param tokenRewardTokens     Array of token reward addresses to use with tokenRewardContracts
-     * @param depositCrvMaxAmount   The max amount of CRV to deposit if converting to crvCvx
-     * @param minAmountOut          The min amount out for crv:cvxCrv swaps if swapping. Set this to zero if you
-     *                              want to use CrvDepositor instead of balancer swap
-     * @param depositCvxMaxAmount   The max amount of CVX to deposit if locking CVX
-     * @param options               Claim options
+     * @param rewardContracts        Array of addresses for LP token rewards
+     * @param extraRewardContracts   Array of addresses for extra rewards
+     * @param tokenRewardContracts   Array of addresses for token rewards e.g vlCvxExtraRewardDistribution
+     * @param tokenRewardTokens      Array of token reward addresses to use with tokenRewardContracts
+     * @param amounts                Claim rewards amoutns.
+     * @param options                Claim options
      */
     function claimRewards(
         address[] calldata rewardContracts,
         address[] calldata extraRewardContracts,
         address[] calldata tokenRewardContracts,
         address[] calldata tokenRewardTokens,
-        uint256 depositCrvMaxAmount,
-        uint256 minAmountOut,
-        uint256 depositCvxMaxAmount,
+        ClaimRewardsAmounts memory amounts,
         uint256 options
     ) external {
         require(tokenRewardContracts.length == tokenRewardTokens.length, "!parity");
 
         uint256 crvBalance = IERC20(crv).balanceOf(msg.sender);
         uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender);
+        uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
 
         //claim from main curve LP pools
         for (uint256 i = 0; i < rewardContracts.length; i++) {
@@ -136,29 +147,50 @@ contract AuraClaimZap {
         }
 
         // claim others/deposit/lock/stake
-        _claimExtras(depositCrvMaxAmount, minAmountOut, depositCvxMaxAmount, crvBalance, cvxBalance, options);
+        _claimExtras(
+            amounts.depositCrvMaxAmount,
+            amounts.minAmountOut,
+            amounts.depositCvxMaxAmount,
+            amounts.depositCvxCrvMaxAmount,
+            crvBalance,
+            cvxBalance,
+            cvxCrvBalance,
+            options
+        );
     }
 
     /**
      * @notice  Claim additional rewards from:
      *          - cvxCrvRewards
      *          - cvxLocker
-     * @param depositCrvMaxAmount see claimRewards
-     * @param minAmountOut        see claimRewards
-     * @param depositCvxMaxAmount see claimRewards
-     * @param removeCrvBalance    crvBalance to ignore and not redeposit (starting Crv balance)
-     * @param removeCvxBalance    cvxBalance to ignore and not redeposit (starting Cvx balance)
-     * @param options             see claimRewards
+     * @param depositCrvMaxAmount    see claimRewards
+     * @param minAmountOut           see claimRewards
+     * @param depositCvxMaxAmount    see claimRewards
+     * @param depositCvxCrvMaxAmount see claimRewards
+     * @param removeCrvBalance       crvBalance to ignore and not redeposit (starting Crv balance)
+     * @param removeCvxBalance       cvxBalance to ignore and not redeposit (starting Cvx balance)
+     * @param removeCvxCrvBalance    cvxcrvBalance to ignore and not redeposit (starting CvxCrv balance)
+     * @param options                see claimRewards
      */
     // prettier-ignore
     function _claimExtras( // solhint-disable-line 
-        uint256 depositCrvMaxAmount,
+        uint256 depositCrvMaxAmount,     
         uint256 minAmountOut,
         uint256 depositCvxMaxAmount,
+        uint256 depositCvxCrvMaxAmount,
         uint256 removeCrvBalance,
         uint256 removeCvxBalance,
+        uint256 removeCvxCrvBalance,           
         uint256 options
     ) internal {
+
+        //reset remove balances if we want to also stake/lock funds already in our wallet
+        if (_checkOption(options, uint256(Options.UseAllWalletFunds))) {
+            removeCrvBalance = 0;
+            removeCvxBalance = 0;
+            removeCvxCrvBalance = 0;
+        }
+
         //claim from cvxCrv rewards
         if (_checkOption(options, uint256(Options.ClaimCvxCrv))) {
             IRewardStaking(cvxCrvRewards).getReward(msg.sender, true);
@@ -166,14 +198,18 @@ contract AuraClaimZap {
 
         //claim from locker
         if (_checkOption(options, uint256(Options.ClaimLockedCvx))) {
-            IAuraLocker(locker).getReward(msg.sender, _checkOption(options, uint256(Options.ClaimLockedCvxStake)));
+            IAuraLocker(locker).getReward(msg.sender);
+            if (_checkOption(options, uint256(Options.ClaimLockedCvxStake))) {
+                uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender).sub(removeCvxCrvBalance);
+                cvxCrvBalance = AuraMath.min(cvxCrvBalance, depositCvxCrvMaxAmount);
+                if (cvxCrvBalance > 0) {
+                    IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
+                    IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalance);  
+                }
+            }
         }
 
-        //reset remove balances if we want to also stake/lock funds already in our wallet
-        if (_checkOption(options, uint256(Options.UseAllWalletFunds))) {
-            removeCrvBalance = 0;
-            removeCvxBalance = 0;
-        }
+
 
         //lock upto given amount of crv and stake
         if (depositCrvMaxAmount > 0) {

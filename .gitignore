@@ -25,6 +25,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 contracts.json
+tasks/shutdown/shutdown_all_system.json
 
 # types
 types/generated/**/*

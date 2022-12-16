@@ -15,7 +15,6 @@ import {
     BoosterOwner,
     PoolManagerSecondaryProxy,
     PoolManagerV3,
-    ERC20__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { hashMessage } from "@ethersproject/hash";
@@ -106,13 +105,13 @@ describe("VoterProxy", () => {
     describe("validates vote hash from Snapshot Hub", async () => {
         it("with a valid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            let tx = await booster.connect(daoMultisig).setVote(hash, true);
-            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
+            let tx = await booster.connect(daoMultisig).setVote(hash);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, false);
 
             let isValid = await voterProxy.isValidSignature(hash, sig);
-            expect(isValid).to.equal(eip1271MagicValue);
+            expect(isValid).to.equal("0xffffffff");
 
-            tx = await booster.connect(daoMultisig).setVote(hash, false);
+            tx = await booster.connect(daoMultisig).setVote(hash);
             await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, false);
             isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
@@ -120,8 +119,8 @@ describe("VoterProxy", () => {
 
         it("with an invalid hash", async () => {
             const sig = await deployer.signMessage(msg);
-            const tx = await booster.connect(daoMultisig).setVote(hash, true);
-            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, true);
+            const tx = await booster.connect(daoMultisig).setVote(hash);
+            await expect(tx).to.emit(voterProxy, "VoteSet").withArgs(hash, false);
             const isValid = await voterProxy.isValidSignature(invalidHash, sig);
             expect(isValid).to.equal("0xffffffff");
         });
