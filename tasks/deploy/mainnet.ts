@@ -13,7 +13,7 @@ import {
     deployTempBooster,
 } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx, deployContract } from "../utils";
 import {
@@ -23,6 +23,8 @@ import {
     SiphonToken__factory,
     MasterChefRewardHook,
     MasterChefRewardHook__factory,
+    AuraMerkleDropV2,
+    AuraMerkleDropV2__factory,
 } from "../../types/generated";
 
 task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
@@ -114,6 +116,38 @@ task("deploy:mainnet:temp-booster").setAction(async function (taskArguments: Tas
     const tempBooster = await deployTempBooster(hre, deployer, true, 3);
     logContracts({ tempBooster });
 });
+
+task("deploy:mainnet:merkledrop")
+    .addParam("hash", "The root hash of merkle tree")
+    .setAction(async function (taskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+
+        const phase2 = await config.getPhase2(deployer);
+
+        const hash = taskArgs.hash;
+        if (hash == "" || hash == undefined) {
+            throw console.error("invalid hash");
+        }
+
+        const airdrop = await deployContract<AuraMerkleDropV2>(
+            hre,
+            new AuraMerkleDropV2__factory(deployer),
+            "AuraMerkleDropV2",
+            [
+                config.multisigs.treasuryMultisig,
+                hash,
+                phase2.cvx.address,
+                phase2.cvxLocker.address,
+                0,
+                ONE_WEEK.mul(26),
+            ],
+            {},
+            true,
+            3,
+        );
+
+        logContracts({ airdrop });
+    });
 
 task("mainnet:getgauges").setAction(async function (taskArguments: TaskArguments, hre) {
     const { ethers } = hre;
