@@ -12,6 +12,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
  * @title   AuraMerkleDropV2
  * @dev     Forked from contracts/rewards/AuraMerkleDrop.sol. Changes:
  *          - Removed rewards penalty
+ *          - Added Initialized event
  */
 contract AuraMerkleDropV2 {
     using SafeERC20 for IERC20;
@@ -35,6 +36,7 @@ contract AuraMerkleDropV2 {
     event LockerSet(address newLocker);
     event Claimed(address addr, uint256 amt, bool locked);
     event Rescued();
+    event Initialized();
 
     /**
      * @param _dao              The Aura Dao
@@ -64,6 +66,8 @@ contract AuraMerkleDropV2 {
 
         require(_expiresAfter > 2 weeks, "!expiry");
         expiryTime = startTime + _expiresAfter;
+
+        emit Initialized();
     }
 
     /***************************************
