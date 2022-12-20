@@ -120,28 +120,32 @@ contract AuraMerkleDropV2 {
     function claim(
         bytes32[] calldata _proof,
         uint256 _amount,
-        bool _lock
+        bool _lock,
+        address addr
     ) public returns (bool) {
+        if (addr != msg.sender) {
+            require(!_lock, "sender!=addr");
+        }
         require(merkleRoot != bytes32(0), "!root");
         require(block.timestamp > startTime, "!started");
         require(block.timestamp < expiryTime, "!active");
         require(_amount > 0, "!amount");
-        require(hasClaimed[msg.sender] == false, "already claimed");
+        require(hasClaimed[addr] == false, "already claimed");
 
-        bytes32 leaf = keccak256(abi.encodePacked(msg.sender, _amount));
+        bytes32 leaf = keccak256(abi.encodePacked(addr, _amount));
         require(MerkleProof.verify(_proof, merkleRoot, leaf), "invalid proof");
 
-        hasClaimed[msg.sender] = true;
+        hasClaimed[addr] = true;
 
         if (_lock) {
             aura.safeApprove(address(auraLocker), 0);
             aura.safeApprove(address(auraLocker), _amount);
-            auraLocker.lock(msg.sender, _amount);
+            auraLocker.lock(addr, _amount);
         } else {
-            aura.safeTransfer(msg.sender, _amount);
+            aura.safeTransfer(addr, _amount);
         }
 
-        emit Claimed(msg.sender, _amount, _lock);
+        emit Claimed(addr, _amount, _lock);
         return true;
     }
 }
