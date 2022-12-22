@@ -1536,5 +1536,540 @@
             "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270/logo.png",
             "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x3a58a54c066fdc0f2d55fc9c89f0415c92ebf3c4.png"
         }
+    },
+    {
+        "address": "0xf46FD013Acc2c6988BB2f773bd879101eB5d4573",
+        "network": 1,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x8f4205e1604133d1875a3e771ae7e4f2b086563900020000000000000000010e",
+            "address": "0x8f4205e1604133d1875a3E771AE7e4F2b0865639",
+            "poolType": "Weighted",
+            "symbol": "50N/A-50N/A",
+            "tokens": [
+                {
+                    "address": "0x43D4A3cd90ddD2F8f4f693170C9c8098163502ad",
+                    "weight": "0.5",
+                    "symbol": "D2D"
+                },
+                {
+                    "address": "0xba100000625a3754423978a60c9317c58a424e3D",
+                    "weight": "0.5",
+                    "symbol": "BAL"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x43D4A3cd90ddD2F8f4f693170C9c8098163502ad": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0x43d4a3cd90ddd2f8f4f693170c9c8098163502ad.png",
+            "0xba100000625a3754423978a60c9317c58a424e3D": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xba100000625a3754423978a60c9317c58a424e3D/logo.png"
+        }
+    },
+    {
+        "address": "0xAde9C0054f051f5051c4751563C7364765Bf52f5",
+        "network": 1,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x96ba9025311e2f47b840a1f68ed57a3df1ea8747000200000000000000000160",
+            "address": "0x96bA9025311e2f47B840A1f68ED57A3DF1EA8747",
+            "poolType": "Weighted",
+            "symbol": "20DAI-80TCR",
+            "tokens": [
+                {
+                    "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+                    "weight": "0.2",
+                    "symbol": "DAI"
+                },
+                {
+                    "address": "0x9C4A4204B79dd291D6b6571C5BE8BbcD0622F050",
+                    "weight": "0.8",
+                    "symbol": "TCR"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x6B175474E89094C44Da98b954EedeAC495271d0F": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+            "0x9C4A4204B79dd291D6b6571C5BE8BbcD0622F050": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0x9c4a4204b79dd291d6b6571c5be8bbcd0622f050.png"
+        }
+    },
+    {
+        "address": "0x96d7e549eA1d810725e4Cd1f51ed6b4AE8496338",
+        "network": 1,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x5f7fa48d765053f8dd85e052843e12d23e3d7bc50002000000000000000000c0",
+            "address": "0x5f7FA48d765053F8dD85E052843e12D23e3D7BC5",
+            "poolType": "Weighted",
+            "symbol": "NWWP",
+            "tokens": [
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.5",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5",
+                    "weight": "0.5",
+                    "symbol": "NOTE"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+            "0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xcfeaead4947f0705a14ec42ac3d44129e1ef3ed5.png"
+        }
+    },
+    {
+        "address": "0x4e311e207CEAaaed421F17E909DA16527565Daef",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1648465429,
+        "pool": {
+            "id": "0xa02e4b3d18d4e6b8d18ac421fbc3dfff8933c40a00020000000000000000004b",
+            "address": "0xa02E4b3d18D4E6B8d18Ac421fBc3dfFF8933c40a",
+            "poolType": "Weighted",
+            "symbol": "B-50MATIC-50WETH",
+            "tokens": [
+                {
+                    "address": "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0",
+                    "weight": "0.5",
+                    "symbol": "MATIC"
+                },
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.5",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+        }
+    },
+    {
+        "address": "0xD6E4d70bdA78FBa018c2429e1b84153b9284298e",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1648465429,
+        "pool": {
+            "id": "0xec60a5fef79a92c741cb74fdd6bfc340c0279b01000200000000000000000015",
+            "address": "0xeC60a5FeF79a92c741Cb74FdD6bfC340C0279B01",
+            "poolType": "Weighted",
+            "symbol": "B-50REN-50WETH",
+            "tokens": [
+                {
+                    "address": "0x408e41876cCCDC0F92210600ef50372656052a38",
+                    "weight": "0.5",
+                    "symbol": "REN"
+                },
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.5",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x408e41876cCCDC0F92210600ef50372656052a38": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x408e41876cCCDC0F92210600ef50372656052a38/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+        }
+    },
+    {
+        "address": "0x57d40FF4cF7441A04A05628911F57bb940B6C238",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1648465429,
+        "pool": {
+            "id": "0xfeadd389a5c427952d8fdb8057d6c8ba1156cc56000000000000000000000066",
+            "address": "0xFeadd389a5c427952D8fdb8057D6C8ba1156cC56",
+            "poolType": "Stable",
+            "symbol": "staBAL3-BTC",
+            "tokens": [
+                {
+                    "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+                    "weight": "null",
+                    "symbol": "WBTC"
+                },
+                {
+                    "address": "0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D",
+                    "weight": "null",
+                    "symbol": "renBTC"
+                },
+                {
+                    "address": "0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6",
+                    "weight": "null",
+                    "symbol": "sBTC"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png",
+            "0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D/logo.png",
+            "0xfE18be6b3Bd88A2D2A7f928d00292E7a9963CfC6": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xfe18be6b3bd88a2d2a7f928d00292e7a9963cfc6.png"
+        }
+    },
+    {
+        "address": "0x31e7F53D27BFB324656FACAa69Fe440169522E1C",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1648465429,
+        "pool": {
+            "id": "0xe99481dc77691d8e2456e5f3f61c1810adfc1503000200000000000000000018",
+            "address": "0xE99481DC77691d8E2456E5f3F61C1810adFC1503",
+            "poolType": "Weighted",
+            "symbol": "B-50LINK-50WETH",
+            "tokens": [
+                {
+                    "address": "0x514910771AF9Ca656af840dff83E8264EcF986CA",
+                    "weight": "0.5",
+                    "symbol": "LINK"
+                },
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.5",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x514910771AF9Ca656af840dff83E8264EcF986CA": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+        }
+    },
+    {
+        "address": "0x59E7DBfF74B2B76957E6a3f25cCEe40b2f3421D0",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x2d344a84bac123660b021eebe4eb6f12ba25fe8600020000000000000000018a",
+            "address": "0x2D344A84BaC123660b021EEbE4eB6F12ba25fe86",
+            "poolType": "Weighted",
+            "symbol": "20WETH-80FDT",
+            "tokens": [
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.2",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0xEd1480d12bE41d92F36f5f7bDd88212E381A3677",
+                    "weight": "0.8",
+                    "symbol": "FDT"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+            "0xEd1480d12bE41d92F36f5f7bDd88212E381A3677": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xed1480d12be41d92f36f5f7bdd88212e381a3677.png"
+        }
+    },
+    {
+        "address": "0x00Ab79a3bE3AacDD6f85C623f63222A07d3463DB",
+        "network": 1,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x17ddd9646a69c9445cd8a9f921d4cd93bf50d108000200000000000000000159",
+            "address": "0x17dDd9646a69C9445CD8A9f921d4cD93BF50D108",
+            "poolType": "Weighted",
+            "symbol": "20WETH-80HAUS",
+            "tokens": [
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.2",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0xf2051511B9b121394FA75B8F7d4E7424337af687",
+                    "weight": "0.8",
+                    "symbol": "HAUS"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png",
+            "0xf2051511B9b121394FA75B8F7d4E7424337af687": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0xf2051511b9b121394fa75b8f7d4e7424337af687.png"
+        }
+    },
+    {
+        "address": "0xe0779Dc81B5DF4D421044f7f7227f7e2F5b0F0cC",
+        "network": 137,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1663170555,
+        "pool": {
+            "id": "0x186084ff790c65088ba694df11758fae4943ee9e000200000000000000000032",
+            "address": "0x186084fF790C65088BA694Df11758faE4943EE9E",
+            "poolType": "Weighted",
+            "symbol": "TELX-50TEL-50BAL",
+            "tokens": [
+                {
+                    "address": "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3",
+                    "weight": "0.5",
+                    "symbol": "BAL"
+                },
+                {
+                    "address": "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32",
+                    "weight": "0.5",
+                    "symbol": "TEL"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3/logo.png",
+            "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32/logo.png"
+        }
+    },
+    {
+        "address": "0x231B05F3a92d578EFf772f2Ddf6DacFFB3609749",
+        "network": 42161,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0xc2f082d33b5b8ef3a7e3de30da54efd3114512ac000200000000000000000017",
+            "address": "0xc2F082d33b5B8eF3A7E3de30da54EFd3114512aC",
+            "poolType": "Weighted",
+            "symbol": "B-80PICKLE-20WETH",
+            "tokens": [
+                {
+                    "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                    "weight": "0.2",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0x965772e0E9c84b6f359c8597C891108DcF1c5B1A",
+                    "weight": "0.8",
+                    "symbol": "PICKLE"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x82aF49447D8a07e3bd95BD0d56f35241523fBab1/logo.png",
+            "0x965772e0E9c84b6f359c8597C891108DcF1c5B1A": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x429881672B9AE42b8EbA0E26cD9C73711b891Ca5/logo.png"
+        }
+    },
+    {
+        "address": "0x5A3970E3145Bbba4838D1a3A31C79bcD35A16A9E",
+        "network": 137,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1650405699,
+        "pool": {
+            "id": "0x36128d5436d2d70cab39c9af9cce146c38554ff0000100000000000000000008",
+            "address": "0x36128D5436d2d70cab39C9AF9CcE146C38554ff0",
+            "poolType": "Weighted",
+            "symbol": "B-POLYDEFI",
+            "tokens": [
+                {
+                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "weight": "0.2",
+                    "symbol": "USDC"
+                },
+                {
+                    "address": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39",
+                    "weight": "0.2",
+                    "symbol": "LINK"
+                },
+                {
+                    "address": "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+                    "weight": "0.2",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3",
+                    "weight": "0.2",
+                    "symbol": "BAL"
+                },
+                {
+                    "address": "0xD6DF932A45C0f255f85145f286eA0b292B21C90B",
+                    "weight": "0.2",
+                    "symbol": "AAVE"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174/logo.png",
+            "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39/logo.png",
+            "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619/logo.png",
+            "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3/logo.png",
+            "0xD6DF932A45C0f255f85145f286eA0b292B21C90B": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0xD6DF932A45C0f255f85145f286eA0b292B21C90B/logo.png"
+        }
+    },
+    {
+        "address": "0x077794c30AFECcdF5ad2Abc0588E8CEE7197b71a",
+        "network": 42161,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0xe1b40094f1446722c424c598ac412d590e0b3ffb000200000000000000000076",
+            "address": "0xE1B40094F1446722c424C598aC412D590e0b3ffb",
+            "poolType": "Weighted",
+            "symbol": "20WETH-80CRE8R",
+            "tokens": [
+                {
+                    "address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+                    "weight": "0.2",
+                    "symbol": "WETH"
+                },
+                {
+                    "address": "0xb96B904ba83DdEeCE47CAADa8B40EE6936D92091",
+                    "weight": "0.8",
+                    "symbol": "CRE8R"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x82aF49447D8a07e3bd95BD0d56f35241523fBab1/logo.png",
+            "0xb96B904ba83DdEeCE47CAADa8B40EE6936D92091": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0xb96b904ba83ddeece47caada8b40ee6936d92091.png"
+        }
+    },
+    {
+        "address": "0xb61014De55A7AB12e53C285d88706dca2A1B7625",
+        "network": 137,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1662504532,
+        "pool": {
+            "id": "0x2dbc9ab0160087ae59474fb7bed95b9e808fa6bc0001000000000000000003db",
+            "address": "0x2dbC9Ab0160087AE59474FB7bed95B9E808fA6bc",
+            "poolType": "Weighted",
+            "symbol": "20USDC-40TEL-40DFX",
+            "tokens": [
+                {
+                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "weight": "0.2",
+                    "symbol": "USDC"
+                },
+                {
+                    "address": "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32",
+                    "weight": "0.4",
+                    "symbol": "TEL"
+                },
+                {
+                    "address": "0xE7804D91dfCDE7F776c90043E03eAa6Df87E6395",
+                    "weight": "0.4",
+                    "symbol": "DFX"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174/logo.png",
+            "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32/logo.png",
+            "0xE7804D91dfCDE7F776c90043E03eAa6Df87E6395": "https://raw.githubusercontent.com/dfx-finance/assets/add-dfx-logov3/blockchains/ethereum/assets/0x888888435FDe8e7d4c54cAb67f206e4199454c60/logo.png"
+        }
+    },
+    {
+        "address": "0x7C56371077fa0dD8327E5C53Ee26a37D14b671ad",
+        "network": 137,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1663170555,
+        "pool": {
+            "id": "0xdb1db6e248d7bb4175f6e5a382d0a03fe3dcc813000100000000000000000035",
+            "address": "0xdB1db6E248d7Bb4175f6E5A382d0A03fe3DCc813",
+            "poolType": "Weighted",
+            "symbol": "TELX-60TEL-20BAL-20USDC",
+            "tokens": [
+                {
+                    "address": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+                    "weight": "0.2",
+                    "symbol": "USDC"
+                },
+                {
+                    "address": "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3",
+                    "weight": "0.2",
+                    "symbol": "BAL"
+                },
+                {
+                    "address": "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32",
+                    "weight": "0.6",
+                    "symbol": "TEL"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174/logo.png",
+            "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3/logo.png",
+            "0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/polygon/assets/0xdF7837DE1F2Fa4631D716CF2502f8b230F1dcc32/logo.png"
+        }
+    },
+    {
+        "address": "0xAFc28B2412B343574E8673D4fb6b220473677602",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1648465429,
+        "pool": {
+            "id": "0xefaa1604e82e1b3af8430b90192c1b9e8197e377000200000000000000000021",
+            "address": "0xEFAa1604e82e1B3AF8430b90192c1B9e8197e377",
+            "poolType": "Weighted",
+            "symbol": "B-50COMP-50WETH",
+            "tokens": [
+                {
+                    "address": "0xc00e94Cb662C3520282E6f5717214004A7f26888",
+                    "weight": "0.5",
+                    "symbol": "COMP"
+                },
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.5",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0xc00e94Cb662C3520282E6f5717214004A7f26888": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xc00e94Cb662C3520282E6f5717214004A7f26888/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+        }
+    },
+    {
+        "address": "0x852CF729dEF9beB9De2f18c97a0ea6bf93a7dF8B",
+        "network": 1,
+        "isKilled": true,
+        "relativeWeightCap": "null",
+        "addedTimestamp": 1651666799,
+        "pool": {
+            "id": "0xc45d42f801105e861e86658648e3678ad7aa70f900010000000000000000011e",
+            "address": "0xc45D42f801105e861e86658648e3678aD7aa70f9",
+            "poolType": "Weighted",
+            "symbol": "50OHM-25DAI-25WETH",
+            "tokens": [
+                {
+                    "address": "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5",
+                    "weight": "0.5",
+                    "symbol": "OHM"
+                },
+                {
+                    "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+                    "weight": "0.25",
+                    "symbol": "DAI"
+                },
+                {
+                    "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                    "weight": "0.25",
+                    "symbol": "WETH"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x64aa3364F17a4D01c6f1751Fd97C2BD3D7e7f1D5": "https://raw.githubusercontent.com/balancer-labs/assets/master/assets/0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5.png",
+            "0x6B175474E89094C44Da98b954EedeAC495271d0F": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png"
+        }
     }
 ]
