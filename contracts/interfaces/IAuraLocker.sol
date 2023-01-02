@@ -17,4 +17,8 @@ interface IAuraLocker {
     function getReward(address _account, bool _stake) external;
 
     function getReward(address _account) external;
+
+    function delegate(address _to) external;
+
+    function processExpiredLocks(bool _relock) external;
 }
