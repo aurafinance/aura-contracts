@@ -13,7 +13,7 @@ import {
     deployTempBooster,
 } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
-import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
+import { ONE_WEEK, ONE_YEAR, ZERO_ADDRESS } from "../../test-utils/constants";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx, deployContract } from "../utils";
 import {
@@ -25,7 +25,14 @@ import {
     MasterChefRewardHook__factory,
     AuraMerkleDropV2,
     AuraMerkleDropV2__factory,
+    VestingRecipient,
+    VestingRecipient__factory,
+    VestingRecipientFactory,
+    VestingRecipientFactory__factory,
+    AuraVestedEscrow,
+    AuraVestedEscrow__factory,
 } from "../../types/generated";
+import { getTimestamp } from "test-utils";
 
 task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -245,4 +252,45 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     await waitForTx(tx, debug, waitForBlocks);
     tx = await masterChefRewardHook.transferOwnership(protocolMultisig);
     await waitForTx(tx, debug, waitForBlocks);
+});
+
+task("mainnet:vestedEscrow:2").setAction(async function (_: TaskArguments, hre) {
+    const debug = true;
+    const waitForBlocks = 3;
+
+    const signer = await getSigner(hre);
+    const phase2 = await config.getPhase2(signer);
+
+    const protocolMultisig = config.multisigs.daoMultisig;
+    // TODO: what should these values actually be?
+    // maybe stick them in the config file
+    const ts = await getTimestamp();
+    const vestingStart = ts;
+    const vestingEnd = ts.add(ONE_YEAR.mul(2));
+
+    const vestedEscrow = await deployContract<AuraVestedEscrow>(
+        hre,
+        new AuraVestedEscrow__factory(signer),
+        "AuraVestedEscrow",
+        [phase2.cvx.address, protocolMultisig, phase2.cvxLocker.address, vestingStart, vestingEnd],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const vestingRecipientImplementation = await deployContract<VestingRecipient>(
+        hre,
+        new VestingRecipient__factory(signer),
+        "VestedRecipient",
+        [vestedEscrow.address, phase2.cvxLocker.address],
+        {},
+    );
+
+    await deployContract<VestingRecipientFactory>(
+        hre,
+        new VestingRecipientFactory__factory(signer),
+        "vestingRecipientFactory",
+        [vestingRecipientImplementation.address],
+        {},
+    );
 });
