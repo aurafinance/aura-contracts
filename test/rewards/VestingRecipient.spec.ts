@@ -8,8 +8,11 @@ import {
     AuraVestedEscrow__factory,
     ERC20,
     VestingRecipient,
+    VestingRecipientFactory,
+    VestingRecipientFactory__factory,
     VestingRecipient__factory,
 } from "../../types/generated";
+import { Account } from "../../types";
 import { deployContract } from "../../tasks/utils";
 import { impersonateAccount } from "../../test-utils/fork";
 import { BN, simpleToExactAmount } from "../../test-utils/math";
@@ -31,12 +34,14 @@ describe("AuraVestedEscrow", () => {
     let deployTime: BN;
 
     let deployer: Signer;
+    let rando: Account;
     let deployerAddress: string;
 
     let fundAdmin: Signer;
     let fundAdminAddress: string;
 
     let vestingRecipient: VestingRecipient;
+    let vestingRecipientFactory: VestingRecipientFactory;
 
     before(async () => {
         accounts = await ethers.getSigners();
@@ -80,15 +85,47 @@ describe("AuraVestedEscrow", () => {
             deployTime.add(ONE_WEEK),
             deployTime.add(ONE_WEEK.mul(53)),
         );
+
+        rando = await impersonateAccount("0x0000000000000000000000000000000000000002");
     });
 
     it("deploy VestedRecipient", async () => {
-        vestingRecipient = await deployContract<VestingRecipient>(
+        const vestingRecipientImplementation = await deployContract<VestingRecipient>(
             hre,
             new VestingRecipient__factory(deployer),
             "VestedRecipient",
-            [deployerAddress, vestedEscrow.address, auraLocker.address],
+            [vestedEscrow.address, auraLocker.address],
             {},
+        );
+
+        vestingRecipientFactory = await deployContract<VestingRecipientFactory>(
+            hre,
+            new VestingRecipientFactory__factory(deployer),
+            "vestingRecipientFactory",
+            [vestingRecipientImplementation.address],
+            {},
+        );
+
+        const tx = await vestingRecipientFactory.create(deployerAddress);
+        const resp = await tx.wait();
+        const createEvent = resp.events.find(({ event }) => event === "Created");
+        vestingRecipient = VestingRecipient__factory.connect(createEvent.args.vestingRecipient, deployer);
+    });
+    it("vesting recipient factory setImplementation", async () => {
+        const newImplementation = "0x0000000000000000000000000000000000000002";
+        const currentImplementation = await vestingRecipientFactory.implementation();
+        await expect(
+            vestingRecipientFactory.connect(rando.signer).setImplementation(newImplementation),
+        ).to.be.revertedWith("Ownable: caller is not the owner");
+
+        await vestingRecipientFactory.setImplementation(newImplementation);
+        expect(await vestingRecipientFactory.implementation()).eq(newImplementation);
+        // reset
+        await vestingRecipientFactory.setImplementation(currentImplementation);
+    });
+    it("cannot re-init", async () => {
+        await expect(vestingRecipient.init("0x0000000000000000000000000000000000000002")).to.be.revertedWith(
+            "Initializable: contract is already initialized",
         );
     });
     it("has the correct config", async () => {
@@ -106,8 +143,7 @@ describe("AuraVestedEscrow", () => {
         expect(await vestedEscrow.totalLocked(vestingRecipient.address)).eq(simpleToExactAmount(200));
     });
     it("owner protected functions", async () => {
-        const notOwner = await impersonateAccount("0x0000000000000000000000000000000000000002");
-        const vestingRecipientNotOwner = vestingRecipient.connect(notOwner.signer);
+        const vestingRecipientNotOwner = vestingRecipient.connect(rando.signer);
         await expect(vestingRecipientNotOwner.setOwner(ZERO_ADDRESS)).to.be.revertedWith("!owner");
         await expect(vestingRecipientNotOwner.claim(false)).to.be.revertedWith("!owner");
         await expect(vestingRecipientNotOwner.withdrawERC20(contracts.cvx.address, 1)).to.be.revertedWith("!owner");
@@ -118,11 +154,10 @@ describe("AuraVestedEscrow", () => {
     });
     it("update owner", async () => {
         const currentOwner = await vestingRecipient.owner();
-        const newOwner = await impersonateAccount("0x0000000000000000000000000000000000000002", true);
-        await vestingRecipient.setOwner(newOwner.address);
-        expect(await vestingRecipient.owner()).eq(newOwner.address);
+        await vestingRecipient.setOwner(rando.address);
+        expect(await vestingRecipient.owner()).eq(rando.address);
         await expect(vestingRecipient.setOwner(currentOwner)).to.be.revertedWith("!owner");
-        await vestingRecipient.connect(newOwner.signer).setOwner(currentOwner);
+        await vestingRecipient.connect(rando.signer).setOwner(currentOwner);
     });
     it("cannot execute forbiden contracts", async () => {
         await expect(vestingRecipient.execute(auraLocker.address, 0, [])).to.be.revertedWith("to==auraLocker");
@@ -156,7 +191,7 @@ describe("AuraVestedEscrow", () => {
     it("delegate", async () => {
         const currentDelegate = await auraLocker.delegates(vestingRecipient.address);
         expect(currentDelegate).eq(ZERO_ADDRESS);
-        const newDelegate = "0x0000000000000000000000000000000000000002";
+        const newDelegate = rando.address;
         await vestingRecipient.delegate(newDelegate);
         expect(await auraLocker.delegates(vestingRecipient.address)).eq(newDelegate);
     });

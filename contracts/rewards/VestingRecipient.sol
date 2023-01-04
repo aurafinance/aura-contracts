@@ -5,6 +5,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { Initializable } from "@openzeppelin/contracts-0.8/proxy/utils/Initializable.sol";
 
 interface IVestedEscrow {
     function claim(bool) external;
@@ -18,7 +19,7 @@ interface IVestedEscrow {
  * @title   VestingRecipient
  * @author  AuraFinance
  */
-contract VestingRecipient {
+contract VestingRecipient is Initializable {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -51,21 +52,21 @@ contract VestingRecipient {
     // ----------------------------------------------------------
 
     /**
-     * @param _owner The address of the owner
      * @param _vesting VestedEscrow V2 contract
      * @param _auraLocker Aura Locker contract
      */
-    constructor(
-        address _owner,
-        address _vesting,
-        address _auraLocker
-    ) {
-        // TODO: create init function to setup owner so this can be proxied
-        owner = _owner;
+    constructor(address _vesting, address _auraLocker) {
         vesting = _vesting;
         auraLocker = _auraLocker;
-
         rewardToken = IVestedEscrow(_vesting).rewardToken();
+    }
+
+    /**
+     * @dev Initialize the contract
+     * @param _owner The address of the owner
+     */
+    function init(address _owner) external initializer {
+        owner = _owner;
         unlockTime = block.timestamp + UNLOCK_DURATION;
     }
 
