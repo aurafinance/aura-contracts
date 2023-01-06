@@ -2184,6 +2184,64 @@
         }
     },
     {
+        "address": "0xE77239359CE4D445Fed27C17Da23B8024d35e456",
+        "network": 137,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1672444283,
+        "pool": {
+            "id": "0x4a0b73f0d13ff6d43e304a174697e3d5cfd310a400020000000000000000091c",
+            "address": "0x4A0b73f0D13fF6d43e304a174697e3d5CFd310a4",
+            "poolType": "Weighted",
+            "symbol": "2BRLUSD-boosted",
+            "tokens": [
+                {
+                    "address": "0x48e6B98ef6329f8f0A30eBB8c7C960330d648085",
+                    "weight": "0.5",
+                    "symbol": "bb-am-usd"
+                },
+                {
+                    "address": "0xE22483774bd8611bE2Ad2F4194078DaC9159F4bA",
+                    "weight": "0.5",
+                    "symbol": "2BRL (BRZ)"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x48e6B98ef6329f8f0A30eBB8c7C960330d648085": "https://raw.githubusercontent.com/balancer-labs/assets/refactor-for-multichain/assets/0x48e6b98ef6329f8f0a30ebb8c7c960330d648085.png",
+            "0xE22483774bd8611bE2Ad2F4194078DaC9159F4bA": ""
+        }
+    },
+    {
+        "address": "0xF0d887c1f5996C91402EB69Ab525f028DD5d7578",
+        "network": 137,
+        "isKilled": false,
+        "relativeWeightCap": "0.02",
+        "addedTimestamp": 1672444283,
+        "pool": {
+            "id": "0xe22483774bd8611be2ad2f4194078dac9159f4ba0000000000000000000008f0",
+            "address": "0xE22483774bd8611bE2Ad2F4194078DaC9159F4bA",
+            "poolType": "ComposableStable",
+            "symbol": "2BRL (BRZ)",
+            "tokens": [
+                {
+                    "address": "0x491a4eB4f1FC3BfF8E1d2FC856a6A46663aD556f",
+                    "weight": "null",
+                    "symbol": "BRZ"
+                },
+                {
+                    "address": "0xf2f77FE7b8e66571E0fca7104c4d670BF1C8d722",
+                    "weight": "null",
+                    "symbol": "jBRL"
+                }
+            ]
+        },
+        "tokenLogoURIs": {
+            "0x491a4eB4f1FC3BfF8E1d2FC856a6A46663aD556f": "",
+            "0xf2f77FE7b8e66571E0fca7104c4d670BF1C8d722": ""
+        }
+    },
+    {
         "address": "0xfb0265841C49A6b19D70055E596b212B0dA3f606",
         "network": 10,
         "isKilled": false,
@@ -2504,3 +2562,4 @@
         }
     }
 ]
+
