@@ -74,8 +74,6 @@ abstract contract AuraHeadlessRewardPool {
     address[] public extraRewards;
 
     event RewardAdded(uint256 reward);
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -271,8 +269,6 @@ abstract contract AuraHeadlessRewardPool {
     function stakeFor(address _for, uint256 _amount) public virtual returns(bool);
 
     function withdraw(uint256 amount, bool claim) public virtual returns(bool);
-        
-    function withdrawAll(bool claim) external virtual;
 
     function totalSupply() public view virtual returns (uint256);
 
