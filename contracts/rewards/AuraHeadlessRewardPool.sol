@@ -201,6 +201,7 @@ abstract contract AuraHeadlessRewardPool {
      *      large, or the epoch has ended.
      */
     function queueNewRewards(uint256 _rewards) external returns(bool){
+        require(msg.sender == operator, "!authorized");
         return _queueNewRewards(_rewards);
     }
   
@@ -208,8 +209,6 @@ abstract contract AuraHeadlessRewardPool {
      * @dev See queueNewRewards
      */
     function _queueNewRewards(uint256 _rewards) internal returns(bool) {
-        require(msg.sender == operator, "!authorized");
-
         _rewards = _rewards.add(queuedRewards);
 
         if (block.timestamp >= periodFinish) {

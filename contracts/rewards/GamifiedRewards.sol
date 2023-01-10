@@ -5,7 +5,6 @@ import "./GamifiedStructs.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 import { AuraHeadlessRewardPool } from "./AuraHeadlessRewardPool.sol";
 
-// TODO:
 interface IQuestManager {
     function checkForSeasonFinish(address _account) external returns (uint8 newQuestMultiplier);
 }

@@ -8,6 +8,7 @@ import { GamifiedRewards } from "./GamifiedRewards.sol";
 import { IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { IBalancerVault, IAsset } from "../interfaces/balancer/IBalancerCore.sol";
 
 interface IBaseRewardPool {
     function getReward(address _account, bool _claimExtras) external returns (bool);
@@ -17,7 +18,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     using SafeERC20 for IERC20;
 
     // ---------------------------------------------------------
-    // Storage 
+    // Storage
     // ---------------------------------------------------------
 
     address public cvxCrvStaking;
@@ -26,12 +27,15 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     /// @notice Seconds a user must wait after she initiates her cooldown before withdrawal is possible
     uint256 public constant COOLDOWN_SECONDS = 1814400 seconds;
-    
+
     /// @notice Window in which it is possible to withdraw, following the cooldown period
     uint256 public constant UNSTAKE_WINDOW = 14 days;
-    
+
     /// @notice A week
     uint256 private constant ONE_WEEK = 7 days;
+
+    bytes32 public constant AURA_BAL_STABLE_POOL_ID =
+        0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249;
 
     // ---------------------------------------------------------
     // Events
@@ -45,7 +49,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     event Withdraw(address indexed user, address indexed to, uint256 amount);
 
     // ---------------------------------------------------------
-    // Constructor 
+    // Constructor
     // ---------------------------------------------------------
 
     constructor(
@@ -78,7 +82,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     }
 
     // ---------------------------------------------------------
-    // Modifiers 
+    // Modifiers
     // ---------------------------------------------------------
 
     modifier onlyHarvester() {
@@ -92,7 +96,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     }
 
     // ---------------------------------------------------------
-    // Setters 
+    // Setters
     // ---------------------------------------------------------
 
     function setHarvester(address _harvester) external onlyOperator {
@@ -100,28 +104,33 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         emit SetHarvester(_harvester);
     }
 
+    function setApprovals() external onlyOperator {
+        _setApprovals();
+        IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+    }
+
     // ---------------------------------------------------------
     // Stake/Withdraw
     // ---------------------------------------------------------
 
-    function stake(uint256 _amount) public override returns(bool) {
+    function stake(uint256 _amount) public override returns (bool) {
         _transferAndStake(msg.sender, _amount, false);
         return true;
     }
 
-    function stakeAll() external override returns(bool) {
+    function stakeAll() external override returns (bool) {
         uint256 amount = IERC20(stakingToken).balanceOf(msg.sender);
         _transferAndStake(msg.sender, amount, false);
         return true;
     }
 
-    function stakeFor(address _for, uint256 _amount) public override returns(bool) {
+    function stakeFor(address _for, uint256 _amount) public override returns (bool) {
         _transferAndStake(_for, _amount, false);
         return true;
     }
 
-    function withdraw(uint256 amount, bool claim) public override returns(bool) {
-        if(claim) {
+    function withdraw(uint256 amount, bool claim) public override returns (bool) {
+        if (claim) {
             getReward(msg.sender, claim);
         }
         _withdraw(amount, msg.sender, true);
@@ -161,7 +170,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
      * Can be overridden if the tokens are held elsewhere. eg in the Balancer Pool Gauge.
      */
     function _transferAndStake(
-        address _to, 
+        address _to,
         uint256 _amount,
         bool _exitCooldown
     ) internal virtual {
@@ -190,8 +199,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         //    then reset the timestamp to 0
         bool exitCooldown = _exitCooldown ||
             (oldBalance.cooldownTimestamp > 0 &&
-                block.timestamp >
-                (oldBalance.cooldownTimestamp + COOLDOWN_SECONDS + UNSTAKE_WINDOW));
+                block.timestamp > (oldBalance.cooldownTimestamp + COOLDOWN_SECONDS + UNSTAKE_WINDOW));
         if (exitCooldown) {
             emit CooldownExited(_to);
         }
@@ -218,13 +226,9 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
         // 1. If no recollateralisation has occured, the user must be within their UNSTAKE_WINDOW period in order to withdraw
         Balance memory oldBalance = _balances[msg.sender];
+        require(block.timestamp > oldBalance.cooldownTimestamp + COOLDOWN_SECONDS, "INSUFFICIENT_COOLDOWN");
         require(
-            block.timestamp > oldBalance.cooldownTimestamp + COOLDOWN_SECONDS,
-            "INSUFFICIENT_COOLDOWN"
-        );
-        require(
-            block.timestamp - (oldBalance.cooldownTimestamp + COOLDOWN_SECONDS) <=
-                UNSTAKE_WINDOW,
+            block.timestamp - (oldBalance.cooldownTimestamp + COOLDOWN_SECONDS) <= UNSTAKE_WINDOW,
             "UNSTAKE_WINDOW_FINISHED"
         );
 
@@ -285,11 +289,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
      * @param _weightedTimestamp The users weightedTimestamp
      * @return _feeRate where 1% == 1e16
      */
-    function calcRedemptionFeeRate(uint32 _weightedTimestamp)
-        public
-        view
-        returns (uint256 _feeRate)
-    {
+    function calcRedemptionFeeRate(uint32 _weightedTimestamp) public view returns (uint256 _feeRate) {
         uint256 weeksStaked = ((block.timestamp - _weightedTimestamp) * 1e18) / ONE_WEEK;
         if (weeksStaked > 3e18) {
             // e.g. weeks = 1  = sqrt(300e18) = 17320508075
@@ -315,11 +315,11 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
         // 1. Add BAL as single sided liq to 8020BALWETH
         uint256 bptAmount = _investAllBalToPool(_outputBps);
-        if(bptAmount > 0) {
+        if (bptAmount > 0) {
             // 2. Swap 8020BALWETH-BPT for auraBAL
             uint256 auraBalAmount = _swapAllBptForAuraBal(bptAmount);
             // 3. Queue new rewards with the newly swapped auraBAL
-            if(auraBalAmount > 0) {
+            if (auraBalAmount > 0) {
                 _queueNewRewards(auraBalAmount);
                 emit Harvest(auraBalAmount);
             }
@@ -327,12 +327,31 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     }
 
     // ---------------------------------------------------------
-    // Internals 
+    // Internals
     // ---------------------------------------------------------
 
     function _swapAllBptForAuraBal(uint256 _bptAmount) internal returns (uint256) {
         uint256 auraBalBalanceBefore = IERC20(stakingToken).balanceOf(address(this));
-        // TODO: swap BPT for auraBAL
+
+        IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
+            poolId: AURA_BAL_STABLE_POOL_ID,
+            kind: IBalancerVault.SwapKind.GIVEN_IN,
+            assetIn: IAsset(BALANCER_POOL_TOKEN),
+            assetOut: IAsset(address(rewardToken)),
+            amount: _bptAmount,
+            userData: bytes("")
+        });
+
+        IBalancerVault.FundManagement memory fundManagement = IBalancerVault.FundManagement({
+            sender: address(this),
+            fromInternalBalance: false,
+            recipient: payable(address(this)),
+            toInternalBalance: false
+        });
+
+        // TODO: set a proper limit that isn't 0
+        BALANCER_VAULT.swap(singleSwap, fundManagement, 0, block.timestamp + 5 minutes);
+
         uint256 auraBalBalanceAfter = IERC20(stakingToken).balanceOf(address(this));
         return auraBalBalanceAfter - auraBalBalanceBefore;
     }
@@ -340,7 +359,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     function _investAllBalToPool(uint256 _outputBps) internal returns (uint256) {
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
         uint256 minOut = _getMinOut(balBalance, _outputBps);
-        _investBalToPool(balBalance, minOut);
+        _joinWithBal(balBalance, minOut);
         return IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
     }
 

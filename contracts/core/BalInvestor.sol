@@ -67,6 +67,10 @@ abstract contract BalInvestor {
 
     function _investBalToPool(uint256 amount, uint256 minOut) internal {
         IERC20(BAL).safeTransferFrom(msg.sender, address(this), amount);
+        _joinWithBal(amount, minOut);
+    }
+
+    function _joinWithBal(uint256 amount, uint256 minOut) internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(BAL);
         assets[1] = IAsset(WETH);

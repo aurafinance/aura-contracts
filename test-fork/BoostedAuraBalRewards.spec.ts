@@ -48,7 +48,7 @@ describe("BoostedAuraBalRewards", () => {
     // auraBAL and queue it for rewards
     async function forceHarvestRewards(amount = parseEther("100")) {
         await getBal(rewards.address, amount);
-        rewards.harvest(SLIPPAGE_OUTPUT_BPS);
+        await rewards.harvest(SLIPPAGE_OUTPUT_BPS);
     }
 
     before(async () => {
@@ -95,6 +95,9 @@ describe("BoostedAuraBalRewards", () => {
         it("Add BoostedAuraBalRewards to Booster platform rewards", async () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
             expect(await phase2.booster.treasury()).eq(rewards.address);
+        });
+        it("Set approvals", async () => {
+            await rewards.connect(dao.signer).setApprovals();
         });
     });
 
