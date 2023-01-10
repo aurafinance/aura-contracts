@@ -2,20 +2,23 @@
 pragma solidity 0.8.11;
 
 import { BalInvestor } from "../core/BalInvestor.sol";
-import { AuraBaseRewardPool } from "./AuraBaseRewardPool.sol";
+import { GamifiedRewards } from "./GamifiedRewards.sol";
 import { IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 
 interface IBaseRewardPool {
     function getReward(address _account, bool _claimExtras) external returns (bool);
 }
 
-contract BoostedAuraBalRewardPool is AuraBaseRewardPool, BalInvestor {
+contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     // ---------------------------------------------------------
     // Storage 
     // ---------------------------------------------------------
 
     address public cvxCrvStaking;
+
+    address public harvester;
 
     // ---------------------------------------------------------
     // Events
@@ -30,20 +33,30 @@ contract BoostedAuraBalRewardPool is AuraBaseRewardPool, BalInvestor {
     // ---------------------------------------------------------
 
     constructor(
+        // HeadlessStaking
         uint256 _pid,
         address _stakingToken,
         address _rewardToken,
         address _operator,
         address _rewardManager,
-        // BalInvestor params
+        // BalInvestor
         IBalancerVault _balancerVault,
         address _bal,
         address _weth,
-        bytes32 _balETHPoolId
-        // GamifiedRewardPool params
-        address _cvxCrvStaking,
+        bytes32 _balETHPoolId,
+        // BoostedAuraBalRewardPool
+        address _cvxCrvStaking
     )
-        AuraBaseRewardPool(_pid, _stakingToken, _rewardToken, _operator, _rewardManager)
+        GamifiedRewards(
+            // HeadlessStaking
+            _pid,
+            _stakingToken,
+            _rewardToken,
+            _operator,
+            _rewardManager,
+            // GamifiedRewards
+            address(0) // questManager
+        )
         BalInvestor(_balancerVault, _bal, _weth, _balETHPoolId)
     {
         cvxCrvStaking = _cvxCrvStaking;
@@ -74,7 +87,31 @@ contract BoostedAuraBalRewardPool is AuraBaseRewardPool, BalInvestor {
     }
 
     // ---------------------------------------------------------
-    // Core 
+    // Base Reward 
+    // ---------------------------------------------------------
+
+    function stake(uint256 _amount) public override returns(bool) {
+        // TODO:
+    }
+
+    function stakeAll() external override returns(bool) {
+        // TODO:
+    }
+
+    function stakeFor(address _for, uint256 _amount) public override returns(bool) {
+        // TODO:
+    }
+
+    function withdraw(uint256 amount, bool claim) public override returns(bool) {
+        // TODO:
+    }
+        
+    function withdrawAll(bool claim) external override {
+        // TODO:
+    }
+
+    // ---------------------------------------------------------
+    // Boosted
     // ---------------------------------------------------------
 
     function harvest(uint256 _outputBps) external onlyHarvester {
@@ -82,32 +119,33 @@ contract BoostedAuraBalRewardPool is AuraBaseRewardPool, BalInvestor {
         IBaseRewardPool(cvxCrvStaking).getReward(address(this), true);
 
         // 1. Add BAL as single sided liq to 8020BALWETH
-        uint256 bptAmount = _investAllBalToPool();
-        // 2. Swap 8020BALWETH-BPT for auraBAL
-        uint256 auraBalAmount = _swapAllBptForAuraBal(bptAmount);
-        // 3. Queue new rewards with the newly swapped auraBAL
-        if(auraBalAmount > 0) {
-            _queueNewRewards(auraBalAmount);
+        uint256 bptAmount = _investAllBalToPool(_outputBps);
+        if(bptAmount > 0) {
+            // 2. Swap 8020BALWETH-BPT for auraBAL
+            uint256 auraBalAmount = _swapAllBptForAuraBal(bptAmount);
+            // 3. Queue new rewards with the newly swapped auraBAL
+            if(auraBalAmount > 0) {
+                _queueNewRewards(auraBalAmount);
+                emit Harvest(auraBalAmount);
+            }
         }
-
-        emit Harvest(auraBalAmount);
     }
 
     // ---------------------------------------------------------
     // Internals 
     // ---------------------------------------------------------
 
-    function _swapBptForAuraBal(uint256 _bptAmount) internal returns (uint256) {
-        uint256 auraBalBalanceBefore = IERC20(cvxCrv).balanceOf(address(this));
+    function _swapAllBptForAuraBal(uint256 _bptAmount) internal returns (uint256) {
+        uint256 auraBalBalanceBefore = IERC20(stakingToken).balanceOf(address(this));
         // TODO: swap BPT for auraBAL
-        uint256 auraBalBalanceAfter = IERC20(cvxCrv).balanceOf(address(this));
+        uint256 auraBalBalanceAfter = IERC20(stakingToken).balanceOf(address(this));
         return auraBalBalanceAfter - auraBalBalanceBefore;
     }
 
-    function _investAllBalToPool() internal returns (uint256) {
+    function _investAllBalToPool(uint256 _outputBps) internal returns (uint256) {
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
         uint256 minOut = _getMinOut(balBalance, _outputBps);
-        _investBalToPool(balance, minOut);
+        _investBalToPool(balBalance, minOut);
         return IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
     }
 

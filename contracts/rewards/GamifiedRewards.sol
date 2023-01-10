@@ -1,113 +1,65 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity 0.8.6;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.11;
 
-import { SafeCastExtended } from "../../shared/SafeCastExtended.sol";
-import { ILockedERC20 } from "./interfaces/ILockedERC20.sol";
-import { HeadlessStakingRewards } from "../../rewards/staking/HeadlessStakingRewards.sol";
-import { IQuestManager } from "./interfaces/IQuestManager.sol";
-import "./deps/GamifiedTokenStructs.sol";
-import { SlotFiller51 } from "../../shared/SlotFiller51.sol";
+import "./GamifiedStructs.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
+import { AuraHeadlessRewardPool } from "./AuraHeadlessRewardPool.sol";
+
+// TODO:
+interface IQuestManager {  
+    function checkForSeasonFinish(address _account) external returns (uint8 newQuestMultiplier);
+}
 
 /**
- * @title GamifiedToken
- * @notice GamifiedToken is a non-transferrable ERC20 token that has both a raw balance and a scaled balance.
- * Scaled balance is determined by quests a user completes, and the length of time they keep the raw balance wrapped.
- * QuestMasters can add new quests for stakers to complete, for which they are rewarded with permanent or seasonal multipliers.
- * @author mStable
- * @dev Originally forked from openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol
- * Changes:
- *   - Removed the transfer, transferFrom, approve fns to make non-transferrable
- *   - Removed `_allowances` storage
- *   - Removed `_beforeTokenTransfer` hook
- *   - Replaced standard uint256 balance with a single struct containing all data from which the scaledBalance can be derived
- *   - Quest system implemented that tracks a users quest status and applies multipliers for them
+ * @title GamifiedRewards
  **/
-abstract contract GamifiedToken is
-    ILockedERC20,
-    SlotFiller51,
-    HeadlessStakingRewards
-{
-    /// @notice name of this token (ERC20)
-    bytes32 private _name;
-    /// @notice symbol of this token (ERC20)
-    bytes32 private _symbol;
-    /// @notice number of decimals of this token (ERC20)
-    uint8 public constant override decimals = 18;
-
+abstract contract GamifiedRewards is AuraHeadlessRewardPool {
+    /// @notice Total token supply
+    uint256 internal _totalSupply;
     /// @notice User balance structs containing all data needed to scale balance
     mapping(address => Balance) internal _balances;
-    /// @notice Most recent price coefficients per user
-    mapping(address => uint256) internal _userPriceCoeff;
     /// @notice Quest Manager
     IQuestManager public immutable questManager;
-    /// @notice Has variable price
-    bool public immutable hasPriceCoeff;
 
-    /***************************************
-                    INIT
-    ****************************************/
+    // ---------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------
 
     /**
-     * @param _nexus System nexus
-     * @param _rewardsToken Token that is being distributed as a reward. eg MTA
-     * @param _questManager Centralised manager of quests
-     * @param _hasPriceCoeff true if raw staked amount is multiplied by price coeff to get staked amount. eg BPT Staked Token
+     * @param _questManager Manager of quests
      */
     constructor(
-        address _nexus,
-        address _rewardsToken,
-        address _questManager,
-        bool _hasPriceCoeff
-    ) HeadlessStakingRewards(_nexus, _rewardsToken) {
+        // HeadlessStaking
+        uint256 _pid,
+        address _stakingToken,
+        address _rewardToken,
+        address _operator,
+        address _rewardManager,
+        // GamifiedRewards
+        address _questManager
+    ) 
+        AuraHeadlessRewardPool(
+            _pid,
+            _stakingToken,
+            _rewardToken,
+            _operator,
+            _rewardManager
+        )
+    {
         questManager = IQuestManager(_questManager);
-        hasPriceCoeff = _hasPriceCoeff;
-    }
-
-    /**
-     * @param _nameArg Token name
-     * @param _symbolArg Token symbol
-     * @param _rewardsDistributorArg mStable Rewards Distributor
-     */
-    function __GamifiedToken_init(
-        bytes32 _nameArg,
-        bytes32 _symbolArg,
-        address _rewardsDistributorArg
-    ) internal {
-        _name = _nameArg;
-        _symbol = _symbolArg;
-        HeadlessStakingRewards._initialize(_rewardsDistributorArg);
     }
 
     /**
      * @dev Checks that _msgSender is the quest Manager
      */
     modifier onlyQuestManager() {
-        require(_msgSender() == address(questManager), "Not verified");
+        require(msg.sender == address(questManager), "!questManager");
         _;
     }
 
-    /***************************************
-                    VIEWS
-    ****************************************/
-
-    function name() public view override returns (string memory) {
-        return bytes32ToString(_name);
-    }
-
-    function symbol() public view override returns (string memory) {
-        return bytes32ToString(_symbol);
-    }
-
-    /**
-     * @dev Total sum of all scaled balances
-     * In this instance, leave to the child token.
-     */
-    function totalSupply()
-        public
-        view
-        virtual
-        override(HeadlessStakingRewards, ILockedERC20)
-        returns (uint256);
+    // ---------------------------------------------------------
+    // Views
+    // ---------------------------------------------------------
 
     /**
      * @dev Simply gets scaled balance
@@ -117,7 +69,7 @@ abstract contract GamifiedToken is
         public
         view
         virtual
-        override(HeadlessStakingRewards, ILockedERC20)
+        override(AuraHeadlessRewardPool)
         returns (uint256)
     {
         return _getBalance(_account, _balances[_account]);
@@ -144,11 +96,6 @@ abstract contract GamifiedToken is
         balance = (_balance.raw * (100 + _balance.questMultiplier)) / 100;
         // e.g. 1400 * (100 + 30) / 100 = 1820
         balance = (balance * (100 + _balance.timeMultiplier)) / 100;
-
-        if (hasPriceCoeff) {
-            // e.g. 1820 * 16000 / 10000 = 2912
-            balance = (balance * _userPriceCoeff[_account]) / 10000;
-        }
     }
 
     /**
@@ -158,16 +105,14 @@ abstract contract GamifiedToken is
         return _balances[_account];
     }
 
-    /**
-     * @notice Raw staked balance without any multipliers
-     */
-    function userPriceCoeff(address _account) external view returns (uint256) {
-        return _userPriceCoeff[_account];
+
+    function totalSupply() public view override(AuraHeadlessRewardPool) returns (uint256) {
+        return _totalSupply;
     }
 
-    /***************************************
-                    QUESTS
-    ****************************************/
+    // ---------------------------------------------------------
+    // Quests
+    // ---------------------------------------------------------
 
     /**
      * @dev Called by anyone to poke the timestamp of a given account. This allows users to
@@ -228,13 +173,9 @@ abstract contract GamifiedToken is
         }
     }
 
-    function _getPriceCoeff() internal virtual returns (uint256) {
-        return 10000;
-    }
-
-    /***************************************
-                BALANCE CHANGES
-    ****************************************/
+    // ---------------------------------------------------------
+    // Balance changes
+    // ---------------------------------------------------------
 
     /**
      * @dev Adds the multiplier awarded from quest completion to a users data, taking the opportunity
@@ -278,11 +219,11 @@ abstract contract GamifiedToken is
         // 2. Set weighted timestamp and enter cooldown
         _balances[_account].timeMultiplier = _timeMultiplier(oldBalance.weightedTimestamp);
         // e.g. 1e18 / 1e16 = 100, 2e16 / 1e16 = 2, 1e15/1e16 = 0
-        _balances[_account].raw = totalUnits - SafeCastExtended.toUint88(_units);
+        _balances[_account].raw = totalUnits - AuraMath.to88(_units);
 
         // 3. Set cooldown data
-        _balances[_account].cooldownTimestamp = SafeCastExtended.toUint32(block.timestamp);
-        _balances[_account].cooldownUnits = SafeCastExtended.toUint88(_units);
+        _balances[_account].cooldownTimestamp = AuraMath.to32(block.timestamp);
+        _balances[_account].cooldownUnits = AuraMath.to88(_units);
 
         // 4. Update scaled balance
         _settleScaledBalance(_account, oldScaledBalance);
@@ -347,7 +288,7 @@ abstract contract GamifiedToken is
         // 1. Get and update current balance
         (Balance memory oldBalance, uint256 oldScaledBalance) = _prepareOldBalance(_account);
         uint88 totalRaw = oldBalance.raw + oldBalance.cooldownUnits;
-        _balances[_account].raw = oldBalance.raw + SafeCastExtended.toUint88(_rawAmount);
+        _balances[_account].raw = oldBalance.raw + AuraMath.to88(_rawAmount);
 
         // 2. Exit cooldown if necessary
         if (_exitCooldown) {
@@ -359,7 +300,7 @@ abstract contract GamifiedToken is
         // 3. Set weighted timestamp
         //  i) For new _account, set up weighted timestamp
         if (oldBalance.weightedTimestamp == 0) {
-            _balances[_account].weightedTimestamp = SafeCastExtended.toUint32(block.timestamp);
+            _balances[_account].weightedTimestamp = AuraMath.to32(block.timestamp);
             _mintScaled(_account, _getBalance(_account, _balances[_account]));
             return;
         }
@@ -368,7 +309,7 @@ abstract contract GamifiedToken is
         uint256 oldWeightedSecondsHeld = (block.timestamp - oldBalance.weightedTimestamp) *
             totalRaw;
         uint256 newSecondsHeld = oldWeightedSecondsHeld / (totalRaw + (_rawAmount / 2));
-        uint32 newWeightedTs = SafeCastExtended.toUint32(block.timestamp - newSecondsHeld);
+        uint32 newWeightedTs = AuraMath.to32(block.timestamp - newSecondsHeld);
         _balances[_account].weightedTimestamp = newWeightedTs;
 
         uint8 timeMultiplier = _timeMultiplier(newWeightedTs);
@@ -399,13 +340,13 @@ abstract contract GamifiedToken is
         // 1.1. If _finalise, move everything to cooldown
         if (_finalise) {
             _balances[_account].raw = 0;
-            _balances[_account].cooldownUnits = SafeCastExtended.toUint88(totalRaw);
-            oldBalance.cooldownUnits = SafeCastExtended.toUint88(totalRaw);
+            _balances[_account].cooldownUnits = AuraMath.to88(totalRaw);
+            oldBalance.cooldownUnits = AuraMath.to88(totalRaw);
         }
         // 1.2. Update
         require(oldBalance.cooldownUnits >= _rawAmount, "ERC20: burn amount > balance");
         unchecked {
-            _balances[_account].cooldownUnits -= SafeCastExtended.toUint88(_rawAmount);
+            _balances[_account].cooldownUnits -= AuraMath.to88(_rawAmount);
         }
 
         // 2. If we are exiting cooldown, reset the balance
@@ -422,7 +363,7 @@ abstract contract GamifiedToken is
             (totalRaw - (_rawAmount / 8));
         //      newWeightedTs = 937.5 / 100 = 93.75
         uint256 newSecondsHeld = secondsHeld / totalRaw;
-        uint32 newWeightedTs = SafeCastExtended.toUint32(block.timestamp - newSecondsHeld);
+        uint32 newWeightedTs = AuraMath.to32(block.timestamp - newSecondsHeld);
         _balances[_account].weightedTimestamp = newWeightedTs;
 
         uint8 timeMultiplier = _timeMultiplier(newWeightedTs);
@@ -432,10 +373,9 @@ abstract contract GamifiedToken is
         _settleScaledBalance(_account, oldScaledBalance);
     }
 
-    /***************************************
-                    PRIVATE
-    updateReward should already be called by now
-    ****************************************/
+    // ---------------------------------------------------------
+    // Private: updateReward should already be called by now
+    // ---------------------------------------------------------
 
     /**
      * @dev Fetches the balance of a given user, scales it, and also takes the opportunity
@@ -453,9 +393,6 @@ abstract contract GamifiedToken is
         oldScaledBalance = _getBalance(_account, oldBalance);
         // Take the opportunity to check for season finish
         _balances[_account].questMultiplier = questManager.checkForSeasonFinish(_account);
-        if (hasPriceCoeff) {
-            _userPriceCoeff[_account] = SafeCastExtended.toUint16(_getPriceCoeff());
-        }
     }
 
     /**
@@ -484,8 +421,7 @@ abstract contract GamifiedToken is
      */
     function _mintScaled(address _account, uint256 _amount) private {
         emit Transfer(address(0), _account, _amount);
-
-        _afterTokenTransfer(address(0), _account, _amount);
+        _totalSupply += _amount;
     }
 
     /**
@@ -495,60 +431,26 @@ abstract contract GamifiedToken is
      */
     function _burnScaled(address _account, uint256 _amount) private {
         emit Transfer(_account, address(0), _amount);
-
-        _afterTokenTransfer(_account, address(0), _amount);
+        _totalSupply -= _amount;
     }
 
-    /***************************************
-                    HOOKS
-    ****************************************/
+    // ---------------------------------------------------------
+    // Hooks
+    // ---------------------------------------------------------
 
     /**
      * @dev Triggered after a user claims rewards from the HeadlessStakingRewards. Used
      * to check for season finish. If it has not, then do not spend gas updating the other vars.
      * @param _account Address of user that has burned
      */
-    function _claimRewardHook(address _account) internal override {
+    function _claimRewardHook(address _account) internal override(AuraHeadlessRewardPool) {
         uint8 newMultiplier = questManager.checkForSeasonFinish(_account);
-        bool priceCoeffChanged = hasPriceCoeff
-            ? _getPriceCoeff() != _userPriceCoeff[_account]
-            : false;
-        if (newMultiplier != _balances[_account].questMultiplier || priceCoeffChanged) {
+        if (newMultiplier != _balances[_account].questMultiplier) {
             // 1. Get current balance & trigger season finish
             uint256 oldScaledBalance = _getBalance(_account, _balances[_account]);
             _balances[_account].questMultiplier = newMultiplier;
-            if (priceCoeffChanged) {
-                _userPriceCoeff[_account] = SafeCastExtended.toUint16(_getPriceCoeff());
-            }
             // 3. Update scaled balance
             _settleScaledBalance(_account, oldScaledBalance);
         }
     }
-
-    /**
-     * @dev Unchanged from OpenZeppelin. Used in child contracts to react to any balance changes.
-     */
-    function _afterTokenTransfer(
-        address _from,
-        address _to,
-        uint256 _amount
-    ) internal virtual {}
-
-    /***************************************
-                    Utils
-    ****************************************/
-
-    function bytes32ToString(bytes32 _bytes32) internal pure returns (string memory) {
-        uint256 i = 0;
-        while (i < 32 && _bytes32[i] != 0) {
-            i++;
-        }
-        bytes memory bytesArray = new bytes(i);
-        for (i = 0; i < 32 && _bytes32[i] != 0; i++) {
-            bytesArray[i] = _bytes32[i];
-        }
-        return string(bytesArray);
-    }
-
-    uint256[46] private __gap;
 }

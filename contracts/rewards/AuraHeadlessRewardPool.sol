@@ -48,7 +48,7 @@ interface IDeposit {
 // Avoid formatting this file so we can diff it against the
 // original: convex-platform/contracts/contracts/BaseRewardPool.sol
 // prettier-ignore
-contract AuraBaseRewardPool {
+abstract contract AuraHeadlessRewardPool {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -93,7 +93,7 @@ contract AuraBaseRewardPool {
         address rewardToken_,
         address operator_,
         address rewardManager_
-    ) public {
+    ) {
         pid = pid_;
         stakingToken = IERC20(stakingToken_);
         rewardToken = IERC20(rewardToken_);
@@ -178,6 +178,8 @@ contract AuraBaseRewardPool {
                 IRewards(extraRewards[i]).getReward(_account);
             }
         }
+
+        _claimRewardHook(_account);
         return true;
     }
 
@@ -206,6 +208,13 @@ contract AuraBaseRewardPool {
      *      large, or the epoch has ended.
      */
     function queueNewRewards(uint256 _rewards) external returns(bool){
+        return _queueNewRewards(_rewards);
+    }
+  
+    /**
+     * @dev See queueNewRewards
+     */
+    function _queueNewRewards(uint256 _rewards) internal returns(bool) {
         require(msg.sender == operator, "!authorized");
 
         _rewards = _rewards.add(queuedRewards);
@@ -268,4 +277,6 @@ contract AuraBaseRewardPool {
     function totalSupply() public view virtual returns (uint256);
 
     function balanceOf(address account) public view virtual returns (uint256);
+
+    function _claimRewardHook(address account) internal virtual;
 }
