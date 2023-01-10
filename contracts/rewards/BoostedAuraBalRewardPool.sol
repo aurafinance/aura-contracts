@@ -50,7 +50,6 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     constructor(
         // HeadlessStaking
-        uint256 _pid,
         address _stakingToken,
         address _rewardToken,
         address _operator,
@@ -65,7 +64,6 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     )
         GamifiedRewards(
             // HeadlessStaking
-            _pid,
             _stakingToken,
             _rewardToken,
             _operator,

@@ -59,7 +59,6 @@ abstract contract AuraHeadlessRewardPool {
     address public immutable operator;
     address public immutable rewardManager;
 
-    uint256 public immutable pid;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
@@ -79,20 +78,17 @@ abstract contract AuraHeadlessRewardPool {
 
     /**
      * @dev This is called directly from RewardFactory
-     * @param pid_           Effectively the pool identifier - used in the Booster
      * @param stakingToken_  Pool LP token
      * @param rewardToken_   Crv
      * @param operator_      Booster
      * @param rewardManager_ RewardFactory
      */
     constructor(
-        uint256 pid_,
         address stakingToken_,
         address rewardToken_,
         address operator_,
         address rewardManager_
     ) {
-        pid = pid_;
         stakingToken = IERC20(stakingToken_);
         rewardToken = IERC20(rewardToken_);
         operator = operator_;
@@ -166,7 +162,6 @@ abstract contract AuraHeadlessRewardPool {
         if (reward > 0) {
             rewards[_account] = 0;
             rewardToken.safeTransfer(_account, reward);
-            IDeposit(operator).rewardClaimed(pid, _account, reward);
             emit RewardPaid(_account, reward);
         }
 

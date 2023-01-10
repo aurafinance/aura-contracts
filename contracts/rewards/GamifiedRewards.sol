@@ -6,7 +6,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
 import { AuraHeadlessRewardPool } from "./AuraHeadlessRewardPool.sol";
 
 // TODO:
-interface IQuestManager {  
+interface IQuestManager {
     function checkForSeasonFinish(address _account) external returns (uint8 newQuestMultiplier);
 }
 
@@ -30,22 +30,13 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
      */
     constructor(
         // HeadlessStaking
-        uint256 _pid,
         address _stakingToken,
         address _rewardToken,
         address _operator,
         address _rewardManager,
         // GamifiedRewards
         address _questManager
-    ) 
-        AuraHeadlessRewardPool(
-            _pid,
-            _stakingToken,
-            _rewardToken,
-            _operator,
-            _rewardManager
-        )
-    {
+    ) AuraHeadlessRewardPool(_stakingToken, _rewardToken, _operator, _rewardManager) {
         questManager = IQuestManager(_questManager);
     }
 
@@ -65,13 +56,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
      * @dev Simply gets scaled balance
      * @return scaled balance for user
      */
-    function balanceOf(address _account)
-        public
-        view
-        virtual
-        override(AuraHeadlessRewardPool)
-        returns (uint256)
-    {
+    function balanceOf(address _account) public view virtual override(AuraHeadlessRewardPool) returns (uint256) {
         return _getBalance(_account, _balances[_account]);
     }
 
@@ -86,11 +71,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
     /**
      * @dev Scales the balance of a given user by applying multipliers
      */
-    function _getBalance(address _account, Balance memory _balance)
-        internal
-        view
-        returns (uint256 balance)
-    {
+    function _getBalance(address _account, Balance memory _balance) internal view returns (uint256 balance) {
         // e.g. raw = 1000, questMultiplier = 40, timeMultiplier = 30. Cooldown of 60%
         // e.g. 1000 * (100 + 40) / 100 = 1400
         balance = (_balance.raw * (100 + _balance.questMultiplier)) / 100;
@@ -104,7 +85,6 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
     function balanceData(address _account) external view returns (Balance memory) {
         return _balances[_account];
     }
-
 
     function totalSupply() public view override(AuraHeadlessRewardPool) returns (uint256) {
         return _totalSupply;
@@ -128,10 +108,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
      * @param _account Address of user that should be updated
      * @param _newMultiplier New Quest Multiplier
      */
-    function applyQuestMultiplier(address _account, uint8 _newMultiplier)
-        external
-        onlyQuestManager
-    {
+    function applyQuestMultiplier(address _account, uint8 _newMultiplier) external onlyQuestManager {
         require(_account != address(0), "Invalid address");
 
         // 1. Get current balance & update questMultiplier, only if user has a balance
@@ -205,10 +182,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
      * @param _account Address of user that should be cooled
      * @param _units Units to cooldown for
      */
-    function _enterCooldownPeriod(address _account, uint256 _units)
-        internal
-        updateReward(_account)
-    {
+    function _enterCooldownPeriod(address _account, uint256 _units) internal updateReward(_account) {
         require(_account != address(0), "Invalid address");
 
         // 1. Get current balance
@@ -306,8 +280,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
         }
         //  ii) For previous minters, recalculate time held
         //      Calc new weighted timestamp
-        uint256 oldWeightedSecondsHeld = (block.timestamp - oldBalance.weightedTimestamp) *
-            totalRaw;
+        uint256 oldWeightedSecondsHeld = (block.timestamp - oldBalance.weightedTimestamp) * totalRaw;
         uint256 newSecondsHeld = oldWeightedSecondsHeld / (totalRaw + (_rawAmount / 2));
         uint32 newWeightedTs = AuraMath.to32(block.timestamp - newSecondsHeld);
         _balances[_account].weightedTimestamp = newWeightedTs;
@@ -359,8 +332,7 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
         // 3. Set back scaled time
         // e.g. stake 10 for 100 seconds, withdraw 5.
         //      secondsHeld = (100 - 0) * (10 - 0.625) = 937.5
-        uint256 secondsHeld = (block.timestamp - oldBalance.weightedTimestamp) *
-            (totalRaw - (_rawAmount / 8));
+        uint256 secondsHeld = (block.timestamp - oldBalance.weightedTimestamp) * (totalRaw - (_rawAmount / 8));
         //      newWeightedTs = 937.5 / 100 = 93.75
         uint256 newSecondsHeld = secondsHeld / totalRaw;
         uint32 newWeightedTs = AuraMath.to32(block.timestamp - newSecondsHeld);
@@ -454,3 +426,4 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
         }
     }
 }
+
