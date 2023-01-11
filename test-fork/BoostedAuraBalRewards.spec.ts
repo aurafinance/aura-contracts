@@ -8,7 +8,7 @@ import { config } from "../tasks/deploy/mainnet-config";
 import { impersonate, impersonateAccount } from "../test-utils/fork";
 import { Phase2Deployed } from "../scripts/deploySystem";
 import { Account, MockERC20__factory, BoostedAuraBalRewardPool, BoostedAuraBalRewardPool__factory } from "../types";
-import { simpleToExactAmount } from "../test-utils";
+import { increaseTime, ONE_WEEK, simpleToExactAmount } from "../test-utils";
 
 const DEBUG = false;
 const FORK_BLOCK = 16370000;
@@ -102,8 +102,54 @@ describe("BoostedAuraBalRewards", () => {
     });
 
     describe("Deposits", () => {
-        it("Deposit increments user balance and total supply");
-        it("Time increases balance and total supply");
+        it("Deposit increments user balance and total supply", async () => {
+            const totalSupplyBefore = await rewards.totalSupply();
+            const stakedBalanceBefore = await rewards.balanceOf(deployer.address);
+            const [rawBalanceBefore] = await rewards.rawBalanceOf(deployer.address);
+            const underlyingStakedBalanceBefore = await phase2.cvxCrvRewards.balanceOf(rewards.address);
+
+            const stakeAmount = simpleToExactAmount(10);
+            await phase2.cvxCrv.connect(deployer.signer).approve(rewards.address, stakeAmount);
+            await rewards.connect(deployer.signer).stake(stakeAmount);
+
+            const stakedBalance = (await rewards.balanceOf(deployer.address)).sub(stakedBalanceBefore);
+            const rawBalance = (await rewards.rawBalanceOf(deployer.address))[0].sub(rawBalanceBefore);
+            console.log("Raw balance:", formatEther(rawBalance));
+            console.log("Staked balance:", formatEther(stakedBalance));
+            expect(stakedBalance).eq(stakeAmount);
+            expect(rawBalance).eq(stakeAmount);
+
+            const totalSupply = (await rewards.totalSupply()).sub(totalSupplyBefore);
+            console.log("Total supply:", formatEther(totalSupply));
+            expect(totalSupply).eq(stakedBalance);
+
+            const underlyingStakedBalance = (await phase2.cvxCrvRewards.balanceOf(rewards.address)).sub(
+                underlyingStakedBalanceBefore,
+            );
+            expect(underlyingStakedBalance).eq(stakeAmount);
+        });
+        it("Time increases (26 weeks) balance and total supply", async () => {
+            const totalSupplyBefore = await rewards.totalSupply();
+            const stakedBalanceBefore = await rewards.balanceOf(deployer.address);
+            const [rawBalanceBefore] = await rewards.rawBalanceOf(deployer.address);
+
+            await increaseTime(ONE_WEEK.mul(26));
+            await rewards.reviewTimestamp(deployer.address);
+
+            const stakedBalanceNow = await rewards.balanceOf(deployer.address);
+            const expectedStakedBalance = stakedBalanceBefore.add(stakedBalanceBefore.mul(30).div(100));
+            const stakedBalanceDelta = stakedBalanceNow.sub(stakedBalanceBefore);
+            console.log("Staked balance (before):", formatEther(stakedBalanceBefore));
+            console.log("Staked balance (after):", formatEther(stakedBalanceNow));
+            expect(expectedStakedBalance).eq(stakedBalanceNow);
+
+            const totalSupply = await rewards.totalSupply();
+            console.log("Total supply (before):", formatEther(totalSupplyBefore));
+            console.log("Total supply (after):", formatEther(totalSupply));
+            expect(totalSupply).eq(totalSupplyBefore.add(stakedBalanceDelta));
+
+            expect((await rewards.rawBalanceOf(deployer.address))[0]).eq(rawBalanceBefore);
+        });
     });
 
     describe("Harvest", () => {

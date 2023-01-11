@@ -12,6 +12,8 @@ import { IBalancerVault, IAsset } from "../interfaces/balancer/IBalancerCore.sol
 
 interface IBaseRewardPool {
     function getReward(address _account, bool _claimExtras) external returns (bool);
+
+    function stake(uint256 amount) external returns (bool);
 }
 
 contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
@@ -21,7 +23,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     // Storage
     // ---------------------------------------------------------
 
-    address public cvxCrvStaking;
+    address public immutable cvxCrvStaking;
 
     address public harvester;
 
@@ -107,6 +109,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     function setApprovals() external onlyOperator {
         _setApprovals();
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+        IERC20(stakingToken).approve(cvxCrvStaking, type(uint256).max);
     }
 
     // ---------------------------------------------------------
@@ -175,6 +178,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         bool _exitCooldown
     ) internal virtual {
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
+        IBaseRewardPool(cvxCrvStaking).stake(_amount);
         _settleStake(_to, _amount, _exitCooldown);
     }
 
@@ -267,6 +271,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
      * Can be overridden if the tokens are held elsewhere. eg in the Balancer Pool Gauge.
      */
     function _withdrawStakedTokens(address _recipient, uint256 amount) internal virtual {
+        // TODO: withdraw from underlying cvxCrvStaking
         stakingToken.safeTransfer(_recipient, amount);
     }
 
@@ -310,6 +315,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     // ---------------------------------------------------------
 
     function harvest(uint256 _outputBps) external onlyHarvester {
+        // TODO: restake the auraBAL in cvxCrvStaking in order to earn more rewards
         // TODO: swap BAL, AURA and bb-a-USD to auraBAL
         IBaseRewardPool(cvxCrvStaking).getReward(address(this), true);
 

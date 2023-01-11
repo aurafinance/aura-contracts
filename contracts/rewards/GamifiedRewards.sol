@@ -363,7 +363,9 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
         oldBalance = _balances[_account];
         oldScaledBalance = _getBalance(_account, oldBalance);
         // Take the opportunity to check for season finish
-        _balances[_account].questMultiplier = questManager.checkForSeasonFinish(_account);
+        if (address(questManager) != address(0)) {
+            _balances[_account].questMultiplier = questManager.checkForSeasonFinish(_account);
+        }
     }
 
     /**
@@ -415,7 +417,12 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
      * @param _account Address of user that has burned
      */
     function _claimRewardHook(address _account) internal override(AuraHeadlessRewardPool) {
-        uint8 newMultiplier = questManager.checkForSeasonFinish(_account);
+        uint8 newMultiplier = 0;
+
+        if (address(questManager) != address(0)) {
+            newMultiplier = questManager.checkForSeasonFinish(_account);
+        }
+
         if (newMultiplier != _balances[_account].questMultiplier) {
             // 1. Get current balance & trigger season finish
             uint256 oldScaledBalance = _getBalance(_account, _balances[_account]);
@@ -425,4 +432,3 @@ abstract contract GamifiedRewards is AuraHeadlessRewardPool {
         }
     }
 }
-
