@@ -17,4 +17,4 @@
 | :---------- | :-------------------- |
 | Channel     | Immunefi              |
 | Scope       | Not in scope          |
-| Bounty paid | No                    |
+| Bounty paid | Yes                   |
