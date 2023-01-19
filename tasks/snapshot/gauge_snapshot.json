@@ -714,14 +714,14 @@
             "symbol": "B-auraBAL-STABLE",
             "tokens": [
                 {
-                    "address": "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
-                    "weight": "null",
-                    "symbol": "B-80BAL-20WETH"
-                },
-                {
                     "address": "0x616e8BfA43F920657B3497DBf40D6b1A02D4608d",
                     "weight": "null",
                     "symbol": "auraBAL"
+                },
+                {
+                    "address": "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56",
+                    "weight": "null",
+                    "symbol": "B-80BAL-20WETH"
                 }
             ]
         },
