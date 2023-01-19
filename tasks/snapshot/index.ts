@@ -15,7 +15,7 @@ import uniqBy from "lodash/uniqBy";
 const configs = {
     main: {
         hub: "https://hub.snapshot.org",
-        space: "aurafinance.eth",
+        space: "gauges.aurafinance.eth",
     },
     test: {
         hub: "https://testnet.snapshot.org",
@@ -117,8 +117,14 @@ const ordinalSuffix = (i: number) => {
 
 task("snapshot:create")
     .addParam("snapshot", "The block to snapshot")
+    .addParam("hub", "test or main config")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
-        const config = configs.main;
+        const config = configs[taskArgs.hub];
+
+        if (!config) {
+            console.log("Invalid config value:", taskArgs.config);
+            return;
+        }
 
         const wallet = new Wallet(process.env.PRIVATE_KEY);
         const account = wallet.address;
