@@ -279,6 +279,24 @@ task("snapshot:create")
         });
     });
 
+task("snapshot:labels", "Save snapshot choice labels").setAction(async function () {
+    const savePath = path.resolve(__dirname, "gauge_snapshot.json");
+
+    let gaugeList = JSON.parse(fs.readFileSync(savePath, "utf-8"));
+
+    const validNetworks = [1, 10, 42161, 137];
+
+    gaugeList = gaugeList.filter(
+        (gauge: any) => validNetworks.includes(gauge.network) && gauge.pool.poolType !== "Element",
+    );
+
+    gaugeList = sortGaugeList(gaugeList);
+
+    gaugeList = gaugeList.map((gauge: any) => ({ gauge: gauge.address, label: parseLabel(gauge) }));
+
+    fs.writeFileSync(path.resolve(__dirname, "../snapshot/labels.json"), JSON.stringify(gaugeList));
+});
+
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
     .addOptionalParam("debug", "Debug mode", "false")
