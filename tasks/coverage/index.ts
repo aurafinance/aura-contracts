@@ -34,7 +34,7 @@ subtask("coverage:clean")
     });
 
 subtask("coverage:setup")
-    .addOptionalParam("externalSrc", "External smart contracts paths separeted by ','", "/convex-platform/contracts/contracts")
+    .addOptionalParam("externalSrc", "External smart contracts paths separated by ','", "/convex-platform/contracts/contracts")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntimeEnvironment, _: RunSuperFunction<any>) {
         // Copy external sources to the hre config path source directory.
         const sources = taskArgs.externalSrc.split(",");
@@ -44,7 +44,7 @@ subtask("coverage:setup")
     });
 
 task("coverage:externalSrc")
-    .addOptionalParam("externalSrc", "External smart contracts paths separeted by ','", "/convex-platform/contracts/contracts")
+    .addOptionalParam("externalSrc", "External smart contracts paths separated by ','", "/convex-platform/contracts/contracts")
     .addOptionalParam("testfiles", "test/**/*.ts")
     .addOptionalParam("solcoverjs", "./.solcover.js")
     .addOptionalParam('temp', "artifacts")

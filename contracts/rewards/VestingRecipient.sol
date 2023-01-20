@@ -22,29 +22,31 @@ interface IVestedEscrow {
 contract VestingRecipient is Initializable {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
+    /// @notice The unlock duration period.
+    uint256 public constant UNLOCK_DURATION = 365 days * 3;
 
     // ----------------------------------------------------------
     // Storage
     // ----------------------------------------------------------
 
+    /// @notice The unlock time when tokens can be withdrawn.
     uint256 public unlockTime;
-
-    uint256 public constant UNLOCK_DURATION = 365 days * 3;
-
+    /// @notice The owner of the contract.
     address public owner;
-
+    /// @notice The VestedEscrow V2 contract
     address public immutable vesting;
-
+    /// @notice The Aura Locker contract, it implements IAuraLocker
     address public immutable auraLocker;
-
+    /// @notice ERC20 Token
     address public immutable rewardToken;
-
+    /// @notice (tokenAddress, amountClaimend) map.
     mapping(address => uint256) public claimed;
 
     // ----------------------------------------------------------
     // Events
     // ----------------------------------------------------------
-
+    /// @dev Event emmited when the owner of the contract is set.
+    /// @param _owner The onwer of the contract
     event SetOwner(address _owner);
 
     // ----------------------------------------------------------
@@ -62,7 +64,7 @@ contract VestingRecipient is Initializable {
     }
 
     /**
-     * @dev Initialize the contract
+     * @dev Initialize the contract, owner and unlockTime.
      * @param _owner The address of the owner
      */
     function init(address _owner) external initializer {
@@ -75,10 +77,15 @@ contract VestingRecipient is Initializable {
     // ----------------------------------------------------------
 
     /**
-     * @dev Returns the withdrawable amount of the reward token
+     * @notice The max withdrawable amount only depends on the unlock time and claimed rewards. 
+     * It does not take into account if the reward tokens are locked or rewards had been already witdhrawn.
+     * if the unlock time has not expired only half of the claimed rewards can be witdhrawn, 
+     * If the unlock time has expired then the full claimed amount can be withdraw. 
+     * @dev Returns the maxWithdrawable amount of the reward token.
+
      */
-    function withdrawable() external view returns (uint256) {
-        return _withdrawable();
+    function maxWithdrawable() external view returns (uint256) {
+        return _maxWithdrawable();
     }
 
     // ----------------------------------------------------------
@@ -101,6 +108,7 @@ contract VestingRecipient is Initializable {
 
     /**
      * @dev Claim tokens from vesting contract
+     * @param _lock       Lock rewards immediately.
      */
     function claim(bool _lock) external {
         require(msg.sender == owner, "!owner");
@@ -110,7 +118,7 @@ contract VestingRecipient is Initializable {
     /**
      * @dev Withdraw ERC20 tokens
      *      If the unlock time has not expired for AURA then limit the
-     *      amount that can be withdraw to the withdrawable amount
+     *      amount that can be withdraw to the maxWithdrawable amount
      * @param _token The ERC20 token
      * @param _amount The amount of tokens to withdraw
      */
@@ -118,11 +126,11 @@ contract VestingRecipient is Initializable {
         require(msg.sender == owner, "!owner");
         if (rewardToken == _token && block.timestamp < unlockTime) {
             require(unlockTime != 0, "!unlockTime");
-            require(_amount <= _withdrawable(), "amount>withdrawable");
+            require(_amount <= _maxWithdrawable(), "amount>maxWithdrawable");
         }
 
         claimed[_token] += _amount;
-        IERC20(_token).transfer(msg.sender, _amount);
+        IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
     // ----------------------------------------------------------
@@ -140,10 +148,12 @@ contract VestingRecipient is Initializable {
 
     /**
      * @dev Wrapper for AuraLocker processExpiredLocks
+     * It withdraws/relocks all currently locked tokens where the unlock time has passed.
      */
-    function processExpiredLocks() external {
+    function processExpiredLocks(bool _relock) external {
         require(msg.sender == owner, "!owner");
-        IAuraLocker(auraLocker).processExpiredLocks(true);
+        // relock or withdraw
+        IAuraLocker(auraLocker).processExpiredLocks(_relock);
     }
 
     /**
@@ -185,14 +195,23 @@ contract VestingRecipient is Initializable {
     // Internal
     // ----------------------------------------------------------
 
+    /**
+     * @dev Locks reward tokens on the aura locker.
+     * @param _amount Amount of reward tokens to  lock.
+     */
     function _lock(uint256 _amount) internal {
-        require(address(auraLocker) != address(0), "!auraLocker");
         IERC20(rewardToken).safeApprove(address(auraLocker), _amount);
         IAuraLocker(auraLocker).lock(address(this), _amount);
     }
 
-    function _withdrawable() internal view returns (uint256) {
+    /**
+     * @dev Upbound Amount reward tokens to withdraw.
+     */
+    function _maxWithdrawable() internal view returns (uint256) {
         uint256 totalVestClaimed = IVestedEscrow(vesting).totalClaimed(address(this));
+        if (block.timestamp >= unlockTime) {
+            return totalVestClaimed.sub(claimed[rewardToken]);
+        }
         return totalVestClaimed.div(2).sub(claimed[rewardToken]);
     }
 }
