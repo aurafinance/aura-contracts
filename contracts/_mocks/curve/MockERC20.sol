@@ -14,7 +14,11 @@ contract MockERC20 is ERC20 {
         uint256 _initialMint
     ) ERC20(_name, _symbol) {
         dec = _decimals;
-        _mint(_initialRecipient, _initialMint * (10**uint256(_decimals)));
+        if (_initialMint >= type(uint256).max) {
+            _mint(_initialRecipient, type(uint256).max);
+        } else {
+            _mint(_initialRecipient, _initialMint * (10**uint256(_decimals)));
+        }
     }
 
     function decimals() public view override returns (uint8) {

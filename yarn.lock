@@ -1398,6 +1398,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@openzeppelin/contracts-upgradeable-0.6@npm:@openzeppelin/contracts-upgradeable@3.4.0":
+  version: 3.4.0
+  resolution: "@openzeppelin/contracts-upgradeable@npm:3.4.0"
+  checksum: a9305f4609dd0948bb810ac2fddbeca4ea590a945362c840c876016e3a736c9d0e4cb1d1e004aab7b444cd052385b969068b61891771537c5dfe44a4df081751
+  languageName: node
+  linkType: hard
+
 "@resolver-engine/core@npm:^0.3.3":
   version: 0.3.3
   resolution: "@resolver-engine/core@npm:0.3.3"
@@ -4618,10 +4625,11 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=3a28a7&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=a72631&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
-  checksum: 68af4610f4573d30c76f12ad4617fa13f73eabd41350c9633bd12d963f93137f4ec4d2b2613d3fd68fb5dfca004073d2695e91924ca287bfe38bcd295cae3fa8
+    "@openzeppelin/contracts-upgradeable-0.6": "npm:@openzeppelin/contracts-upgradeable@3.4.0"
+  checksum: ffeeae907a298bdae3c013b1878d15db44973c9bcf0970984c33ed20667aad2bfef09233b5efa9d12c3a5310a0b37d1808b7c0cd31eaf3a52b9dac7f5fd18b39
   languageName: node
   linkType: hard
 
