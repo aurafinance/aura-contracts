@@ -205,7 +205,7 @@ contract VestingRecipient is Initializable {
     }
 
     /**
-     * @dev Upbound Amount reward tokens to withdraw.
+     * @dev Upbound amount reward tokens to withdraw.
      */
     function _maxWithdrawable() internal view returns (uint256) {
         uint256 totalVestClaimed = IVestedEscrow(vesting).totalClaimed(address(this));

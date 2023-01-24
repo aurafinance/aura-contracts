@@ -9,6 +9,8 @@ import {
     AuraVestedEscrow,
     AuraVestedEscrow__factory,
     ERC20,
+    MockBalancerPoolToken__factory,
+    MockBalancerVault__factory,
     VestingRecipient,
     VestingRecipientFactory,
     VestingRecipientFactory__factory,
@@ -24,6 +26,7 @@ import { deployPhase1, deployPhase2, Phase2Deployed } from "../../scripts/deploy
 import { DeployMocksResult, deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import MerkleTree from "merkletreejs";
 import { createTreeWithAccounts, getAccountBalanceProof } from "../../test-utils";
+import { JoinPoolRequestStruct } from "types/generated/MockBalancerVault";
 
 const debug = false;
 
@@ -396,5 +399,59 @@ describe("AuraVestedEscrow", () => {
             );
             expect(await merkleDrop.hasClaimed(vestingRecipient.address), "user claimed").to.eq(true);
         });
+        it("should revert if fall success fails", async () => {
+            // Given a merkleDrop
+            await increaseTime(ONE_WEEK);
+            const crazyAmount = simpleToExactAmount(1000000);
+            const lock = true;
+
+            // When owner of the vesting recipient claims the merkleDrop and locks it
+            const proof = getAccountBalanceProof(tree, vestingRecipient.address, crazyAmount);
+            const encodedClaimData = merkleDrop.interface.encodeFunctionData("claim", [
+                proof,
+                crazyAmount,
+                lock,
+                vestingRecipient.address,
+            ]);
+            await expect(
+                vestingRecipient.execute(merkleDrop.address, 0, encodedClaimData),
+                "wrong amount",
+            ).to.be.revertedWith("!success");
+        });
+    });
+    it("join pool send eth on tx", async () => {
+        // const stContract = mocks.bal;
+        const ptContract = mocks.weth;
+
+        const poolContract = await new MockBalancerPoolToken__factory(deployer).deploy(
+            18,
+            await deployer.getAddress(),
+            simpleToExactAmount(0),
+        );
+        await poolContract.setPrice(simpleToExactAmount(1));
+
+        const bVault = await new MockBalancerVault__factory(deployer).deploy(poolContract.address);
+        const poolTokens = ["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", poolContract.address];
+        const maxAmountsIn = [simpleToExactAmount(1), simpleToExactAmount(1)];
+
+        let joinPoolRequest: JoinPoolRequestStruct = {
+            assets: poolTokens,
+            maxAmountsIn: maxAmountsIn,
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256", "uint256[]"], [0, maxAmountsIn]),
+            fromInternalBalance: false,
+        };
+        const encodedJoinPool = bVault.interface.encodeFunctionData("joinPool", [
+            "0x06df3b2bbb68adc8b0e302443692037ed9f91b42000000000000000000000063",
+            vestingRecipient.address,
+            vestingRecipient.address,
+            joinPoolRequest,
+        ]);
+
+        const balBefore = await poolContract.balanceOf(vestingRecipient.address);
+        expect(balBefore, "balancer before").eq(0);
+
+        await vestingRecipient.execute(bVault.address, maxAmountsIn[0], encodedJoinPool, { value: maxAmountsIn[0] });
+        const balAfter = await poolContract.balanceOf(vestingRecipient.address);
+        expect(balAfter, "balancer after").eq(maxAmountsIn[1]);
     });
 });
