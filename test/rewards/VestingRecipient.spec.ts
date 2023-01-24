@@ -420,9 +420,6 @@ describe("AuraVestedEscrow", () => {
         });
     });
     it("join pool send eth on tx", async () => {
-        // const stContract = mocks.bal;
-        const ptContract = mocks.weth;
-
         const poolContract = await new MockBalancerPoolToken__factory(deployer).deploy(
             18,
             await deployer.getAddress(),
@@ -434,7 +431,7 @@ describe("AuraVestedEscrow", () => {
         const poolTokens = ["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", poolContract.address];
         const maxAmountsIn = [simpleToExactAmount(1), simpleToExactAmount(1)];
 
-        let joinPoolRequest: JoinPoolRequestStruct = {
+        const joinPoolRequest: JoinPoolRequestStruct = {
             assets: poolTokens,
             maxAmountsIn: maxAmountsIn,
             userData: ethers.utils.defaultAbiCoder.encode(["uint256", "uint256[]"], [0, maxAmountsIn]),
