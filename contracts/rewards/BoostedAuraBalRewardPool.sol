@@ -36,8 +36,18 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     /// @notice A week
     uint256 private constant ONE_WEEK = 7 days;
 
+    // TODO - move logic to a harvest contract ?
+    address public constant AURA_TOKEN = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
+    address public constant BBUSD_TOKEN = 0xA13a9247ea42D743238089903570127DdA72fE44;
+    address public constant WETH_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant RETH_TOKEN = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+
     bytes32 public constant AURA_BAL_STABLE_POOL_ID =
         0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249;
+    bytes32 public constant AURA_ETH_POOL_ID = 0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
+    bytes32 public constant BBUSD_AAVE_POOL_ID = 0xa13a9247ea42d743238089903570127dda72fe4400000000000000000000035d;
+    bytes32 private constant BBUSD_RETH_POOL_ID = 0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a;
+    bytes32 private constant RETH_WETH_POOL_ID = 0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112;
 
     // ---------------------------------------------------------
     // Events
@@ -142,7 +152,8 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     /**
      * @dev Enters a cooldown period, after which (and before the unstake window elapses) a user will be able
-     * to withdraw part or all of their staked tokens. Note, during this period, a users voting power is significantly reduced.
+     * to withdraw part or all of their staked tokens.
+     * Note, during this period, a users voting power is significantly reduced.
      * If a user already has a cooldown period, then it will reset to the current block timestamp, so use wisely.
      * @param _units Units of stake to cooldown for
      **/
@@ -152,7 +163,8 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     /**
      * @dev Ends the cooldown of the sender and give them back their full voting power. This can be used to signal that
-     * the user no longer wishes to exit the system. Note, the cooldown can also be reset, more smoothly, as part of a stake or
+     * the user no longer wishes to exit the system.
+     * Note, the cooldown can also be reset, more smoothly, as part of a stake or
      * withdraw transaction.
      **/
     function endCooldown() external {
@@ -184,7 +196,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     /**
      * @dev Internal stake fn.
-     * NOTE - Assumes tokens have already been transferred
+     * Note - Assumes tokens have already been transferred
      * @param _amount Units of stakedToken to stake
      * @param _exitCooldown Bool signalling whether to take this opportunity to end any outstanding cooldown and
      * return the user back to their full voting power
@@ -228,7 +240,8 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     ) internal {
         require(_amount != 0, "INVALID_ZERO_AMOUNT");
 
-        // 1. If no recollateralisation has occured, the user must be within their UNSTAKE_WINDOW period in order to withdraw
+        // 1. If no recollateralisation has occured, the user must be within their
+        // UNSTAKE_WINDOW period in order to withdraw
         Balance memory oldBalance = _balances[msg.sender];
         require(block.timestamp > oldBalance.cooldownTimestamp + COOLDOWN_SECONDS, "INSUFFICIENT_COOLDOWN");
         require(
@@ -277,7 +290,8 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     /**
      * @dev Enters a cooldown period, after which (and before the unstake window elapses) a user will be able
-     * to withdraw part or all of their staked tokens. Note, during this period, a users voting power is significantly reduced.
+     * to withdraw part or all of their staked tokens.
+     * Note, during this period, a users voting power is significantly reduced.
      * If a user already has a cooldown period, then it will reset to the current block timestamp, so use wisely.
      * @param _units Units of stake to cooldown for
      **/
@@ -313,17 +327,33 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     // ---------------------------------------------------------
     // Boosted
     // ---------------------------------------------------------
-
+    /**
+     * @notice Claims rewards and extra rewards from the BaseRewardPool, then it swaps all
+     * claimed rewards to cvxCrv.
+     * @param _outputBps Multiplier where 100% == 10000, 99.5% == 9950 and 98% == 9800
+     */
     function harvest(uint256 _outputBps) external onlyHarvester {
         // TODO: restake the auraBAL in cvxCrvStaking in order to earn more rewards
-        // TODO: swap BAL, AURA and bb-a-USD to auraBAL
-        IBaseRewardPool(cvxCrvStaking).getReward(address(this), true);
+        require(IBaseRewardPool(cvxCrvStaking).getReward(address(this), true), "!getReward");
+
+        // TODO : this code is not flexible
+        // Swap AURA for WETH
+        uint256 auraBalance = IERC20(AURA_TOKEN).balanceOf(address(this));
+        if (auraBalance > 0) {
+            _swapAuraToWEth(auraBalance);
+        }
+        // Swap bb-a-USD for WETH
+        uint256 bbusdBalance = IERC20(BBUSD_TOKEN).balanceOf(address(this));
+        if (bbusdBalance > 0) {
+            _swapAuraToWEth(bbusdBalance);
+        }
 
         // 1. Add BAL as single sided liq to 8020BALWETH
-        uint256 bptAmount = _investAllBalToPool(_outputBps);
+        uint256 bptAmount = _investAllToPool(_outputBps);
         if (bptAmount > 0) {
             // 2. Swap 8020BALWETH-BPT for auraBAL
-            uint256 auraBalAmount = _swapAllBptForAuraBal(bptAmount);
+            // TODO how to calculate uint256 _minAmountOut
+            uint256 auraBalAmount = _swapBptToAuraBal(bptAmoun, 0);
             // 3. Queue new rewards with the newly swapped auraBAL
             if (auraBalAmount > 0) {
                 _queueNewRewards(auraBalAmount);
@@ -336,7 +366,7 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     // Internals
     // ---------------------------------------------------------
 
-    function _swapAllBptForAuraBal(uint256 _bptAmount) internal returns (uint256) {
+    function _swapBptToAuraBal(uint256 _bptAmount, uint256 _minAmountOut) internal returns (uint256) {
         uint256 auraBalBalanceBefore = IERC20(stakingToken).balanceOf(address(this));
 
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
@@ -348,27 +378,85 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
             userData: bytes("")
         });
 
-        IBalancerVault.FundManagement memory fundManagement = IBalancerVault.FundManagement({
-            sender: address(this),
-            fromInternalBalance: false,
-            recipient: payable(address(this)),
-            toInternalBalance: false
-        });
-
-        // TODO: set a proper limit that isn't 0
-        BALANCER_VAULT.swap(singleSwap, fundManagement, 0, block.timestamp + 5 minutes);
+        BALANCER_VAULT.swap(singleSwap, _createSwapFunds(), _minAmountOut, block.timestamp + 5 minutes);
 
         uint256 auraBalBalanceAfter = IERC20(stakingToken).balanceOf(address(this));
         return auraBalBalanceAfter - auraBalBalanceBefore;
     }
 
-    function _investAllBalToPool(uint256 _outputBps) internal returns (uint256) {
+    function _investAllToPool(uint256 _outputBps) internal returns (uint256) {
         uint256 balBalance = IERC20(BAL).balanceOf(address(this));
-        uint256 minOut = _getMinOut(balBalance, _outputBps);
-        _joinWithBal(balBalance, minOut);
+        uint256 wethBalance = IERC20(WETH).balanceOf(address(this));
+
+        uint256 minOut = _getMinOut(balBalance, wethBalance, _outputBps);
+        _joinPool(balBalance, wethBalance, minOut);
         return IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
     }
 
     // TODO: implement _afterTokenTransfer to track totalSupply
     // TODO: implement abstract functions from AuraBaseRewardPool stake, withdraw etc
+
+    /// @notice Swap Aura for WETH on Balancer
+    /// @param _amount - amount to swap
+    function _swapAuraToWEth(uint256 _amount) internal {
+        IBalancerVault.SingleSwap memory _auraSwapParams = IBalancerVault.SingleSwap({
+            poolId: AURA_ETH_POOL_ID,
+            kind: IBalancerVault.SwapKind.GIVEN_IN,
+            assetIn: IAsset(AURA_TOKEN),
+            assetOut: IAsset(WETH_TOKEN),
+            amount: _amount,
+            userData: new bytes(0)
+        });
+
+        BALANCER_VAULT.swap(_auraSwapParams, _createSwapFunds(), 0, block.timestamp + 5 minutes);
+    }
+
+    /// @notice Swap bb-USD for WETH on Balancer via rEth
+    /// @param _amount - amount to swap
+    function _swapBbUsdToWEth(uint256 _amount) internal {
+        IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](2);
+        _swaps[0] = IBalancerVault.BatchSwapStep({
+            poolId: BBUSD_RETH_POOL_ID,
+            assetInIndex: 0,
+            assetOutIndex: 1,
+            amount: _amount,
+            userData: new bytes(0)
+        });
+        _swaps[1] = IBalancerVault.BatchSwapStep({
+            poolId: RETH_WETH_POOL_ID,
+            assetInIndex: 1,
+            assetOutIndex: 2,
+            amount: 0,
+            userData: new bytes(0)
+        });
+        IAsset[] memory _zapAssets = new IAsset[](3);
+        int256[] memory _limits = new int256[](3);
+
+        _zapAssets[0] = IAsset(BBUSD_TOKEN);
+        _zapAssets[1] = IAsset(RETH_TOKEN);
+        _zapAssets[2] = IAsset(WETH_TOKEN);
+
+        _limits[0] = int256(_amount);
+        _limits[1] = type(int256).max;
+        _limits[2] = type(int256).max;
+
+        BALANCER_VAULT.batchSwap(
+            IBalancerVault.SwapKind.GIVEN_IN,
+            _swaps,
+            _zapAssets,
+            _createSwapFunds(),
+            _limits,
+            block.timestamp + 5 minutes
+        );
+    }
+
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
+        return
+            IBalancerVault.FundManagement({
+                sender: address(this),
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
+    }
 }
