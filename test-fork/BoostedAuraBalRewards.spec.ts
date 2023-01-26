@@ -126,6 +126,8 @@ describe("BoostedAuraBalRewards", () => {
         });
         it("Set approvals", async () => {
             await rewards.connect(dao.signer).setApprovals();
+            // It should be able to setApprovals more than once, in case the allowance of a token goes to 0.
+            await rewards.connect(dao.signer).setApprovals();
         });
     });
 

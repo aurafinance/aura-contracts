@@ -116,9 +116,16 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
 
     function setApprovals() external onlyOperator {
         _setApprovals();
+        IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+
+        IERC20(AURA).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(AURA).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+
+        IERC20(RETH).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(RETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+
+        IERC20(stakingToken).safeApprove(cvxCrvStaking, 0);
         IERC20(stakingToken).safeApprove(cvxCrvStaking, type(uint256).max);
     }
 

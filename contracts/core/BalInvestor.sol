@@ -40,7 +40,10 @@ abstract contract BalInvestor {
     }
 
     function _setApprovals() internal {
+        IERC20(WETH).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(WETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+
+        IERC20(BAL).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(BAL).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
