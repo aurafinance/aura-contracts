@@ -104,6 +104,16 @@ abstract contract BalInvestor {
         _joinWithBal(amount, minOut);
     }
 
+    function _investBalAndWethToPool(
+        uint256 balAmount,
+        uint256 ethAmount,
+        uint256 minOut
+    ) internal {
+        IERC20(BAL).safeTransferFrom(msg.sender, address(this), balAmount);
+        IERC20(WETH).safeTransferFrom(msg.sender, address(this), ethAmount);
+        _joinPool(balAmount, ethAmount, minOut);
+    }
+
     function _joinPool(
         uint256 balAmount,
         uint256 ethAmount,
