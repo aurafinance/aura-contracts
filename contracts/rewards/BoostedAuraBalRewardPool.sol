@@ -36,11 +36,9 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     /// @notice A week
     uint256 private constant ONE_WEEK = 7 days;
 
-    // TODO - move logic to a harvest contract ?
-    address public constant AURA_TOKEN = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
-    address public constant BBUSD_TOKEN = 0xA13a9247ea42D743238089903570127DdA72fE44;
-    address public constant WETH_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant RETH_TOKEN = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
+    address public constant BBUSD = 0xA13a9247ea42D743238089903570127DdA72fE44;
+    address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
 
     bytes32 public constant AURA_BAL_STABLE_POOL_ID =
         0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249;
@@ -119,7 +117,9 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
     function setApprovals() external onlyOperator {
         _setApprovals();
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
-        IERC20(stakingToken).approve(cvxCrvStaking, type(uint256).max);
+        IERC20(AURA).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+        IERC20(RETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+        IERC20(stakingToken).safeApprove(cvxCrvStaking, type(uint256).max);
     }
 
     // ---------------------------------------------------------
@@ -336,24 +336,23 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         // TODO: restake the auraBAL in cvxCrvStaking in order to earn more rewards
         require(IBaseRewardPool(cvxCrvStaking).getReward(address(this), true), "!getReward");
 
-        // TODO : this code is not flexible
-        // Swap AURA for WETH
-        uint256 auraBalance = IERC20(AURA_TOKEN).balanceOf(address(this));
+        // 1.1 Swap AURA for WETH
+        uint256 auraBalance = IERC20(AURA).balanceOf(address(this));
         if (auraBalance > 0) {
             _swapAuraToWEth(auraBalance);
         }
-        // Swap bb-a-USD for WETH
-        uint256 bbusdBalance = IERC20(BBUSD_TOKEN).balanceOf(address(this));
+        // 1.2 Swap bb-a-USD for WETH
+        uint256 bbusdBalance = IERC20(BBUSD).balanceOf(address(this));
         if (bbusdBalance > 0) {
-            _swapAuraToWEth(bbusdBalance);
+            _swapBbAUsdToWEth(bbusdBalance);
         }
 
-        // 1. Add BAL as single sided liq to 8020BALWETH
+        // 1.3 Add BAL/WETH liq to 8020BALWETH
         uint256 bptAmount = _investAllToPool(_outputBps);
         if (bptAmount > 0) {
             // 2. Swap 8020BALWETH-BPT for auraBAL
             // TODO how to calculate uint256 _minAmountOut
-            uint256 auraBalAmount = _swapBptToAuraBal(bptAmoun, 0);
+            uint256 auraBalAmount = _swapBptToAuraBal(bptAmount, 0);
             // 3. Queue new rewards with the newly swapped auraBAL
             if (auraBalAmount > 0) {
                 _queueNewRewards(auraBalAmount);
@@ -402,8 +401,8 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         IBalancerVault.SingleSwap memory _auraSwapParams = IBalancerVault.SingleSwap({
             poolId: AURA_ETH_POOL_ID,
             kind: IBalancerVault.SwapKind.GIVEN_IN,
-            assetIn: IAsset(AURA_TOKEN),
-            assetOut: IAsset(WETH_TOKEN),
+            assetIn: IAsset(AURA),
+            assetOut: IAsset(WETH),
             amount: _amount,
             userData: new bytes(0)
         });
@@ -411,9 +410,9 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         BALANCER_VAULT.swap(_auraSwapParams, _createSwapFunds(), 0, block.timestamp + 5 minutes);
     }
 
-    /// @notice Swap bb-USD for WETH on Balancer via rEth
+    /// @notice Swap bb-a-USD for WETH on Balancer via rEth
     /// @param _amount - amount to swap
-    function _swapBbUsdToWEth(uint256 _amount) internal {
+    function _swapBbAUsdToWEth(uint256 _amount) internal {
         IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](2);
         _swaps[0] = IBalancerVault.BatchSwapStep({
             poolId: BBUSD_RETH_POOL_ID,
@@ -432,9 +431,9 @@ contract BoostedAuraBalRewardPool is GamifiedRewards, BalInvestor {
         IAsset[] memory _zapAssets = new IAsset[](3);
         int256[] memory _limits = new int256[](3);
 
-        _zapAssets[0] = IAsset(BBUSD_TOKEN);
-        _zapAssets[1] = IAsset(RETH_TOKEN);
-        _zapAssets[2] = IAsset(WETH_TOKEN);
+        _zapAssets[0] = IAsset(BBUSD);
+        _zapAssets[1] = IAsset(RETH);
+        _zapAssets[2] = IAsset(WETH);
 
         _limits[0] = int256(_amount);
         _limits[1] = type(int256).max;

@@ -16,6 +16,12 @@ const SLIPPAGE_OUTPUT_BPS = 9950;
 
 const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
 
+async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
+    const tokenWhaleSigner = await impersonateAccount(from);
+    const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
+    await token.transfer(to, amount);
+}
+
 describe("BoostedAuraBalRewards", () => {
     let dao: Account;
     let deployer: Account;
@@ -43,12 +49,34 @@ describe("BoostedAuraBalRewards", () => {
         await crv.transfer(to, amount);
     }
 
-    // Force a reward harvest by transfering BAL tokens directly
+    async function getAura(to: string, amount: BigNumberish) {
+        const whaleAddress = "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC";
+        await impersonateAndTransfer(phase2.cvx.address, whaleAddress, to, amount);
+    }
+
+    async function getBBaUSD(to: string, amount: BigNumberish) {
+        const whaleAddress = "0xe649B71783d5008d10a96b6871e3840a398d4F06";
+        await impersonateAndTransfer(config.addresses.feeToken, whaleAddress, to, amount);
+    }
+    // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
     // to the reward contract the contract will then swap it for
     // auraBAL and queue it for rewards
     async function forceHarvestRewards(amount = parseEther("100")) {
         await getBal(rewards.address, amount);
+        await getBBaUSD(rewards.address, amount);
+        await getAura(rewards.address, amount);
+        const crv = MockERC20__factory.connect(config.addresses.token, dao.signer);
+        const feeToken = MockERC20__factory.connect(config.addresses.feeToken, dao.signer);
+
+        expect(await crv.balanceOf(rewards.address), " crv balance").to.be.gt(0);
+        expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.gt(0);
+        expect(await phase2.cvx.balanceOf(rewards.address), " cvx balance").to.be.gt(0);
+
         await rewards.harvest(SLIPPAGE_OUTPUT_BPS);
+
+        expect(await crv.balanceOf(rewards.address), " crv balance").to.be.eq(0);
+        expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.eq(0);
+        expect(await phase2.cvx.balanceOf(rewards.address), " cvx balance").to.be.eq(0);
     }
 
     before(async () => {
