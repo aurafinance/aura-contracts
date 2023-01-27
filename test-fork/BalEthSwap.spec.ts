@@ -9,7 +9,7 @@ import {
     MockERC20__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
-import { impersonateAccount, impersonate, fullScale, assertBNClose, increaseTimeTo } from "../test-utils";
+import { impersonateAccount, impersonate, fullScale, assertBNClose } from "../test-utils";
 import { BigNumberish, Signer } from "ethers";
 import { config } from "../tasks/deploy/mainnet-config";
 
