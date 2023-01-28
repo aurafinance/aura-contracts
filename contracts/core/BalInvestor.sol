@@ -40,7 +40,10 @@ abstract contract BalInvestor {
     }
 
     function _setApprovals() internal {
+        IERC20(WETH).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(WETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
+
+        IERC20(BAL).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(BAL).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
@@ -55,6 +58,21 @@ abstract contract BalInvestor {
         return IPriceOracle(BALANCER_POOL_TOKEN).getTimeWeightedAverage(queries)[0];
     }
 
+    function _getPairAndBptPrice() internal view returns (uint256, uint256) {
+        IPriceOracle.OracleAverageQuery[] memory queries = new IPriceOracle.OracleAverageQuery[](2);
+        queries[0].variable = IPriceOracle.Variable.PAIR_PRICE;
+        queries[0].secs = 3600; // last hour
+        queries[0].ago = 0; // now
+
+        queries[1].variable = IPriceOracle.Variable.BPT_PRICE;
+        queries[1].secs = 3600; // last hour
+        queries[1].ago = 0; // now
+        uint256[] memory results = IPriceOracle(BALANCER_POOL_TOKEN).getTimeWeightedAverage(queries);
+
+        // Gets the balancer time weighted average price denominated in BAL
+        return (results[0], results[1]);
+    }
+
     function _getMinOut(uint256 amount, uint256 minOutBps) internal view returns (uint256) {
         // Gets the balancer time weighted average price denominated in BAL
         // e.g.  if 1 BAL == 0.4 BPT, bptOraclePrice == 2.5
@@ -65,14 +83,48 @@ abstract contract BalInvestor {
         return minOut;
     }
 
+    function _getMinOut(
+        uint256 balAmount,
+        uint256 ethAmount,
+        uint256 minOutBps
+    ) internal view returns (uint256 minOut) {
+        // Gets the balancer time weighted average price denominated in BAL
+        // e.g.  if 1 BAL == 0.4 BPT, bptOraclePrice == 2.5
+        (uint256 pairPrice, uint256 bptOraclePrice) = _getPairAndBptPrice();
+        // e.g. balMinOut = ((100e18 * 1e18) / 2.5e18);
+        // e.g. PAIR_PRICE * ETH / bptOraclePrice
+        // e.g. ethMinOut = ((231e18 * 1e18) / 2.5e18);
+        // e.g. minOut = ((balMinOut + ethMinOut) * 9980) / 10000
+        // e.g. minOut = 39.92e18
+        minOut = ((((balAmount * 1e18) + (ethAmount * pairPrice)) / bptOraclePrice) * minOutBps) / 10000;
+    }
+
     function _investBalToPool(uint256 amount, uint256 minOut) internal {
         IERC20(BAL).safeTransferFrom(msg.sender, address(this), amount);
+        _joinWithBal(amount, minOut);
+    }
+
+    function _investBalAndWethToPool(
+        uint256 balAmount,
+        uint256 ethAmount,
+        uint256 minOut
+    ) internal {
+        IERC20(BAL).safeTransferFrom(msg.sender, address(this), balAmount);
+        IERC20(WETH).safeTransferFrom(msg.sender, address(this), ethAmount);
+        _joinPool(balAmount, ethAmount, minOut);
+    }
+
+    function _joinPool(
+        uint256 balAmount,
+        uint256 ethAmount,
+        uint256 minOut
+    ) internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(BAL);
         assets[1] = IAsset(WETH);
         uint256[] memory maxAmountsIn = new uint256[](2);
-        maxAmountsIn[0] = amount;
-        maxAmountsIn[1] = 0;
+        maxAmountsIn[0] = balAmount;
+        maxAmountsIn[1] = ethAmount;
 
         BALANCER_VAULT.joinPool(
             BAL_ETH_POOL_ID,
@@ -85,5 +137,9 @@ abstract contract BalInvestor {
                 false // Don't use internal balances
             )
         );
+    }
+
+    function _joinWithBal(uint256 amount, uint256 minOut) internal {
+        _joinPool(amount, 0, minOut);
     }
 }
