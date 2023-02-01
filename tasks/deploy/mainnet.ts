@@ -11,6 +11,7 @@ import {
     deployPhase6,
     deployPhase7,
     deployTempBooster,
+    deployVestingRecipients,
 } from "../../scripts/deploySystem";
 import { config } from "./mainnet-config";
 import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
@@ -25,14 +26,7 @@ import {
     MasterChefRewardHook__factory,
     AuraMerkleDropV2,
     AuraMerkleDropV2__factory,
-    VestingRecipient,
-    VestingRecipient__factory,
-    VestingRecipientFactory,
-    VestingRecipientFactory__factory,
-    AuraVestedEscrow,
-    AuraVestedEscrow__factory,
 } from "../../types/generated";
-import { getTimestamp } from "test-utils";
 
 task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -256,82 +250,57 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
 
 task("mainnet:vestedEscrow:2")
     .addOptionalParam(
-        "ownerAddress",
-        "Owner of the vesting recipient, default value signer address",
+        "vestingOwnersAddress",
+        "List of Owners of the vesting recipient separated by ','",
         undefined,
         types.string,
     )
-    .addOptionalParam("vestedEscrowAddress", "Address of the vested escrow.", undefined, types.string)
+    .addOptionalParam(
+        "vestedEscrowAddress",
+        "Address of the vested escrow if provided, otherwise deploy a new one",
+        undefined,
+        types.string,
+    )
     .addOptionalParam("vestingStart", "Vesting start time stamp", undefined, types.int)
-    .addOptionalParam("vestingEnd", "Vesting end time stamp", undefined, types.int)
+    .addOptionalParam("vestingPeriod", "Vesting end time stamp", undefined, types.int)
     .addOptionalParam(
         "vestingRecipientFactoryAddress",
-        "Address of the vesting recipient factory.",
+        "Address of the vesting recipient factory if provided, otherwise deploy a new one",
         undefined,
         types.string,
     )
     .setAction(async function (taskArgs: TaskArguments, hre) {
-        let { vestedEscrowAddress, ownerAddress, vestingStart } = taskArgs;
-        const { vestingRecipientFactoryAddress, vestingEnd } = taskArgs;
-
-        let vestingRecipientFactory: VestingRecipientFactory;
+        const {
+            vestingStart,
+            vestingPeriod,
+            vestedEscrowAddress,
+            vestingRecipientFactoryAddress,
+            vestingOwnersAddress,
+        } = taskArgs;
 
         const debug = true;
         const waitForBlocks = 3;
 
         const signer = await getSigner(hre);
         const phase2 = await config.getPhase2(signer);
-        const protocolMultisig = config.multisigs.daoMultisig;
+        const vestedEscrowConfig =
+            vestedEscrowAddress != undefined
+                ? { vestedEscrowAddress }
+                : { vestingStart, vestingPeriod: vestingPeriod ?? ONE_WEEK.mul(53) };
 
-        vestingStart = vestingStart ?? (await getTimestamp());
-        ownerAddress = ownerAddress ?? (await signer.getAddress());
-
-        // If vested escrow is not passed, deploy a new contract
-        if (!vestedEscrowAddress) {
-            if (!vestingEnd) throw new Error("Vesting End is mandatory");
-            const vestedEscrow = await deployContract<AuraVestedEscrow>(
-                hre,
-                new AuraVestedEscrow__factory(signer),
-                "AuraVestedEscrow",
-                [phase2.cvx.address, protocolMultisig, phase2.cvxLocker.address, vestingStart, vestingEnd],
-                {},
-                debug,
-                waitForBlocks,
-            );
-            vestedEscrowAddress = vestedEscrow.address;
-            console.log(`Vested Escrow created ${vestedEscrowAddress}, proceed to fund it`);
-        }
-
-        // If vested vestingRecipientFactoryAddress is not passed, deploy a new contract
-        if (!vestingRecipientFactoryAddress) {
-            const vestingRecipientImplementation = await deployContract<VestingRecipient>(
-                hre,
-                new VestingRecipient__factory(signer),
-                "VestedRecipient",
-                [vestedEscrowAddress, phase2.cvxLocker.address],
-                {},
-            );
-
-            const vestingRecipientImplementationAddress = vestingRecipientImplementation;
-
-            vestingRecipientFactory = await deployContract<VestingRecipientFactory>(
-                hre,
-                new VestingRecipientFactory__factory(signer),
-                "vestingRecipientFactory",
-                [vestingRecipientImplementationAddress],
-                {},
-            );
-        } else {
-            vestingRecipientFactory.connect(signer).attach(vestingRecipientFactoryAddress);
-        }
-
-        if ((await vestingRecipientFactory.implementation()) === ZERO_ADDRESS)
-            throw new Error("VestingRecipientFactory implementation not set");
-
-        // Crate new vesting recipient
-        const tx = await vestingRecipientFactory.create(ownerAddress);
-        const resp = await tx.wait();
-        const createEvent = resp.events.find(({ event }) => event === "Created");
-
-        console.log(`Vesting Recipient created ${createEvent.args.vestingRecipient} for owner ${ownerAddress}`);
+        await deployVestingRecipients(
+            hre,
+            signer,
+            phase2,
+            config.multisigs,
+            {
+                vestedEscrow: vestedEscrowConfig,
+                vestingRecipientFactoryAddress,
+                vesting: vestingOwnersAddress
+                    .split(",")
+                    .map((vestingOwnerAddress: string) => ({ vestingOwnerAddress })),
+            },
+            debug,
+            waitForBlocks,
+        );
     });

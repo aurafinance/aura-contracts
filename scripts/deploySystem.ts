@@ -1,4 +1,4 @@
-import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
+import { BigNumber as BN, BigNumber, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
     RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
@@ -86,6 +86,10 @@ import {
     TempBooster__factory,
     PoolMigrator,
     PoolMigrator__factory,
+    VestingRecipient as VestingRecipientContract,
+    VestingRecipientFactory,
+    VestingRecipientFactory__factory,
+    VestingRecipient__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -271,6 +275,19 @@ type PoolsSnapshot = { gauge: string; lptoken: string; shutdown: boolean; pid: n
 interface Phase7Deployed {
     masterChefRewardHook: MasterChefRewardHook;
     siphonToken: SiphonToken;
+}
+
+type VestedEscrowDeployed = { vestedEscrowAddress: string };
+type VestedEscrowConfig = { vestingStart?: BigNumber; vestingPeriod: BigNumber };
+interface VestedEscrow2RecipientsConfig {
+    vestedEscrow: VestedEscrowDeployed | VestedEscrowConfig;
+    vestingRecipientFactoryAddress?: string;
+    vesting: { vestingOwnerAddress: string }[];
+}
+interface VestedEscrow2RecipientsDeployed {
+    vestedEscrow: AuraVestedEscrow;
+    vestingRecipients: Array<VestingRecipientContract>;
+    vestingRecipientFactory: VestingRecipientFactory;
 }
 
 function getPoolAddress(utils: any, receipt: ContractReceipt): string {
@@ -1619,6 +1636,173 @@ async function deployPhase7(
     return { masterChefRewardHook, siphonToken };
 }
 
+// -----------------------------
+// Post Deployment
+// -----------------------------
+
+// Deploys an aura vested escrow without funding it.
+async function deployAuraVestedEscrow(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    deployment: Phase2Deployed,
+    multisigs: MultisigConfig,
+    params: {
+        vestingStart?: BigNumber;
+        vestingPeriod: BigNumber;
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<AuraVestedEscrow> {
+    const { ethers } = hre;
+    const deployer = signer;
+    const { cvx, cvxLocker } = deployment;
+
+    const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
+    const DELAY = ONE_WEEK;
+    const vestingStart = params.vestingStart ?? currentTime.add(DELAY);
+    const vestingEnd = vestingStart.add(params.vestingPeriod);
+
+    const vestedEscrow = await deployContract<AuraVestedEscrow>(
+        hre,
+        new AuraVestedEscrow__factory(deployer),
+        "AuraVestedEscrow",
+        [cvx.address, multisigs.vestingMultisig, cvxLocker.address, vestingStart, vestingEnd],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    console.log(`Vested Escrow created ${vestedEscrow.address}, proceed to fund it.`);
+
+    return vestedEscrow;
+}
+async function deployVestingRecipientFactory(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    deployment: Phase2Deployed,
+    __: MultisigConfig,
+    params: {
+        vestingRecipientImplementation?: VestingRecipientContract;
+        vestedEscrow: AuraVestedEscrow;
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<VestingRecipientFactory> {
+    const { vestingRecipientImplementation } = params;
+    let vestingRecipientImplementationAddress: string;
+    const deployer = signer;
+
+    if (!vestingRecipientImplementation) {
+        const vestingRecipient = await deployContract<VestingRecipientContract>(
+            hre,
+            new VestingRecipient__factory(deployer),
+            "VestingRecipient",
+            [deployment.cvxLocker.address],
+            {},
+        );
+        vestingRecipientImplementationAddress = vestingRecipient.address;
+    } else {
+        vestingRecipientImplementationAddress = vestingRecipientImplementation.address;
+    }
+
+    return deployContract<VestingRecipientFactory>(
+        hre,
+        new VestingRecipientFactory__factory(deployer),
+        "vestingRecipientFactory",
+        [vestingRecipientImplementationAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+}
+async function createVestingRecipient(
+    __: HardhatRuntimeEnvironment,
+    signer: Signer,
+    ___: MultisigConfig,
+    params: {
+        vestingOwnerAddress: string;
+        vestedEscrow: AuraVestedEscrow;
+        vestingRecipientFactory: VestingRecipientFactory;
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<VestingRecipientContract> {
+    const { vestingRecipientFactory, vestingOwnerAddress, vestedEscrow } = params;
+    // Crate new vesting recipient
+    const tx = await vestingRecipientFactory.create(vestedEscrow.address, vestingOwnerAddress);
+    await waitForTx(tx, debug, waitForBlocks);
+    const resp = await tx.wait();
+    const createEvent = resp.events.find(({ event }) => event === "Created");
+
+    console.log(`Vesting Recipient created ${createEvent.args.vestingRecipient} for owner ${vestingOwnerAddress}`);
+    return new VestingRecipient__factory(signer).attach(createEvent.args.vestingRecipient);
+}
+
+async function deployVestingRecipients(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    deployment: Phase2Deployed,
+    multisigs: MultisigConfig,
+    params: VestedEscrow2RecipientsConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<VestedEscrow2RecipientsDeployed> {
+    // If vested escrow is not passed, deploy a new contract
+    let vestedEscrow: AuraVestedEscrow;
+    let vestingRecipientFactory: VestingRecipientFactory;
+
+    if (!(params.vestedEscrow as VestedEscrowDeployed).vestedEscrowAddress) {
+        const { vestingStart, vestingPeriod } = params.vestedEscrow as VestedEscrowConfig;
+        if (!vestingPeriod) throw new Error("Vesting Period is mandatory");
+        vestedEscrow = await deployAuraVestedEscrow(
+            hre,
+            signer,
+            deployment,
+            multisigs,
+            { vestingStart, vestingPeriod },
+            debug,
+            waitForBlocks,
+        );
+    } else {
+        vestedEscrow = new AuraVestedEscrow__factory(signer).attach(
+            (params.vestedEscrow as VestedEscrowDeployed).vestedEscrowAddress,
+        );
+    }
+
+    // If vested vestingRecipientFactoryAddress is not passed, deploy a new contract
+    if (!params.vestingRecipientFactoryAddress) {
+        vestingRecipientFactory = await deployVestingRecipientFactory(
+            hre,
+            signer,
+            deployment,
+            multisigs,
+            { vestedEscrow },
+            debug,
+        );
+    } else {
+        vestingRecipientFactory.connect(signer).attach(params.vestingRecipientFactoryAddress);
+    }
+
+    if ((await vestingRecipientFactory.implementation()) === ZERO_ADDRESS)
+        throw new Error("VestingRecipientFactory implementation not set");
+
+    // Crate new vesting recipient
+    const vestingRecipients = [];
+    for (let i = 0; i < params.vesting.length; i++) {
+        const vestingRecipient = await createVestingRecipient(
+            hre,
+            signer,
+            multisigs,
+            {
+                vestingOwnerAddress: params.vesting[i].vestingOwnerAddress,
+                vestedEscrow,
+                vestingRecipientFactory,
+            },
+            debug,
+        );
+        vestingRecipients.push(vestingRecipient);
+    }
+    return { vestingRecipients, vestedEscrow, vestingRecipientFactory };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1642,4 +1826,6 @@ export {
     deployPhase7,
     Phase7Deployed,
     PoolsSnapshot,
+    deployVestingRecipients,
+    VestedEscrow2RecipientsDeployed,
 };

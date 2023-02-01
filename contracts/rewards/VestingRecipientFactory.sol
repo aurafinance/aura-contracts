@@ -5,7 +5,7 @@ import { Clones } from "@openzeppelin/contracts-0.8/proxy/Clones.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
 interface IInit {
-    function init(address) external;
+    function init(address _vesting, address _owner) external;
 }
 
 /**
@@ -26,7 +26,7 @@ contract VestingRecipientFactory is Ownable {
     // Events
     // ----------------------------------------------------------
 
-    event Created(address vestingRecipient, address owner);
+    event Created(address vestingRecipient, address vestedEscrow, address owner);
 
     event SetImplementation(address implementation);
 
@@ -56,11 +56,12 @@ contract VestingRecipientFactory is Ownable {
 
     /**
      * @dev Create vestingRecipient instance
+     * @param _vestedEscrow VestedEscrow V2 contract
      * @param _owner The owner of the vestingRecipient
      */
-    function create(address _owner) external {
+    function create(address _vestedEscrow, address _owner) external {
         address vestingRecipient = Clones.clone(implementation);
-        IInit(vestingRecipient).init(_owner);
-        emit Created(vestingRecipient, _owner);
+        IInit(vestingRecipient).init(_vestedEscrow, _owner);
+        emit Created(vestingRecipient, _vestedEscrow, _owner);
     }
 }

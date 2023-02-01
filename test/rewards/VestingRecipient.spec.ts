@@ -30,7 +30,7 @@ import { JoinPoolRequestStruct } from "types/generated/MockBalancerVault";
 
 const debug = false;
 
-describe("AuraVestedEscrow", () => {
+describe("VestingRecipient", () => {
     let accounts: Signer[];
 
     let contracts: Phase2Deployed;
@@ -103,7 +103,7 @@ describe("AuraVestedEscrow", () => {
             hre,
             new VestingRecipient__factory(deployer),
             "VestingRecipient",
-            [vestedEscrow.address, auraLocker.address],
+            [auraLocker.address],
             {},
         );
 
@@ -115,7 +115,7 @@ describe("AuraVestedEscrow", () => {
             {},
         );
 
-        const tx = await vestingRecipientFactory.create(deployerAddress);
+        const tx = await vestingRecipientFactory.create(vestedEscrow.address, deployerAddress);
         const resp = await tx.wait();
         initTime = (await ethers.provider.getBlock(tx.blockNumber)).timestamp;
         const createEvent = resp.events.find(({ event }) => event === "Created");
@@ -134,9 +134,9 @@ describe("AuraVestedEscrow", () => {
         await vestingRecipientFactory.setImplementation(currentImplementation);
     });
     it("cannot re-init", async () => {
-        await expect(vestingRecipient.init("0x0000000000000000000000000000000000000002")).to.be.revertedWith(
-            "Initializable: contract is already initialized",
-        );
+        await expect(
+            vestingRecipient.init(vestedEscrow.address, "0x0000000000000000000000000000000000000002"),
+        ).to.be.revertedWith("Initializable: contract is already initialized");
     });
     it("has the correct config", async () => {
         const unlockTime = await vestingRecipient.UNLOCK_DURATION();
@@ -342,10 +342,7 @@ describe("AuraVestedEscrow", () => {
         expect(balAfter.sub(balBefore)).eq(balance);
     });
     it("before init cannot withdraw", async () => {
-        const vestingRecipient = await new VestingRecipient__factory(deployer).deploy(
-            vestedEscrow.address,
-            auraLocker.address,
-        );
+        const vestingRecipient = await new VestingRecipient__factory(deployer).deploy(auraLocker.address);
         // as the contract has not ben initialized, the owner is not set, therefore it reverts.
         await expect(vestingRecipient.withdrawERC20(contracts.cvx.address, 1)).to.be.revertedWith("!owner");
     });

@@ -25,6 +25,8 @@ contract VestingRecipient is Initializable {
     /// @notice The unlock duration period.
     uint256 public constant UNLOCK_DURATION = 365 days * 3;
 
+    /// @notice The Aura Locker contract, it implements IAuraLocker
+    address public immutable auraLocker;
     // ----------------------------------------------------------
     // Storage
     // ----------------------------------------------------------
@@ -34,11 +36,9 @@ contract VestingRecipient is Initializable {
     /// @notice The owner of the contract.
     address public owner;
     /// @notice The VestedEscrow V2 contract
-    address public immutable vesting;
-    /// @notice The Aura Locker contract, it implements IAuraLocker
-    address public immutable auraLocker;
+    address public vesting;
     /// @notice ERC20 Token
-    address public immutable rewardToken;
+    address public rewardToken;
     /// @notice (tokenAddress, amountClaimend) map.
     mapping(address => uint256) public claimed;
 
@@ -54,20 +54,21 @@ contract VestingRecipient is Initializable {
     // ----------------------------------------------------------
 
     /**
-     * @param _vesting VestedEscrow V2 contract
      * @param _auraLocker Aura Locker contract
      */
-    constructor(address _vesting, address _auraLocker) {
-        vesting = _vesting;
+    constructor(address _auraLocker) {
         auraLocker = _auraLocker;
-        rewardToken = IVestedEscrow(_vesting).rewardToken();
     }
 
     /**
      * @dev Initialize the contract, owner and unlockTime.
+     * @param _vesting VestedEscrow V2 contract
      * @param _owner The address of the owner
      */
-    function init(address _owner) external initializer {
+    function init(address _vesting, address _owner) external initializer {
+        vesting = _vesting;
+        rewardToken = IVestedEscrow(_vesting).rewardToken();
+
         owner = _owner;
         unlockTime = block.timestamp + UNLOCK_DURATION;
     }
