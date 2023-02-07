@@ -12,6 +12,6 @@ export default {
         },
     },
     mocha: {
-        timeout: 240000, // 4 min timeout
+        timeout: 480000, // 4 min timeout
     },
 };

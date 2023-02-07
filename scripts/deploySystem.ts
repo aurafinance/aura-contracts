@@ -86,6 +86,8 @@ import {
     TempBooster__factory,
     PoolMigrator,
     PoolMigrator__factory,
+    PoolManagerV4,
+    BoosterOwnerSecondary,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -271,6 +273,10 @@ type PoolsSnapshot = { gauge: string; lptoken: string; shutdown: boolean; pid: n
 interface Phase7Deployed {
     masterChefRewardHook: MasterChefRewardHook;
     siphonToken: SiphonToken;
+}
+interface Phase8Deployed {
+    poolManagerV4: PoolManagerV4;
+    boosterOwnerSecondary: BoosterOwnerSecondary;
 }
 
 function getPoolAddress(utils: any, receipt: ContractReceipt): string {
@@ -1641,5 +1647,6 @@ export {
     Phase6Deployed,
     deployPhase7,
     Phase7Deployed,
+    Phase8Deployed,
     PoolsSnapshot,
 };

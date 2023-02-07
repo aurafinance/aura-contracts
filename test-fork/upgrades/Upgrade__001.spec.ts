@@ -35,15 +35,14 @@ import { config } from "../../tasks/deploy/mainnet-config";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { deployContract } from "../../tasks/utils";
 import { PoolInfoStruct } from "../../types/generated/IBooster";
-import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 
 const cowWethPid = 4;
 const wstEthPid = 29;
 const cowWethWhale = "0xb1c26d7ab776c58e349dfb30f475e70087f86fd2";
 const wstEthWhale = "0x21ac89788d52070d23b8eacecbd3dc544178dc60";
-const dolaUsdcLpWhale = "0x11ec78492d53c9276dd7a184b1dbfb34e50b710d";
-const dolaUsdcGaugeAddress = "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b";
-const rbnUsdcGaugeAddress = "0x81C452E84B103555C2Dd2DEc0bFABC0c4d6B3065";
+const compWstethLpWhale = "0xec576a26335de1c360d2fc9a68cba6ba37af4a13";
+const compWstethGaugeAddress = "0x9C0f4144D037688e0AdA74B22a9aAb7c14c58e6C";
+const ankrWethGaugeAddress = "0x21D8dB8a46393FEdE4e91eAfBc0cCf092faCb469";
 
 /**
  * Upgrade:
@@ -75,7 +74,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 16469240,
+                        blockNumber: 16577241,
                     },
                 },
             ],
@@ -149,9 +148,10 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
 
     describe("Deployment and Setup", () => {
         it("Deploy contracts", async () => {
-            const result = await deployUpgrade01(hre, deployer, false, 0);
+            // const result = await deployUpgrade01(hre, deployer, false, 0);
+            const result = await config.getPhase8(deployer);
 
-            newStashImpl = result.extraRewardStashV3;
+            newStashImpl = phase6.stashV3;
             poolManagerV4 = result.poolManagerV4;
             boosterOwnerSecondary = result.boosterOwnerSecondary;
         });
@@ -440,7 +440,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
      * --------------------------------------------------------------------- */
 
     describe("PoolManagerV4 functional tests", () => {
-        let rbnUsdcPid: BigNumberish;
+        let ankrPid: BigNumberish;
 
         it("Can not call setOperator", async () => {
             await expect(phase6.poolManagerSecondaryProxy.setOperator(protocolDao.address)).to.be.revertedWith(
@@ -458,30 +458,30 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
             // Test protect add pool
             await poolManagerV4.connect(protocolDao.signer).setProtectPool(true);
             expect(await poolManagerV4.protectAddPool()).eq(true);
-            await expect(poolManagerV4["addPool(address)"](rbnUsdcGaugeAddress)).to.be.revertedWith("!auth");
+            await expect(poolManagerV4["addPool(address)"](ankrWethGaugeAddress)).to.be.revertedWith("!auth");
             await poolManagerV4.connect(protocolDao.signer).setProtectPool(false);
             expect(await poolManagerV4.protectAddPool()).eq(false);
 
-            await poolManagerV4["addPool(address)"](rbnUsdcGaugeAddress);
+            await poolManagerV4["addPool(address)"](ankrWethGaugeAddress);
             const poolLengthAfter = await phase6.booster.poolLength();
             expect(poolLengthAfter.sub(poolLengthBefore)).eq(1);
             // Save RBN USDC PID
-            rbnUsdcPid = poolLengthBefore;
+            ankrPid = poolLengthBefore;
         });
         it("New pool ExtraRewardStashV3 has correct config", async () => {
             const { voterProxy } = phase2;
             const { booster, factories } = phase6;
-            const poolInfo = await booster.poolInfo(rbnUsdcPid);
-            expect(poolInfo.gauge).eq(rbnUsdcGaugeAddress);
+            const poolInfo = await booster.poolInfo(ankrPid);
+            expect(poolInfo.gauge).eq(ankrWethGaugeAddress);
             expect(poolInfo.stash).not.eq(ZERO_ADDRESS);
 
-            await booster.earmarkRewards(rbnUsdcPid);
+            await booster.earmarkRewards(ankrPid);
 
             const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer);
-            expect(await stash.pid()).eq(rbnUsdcPid);
+            expect(await stash.pid()).eq(ankrPid);
             expect(await stash.operator()).eq(booster.address);
             expect(await stash.staker()).eq(voterProxy.address);
-            expect(await stash.gauge()).eq(rbnUsdcGaugeAddress);
+            expect(await stash.gauge()).eq(ankrWethGaugeAddress);
             expect(await stash.rewardFactory()).eq(factories.rewardFactory.address);
             expect(await stash.hasRedirected()).eq(true);
 
@@ -557,18 +557,18 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
 
         before(async () => {
             pid = (await phase6.booster.poolLength()).toNumber();
-            whale = await impersonateAccount(dolaUsdcLpWhale);
+            whale = await impersonateAccount(compWstethLpWhale);
             whales[pid] = whale;
         });
         it("Add DOLA/USDC pool", async () => {
-            await poolManagerV4.connect(protocolDao.signer)["addPool(address)"](dolaUsdcGaugeAddress);
+            await poolManagerV4.connect(protocolDao.signer)["addPool(address)"](compWstethGaugeAddress);
 
             const poolInfo = await getPoolInfo(pid);
             lpToken = poolInfo.lpToken.connect(whale.signer);
             rewards = poolInfo.rewards.connect(whale.signer);
             stash = poolInfo.stash;
         });
-        it("Deposit into COW/WETH pool", async () => {
+        it("Deposit into DOLA/USDC pool", async () => {
             await lpToken.approve(phase6.booster.address, ethers.constants.MaxUint256);
             whaleBalance = await lpToken.balanceOf(whale.address);
             expect(whaleBalance, "No whale balance").gt(0);
