@@ -14,5 +14,13 @@ interface IRewardStaking {
 
     function withdraw(uint256, bool) external;
 
+    function withdraw(address, uint256) external;
+
     function stakeAll() external;
+
+    function stake(address, uint256) external;
+
+    function rewardToken() external view returns (address);
+
+    function queueNewRewards(uint256) external;
 }

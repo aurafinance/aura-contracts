@@ -7,7 +7,14 @@ import { deployContract } from "../tasks/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { impersonate, impersonateAccount } from "../test-utils/fork";
 import { Phase2Deployed } from "../scripts/deploySystem";
-import { Account, MockERC20__factory, AuraBalBoostedRewardPool, AuraBalBoostedRewardPool__factory } from "../types";
+import {
+    Account,
+    MockERC20__factory,
+    AuraBalBoostedRewardPool,
+    AuraBalBoostedRewardPool__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
+} from "../types";
 import { simpleToExactAmount } from "../test-utils";
 
 const DEBUG = false;
@@ -27,6 +34,7 @@ describe("AuraBalBoostedRewards", () => {
     let deployer: Account;
     let phase2: Phase2Deployed;
     let rewards: AuraBalBoostedRewardPool;
+    let auraRewards: VirtualBalanceRewardPool;
 
     async function getEth(recipient: string) {
         const ethWhale = await impersonate(config.addresses.weth);
@@ -107,9 +115,14 @@ describe("AuraBalBoostedRewards", () => {
                 new AuraBalBoostedRewardPool__factory(deployer.signer),
                 "AuraBalBoostedRewardPool",
                 [
+                    // AuraBalBoostedRewardPool
                     dao.address,
-                    phase2.cvxCrv.address,
                     phase2.cvxCrvRewards.address,
+                    // AuraBaseRewardPool
+                    phase2.cvxCrv.address,
+                    phase2.cvxCrv.address,
+                    dao.address,
+                    // BalInvestor
                     config.addresses.balancerVault,
                     config.addresses.token,
                     config.addresses.weth,
@@ -118,6 +131,19 @@ describe("AuraBalBoostedRewards", () => {
                 {},
                 DEBUG,
             );
+        });
+        it("Deploy AURA virtual rewards", async () => {
+            auraRewards = await deployContract<VirtualBalanceRewardPool>(
+                hre,
+                new VirtualBalanceRewardPool__factory(deployer.signer),
+                "AuraRewards",
+                [rewards.address, phase2.cvx.address, rewards.address],
+                {},
+                DEBUG,
+            );
+        });
+        it("Add AURA as extra rewards", async () => {
+            await rewards.connect(dao.signer).addExtraReward(auraRewards.address);
         });
         it("Add AuraBalBoostedRewards to Booster platform rewards", async () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
