@@ -46,7 +46,6 @@ import "@openzeppelin/contracts-0.6/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-0.6/utils/Address.sol";
 import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
 
-
 /**
  * @title   BaseRewardPool
  * @author  Synthetix -> ConvexFinance
@@ -57,7 +56,7 @@ import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
  *          distribute a child reward token (i.e. a secondary one from Curve, or a seperate one).
  */
 contract BaseRewardPool {
-     using SafeMath for uint256;
+    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     IERC20 public immutable rewardToken;
@@ -123,18 +122,19 @@ contract BaseRewardPool {
         return extraRewards.length;
     }
 
-    function addExtraReward(address _reward) external returns(bool){
+    function addExtraReward(address _reward) external returns (bool) {
         require(msg.sender == rewardManager, "!authorized");
-        require(_reward != address(0),"!reward setting");
-        
-        if(extraRewards.length >= 12){
+        require(_reward != address(0), "!reward setting");
+
+        if (extraRewards.length >= 12) {
             return false;
         }
-        
+
         extraRewards.push(_reward);
         return true;
     }
-    function clearExtraRewards() external{
+
+    function clearExtraRewards() external {
         require(msg.sender == rewardManager, "!authorized");
         delete extraRewards;
     }
@@ -159,26 +159,18 @@ contract BaseRewardPool {
         }
         return
             rewardPerTokenStored.add(
-                lastTimeRewardApplicable()
-                    .sub(lastUpdateTime)
-                    .mul(rewardRate)
-                    .mul(1e18)
-                    .div(totalSupply())
+                lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(totalSupply())
             );
     }
 
     function earned(address account) public view returns (uint256) {
         return
-            balanceOf(account)
-                .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
-                .div(1e18)
-                .add(rewards[account]);
+            balanceOf(account).mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(
+                rewards[account]
+            );
     }
 
-    function stake(uint256 _amount)
-        public 
-        returns(bool)
-    {
+    function stake(uint256 _amount) public returns (bool) {
         _processStake(_amount, msg.sender);
 
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -187,22 +179,19 @@ contract BaseRewardPool {
         return true;
     }
 
-    function stakeAll() external returns(bool){
+    function stakeAll() external returns (bool) {
         uint256 balance = stakingToken.balanceOf(msg.sender);
         stake(balance);
         return true;
     }
 
-    function stakeFor(address _for, uint256 _amount)
-        public
-        returns(bool)
-    {
+    function stakeFor(address _for, uint256 _amount) public returns (bool) {
         _processStake(_amount, _for);
 
         //take away from sender
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
         emit Staked(_for, _amount);
-        
+
         return true;
     }
 
@@ -213,10 +202,10 @@ contract BaseRewardPool {
      * @param _receiver  Address of user who will receive the stake
      */
     function _processStake(uint256 _amount, address _receiver) internal updateReward(_receiver) {
-        require(_amount > 0, 'RewardPool : Cannot stake 0');
-        
+        require(_amount > 0, "RewardPool : Cannot stake 0");
+
         //also stake to linked rewards
-        for(uint i=0; i < extraRewards.length; i++){
+        for (uint256 i = 0; i < extraRewards.length; i++) {
             IRewards(extraRewards[i]).stake(_receiver, _amount);
         }
 
@@ -226,15 +215,11 @@ contract BaseRewardPool {
         emit Transfer(address(0), _receiver, _amount);
     }
 
-    function withdraw(uint256 amount, bool claim)
-        public
-        updateReward(msg.sender)
-        returns(bool)
-    {
-        require(amount > 0, 'RewardPool : Cannot withdraw 0');
+    function withdraw(uint256 amount, bool claim) public updateReward(msg.sender) returns (bool) {
+        require(amount > 0, "RewardPool : Cannot withdraw 0");
 
         //also withdraw from linked rewards
-        for(uint i=0; i < extraRewards.length; i++){
+        for (uint256 i = 0; i < extraRewards.length; i++) {
             IRewards(extraRewards[i]).withdraw(msg.sender, amount);
         }
 
@@ -243,9 +228,9 @@ contract BaseRewardPool {
 
         stakingToken.safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
-     
-        if(claim){
-            getReward(msg.sender,true);
+
+        if (claim) {
+            getReward(msg.sender, true);
         }
 
         emit Transfer(msg.sender, address(0), amount);
@@ -253,30 +238,34 @@ contract BaseRewardPool {
         return true;
     }
 
-    function withdrawAll(bool claim) external{
-        withdraw(_balances[msg.sender],claim);
+    function withdrawAll(bool claim) external {
+        withdraw(_balances[msg.sender], claim);
     }
 
-    function withdrawAndUnwrap(uint256 amount, bool claim) public returns(bool){
+    function withdrawAndUnwrap(uint256 amount, bool claim) public returns (bool) {
         _withdrawAndUnwrapTo(amount, msg.sender, msg.sender);
         //get rewards too
-        if(claim){
-            getReward(msg.sender,true);
+        if (claim) {
+            getReward(msg.sender, true);
         }
         return true;
     }
 
-    function _withdrawAndUnwrapTo(uint256 amount, address from, address receiver) internal updateReward(from) returns(bool){
+    function _withdrawAndUnwrapTo(
+        uint256 amount,
+        address from,
+        address receiver
+    ) internal updateReward(from) returns (bool) {
         //also withdraw from linked rewards
-        for(uint i=0; i < extraRewards.length; i++){
+        for (uint256 i = 0; i < extraRewards.length; i++) {
             IRewards(extraRewards[i]).withdraw(from, amount);
         }
-        
+
         _totalSupply = _totalSupply.sub(amount);
         _balances[from] = _balances[from].sub(amount);
 
         //tell operator to withdraw from here directly to user
-        IDeposit(operator).withdrawTo(pid,amount,receiver);
+        IDeposit(operator).withdrawTo(pid, amount, receiver);
         emit Withdrawn(from, amount);
 
         emit Transfer(from, address(0), amount);
@@ -284,8 +273,8 @@ contract BaseRewardPool {
         return true;
     }
 
-    function withdrawAllAndUnwrap(bool claim) external{
-        withdrawAndUnwrap(_balances[msg.sender],claim);
+    function withdrawAllAndUnwrap(bool claim) external {
+        withdrawAndUnwrap(_balances[msg.sender], claim);
     }
 
     /**
@@ -293,7 +282,7 @@ contract BaseRewardPool {
      * @param _account     Account for which to claim
      * @param _claimExtras Get the child rewards too?
      */
-    function getReward(address _account, bool _claimExtras) public updateReward(_account) returns(bool){
+    function getReward(address _account, bool _claimExtras) public updateReward(_account) returns (bool) {
         uint256 reward = earned(_account);
         if (reward > 0) {
             rewards[_account] = 0;
@@ -303,8 +292,8 @@ contract BaseRewardPool {
         }
 
         //also get rewards from linked rewards
-        if(_claimExtras){
-            for(uint i=0; i < extraRewards.length; i++){
+        if (_claimExtras) {
+            for (uint256 i = 0; i < extraRewards.length; i++) {
                 IRewards(extraRewards[i]).getReward(_account);
             }
         }
@@ -314,8 +303,8 @@ contract BaseRewardPool {
     /**
      * @dev Called by a staker to get their allocated rewards
      */
-    function getReward() external returns(bool){
-        getReward(msg.sender,true);
+    function getReward() external returns (bool) {
+        getReward(msg.sender, true);
         return true;
     }
 
@@ -335,7 +324,7 @@ contract BaseRewardPool {
      *      Curve is queued for rewards and the distribution only begins once the new rewards are sufficiently
      *      large, or the epoch has ended.
      */
-    function queueNewRewards(uint256 _rewards) external returns(bool){
+    function queueNewRewards(uint256 _rewards) external returns (bool) {
         require(msg.sender == operator, "!authorized");
 
         _rewards = _rewards.add(queuedRewards);
@@ -353,19 +342,16 @@ contract BaseRewardPool {
         uint256 queuedRatio = currentAtNow.mul(1000).div(_rewards);
 
         //uint256 queuedRatio = currentRewards.mul(1000).div(_rewards);
-        if(queuedRatio < newRewardRatio){
+        if (queuedRatio < newRewardRatio) {
             notifyRewardAmount(_rewards);
             queuedRewards = 0;
-        }else{
+        } else {
             queuedRewards = _rewards;
         }
         return true;
     }
 
-    function notifyRewardAmount(uint256 reward)
-        internal
-        updateReward(address(0))
-    {
+    function notifyRewardAmount(uint256 reward) internal updateReward(address(0)) {
         historicalRewards = historicalRewards.add(reward);
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(duration);
