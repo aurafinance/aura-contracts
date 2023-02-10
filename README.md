@@ -117,7 +117,7 @@ yarn task timeTravel --duration 69420 --network forking
 | minter                          | [0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707](https://etherscan.io/address/0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707) |
 | booster                         | [0xA57b8d98dAE62B26Ec3bcC4a365338157060B234](https://etherscan.io/address/0xA57b8d98dAE62B26Ec3bcC4a365338157060B234) |
 | boosterOwner                    | [0x228a142081b456a9fF803d004504955032989f04](https://etherscan.io/address/0x228a142081b456a9fF803d004504955032989f04) |
-| boosterOwnerSecondary           | [0x1fdd5CC20303F61f3fE2Da6cAD9023C9993c4760](https://etherscan.io/address/0x1fdd5CC20303F61f3fE2Da6cAD9023C9993c4760) |
+| boosterOwnerSecondary           | [0xCe96e48A2893C599fe2601Cc1918882e1D001EaD](https://etherscan.io/address/0xCe96e48A2893C599fe2601Cc1918882e1D001EaD) |
 | boosterHelper                   | [0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0](https://etherscan.io/address/0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0) |
 | rewardFactory                   | [0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA](https://etherscan.io/address/0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA) |
 | tokenFactory                    | [0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba](https://etherscan.io/address/0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba) |

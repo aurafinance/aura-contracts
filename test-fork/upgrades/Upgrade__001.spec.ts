@@ -74,7 +74,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 16577241,
+                        blockNumber: 16597635,
                     },
                 },
             ],
@@ -313,7 +313,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 boosterOwnerSecondary
                     .connect(protocolDao.signer)
                     .execute(phase6.boosterOwner.address, 0, callSetStashFactoryImpl),
-            ).to.be.revertedWith("!allowed");
+            ).to.be.revertedWith("!success");
 
             const poolInfo = await phase6.booster.poolInfo(1);
             const callSetStashExtraReward = phase6.boosterOwner.interface.encodeFunctionData("setStashExtraReward", [
@@ -324,7 +324,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 boosterOwnerSecondary
                     .connect(protocolDao.signer)
                     .execute(phase6.boosterOwner.address, 0, callSetStashExtraReward),
-            ).to.be.revertedWith("!allowed");
+            ).to.be.revertedWith("!success");
 
             const callTransferOwnership = phase6.boosterOwner.interface.encodeFunctionData("transferOwnership", [
                 ZERO_ADDRESS,
@@ -333,7 +333,7 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 boosterOwnerSecondary
                     .connect(protocolDao.signer)
                     .execute(phase6.boosterOwner.address, 0, callTransferOwnership),
-            ).to.be.revertedWith("!allowed");
+            ).to.be.revertedWith("!success");
 
             const callSetFeeToken = phase6.boosterOwner.interface.encodeFunctionData("setFeeInfo", [
                 ZERO_ADDRESS,
@@ -343,6 +343,25 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
                 boosterOwnerSecondary
                     .connect(protocolDao.signer)
                     .execute(phase6.boosterOwner.address, 0, callSetFeeToken),
+            ).to.be.revertedWith("!allowed");
+
+            const callSetImpl = phase6.factories.stashFactory.interface.encodeFunctionData("setImplementation", [
+                ZERO_ADDRESS,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS,
+            ]);
+            await expect(
+                boosterOwnerSecondary
+                    .connect(protocolDao.signer)
+                    .execute(phase6.factories.stashFactory.address, 0, callSetImpl),
+            ).to.be.revertedWith("!allowed");
+
+            const callSetExtraReward = new ExtraRewardStashV3__factory().interface.encodeFunctionData(
+                "setExtraReward",
+                [ZERO_ADDRESS],
+            );
+            await expect(
+                boosterOwnerSecondary.connect(protocolDao.signer).execute(poolInfo.stash, 0, callSetExtraReward),
             ).to.be.revertedWith("!allowed");
         });
         it("Cannot add extra rewards to old pools", async () => {

@@ -354,7 +354,7 @@ const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
 const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
     poolManagerV4: PoolManagerV4__factory.connect("0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64", deployer),
     boosterOwnerSecondary: BoosterOwnerSecondary__factory.connect(
-        "0x1fdd5CC20303F61f3fE2Da6cAD9023C9993c4760",
+        "0xCe96e48A2893C599fe2601Cc1918882e1D001EaD",
         deployer,
     ),
 });
