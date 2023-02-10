@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { BigNumberish } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 import hre, { network } from "hardhat";
 import { formatEther, parseEther } from "ethers/lib/utils";
 
@@ -15,6 +15,31 @@ const FORK_BLOCK = 16370000;
 const SLIPPAGE_OUTPUT_BPS = 9950;
 
 const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
+
+const feeTokenRewardPool = "0x62D7d772b2d909A0779d15299F4FC87e34513c6d";
+const RETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
+const WSTETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
+
+const AURA_ETH_POOL_ID = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274";
+
+const BBUSD_RETH_POOL_ID = "0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a";
+const RETH_WETH_POOL_ID = "0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112";
+
+const BBUSD_WSTETH_POOL_ID = "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387";
+const WSTETH_WETH_POOL_ID = "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080";
+
+function encodeFeeTokenRethWethPath() {
+    const poolIds = [BBUSD_RETH_POOL_ID, RETH_WETH_POOL_ID];
+    const assetIns = [config.addresses.feeToken, RETH];
+    const bbusdToWethPath = ethers.utils.defaultAbiCoder.encode(["bytes32[]", "address[]"], [poolIds, assetIns]);
+    return bbusdToWethPath;
+}
+function encodeFeeTokenWstethWethPath() {
+    const poolIds = [BBUSD_WSTETH_POOL_ID, WSTETH_WETH_POOL_ID];
+    const assetIns = [config.addresses.feeToken, WSTETH];
+    const bbusdToWethPath = ethers.utils.defaultAbiCoder.encode(["bytes32[]", "address[]"], [poolIds, assetIns]);
+    return bbusdToWethPath;
+}
 
 async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
     const tokenWhaleSigner = await impersonateAccount(from);
@@ -124,10 +149,21 @@ describe("BoostedAuraBalRewards", () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
             expect(await phase2.booster.treasury()).eq(rewards.address);
         });
+        it("Add FeeToken as extra reward", async () => {
+            await rewards.connect(dao.signer).addExtraReward(feeTokenRewardPool);
+            expect(await rewards.extraRewards(0), "fee Token as extra reward").to.be.eq(feeTokenRewardPool);
+        });
+
         it("Set approvals", async () => {
             await rewards.connect(dao.signer).setApprovals();
             // It should be able to setApprovals more than once, in case the allowance of a token goes to 0.
             await rewards.connect(dao.signer).setApprovals();
+        });
+        it("Set balancer paths", async () => {
+            const tx = await rewards
+                .connect(dao.signer)
+                .setBalancerPath(config.addresses.feeToken, encodeFeeTokenRethWethPath());
+            await expect(tx).to.emit(rewards, "SetBalancerPath").withArgs(config.addresses.feeToken);
         });
     });
 
@@ -184,6 +220,20 @@ describe("BoostedAuraBalRewards", () => {
 
     describe("Harvest", () => {
         it("Harvest rewards and convert to auraBAL", async () => {
+            const auraBalBalanceBefore = await phase2.cvxCrv.balanceOf(rewards.address);
+            await forceHarvestRewards();
+            const auraBalBalanceAfter = await phase2.cvxCrv.balanceOf(rewards.address);
+            const auraBalBalance = auraBalBalanceAfter.sub(auraBalBalanceBefore);
+            console.log("auraBAL balance:", formatEther(auraBalBalance));
+            expect(auraBalBalance).gt(0);
+        });
+        it("Harvest rewards and convert to auraBAL with a different swap path", async () => {
+            // Update to a new path
+            const tx = await rewards
+                .connect(dao.signer)
+                .setBalancerPath(config.addresses.feeToken, encodeFeeTokenWstethWethPath());
+            await expect(tx).to.emit(rewards, "SetBalancerPath").withArgs(config.addresses.feeToken);
+
             const auraBalBalanceBefore = await phase2.cvxCrv.balanceOf(rewards.address);
             await forceHarvestRewards();
             const auraBalBalanceAfter = await phase2.cvxCrv.balanceOf(rewards.address);
