@@ -17,6 +17,8 @@ import {
     IBalancerVault__factory,
     IBalancerHelpers__factory,
     IBalancerHelpers,
+    IERC20,
+    IERC20__factory,
 } from "../types";
 import { BN, simpleToExactAmount } from "../test-utils";
 import {
@@ -35,7 +37,6 @@ const SLIPPAGE_OUTPUT_SCALE = 10000;
 
 const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
 
-const feeTokenRewardPool = "0x62D7d772b2d909A0779d15299F4FC87e34513c6d";
 const RETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
 const WSTETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -154,8 +155,12 @@ describe("AuraBalBoostedRewards", () => {
     let phase2: Phase2Deployed;
     let rewards: AuraBalBoostedRewardPool;
     let auraRewards: VirtualBalanceRewardPool;
+    let feeTokenRewards: VirtualBalanceRewardPool;
     let bVault: IBalancerVault;
     let balancerHelpers: IBalancerHelpers;
+    let wethToken: IERC20;
+    let balToken: IERC20;
+    let balWethBptToken: IERC20;
 
     async function getEth(recipient: string) {
         const ethWhale = await impersonate(config.addresses.weth);
@@ -247,6 +252,9 @@ describe("AuraBalBoostedRewards", () => {
         phase2 = await config.getPhase2(dao.signer);
         bVault = IBalancerVault__factory.connect(config.addresses.balancerVault, dao.signer);
         balancerHelpers = IBalancerHelpers__factory.connect(config.addresses.balancerHelpers, dao.signer);
+        wethToken = IERC20__factory.connect(WETH, dao.signer);
+        balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
+        balWethBptToken = IERC20__factory.connect("0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56", dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
     });
@@ -281,8 +289,16 @@ describe("AuraBalBoostedRewards", () => {
             auraRewards = await deployContract<VirtualBalanceRewardPool>(
                 hre,
                 new VirtualBalanceRewardPool__factory(deployer.signer),
-                "AuraRewards",
+                "VirtualBalanceRewardPool - aura",
                 [rewards.address, phase2.cvx.address, rewards.address],
+                {},
+                DEBUG,
+            );
+            feeTokenRewards = await deployContract<VirtualBalanceRewardPool>(
+                hre,
+                new VirtualBalanceRewardPool__factory(deployer.signer),
+                "VirtualBalanceRewardPool - bbausd",
+                [rewards.address, config.addresses.feeToken, rewards.address],
                 {},
                 DEBUG,
             );
@@ -291,17 +307,33 @@ describe("AuraBalBoostedRewards", () => {
             await rewards.connect(dao.signer).addExtraReward(auraRewards.address);
             expect(await rewards.extraRewards(0), "aura as extra reward").to.be.eq(auraRewards.address);
         });
+        it("Add FeeToken as extra reward", async () => {
+            await rewards.connect(dao.signer).addExtraReward(feeTokenRewards.address);
+            expect(await rewards.extraRewards(1), "fee Token as extra reward").to.be.eq(feeTokenRewards.address);
+        });
         it("Add AuraBalBoostedRewards to Booster platform rewards", async () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
             expect(await phase2.booster.treasury()).eq(rewards.address);
         });
-        it("Add FeeToken as extra reward", async () => {
-            await rewards.connect(dao.signer).addExtraReward(feeTokenRewardPool);
-            expect(await rewards.extraRewards(1), "fee Token as extra reward").to.be.eq(feeTokenRewardPool);
-        });
 
         it("Set approvals", async () => {
             await rewards.connect(dao.signer).setApprovals();
+            expect(
+                await wethToken.allowance(rewards.address, config.addresses.balancerVault),
+                "WETH allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+            expect(await balToken.allowance(rewards.address, config.addresses.balancerVault), "BAL allowance").to.be.eq(
+                ethers.constants.MaxUint256,
+            );
+            expect(
+                await phase2.cvxCrv.allowance(rewards.address, phase2.cvxCrvRewards.address),
+                "auraBal allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+            expect(
+                await balWethBptToken.allowance(rewards.address, config.addresses.balancerVault),
+                "BPT allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+
             // It should be able to setApprovals more than once, in case the allowance of a token goes to 0.
             await rewards.connect(dao.signer).setApprovals();
         });
@@ -313,7 +345,7 @@ describe("AuraBalBoostedRewards", () => {
     });
 
     describe("Deposits", () => {
-        it.skip("Deposit increments user balance and total supply", async () => {
+        it("Deposit increments user balance and total supply", async () => {
             const totalSupplyBefore = await rewards.totalSupply();
             const stakedBalanceBefore = await rewards.balanceOf(deployer.address);
             const underlyingStakedBalanceBefore = await phase2.cvxCrvRewards.balanceOf(rewards.address);
@@ -321,6 +353,8 @@ describe("AuraBalBoostedRewards", () => {
             const stakeAmount = simpleToExactAmount(10);
             await phase2.cvxCrv.connect(deployer.signer).approve(rewards.address, stakeAmount);
             await rewards.connect(deployer.signer).stake(stakeAmount);
+            // TODO - @phijfry review AuraBaseRewardPool.sol#stake(), it iterate over all
+            // TODO - extraRewards (aura,feeToken) with the same amount
 
             const stakedBalance = (await rewards.balanceOf(deployer.address)).sub(stakedBalanceBefore);
 

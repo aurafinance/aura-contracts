@@ -97,9 +97,6 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
-
-        IERC20(AURA).safeApprove(address(BALANCER_VAULT), 0);
-        IERC20(AURA).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
     // ----------------------------------------------------------------
