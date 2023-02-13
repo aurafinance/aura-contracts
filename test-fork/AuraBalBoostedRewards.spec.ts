@@ -58,17 +58,15 @@ const applySlippage = (amount: BigNumber, slippage: BigNumberish): BigNumber =>
     amount.mul(slippage).div(SLIPPAGE_OUTPUT_SCALE);
 const applySwapSlippage = (amount: BigNumber): BigNumber => applySlippage(amount, SLIPPAGE_OUTPUT_SWAP);
 
-function encodeFeeTokenRethWethPath() {
+function getFeeTokenRethWethPath() {
     const poolIds = [BBUSD_RETH_POOL_ID, RETH_WETH_POOL_ID];
-    const assetIns = [config.addresses.feeToken, RETH];
-    const bbusdToWethPath = ethers.utils.defaultAbiCoder.encode(["bytes32[]", "address[]"], [poolIds, assetIns]);
-    return bbusdToWethPath;
+    const assetsIn = [config.addresses.feeToken, RETH];
+    return { poolIds, assetsIn };
 }
-function encodeFeeTokenWstethWethPath() {
+function getFeeTokenWstethWethPath() {
     const poolIds = [BBUSD_WSTETH_POOL_ID, WSTETH_WETH_POOL_ID];
-    const assetIns = [config.addresses.feeToken, WSTETH];
-    const bbusdToWethPath = ethers.utils.defaultAbiCoder.encode(["bytes32[]", "address[]"], [poolIds, assetIns]);
-    return bbusdToWethPath;
+    const assetsIn = [config.addresses.feeToken, WSTETH];
+    return { poolIds, assetsIn };
 }
 
 async function getBbaUsdToWethAmount(bVault: IBalancerVault, amount: BigNumberish, sender: string): Promise<BigNumber> {
@@ -204,11 +202,10 @@ describe("AuraBalBoostedRewards", () => {
         const minAmountAuraBal = await getBptToAuraBalAmount(bVault, minBptBalWethAmount, rewards.address);
 
         const minAmountOuts = [
-            0, // aura is extra reward but it does not need to be swapped.
             applySwapSlippage(minAmountFeeTokenWeth), // bbausd=>WETH
-            applySwapSlippage(minAmountAuraBal), // 8020BALWETH-BPT => auraBAL
         ];
-        return minAmountOuts;
+
+        return { minAmountOuts, auraBalMinAmount: applySwapSlippage(minAmountAuraBal) };
     }
 
     // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
@@ -225,9 +222,11 @@ describe("AuraBalBoostedRewards", () => {
         expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.gt(0);
         expect(await phase2.cvx.balanceOf(rewards.address), " cvx balance").to.be.gt(0);
 
-        const minAmountOuts = await calcHarvestMinAmounts({ bal: amount, feeToken: amount });
+        const result = await calcHarvestMinAmounts({ bal: amount, feeToken: amount });
 
-        await rewards.connect(dao.signer).harvest(SLIPPAGE_OUTPUT_BPS, minAmountOuts);
+        await rewards
+            .connect(dao.signer)
+            .harvest(SLIPPAGE_OUTPUT_BPS, result.minAmountOuts, 0 /*result.auraBalMinAmount*/);
 
         expect(await crv.balanceOf(rewards.address), " crv balance").to.be.eq(0);
         expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.eq(0);
@@ -338,9 +337,9 @@ describe("AuraBalBoostedRewards", () => {
             await rewards.connect(dao.signer).setApprovals();
         });
         it("Set balancer paths", async () => {
-            const tx = await rewards.setBalancerPath(config.addresses.feeToken, encodeFeeTokenRethWethPath());
-
-            await expect(tx).to.emit(rewards, "SetBalancerPath").withArgs(config.addresses.feeToken);
+            const path = getFeeTokenRethWethPath();
+            await rewards.addHarvestToken(config.addresses.feeToken, path.poolIds, path.assetsIn);
+            // TODO: add assertions
         });
     });
 
@@ -353,8 +352,6 @@ describe("AuraBalBoostedRewards", () => {
             const stakeAmount = simpleToExactAmount(10);
             await phase2.cvxCrv.connect(deployer.signer).approve(rewards.address, stakeAmount);
             await rewards.connect(deployer.signer).stake(stakeAmount);
-            // TODO - @phijfry review AuraBaseRewardPool.sol#stake(), it iterate over all
-            // TODO - extraRewards (aura,feeToken) with the same amount
 
             const stakedBalance = (await rewards.balanceOf(deployer.address)).sub(stakedBalanceBefore);
 
@@ -374,18 +371,6 @@ describe("AuraBalBoostedRewards", () => {
 
     describe("Harvest", () => {
         it("Harvest rewards and convert to auraBAL", async () => {
-            const auraBalBalanceBefore = await phase2.cvxCrvRewards.balanceOf(rewards.address);
-            await forceHarvestRewards();
-            const auraBalBalanceAfter = await phase2.cvxCrvRewards.balanceOf(rewards.address);
-            const auraBalBalance = auraBalBalanceAfter.sub(auraBalBalanceBefore);
-            console.log("auraBAL balance:", formatEther(auraBalBalance));
-            expect(auraBalBalance).gt(0);
-        });
-        it("Harvest rewards and convert to auraBAL with a different swap path", async () => {
-            // Update to a new path
-            const tx = await rewards.setBalancerPath(config.addresses.feeToken, encodeFeeTokenWstethWethPath());
-            await expect(tx).to.emit(rewards, "SetBalancerPath").withArgs(config.addresses.feeToken);
-
             const auraBalBalanceBefore = await phase2.cvxCrvRewards.balanceOf(rewards.address);
             await forceHarvestRewards();
             const auraBalBalanceAfter = await phase2.cvxCrvRewards.balanceOf(rewards.address);
