@@ -31,7 +31,7 @@ import {
     MockERC20,
     IERC20__factory,
 } from "../../types/generated";
-import { ONE_DAY, ZERO_ADDRESS } from "../../test-utils/constants";
+import { ONE_DAY, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 
 const kovanBalancerConfig: ExtSystemConfig = {
     authorizerAdapter: "0xeAF536c3202099365369597DD8207c4f5952e91e",
@@ -50,6 +50,7 @@ const kovanBalancerConfig: ExtSystemConfig = {
     ],
     balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
     balancerPoolId: "0xdc2ecfdf2688f92c85064be0b929693acc6dbca6000200000000000000000701",
+    balancerAuraBalPoolId: ZERO_KEY,
     balancerMinOutBps: "9975",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",

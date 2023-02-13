@@ -146,6 +146,7 @@ interface ExtSystemConfig {
     balancerVault: string;
     balancerPoolFactories: BalancerPoolFactories;
     balancerPoolId: string;
+    balancerAuraBalPoolId: string;
     balancerMinOutBps: string;
     balancerPoolOwner?: string;
     balancerGaugeFactory?: string;
