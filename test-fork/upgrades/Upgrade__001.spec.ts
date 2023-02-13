@@ -229,6 +229,9 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
             await expect(
                 boosterOwnerSecondary.setRescueTokenDistribution(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
             ).to.be.revertedWith("!owner");
+            await expect(boosterOwnerSecondary.setRescueTokenReward(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
+                "!owner",
+            );
             await expect(boosterOwnerSecondary.setStashExtraReward(1, ZERO_ADDRESS)).to.be.revertedWith("!owner");
             await expect(boosterOwnerSecondary.setStashRewardHook(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(
                 "!owner",
@@ -281,6 +284,14 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
             expect(await phase6.factories.stashFactory.v1Implementation()).eq(ZERO_ADDRESS);
             expect(await phase6.factories.stashFactory.v2Implementation()).eq(ZERO_ADDRESS);
             expect(await phase6.factories.stashFactory.v3Implementation()).eq(v3Implementation);
+
+            const poolInfo = await phase6.booster.poolInfo(1);
+            const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer);
+            const rando = "0x0000000000000000000000000000000000000020";
+            await boosterOwnerSecondary.connect(protocolDao.signer).setStashRewardHook(stash.address, rando);
+            expect(await stash.rewardHook()).eq(rando);
+            await boosterOwnerSecondary.connect(protocolDao.signer).setStashRewardHook(stash.address, ZERO_ADDRESS);
+            expect(await stash.rewardHook()).eq(ZERO_ADDRESS);
         });
         it("Can call execute", async () => {
             const token = IERC20__factory.connect(config.addresses.token, protocolDao.signer);
