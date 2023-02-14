@@ -14,9 +14,11 @@ import {
     GaugeMigrator,
     GaugeMigrator__factory,
 } from "../../types/generated";
+import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 
-const waitForBlocks = 1;
+const waitForBlocks = 2;
 const debug = true;
+
 // Deployments after the initial deployment script
 task("deploy:mainnet:feeCollector").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -71,6 +73,7 @@ task("deploy:mainnet:gaugeMigrator").setAction(async function (taskArguments: Ta
 
     console.log("update gaugeMigrator address to:", gaugeMigrator.address);
 });
+
 task("deploy:mainnet:uniswapMigrator").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
@@ -93,4 +96,18 @@ task("deploy:mainnet:uniswapMigrator").setAction(async function (taskArguments: 
     );
 
     console.log("update uniswapMigrator address to:", uniswapMigrator.address);
+});
+
+task("deploy:mainnet:boosterSecondary").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+
+    const {
+        extraRewardStashV3: newStashImpl,
+        poolManagerV4,
+        boosterOwnerSecondary,
+    } = await deployUpgrade01(hre, deployer, debug, waitForBlocks);
+
+    console.log("update newStashImpl address to:", newStashImpl.address);
+    console.log("update poolManagerV4 address to:", poolManagerV4.address);
+    console.log("update boosterOwnerSecondary address to:", boosterOwnerSecondary.address);
 });

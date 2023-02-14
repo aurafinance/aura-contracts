@@ -117,12 +117,13 @@ yarn task timeTravel --duration 69420 --network forking
 | minter                          | [0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707](https://etherscan.io/address/0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707) |
 | booster                         | [0xA57b8d98dAE62B26Ec3bcC4a365338157060B234](https://etherscan.io/address/0xA57b8d98dAE62B26Ec3bcC4a365338157060B234) |
 | boosterOwner                    | [0x228a142081b456a9fF803d004504955032989f04](https://etherscan.io/address/0x228a142081b456a9fF803d004504955032989f04) |
+| boosterOwnerSecondary           | [0xCe96e48A2893C599fe2601Cc1918882e1D001EaD](https://etherscan.io/address/0xCe96e48A2893C599fe2601Cc1918882e1D001EaD) |
 | boosterHelper                   | [0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0](https://etherscan.io/address/0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0) |
 | rewardFactory                   | [0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA](https://etherscan.io/address/0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA) |
 | tokenFactory                    | [0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba](https://etherscan.io/address/0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba) |
 | proxyFactory                    | [0xf5E2cFde016bd55BEF42a5A4bAad7E21cd39720d](https://etherscan.io/address/0xf5E2cFde016bd55BEF42a5A4bAad7E21cd39720d) |
 | stashFactory                    | [0x54da426EFBB93fbaB5CF81bef03F9B9F00A3E915](https://etherscan.io/address/0x54da426EFBB93fbaB5CF81bef03F9B9F00A3E915) |
-| extraRewardStashV3              | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
+| extraRewardStashV3              | [0x4A53301Fe213ECA70f904cD3766C07DB3A621bF8](https://etherscan.io/address/0x4A53301Fe213ECA70f904cD3766C07DB3A621bF8) |
 | arbitratorVault                 | [0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40](https://etherscan.io/address/0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40) |
 | auraBAL                         | [0x616e8BfA43F920657B3497DBf40D6b1A02D4608d](https://etherscan.io/address/0x616e8BfA43F920657B3497DBf40D6b1A02D4608d) |
 | auraBALBpt                      | [0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd](https://etherscan.io/address/0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd) |
@@ -138,7 +139,7 @@ yarn task timeTravel --duration 69420 --network forking
 | balLiquidityProvider            | [0xa7429af4DeB16827dAd0e71D8AEEa9C2bF70e32c](https://etherscan.io/address/0xa7429af4DeB16827dAd0e71D8AEEa9C2bF70e32c) |
 | penaltyForwarder                | [0x4043569200F7a7a1D989AbbaBC2De2Bde1C20D1E](https://etherscan.io/address/0x4043569200F7a7a1D989AbbaBC2De2Bde1C20D1E) |
 | extraRewardsDistributor         | [0xA3739b206097317c72EF416F0E75BB8f58FbD308](https://etherscan.io/address/0xA3739b206097317c72EF416F0E75BB8f58FbD308) |
-| poolManager                     | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
+| poolManager                     | [0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64](https://etherscan.io/address/0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64) |
 | poolManagerProxy                | [0x2c809Ec701C088099c911AF9DdfA4A1Db6110F3c](https://etherscan.io/address/0x2c809Ec701C088099c911AF9DdfA4A1Db6110F3c) |
 | poolManagerSecondaryProxy       | [0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54](https://etherscan.io/address/0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54) |
 | vestedEscrows                   | [0x5bd3fCA8D3d8c94a6419d85E0a76ec8Da52d836a](https://etherscan.io/address/0x5bd3fCA8D3d8c94a6419d85E0a76ec8Da52d836a) |
@@ -211,3 +212,8 @@ yarn task timeTravel --duration 69420 --network forking
 | rewardFactory             | [0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356](https://etherscan.io/address/0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356) |
 | stashFactory              | [0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5](https://etherscan.io/address/0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5) |
 | tokenFactory              | [0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC](https://etherscan.io/address/0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC) |
+
+### Ethereum Mainnet (2) @deprecated
+
+| extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
+| poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |

@@ -5,6 +5,7 @@ import {
     Phase3Deployed,
     Phase6Deployed,
     Phase7Deployed,
+    Phase8Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -44,6 +45,8 @@ import {
     BoosterHelper__factory,
     ExtraRewardStashV3__factory,
     PoolMigrator__factory,
+    PoolManagerV4__factory,
+    BoosterOwnerSecondary__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -339,13 +342,21 @@ const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
         deployer,
     ),
     claimZap: AuraClaimZap__factory.connect("0x2E307704EfaE244c4aae6B63B601ee8DA69E92A9", deployer),
-    stashV3: ExtraRewardStashV3__factory.connect("0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98", deployer),
+    stashV3: ExtraRewardStashV3__factory.connect("0x4A53301Fe213ECA70f904cD3766C07DB3A621bF8", deployer),
     poolMigrator: PoolMigrator__factory.connect("0x12addE99768a82871EAaecFbDB065b12C56F0578", deployer),
 });
 
 const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
     masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
     siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
+});
+
+const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
+    poolManagerV4: PoolManagerV4__factory.connect("0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64", deployer),
+    boosterOwnerSecondary: BoosterOwnerSecondary__factory.connect(
+        "0xCe96e48A2893C599fe2601Cc1918882e1D001EaD",
+        deployer,
+    ),
 });
 
 export const config = {
@@ -360,4 +371,5 @@ export const config = {
     getTempBooster,
     getPhase6,
     getPhase7,
+    getPhase8,
 };
