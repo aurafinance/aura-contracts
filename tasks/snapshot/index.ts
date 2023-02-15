@@ -450,23 +450,41 @@ task("snapshot:clean", "Clean up expired gauges").setAction(async function (
     const remove = [
         "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2", // sdBAL
         "0xcF5938cA6d9F19C73010c7493e19c02AcFA8d24D", // tetuBAL
+        // Removed as a part of https://forum.balancer.fi/t/bip-177-great-migration-wave-1/4364
+        "0x3F0FB52648Eb3981EA598716b7320081d1c8Ba1a", // wstETH/sfrxETH/rETH
+        "0x6Eb7CdCd15417ABF120FfE404B9b88141Ca952B7", // rETH/RPL
+        "0xb32Ae42524d38be7E7eD9E02b5F9330fCEf07f3F", // rETH/BADGER
+        "0xc2c2304E163e1aB53De2eEB08820a0B592bec20B", // LDO/wstETH
+        "0x651361a042e0573295dd7f6A84dBD1DA56DAc9D5", // wstETH/bbaUSD
+        "0x973fb174Cdf9b1652e4213125a186f66684D899c", // TEMPLE/bbaUSD
+        "0xF60B8DAF6825c9fBE5eC073D623B9d47cDa592E8", // rETH/bbaUSD
+        "0x89F65570Ac019f86E145c501023e2ef7010D155B", // ACX/wstETH
     ].map(x => x.toLowerCase());
 
     const removedGauges = [];
 
     const list = await Promise.all(
         gaugeList.map(async g => {
+            if (g.isKilled) {
+                console.log("Gauge killed:", g.pool.symbol, g.address);
+                return false;
+            }
+
             if ([1, 137, 42161, 10].includes(g.network)) {
-                const gauge = MockCurveGauge__factory.connect(g.address, signer);
-                if (await gauge.is_killed()) {
-                    console.log("Gauge killed:", g.pool.symbol, g.address);
-                    removedGauges.push(g);
-                    return false;
-                } else if (remove.includes(g.address.toLowerCase())) {
-                    console.log("Gauge removed:", g.pool.symbol, g.address);
-                    return false;
-                } else {
-                    return g;
+                try {
+                    const gauge = MockCurveGauge__factory.connect(g.address, signer);
+                    if (await gauge.is_killed()) {
+                        console.log("Gauge killed:", g.pool.symbol, g.address);
+                        removedGauges.push(g);
+                        return false;
+                    } else if (remove.includes(g.address.toLowerCase())) {
+                        console.log("Gauge removed:", g.pool.symbol, g.address);
+                        return false;
+                    } else {
+                        return g;
+                    }
+                } catch (e) {
+                    console.log("Failed:", g);
                 }
             } else {
                 console.log("Gauge is testnet:", g.pool.symbol, g.address);
