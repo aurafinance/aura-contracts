@@ -38,7 +38,6 @@ const SLIPPAGE_OUTPUT_SCALE = 10000;
 const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
 
 const RETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
-const WSTETH = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
 const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 const BAL = "0xba100000625a3754423978a60c9317c58a424e3d";
 const BPT_BALWETH = "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56";
@@ -50,9 +49,6 @@ const BPT_AURABAL_POOL_ID = "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000
 const BBUSD_RETH_POOL_ID = "0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a";
 const RETH_WETH_POOL_ID = "0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112";
 
-const BBUSD_WSTETH_POOL_ID = "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387";
-const WSTETH_WETH_POOL_ID = "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080";
-
 // ----------HARVEST UTILITY FUNCTIONS ------------ //
 const applySlippage = (amount: BigNumber, slippage: BigNumberish): BigNumber =>
     amount.mul(slippage).div(SLIPPAGE_OUTPUT_SCALE);
@@ -61,11 +57,6 @@ const applySwapSlippage = (amount: BigNumber): BigNumber => applySlippage(amount
 function getFeeTokenRethWethPath() {
     const poolIds = [BBUSD_RETH_POOL_ID, RETH_WETH_POOL_ID];
     const assetsIn = [config.addresses.feeToken, RETH];
-    return { poolIds, assetsIn };
-}
-function getFeeTokenWstethWethPath() {
-    const poolIds = [BBUSD_WSTETH_POOL_ID, WSTETH_WETH_POOL_ID];
-    const assetsIn = [config.addresses.feeToken, WSTETH];
     return { poolIds, assetsIn };
 }
 
@@ -153,7 +144,6 @@ describe("AuraBalBoostedRewards", () => {
     let phase2: Phase2Deployed;
     let rewards: AuraBalBoostedRewardPool;
     let auraRewards: VirtualBalanceRewardPool;
-    let feeTokenRewards: VirtualBalanceRewardPool;
     let bVault: IBalancerVault;
     let balancerHelpers: IBalancerHelpers;
     let wethToken: IERC20;
@@ -194,11 +184,13 @@ describe("AuraBalBoostedRewards", () => {
 
     async function calcHarvestMinAmounts(rewardAmounts: { bal: BigNumberish; feeToken: BigNumberish }) {
         const minAmountFeeTokenWeth = await getBbaUsdToWethAmount(bVault, rewardAmounts.feeToken, rewards.address);
+        // Calc BAL/WETH liq to 8020BALWETH
         const minBptBalWethAmount = await getBalWethJoinBptAmount(
             balancerHelpers,
             [BN.from(rewardAmounts.bal), minAmountFeeTokenWeth],
             rewards.address,
         );
+        // Calc 8020BALWETH-BPT for auraBAL
         const minAmountAuraBal = await getBptToAuraBalAmount(bVault, minBptBalWethAmount, rewards.address);
 
         const minAmountOuts = [
@@ -224,9 +216,7 @@ describe("AuraBalBoostedRewards", () => {
 
         const result = await calcHarvestMinAmounts({ bal: amount, feeToken: amount });
 
-        await rewards
-            .connect(dao.signer)
-            .harvest(SLIPPAGE_OUTPUT_BPS, result.minAmountOuts, 0 /*result.auraBalMinAmount*/);
+        await rewards.connect(dao.signer).harvest(SLIPPAGE_OUTPUT_BPS, result.minAmountOuts, result.auraBalMinAmount);
 
         expect(await crv.balanceOf(rewards.address), " crv balance").to.be.eq(0);
         expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.eq(0);
@@ -293,22 +283,10 @@ describe("AuraBalBoostedRewards", () => {
                 {},
                 DEBUG,
             );
-            feeTokenRewards = await deployContract<VirtualBalanceRewardPool>(
-                hre,
-                new VirtualBalanceRewardPool__factory(deployer.signer),
-                "VirtualBalanceRewardPool - bbausd",
-                [rewards.address, config.addresses.feeToken, rewards.address],
-                {},
-                DEBUG,
-            );
         });
         it("Add AURA as extra rewards", async () => {
             await rewards.connect(dao.signer).addExtraReward(auraRewards.address);
             expect(await rewards.extraRewards(0), "aura as extra reward").to.be.eq(auraRewards.address);
-        });
-        it("Add FeeToken as extra reward", async () => {
-            await rewards.connect(dao.signer).addExtraReward(feeTokenRewards.address);
-            expect(await rewards.extraRewards(1), "fee Token as extra reward").to.be.eq(feeTokenRewards.address);
         });
         it("Add AuraBalBoostedRewards to Booster platform rewards", async () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
@@ -338,8 +316,8 @@ describe("AuraBalBoostedRewards", () => {
         });
         it("Set balancer paths", async () => {
             const path = getFeeTokenRethWethPath();
-            await rewards.addHarvestToken(config.addresses.feeToken, path.poolIds, path.assetsIn);
-            // TODO: add assertions
+            const tx = await rewards.addHarvestToken(config.addresses.feeToken, path.poolIds, path.assetsIn);
+            await expect(tx).to.emit(rewards, "AddHarvestToken").withArgs(config.addresses.feeToken);
         });
     });
 

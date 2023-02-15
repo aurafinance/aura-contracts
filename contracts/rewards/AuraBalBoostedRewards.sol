@@ -116,7 +116,7 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
         require(poolIds.length == assetsIn.length, "parity");
         require(_token != AURA, "token=AURA");
         require(_token == assetsIn[0], "!swap path");
-        require(_token != address(stakingToken), "!stakingToken");
+        require(_token != address(stakingToken), "token=stakingToken");
 
         for (uint256 i = 0; i < assetsInLength; i++) {
             require(assetsIn[i] != address(stakingToken), "!stakingToken");
@@ -201,8 +201,6 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
     // ---------------------------------------------------------
 
     function _swapBptToAuraBal(uint256 _bptAmount, uint256 _minAmountOut) internal returns (uint256) {
-        uint256 auraBalBalanceBefore = stakingToken.balanceOf(address(this));
-
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
             poolId: AURABAL_POOL_ID,
             kind: IBalancerVault.SwapKind.GIVEN_IN,
@@ -214,8 +212,7 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
         BALANCER_VAULT.swap(singleSwap, _createSwapFunds(), _minAmountOut, block.timestamp + 5 minutes);
 
-        uint256 auraBalBalanceAfter = stakingToken.balanceOf(address(this));
-        return auraBalBalanceAfter - auraBalBalanceBefore;
+        return stakingToken.balanceOf(address(this));
     }
 
     function _swapBalTo8020Bpt(uint256 _outputBps) internal returns (uint256) {
