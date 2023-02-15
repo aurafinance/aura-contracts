@@ -286,6 +286,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
                 bootstrappingPool: ZERO_ADDRESS,
             },
             balancerPoolId: ZERO_KEY,
+            balancerAuraBalPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",
             weth: weth.address,
             wethWhale: deployerAddress,

@@ -18,22 +18,27 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
     using SafeERC20 for IERC20;
 
     // ----------------------------------------------------------------
+    // Types
+    // ----------------------------------------------------------------
+
+    struct SwapPath {
+        bool isSet;
+        bytes32[] poolIds;
+        address[] assetsIn;
+    }
+
+    // ----------------------------------------------------------------
     // Storage
     // ----------------------------------------------------------------
 
-    address public constant AURA = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
-    address public constant BBUSD = 0xA13a9247ea42D743238089903570127DdA72fE44;
-    address public constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-
-    bytes32 public constant AURABAL_POOL_ID = 0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249;
-    bytes32 public constant AURA_ETH_POOL_ID = 0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274;
-    bytes32 public constant BBUSD_AAVE_POOL_ID = 0xa13a9247ea42d743238089903570127dda72fe4400000000000000000000035d;
-    bytes32 private constant BBUSD_RETH_POOL_ID = 0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a;
-    bytes32 private constant RETH_WETH_POOL_ID = 0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112;
-
+    address public immutable AURA;
+    bytes32 public immutable AURABAL_POOL_ID;
     IRewardStaking public immutable auraBalStaking;
 
     address public harvester;
+
+    address[] public harvesterTokens;
+    mapping(address => SwapPath) internal _swapPaths;
 
     // ----------------------------------------------------------------
     // Events
@@ -41,6 +46,8 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
     event Harvest(uint256 amount);
     event SetHarvester(address harvester);
+    event AddHarvestToken(address harvestToken);
+    event RemoveHarvestToken(address harvestToken);
 
     // ----------------------------------------------------------------
     // Modifiers
@@ -59,6 +66,8 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
         // AuraBalBoostedRewardPool
         address _harvester,
         address _auraBalStaking,
+        address _aura,
+        bytes32 _auraBalPoolId,
         // AuraBaseRewardPool
         address _stakingToken,
         address _rewardToken,
@@ -69,12 +78,21 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
         address _weth,
         bytes32 _balETHPoolId
     )
-        public
         BalInvestor(_balancerVault, _bal, _weth, _balETHPoolId)
         AuraBaseRewardPool(_stakingToken, _rewardToken, _rewardManager)
     {
         harvester = _harvester;
         auraBalStaking = IRewardStaking(_auraBalStaking);
+        AURA = _aura;
+        AURABAL_POOL_ID = _auraBalPoolId;
+    }
+
+    // ---------------------------------------------------------
+    // View
+    // ---------------------------------------------------------
+
+    function getSwapPath(address _token) external view returns (SwapPath memory) {
+        return _swapPaths[_token];
     }
 
     // ---------------------------------------------------------
@@ -86,6 +104,37 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
         emit SetHarvester(_harvester);
     }
 
+    function addHarvestToken(
+        address _token,
+        bytes32[] memory poolIds,
+        address[] memory assetsIn
+    ) external onlyOwner {
+        require(!_swapPaths[_token].isSet, "already set");
+        uint256 assetsInLength = assetsIn.length;
+
+        require(assetsInLength > 0, "!poolIds");
+        require(poolIds.length == assetsIn.length, "parity");
+        require(_token != AURA, "token=AURA");
+        require(_token == assetsIn[0], "!swap path");
+        require(_token != address(stakingToken), "token=stakingToken");
+
+        for (uint256 i = 0; i < assetsInLength; i++) {
+            require(assetsIn[i] != address(stakingToken), "!stakingToken");
+        }
+
+        _swapPaths[_token] = SwapPath(true, poolIds, assetsIn);
+        harvesterTokens.push(_token);
+        emit AddHarvestToken(_token);
+    }
+
+    function removeHarvestToken(address _token, uint256 _index) external onlyOwner {
+        require(harvesterTokens[_index] == _token, "!token");
+        delete _swapPaths[_token];
+        harvesterTokens[_index] = harvesterTokens[harvesterTokens.length - 1];
+        harvesterTokens.pop();
+        emit RemoveHarvestToken(_token);
+    }
+
     function setApprovals() external {
         _setApprovals();
 
@@ -94,12 +143,6 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), 0);
         IERC20(BALANCER_POOL_TOKEN).safeApprove(address(BALANCER_VAULT), type(uint256).max);
-
-        IERC20(AURA).safeApprove(address(BALANCER_VAULT), 0);
-        IERC20(AURA).safeApprove(address(BALANCER_VAULT), type(uint256).max);
-
-        IERC20(RETH).safeApprove(address(BALANCER_VAULT), 0);
-        IERC20(RETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
     // ----------------------------------------------------------------
@@ -111,30 +154,18 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
      * claimed rewards to cvxCrv.
      * @param _outputBps Multiplier where 100% == 10000, 99.5% == 9950 and 98% == 9800
      */
-    function harvest(uint256 _outputBps) external onlyHarvester {
+    function harvest(
+        uint256 _outputBps,
+        uint256[] memory _minAmountOuts,
+        uint256 _auraBalMinAmountOut
+    ) external onlyHarvester nonReentrant {
         require(auraBalStaking.getReward(address(this), true), "!getReward");
+        uint256 harvesterTokensLength = harvesterTokens.length;
+        require(harvesterTokensLength == _minAmountOuts.length, "parity");
 
-        // Swap bb-a-USD for WETH
-        uint256 bbusdBalance = IERC20(BBUSD).balanceOf(address(this));
-        if (bbusdBalance > 0) {
-            _swapBbAUsdToWEth(bbusdBalance);
-        }
-
-        // Add BAL/WETH liq to 8020BALWETH
-        uint256 bptAmount = _swapBalTo8020Bpt(_outputBps);
-        if (bptAmount > 0) {
-            // Swap 8020BALWETH-BPT for auraBAL
-            // TODO how to calculate uint256 _minAmountOut
-            uint256 auraBalAmount = _swapBptToAuraBal(bptAmount, 0);
-            // Queue new rewards with the newly swapped auraBAL
-            if (auraBalAmount > 0) {
-                _notifyRewardAmount(auraBalAmount);
-                _stakeUnderlying();
-                emit Harvest(auraBalAmount);
-            }
-        }
-
-        for (uint256 i = 0; i < extraRewards.length; i++) {
+        // Queue extra rewards
+        uint256 extraRewardsLength = extraRewards.length;
+        for (uint256 i = 0; i < extraRewardsLength; i++) {
             address extraReward = extraRewards[i];
             address extraRewardToken = IRewardStaking(extraReward).rewardToken();
             uint256 amount = IERC20(extraRewardToken).balanceOf(address(this));
@@ -143,11 +174,33 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
                 IRewardStaking(extraReward).queueNewRewards(amount);
             }
         }
+
+        // Swap all the extra rewards (bb-a-USD) to WETH
+        for (uint256 i = 0; i < harvesterTokensLength; i++) {
+            address token = harvesterTokens[i];
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            if (balance > 0) {
+                _swapTokenToWEth(balance, _minAmountOuts[i], _swapPaths[token]);
+            }
+        }
+
+        // Add BAL/WETH liq to 8020BALWETH
+        uint256 bptAmount = _swapBalTo8020Bpt(_outputBps);
+        // Swap 8020BALWETH-BPT for auraBAL
+        uint256 auraBalAmount = _swapBptToAuraBal(bptAmount, _auraBalMinAmountOut);
+        // Queue new rewards with the newly swapped auraBAL
+        if (auraBalAmount > 0) {
+            _notifyRewardAmount(auraBalAmount);
+            _stakeUnderlying();
+            emit Harvest(auraBalAmount);
+        }
     }
 
-    function _swapBptToAuraBal(uint256 _bptAmount, uint256 _minAmountOut) internal returns (uint256) {
-        uint256 auraBalBalanceBefore = stakingToken.balanceOf(address(this));
+    // ---------------------------------------------------------
+    // Internals
+    // ---------------------------------------------------------
 
+    function _swapBptToAuraBal(uint256 _bptAmount, uint256 _minAmountOut) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap({
             poolId: AURABAL_POOL_ID,
             kind: IBalancerVault.SwapKind.GIVEN_IN,
@@ -159,8 +212,7 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
         BALANCER_VAULT.swap(singleSwap, _createSwapFunds(), _minAmountOut, block.timestamp + 5 minutes);
 
-        uint256 auraBalBalanceAfter = stakingToken.balanceOf(address(this));
-        return auraBalBalanceAfter - auraBalBalanceBefore;
+        return stakingToken.balanceOf(address(this));
     }
 
     function _swapBalTo8020Bpt(uint256 _outputBps) internal returns (uint256) {
@@ -169,46 +221,50 @@ contract AuraBalBoostedRewardPool is AuraBaseRewardPool, ReentrancyGuard, BalInv
 
         uint256 minOut = _getMinOut(balBalance, wethBalance, _outputBps);
         _joinPool(balBalance, wethBalance, minOut);
+
         return IERC20(BALANCER_POOL_TOKEN).balanceOf(address(this));
     }
 
-    /// @notice Swap bb-a-USD for WETH on Balancer via rEth
-    /// @param _amount - amount to swap
-    function _swapBbAUsdToWEth(uint256 _amount) internal {
-        IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](2);
-        _swaps[0] = IBalancerVault.BatchSwapStep({
-            poolId: BBUSD_RETH_POOL_ID,
-            assetInIndex: 0,
-            assetOutIndex: 1,
-            amount: _amount,
-            userData: new bytes(0)
-        });
-        _swaps[1] = IBalancerVault.BatchSwapStep({
-            poolId: RETH_WETH_POOL_ID,
-            assetInIndex: 1,
-            assetOutIndex: 2,
-            amount: 0,
-            userData: new bytes(0)
-        });
-        IAsset[] memory _zapAssets = new IAsset[](3);
-        int256[] memory _limits = new int256[](3);
+    function _swapTokenToWEth(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        SwapPath memory swapPath
+    ) internal {
+        uint256 len = swapPath.poolIds.length;
+        uint256 wethBalBefore = IERC20(WETH).balanceOf(address(this));
 
-        _zapAssets[0] = IAsset(BBUSD);
-        _zapAssets[1] = IAsset(RETH);
-        _zapAssets[2] = IAsset(WETH);
+        IBalancerVault.BatchSwapStep[] memory swaps = new IBalancerVault.BatchSwapStep[](len);
+        IAsset[] memory zapAssets = new IAsset[](len + 1);
+        int256[] memory limits = new int256[](len + 1);
 
-        _limits[0] = int256(_amount);
-        _limits[1] = type(int256).max;
-        _limits[2] = type(int256).max;
+        for (uint256 i = 0; i < len; i++) {
+            swaps[i] = IBalancerVault.BatchSwapStep({
+                poolId: swapPath.poolIds[i],
+                assetInIndex: i,
+                assetOutIndex: i + 1,
+                amount: i == 0 ? _amount : 0,
+                userData: new bytes(0)
+            });
+
+            zapAssets[i] = IAsset(swapPath.assetsIn[i]);
+            limits[i] = int256(i == 0 ? _amount : 0);
+        }
+
+        // Last asset can only be WETH
+        zapAssets[len] = IAsset(WETH);
+        limits[len] = type(int256).max;
 
         BALANCER_VAULT.batchSwap(
             IBalancerVault.SwapKind.GIVEN_IN,
-            _swaps,
-            _zapAssets,
+            swaps,
+            zapAssets,
             _createSwapFunds(),
-            _limits,
+            limits,
             block.timestamp + 5 minutes
         );
+
+        uint256 wethBalAfter = IERC20(WETH).balanceOf(address(this));
+        require(_minAmountOut < (wethBalAfter - wethBalBefore), "!minAmountOut");
     }
 
     function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {

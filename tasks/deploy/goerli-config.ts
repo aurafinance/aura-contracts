@@ -35,7 +35,7 @@ import {
     RewardPoolDepositWrapper__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 import { getMockDistro } from "../../scripts/deployMocks";
 
 const addresses: ExtSystemConfig = {
@@ -52,6 +52,7 @@ const addresses: ExtSystemConfig = {
     gauges: [],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
+    balancerAuraBalPoolId: ZERO_KEY,
     balancerMinOutBps: "9975", // mainnet is 9950
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",

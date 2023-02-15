@@ -24,7 +24,7 @@ import {
     GaugeMigrator,
     GaugeMigrator__factory,
 } from "../../types/generated";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 import { config } from "./goerli-config";
 const debug = true;
 const goerliBalancerConfig: ExtSystemConfig = {
@@ -40,6 +40,7 @@ const goerliBalancerConfig: ExtSystemConfig = {
     gauges: [],
     balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
     balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
+    balancerAuraBalPoolId: ZERO_KEY,
     balancerMinOutBps: "9975",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",

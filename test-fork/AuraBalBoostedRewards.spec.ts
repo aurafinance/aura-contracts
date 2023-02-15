@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { BigNumberish } from "ethers";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 import hre, { network } from "hardhat";
 import { formatEther, parseEther } from "ethers/lib/utils";
 
@@ -14,27 +14,141 @@ import {
     AuraBalBoostedRewardPool__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
+    IBalancerVault__factory,
+    IBalancerHelpers__factory,
+    IBalancerHelpers,
+    IERC20,
+    IERC20__factory,
 } from "../types";
-import { simpleToExactAmount } from "../test-utils";
+import { BN, simpleToExactAmount } from "../test-utils";
+import {
+    BatchSwapStepStruct,
+    FundManagementStruct,
+    IBalancerVault,
+    JoinPoolRequestStruct,
+} from "types/generated/IBalancerVault";
+import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
 
 const DEBUG = false;
 const FORK_BLOCK = 16370000;
 const SLIPPAGE_OUTPUT_BPS = 9950;
+const SLIPPAGE_OUTPUT_SWAP = 9900;
+const SLIPPAGE_OUTPUT_SCALE = 10000;
 
 const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
+
+const RETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
+const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+const BAL = "0xba100000625a3754423978a60c9317c58a424e3d";
+const BPT_BALWETH = "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56";
+const AURABAL = "0x616e8BfA43F920657B3497DBf40D6b1A02D4608d";
+
+const BAL_WETH_POOL_ID = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014";
+const BPT_AURABAL_POOL_ID = "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249";
+
+const BBUSD_RETH_POOL_ID = "0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a";
+const RETH_WETH_POOL_ID = "0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112";
+
+// ----------HARVEST UTILITY FUNCTIONS ------------ //
+const applySlippage = (amount: BigNumber, slippage: BigNumberish): BigNumber =>
+    amount.mul(slippage).div(SLIPPAGE_OUTPUT_SCALE);
+const applySwapSlippage = (amount: BigNumber): BigNumber => applySlippage(amount, SLIPPAGE_OUTPUT_SWAP);
+
+function getFeeTokenRethWethPath() {
+    const poolIds = [BBUSD_RETH_POOL_ID, RETH_WETH_POOL_ID];
+    const assetsIn = [config.addresses.feeToken, RETH];
+    return { poolIds, assetsIn };
+}
+
+async function getBbaUsdToWethAmount(bVault: IBalancerVault, amount: BigNumberish, sender: string): Promise<BigNumber> {
+    const swaps: BatchSwapStepStruct[] = [
+        {
+            poolId: BBUSD_RETH_POOL_ID,
+            assetInIndex: 0, // bbusd Index
+            assetOutIndex: 1, // reth Index
+            amount: amount,
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256"], [0]),
+        },
+        {
+            poolId: RETH_WETH_POOL_ID,
+            assetInIndex: 1, // reth Index
+            assetOutIndex: 2, // weth Index
+            amount: 0,
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256"], [0]),
+        },
+    ];
+    const assets: string[] = [config.addresses.feeToken, RETH, WETH];
+    const funds: FundManagementStruct = {
+        sender,
+        fromInternalBalance: false,
+        recipient: sender,
+        toInternalBalance: false,
+    };
+    const query = await bVault.callStatic.queryBatchSwap(
+        0, //kind: GIVEN_IN
+        swaps,
+        assets,
+        funds,
+    );
+    return query.slice(-1)[0].abs();
+}
+async function getBptToAuraBalAmount(bVault: IBalancerVault, amount: BigNumberish, sender: string): Promise<BigNumber> {
+    const swaps: BatchSwapStepStruct[] = [
+        {
+            poolId: BPT_AURABAL_POOL_ID,
+            assetInIndex: 0, // BPT Index
+            assetOutIndex: 1, // auraBAL Index
+            amount: amount,
+            userData: ethers.utils.defaultAbiCoder.encode(["uint256"], [0]),
+        },
+    ];
+    const assets: string[] = [BPT_BALWETH, AURABAL];
+    const funds: FundManagementStruct = {
+        sender,
+        fromInternalBalance: false,
+        recipient: sender,
+        toInternalBalance: false,
+    };
+    const query = await bVault.callStatic.queryBatchSwap(
+        0, //kind: GIVEN_IN
+        swaps,
+        assets,
+        funds,
+    );
+
+    return query.slice(-1)[0].abs();
+}
+async function getBalWethJoinBptAmount(balancerHelpers: IBalancerHelpers, maxAmountsIn: BN[], sender: string) {
+    // Use a minimumBPT of 1 because we need to call queryJoin with amounts in to get the BPT amount out
+    const userData = WeightedPoolEncoder.joinExactTokensInForBPTOut(maxAmountsIn, 1);
+    const joinPoolRequest: JoinPoolRequestStruct = {
+        assets: [BAL, WETH],
+        maxAmountsIn,
+        userData,
+        fromInternalBalance: false,
+    };
+    const poolId = BAL_WETH_POOL_ID;
+
+    const [bptOut] = await balancerHelpers.callStatic.queryJoin(poolId, sender, sender, joinPoolRequest);
+    return bptOut;
+}
 
 async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
     const tokenWhaleSigner = await impersonateAccount(from);
     const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
     await token.transfer(to, amount);
 }
-
 describe("AuraBalBoostedRewards", () => {
     let dao: Account;
     let deployer: Account;
     let phase2: Phase2Deployed;
     let rewards: AuraBalBoostedRewardPool;
     let auraRewards: VirtualBalanceRewardPool;
+    let bVault: IBalancerVault;
+    let balancerHelpers: IBalancerHelpers;
+    let wethToken: IERC20;
+    let balToken: IERC20;
+    let balWethBptToken: IERC20;
 
     async function getEth(recipient: string) {
         const ethWhale = await impersonate(config.addresses.weth);
@@ -66,6 +180,25 @@ describe("AuraBalBoostedRewards", () => {
         const whaleAddress = "0xe649B71783d5008d10a96b6871e3840a398d4F06";
         await impersonateAndTransfer(config.addresses.feeToken, whaleAddress, to, amount);
     }
+    // ----------HARVEST UTILITY FUNCTIONS ------------ //
+
+    async function calcHarvestMinAmounts(rewardAmounts: { bal: BigNumberish; feeToken: BigNumberish }) {
+        const minAmountFeeTokenWeth = await getBbaUsdToWethAmount(bVault, rewardAmounts.feeToken, rewards.address);
+        // Calc BAL/WETH liq to 8020BALWETH
+        const minBptBalWethAmount = await getBalWethJoinBptAmount(
+            balancerHelpers,
+            [BN.from(rewardAmounts.bal), minAmountFeeTokenWeth],
+            rewards.address,
+        );
+        // Calc 8020BALWETH-BPT for auraBAL
+        const minAmountAuraBal = await getBptToAuraBalAmount(bVault, minBptBalWethAmount, rewards.address);
+
+        const minAmountOuts = [
+            applySwapSlippage(minAmountFeeTokenWeth), // bbausd=>WETH
+        ];
+
+        return { minAmountOuts, auraBalMinAmount: applySwapSlippage(minAmountAuraBal) };
+    }
 
     // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
     // to the reward contract the contract will then swap it for
@@ -81,7 +214,9 @@ describe("AuraBalBoostedRewards", () => {
         expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.gt(0);
         expect(await phase2.cvx.balanceOf(rewards.address), " cvx balance").to.be.gt(0);
 
-        await rewards.connect(dao.signer).harvest(SLIPPAGE_OUTPUT_BPS);
+        const result = await calcHarvestMinAmounts({ bal: amount, feeToken: amount });
+
+        await rewards.connect(dao.signer).harvest(SLIPPAGE_OUTPUT_BPS, result.minAmountOuts, result.auraBalMinAmount);
 
         expect(await crv.balanceOf(rewards.address), " crv balance").to.be.eq(0);
         expect(await feeToken.balanceOf(rewards.address), " feeToken balance").to.be.eq(0);
@@ -104,6 +239,11 @@ describe("AuraBalBoostedRewards", () => {
         deployer = await impersonateAccount(DEPLOYER, true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         phase2 = await config.getPhase2(dao.signer);
+        bVault = IBalancerVault__factory.connect(config.addresses.balancerVault, dao.signer);
+        balancerHelpers = IBalancerHelpers__factory.connect(config.addresses.balancerHelpers, dao.signer);
+        wethToken = IERC20__factory.connect(WETH, dao.signer);
+        balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
+        balWethBptToken = IERC20__factory.connect("0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56", dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
     });
@@ -118,6 +258,8 @@ describe("AuraBalBoostedRewards", () => {
                     // AuraBalBoostedRewardPool
                     dao.address,
                     phase2.cvxCrvRewards.address,
+                    phase2.cvx.address,
+                    config.addresses.balancerAuraBalPoolId,
                     // AuraBaseRewardPool
                     phase2.cvxCrv.address,
                     phase2.cvxCrv.address,
@@ -136,7 +278,7 @@ describe("AuraBalBoostedRewards", () => {
             auraRewards = await deployContract<VirtualBalanceRewardPool>(
                 hre,
                 new VirtualBalanceRewardPool__factory(deployer.signer),
-                "AuraRewards",
+                "VirtualBalanceRewardPool - aura",
                 [rewards.address, phase2.cvx.address, rewards.address],
                 {},
                 DEBUG,
@@ -144,13 +286,38 @@ describe("AuraBalBoostedRewards", () => {
         });
         it("Add AURA as extra rewards", async () => {
             await rewards.connect(dao.signer).addExtraReward(auraRewards.address);
+            expect(await rewards.extraRewards(0), "aura as extra reward").to.be.eq(auraRewards.address);
         });
         it("Add AuraBalBoostedRewards to Booster platform rewards", async () => {
             await phase2.booster.connect(dao.signer).setTreasury(rewards.address);
             expect(await phase2.booster.treasury()).eq(rewards.address);
         });
+
         it("Set approvals", async () => {
             await rewards.connect(dao.signer).setApprovals();
+            expect(
+                await wethToken.allowance(rewards.address, config.addresses.balancerVault),
+                "WETH allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+            expect(await balToken.allowance(rewards.address, config.addresses.balancerVault), "BAL allowance").to.be.eq(
+                ethers.constants.MaxUint256,
+            );
+            expect(
+                await phase2.cvxCrv.allowance(rewards.address, phase2.cvxCrvRewards.address),
+                "auraBal allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+            expect(
+                await balWethBptToken.allowance(rewards.address, config.addresses.balancerVault),
+                "BPT allowance",
+            ).to.be.eq(ethers.constants.MaxUint256);
+
+            // It should be able to setApprovals more than once, in case the allowance of a token goes to 0.
+            await rewards.connect(dao.signer).setApprovals();
+        });
+        it("Set balancer paths", async () => {
+            const path = getFeeTokenRethWethPath();
+            const tx = await rewards.addHarvestToken(config.addresses.feeToken, path.poolIds, path.assetsIn);
+            await expect(tx).to.emit(rewards, "AddHarvestToken").withArgs(config.addresses.feeToken);
         });
     });
 
