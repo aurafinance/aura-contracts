@@ -11,6 +11,7 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory, MockCurveGauge__factory } from "../../types/generated";
 import uniqBy from "lodash/uniqBy";
+import { uniq } from "lodash";
 
 const configs = {
     main: {
@@ -217,6 +218,12 @@ task("snapshot:create")
             "Please read gauge voting rules before voting: https://docs.aura.finance/aura/governance/gauge-voting#gauge-voting-rules-and-information\n\nBe sure to also consult the voting dashboard for gauge voting insights: https://app.aura.finance/#/lock";
         console.log("Body:", body);
 
+        const choices = gaugeList.map(gauge => parseLabel(gauge));
+        if (choices.length !== uniq(choices).length) {
+            console.log("Duplicate labels not allowed");
+            return;
+        }
+
         await new Promise(res => {
             readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
                 if (answer.toLowerCase() === "y") {
@@ -232,7 +239,7 @@ task("snapshot:create")
                             title,
                             body,
                             discussion: "",
-                            choices: gaugeList.map(gauge => parseLabel(gauge)),
+                            choices,
                             start,
                             end,
                             snapshot,
