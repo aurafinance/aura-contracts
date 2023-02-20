@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
+import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
 
 /**
  * @title   GenericUnionVault
@@ -13,6 +14,7 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
  * @notice  Changes:
  *          - remove withdraw penalty
  *          - remove platform fee
+ *          - add extra rewards logic
  */
 contract GenericUnionVault is ERC20, Ownable {
     using SafeERC20 for IERC20;
@@ -24,9 +26,11 @@ contract GenericUnionVault is ERC20, Ownable {
     address public immutable underlying;
     address public strategy;
 
+    address[] public extraRewards;
+
     event Harvest(address indexed _caller, uint256 _value);
-    event Deposit(address indexed _from, address indexed _to, uint256 _value);
-    event Withdraw(address indexed _from, address indexed _to, uint256 _value);
+    event Deposit(address indexed _from, uint256 _value);
+    event Withdraw(address indexed _from, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
 
@@ -56,6 +60,30 @@ contract GenericUnionVault is ERC20, Ownable {
         emit StrategySet(_strategy);
     }
 
+    /// @notice Count of extra rewards
+    function extraRewardsLength() external view returns (uint256) {
+        return extraRewards.length;
+    }
+
+    /// @notice Add extra reward contract
+    /// @param _reward VirtualShareRewardPool address
+    /// @return bool success
+    function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
+        require(_reward != address(0), "!reward setting");
+
+        if (extraRewards.length >= 12) {
+            return false;
+        }
+
+        extraRewards.push(_reward);
+        return true;
+    }
+
+    /// @notice Clear extra rewards array
+    function clearExtraRewards() external onlyOwner {
+        delete extraRewards;
+    }
+
     /// @notice Query the amount currently staked
     /// @return total - the total amount of tokens staked
     function totalUnderlying() public view returns (uint256 total) {
@@ -73,10 +101,9 @@ contract GenericUnionVault is ERC20, Ownable {
 
     /// @notice Deposit user funds in the autocompounder and mints tokens
     /// representing user's share of the pool in exchange
-    /// @param _to - the address that will receive the shares
     /// @param _amount - the amount of underlying to deposit
     /// @return _shares - the amount of shares issued
-    function deposit(address _to, uint256 _amount) public notToZeroAddress(_to) returns (uint256 _shares) {
+    function deposit(uint256 _amount) public returns (uint256 _shares) {
         require(_amount > 0, "Deposit too small");
 
         uint256 _before = totalUnderlying();
@@ -90,16 +117,21 @@ contract GenericUnionVault is ERC20, Ownable {
         } else {
             shares = (_amount * totalSupply()) / _before;
         }
-        _mint(_to, shares);
-        emit Deposit(msg.sender, _to, _amount);
+
+        // Stake into extra rewards
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(msg.sender, shares);
+        }
+
+        _mint(msg.sender, shares);
+        emit Deposit(msg.sender, _amount);
         return shares;
     }
 
     /// @notice Deposit all of user's underlying balance
-    /// @param _to - the address that will receive the shares
     /// @return _shares - the amount of shares issued
-    function depositAll(address _to) external returns (uint256 _shares) {
-        return deposit(_to, IERC20(underlying).balanceOf(msg.sender));
+    function depositAll() external returns (uint256 _shares) {
+        return deposit(IERC20(underlying).balanceOf(msg.sender));
     }
 
     /// @notice Unstake underlying in proportion to the amount of shares sent
@@ -129,23 +161,26 @@ contract GenericUnionVault is ERC20, Ownable {
     }
 
     /// @notice Unstake underlying token in proportion to the amount of shares sent
-    /// @param _to - address to send underlying to
     /// @param _shares - the number of shares sent
     /// @return withdrawn - the amount of underlying returned to the user
-    function withdraw(address _to, uint256 _shares) public notToZeroAddress(_to) returns (uint256 withdrawn) {
+    function withdraw(uint256 _shares) public returns (uint256 withdrawn) {
+        // Withdraw from extra rewards
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).withdraw(msg.sender, _shares);
+        }
+
         // Withdraw requested amount of underlying
         uint256 _withdrawable = _withdraw(_shares);
         // And sends back underlying to user
-        IERC20(underlying).safeTransfer(_to, _withdrawable);
-        emit Withdraw(msg.sender, _to, _withdrawable);
+        IERC20(underlying).safeTransfer(msg.sender, _withdrawable);
+        emit Withdraw(msg.sender, _withdrawable);
         return _withdrawable;
     }
 
     /// @notice Withdraw all of a users' position as underlying
-    /// @param _to - address to send underlying to
     /// @return withdrawn - the amount of underlying returned to the user
-    function withdrawAll(address _to) external notToZeroAddress(_to) returns (uint256 withdrawn) {
-        return withdraw(_to, balanceOf(msg.sender));
+    function withdrawAll() external returns (uint256 withdrawn) {
+        return withdraw(balanceOf(msg.sender));
     }
 
     /// @notice Claim rewards and swaps them to FXS for restaking
