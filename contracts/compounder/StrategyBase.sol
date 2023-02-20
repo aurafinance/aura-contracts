@@ -3,10 +3,14 @@ pragma solidity 0.8.11;
 
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
 import { IAsset, IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol";
-import { IBalPtDeposit } from "../interfaces/balancer/IBalPtDeposit.sol";
 
+/**
+ * @title   AuraBalStrategyBase
+ * @author  lama.airforce -> AuraFinance
+ * @notice  Changes:
+ *          - remove BAL Depositor address
+ */
 contract AuraBalStrategyBase {
-    address public constant AURABAL_PT_DEPOSIT = 0xeAd792B55340Aa20181A80d6a16db6A0ECd1b827;
     address public constant AURABAL_STAKING = 0x00A7BA8Ae7bca0B10A32Ea1f8e2a1Da980c6CAd2;
     address public constant BAL_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
@@ -24,7 +28,6 @@ contract AuraBalStrategyBase {
 
     IBasicRewards public auraBalStaking = IBasicRewards(AURABAL_STAKING);
     IBalancerVault public balVault = IBalancerVault(BAL_VAULT);
-    IBalPtDeposit public bptDepositor = IBalPtDeposit(AURABAL_PT_DEPOSIT);
 
     /// @notice Deposit BAL and WETH to the BAL-ETH pool
     /// @param _wethAmount - amount of wETH to deposit

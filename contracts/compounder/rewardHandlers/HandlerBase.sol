@@ -6,6 +6,10 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
 import { IRewardHandler } from "../../interfaces/balancer/IRewardHandler.sol";
 
+/**
+ * @title   HandlerBase
+ * @author  lama.airforce
+ */
 contract HandlerBase is IRewardHandler {
     using SafeERC20 for IERC20;
     address public owner;

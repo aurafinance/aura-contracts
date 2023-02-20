@@ -11,6 +11,10 @@ interface AuraBalStrategy {
     ) external returns (uint256 harvested);
 }
 
+/**
+ * @title   AuraBalVault
+ * @author  lama.airforce
+ */
 contract AuraBalVault is GenericUnionVault {
     bool public isHarvestPermissioned = false;
     mapping(address => bool) public authorizedHarvesters;
