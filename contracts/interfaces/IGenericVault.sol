@@ -53,4 +53,8 @@ interface IGenericVault {
         address to,
         uint256 value
     ) external returns (bool);
+
+    function extraRewardCount() external view returns (uint256);
+
+    function extraRewards(uint256) external view returns (address);
 }
