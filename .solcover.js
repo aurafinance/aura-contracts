@@ -15,6 +15,7 @@ module.exports = {
         "peripheral/BoosterHelper.sol",
         "peripheral/ClaimFeesHelper.sol",
         "peripheral/RewardPoolDepositWrapper.sol",
+        "peripheral/AuraMining.sol",
     ],
     configureYulOptimizer: true,
 };
