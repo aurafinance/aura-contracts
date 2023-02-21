@@ -7,6 +7,7 @@ import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IRewardHandler } from "../interfaces/balancer/IRewardHandler.sol";
+import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { AuraBalStrategyBase } from "./StrategyBase.sol";
 
 /**
@@ -112,6 +113,16 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
     function harvest(address _caller, uint256 _minAmountOut) public onlyVault returns (uint256 harvested) {
         // claim rewards
         auraBalStaking.getReward();
+
+        // process extra rewards
+        uint256 extraRewardCount = IGenericVault(vault).extraRewardCount();
+        for (uint256 i; i < extraRewardCount; ++i) {
+            address rewards = IGenericVault(vault).extraRewards(i);
+            address token = IVirtualRewards(rewards).rewardToken();
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            IERC20(token).safeTransfer(rewards, balance);
+            IVirtualRewards(rewards).queueNewRewards(balance);
+        }
 
         // process rewards
         address[] memory _rewardTokens = rewardTokens;
