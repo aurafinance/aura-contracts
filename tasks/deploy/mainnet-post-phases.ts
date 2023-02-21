@@ -15,6 +15,7 @@ import {
     GaugeMigrator__factory,
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
+import { deployVault } from "../../scripts/deployVault";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -111,3 +112,21 @@ task("deploy:mainnet:boosterSecondary").setAction(async function (_: TaskArgumen
     console.log("update poolManagerV4 address to:", poolManagerV4.address);
     console.log("update boosterOwnerSecondary address to:", boosterOwnerSecondary.address);
 });
+
+task("deploy:mainnet:vault")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+
+        const { vault, strategy, bbusdHandler, auraRewards } = await deployVault(
+            hre,
+            deployer,
+            debug,
+            tskArgs.wait || waitForBlocks,
+        );
+
+        console.log("Vault:", vault.address);
+        console.log("Strategy:", strategy.address);
+        console.log("BBUSD Handler:", bbusdHandler.address);
+        console.log("AuraRewards:", auraRewards.address);
+    });
