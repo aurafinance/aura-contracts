@@ -36,8 +36,8 @@ contract GenericUnionVault is ERC20, Ownable {
 
     constructor(address _token)
         ERC20(
-            string(abi.encodePacked("Unionized ", ERC20(_token).name())),
-            string(abi.encodePacked("u", ERC20(_token).symbol()))
+            string(abi.encodePacked("Staked ", ERC20(_token).name())),
+            string(abi.encodePacked("stk", ERC20(_token).symbol()))
         )
     {
         underlying = _token;
@@ -106,6 +106,12 @@ contract GenericUnionVault is ERC20, Ownable {
     function deposit(uint256 _amount) public returns (uint256 _shares) {
         require(_amount > 0, "Deposit too small");
 
+        // Stake into extra rewards before we update the users
+        // balancers and update totalSupply/totalUnderlying
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(msg.sender, _amount);
+        }
+
         uint256 _before = totalUnderlying();
         IERC20(underlying).safeTransferFrom(msg.sender, strategy, _amount);
         IStrategy(strategy).stake(_amount);
@@ -116,11 +122,6 @@ contract GenericUnionVault is ERC20, Ownable {
             shares = _amount;
         } else {
             shares = (_amount * totalSupply()) / _before;
-        }
-
-        // Stake into extra rewards
-        for (uint256 i = 0; i < extraRewards.length; i++) {
-            IBasicRewards(extraRewards[i]).stake(msg.sender, shares);
         }
 
         _mint(msg.sender, shares);

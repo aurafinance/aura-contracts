@@ -4,11 +4,7 @@ pragma solidity 0.8.11;
 import { GenericUnionVault } from "./GenericVault.sol";
 
 interface IAuraBalStrategy {
-    function harvest(
-        address _caller,
-        uint256 _minAmountOut,
-        bool _lock
-    ) external returns (uint256 harvested);
+    function harvest(address _caller, uint256 _minAmountOut) external returns (uint256 harvested);
 }
 
 /**
@@ -16,7 +12,7 @@ interface IAuraBalStrategy {
  * @author  lama.airforce
  */
 contract AuraBalVault is GenericUnionVault {
-    bool public isHarvestPermissioned = false;
+    bool public isHarvestPermissioned = true;
     mapping(address => bool) public authorizedHarvesters;
 
     constructor(address _token) GenericUnionVault(_token) {}
@@ -36,25 +32,17 @@ contract AuraBalVault is GenericUnionVault {
 
     /// @notice Claim rewards and swaps them to auraBAL for restaking
     /// @param _minAmountOut - min amount of auraBAL to receive for harvest
-    /// @param _lock - whether to lock or swap lp tokens for auraBAL
     /// @dev Can be called by whitelisted account or anyone against an auraBal incentive
     /// @dev Harvest logic in the strategy contract
     /// @dev Harvest can be called even if permissioned when last staker is
     ///      withdrawing from the vault.
-    function harvest(uint256 _minAmountOut, bool _lock) public {
+    function harvest(uint256 _minAmountOut) public {
         require(
             !isHarvestPermissioned || authorizedHarvesters[msg.sender] || totalSupply() == 0,
             "permissioned harvest"
         );
-        uint256 _harvested = IAuraBalStrategy(strategy).harvest(msg.sender, _minAmountOut, _lock);
+        uint256 _harvested = IAuraBalStrategy(strategy).harvest(msg.sender, _minAmountOut);
         emit Harvest(msg.sender, _harvested);
-    }
-
-    /// @notice Claim rewards and swaps them to auraBAL for restaking
-    /// @param _minAmountOut - min amount of BPT to receive for harvest
-    /// @dev locking for auraBAL by default
-    function harvest(uint256 _minAmountOut) public {
-        harvest(_minAmountOut, true);
     }
 
     /// @notice Claim rewards and swaps them to auraBAL for restaking

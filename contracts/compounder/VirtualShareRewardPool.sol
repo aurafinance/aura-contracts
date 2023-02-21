@@ -121,6 +121,7 @@ contract VirtualShareRewardPool {
     }
 
     function balanceOf(address account) public view returns (uint256) {
+        if (vault.totalSupply() == 0) return 0;
         return vault.balanceOfUnderlying(account);
     }
 
@@ -151,21 +152,22 @@ contract VirtualShareRewardPool {
      *          this updates the virtual balance of this user as this contract doesn't
      *          actually hold any staked tokens it just diributes reward tokens
      */
-    function stake(address _account, uint256 amount) external updateReward(_account) {
+    function stake(address _account, uint256 amount) external updateReward(_account) returns (bool) {
         require(msg.sender == address(vault), "!authorized");
         // require(amount > 0, 'VirtualDepositRewardPool: Cannot stake 0');
         emit Staked(_account, amount);
+        return true;
     }
 
     /**
      * @notice  Withdraw stake and update reward, emit, call linked reward's stake
      * @dev     See stake
      */
-    function withdraw(address _account, uint256 amount) public updateReward(_account) {
+    function withdraw(address _account, uint256 amount) public updateReward(_account) returns (bool) {
         require(msg.sender == address(vault), "!authorized");
         //require(amount > 0, 'VirtualDepositRewardPool : Cannot withdraw 0');
-
         emit Withdrawn(_account, amount);
+        return true;
     }
 
     /**

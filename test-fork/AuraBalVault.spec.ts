@@ -1,20 +1,18 @@
 import hre, { network } from "hardhat";
 import { expect } from "chai";
-import { BigNumberish } from "ethers";
+import { BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
 import {
-    AuraBalVault,
-    IBalancerHelpers,
-    IBalancerVault,
-    IERC20,
-    MockERC20__factory,
     Account,
-    AuraBalStrategy,
+    IBalancerVault,
+    MockERC20__factory,
     IBalancerVault__factory,
-    IBalancerHelpers__factory,
+    IERC20,
     IERC20__factory,
+    AuraBalVault,
     AuraBalVault__factory,
+    AuraBalStrategy,
     AuraBalStrategy__factory,
     BBUSDHandlerv2,
     BBUSDHandlerv2__factory,
@@ -24,29 +22,15 @@ import {
 import { deployContract } from "../tasks/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 import { simpleToExactAmount } from "../test-utils/math";
-import { Phase2Deployed } from "../scripts/deploySystem";
-import { impersonate, impersonateAccount } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS } from "../test-utils/constants";
+import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
+import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 
+// Constants
 const DEBUG = false;
 const FORK_BLOCK = 16370000;
-const SLIPPAGE_OUTPUT_BPS = 9950;
-const SLIPPAGE_OUTPUT_SWAP = 9900;
-const SLIPPAGE_OUTPUT_SCALE = 10000;
-
-const DEPLOYER = "0xa28ea848801da877e1844f954ff388e857d405e5";
-
-const RETH = "0xae78736Cd615f374D3085123A210448E74Fc6393";
-const WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const BAL = "0xba100000625a3754423978a60c9317c58a424e3d";
-const BPT_BALWETH = "0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56";
-const AURABAL = "0x616e8BfA43F920657B3497DBf40D6b1A02D4608d";
-
-const BAL_WETH_POOL_ID = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014";
-const BPT_AURABAL_POOL_ID = "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249";
-
-const BBUSD_RETH_POOL_ID = "0x334c96d792e4b26b841d28f53235281cec1be1f200020000000000000000038a";
-const RETH_WETH_POOL_ID = "0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112";
+const DEPOSIT_AMOUNT = simpleToExactAmount(10);
+const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
 
 async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
     const tokenWhaleSigner = await impersonateAccount(from);
@@ -62,9 +46,10 @@ describe("AuraBalVault", () => {
 
     let dao: Account;
     let deployer: Account;
+    let depositor: Account;
     let phase2: Phase2Deployed;
+    let phase6: Phase6Deployed;
     let bVault: IBalancerVault;
-    let balancerHelpers: IBalancerHelpers;
     let wethToken: IERC20;
     let balToken: IERC20;
     let balWethBptToken: IERC20;
@@ -107,18 +92,18 @@ describe("AuraBalVault", () => {
     // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
     // to the reward contract the contract will then swap it for
     // auraBAL and queue it for rewards
-    async function forceHarvestRewards(amount = parseEther("10")) {
+    async function forceHarvestRewards(amount = parseEther("10"), signer = dao.signer) {
         await getBal(strategy.address, amount);
         await getBBaUSD(strategy.address, amount);
         await getAura(strategy.address, amount);
-        const crv = MockERC20__factory.connect(config.addresses.token, dao.signer);
-        const feeToken = MockERC20__factory.connect(config.addresses.feeToken, dao.signer);
+        const crv = MockERC20__factory.connect(config.addresses.token, signer);
+        const feeToken = MockERC20__factory.connect(config.addresses.feeToken, signer);
 
         expect(await crv.balanceOf(strategy.address), " crv balance").to.be.gt(0);
         expect(await feeToken.balanceOf(strategy.address), " feeToken balance").to.be.gt(0);
         expect(await phase2.cvx.balanceOf(strategy.address), " cvx balance").to.be.gt(0);
 
-        await vault.connect(dao.signer)["harvest(uint256)"](0);
+        await vault.connect(signer)["harvest(uint256)"](0);
 
         expect(await crv.balanceOf(strategy.address), " crv balance").to.be.eq(0);
         expect(await feeToken.balanceOf(strategy.address), " feeToken balance").to.be.eq(0);
@@ -142,17 +127,21 @@ describe("AuraBalVault", () => {
             ],
         });
 
+        const accounts = await hre.ethers.getSigners();
+
         deployer = await impersonateAccount(DEPLOYER, true);
+        depositor = await impersonateAccount(await accounts[0].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         phase2 = await config.getPhase2(dao.signer);
+        phase6 = await config.getPhase6(dao.signer);
 
         bVault = IBalancerVault__factory.connect(config.addresses.balancerVault, dao.signer);
-        balancerHelpers = IBalancerHelpers__factory.connect(config.addresses.balancerHelpers, dao.signer);
-        wethToken = IERC20__factory.connect(WETH, dao.signer);
+        wethToken = IERC20__factory.connect(config.addresses.weth, dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
-        balWethBptToken = IERC20__factory.connect("0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56", dao.signer);
+        balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
+        await getAuraBal(depositor.address, parseEther("100"));
     });
 
     /* -------------------------------------------------------------------------
@@ -216,6 +205,11 @@ describe("AuraBalVault", () => {
             expect(await strategy.rewardTokens(0)).eq(config.addresses.feeToken);
             expect(await strategy.rewardHandlers(config.addresses.feeToken)).eq(bbusd.address);
         });
+        it("set harvester", async () => {
+            expect(await vault.authorizedHarvesters(dao.address)).eq(false);
+            await vault.updateAuthorizedHarvesters(dao.address, true);
+            expect(await vault.authorizedHarvesters(dao.address)).eq(true);
+        });
         it("add AURA as extra reward", async () => {
             expect(await vault.extraRewardsLength()).eq(0);
             await vault.addExtraReward(auraRewards.address);
@@ -223,19 +217,109 @@ describe("AuraBalVault", () => {
             expect(await vault.extraRewards(0)).eq(auraRewards.address);
         });
         it("set approvals", async () => {
+            expect(await phase2.cvxCrv.allowance(strategy.address, phase6.cvxCrvRewards.address)).eq(0);
+            expect(await balToken.allowance(strategy.address, bVault.address)).eq(0);
+            expect(await wethToken.allowance(strategy.address, bVault.address)).eq(0);
+            expect(await balWethBptToken.allowance(strategy.address, bVault.address)).eq(0);
+
             await strategy.setApprovals();
+
+            const max = ethers.constants.MaxUint256;
+            expect(await phase2.cvxCrv.allowance(strategy.address, phase6.cvxCrvRewards.address)).eq(max);
+            expect(await balToken.allowance(strategy.address, bVault.address)).eq(max);
+            expect(await wethToken.allowance(strategy.address, bVault.address)).eq(max);
+            expect(await balWethBptToken.allowance(strategy.address, bVault.address)).eq(max);
         });
     });
 
     describe("check configurations", () => {
-        it("check vault is configured correctly");
+        it("check vault is configured correctly", async () => {
+            expect(await vault.isHarvestPermissioned()).eq(true);
+            expect(await vault.callIncentive()).eq(500);
+            expect(await vault.MAX_CALL_INCENTIVE()).eq(500);
+            expect(await vault.FEE_DENOMINATOR()).eq(10000);
+            expect(await vault.underlying()).eq(phase2.cvxCrv.address);
+            expect(await vault.strategy()).eq(strategy.address);
+            expect(await vault.name()).eq("Staked Aura BAL");
+            expect(await vault.symbol()).eq("stkauraBAL");
+        });
         it("check auraBAL strategy is configured correctly", async () => {
             expect(await strategy.balVault()).eq(bVault.address);
             expect(await strategy.WETH_TOKEN()).eq(wethToken.address);
             expect(await strategy.BAL_TOKEN()).eq(balToken.address);
             expect(await strategy.BAL_ETH_POOL_TOKEN()).eq(balWethBptToken.address);
         });
-        it("check bbusd handler is configured correctly");
-        it("check AURA virtual share pool is configured correctly");
+        it("check bbusd handler is configured correctly", async () => {
+            expect(await bbusd.owner()).eq(deployer.address);
+            expect(await bbusd.pendingOwner()).eq(ZERO_ADDRESS);
+            expect(await bbusd.token()).eq(config.addresses.feeToken);
+            expect(await bbusd.strategy()).eq(strategy.address);
+            expect(await bbusd.balVault()).eq(config.addresses.balancerVault);
+        });
+        it("check AURA virtual share pool is configured correctly", async () => {
+            expect(await auraRewards.vault()).eq(vault.address);
+            expect(await auraRewards.rewardToken()).eq(phase2.cvx.address);
+            expect(await auraRewards.operator()).eq(strategy.address);
+        });
+    });
+
+    describe("deposit auraBAL", () => {
+        it("can deposit into vault", async () => {
+            await phase2.cvxCrv.connect(depositor.signer).approve(vault.address, ethers.constants.MaxUint256);
+            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT);
+            expect(await vault.totalSupply()).eq(DEPOSIT_AMOUNT);
+            expect(await vault.balanceOf(depositor.address)).eq(DEPOSIT_AMOUNT);
+            expect(await vault.balanceOfUnderlying(depositor.address)).eq(DEPOSIT_AMOUNT);
+        });
+    });
+
+    describe("harvesting rewards", () => {
+        it("can call harvest", async () => {
+            const auraBalanceBefore = await phase2.cvx.balanceOf(auraRewards.address);
+            const stakedBalanceBefore = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const totalUnderlyingBefore = await vault.totalUnderlying();
+            await forceHarvestRewards(simpleToExactAmount(100));
+            const stakedBalanceAfter = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const auraBalanceAfter = await phase2.cvx.balanceOf(auraRewards.address);
+            const totalUnderlyingAfter = await vault.totalUnderlying();
+
+            expect(totalUnderlyingAfter).gt(totalUnderlyingBefore);
+            expect(stakedBalanceAfter).gt(stakedBalanceBefore);
+            expect(auraBalanceAfter).gt(auraBalanceBefore);
+
+            // Depositor balances
+            const underlyingBalance = await vault.balanceOfUnderlying(depositor.address);
+            expect(underlyingBalance).gt(DEPOSIT_AMOUNT);
+        });
+        it("can not call harvest while protected", async () => {
+            expect(await vault.totalSupply()).gt(0);
+            await expect(vault["harvest()"]()).to.be.revertedWith("permissioned harvest");
+        });
+        it("can not call harvest on the strategy", async () => {
+            await expect(strategy.harvest(deployer.address, 0)).to.be.revertedWith("Vault calls only");
+        });
+    });
+
+    describe("claim AURA rewards", () => {
+        it("can claim extra AURA rewards", async () => {
+            await increaseTime(ONE_WEEK);
+            const earned = await auraRewards.earned(depositor.address);
+            expect(earned).gt(0);
+            const balBefore = await phase2.cvx.balanceOf(depositor.address);
+            await auraRewards.connect(depositor.signer)["getReward()"]();
+            const balAfter = await phase2.cvx.balanceOf(depositor.address);
+            expect(balAfter.sub(balBefore)).gte(earned);
+        });
+    });
+
+    describe("withdraw auraBAL", () => {
+        it("can withdraw rewards", async () => {
+            const balanceOfUnderlying = await vault.balanceOfUnderlying(depositor.address);
+            const balanceBefore = await phase2.cvxCrv.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).withdrawAll();
+            const balanceAfter = await phase2.cvxCrv.balanceOf(depositor.address);
+            expect(balanceAfter.sub(balanceBefore)).gte(balanceOfUnderlying);
+            expect(balanceAfter.sub(balanceBefore)).gt(DEPOSIT_AMOUNT);
+        });
     });
 });
