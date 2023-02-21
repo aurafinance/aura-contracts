@@ -115,7 +115,7 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         auraBalStaking.getReward();
 
         // process extra rewards
-        uint256 extraRewardCount = IGenericVault(vault).extraRewardCount();
+        uint256 extraRewardCount = IGenericVault(vault).extraRewardsLength();
         for (uint256 i; i < extraRewardCount; ++i) {
             address rewards = IGenericVault(vault).extraRewards(i);
             address token = IVirtualRewards(rewards).rewardToken();
