@@ -3,7 +3,7 @@ pragma solidity 0.8.11;
 
 import { GenericUnionVault } from "./GenericVault.sol";
 
-interface AuraBalStrategy {
+interface IAuraBalStrategy {
     function harvest(
         address _caller,
         uint256 _minAmountOut,
@@ -46,7 +46,7 @@ contract AuraBalVault is GenericUnionVault {
             !isHarvestPermissioned || authorizedHarvesters[msg.sender] || totalSupply() == 0,
             "permissioned harvest"
         );
-        uint256 _harvested = AuraBalStrategy(strategy).harvest(msg.sender, _minAmountOut, _lock);
+        uint256 _harvested = IAuraBalStrategy(strategy).harvest(msg.sender, _minAmountOut, _lock);
         emit Harvest(msg.sender, _harvested);
     }
 
