@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity 0.8.11;
 /**
  *Submitted for verification at Etherscan.io on 2020-07-17
  */
@@ -39,35 +39,15 @@ pragma solidity 0.6.12;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-import "./Interfaces.sol";
-import "./interfaces/MathUtil.sol";
-import "@openzeppelin/contracts-0.6/math/SafeMath.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts-0.6/utils/Address.sol";
-import "@openzeppelin/contracts-0.6/token/ERC20/SafeERC20.sol";
-
-abstract contract VirtualBalanceWrapper {
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
-
-    IDeposit public immutable deposits;
-
-    constructor(address deposit_) internal {
-        deposits = IDeposit(deposit_);
-    }
-
-    function totalSupply() public view returns (uint256) {
-        return deposits.totalSupply();
-    }
-
-    function balanceOf(address account) public view returns (uint256) {
-        return deposits.balanceOf(account);
-    }
-}
+import { AuraMath } from "../utils/AuraMath.sol";
+import { Address } from "@openzeppelin/contracts-0.8/utils/Address.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { IGenericVault } from "../interfaces/IGenericVault.sol";
 
 /**
- * @title   VirtualBalanceRewardPool
- * @author  ConvexFinance
+ * @title   VirtualShareRewardPool
+ * @author  ConvexFinance -> AuraFinance
  * @notice  Reward pool used for ExtraRewards in Booster lockFees (3crv) and
  *          Extra reward stashes
  * @dev     The rewards are sent to this contract for distribution to stakers. This
@@ -76,10 +56,17 @@ abstract contract VirtualBalanceWrapper {
  *          For example the Booster sends veCRV fees (3Crv) to a VirtualBalanceRewardPool
  *          which tracks the virtual balance of cxvCRV stakers and distributes their share
  *          of 3Crv rewards
+ *          Changes:
+ *          - Rename to VirtualShareRewardPool
+ *          - Merge VirtualBalanceRewardPoolWrapper logic
+ *          - balanceOf converts shares to balances
+ *          - totalSupply looks up underlying balance of vault
  */
-contract VirtualBalanceRewardPool is VirtualBalanceWrapper {
+contract VirtualShareRewardPool {
     using SafeERC20 for IERC20;
+    using AuraMath for uint256;
 
+    IGenericVault public immutable vault;
     IERC20 public immutable rewardToken;
     uint256 public constant duration = 7 days;
 
@@ -102,15 +89,16 @@ contract VirtualBalanceRewardPool is VirtualBalanceWrapper {
     event RewardPaid(address indexed user, uint256 reward);
 
     /**
-     * @param deposit_  Parent deposit pool e.g cvxCRV staking in BaseRewardPool
+     * @param vault_    Parent vault
      * @param reward_   The rewards token e.g 3Crv
      * @param op_       Operator contract (Booster)
      */
     constructor(
-        address deposit_,
+        address vault_,
         address reward_,
         address op_
-    ) public VirtualBalanceWrapper(deposit_) {
+    ) public {
+        vault = IGenericVault(vault_);
         rewardToken = IERC20(reward_);
         operator = op_;
     }
@@ -128,8 +116,16 @@ contract VirtualBalanceRewardPool is VirtualBalanceWrapper {
         _;
     }
 
+    function totalSupply() public view returns (uint256) {
+        return vault.totalUnderlying();
+    }
+
+    function balanceOf(address account) public view returns (uint256) {
+        return vault.balanceOfUnderlying(account);
+    }
+
     function lastTimeRewardApplicable() public view returns (uint256) {
-        return MathUtil.min(block.timestamp, periodFinish);
+        return AuraMath.min(block.timestamp, periodFinish);
     }
 
     function rewardPerToken() public view returns (uint256) {
@@ -151,12 +147,12 @@ contract VirtualBalanceRewardPool is VirtualBalanceWrapper {
 
     /**
      * @notice  Update reward, emit, call linked reward's stake
-     * @dev     Callable by the deposits address which is the BaseRewardPool
+     * @dev     Callable by the vault address which is the BaseRewardPool
      *          this updates the virtual balance of this user as this contract doesn't
      *          actually hold any staked tokens it just diributes reward tokens
      */
     function stake(address _account, uint256 amount) external updateReward(_account) {
-        require(msg.sender == address(deposits), "!authorized");
+        require(msg.sender == address(vault), "!authorized");
         // require(amount > 0, 'VirtualDepositRewardPool: Cannot stake 0');
         emit Staked(_account, amount);
     }
@@ -166,7 +162,7 @@ contract VirtualBalanceRewardPool is VirtualBalanceWrapper {
      * @dev     See stake
      */
     function withdraw(address _account, uint256 amount) public updateReward(_account) {
-        require(msg.sender == address(deposits), "!authorized");
+        require(msg.sender == address(vault), "!authorized");
         //require(amount > 0, 'VirtualDepositRewardPool : Cannot withdraw 0');
 
         emit Withdrawn(_account, amount);
