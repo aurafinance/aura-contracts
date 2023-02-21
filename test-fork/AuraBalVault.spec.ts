@@ -11,20 +11,16 @@ import {
     IERC20,
     IERC20__factory,
     AuraBalVault,
-    AuraBalVault__factory,
     AuraBalStrategy,
-    AuraBalStrategy__factory,
     BBUSDHandlerv2,
-    BBUSDHandlerv2__factory,
     VirtualShareRewardPool,
-    VirtualShareRewardPool__factory,
 } from "../types";
-import { deployContract } from "../tasks/utils";
-import { config } from "../tasks/deploy/mainnet-config";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
+import { deployVault } from "../scripts/deployVault";
+import { config } from "../tasks/deploy/mainnet-config";
 
 // Constants
 const DEBUG = false;
@@ -41,7 +37,7 @@ async function impersonateAndTransfer(tokenAddress: string, from: string, to: st
 describe("AuraBalVault", () => {
     let vault: AuraBalVault;
     let strategy: AuraBalStrategy;
-    let bbusd: BBUSDHandlerv2;
+    let bbusdHandler: BBUSDHandlerv2;
     let auraRewards: VirtualShareRewardPool;
 
     let dao: Account;
@@ -148,82 +144,35 @@ describe("AuraBalVault", () => {
      * Tests
      * ----------------------------------------------------------------------- */
 
-    describe("deploy", () => {
-        it("deploy vault", async () => {
-            vault = await deployContract<AuraBalVault>(
-                hre,
-                new AuraBalVault__factory(deployer.signer),
-                "AuraBalVault",
-                [phase2.cvxCrv.address],
-                {},
-                DEBUG,
-            );
-        });
-        it("deploy strategy", async () => {
-            strategy = await deployContract<AuraBalStrategy>(
-                hre,
-                new AuraBalStrategy__factory(deployer.signer),
-                "AuraBalStrategy",
-                [vault.address],
-                {},
-                DEBUG,
-            );
-        });
-        it("deploy bb-a-usd handler", async () => {
-            bbusd = await deployContract<BBUSDHandlerv2>(
-                hre,
-                new BBUSDHandlerv2__factory(deployer.signer),
-                "BBUSDHandlerv2",
-                [config.addresses.feeToken, strategy.address],
-                {},
-                DEBUG,
-            );
-        });
-        it("deploy AURA virtual share pool", async () => {
-            auraRewards = await deployContract<VirtualShareRewardPool>(
-                hre,
-                new VirtualShareRewardPool__factory(deployer.signer),
-                "VirtualShareRewardPool",
-                [vault.address, phase2.cvx.address, strategy.address],
-                {},
-                DEBUG,
-            );
-        });
+    it("deploy", async () => {
+        const result = await deployVault(hre, deployer.signer, DEBUG);
+
+        vault = result.vault;
+        strategy = result.strategy;
+        bbusdHandler = result.bbusdHandler;
+        auraRewards = result.auraRewards;
     });
 
-    describe("configure", () => {
-        it("set strategy", async () => {
-            expect(await vault.strategy()).eq(ZERO_ADDRESS);
-            await vault.setStrategy(strategy.address);
+    describe("check initial configuration", () => {
+        it("check strategy", async () => {
             expect(await vault.strategy()).eq(strategy.address);
             await expect(vault.setStrategy(DEAD_ADDRESS)).to.be.revertedWith("Strategy already set");
         });
-        it("add reward tokens to strategy", async () => {
-            expect(await strategy.totalRewardTokens()).eq(0);
-            await strategy.addRewardToken(config.addresses.feeToken, bbusd.address);
+        it("check reward tokens", async () => {
             expect(await strategy.totalRewardTokens()).eq(1);
             expect(await strategy.rewardTokens(0)).eq(config.addresses.feeToken);
-            expect(await strategy.rewardHandlers(config.addresses.feeToken)).eq(bbusd.address);
+            expect(await strategy.rewardHandlers(config.addresses.feeToken)).eq(bbusdHandler.address);
         });
         it("set harvester", async () => {
             expect(await vault.authorizedHarvesters(dao.address)).eq(false);
             await vault.updateAuthorizedHarvesters(dao.address, true);
             expect(await vault.authorizedHarvesters(dao.address)).eq(true);
         });
-        it("add AURA as extra reward", async () => {
-            expect(await vault.extraRewardsLength()).eq(0);
-            await vault.addExtraReward(auraRewards.address);
+        it("check AURA as extra reward", async () => {
             expect(await vault.extraRewardsLength()).eq(1);
             expect(await vault.extraRewards(0)).eq(auraRewards.address);
         });
-        it("set approvals", async () => {
-            expect(await phase2.cvxCrv.allowance(strategy.address, phase6.cvxCrvRewards.address)).eq(0);
-            expect(await balToken.allowance(strategy.address, bVault.address)).eq(0);
-            expect(await wethToken.allowance(strategy.address, bVault.address)).eq(0);
-            expect(await balWethBptToken.allowance(strategy.address, bVault.address)).eq(0);
-
-            await strategy.setApprovals();
-
+        it("check approvals", async () => {
             const max = ethers.constants.MaxUint256;
             expect(await phase2.cvxCrv.allowance(strategy.address, phase6.cvxCrvRewards.address)).eq(max);
             expect(await balToken.allowance(strategy.address, bVault.address)).eq(max);
@@ -250,11 +199,11 @@ describe("AuraBalVault", () => {
             expect(await strategy.BAL_ETH_POOL_TOKEN()).eq(balWethBptToken.address);
         });
         it("check bbusd handler is configured correctly", async () => {
-            expect(await bbusd.owner()).eq(deployer.address);
-            expect(await bbusd.pendingOwner()).eq(ZERO_ADDRESS);
-            expect(await bbusd.token()).eq(config.addresses.feeToken);
-            expect(await bbusd.strategy()).eq(strategy.address);
-            expect(await bbusd.balVault()).eq(config.addresses.balancerVault);
+            expect(await bbusdHandler.owner()).eq(deployer.address);
+            expect(await bbusdHandler.pendingOwner()).eq(ZERO_ADDRESS);
+            expect(await bbusdHandler.token()).eq(config.addresses.feeToken);
+            expect(await bbusdHandler.strategy()).eq(strategy.address);
+            expect(await bbusdHandler.balVault()).eq(config.addresses.balancerVault);
         });
         it("check AURA virtual share pool is configured correctly", async () => {
             expect(await auraRewards.vault()).eq(vault.address);
