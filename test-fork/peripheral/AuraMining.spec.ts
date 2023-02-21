@@ -1,7 +1,7 @@
 import { BN, simpleToExactAmount } from "../../test-utils/math";
 import { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { AuraMining, AuraMining__factory, Booster } from "../../types/generated";
+import { AuraMining, AuraMining__factory } from "../../types/generated";
 import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
 import { Signer } from "ethers";
 import { config } from "../../tasks/deploy/mainnet-config";
@@ -37,9 +37,9 @@ describe("AuraMining", () => {
         phase2 = await config.getPhase2(signer);
         operatorAccount = await impersonateAccount(phase2.booster.address);
     });
-    const expectMint = async (crvAmount: BN, expectedCvxAmount: BN, desc: String) => {
+    const expectMint = async (crvAmount: BN, expectedCvxAmount: BN, desc: string) => {
         const cvxCalculated = await cvxMining.convertCrvToCvx(crvAmount);
-        let tx = await phase2.cvx.connect(operatorAccount.signer).mint(aliceAddress, crvAmount);
+        const tx = await phase2.cvx.connect(operatorAccount.signer).mint(aliceAddress, crvAmount);
         await expect(tx).to.emit(phase2.cvx, "Transfer").withArgs(ZERO_ADDRESS, aliceAddress, cvxCalculated);
         expect(cvxCalculated, `${desc} cvxCalculated`).to.be.eq(expectedCvxAmount);
     };

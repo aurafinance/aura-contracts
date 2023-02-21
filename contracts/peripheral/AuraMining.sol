@@ -18,7 +18,7 @@ interface ICvx {
 }
 
 /**
- * @Notice Utility library to calculate how many Cvx will be minted based on the amount of Crv
+ * @notice Utility library to calculate how many Cvx will be minted based on the amount of Crv
  */
 library AuraMining {
     ICvx public constant cvx = ICvx(0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF);
