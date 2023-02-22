@@ -69,8 +69,6 @@ contract GenericUnionVault is ERC20, Ownable {
     /// @param _reward VirtualShareRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
-        require(_reward != address(0), "!reward setting");
-
         if (extraRewards.length >= 12) {
             return false;
         }
