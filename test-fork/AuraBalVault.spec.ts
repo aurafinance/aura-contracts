@@ -215,7 +215,7 @@ describe("AuraBalVault", () => {
     describe("deposit auraBAL", () => {
         it("can deposit into vault", async () => {
             await phase2.cvxCrv.connect(depositor.signer).approve(vault.address, ethers.constants.MaxUint256);
-            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT);
+            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT, depositor.address);
             expect(await vault.totalSupply()).eq(DEPOSIT_AMOUNT);
             expect(await vault.balanceOf(depositor.address)).eq(DEPOSIT_AMOUNT);
             expect(await vault.balanceOfUnderlying(depositor.address)).eq(DEPOSIT_AMOUNT);
@@ -265,7 +265,8 @@ describe("AuraBalVault", () => {
         it("can withdraw rewards", async () => {
             const balanceOfUnderlying = await vault.balanceOfUnderlying(depositor.address);
             const balanceBefore = await phase2.cvxCrv.balanceOf(depositor.address);
-            await vault.connect(depositor.signer).withdrawAll();
+            const shares = await vault.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).redeem(shares, depositor.address, depositor.address);
             const balanceAfter = await phase2.cvxCrv.balanceOf(depositor.address);
             expect(balanceAfter.sub(balanceBefore)).gte(balanceOfUnderlying);
             expect(balanceAfter.sub(balanceBefore)).gt(DEPOSIT_AMOUNT);

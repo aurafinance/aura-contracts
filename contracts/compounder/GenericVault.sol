@@ -29,8 +29,8 @@ contract GenericUnionVault is ERC20, Ownable {
     address[] public extraRewards;
 
     event Harvest(address indexed _caller, uint256 _value);
-    event Deposit(address indexed _from, uint256 _value);
-    event Withdraw(address indexed _from, uint256 _value);
+    event Deposit(address indexed _from, address indexed _receiver, uint256 _value);
+    event Withdraw(address indexed _from, address indexed _receiver, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
 
@@ -101,13 +101,13 @@ contract GenericUnionVault is ERC20, Ownable {
     /// representing user's share of the pool in exchange
     /// @param _amount - the amount of underlying to deposit
     /// @return _shares - the amount of shares issued
-    function deposit(uint256 _amount) public returns (uint256 _shares) {
+    function deposit(uint256 _amount, address _receiver) public returns (uint256 _shares) {
         require(_amount > 0, "Deposit too small");
 
         // Stake into extra rewards before we update the users
         // balancers and update totalSupply/totalUnderlying
         for (uint256 i = 0; i < extraRewards.length; i++) {
-            IBasicRewards(extraRewards[i]).stake(msg.sender, _amount);
+            IBasicRewards(extraRewards[i]).stake(_receiver, _amount);
         }
 
         uint256 _before = totalUnderlying();
@@ -122,15 +122,9 @@ contract GenericUnionVault is ERC20, Ownable {
             shares = (_amount * totalSupply()) / _before;
         }
 
-        _mint(msg.sender, shares);
-        emit Deposit(msg.sender, _amount);
+        _mint(_receiver, shares);
+        emit Deposit(msg.sender, _receiver, _amount);
         return shares;
-    }
-
-    /// @notice Deposit all of user's underlying balance
-    /// @return _shares - the amount of shares issued
-    function depositAll() external returns (uint256 _shares) {
-        return deposit(IERC20(underlying).balanceOf(msg.sender));
     }
 
     /// @notice Unstake underlying in proportion to the amount of shares sent
@@ -162,24 +156,29 @@ contract GenericUnionVault is ERC20, Ownable {
     /// @notice Unstake underlying token in proportion to the amount of shares sent
     /// @param _shares - the number of shares sent
     /// @return withdrawn - the amount of underlying returned to the user
-    function withdraw(uint256 _shares) public returns (uint256 withdrawn) {
+    function redeem(
+        uint256 _shares,
+        address _receiver,
+        address _owner
+    ) public returns (uint256 withdrawn) {
+        // Check allowance if owner if not sender
+        if (msg.sender != _owner) {
+            uint256 currentAllowance = allowance(_owner, msg.sender);
+            require(currentAllowance >= _shares, "ERC4626: redeem exceeds allowance");
+            _approve(_owner, msg.sender, currentAllowance - _shares);
+        }
+
         // Withdraw from extra rewards
         for (uint256 i = 0; i < extraRewards.length; i++) {
-            IBasicRewards(extraRewards[i]).withdraw(msg.sender, _shares);
+            IBasicRewards(extraRewards[i]).withdraw(_owner, _shares);
         }
 
         // Withdraw requested amount of underlying
         uint256 _withdrawable = _withdraw(_shares);
         // And sends back underlying to user
-        IERC20(underlying).safeTransfer(msg.sender, _withdrawable);
-        emit Withdraw(msg.sender, _withdrawable);
+        IERC20(underlying).safeTransfer(_receiver, _withdrawable);
+        emit Withdraw(msg.sender, _receiver, _withdrawable);
         return _withdrawable;
-    }
-
-    /// @notice Withdraw all of a users' position as underlying
-    /// @return withdrawn - the amount of underlying returned to the user
-    function withdrawAll() external returns (uint256 withdrawn) {
-        return withdraw(balanceOf(msg.sender));
     }
 
     /// @notice Claim rewards and swaps them to FXS for restaking
@@ -193,5 +192,98 @@ contract GenericUnionVault is ERC20, Ownable {
     modifier notToZeroAddress(address _to) {
         require(_to != address(0), "Invalid address!");
         _;
+    }
+
+    /* --------------------------------------------------------------
+     * EIP-4626 functions
+    ----------------------------------------------------------------- */
+
+    /// @notice The address of the underlying token used for the Vault for
+    /// accounting, depositing, and withdrawing.
+    function asset() public view returns (address) {
+        return underlying;
+    }
+
+    /// @notice Total amount of the underlying asset that is “managed” by Vault.
+    function totalAssets() public view returns (uint256) {
+        return totalUnderlying();
+    }
+
+    /// @notice The amount of shares that the Vault would exchange for the amount
+    /// of assets provided, in an ideal scenario where all the conditions are met.
+    function convertToShares(uint256 _assets) public view returns (uint256) {
+        return totalSupply() == 0 ? _assets : (_assets * totalSupply()) / totalAssets();
+    }
+
+    /// @notice The amount of assets that the Vault would exchange for the amount
+    /// of shares provided, in an ideal scenario where all the conditions are met.
+    function convertToAssets(uint256 _shares) public view returns (uint256) {
+        return (_shares * totalUnderlying()) / totalSupply();
+    }
+
+    /// @notice Maximum amount of the underlying asset that can be deposited into
+    /// the Vault for the receiver, through a deposit call.
+    function maxDeposit(address) public pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    /// @notice Allows an on-chain or off-chain user to simulate the effects of
+    /// their deposit at the current block, given current on-chain conditions.
+    function previewDeposit(uint256 _assets) public view returns (uint256) {
+        return convertToShares(_assets);
+    }
+
+    /// @notice Maximum amount of shares that can be minted from the Vault
+    /// for the receiver, through a mint call.
+    function maxMint(address) public pure returns (uint256) {
+        return type(uint256).max;
+    }
+
+    /// @notice Allows an on-chain or off-chain user to simulate the effects of
+    /// their mint at the current block, given current on-chain conditions.
+    function previewMint(uint256 _shares) public view returns (uint256) {
+        return convertToAssets(_shares);
+    }
+
+    /// @notice Mints exactly shares Vault shares to receiver by depositing
+    /// assets of underlying tokens.
+    function mint(uint256 _shares, address _receiver) public returns (uint256) {
+        uint256 assets = convertToAssets(_shares);
+        return deposit(assets, _receiver);
+    }
+
+    /// @notice Maximum amount of the underlying asset that can be withdrawn
+    /// from the owner balance in the Vault, through a withdraw call.
+    function maxWithdraw(address _owner) public view returns (uint256) {
+        return convertToAssets(balanceOf(_owner));
+    }
+
+    /// @notice Allows an on-chain or off-chain user to simulate the effects
+    /// of their withdrawal at the current block, given current on-chain conditions.
+    function previewWithdraw(uint256 _assets) public view returns (uint256) {
+        return convertToShares(_assets);
+    }
+
+    /// @notice Burns shares from owner and sends exactly assets of
+    /// underlying tokens to receiver.
+    function withdraw(
+        uint256 _assets,
+        address _receiver,
+        address _owner
+    ) public returns (uint256) {
+        uint256 shares = convertToShares(_assets);
+        return redeem(shares, _receiver, _owner);
+    }
+
+    /// @notice Maximum amount of Vault shares that can be redeemed from the
+    /// owner balance in the Vault, through a redeem call.
+    function maxRedeem(address _owner) public view returns (uint256) {
+        return balanceOf(_owner);
+    }
+
+    /// @notice Allows an on-chain or off-chain user to simulate the effects of
+    /// their redeemption at the current block, given current on-chain conditions.
+    function previewRedeem(uint256 _shares) public view returns (uint256) {
+        return convertToAssets(_shares);
     }
 }
