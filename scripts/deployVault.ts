@@ -16,6 +16,7 @@ import { config } from "../tasks/deploy/mainnet-config";
 
 export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false, waitForBlocks = 0) {
     const phase2 = await config.getPhase2(signer);
+    const phase6 = await config.getPhase6(signer);
 
     const vault = await deployContract<AuraBalVault>(
         hre,
@@ -26,12 +27,22 @@ export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer
         debug,
         waitForBlocks,
     );
-
     const strategy = await deployContract<AuraBalStrategy>(
         hre,
         new AuraBalStrategy__factory(signer),
         "AuraBalStrategy",
-        [vault.address],
+        [
+            vault.address,
+            config.addresses.balancerVault,
+            phase6.cvxCrvRewards.address,
+            config.addresses.token,
+            config.addresses.weth,
+            phase2.cvx.address,
+            phase2.cvxCrv.address,
+            config.addresses.feeToken,
+            phase2.cvxCrvBpt.poolId,
+            config.addresses.balancerPoolId,
+        ],
         {},
         debug,
         waitForBlocks,
@@ -41,7 +52,7 @@ export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer
         hre,
         new BBUSDHandlerv2__factory(signer),
         "BBUSDHandlerv2",
-        [config.addresses.feeToken, strategy.address],
+        [config.addresses.feeToken, strategy.address, config.addresses.balancerVault, config.addresses.weth],
         {},
         debug,
         waitForBlocks,
