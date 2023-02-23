@@ -130,12 +130,12 @@ contract GenericUnionVault is ERC20, Ownable {
     /// @notice Unstake underlying in proportion to the amount of shares sent
     /// @param _shares - the number of shares sent
     /// @return _withdrawable - the withdrawable underlying amount
-    function _withdraw(uint256 _shares) internal returns (uint256 _withdrawable) {
+    function _withdraw(address _from, uint256 _shares) internal returns (uint256 _withdrawable) {
         require(totalSupply() > 0);
         // Computes the amount withdrawable based on the number of shares sent
         uint256 amount = (_shares * totalUnderlying()) / totalSupply();
         // Burn the shares before retrieving tokens
-        _burn(msg.sender, _shares);
+        _burn(_from, _shares);
         // If user is last to withdraw, harvest before exit
         if (totalSupply() == 0) {
             harvest();
@@ -174,7 +174,7 @@ contract GenericUnionVault is ERC20, Ownable {
         }
 
         // Withdraw requested amount of underlying
-        uint256 _withdrawable = _withdraw(_shares);
+        uint256 _withdrawable = _withdraw(_owner, _shares);
         // And sends back underlying to user
         IERC20(underlying).safeTransfer(_receiver, _withdrawable);
         emit Withdraw(msg.sender, _receiver, _withdrawable);
@@ -218,7 +218,7 @@ contract GenericUnionVault is ERC20, Ownable {
     /// @notice The amount of assets that the Vault would exchange for the amount
     /// of shares provided, in an ideal scenario where all the conditions are met.
     function convertToAssets(uint256 _shares) public view returns (uint256) {
-        return (_shares * totalUnderlying()) / totalSupply();
+        return totalSupply() == 0 ? _shares : (_shares * totalUnderlying()) / totalSupply();
     }
 
     /// @notice Maximum amount of the underlying asset that can be deposited into
