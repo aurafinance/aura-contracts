@@ -22,9 +22,9 @@ contract BBUSDHandlerv2 is HandlerBase {
     constructor(
         address _token,
         address _strategy,
-        address _balancerVault,
-        address _weth
-    ) HandlerBase(_token, _strategy, _balancerVault, _weth) {}
+        address _balVault,
+        address _wethToken
+    ) HandlerBase(_token, _strategy, _balVault, _wethToken) {}
 
     /// @notice Swap bb-USD for WETH on Balancer via wstEth
     /// @param _amount - amount to swap

@@ -23,14 +23,14 @@ contract HandlerBase is IRewardHandler {
     constructor(
         address _token,
         address _strategy,
-        address _balancerVault,
-        address _weth
+        address _balVault,
+        address _wethToken
     ) {
         token = _token;
         strategy = _strategy;
         owner = msg.sender;
-        balVault = IBalancerVault(_balancerVault);
-        WETH_TOKEN = _weth;
+        balVault = IBalancerVault(_balVault);
+        WETH_TOKEN = _wethToken;
     }
 
     function setPendingOwner(address _po) external onlyOwner {

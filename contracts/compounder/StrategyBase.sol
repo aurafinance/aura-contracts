@@ -26,32 +26,32 @@ contract AuraBalStrategyBase {
     IBalancerVault public immutable balVault;
 
     constructor(
-        address _balancerVault,
+        address _balVault,
         address _auraBalStaking,
         // tokens
-        address _bal,
-        address _weth,
-        address _aura,
-        address _auraBal,
-        address _bbusd,
+        address _balToken,
+        address _wethToken,
+        address _auraToken,
+        address _auraBalToken,
+        address _bbusdToken,
         // pools
-        bytes32 _auraBalBalETHPoolId,
+        bytes32 _auraBalBalETHBptPoolId,
         bytes32 _balETHPoolId
     ) {
         (
-            address poolAddress, /* */
+            address balEthPoolToken, /* */
 
-        ) = IBalancerVault(_balancerVault).getPool(_balETHPoolId);
-        require(poolAddress != address(0), "!poolAddress");
-        balVault = IBalancerVault(_balancerVault);
+        ) = IBalancerVault(_balVault).getPool(_balETHPoolId);
+        require(balEthPoolToken != address(0), "!balEthPoolToken");
+        balVault = IBalancerVault(_balVault);
         auraBalStaking = IBasicRewards(_auraBalStaking);
-        BAL_TOKEN = _bal;
-        WETH_TOKEN = _weth;
-        AURA_TOKEN = _aura;
-        AURABAL_TOKEN = _auraBal;
-        BBUSD_TOKEN = _bbusd;
-        BAL_ETH_POOL_TOKEN = poolAddress;
-        AURABAL_BAL_ETH_BPT_POOL_ID = _auraBalBalETHPoolId;
+        BAL_TOKEN = _balToken;
+        WETH_TOKEN = _wethToken;
+        AURA_TOKEN = _auraToken;
+        AURABAL_TOKEN = _auraBalToken;
+        BBUSD_TOKEN = _bbusdToken;
+        BAL_ETH_POOL_TOKEN = balEthPoolToken;
+        AURABAL_BAL_ETH_BPT_POOL_ID = _auraBalBalETHBptPoolId;
         BAL_ETH_POOL_ID = _balETHPoolId;
     }
 

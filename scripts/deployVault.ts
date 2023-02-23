@@ -48,15 +48,6 @@ export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer
         waitForBlocks,
     );
 
-    // const bbusdHandler = await deployContract<BBUSDHandlerv2>(
-    //     hre,
-    //     new BBUSDHandlerv2__factory(signer),
-    //     "BBUSDHandlerv2",
-    //     [config.addresses.feeToken, strategy.address, config.addresses.balancerVault, config.addresses.weth],
-    //     {},
-    //     debug,
-    //     waitForBlocks,
-    // );
     const bbusdHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
