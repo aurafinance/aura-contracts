@@ -1,6 +1,7 @@
 import { assert } from "chai";
 import { BN, simpleToExactAmount } from "./math";
 import { fullScale } from "./constants";
+import { Event, ContractReceipt } from "ethers";
 
 /**
  *  Convenience method to assert that two BN.js instances are within 100 units of each other.
@@ -109,3 +110,21 @@ export const assertBNSlightlyGTPercent = (
         `Actual value should not exceed ${maxPercentIncrease}% greater than expected`,
     );
 };
+
+/**
+ * Find a contract event by address and event name
+ *
+ * @param {string} address The address of the contract
+ * @param {string} eventName The name of the event
+ */
+const isContractEvent = (address: string, eventName: string) => (event: Event) =>
+    event.address === address && event.event === eventName;
+/**
+ * Find a contract event by address and event name
+ *
+ * @param {ContractReceipt} receipt The receipt| tx to search
+ * @param {string} address The address of the contract
+ * @param {string} eventName The name of the event
+ */
+export const findContractEvent = (receipt: ContractReceipt, address: string, eventName: string) =>
+    receipt.events.find(isContractEvent(address, eventName));

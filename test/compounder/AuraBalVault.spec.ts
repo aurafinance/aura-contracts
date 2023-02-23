@@ -113,7 +113,7 @@ describe("AuraBalVault", () => {
 
                     await auraBalVault.setStrategy(strategyAddress);
                     await mocks.lptoken.connect(deployer).approve(auraBalVault.address, initialSupply);
-                    await auraBalVault.connect(deployer).deposit(initialSupply);
+                    await auraBalVault.connect(deployer).deposit(initialSupply, deployerAddress);
                 };
             });
             shouldBehaveLikeERC20(() => ctx as IERC20BehaviourContext, "ERC20", initialSupply);
@@ -171,8 +171,10 @@ describe("AuraBalVault", () => {
 
             expect(totalSupplyBefore, "totalSupply").to.be.eq(ZERO);
 
-            const tx = await auraBalVault.deposit(amount);
-            await expect(tx).to.emit(auraBalVault, "Deposit").withArgs(deployerAddress, amount);
+            const tx = await auraBalVault.deposit(amount, deployerAddress);
+            await expect(tx)
+                .to.emit(auraBalVault, "Deposit")
+                .withArgs(deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares as totalSupply was zero
             const totalUnderlyingAfter = await auraBalVault.totalUnderlying();
@@ -206,8 +208,10 @@ describe("AuraBalVault", () => {
 
             await mocks.lptoken.approve(auraBalVault.address, amount);
 
-            const tx = await auraBalVault.depositAll();
-            await expect(tx).to.emit(auraBalVault, "Deposit").withArgs(deployerAddress, amount);
+            const tx = await auraBalVault.deposit(amount, deployerAddress);
+            await expect(tx)
+                .to.emit(auraBalVault, "Deposit")
+                .withArgs(deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares as totalSupply was zero
             const totalUnderlyingAfter = await auraBalVault.totalUnderlying();
@@ -240,9 +244,11 @@ describe("AuraBalVault", () => {
             const userBalanceBefore = await auraBalVault.balanceOf(deployerAddress);
             const lpUserBalanceBefore = await mocks.lptoken.balanceOf(deployerAddress);
 
-            const tx = await auraBalVault.withdraw(amount);
+            const tx = await auraBalVault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            await expect(tx).to.emit(auraBalVault, "Withdraw").withArgs(deployerAddress, amount);
+            await expect(tx)
+                .to.emit(auraBalVault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares
             const totalUnderlyingAfter = await auraBalVault.totalUnderlying();
@@ -269,9 +275,11 @@ describe("AuraBalVault", () => {
             await auraBalVault.updateAuthorizedHarvesters(deployerAddress, false);
             await auraBalVault.setHarvestPermissions(true);
 
-            const tx = await auraBalVault.withdrawAll();
+            const tx = await auraBalVault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            await expect(tx).to.emit(auraBalVault, "Withdraw").withArgs(deployerAddress, amount);
+            await expect(tx)
+                .to.emit(auraBalVault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, amount);
             await expect(tx).to.emit(auraBalVault, "Harvest");
 
             // Expect 1:1 asset:shares
@@ -317,7 +325,7 @@ describe("AuraBalVault", () => {
                 //  Deposit to make sure totalSupply is not ZERO
                 const amount = simpleToExactAmount(10);
                 await mocks.lptoken.approve(auraBalVault.address, amount);
-                await auraBalVault.deposit(amount);
+                await auraBalVault.deposit(amount, deployerAddress);
                 await auraBalVault.setHarvestPermissions(true);
 
                 await expect(auraBalVault.connect(alice)["harvest()"](), "fails ").to.be.revertedWith(

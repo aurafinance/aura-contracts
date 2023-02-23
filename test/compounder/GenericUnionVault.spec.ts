@@ -4,6 +4,7 @@ import { Signer } from "ethers";
 import {
     GenericUnionVault,
     GenericUnionVault__factory,
+    IERC4626,
     MockStrategy,
     MockStrategy__factory,
     VirtualShareRewardPool,
@@ -23,6 +24,7 @@ import {
 } from "../../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../shared/ERC20.behaviour";
+import shouldBehaveLikeERC4626, { IERC4626BehaviourContext } from "../shared/ERC4626.behaviour";
 
 const debug = false;
 
@@ -113,10 +115,37 @@ describe("GenericUnionVault", () => {
 
                     await genericUnionVault.setStrategy(strategyAddress);
                     await mocks.lptoken.connect(deployer).approve(genericUnionVault.address, initialSupply);
-                    await genericUnionVault.connect(deployer).deposit(initialSupply);
+                    await genericUnionVault.connect(deployer).deposit(initialSupply, deployerAddress);
                 };
             });
             shouldBehaveLikeERC20(() => ctx as IERC20BehaviourContext, "ERC20", initialSupply);
+        });
+        describe("should behave like ERC4626 ", async () => {
+            const ctx: Partial<IERC4626BehaviourContext> = {};
+            const initialSupply = simpleToExactAmount(2, 18);
+            const depositAmount = simpleToExactAmount(10, 18);
+
+            before(async () => {
+                ctx.fixture = async function fixture() {
+                    await setup();
+                    ctx.vault = genericUnionVault as unknown as IERC4626;
+                    ctx.asset = mocks.lptoken;
+                    ctx.initialHolder = { signer: deployer, address: deployerAddress };
+                    ctx.recipient = { signer: alice, address: aliceAddress };
+                    ctx.anotherAccount = { signer: daoSigner, address: await daoSigner.getAddress() };
+                    ctx.amounts = {
+                        initialDeposit: initialSupply,
+                        deposit: depositAmount,
+                        mint: depositAmount,
+                        withdraw: depositAmount,
+                        redeem: depositAmount,
+                    };
+
+                    await genericUnionVault.setStrategy(strategyAddress);
+                    return ctx as IERC4626BehaviourContext;
+                };
+            });
+            shouldBehaveLikeERC4626(() => ctx as IERC4626BehaviourContext);
         });
     });
     describe("constructor", async () => {
@@ -171,8 +200,10 @@ describe("GenericUnionVault", () => {
 
             expect(totalSupplyBefore, "totalSupply").to.be.eq(ZERO);
 
-            const tx = await genericUnionVault.deposit(amount);
-            await expect(tx).to.emit(genericUnionVault, "Deposit").withArgs(deployerAddress, amount);
+            const tx = await genericUnionVault.deposit(amount, deployerAddress);
+            await expect(tx)
+                .to.emit(genericUnionVault, "Deposit")
+                .withArgs(deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares as totalSupply was zero
             const totalUnderlyingAfter = await genericUnionVault.totalUnderlying();
@@ -202,8 +233,10 @@ describe("GenericUnionVault", () => {
 
             await mocks.lptoken.approve(genericUnionVault.address, amount);
 
-            const tx = await genericUnionVault.depositAll();
-            await expect(tx).to.emit(genericUnionVault, "Deposit").withArgs(deployerAddress, amount);
+            const tx = await genericUnionVault.deposit(amount, deployerAddress);
+            await expect(tx)
+                .to.emit(genericUnionVault, "Deposit")
+                .withArgs(deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares as totalSupply was zero
             const totalUnderlyingAfter = await genericUnionVault.totalUnderlying();
@@ -227,9 +260,11 @@ describe("GenericUnionVault", () => {
             const userBalanceBefore = await genericUnionVault.balanceOf(deployerAddress);
             const lpUserBalanceBefore = await mocks.lptoken.balanceOf(deployerAddress);
 
-            const tx = await genericUnionVault.withdraw(amount);
+            const tx = await genericUnionVault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            await expect(tx).to.emit(genericUnionVault, "Withdraw").withArgs(deployerAddress, amount);
+            await expect(tx)
+                .to.emit(genericUnionVault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, amount);
 
             // Expect 1:1 asset:shares
             const totalUnderlyingAfter = await genericUnionVault.totalUnderlying();
@@ -252,9 +287,11 @@ describe("GenericUnionVault", () => {
             const lpUserBalanceBefore = await mocks.lptoken.balanceOf(deployerAddress);
             const amount = userBalanceBefore;
 
-            const tx = await genericUnionVault.withdrawAll();
+            const tx = await genericUnionVault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            await expect(tx).to.emit(genericUnionVault, "Withdraw").withArgs(deployerAddress, amount);
+            await expect(tx)
+                .to.emit(genericUnionVault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, amount);
             await expect(tx).to.emit(genericUnionVault, "Harvest");
 
             // Expect 1:1 asset:shares
