@@ -15,6 +15,7 @@ import {
     GaugeMigrator__factory,
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
+import { deployAuraClaimZapV2 } from "../../scripts/deployAuraClaimZapV2";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -110,4 +111,12 @@ task("deploy:mainnet:boosterSecondary").setAction(async function (_: TaskArgumen
     console.log("update newStashImpl address to:", newStashImpl.address);
     console.log("update poolManagerV4 address to:", poolManagerV4.address);
     console.log("update boosterOwnerSecondary address to:", boosterOwnerSecondary.address);
+});
+
+task("deploy:mainnet:auraClaimZapV2").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+
+    const { claimZapV2: claimZapV2 } = await deployAuraClaimZapV2(hre, deployer, debug, waitForBlocks);
+
+    console.log("update claimZapV2 address to:", claimZapV2.address);
 });
