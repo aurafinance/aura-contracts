@@ -24,7 +24,7 @@ import { config } from "../tasks/deploy/mainnet-config";
 
 // Constants
 const DEBUG = false;
-const FORK_BLOCK = 16370000;
+const FORK_BLOCK = 16570000;
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
 const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
 
