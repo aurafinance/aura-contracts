@@ -120,8 +120,10 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
             address rewards = IGenericVault(vault).extraRewards(i);
             address token = IVirtualRewards(rewards).rewardToken();
             uint256 balance = IERC20(token).balanceOf(address(this));
-            IERC20(token).safeTransfer(rewards, balance);
-            IVirtualRewards(rewards).queueNewRewards(balance);
+            if (balance > 0) {
+                IERC20(token).safeTransfer(rewards, balance);
+                IVirtualRewards(rewards).queueNewRewards(balance);
+            }
         }
 
         // process rewards
