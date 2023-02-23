@@ -17,16 +17,20 @@ contract HandlerBase is IRewardHandler {
     address public immutable token;
     address public immutable strategy;
 
-    address public constant WETH_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public immutable WETH_TOKEN;
+    IBalancerVault public immutable balVault;
 
-    address public constant BAL_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
-
-    IBalancerVault public balVault = IBalancerVault(BAL_VAULT);
-
-    constructor(address _token, address _strategy) {
+    constructor(
+        address _token,
+        address _strategy,
+        address _balancerVault,
+        address _weth
+    ) {
         token = _token;
         strategy = _strategy;
         owner = msg.sender;
+        balVault = IBalancerVault(_balancerVault);
+        WETH_TOKEN = _weth;
     }
 
     function setPendingOwner(address _po) external onlyOwner {

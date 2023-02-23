@@ -21,7 +21,12 @@ contract BBUSDHandlerv2 is HandlerBase {
     bytes32 private constant BBUSDC_USDC_POOL_ID = 0x82698aecc9e28e9bb27608bd52cf57f704bd1b83000000000000000000000336;
     bytes32 private constant ETH_USDC_POOL_ID = 0x96646936b91d6b9d7d0c47c496afbf3d6ec7b6f8000200000000000000000019;
 
-    constructor(address _token, address _strategy) HandlerBase(_token, _strategy) {}
+    constructor(
+        address _token,
+        address _strategy,
+        address _balancerVault,
+        address _weth
+    ) HandlerBase(_token, _strategy, _balancerVault, _weth) {}
 
     /// @notice Swap bb-USD for WETH on Balancer via wstEth
     /// @param _amount - amount to swap

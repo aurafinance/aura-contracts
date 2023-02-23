@@ -26,20 +26,44 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
 
     uint256 public constant FEE_DENOMINATOR = 10000;
 
-    constructor(address _vault) {
+    constructor(
+        address _vault,
+        // AuraBalStrategyBase
+        address _balancerVault,
+        address _auraBalStaking,
+        address _bal,
+        address _weth,
+        address _aura,
+        address _auraBal,
+        address _bbusd,
+        bytes32 _auraBalBalETHPoolId,
+        bytes32 _balETHPoolId
+    )
+        AuraBalStrategyBase(
+            _balancerVault,
+            _auraBalStaking,
+            _bal,
+            _weth,
+            _aura,
+            _auraBal,
+            _bbusd,
+            _auraBalBalETHPoolId,
+            _balETHPoolId
+        )
+    {
         vault = _vault;
     }
 
     /// @notice Set approvals for the contracts used when swapping & staking
     function setApprovals() external {
-        IERC20(AURABAL_TOKEN).safeApprove(AURABAL_STAKING, 0);
-        IERC20(AURABAL_TOKEN).safeApprove(AURABAL_STAKING, type(uint256).max);
-        IERC20(BAL_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(BAL_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
-        IERC20(WETH_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(WETH_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
-        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
+        IERC20(AURABAL_TOKEN).safeApprove(address(auraBalStaking), 0);
+        IERC20(AURABAL_TOKEN).safeApprove(address(auraBalStaking), type(uint256).max);
+        IERC20(BAL_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(BAL_TOKEN).safeApprove(address(balVault), type(uint256).max);
+        IERC20(WETH_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(WETH_TOKEN).safeApprove(address(balVault), type(uint256).max);
+        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(address(balVault), type(uint256).max);
     }
 
     /// @notice update the token to handler mapping
