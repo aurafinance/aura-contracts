@@ -17,7 +17,7 @@ describe("AuraMining", () => {
     let signer: Signer;
     let phase2: Phase2Deployed;
     let operatorAccount: Account;
-    const aliceAddress = "0x3000d9B2c0E6B9F97f30ABE379eaAa8A85A04afC";
+    let aliceAddress: string;
 
     before(async () => {
         await network.provider.request({
@@ -36,6 +36,7 @@ describe("AuraMining", () => {
         cvxMining = await new AuraMining__factory(signer).deploy();
         phase2 = await config.getPhase2(signer);
         operatorAccount = await impersonateAccount(phase2.booster.address);
+        aliceAddress = (await ethers.getSigners())[0].address;
     });
     const expectMint = async (crvAmount: BN, expectedCvxAmount: BN, desc: string) => {
         const cvxCalculated = await cvxMining.convertCrvToCvx(crvAmount);

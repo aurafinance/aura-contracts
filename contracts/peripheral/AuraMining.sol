@@ -5,6 +5,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
 // Forked of https://etherscan.io/address/0x3c75bfe6fbfda3a94e7e7e8c2216afc684de5343#code
 //  - Refactor based on Aura emissions schedule.
 
+// solhint-disable func-name-mixedcase
 interface ICvx {
     function reductionPerCliff() external view returns (uint256);
 
@@ -18,7 +19,9 @@ interface ICvx {
 }
 
 /**
- * @notice Utility library to calculate how many Cvx will be minted based on the amount of Crv
+ * @notice Utility library to calculate how many Cvx will be minted based on the amount of Crv.
+ * Do not use this on-chain, as AuraMinter after can mint additional tokens after `inflationProtectionTime`
+ * has passed, those new tokens are not taken into consideration in this library.
  */
 library AuraMining {
     ICvx public constant cvx = ICvx(0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF);
@@ -26,6 +29,7 @@ library AuraMining {
 
     /**
      * @dev Calculates the amount of AURA to mint based on the BAL supply schedule.
+     * Do not use this on chain.
      */
     function convertCrvToCvx(uint256 _amount) external view returns (uint256 amount) {
         uint256 supply = cvx.totalSupply();
@@ -33,6 +37,8 @@ library AuraMining {
         uint256 maxSupply = cvx.EMISSIONS_MAX_SUPPLY();
         uint256 initMintAmount = cvx.INIT_MINT_AMOUNT();
 
+        // After AuraMinter.inflationProtectionTime has passed, this calculation might not be valid.
+        // uint256 emissionsMinted = supply - initMintAmount - minterMinted;
         uint256 emissionsMinted = supply - initMintAmount;
 
         uint256 cliff = emissionsMinted.div(cvx.reductionPerCliff());
