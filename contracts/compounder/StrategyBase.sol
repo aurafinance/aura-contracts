@@ -99,7 +99,7 @@ contract AuraBalStrategyBase {
     }
 
     /// @notice Returns a FundManagement struct used for BAL swaps
-    function _createSwapFunds() internal returns (IBalancerVault.FundManagement memory) {
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
         return
             IBalancerVault.FundManagement({
                 sender: address(this),
