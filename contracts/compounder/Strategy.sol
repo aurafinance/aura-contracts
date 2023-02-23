@@ -29,25 +29,25 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
     constructor(
         address _vault,
         // AuraBalStrategyBase
-        address _balancerVault,
+        address _balVault,
         address _auraBalStaking,
-        address _bal,
-        address _weth,
-        address _aura,
-        address _auraBal,
-        address _bbusd,
-        bytes32 _auraBalBalETHPoolId,
+        address _balToken,
+        address _wethToken,
+        address _auraToken,
+        address _auraBalToken,
+        address _bbusdToken,
+        bytes32 _auraBalBalETHBptPoolId,
         bytes32 _balETHPoolId
     )
         AuraBalStrategyBase(
-            _balancerVault,
+            _balVault,
             _auraBalStaking,
-            _bal,
-            _weth,
-            _aura,
-            _auraBal,
-            _bbusd,
-            _auraBalBalETHPoolId,
+            _balToken,
+            _wethToken,
+            _auraToken,
+            _auraBalToken,
+            _bbusdToken,
+            _auraBalBalETHBptPoolId,
             _balETHPoolId
         )
     {
