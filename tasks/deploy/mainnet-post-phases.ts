@@ -13,6 +13,8 @@ import {
     ClaimFeesHelper__factory,
     GaugeMigrator,
     GaugeMigrator__factory,
+    AuraMining,
+    AuraMining__factory,
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 
@@ -110,4 +112,18 @@ task("deploy:mainnet:boosterSecondary").setAction(async function (_: TaskArgumen
     console.log("update newStashImpl address to:", newStashImpl.address);
     console.log("update poolManagerV4 address to:", poolManagerV4.address);
     console.log("update boosterOwnerSecondary address to:", boosterOwnerSecondary.address);
+});
+
+task("deploy:mainnet:auraMining").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const auraMining = await deployContract<AuraMining>(
+        hre,
+        new AuraMining__factory(deployer),
+        "AuraMining",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    console.log("update auraMining address to:", auraMining.address);
 });

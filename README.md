@@ -160,6 +160,7 @@ yarn task timeTravel --duration 69420 --network forking
 | poolMigrator                    | [0x12addE99768a82871EAaecFbDB065b12C56F0578](https://etherscan.io/address/0x12addE99768a82871EAaecFbDB065b12C56F0578) |
 | siphonToken                     | [TBD](https://etherscan.io/address/TBD)                                                                               |
 | uniswapMigrator                 | [0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6](https://etherscan.io/address/0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6) |
+| auraMining                      | [TBD](https://etherscan.io/address/TBD)                                                                               |
 
 ### Goerli (5)
 
