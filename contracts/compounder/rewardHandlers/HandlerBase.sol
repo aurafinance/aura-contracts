@@ -45,7 +45,7 @@ contract HandlerBase is IRewardHandler {
         IERC20(_token).safeTransfer(_to, _balance);
     }
 
-    function _createSwapFunds() internal returns (IBalancerVault.FundManagement memory) {
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
         return
             IBalancerVault.FundManagement({
                 sender: address(this),

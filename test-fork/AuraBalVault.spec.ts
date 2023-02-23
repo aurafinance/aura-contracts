@@ -43,6 +43,7 @@ describe("AuraBalVault", () => {
     let dao: Account;
     let deployer: Account;
     let depositor: Account;
+    let account: Account;
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
     let bVault: IBalancerVault;
@@ -127,6 +128,7 @@ describe("AuraBalVault", () => {
 
         deployer = await impersonateAccount(DEPLOYER, true);
         depositor = await impersonateAccount(await accounts[0].getAddress(), true);
+        account = await impersonateAccount(await accounts[1].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         phase2 = await config.getPhase2(dao.signer);
         phase6 = await config.getPhase6(dao.signer);
@@ -215,7 +217,7 @@ describe("AuraBalVault", () => {
     describe("deposit auraBAL", () => {
         it("can deposit into vault", async () => {
             await phase2.cvxCrv.connect(depositor.signer).approve(vault.address, ethers.constants.MaxUint256);
-            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT);
+            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT, depositor.address);
             expect(await vault.totalSupply()).eq(DEPOSIT_AMOUNT);
             expect(await vault.balanceOf(depositor.address)).eq(DEPOSIT_AMOUNT);
             expect(await vault.balanceOfUnderlying(depositor.address)).eq(DEPOSIT_AMOUNT);
@@ -265,10 +267,64 @@ describe("AuraBalVault", () => {
         it("can withdraw rewards", async () => {
             const balanceOfUnderlying = await vault.balanceOfUnderlying(depositor.address);
             const balanceBefore = await phase2.cvxCrv.balanceOf(depositor.address);
-            await vault.connect(depositor.signer).withdrawAll();
+            const shares = await vault.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).redeem(shares, depositor.address, depositor.address);
             const balanceAfter = await phase2.cvxCrv.balanceOf(depositor.address);
             expect(balanceAfter.sub(balanceBefore)).gte(balanceOfUnderlying);
             expect(balanceAfter.sub(balanceBefore)).gt(DEPOSIT_AMOUNT);
+        });
+    });
+
+    describe("mint stkauraBAL", () => {
+        it("mint to sender with totalSupply == 0", async () => {
+            expect(await vault.totalSupply()).eq(0);
+            const shares = await vault.convertToShares(DEPOSIT_AMOUNT);
+            const preview = await vault.previewMint(shares);
+            expect(DEPOSIT_AMOUNT).eq(preview);
+
+            const totalAssetsBefore = await vault.totalAssets();
+            const sharesBefore = await vault.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).mint(shares, depositor.address);
+            const sharesAfter = await vault.balanceOf(depositor.address);
+            const totalAssetsAfter = await vault.totalAssets();
+
+            expect(sharesAfter.sub(sharesBefore)).eq(shares);
+            expect(totalAssetsAfter.sub(totalAssetsBefore)).eq(DEPOSIT_AMOUNT);
+            expect(await vault.maxRedeem(depositor.address)).eq(shares);
+        });
+        it("mint to sender with totalSupply > 0", async () => {
+            expect(await vault.totalSupply()).gt(0);
+            const shares = await vault.convertToShares(DEPOSIT_AMOUNT);
+            const sharesBefore = await vault.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).mint(shares, depositor.address);
+            const sharesAfter = await vault.balanceOf(depositor.address);
+            expect(sharesAfter.sub(sharesBefore)).eq(shares);
+        });
+    });
+
+    describe("redeem auraBAL", () => {
+        it("redeem to sender", async () => {
+            const shares = (await vault.balanceOf(depositor.address)).div(2);
+            const expectedAssets = await vault.convertToAssets(shares);
+
+            const assetsBefore = await phase2.cvxCrv.balanceOf(depositor.address);
+            await vault.connect(depositor.signer).redeem(shares, depositor.address, depositor.address);
+            const assetsAfter = await phase2.cvxCrv.balanceOf(depositor.address);
+            expect(assetsAfter.sub(assetsBefore)).eq(expectedAssets);
+        });
+        it("redeem as approved spender", async () => {
+            const redeemer = account;
+            const shares = await vault.balanceOf(depositor.address);
+            const allowanceBefore = await vault.allowance(depositor.address, redeemer.address);
+            await vault.connect(depositor.signer).approve(redeemer.address, shares);
+            const allowanceAfter = await vault.allowance(depositor.address, redeemer.address);
+            expect(allowanceAfter.sub(allowanceBefore)).eq(shares);
+
+            const expectedAssets = await vault.convertToAssets(shares);
+            const assetsBefore = await phase2.cvxCrv.balanceOf(redeemer.address);
+            await vault.connect(redeemer.signer).redeem(shares, redeemer.address, depositor.address);
+            const assetsAfter = await phase2.cvxCrv.balanceOf(redeemer.address);
+            expect(assetsAfter.sub(assetsBefore)).eq(expectedAssets);
         });
     });
 });
