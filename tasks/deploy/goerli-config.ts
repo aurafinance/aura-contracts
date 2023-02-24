@@ -3,6 +3,7 @@ import {
     Phase1Deployed,
     Phase2Deployed,
     Phase3Deployed,
+    Phase6Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -62,6 +63,14 @@ const addresses: ExtSystemConfig = {
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     sushiswapRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+    feeToken: "0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd",
+    feeTokenHandlerPath: {
+        poolIds: [
+            "0x13acd41c585d7ebb4a9460f7c8f50be60dc080cd00000000000000000000005f",
+            "0xe8075304a388f2f9b2af61f502741a88ff21d9a4000200000000000000000070",
+        ],
+        assetsIn: ["0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd", "0x0595D1Df64279ddB51F1bdC405Fe2D0b4Cc86681"],
+    },
 };
 
 const naming = {
@@ -149,7 +158,21 @@ const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
         deployer,
     ),
 });
-
+const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
+    // same as phase 2  as goerli was never migrated.
+    booster: undefined,
+    boosterOwner: undefined,
+    boosterHelper: undefined,
+    feeCollector: undefined,
+    factories: undefined,
+    cvxCrvRewards: BaseRewardPool__factory.connect("0x09421e5d9c2b11f502482dce2b718b037fd10a25", deployer),
+    poolManager: undefined,
+    poolManagerProxy: undefined,
+    poolManagerSecondaryProxy: undefined,
+    claimZap: undefined,
+    stashV3: undefined,
+    poolMigrator: undefined,
+});
 export const config = {
     addresses,
     naming,
@@ -159,4 +182,5 @@ export const config = {
     getPhase2,
     getPhase3,
     getPhase4,
+    getPhase6,
 };

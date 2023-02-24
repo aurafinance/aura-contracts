@@ -135,6 +135,13 @@ const addresses: ExtSystemConfig = {
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
+    feeTokenHandlerPath: {
+        poolIds: [
+            "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387",
+            "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080",
+        ],
+        assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
+    },
 };
 
 const multisigs = {

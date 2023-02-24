@@ -147,7 +147,7 @@ describe("AuraBalVault", () => {
      * ----------------------------------------------------------------------- */
 
     it("deploy", async () => {
-        const result = await deployVault(hre, deployer.signer, DEBUG);
+        const result = await deployVault(config, hre, deployer.signer, DEBUG);
 
         vault = result.vault;
         strategy = result.strategy;

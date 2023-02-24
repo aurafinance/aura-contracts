@@ -26,6 +26,8 @@ import {
 } from "../../types/generated";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { config } from "./goerli-config";
+import { deployVault } from "../../scripts/deployVault";
+
 const debug = true;
 const goerliBalancerConfig: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
@@ -200,3 +202,22 @@ task("deploy:goerli:uniswapMigrator").setAction(async function (taskArguments: T
 
     console.log("update uniswapMigrator address to:", uniswapMigrator.address);
 });
+
+task("deploy:goerli:vault")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+
+        const { vault, strategy, bbusdHandler, auraRewards } = await deployVault(
+            config,
+            hre,
+            deployer,
+            debug,
+            tskArgs.wait || waitForBlocks,
+        );
+
+        console.log("Vault:", vault.address);
+        console.log("Strategy:", strategy.address);
+        console.log("BBUSD Handler:", bbusdHandler.address);
+        console.log("AuraRewards:", auraRewards.address);
+    });
