@@ -6,7 +6,7 @@ import { IAsset, IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol
 
 /**
  * @title   AuraBalStrategyBase
- * @author  lama.airforce -> AuraFinance
+ * @author  llama.airforce -> AuraFinance
  * @notice  Changes:
  *          - remove BAL Depositor address
  */

@@ -12,7 +12,7 @@ import { AuraBalStrategyBase } from "./StrategyBase.sol";
 
 /**
  * @title   AuraBalStrategy
- * @author  lama.airforce -> AuraFinance
+ * @author  llama.airforce -> AuraFinance
  * @notice  Changes:
  *          - remove option to lock auraBAL instead of swapping it
  *          - remove paltform fee

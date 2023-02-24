@@ -8,7 +8,7 @@ import { IRewardHandler } from "../../interfaces/balancer/IRewardHandler.sol";
 
 /**
  * @title   HandlerBase
- * @author  lama.airforce
+ * @author  llama.airforce
  */
 contract HandlerBase is IRewardHandler {
     using SafeERC20 for IERC20;

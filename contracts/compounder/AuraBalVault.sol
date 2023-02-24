@@ -9,7 +9,7 @@ interface IAuraBalStrategy {
 
 /**
  * @title   AuraBalVault
- * @author  lama.airforce
+ * @author  llama.airforce
  */
 contract AuraBalVault is GenericUnionVault {
     bool public isHarvestPermissioned = true;
