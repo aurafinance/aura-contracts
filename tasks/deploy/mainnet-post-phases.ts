@@ -135,6 +135,7 @@ task("deploy:mainnet:vault")
         const deployer = await getSigner(hre);
 
         const { vault, strategy, bbusdHandler, auraRewards } = await deployVault(
+            config,
             hre,
             deployer,
             debug,

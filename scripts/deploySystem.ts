@@ -166,6 +166,7 @@ interface ExtSystemConfig {
     uniswapRouter?: string;
     sushiswapRouter?: string;
     auraBalGauge?: string;
+    feeTokenHandlerPath?: { poolIds: string[]; assetsIn: string[] };
 }
 
 interface NamingConfig {

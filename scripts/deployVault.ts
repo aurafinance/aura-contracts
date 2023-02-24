@@ -12,9 +12,21 @@ import {
     VirtualShareRewardPool__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { config } from "../tasks/deploy/mainnet-config";
+import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
-export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false, waitForBlocks = 0) {
+interface VaultConfig {
+    addresses: ExtSystemConfig;
+    getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
+    getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
+}
+
+export async function deployVault(
+    config: VaultConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
     const phase2 = await config.getPhase2(signer);
     const phase6 = await config.getPhase6(signer);
 
@@ -60,11 +72,8 @@ export async function deployVault(hre: HardhatRuntimeEnvironment, signer: Signer
             phase2.cvx.address,
             phase2.cvxCrv.address,
             {
-                poolIds: [
-                    "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387",
-                    "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080",
-                ],
-                assetsIn: [config.addresses.feeToken, "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
+                poolIds: config.addresses.feeTokenHandlerPath.poolIds,
+                assetsIn: config.addresses.feeTokenHandlerPath.assetsIn,
             },
         ],
         {},
