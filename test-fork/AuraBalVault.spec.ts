@@ -20,13 +20,36 @@ import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { deployVault } from "../scripts/deployVault";
-import { config } from "../tasks/deploy/mainnet-config";
+import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
+import { config as goerliConfig } from "../tasks/deploy/goerli-config";
 
 // Constants
 const DEBUG = false;
-const FORK_BLOCK = 16570000;
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
-const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
+
+const testConfigs = {
+    mainnet: {
+        forkBlock: 16570000,
+        auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
+        auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
+        bbaUsdWhale: "0xe649B71783d5008d10a96b6871e3840a398d4F06",
+        config: mainnetConfig,
+        deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+    },
+    goerli: {
+        forkBlock: 8550494,
+        auraBalWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+        auraWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+        bbaUsdWhale: "0xE0a171587b1Cae546E069A943EDa96916F5EE977",
+        config: goerliConfig,
+        deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+    },
+};
+
+const TEST_CONFIG = process.env.TEST_CONFIG;
+const testConfig = testConfigs[TEST_CONFIG || "mainnet"];
+if (!testConfig) throw new Error(`Test config not found for value: ${TEST_CONFIG}`);
+const config = testConfig.config;
 
 async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
     const tokenWhaleSigner = await impersonateAccount(from);
@@ -64,7 +87,7 @@ describe("AuraBalVault", () => {
     }
 
     async function getAuraBal(to: string, amount: BigNumberish) {
-        const auraBalWhaleAddr = "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7";
+        const auraBalWhaleAddr = testConfig.auraBalWhale;
         const auraBalWhale = await impersonateAccount(auraBalWhaleAddr);
         await phase2.cvxCrv.connect(auraBalWhale.signer).transfer(to, amount);
     }
@@ -77,12 +100,12 @@ describe("AuraBalVault", () => {
     }
 
     async function getAura(to: string, amount: BigNumberish) {
-        const whaleAddress = "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC";
+        const whaleAddress = testConfig.auraWhale;
         await impersonateAndTransfer(phase2.cvx.address, whaleAddress, to, amount);
     }
 
     async function getBBaUSD(to: string, amount: BigNumberish) {
-        const whaleAddress = "0xe649B71783d5008d10a96b6871e3840a398d4F06";
+        const whaleAddress = testConfig.bbaUsdWhale;
         await impersonateAndTransfer(config.addresses.feeToken, whaleAddress, to, amount);
     }
 
@@ -118,7 +141,7 @@ describe("AuraBalVault", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: FORK_BLOCK,
+                        blockNumber: testConfig.forkBlock,
                     },
                 },
             ],
@@ -126,7 +149,7 @@ describe("AuraBalVault", () => {
 
         const accounts = await hre.ethers.getSigners();
 
-        deployer = await impersonateAccount(DEPLOYER, true);
+        deployer = await impersonateAccount(testConfig.deployer, true);
         depositor = await impersonateAccount(await accounts[0].getAddress(), true);
         account = await impersonateAccount(await accounts[1].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
@@ -138,8 +161,8 @@ describe("AuraBalVault", () => {
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
         balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
 
-        await getAuraBal(deployer.address, parseEther("100"));
-        await getAuraBal(depositor.address, parseEther("100"));
+        await getAuraBal(deployer.address, parseEther("50"));
+        await getAuraBal(depositor.address, parseEther("50"));
     });
 
     /* -------------------------------------------------------------------------
@@ -147,12 +170,21 @@ describe("AuraBalVault", () => {
      * ----------------------------------------------------------------------- */
 
     it("deploy", async () => {
-        const result = await deployVault(config, hre, deployer.signer, DEBUG);
+        if (TEST_CONFIG === "goerli") {
+            const result = await config.getAuraBalVault(deployer.signer);
 
-        vault = result.vault;
-        strategy = result.strategy;
-        bbusdHandler = result.bbusdHandler;
-        auraRewards = result.auraRewards;
+            vault = result.vault;
+            strategy = result.strategy;
+            bbusdHandler = result.bbusdHandler;
+            auraRewards = result.auraRewards;
+        } else {
+            const result = await deployVault(config, hre, deployer.signer, DEBUG);
+
+            vault = result.vault;
+            strategy = result.strategy;
+            bbusdHandler = result.bbusdHandler;
+            auraRewards = result.auraRewards;
+        }
     });
 
     describe("check initial configuration", () => {
@@ -191,8 +223,8 @@ describe("AuraBalVault", () => {
             expect(await vault.FEE_DENOMINATOR()).eq(10000);
             expect(await vault.underlying()).eq(phase2.cvxCrv.address);
             expect(await vault.strategy()).eq(strategy.address);
-            expect(await vault.name()).eq("Staked Aura BAL");
-            expect(await vault.symbol()).eq("stkauraBAL");
+            expect(await vault.name()).eq(`Staked ${await phase2.cvxCrv.name()}`);
+            expect(await vault.symbol()).eq(`stk${await phase2.cvxCrv.symbol()}`);
         });
         it("check auraBAL strategy is configured correctly", async () => {
             expect(await strategy.balVault()).eq(bVault.address);
@@ -244,7 +276,7 @@ describe("AuraBalVault", () => {
         });
         it("can not call harvest while protected", async () => {
             expect(await vault.totalSupply()).gt(0);
-            await expect(vault["harvest()"]()).to.be.revertedWith("permissioned harvest");
+            await expect(vault.connect(account.signer)["harvest()"]()).to.be.revertedWith("permissioned harvest");
         });
         it("can not call harvest on the strategy", async () => {
             await expect(strategy.harvest(deployer.address, 0)).to.be.revertedWith("Vault calls only");

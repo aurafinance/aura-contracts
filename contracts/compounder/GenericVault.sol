@@ -11,7 +11,7 @@ import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
 
 /**
  * @title   GenericUnionVault
- * @author  lama.airforce -> AuraFinance
+ * @author  llama.airforce -> AuraFinance
  * @notice  Changes:
  *          - remove withdraw penalty
  *          - remove platform fee

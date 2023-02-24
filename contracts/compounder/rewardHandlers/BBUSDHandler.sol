@@ -8,7 +8,7 @@ import { HandlerBase } from "./HandlerBase.sol";
 
 /**
  * @title   BBUSDHandlerv2
- * @author  lama.airforce
+ * @author  llama.airforce
  */
 contract BBUSDHandlerv2 is HandlerBase {
     using SafeERC20 for IERC20;

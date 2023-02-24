@@ -192,6 +192,10 @@ yarn task timeTravel --duration 69420 --network forking
 | rewardPoolDepositWrapper | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://goerli.etherscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | GaugeMigrator            | [0x432d9d821ed4a6fc29f41631e27ba91d4800f081](https://goerli.etherscan.io/address/0x432d9d821ed4a6fc29f41631e27ba91d4800f081) |
 | sushiSwapMigrator        | [0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58](https://goerli.etherscan.io/address/0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58) |
+| auraBalVault             | [0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B](https://goerli.etherscan.io/address/0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B) |
+| vaultStrategy            | [0xab07f0279023886222e80E25CB4a01CD007B6764](https://goerli.etherscan.io/address/0xab07f0279023886222e80E25CB4a01CD007B6764) |
+| vaultBbusdHandler        | [0x55850230cE77f670B8FBf47469F935cF41304e0a](https://goerli.etherscan.io/address/0x55850230cE77f670B8FBf47469F935cF41304e0a) |
+| vaultAuraRewards         | [0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0](https://goerli.etherscan.io/address/0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0) |
 
 ### Ethereum Mainnet (1) @deprecated
 
