@@ -11,23 +11,49 @@ import { IAsset, IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol
  *          - remove BAL Depositor address
  */
 contract AuraBalStrategyBase {
-    address public constant AURABAL_STAKING = 0x00A7BA8Ae7bca0B10A32Ea1f8e2a1Da980c6CAd2;
-    address public constant BAL_VAULT = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+    address public immutable BBUSD_TOKEN;
+    address public immutable AURA_TOKEN;
+    address public immutable AURABAL_TOKEN;
 
-    address public constant BBUSD_TOKEN = 0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2;
-    address public constant AURA_TOKEN = 0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF;
-    address public constant AURABAL_TOKEN = 0x616e8BfA43F920657B3497DBf40D6b1A02D4608d;
+    address public immutable WETH_TOKEN;
+    address public immutable BAL_TOKEN;
+    address public immutable BAL_ETH_POOL_TOKEN;
 
-    address public constant WETH_TOKEN = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant BAL_TOKEN = 0xba100000625a3754423978a60c9317c58a424e3D;
-    address public constant BAL_ETH_POOL_TOKEN = 0x5c6Ee304399DBdB9C8Ef030aB642B10820DB8F56;
+    bytes32 private immutable AURABAL_BAL_ETH_BPT_POOL_ID;
+    bytes32 private immutable BAL_ETH_POOL_ID;
 
-    bytes32 private constant AURABAL_BAL_ETH_BPT_POOL_ID =
-        0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249;
-    bytes32 private constant BAL_ETH_POOL_ID = 0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014;
+    IBasicRewards public immutable auraBalStaking;
+    IBalancerVault public immutable balVault;
 
-    IBasicRewards public auraBalStaking = IBasicRewards(AURABAL_STAKING);
-    IBalancerVault public balVault = IBalancerVault(BAL_VAULT);
+    constructor(
+        address _balVault,
+        address _auraBalStaking,
+        // tokens
+        address _balToken,
+        address _wethToken,
+        address _auraToken,
+        address _auraBalToken,
+        address _bbusdToken,
+        // pools
+        bytes32 _auraBalBalETHBptPoolId,
+        bytes32 _balETHPoolId
+    ) {
+        (
+            address balEthPoolToken, /* */
+
+        ) = IBalancerVault(_balVault).getPool(_balETHPoolId);
+        require(balEthPoolToken != address(0), "!balEthPoolToken");
+        balVault = IBalancerVault(_balVault);
+        auraBalStaking = IBasicRewards(_auraBalStaking);
+        BAL_TOKEN = _balToken;
+        WETH_TOKEN = _wethToken;
+        AURA_TOKEN = _auraToken;
+        AURABAL_TOKEN = _auraBalToken;
+        BBUSD_TOKEN = _bbusdToken;
+        BAL_ETH_POOL_TOKEN = balEthPoolToken;
+        AURABAL_BAL_ETH_BPT_POOL_ID = _auraBalBalETHBptPoolId;
+        BAL_ETH_POOL_ID = _balETHPoolId;
+    }
 
     /// @notice Deposit BAL and WETH to the BAL-ETH pool
     /// @param _wethAmount - amount of wETH to deposit
@@ -73,7 +99,7 @@ contract AuraBalStrategyBase {
     }
 
     /// @notice Returns a FundManagement struct used for BAL swaps
-    function _createSwapFunds() internal returns (IBalancerVault.FundManagement memory) {
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
         return
             IBalancerVault.FundManagement({
                 sender: address(this),

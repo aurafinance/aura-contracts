@@ -26,20 +26,44 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
 
     uint256 public constant FEE_DENOMINATOR = 10000;
 
-    constructor(address _vault) {
+    constructor(
+        address _vault,
+        // AuraBalStrategyBase
+        address _balVault,
+        address _auraBalStaking,
+        address _balToken,
+        address _wethToken,
+        address _auraToken,
+        address _auraBalToken,
+        address _bbusdToken,
+        bytes32 _auraBalBalETHBptPoolId,
+        bytes32 _balETHPoolId
+    )
+        AuraBalStrategyBase(
+            _balVault,
+            _auraBalStaking,
+            _balToken,
+            _wethToken,
+            _auraToken,
+            _auraBalToken,
+            _bbusdToken,
+            _auraBalBalETHBptPoolId,
+            _balETHPoolId
+        )
+    {
         vault = _vault;
     }
 
     /// @notice Set approvals for the contracts used when swapping & staking
     function setApprovals() external {
-        IERC20(AURABAL_TOKEN).safeApprove(AURABAL_STAKING, 0);
-        IERC20(AURABAL_TOKEN).safeApprove(AURABAL_STAKING, type(uint256).max);
-        IERC20(BAL_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(BAL_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
-        IERC20(WETH_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(WETH_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
-        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(BAL_VAULT, 0);
-        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(BAL_VAULT, type(uint256).max);
+        IERC20(AURABAL_TOKEN).safeApprove(address(auraBalStaking), 0);
+        IERC20(AURABAL_TOKEN).safeApprove(address(auraBalStaking), type(uint256).max);
+        IERC20(BAL_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(BAL_TOKEN).safeApprove(address(balVault), type(uint256).max);
+        IERC20(WETH_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(WETH_TOKEN).safeApprove(address(balVault), type(uint256).max);
+        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(address(balVault), 0);
+        IERC20(BAL_ETH_POOL_TOKEN).safeApprove(address(balVault), type(uint256).max);
     }
 
     /// @notice update the token to handler mapping

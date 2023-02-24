@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
 
@@ -16,7 +17,7 @@ import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
  *          - remove platform fee
  *          - add extra rewards logic
  */
-contract GenericUnionVault is ERC20, Ownable {
+contract GenericUnionVault is ERC20, IERC4626, Ownable {
     using SafeERC20 for IERC20;
 
     uint256 public callIncentive = 500;
@@ -29,8 +30,6 @@ contract GenericUnionVault is ERC20, Ownable {
     address[] public extraRewards;
 
     event Harvest(address indexed _caller, uint256 _value);
-    event Deposit(address indexed _from, address indexed _receiver, uint256 _value);
-    event Withdraw(address indexed _from, address indexed _receiver, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
 
@@ -69,8 +68,6 @@ contract GenericUnionVault is ERC20, Ownable {
     /// @param _reward VirtualShareRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
-        require(_reward != address(0), "!reward setting");
-
         if (extraRewards.length >= 12) {
             return false;
         }
@@ -125,7 +122,7 @@ contract GenericUnionVault is ERC20, Ownable {
         }
 
         _mint(_receiver, shares);
-        emit Deposit(msg.sender, _receiver, _amount);
+        emit Deposit(msg.sender, _receiver, _amount, shares);
         return shares;
     }
 
@@ -179,7 +176,7 @@ contract GenericUnionVault is ERC20, Ownable {
         uint256 _withdrawable = _withdraw(_owner, _shares);
         // And sends back underlying to user
         IERC20(underlying).safeTransfer(_receiver, _withdrawable);
-        emit Withdraw(msg.sender, _receiver, _withdrawable);
+        emit Withdraw(msg.sender, _receiver, _owner, _withdrawable, _shares);
         return _withdrawable;
     }
 
