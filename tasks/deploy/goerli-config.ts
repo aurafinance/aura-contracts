@@ -34,6 +34,14 @@ import {
     AuraClaimZap__factory,
     ClaimFeesHelper__factory,
     RewardPoolDepositWrapper__factory,
+    AuraBalVault__factory,
+    AuraBalStrategy__factory,
+    VirtualShareRewardPool__factory,
+    BalancerSwapsHandler__factory,
+    AuraBalVault,
+    AuraBalStrategy,
+    BalancerSwapsHandler,
+    VirtualShareRewardPool,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -111,8 +119,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     arbitratorVault: ArbitratorVault__factory.connect("0xc2939C598e2D044A87C8E22a90A9e36b9579F197", deployer),
     cvxCrv: CvxCrvToken__factory.connect("0xf80D3083b18fe3f11196E57438258330Ba4f15Ec", deployer),
     cvxCrvBpt: {
-        poolId: ZERO_ADDRESS,
-        address: "0xAc98C986d8318ff08109AE6F4E7043468dA9d0a2",
+        poolId: "0xdffd908d17c93d1f9253148826a00d920a19e85e00020000000000000000060c",
+        address: "0xdffd908d17c93d1f9253148826a00d920a19e85e",
     },
     cvxCrvRewards: BaseRewardPool__factory.connect("0x09421e5d9c2b11f502482dce2b718b037fd10a25", deployer),
     crvDepositor: CrvDepositor__factory.connect("0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1", deployer),
@@ -173,6 +181,21 @@ const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
     stashV3: undefined,
     poolMigrator: undefined,
 });
+
+export interface AuraBalVaultDeployed {
+    vault: AuraBalVault;
+    strategy: AuraBalStrategy;
+    bbusdHandler: BalancerSwapsHandler;
+    auraRewards: VirtualShareRewardPool;
+}
+
+const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
+    vault: AuraBalVault__factory.connect("0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B", deployer),
+    strategy: AuraBalStrategy__factory.connect("0xab07f0279023886222e80E25CB4a01CD007B6764", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("0x55850230cE77f670B8FBf47469F935cF41304e0a", deployer),
+    auraRewards: VirtualShareRewardPool__factory.connect("0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -183,4 +206,5 @@ export const config = {
     getPhase3,
     getPhase4,
     getPhase6,
+    getAuraBalVault,
 };
