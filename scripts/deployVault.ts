@@ -103,6 +103,9 @@ export async function deployVault(
     tx = await strategy.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await bbusdHandler.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+
     return {
         vault,
         strategy,

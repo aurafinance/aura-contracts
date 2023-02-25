@@ -97,7 +97,7 @@ contract VirtualShareRewardPool {
         address vault_,
         address reward_,
         address op_
-    ) public {
+    ) {
         vault = IGenericVault(vault_);
         rewardToken = IERC20(reward_);
         operator = op_;

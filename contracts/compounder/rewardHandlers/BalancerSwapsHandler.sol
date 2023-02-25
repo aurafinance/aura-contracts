@@ -73,6 +73,11 @@ contract BalancerSwapsHandler is HandlerBase {
         );
     }
 
+    function setApprovals() external {
+        IERC20(token).safeApprove(address(balVault), 0);
+        IERC20(token).safeApprove(address(balVault), type(uint256).max);
+    }
+
     function sell() external override onlyStrategy {
         _swapTokenToWEth(IERC20(token).balanceOf(address(this)));
         IERC20(WETH_TOKEN).safeTransfer(strategy, IERC20(WETH_TOKEN).balanceOf(address(this)));

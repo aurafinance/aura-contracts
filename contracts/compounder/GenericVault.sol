@@ -130,7 +130,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// @param _shares - the number of shares sent
     /// @return _withdrawable - the withdrawable underlying amount
     function _withdraw(address _from, uint256 _shares) internal returns (uint256 _withdrawable) {
-        require(totalSupply() > 0);
+        require(totalSupply() > 0, "empty vault");
         // Computes the amount withdrawable based on the number of shares sent
         uint256 amount = (_shares * totalUnderlying()) / totalSupply();
         // Burn the shares before retrieving tokens
