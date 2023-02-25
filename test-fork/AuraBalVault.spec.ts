@@ -14,6 +14,8 @@ import {
     AuraBalStrategy,
     BBUSDHandlerv2,
     VirtualShareRewardPool,
+    FeeForwarder,
+    FeeForwarder__factory,
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
@@ -22,6 +24,7 @@ import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
+import { deployContract } from "../tasks/utils";
 
 // Constants
 const DEBUG = false;
@@ -58,6 +61,7 @@ async function impersonateAndTransfer(tokenAddress: string, from: string, to: st
 }
 
 describe("AuraBalVault", () => {
+    let feeForwarder: FeeForwarder;
     let vault: AuraBalVault;
     let strategy: AuraBalStrategy;
     let bbusdHandler: BBUSDHandlerv2;
@@ -169,22 +173,61 @@ describe("AuraBalVault", () => {
      * Tests
      * ----------------------------------------------------------------------- */
 
-    it("deploy", async () => {
-        if (TEST_CONFIG === "goerli") {
-            const result = await config.getAuraBalVault(deployer.signer);
+    describe("deploy reward forwarder", () => {
+        it("deploy reward forwarder", async () => {
+            feeForwarder = await deployContract<FeeForwarder>(
+                hre,
+                new FeeForwarder__factory(deployer.signer),
+                "FeeForwarder",
+                [config.multisigs.daoMultisig],
+                {},
+                false,
+            );
+        });
+        it("update booster platform to reward forwarder", async () => {
+            expect(await phase6.booster.treasury()).not.eq(feeForwarder.address);
+            await phase6.booster.connect(dao.signer).setTreasury(feeForwarder.address);
+            expect(await phase6.booster.treasury()).eq(feeForwarder.address);
+        });
+    });
 
-            vault = result.vault;
-            strategy = result.strategy;
-            bbusdHandler = result.bbusdHandler;
-            auraRewards = result.auraRewards;
-        } else {
-            const result = await deployVault(config, hre, deployer.signer, DEBUG);
+    describe("deploy vault", () => {
+        it("deploy vault", async () => {
+            if (TEST_CONFIG === "goerli") {
+                const result = await config.getAuraBalVault(deployer.signer);
 
-            vault = result.vault;
-            strategy = result.strategy;
-            bbusdHandler = result.bbusdHandler;
-            auraRewards = result.auraRewards;
-        }
+                vault = result.vault;
+                strategy = result.strategy;
+                bbusdHandler = result.bbusdHandler;
+                auraRewards = result.auraRewards;
+            } else {
+                const result = await deployVault(config, hre, deployer.signer, DEBUG);
+
+                vault = result.vault;
+                strategy = result.strategy;
+                bbusdHandler = result.bbusdHandler;
+                auraRewards = result.auraRewards;
+            }
+        });
+        it("update booster platform to vault", async () => {
+            expect(await phase6.booster.treasury()).not.eq(vault.address);
+            await phase6.booster.connect(dao.signer).setTreasury(vault.address);
+            expect(await phase6.booster.treasury()).eq(vault.address);
+        });
+        it("forward rewards from reward forwarder", async () => {
+            const amount = simpleToExactAmount(10);
+            const balBefore = await phase2.cvx.balanceOf(feeForwarder.address);
+            await getAura(feeForwarder.address, amount);
+            const balAfter = await phase2.cvx.balanceOf(feeForwarder.address);
+            expect(balAfter).gt(0);
+            expect(balAfter.sub(balBefore)).eq(amount);
+
+            const sBalBefore = await phase2.cvx.balanceOf(strategy.address);
+            await feeForwarder.connect(dao.signer).forward(vault.address, phase2.cvx.address);
+            const sBalAfter = await phase2.cvx.balanceOf(strategy.address);
+
+            expect(sBalAfter.sub(sBalBefore)).eq(balAfter);
+        });
     });
 
     describe("check initial configuration", () => {
@@ -216,6 +259,9 @@ describe("AuraBalVault", () => {
     });
 
     describe("check configurations", () => {
+        it("check feeForwarder is configured correctly", async () => {
+            expect(await feeForwarder.owner()).eq(dao.address);
+        });
         it("check vault is configured correctly", async () => {
             expect(await vault.isHarvestPermissioned()).eq(true);
             expect(await vault.callIncentive()).eq(500);
@@ -243,6 +289,39 @@ describe("AuraBalVault", () => {
             expect(await auraRewards.vault()).eq(vault.address);
             expect(await auraRewards.rewardToken()).eq(phase2.cvx.address);
             expect(await auraRewards.operator()).eq(strategy.address);
+        });
+    });
+
+    describe("check protected functions", () => {
+        const OWNER_ERROR = "Ownable: caller is not the owner";
+        it("FeeForwarder", async () => {
+            const connectedVault = feeForwarder.connect(account.signer);
+            await expect(connectedVault.forward(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
+        });
+        it("AuraBalVault", async () => {
+            const connectedVault = vault.connect(account.signer);
+            await expect(connectedVault.updateAuthorizedHarvesters(ZERO_ADDRESS, true)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedVault.setHarvestPermissions(true)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedVault.setStrategy(phase2.cvxCrv.address)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedVault.addExtraReward(phase2.cvxCrv.address)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedVault.clearExtraRewards()).to.be.revertedWith(OWNER_ERROR);
+        });
+        it("AuraBalStrategy", async () => {
+            const connectedStrat = strategy.connect(account.signer);
+            await expect(connectedStrat.addRewardToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedStrat.updateRewardToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
+        });
+        it("BBUSDHandler", async () => {
+            const connectedHandler = bbusdHandler.connect(account.signer);
+            await expect(connectedHandler.setPendingOwner(ZERO_ADDRESS)).to.be.revertedWith("owner only");
+            await expect(connectedHandler.applyPendingOwner()).to.be.revertedWith("owner only");
+            await expect(connectedHandler.rescueToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith("owner only");
+        });
+        it("AuraRewards", async () => {
+            const connectedAuraRewards = auraRewards.connect(account.signer);
+            await expect(connectedAuraRewards.stake(ZERO_ADDRESS, 0)).to.be.revertedWith("!authorized");
+            await expect(connectedAuraRewards.withdraw(ZERO_ADDRESS, 0)).to.be.revertedWith("!authorized");
+            await expect(connectedAuraRewards.queueNewRewards(100)).to.be.revertedWith("!authorized");
         });
     });
 
@@ -358,5 +437,11 @@ describe("AuraBalVault", () => {
             const assetsAfter = await phase2.cvxCrv.balanceOf(redeemer.address);
             expect(assetsAfter.sub(assetsBefore)).eq(expectedAssets);
         });
+    });
+
+    describe("Multiple user deposits");
+
+    describe("BBUSDHandler", async () => {
+        it("sell bbUSD for auraBAL");
     });
 });
