@@ -26,6 +26,7 @@ import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { deployAuraClaimZapV2 } from "../scripts/deployAuraClaimZapV2";
 import { ClaimRewardsAmountsStruct, OptionsStruct } from "types/generated/AuraClaimZapV2";
+import { BaseRewardPool__factory } from "../types/generated/";
 import { config } from "../tasks/deploy/mainnet-config";
 
 // Constants
@@ -58,16 +59,17 @@ describe("AuraClaimZapV2", () => {
     let balWethBptToken: IERC20;
     let alice: Signer;
     let aliceAddress: string;
+    let LPToken: IERC20;
 
     /* -------------------------------------------------------------------------
      * Helper functions
      * ----------------------------------------------------------------------- */
 
-    async function getEth(recipient: string) {
+    async function getEth(recipient: string, amount: BigNumberish) {
         const ethWhale = await impersonate(config.addresses.weth);
         await ethWhale.sendTransaction({
             to: recipient,
-            value: simpleToExactAmount(1),
+            value: amount,
         });
     }
 
@@ -81,6 +83,13 @@ describe("AuraClaimZapV2", () => {
         const balWhaleAddr = "0x740a4AEEfb44484853AA96aB12545FC0290805F3";
         const balWhale = await impersonateAccount(balWhaleAddr);
         await IERC20__factory.connect(config.addresses.token, balWhale.signer).transfer(to, amount);
+    }
+
+    async function getDolaUsdcLP(to: string, amount: BigNumberish) {
+        const LPAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
+        const whaleAddress = "0x11EC78492D53c9276dD7a184B1dbfB34E50B710D";
+        const whale = await impersonateAccount(whaleAddress);
+        await IERC20__factory.connect(LPAddress, whale.signer).transfer(to, amount);
     }
 
     /* -------------------------------------------------------------------------
@@ -119,6 +128,9 @@ describe("AuraClaimZapV2", () => {
         wethToken = IERC20__factory.connect(config.addresses.weth, dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
         balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
+
+        const LPAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
+        LPToken = await IERC20__factory.connect(LPAddress, dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
         await getAuraBal(depositor.address, parseEther("100"));
@@ -197,6 +209,44 @@ describe("AuraClaimZapV2", () => {
         expect(Number(newRewardBalance)).to.be.greaterThanOrEqual(Number(minBptAmountOut.add(rewardBalance)));
     });
 
+    it("claim from lp staking pool", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("10");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+
+        await phase6.booster.earmarkRewards(poolId);
+        const pool = await phase6.booster.poolInfo(poolId);
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
+        await increaseTime(ONE_WEEK.mul("2"));
+
+        const balanceBefore = await balToken.balanceOf(aliceAddress);
+        const expectedRewards = await crvRewards.earned(aliceAddress);
+
+        const options: OptionsStruct = {
+            claimCvxCrv: false,
+            claimLockedCvx: false,
+            claimLockedCvxStake: false,
+            lockCrvDeposit: false,
+            useAllWalletFunds: false,
+            lockCvx: false,
+        };
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: 0,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: 0,
+        };
+        await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
+
+        const balanceAfter = await balToken.balanceOf(aliceAddress);
+        expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
+    });
     /*
         const options: OptionsStruct = {
             claimCvxCrv: false,
