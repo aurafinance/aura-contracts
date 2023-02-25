@@ -46,13 +46,13 @@ contract AuraClaimZapV2 {
         uint256 depositCvxCrvMaxAmount;
     }
 
-    enum Options {
-        ClaimCvxCrv, //1
-        ClaimLockedCvx, //2
-        ClaimLockedCvxStake, //4
-        LockCrvDeposit, //8
-        UseAllWalletFunds, //16
-        LockCvx //32
+    struct Options {
+        bool claimCvxCrv;
+        bool claimLockedCvx;
+        bool claimLockedCvxStake;
+        bool lockCrvDeposit;
+        bool useAllWalletFunds;
+        bool lockCvx;
     }
 
     /**
@@ -81,7 +81,7 @@ contract AuraClaimZapV2 {
     }
 
     function getName() external pure returns (string memory) {
-        return "ClaimZap V2.0";
+        return "ClaimZap V2.1";
     }
 
     /**
@@ -104,13 +104,6 @@ contract AuraClaimZapV2 {
     }
 
     /**
-     * @notice Use bitmask to check if option flag is set
-     */
-    function _checkOption(uint256 _mask, uint256 _flag) internal pure returns (bool) {
-        return (_mask & (1 << _flag)) != 0;
-    }
-
-    /**
      * @notice Claim all the rewards
      * @param rewardContracts        Array of addresses for LP token rewards
      * @param extraRewardContracts   Array of addresses for extra rewards
@@ -124,8 +117,8 @@ contract AuraClaimZapV2 {
         address[] calldata extraRewardContracts,
         address[] calldata tokenRewardContracts,
         address[] calldata tokenRewardTokens,
-        ClaimRewardsAmounts memory amounts,
-        uint256 options
+        ClaimRewardsAmounts calldata amounts,
+        Options calldata options
     ) external {
         require(tokenRewardContracts.length == tokenRewardTokens.length, "!parity");
 
@@ -147,61 +140,46 @@ contract AuraClaimZapV2 {
         }
 
         // claim others/deposit/lock/stake
-        _claimExtras(
-            amounts.depositCrvMaxAmount,
-            amounts.minAmountOut,
-            amounts.depositCvxMaxAmount,
-            amounts.depositCvxCrvMaxAmount,
-            crvBalance,
-            cvxBalance,
-            cvxCrvBalance,
-            options
-        );
+        _claimExtras(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
     }
 
     /**
      * @notice  Claim additional rewards from:
      *          - cvxCrvRewards
      *          - cvxLocker
-     * @param depositCrvMaxAmount    see claimRewards
-     * @param minAmountOut           see claimRewards
-     * @param depositCvxMaxAmount    see claimRewards
-     * @param depositCvxCrvMaxAmount see claimRewards
      * @param removeCrvBalance       crvBalance to ignore and not redeposit (starting Crv balance)
      * @param removeCvxBalance       cvxBalance to ignore and not redeposit (starting Cvx balance)
      * @param removeCvxCrvBalance    cvxcrvBalance to ignore and not redeposit (starting CvxCrv balance)
+     * @param amounts                Claim rewards amoutns.
      * @param options                see claimRewards
      */
     // prettier-ignore
     function _claimExtras( // solhint-disable-line 
-        uint256 depositCrvMaxAmount,     
-        uint256 minAmountOut,
-        uint256 depositCvxMaxAmount,
-        uint256 depositCvxCrvMaxAmount,
         uint256 removeCrvBalance,
         uint256 removeCvxBalance,
-        uint256 removeCvxCrvBalance,           
-        uint256 options
+        uint256 removeCvxCrvBalance,          
+        ClaimRewardsAmounts calldata amounts, 
+        Options calldata options
     ) internal {
 
         //reset remove balances if we want to also stake/lock funds already in our wallet
-        if (_checkOption(options, uint256(Options.UseAllWalletFunds))) {
+        if (options.useAllWalletFunds) {
             removeCrvBalance = 0;
             removeCvxBalance = 0;
             removeCvxCrvBalance = 0;
         }
 
         //claim from cvxCrv rewards
-        if (_checkOption(options, uint256(Options.ClaimCvxCrv))) {
+        if (options.claimCvxCrv) {
             IRewardStaking(cvxCrvRewards).getReward(msg.sender, true);
         }
 
         //claim from locker
-        if (_checkOption(options, uint256(Options.ClaimLockedCvx))) {
+        if (options.claimLockedCvx) {
             IAuraLocker(locker).getReward(msg.sender);
-            if (_checkOption(options, uint256(Options.ClaimLockedCvxStake))) {
+            if (options.claimLockedCvxStake) {
                 uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender).sub(removeCvxCrvBalance);
-                cvxCrvBalance = AuraMath.min(cvxCrvBalance, depositCvxCrvMaxAmount);
+                cvxCrvBalance = AuraMath.min(cvxCrvBalance, amounts.depositCvxCrvMaxAmount);
                 if (cvxCrvBalance > 0) {
                     IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
                     IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalance);  
@@ -212,9 +190,9 @@ contract AuraClaimZapV2 {
 
 
         //lock upto given amount of crv and stake
-        if (depositCrvMaxAmount > 0) {
+        if (amounts.depositCrvMaxAmount > 0) {
             uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
-            crvBalance = AuraMath.min(crvBalance, depositCrvMaxAmount);
+            crvBalance = AuraMath.min(crvBalance, amounts.depositCrvMaxAmount);
 
             if (crvBalance > 0) {
                 //pull crv
@@ -222,8 +200,8 @@ contract AuraClaimZapV2 {
                 //deposit
                 ICrvDepositorWrapper(crvDepositWrapper).deposit(
                     crvBalance,
-                    minAmountOut,
-                    _checkOption(options, uint256(Options.LockCrvDeposit)),
+                    amounts.minAmountOut,
+                    options.lockCrvDeposit,
                     address(0)
                 );
 
@@ -234,9 +212,9 @@ contract AuraClaimZapV2 {
         }
 
         //stake up to given amount of cvx
-        if (depositCvxMaxAmount > 0 && _checkOption(options, uint256(Options.LockCvx))) {
+        if (amounts.depositCvxMaxAmount > 0 && options.lockCvx) {
             uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
-            cvxBalance = AuraMath.min(cvxBalance, depositCvxMaxAmount);
+            cvxBalance = AuraMath.min(cvxBalance, amounts.depositCvxMaxAmount);
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
