@@ -12,6 +12,8 @@ export async function deployAuraClaimZapV2(
     waitForBlocks = 0,
 ) {
     const phase2 = await config.getPhase2(signer);
+    const phase4 = await config.getPhase4(signer);
+    const phase6 = await config.getPhase6(signer);
     const { addresses } = config;
 
     const claimZapV2 = await deployContract<AuraClaimZapV2>(
@@ -22,9 +24,9 @@ export async function deployAuraClaimZapV2(
             addresses.token,
             phase2.cvx.address,
             phase2.cvxCrv.address,
-            phase2.crvDepositorWrapper.address,
-            phase2.cvxCrvRewards.address,
-            phase2.cvxLocker.address,
+            phase4.crvDepositorWrapper.address,
+            phase6.cvxCrvRewards.address,
+            phase4.cvxLocker.address,
         ],
         {},
         debug,
