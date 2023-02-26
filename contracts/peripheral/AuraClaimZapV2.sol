@@ -122,9 +122,15 @@ contract AuraClaimZapV2 {
     ) external {
         require(tokenRewardContracts.length == tokenRewardTokens.length, "!parity");
 
-        uint256 crvBalance = IERC20(crv).balanceOf(msg.sender);
-        uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender);
-        uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
+        //Gas Optim: Reduce sload gas useage if reading balance isn't required
+        uint256 crvBalance;
+        uint256 cvxBalance;
+        uint256 cvxCrvBalance;
+        if (!options.useAllWalletFunds) {
+            crvBalance = IERC20(crv).balanceOf(msg.sender);
+            cvxBalance = IERC20(cvx).balanceOf(msg.sender);
+            cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
+        }
 
         //claim from main curve LP pools
         for (uint256 i = 0; i < rewardContracts.length; i++) {
@@ -162,13 +168,6 @@ contract AuraClaimZapV2 {
         Options calldata options
     ) internal {
 
-        //reset remove balances if we want to also stake/lock funds already in our wallet
-        if (options.useAllWalletFunds) {
-            removeCrvBalance = 0;
-            removeCvxBalance = 0;
-            removeCvxCrvBalance = 0;
-        }
-
         //claim from cvxCrv rewards
         if (options.claimCvxCrv) {
             IRewardStaking(cvxCrvRewards).getReward(msg.sender, true);
@@ -205,7 +204,7 @@ contract AuraClaimZapV2 {
             }
         }
 
-        //Stake
+        //Gas Optim: Reduce max calls to stakeFor to 1. We now stake once after we transfer and deposit.
         uint endCvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
         if(endCvxCrvBalance > 0){
             IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, endCvxCrvBalance);
