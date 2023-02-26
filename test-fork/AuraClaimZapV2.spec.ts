@@ -23,7 +23,7 @@ import {
     Phase8Deployed,
 } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ZERO, ONE_WEEK } from "../test-utils/constants";
 import { deployAuraClaimZapV2 } from "../scripts/deployAuraClaimZapV2";
 import { ClaimRewardsAmountsStruct, OptionsStruct } from "types/generated/AuraClaimZapV2";
 import { BaseRewardPool__factory } from "../types/generated/";
@@ -92,6 +92,13 @@ describe("AuraClaimZapV2", () => {
         await IERC20__factory.connect(LPAddress, whale.signer).transfer(to, amount);
     }
 
+    async function getCvxCrv(to: string, amount: BigNumberish) {
+        const TokenAddress = "0x616e8BfA43F920657B3497DBf40D6b1A02D4608d";
+        const whaleAddress = "0xCAab2680d81dF6b3e2EcE585bB45cEe97BF30cD7";
+        const whale = await impersonateAccount(whaleAddress);
+        await IERC20__factory.connect(TokenAddress, whale.signer).transfer(to, amount);
+    }
+
     /* -------------------------------------------------------------------------
      * Before
      * ----------------------------------------------------------------------- */
@@ -140,9 +147,9 @@ describe("AuraClaimZapV2", () => {
      * Tests
      * ----------------------------------------------------------------------- */
 
-    it("deploy", async () => {
+    it("Deploy", async () => {
+        //Deploy
         const result = await deployAuraClaimZapV2(hre, deployer.signer, DEBUG);
-
         claimZapV2 = result.claimZapV2;
     });
 
@@ -211,7 +218,7 @@ describe("AuraClaimZapV2", () => {
 
     it("claim from lp staking pool", async () => {
         const stake = true;
-        const amount = ethers.utils.parseEther("10");
+        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
 
         await getDolaUsdcLP(aliceAddress, amount);
@@ -247,14 +254,187 @@ describe("AuraClaimZapV2", () => {
         const balanceAfter = await balToken.balanceOf(aliceAddress);
         expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
     });
-    /*
+
+    it("claim from lp staking pool no stake cvxCrvRewards", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("2");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+
+        await phase6.booster.earmarkRewards(poolId);
+        const pool = await phase6.booster.poolInfo(poolId);
+
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
+        const cvxCrvRewards = BaseRewardPool__factory.connect(await claimZapV2.cvxCrvRewards(), dao.signer);
+
+        await increaseTime(ONE_WEEK.mul("2"));
+
+        const balanceBefore = await balToken.balanceOf(aliceAddress);
+        const expectedRewards = await crvRewards.earned(aliceAddress);
+
+        // add some cvxCrv to alice
+        //const cvxCrvBal = await phase2.cvxCrv.balanceOf(await dao.signer.getAddress());
+        //await phase2.cvxCrv.connect(dao.signer).transfer(aliceAddress, cvxCrvBal);
+        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
+        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
+        await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
+        const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
+
         const options: OptionsStruct = {
             claimCvxCrv: false,
-            claimLockedCvx:false,
-            claimLockedCvxStake:false,
-            lockCrvDeposit:false,
-            useAllWalletFunds:false,
-            lockCvx:false,
+            claimLockedCvx: true,
+            claimLockedCvxStake: false,
+            lockCrvDeposit: false,
+            useAllWalletFunds: false,
+            lockCvx: false,
         };
-        */
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: 0,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
+        };
+        const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
+        const cvxCrvBalAfter = await phase2.cvxCrv.balanceOf(aliceAddress);
+
+        const balanceAfter = await balToken.balanceOf(aliceAddress);
+        expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
+        // cvxCrv balance should not change as the option to use wallet funds was not provided
+        expect(cvxCrvBalAfter, "cvxcrv balance").eq(cvxCrvBalBefore);
+        await expect(tx).to.not.emit(cvxCrvRewards, "Staked");
+    });
+
+    it("claim from lp staking pool and stake cvxCrvRewards", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("2");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+
+        await phase6.booster.earmarkRewards(poolId);
+        const pool = await phase6.booster.poolInfo(poolId);
+
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
+        const cvxCrvRewards = BaseRewardPool__factory.connect(await claimZapV2.cvxCrvRewards(), dao.signer);
+
+        await increaseTime(ONE_WEEK.mul("2"));
+
+        const balanceBefore = await balToken.balanceOf(aliceAddress);
+        const expectedRewards = await crvRewards.earned(aliceAddress);
+
+        // add some cvxCrv to alice
+        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
+        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
+        await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
+        const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
+
+        const options: OptionsStruct = {
+            claimCvxCrv: false,
+            claimLockedCvx: true,
+            claimLockedCvxStake: true,
+            lockCrvDeposit: false,
+            useAllWalletFunds: false,
+            lockCvx: false,
+        };
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: 0,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
+        };
+        const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
+        const cvxCrvBalAfter = await phase2.cvxCrv.balanceOf(aliceAddress);
+
+        const balanceAfter = await balToken.balanceOf(aliceAddress);
+        expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
+        // cvxCrv balance should not change as the option to use wallet funds was not provided
+        expect(cvxCrvBalAfter, "cvxcrv balance").eq(cvxCrvBalBefore);
+        await expect(tx).to.not.emit(cvxCrvRewards, "Staked");
+    });
+
+    it("claim from lp staking pool and stake full cvxCrvRewards balance", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("2");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+
+        await phase6.booster.earmarkRewards(poolId);
+        const pool = await phase6.booster.poolInfo(poolId);
+
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
+        const cvxCrvRewards = BaseRewardPool__factory.connect(await claimZapV2.cvxCrvRewards(), dao.signer);
+
+        await increaseTime(ONE_WEEK.mul("2"));
+
+        const balanceBefore = await balToken.balanceOf(aliceAddress);
+        const expectedRewards = await crvRewards.earned(aliceAddress);
+
+        // add some cvxCrv to alice
+        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
+        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
+        await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
+        const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
+
+        const options: OptionsStruct = {
+            claimCvxCrv: false,
+            claimLockedCvx: true,
+            claimLockedCvxStake: true,
+            lockCrvDeposit: false,
+            useAllWalletFunds: true,
+            lockCvx: false,
+        };
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: 0,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
+        };
+        const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
+
+        const balanceAfter = await balToken.balanceOf(aliceAddress);
+        expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
+        // User waller funds option was provided, hence  zero balance is expected.
+        expect(await phase2.cvxCrv.balanceOf(aliceAddress)).eq(ZERO);
+        await expect(tx).to.emit(cvxCrvRewards, "Staked");
+    });
+
+    it("verifies only owner can set approvals", async () => {
+        expect(await claimZapV2.owner()).not.eq(aliceAddress);
+        await expect(claimZapV2.connect(alice).setApprovals()).to.be.revertedWith("!auth");
+    });
+
+    it("fails if claim rewards are incorrect", async () => {
+        const options: OptionsStruct = {
+            claimCvxCrv: false,
+            claimLockedCvx: false,
+            claimLockedCvxStake: false,
+            lockCrvDeposit: false,
+            useAllWalletFunds: false,
+            lockCvx: false,
+        };
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: 0,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: 0,
+        };
+        await expect(
+            claimZapV2.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], amounts, options),
+        ).to.be.revertedWith("!parity");
+    });
 });
