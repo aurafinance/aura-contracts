@@ -182,13 +182,11 @@ contract AuraClaimZapV2 {
                 cvxCrvBalance = AuraMath.min(cvxCrvBalance, amounts.depositCvxCrvMaxAmount);
                 if (cvxCrvBalance > 0) {
                     IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
-                    IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalance);  
                 }
             }
         }
 
-
-
+        
         //lock upto given amount of crv and stake
         if (amounts.depositCrvMaxAmount > 0) {
             uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
@@ -204,11 +202,13 @@ contract AuraClaimZapV2 {
                     options.lockCrvDeposit,
                     address(0)
                 );
-
-                uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
-                //stake for msg.sender
-                IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalance);
             }
+        }
+
+        //Stake
+        uint endCvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
+        if(endCvxCrvBalance > 0){
+            IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, endCvxCrvBalance);
         }
 
         //stake up to given amount of cvx
