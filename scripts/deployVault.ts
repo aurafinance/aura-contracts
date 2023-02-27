@@ -8,16 +8,39 @@ import {
     AuraBalVault__factory,
     BalancerSwapsHandler,
     BalancerSwapsHandler__factory,
+    FeeForwarder,
+    FeeForwarder__factory,
     VirtualShareRewardPool,
     VirtualShareRewardPool__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;
+    multisigs: MultisigConfig;
     getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
+}
+
+export async function deployFeeForwarder(
+    config: VaultConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const feeForwarder = await deployContract<FeeForwarder>(
+        hre,
+        new FeeForwarder__factory(signer),
+        "FeeForwarder",
+        [config.multisigs.daoMultisig],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { feeForwarder };
 }
 
 export async function deployVault(
