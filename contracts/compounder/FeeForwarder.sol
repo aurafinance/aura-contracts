@@ -20,7 +20,7 @@ interface IStrategy {
 contract FeeForwarder is Ownable {
     using SafeERC20 for IERC20;
 
-    event Forwarded(uint256 amount);
+    event Forwarded(address vault, address token, uint256 amount);
 
     /**
      * @param _dao Address of DAO
@@ -33,17 +33,18 @@ contract FeeForwarder is Ownable {
      * @dev Forwards the complete balance of token in this contract to the vault
      *      Performs some simple sanity checks on the vault/strategy
      */
-    function forward(address vault, address token) public onlyOwner {
+    function forward(
+        address vault,
+        address token,
+        uint256 amount
+    ) public onlyOwner {
         address strategy = IVault(vault).strategy();
         require(strategy != address(0), "!strategy");
 
         address _vault = IStrategy(strategy).vault();
         require(_vault == vault, "!vault");
 
-        uint256 bal = IERC20(token).balanceOf(address(this));
-        require(bal > 0, "!empty");
-
-        IERC20(token).transfer(strategy, bal);
-        emit Forwarded(bal);
+        IERC20(token).safeTransfer(strategy, amount);
+        emit Forwarded(vault, token, amount);
     }
 }
