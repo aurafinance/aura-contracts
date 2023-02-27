@@ -242,8 +242,6 @@ describe("AuraBalVault", () => {
         });
         it("check vault is configured correctly", async () => {
             expect(await vault.isHarvestPermissioned()).eq(true);
-            expect(await vault.callIncentive()).eq(500);
-            expect(await vault.MAX_CALL_INCENTIVE()).eq(500);
             expect(await vault.FEE_DENOMINATOR()).eq(10000);
             expect(await vault.underlying()).eq(phase2.cvxCrv.address);
             expect(await vault.strategy()).eq(strategy.address);
@@ -300,6 +298,14 @@ describe("AuraBalVault", () => {
             await expect(connectedAuraRewards.stake(ZERO_ADDRESS, 0)).to.be.revertedWith("!authorized");
             await expect(connectedAuraRewards.withdraw(ZERO_ADDRESS, 0)).to.be.revertedWith("!authorized");
             await expect(connectedAuraRewards.queueNewRewards(100)).to.be.revertedWith("!authorized");
+        });
+    });
+
+    describe("Setters", () => {
+        it("AuraBalVault", async () => {
+            expect(await vault.withdrawalPenalty()).eq(100);
+            await vault.setWithdrawalPenalty(0);
+            expect(await vault.withdrawalPenalty()).eq(0);
         });
     });
 

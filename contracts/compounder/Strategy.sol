@@ -114,21 +114,6 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         IERC20(AURABAL_TOKEN).safeTransfer(vault, _amount);
     }
 
-    function _levyFees(uint256 _auraBalBalance, address _caller) internal returns (uint256) {
-        uint256 callIncentive = IGenericVault(vault).callIncentive();
-        uint256 _stakingAmount = _auraBalBalance;
-        // if this is the last call, no fees
-        if (IGenericVault(vault).totalSupply() != 0) {
-            // Deduce and pay out incentive to caller (not needed for final exit)
-            if (callIncentive > 0) {
-                uint256 incentiveAmount = (_auraBalBalance * callIncentive) / FEE_DENOMINATOR;
-                IERC20(AURABAL_TOKEN).safeTransfer(_caller, incentiveAmount);
-                _stakingAmount = _stakingAmount - incentiveAmount;
-            }
-        }
-        return _stakingAmount;
-    }
-
     /// @notice Claim rewards and swaps them to FXS for restaking
     /// @dev Can be called by the vault only
     /// @param _caller - the address calling the harvest on the vault
@@ -178,10 +163,8 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         uint256 _auraBalBalance = _swapBptToAuraBal(_bptBalance, _minAmountOut);
 
         if (_auraBalBalance > 0) {
-            uint256 _stakingAmount = _levyFees(_auraBalBalance, _caller);
-            // stake what is left after fees
-            stake(_stakingAmount);
-            return _stakingAmount;
+            stake(_auraBalBalance);
+            return _auraBalBalance;
         }
 
         return 0;

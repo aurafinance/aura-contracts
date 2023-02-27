@@ -20,8 +20,8 @@ import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
 contract GenericUnionVault is ERC20, IERC4626, Ownable {
     using SafeERC20 for IERC20;
 
-    uint256 public callIncentive = 500;
-    uint256 public constant MAX_CALL_INCENTIVE = 500;
+    uint256 public withdrawalPenalty = 100;
+    uint256 public constant MAX_WITHDRAWAL_PENALTY = 150;
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     address public immutable underlying;
@@ -29,6 +29,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
 
     address[] public extraRewards;
 
+    event WithdrawalPenaltyUpdated(uint256 _penalty);
     event Harvest(address indexed _caller, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
@@ -42,12 +43,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         underlying = _token;
     }
 
-    /// @notice Updates the caller incentive for harvests
-    /// @param _incentive - the amount of the new incentive (in BIPS)
-    function setCallIncentive(uint256 _incentive) external onlyOwner {
-        require(_incentive <= MAX_CALL_INCENTIVE);
-        callIncentive = _incentive;
-        emit CallerIncentiveUpdated(_incentive);
+    /// @notice Updates the withdrawal penalty
+    /// @param _penalty - the amount of the new penalty (in BIPS)
+    function setWithdrawalPenalty(uint256 _penalty) external onlyOwner {
+        require(_penalty <= MAX_WITHDRAWAL_PENALTY);
+        withdrawalPenalty = _penalty;
+        emit WithdrawalPenaltyUpdated(_penalty);
     }
 
     /// @notice Set the address of the strategy contract
@@ -147,6 +148,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
             // Substract a small withdrawal fee to prevent users "timing"
             // the harvests. The fee stays staked and is therefore
             // redistributed to all remaining participants.
+            uint256 _penalty = (_withdrawable * withdrawalPenalty) / FEE_DENOMINATOR;
+            _withdrawable = _withdrawable - _penalty;
             IStrategy(strategy).withdraw(_withdrawable);
         }
         return _withdrawable;
