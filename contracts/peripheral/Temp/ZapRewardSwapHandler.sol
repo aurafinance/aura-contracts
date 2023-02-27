@@ -16,7 +16,7 @@ contract ZapRewardSwapHandler {
     IBalancerVault public immutable balVault;
 
     mapping(address => mapping(address => bytes32)) poolIds;
-    mapping(address => address[]) paths;
+    mapping(address => mapping(address => address[])) paths;
 
     constructor(address _balVault, address _wethToken) {
         owner = msg.sender;
@@ -112,5 +112,43 @@ contract ZapRewardSwapHandler {
         for (uint256 i = 0; i < length; i++) {
             setPath(pathList[i]);
         }
+    }
+
+    //Swap token 0 for token 1 using balancer
+    function swapTokens(
+        address token0,
+        address token1,
+        uint256 amount
+    ) external onlyOwner {
+        address[] memory path = paths[token0][token1];
+        uint256 length = path.length;
+
+        IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](length);
+        IAsset[] memory _zapAssets = new IAsset[](length);
+        int256[] memory _limits = new int256[](length);
+
+        for (uint256 i = 0; i < length - 1; i++) {
+            _swaps[i] = IBalancerVault.BatchSwapStep({
+                poolId: poolIds[path[i]][path[i + 1]],
+                assetInIndex: i,
+                assetOutIndex: i + 1,
+                amount: i == 0 ? _amount : 0,
+                userData: new bytes(0)
+            });
+        }
+
+        for (uint256 i = 0; i < length - 1; i++) {
+            _zapAssets[i] = IAsset(path[i]);
+            _limits[i] = i == 0 ? int256(_amount) : type(int256).max;
+        }
+
+        balVault.batchSwap(
+            IBalancerVault.SwapKind.GIVEN_IN,
+            _swaps,
+            _zapAssets,
+            _createSwapFunds(),
+            _limits,
+            block.timestamp + 1
+        );
     }
 }
