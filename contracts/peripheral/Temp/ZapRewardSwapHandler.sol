@@ -8,28 +8,64 @@ import { IBalancerVault, IPriceOracle, IAsset } from "../interfaces/balancer/IBa
 /*
  * SWAPOOR-MAXI
  */
-contract ZapExtraRewardTokenSwaper {
+contract ZapRewardSwapHandler {
     using SafeERC20 for IERC20;
+    address public owner;
+    address public pendingOwner;
+    address public immutable WETH_TOKEN;
+    IBalancerVault public immutable balVault;
 
-    address balancerPool;
-    address operator;
-    address owner;
     mapping(address => mapping(address => bytes32)) poolIds;
     mapping(address => address[]) paths;
 
-    constructor(address _balancerPool) {
-        balancerPool = _balancerPool;
+    constructor(address _balVault, address _wethToken) {
+        owner = msg.sender;
+        balVault = IBalancerVault(_balVault);
+        WETH_TOKEN = _wethToken;
     }
 
-    modifier onlyOperator() {
-        require(msg.sender == operator, "only operator");
+    // Adapted from HandlerBase
+    function setPendingOwner(address _pendingOwner) external onlyOwner {
+        require(pendingOwner != address(0), "invalid owner");
+        pendingOwner = _pendingOwner;
     }
 
+    // Adapted from HandlerBase
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "only pendingOwner");
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    // Adapted from HandlerBase
+    modifier onlyOwner() {
+        require((msg.sender == owner), "owner only");
+        _;
+    }
+
+    // Adapted from HandlerBase
+    function rescueToken(address _token, address _to) external onlyOwner {
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_to, _balance);
+    }
+
+    // Adapted from HandlerBase
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
+        return
+            IBalancerVault.FundManagement({
+                sender: address(this),
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
+    }
+
+    // Adapted from HandlerBase
     function setPoolIds(
         address token0,
         address token1,
         bytes32 _poolId
-    ) public onlyOperator {
+    ) public onlyOwner {
         require(_poolId != bytes32(0), "Invalid Pool");
         (address[] memory tokens, , ) = IBalancerVault(balancerPool).getPoolTokens(_poolId);
         bool token0Found;
@@ -54,13 +90,13 @@ contract ZapExtraRewardTokenSwaper {
         address[] memory token0,
         address memory token1,
         bytes32[] memory _poolIds
-    ) external onlyOperator {
+    ) external onlyOwner {
         for (uint256 i = 0; i < length; i++) {
             setPoolIds(token0[i], token1[i], _poolIds[i]);
         }
     }
 
-    function setPath(address[] memory path) public onlyOperator {
+    function setPath(address[] memory path) public onlyOwner {
         uint256 length = path.length;
         require(length > 1, "Invalid Path");
         require(path[0] != path[length - 1], "Invalid Path");
@@ -72,7 +108,7 @@ contract ZapExtraRewardTokenSwaper {
         paths[path[0]][path[length - 1]] = path;
     }
 
-    function setMultiplePaths(address[][] memory pathList) external onlyOperator {
+    function setMultiplePaths(address[][] memory pathList) external onlyOwner {
         for (uint256 i = 0; i < length; i++) {
             setPath(pathList[i]);
         }
