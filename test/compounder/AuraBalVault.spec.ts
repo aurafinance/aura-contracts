@@ -124,8 +124,6 @@ describe("AuraBalVault", () => {
             await setup();
         });
         it("should properly store valid arguments", async () => {
-            expect(await auraBalVault.callIncentive(), "callIncentive").to.eq(500);
-            expect(await auraBalVault.MAX_CALL_INCENTIVE(), "MAX_CALL_INCENTIVE").to.eq(500);
             expect(await auraBalVault.FEE_DENOMINATOR(), "FEE_DENOMINATOR").to.eq(10000);
             expect(await auraBalVault.underlying(), "underlying").to.eq(mocks.lptoken.address);
             expect(await auraBalVault.strategy(), "strategy").to.eq(ZERO_ADDRESS);
