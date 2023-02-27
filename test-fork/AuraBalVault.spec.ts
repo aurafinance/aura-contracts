@@ -1,6 +1,6 @@
 import hre, { network } from "hardhat";
 import { expect } from "chai";
-import { BigNumberish, ethers } from "ethers";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
 import {
@@ -15,6 +15,8 @@ import {
     BBUSDHandlerv2,
     VirtualShareRewardPool,
     FeeForwarder,
+    BalancerSwapsHandler,
+    BalancerSwapsHandler__factory,
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
@@ -23,6 +25,7 @@ import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
+import { deployContract } from "../tasks/utils";
 
 // Constants
 const DEBUG = false;
@@ -73,6 +76,7 @@ describe("AuraBalVault", () => {
     let phase6: Phase6Deployed;
     let bVault: IBalancerVault;
     let wethToken: IERC20;
+    let feeToken: IERC20;
     let balToken: IERC20;
     let balWethBptToken: IERC20;
 
@@ -162,6 +166,7 @@ describe("AuraBalVault", () => {
         wethToken = IERC20__factory.connect(config.addresses.weth, dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
         balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
+        feeToken = IERC20__factory.connect(config.addresses.feeToken, dao.signer);
 
         await getAuraBal(deployer.address, parseEther("50"));
         await getAuraBal(depositor.address, parseEther("50"));
@@ -449,11 +454,152 @@ describe("AuraBalVault", () => {
     });
 
     describe("Multiple user deposits", () => {
-        it("Multiple depoists");
-        it("Multiple withdraw");
+        let ALICE: Account;
+        let DAVID: Account;
+        let SARAH: Account;
+        let PETER: Account;
+
+        const amount = simpleToExactAmount(2);
+        let harvestAmount: BigNumber;
+
+        before(async () => {
+            const accounts = await hre.ethers.getSigners();
+            [ALICE, DAVID, SARAH, PETER] = await Promise.all(
+                accounts.map(async account => impersonateAccount(await account.getAddress())),
+            );
+        });
+
+        it("Multiple equal depoists", async () => {
+            expect(await vault.totalSupply()).eq(0);
+
+            await getAuraBal(ALICE.address, amount);
+            await getAuraBal(DAVID.address, amount);
+
+            await phase2.cvxCrv.connect(ALICE.signer).approve(vault.address, amount);
+            await vault.connect(ALICE.signer).deposit(amount, ALICE.address);
+            await phase2.cvxCrv.connect(DAVID.signer).approve(vault.address, amount);
+            await vault.connect(DAVID.signer).deposit(amount, DAVID.address);
+
+            const aliceBal = await vault.balanceOf(ALICE.address);
+            const aliceUnderBal = await vault.balanceOfUnderlying(ALICE.address);
+            const davidBal = await vault.balanceOf(DAVID.address);
+            const davidUnderBal = await vault.balanceOfUnderlying(DAVID.address);
+
+            expect(aliceBal).eq(amount);
+            expect(aliceBal).eq(davidBal);
+            expect(aliceUnderBal).eq(davidUnderBal);
+        });
+        it("2x deposit", async () => {
+            const depositAmount = amount.mul(2);
+            await getAuraBal(SARAH.address, depositAmount);
+            await phase2.cvxCrv.connect(SARAH.signer).approve(vault.address, depositAmount);
+            await vault.connect(SARAH.signer).deposit(depositAmount, SARAH.address);
+
+            const bal = await vault.balanceOf(SARAH.address);
+            const underBal = await vault.balanceOfUnderlying(SARAH.address);
+            expect(bal).eq(depositAmount);
+            expect(underBal).eq(depositAmount);
+        });
+        it("4x deposit", async () => {
+            const depositAmount = amount.mul(4);
+            await getAuraBal(PETER.address, depositAmount);
+            await phase2.cvxCrv.connect(PETER.signer).approve(vault.address, depositAmount);
+            await vault.connect(PETER.signer).deposit(depositAmount, PETER.address);
+
+            const bal = await vault.balanceOf(PETER.address);
+            const underBal = await vault.balanceOfUnderlying(PETER.address);
+            expect(bal).eq(depositAmount);
+            expect(underBal).eq(depositAmount);
+        });
+        it("Harvest", async () => {
+            await getBal(strategy.address, simpleToExactAmount(10));
+            const balBefore = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            expect(await balToken.balanceOf(strategy.address)).eq(simpleToExactAmount(10));
+            await vault.connect(dao.signer)["harvest()"]();
+            const balAfter = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            expect(await balToken.balanceOf(strategy.address)).eq(0);
+
+            harvestAmount = balAfter.sub(balBefore);
+            expect(harvestAmount).gt(0);
+        });
+        it("Multiple withdraw", async () => {
+            const aliceBalanceBefore = await phase2.cvxCrv.balanceOf(ALICE.address);
+            const davidBalanceBefore = await phase2.cvxCrv.balanceOf(DAVID.address);
+            const sarahBalanceBefore = await phase2.cvxCrv.balanceOf(SARAH.address);
+            const peterBalanceBefore = await phase2.cvxCrv.balanceOf(PETER.address);
+
+            await vault
+                .connect(ALICE.signer)
+                .redeem(await vault.balanceOf(ALICE.address), ALICE.address, ALICE.address);
+            await vault
+                .connect(DAVID.signer)
+                .redeem(await vault.balanceOf(DAVID.address), DAVID.address, DAVID.address);
+            await vault
+                .connect(SARAH.signer)
+                .redeem(await vault.balanceOf(SARAH.address), SARAH.address, SARAH.address);
+            await vault
+                .connect(PETER.signer)
+                .redeem(await vault.balanceOf(PETER.address), PETER.address, PETER.address);
+
+            const compare = (a: BigNumber, b: BigNumber) => {
+                // Round it down to deal with off by 1 kek
+                expect(a.div(10)).eq(b.div(10));
+            };
+
+            const aliceBalance = (await phase2.cvxCrv.balanceOf(ALICE.address)).sub(aliceBalanceBefore);
+            const davidBalance = (await phase2.cvxCrv.balanceOf(DAVID.address)).sub(davidBalanceBefore);
+            compare(aliceBalance, davidBalance);
+
+            const sarahBalance = (await phase2.cvxCrv.balanceOf(SARAH.address)).sub(sarahBalanceBefore);
+            compare(sarahBalance, davidBalance.mul(2));
+
+            const peterBalance = (await phase2.cvxCrv.balanceOf(PETER.address)).sub(peterBalanceBefore);
+            compare(peterBalance, sarahBalance.mul(2));
+
+            expect(await vault.totalSupply()).eq(0);
+        });
     });
 
     describe("BBUSDHandler", async () => {
-        it("sell bbUSD for auraBAL");
+        let handler: BalancerSwapsHandler;
+        const strategyAddress = deployer.address;
+        before(async () => {
+            // Deploy BalancerSwapsHandler
+            handler = await deployContract<BalancerSwapsHandler>(
+                hre,
+                new BalancerSwapsHandler__factory(deployer.signer),
+                "BBUSDHandlerv3",
+                [
+                    config.addresses.feeToken,
+                    strategyAddress,
+                    config.addresses.balancerVault,
+                    config.addresses.weth,
+                    phase2.cvx.address,
+                    phase2.cvxCrv.address,
+                    {
+                        poolIds: config.addresses.feeTokenHandlerPath.poolIds,
+                        assetsIn: config.addresses.feeTokenHandlerPath.assetsIn,
+                    },
+                ],
+                {},
+                false,
+            );
+        });
+        it("fund handler with bbUSD", async () => {
+            const amount = simpleToExactAmount(100);
+            await getBBaUSD(handler.address, amount);
+            expect(await feeToken.balanceOf(handler.address)).gt(0);
+        });
+        it("sell bbUSD for WETH", async () => {
+            const wethBefore = await wethToken.balanceOf(strategyAddress);
+            expect(wethBefore).eq(0);
+
+            await handler.connect(deployer.signer).sell();
+            const wethAfter = await wethToken.balanceOf(strategyAddress);
+            const bbUSDAfter = await feeToken.balanceOf(handler.address);
+            console.log(wethAfter, wethBefore, bbUSDAfter);
+            expect(wethAfter).gt(wethBefore);
+            expect(bbUSDAfter).eq(0);
+        });
     });
 });
