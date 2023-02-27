@@ -223,7 +223,7 @@ describe("AuraBalVault", () => {
             expect(balAfter.sub(balBefore)).eq(amount);
 
             const sBalBefore = await phase2.cvx.balanceOf(strategy.address);
-            await feeForwarder.connect(dao.signer).forward(vault.address, phase2.cvx.address);
+            await feeForwarder.connect(dao.signer).forward(vault.address, phase2.cvx.address, balAfter);
             const sBalAfter = await phase2.cvx.balanceOf(strategy.address);
 
             expect(sBalAfter.sub(sBalBefore)).eq(balAfter);
@@ -296,7 +296,7 @@ describe("AuraBalVault", () => {
         const OWNER_ERROR = "Ownable: caller is not the owner";
         it("FeeForwarder", async () => {
             const connectedVault = feeForwarder.connect(account.signer);
-            await expect(connectedVault.forward(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
+            await expect(connectedVault.forward(ZERO_ADDRESS, ZERO_ADDRESS, 0)).to.be.revertedWith(OWNER_ERROR);
         });
         it("AuraBalVault", async () => {
             const connectedVault = vault.connect(account.signer);
@@ -439,7 +439,10 @@ describe("AuraBalVault", () => {
         });
     });
 
-    describe("Multiple user deposits");
+    describe("Multiple user deposits", () => {
+        it("Multiple depoists");
+        it("Multiple withdraw");
+    });
 
     describe("BBUSDHandler", async () => {
         it("sell bbUSD for auraBAL");
