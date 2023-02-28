@@ -65,6 +65,26 @@ Run the Mocha tests:
 $ yarn test
 ```
 
+Run fork tests
+
+```sh
+$ yarn test:fork:all
+```
+
+### Tasks
+
+Running in fork mode
+
+```sh
+$ NODE_URL=<FORK_URL> yarn task:fork <TASK_NAME>
+```
+
+Running task normally
+
+```
+$ NODE_URL=<NODE_URL> yarn task --network <NETWORK> <TASK_NAME>
+```
+
 ### Coverage
 
 Generate the code coverage report:
