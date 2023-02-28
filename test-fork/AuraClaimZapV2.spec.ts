@@ -12,6 +12,7 @@ import {
     IERC20,
     IERC20__factory,
     AuraClaimZapV2,
+    ZapRewardSwapHandler,
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import {
@@ -43,7 +44,7 @@ async function impersonateAndTransfer(tokenAddress: string, from: string, to: st
 
 describe("AuraClaimZapV2", () => {
     let claimZapV2: AuraClaimZapV2;
-
+    let zapRewardSwapHandler: ZapRewardSwapHandler;
     let dao: Account;
     let deployer: Account;
     let depositor: Account;
@@ -151,10 +152,37 @@ describe("AuraClaimZapV2", () => {
         //Deploy
         const result = await deployAuraClaimZapV2(hre, deployer.signer, DEBUG);
         claimZapV2 = result.claimZapV2;
+        zapRewardSwapHandler = result.zapRewardSwapHandler;
+    });
+
+    it("Setup zapRewardHandler", async () => {
+        var bbusd = "0xA13a9247ea42D743238089903570127DdA72fE44";
+        var wsteth = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
+        var weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+        var bal = config.addresses.token;
+        var aura = phase2.cvx.address;
+
+        var bb_wsteth = "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387";
+        var wsteth_weth = "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080";
+        var weth_bal = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014";
+        var aura_weth = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274";
+
+        var path0 = [bbusd, wsteth, weth, bal];
+        var path1 = [aura, weth, bal];
+        var pathList = [path0, path1];
+
+        var token0s = [bbusd, wsteth, weth, aura];
+        var token1s = [wsteth, weth, bal, weth];
+        var poolIds = [bb_wsteth, wsteth_weth, weth_bal, aura_weth];
+
+        await zapRewardSwapHandler.connect(deployer.signer).setMultiplePoolIds(token0s, token1s, poolIds);
+        await zapRewardSwapHandler.connect(deployer.signer).addMultiplePaths(pathList);
+        await zapRewardSwapHandler.connect(deployer.signer).toggleOperators(claimZapV2.address, true);
     });
 
     it("initial configuration is correct", async () => {
         expect(await claimZapV2.getName()).to.be.eq("ClaimZap V2.1");
+        expect(await claimZapV2.zapRewardSwapHandler()).to.be.eq(zapRewardSwapHandler.address);
     });
 
     it("set approval for deposits", async () => {
