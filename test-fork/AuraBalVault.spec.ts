@@ -33,10 +33,10 @@ const DEPOSIT_AMOUNT = simpleToExactAmount(10);
 
 const testConfigs = {
     mainnet: {
-        forkBlock: 16570000,
+        forkBlock: 16725720,
         auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
         auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
-        bbaUsdWhale: "0xe649B71783d5008d10a96b6871e3840a398d4F06",
+        bbaUsdWhale: "0x43b650399F2E4D6f03503f44042fabA8F7D73470",
         config: mainnetConfig,
         deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     },
@@ -178,7 +178,7 @@ describe("AuraBalVault", () => {
 
     describe("deploy reward forwarder", () => {
         it("deploy reward forwarder", async () => {
-            const result = await deployFeeForwarder(config, hre, deployer.signer);
+            const result = await config.getFeeForwarder(deployer.signer);
             feeForwarder = result.feeForwarder;
         });
         it("update booster platform to reward forwarder", async () => {

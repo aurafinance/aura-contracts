@@ -47,6 +47,7 @@ import {
     PoolMigrator__factory,
     PoolManagerV4__factory,
     BoosterOwnerSecondary__factory,
+    FeeForwarder__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -356,6 +357,10 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
     ),
 });
 
+const getFeeForwarder = async (deployer: Signer) => ({
+    feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -369,4 +374,5 @@ export const config = {
     getPhase6,
     getPhase7,
     getPhase8,
+    getFeeForwarder,
 };
