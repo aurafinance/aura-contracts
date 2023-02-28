@@ -24,7 +24,7 @@ contract ZapRewardSwapHandler {
 
     // Adapted from HandlerBase
     function setPendingOwner(address _pendingOwner) external onlyOwner {
-        require(pendingOwner != address(0), "invalid owner");
+        require(_pendingOwner != address(0), "invalid owner");
         pendingOwner = _pendingOwner;
     }
 
@@ -37,7 +37,7 @@ contract ZapRewardSwapHandler {
 
     // Adapted from HandlerBase
     modifier onlyOwner() {
-        require((msg.sender == owner), "owner only");
+        require((msg.sender == owner), "only owner");
         _;
     }
 
@@ -58,7 +58,6 @@ contract ZapRewardSwapHandler {
             });
     }
 
-    // Adapted from HandlerBase
     function setPoolIds(
         address token0,
         address token1,
