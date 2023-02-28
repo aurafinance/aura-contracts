@@ -2,6 +2,7 @@ import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { AuraClaimZapV2, AuraClaimZapV2__factory } from "../types";
+import { ZapRewardSwapHandler, ZapRewardSwapHandler__factory } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { config } from "../tasks/deploy/mainnet-config";
 
@@ -33,7 +34,18 @@ export async function deployAuraClaimZapV2(
         waitForBlocks,
     );
 
+    const zapRewardSwapHandler = await deployContract<ZapRewardSwapHandler>(
+        hre,
+        new ZapRewardSwapHandler__factory(signer),
+        "ZapRewardSwapHandler",
+        [addresses.balancerVault],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     return {
         claimZapV2,
+        zapRewardSwapHandler,
     };
 }
