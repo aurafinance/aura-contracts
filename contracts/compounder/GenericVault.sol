@@ -187,7 +187,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// @dev Can be called by anyone against an incentive in FXS
     /// @dev Harvest logic in the strategy contract
     function harvest() public virtual {
-        uint256 _harvested = IStrategy(strategy).harvest(msg.sender);
+        uint256 _harvested = IStrategy(strategy).harvest();
         emit Harvest(msg.sender, _harvested);
     }
 

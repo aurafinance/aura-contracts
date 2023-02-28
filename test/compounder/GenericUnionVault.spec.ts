@@ -85,6 +85,7 @@ describe("GenericUnionVault", () => {
             {},
             debug,
         );
+        await genericUnionVault.setWithdrawalPenalty(0);
 
         auraRewards = await deployContract<VirtualShareRewardPool>(
             hre,
