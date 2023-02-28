@@ -168,7 +168,7 @@ const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
 });
 const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
     // same as phase 2  as goerli was never migrated.
-    booster: undefined,
+    booster: Booster__factory.connect("0x2ad214dA65effA92159057957E50994440E99A1b", deployer),
     boosterOwner: undefined,
     boosterHelper: undefined,
     feeCollector: undefined,
@@ -190,10 +190,10 @@ export interface AuraBalVaultDeployed {
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
-    vault: AuraBalVault__factory.connect("0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B", deployer),
-    strategy: AuraBalStrategy__factory.connect("0xab07f0279023886222e80E25CB4a01CD007B6764", deployer),
-    bbusdHandler: BalancerSwapsHandler__factory.connect("0x55850230cE77f670B8FBf47469F935cF41304e0a", deployer),
-    auraRewards: VirtualShareRewardPool__factory.connect("0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0", deployer),
+    vault: AuraBalVault__factory.connect("0xF891822bC811CF683a6DD9e4d28ebf3dF8B7C6c3", deployer),
+    strategy: AuraBalStrategy__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
+    auraRewards: VirtualShareRewardPool__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
 });
 
 export const config = {

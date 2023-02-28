@@ -41,7 +41,7 @@ const testConfigs = {
         deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     },
     goerli: {
-        forkBlock: 8550494,
+        forkBlock: 8572175,
         auraBalWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
         auraWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
         bbaUsdWhale: "0xE0a171587b1Cae546E069A943EDa96916F5EE977",
@@ -178,8 +178,13 @@ describe("AuraBalVault", () => {
 
     describe("deploy reward forwarder", () => {
         it("deploy reward forwarder", async () => {
-            const result = await config.getFeeForwarder(deployer.signer);
-            feeForwarder = result.feeForwarder;
+            if (TEST_CONFIG === "goerli") {
+                const result = await deployFeeForwarder(config, hre, deployer.signer, false);
+                feeForwarder = result.feeForwarder;
+            } else {
+                const result = await config.getFeeForwarder(deployer.signer);
+                feeForwarder = result.feeForwarder;
+            }
         });
         it("update booster platform to reward forwarder", async () => {
             expect(await phase6.booster.treasury()).not.eq(feeForwarder.address);

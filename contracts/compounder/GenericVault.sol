@@ -33,6 +33,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     event Harvest(address indexed _caller, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
+    event ExtraRewardAdded(address indexed _reward);
+    event ExtraRewardCleared(address indexed _reward);
 
     constructor(address _token)
         ERC20(
@@ -74,11 +76,16 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         }
 
         extraRewards.push(_reward);
+        emit ExtraRewardAdded(_reward);
         return true;
     }
 
     /// @notice Clear extra rewards array
     function clearExtraRewards() external onlyOwner {
+        uint256 len = extraRewards.length;
+        for (uint256 i = 0; i < len; i++) {
+            emit ExtraRewardCleared(extraRewards[i]);
+        }
         delete extraRewards;
     }
 
