@@ -720,16 +720,16 @@ async function deployPhase2(
 
     // -----------------------------
     // 2.2. Token liquidity:
-    //     - Schedule: vesting (team, treasury, etc)
-    //     - Schedule: 2% emission for cvxCrv staking
-    //     - Create:   cvxCRV/CRV BPT Stableswap
-    //     - Schedule: chef (or other) & cvxCRV/CRV incentives
-    //     - Schedule: Airdrop(s)
-    //     - Schedule: LBP
+    // - Schedule: vesting streams
+    // - Schedule: 2% emission for cvxCrv staking
+    // - Create:   cvxCRV/CRV BPT Stableswap
+    // - Schedule: chef (or other) & cvxCRV/CRV incentives
+    // - Schedule: Airdrop(s)
+    // - Schedule: LBP
     // -----------------------------
 
     // -----------------------------
-    // 2.2.1 Schedule: vesting (team, treasury, etc)
+    // 2.2.1 Schedule: vesting escrow streams
     // -----------------------------
 
     const currentTime = BN.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
