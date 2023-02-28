@@ -16,6 +16,7 @@ contract ZapRewardSwapHandler {
 
     mapping(address => mapping(address => bytes32)) private poolIds;
     mapping(address => mapping(address => address[])) private paths;
+    mapping(address => bool) private tokenApproved;
 
     constructor(address _balVault) {
         owner = msg.sender;
@@ -93,7 +94,7 @@ contract ZapRewardSwapHandler {
         }
     }
 
-    function setPath(address[] memory path) public onlyOwner {
+    function addPath(address[] memory path) public onlyOwner {
         uint256 length = path.length;
         require(length > 1, "Invalid Path");
         require(path[0] != path[length - 1], "Invalid Path");
@@ -105,9 +106,17 @@ contract ZapRewardSwapHandler {
         paths[path[0]][path[length - 1]] = path;
     }
 
-    function setMultiplePaths(address[][] memory pathList) external onlyOwner {
+    function addMultiplePaths(address[][] memory pathList) external onlyOwner {
         for (uint256 i = 0; i < pathList.length; i++) {
-            setPath(pathList[i]);
+            addPath(pathList[i]);
+        }
+    }
+
+    function approveToken(address token) internal {
+        if (!tokenApproved[token]) {
+            IERC20(token).safeApprove(address(balVault), 0);
+            IERC20(token).safeApprove(address(balVault), type(uint256).max);
+            tokenApproved[token] = true;
         }
     }
 
@@ -115,8 +124,11 @@ contract ZapRewardSwapHandler {
     function swapTokens(
         address _token0,
         address _token1,
-        uint256 _amount
+        uint256 _amountIn,
+        uint256 _amountOut
     ) external onlyOwner {
+        IERC20(_token0).safeTransferFrom(msg.sender, address(this), _amountIn);
+
         address[] memory path = paths[_token0][_token1];
         uint256 length = path.length;
 
@@ -129,15 +141,17 @@ contract ZapRewardSwapHandler {
                 poolId: poolIds[path[i]][path[i + 1]],
                 assetInIndex: i,
                 assetOutIndex: i + 1,
-                amount: i == 0 ? _amount : 0,
+                amount: i == 0 ? _amountIn : 0,
                 userData: new bytes(0)
             });
         }
 
         for (uint256 i = 0; i < length - 1; i++) {
             _zapAssets[i] = IAsset(path[i]);
-            _limits[i] = i == 0 ? int256(_amount) : type(int256).max;
+            _limits[i] = i == 0 ? int256(_amountIn) : type(int256).max;
         }
+
+        approveToken(_token0);
 
         balVault.batchSwap(
             IBalancerVault.SwapKind.GIVEN_IN,
@@ -145,9 +159,21 @@ contract ZapRewardSwapHandler {
             _zapAssets,
             _createSwapFunds(),
             _limits,
-            block.timestamp + 1
+            block.timestamp
         );
+
+        uint256 balance = IERC20(_token1).balanceOf(address(this));
+        require(balance >= _amountOut, "Slippage");
+
+        IERC20(_token1).safeTransfer(msg.sender, balance);
     }
+
+    function getAmountOut(
+        address _token0,
+        address _token1,
+        uint256 _amountIn,
+        uint256 _amountOut
+    ) public view returns (uint256 amountOut) {}
 
     function getPath(address token0, address token1) external view returns (address[] memory path) {
         path = paths[token0][token1];
