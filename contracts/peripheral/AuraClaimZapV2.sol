@@ -46,6 +46,8 @@ contract AuraClaimZapV2 {
         uint256 minAmountOut;
         uint256 depositCvxMaxAmount;
         uint256 depositCvxCrvMaxAmount;
+        uint256 zapCvxMaxAmount;
+        uint256 zapCrvMaxAmount;
     }
 
     struct Options {
@@ -54,6 +56,8 @@ contract AuraClaimZapV2 {
         bool claimLockedCvxStake;
         bool lockCrvDeposit;
         bool useAllWalletFunds;
+        bool zapCvxToCrv;
+        bool zapCrvToCvx;
         bool lockCvx;
     }
 
@@ -86,14 +90,14 @@ contract AuraClaimZapV2 {
     }
 
     function getName() external pure returns (string memory) {
-        return "ClaimZap V2.1";
+        return "ClaimZap V3.0";
     }
 
     /**
      * @notice Approve spending of:
      *          crv     -> crvDepositor
      *          cvxCrv  -> cvxCrvRewards
-     *          cvx     -> Locker
+     *          cvx     -> Locker + zapRewardSwapHandler
      */
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
@@ -106,6 +110,12 @@ contract AuraClaimZapV2 {
 
         IERC20(cvx).safeApprove(locker, 0);
         IERC20(cvx).safeApprove(locker, type(uint256).max);
+
+        IERC20(cvx).safeApprove(zapRewardSwapHandler, 0);
+        IERC20(cvx).safeApprove(zapRewardSwapHandler, type(uint256).max);
+
+        IERC20(crv).safeApprove(zapRewardSwapHandler, 0);
+        IERC20(crv).safeApprove(zapRewardSwapHandler, type(uint256).max);
     }
 
     /**
@@ -162,7 +172,9 @@ contract AuraClaimZapV2 {
             options.claimLockedCvxStake ||
             options.lockCrvDeposit ||
             options.lockCrvDeposit ||
-            options.lockCvx);
+            options.lockCvx ||
+            options.zapCvxToCrv ||
+            options.zapCrvToCvx);
     }
 
     /**
@@ -201,15 +213,45 @@ contract AuraClaimZapV2 {
             }
         }
 
+        //Should only Zap Cvx OR Crv. Not both - counter one another
+        if(options.zapCvxToCrv) {
+            uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
+            cvxBalance = AuraMath.min(cvxBalance, amounts.zapCvxMaxAmount);
+
+            if (cvxBalance > 0) {
+                //pull cvx
+                IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
+
+                //TODO: SLIPPAGE
+                IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(cvx, crv, cvxBalance, 0);
+                IERC20(crv).safeTransfer(msg.sender, IERC20(crv).balanceOf((address(this))));
+            }
+        }
+        else if(options.zapCrvToCvx) {
+            uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
+            crvBalance = AuraMath.min(crvBalance, amounts.zapCrvMaxAmount);
+
+            if (crvBalance > 0) {
+                //pull cvx
+                IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
+
+                //TODO: SLIPPAGE
+                IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(crv, cvx, crvBalance, 0);
+                IERC20(cvx).safeTransfer(msg.sender, IERC20(cvx).balanceOf((address(this))));
+            }
+        }
+
         
         //lock upto given amount of crv and stake
         if (amounts.depositCrvMaxAmount > 0) {
             uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
             crvBalance = AuraMath.min(crvBalance, amounts.depositCrvMaxAmount);
+            
 
             if (crvBalance > 0) {
                 //pull crv
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
+
                 //deposit
                 ICrvDepositorWrapper(crvDepositWrapper).deposit(
                     crvBalance,
