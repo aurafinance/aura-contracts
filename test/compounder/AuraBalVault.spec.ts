@@ -83,6 +83,7 @@ describe("AuraBalVault", () => {
             {},
             debug,
         );
+        await auraBalVault.setWithdrawalPenalty(0);
 
         auraRewards = await deployContract<VirtualShareRewardPool>(
             hre,
