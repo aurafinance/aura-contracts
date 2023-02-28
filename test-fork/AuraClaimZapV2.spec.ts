@@ -146,6 +146,7 @@ describe("AuraClaimZapV2", () => {
 
     /* -------------------------------------------------------------------------
      * Tests
+     * todo: Clean up
      * ----------------------------------------------------------------------- */
 
     it("Deploy", async () => {
@@ -169,7 +170,8 @@ describe("AuraClaimZapV2", () => {
 
         var path0 = [bbusd, wsteth, weth, bal];
         var path1 = [aura, weth, bal];
-        var pathList = [path0, path1];
+        var path2 = [bal, weth, aura];
+        var pathList = [path0, path1, path2];
 
         var token0s = [bbusd, wsteth, weth, aura];
         var token1s = [wsteth, weth, bal, weth];
@@ -226,8 +228,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: false,
             lockCrvDeposit: true,
             useAllWalletFunds: true,
+            zapCvxToCrv: false,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: false,
         };
 
         const minBptAmountOut = await phase4.crvDepositorWrapper.getMinOut(expectedRewards, 9900);
@@ -237,12 +240,12 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: 0,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         await claimZapV2.connect(alice).claimRewards([], [], [], [], amounts, options);
 
         const newRewardBalance = await phase6.cvxCrvRewards.balanceOf(aliceAddress);
-        console.log(Number(newRewardBalance));
-        console.log(Number(rewardBalance));
+
         expect(Number(newRewardBalance)).to.be.greaterThanOrEqual(Number(minBptAmountOut.add(rewardBalance)));
     });
 
@@ -270,8 +273,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: false,
             lockCrvDeposit: false,
             useAllWalletFunds: false,
+            zapCvxToCrv: false,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: false,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
@@ -280,6 +284,7 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: 0,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
 
@@ -312,7 +317,7 @@ describe("AuraClaimZapV2", () => {
         //const cvxCrvBal = await phase2.cvxCrv.balanceOf(await dao.signer.getAddress());
         //await phase2.cvxCrv.connect(dao.signer).transfer(aliceAddress, cvxCrvBal);
         await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
-        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
+
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
         const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
 
@@ -322,8 +327,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: false,
             lockCrvDeposit: false,
             useAllWalletFunds: false,
+            zapCvxToCrv: false,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: false,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
@@ -332,6 +338,7 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
         const cvxCrvBalAfter = await phase2.cvxCrv.balanceOf(aliceAddress);
@@ -365,8 +372,6 @@ describe("AuraClaimZapV2", () => {
         const expectedRewards = await crvRewards.earned(aliceAddress);
 
         // add some cvxCrv to alice
-        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
-        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
         const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
 
@@ -376,8 +381,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: true,
             lockCrvDeposit: false,
             useAllWalletFunds: false,
+            zapCvxToCrv: false,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: false,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
@@ -386,6 +392,7 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
         const cvxCrvBalAfter = await phase2.cvxCrv.balanceOf(aliceAddress);
@@ -419,8 +426,6 @@ describe("AuraClaimZapV2", () => {
         const expectedRewards = await crvRewards.earned(aliceAddress);
 
         // add some cvxCrv to alice
-        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
-        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
         const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
 
@@ -430,8 +435,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: true,
             lockCrvDeposit: false,
             useAllWalletFunds: true,
+            zapCvxToCrv: false,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: false,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
@@ -440,6 +446,7 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
 
@@ -468,42 +475,88 @@ describe("AuraClaimZapV2", () => {
 
         await increaseTime(ONE_WEEK.mul("2"));
 
-        const balanceBefore = await balToken.balanceOf(aliceAddress);
-        const expectedRewards = await crvRewards.earned(aliceAddress);
-
         // add some cvxCrv to alice
-        await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
-        console.log(await phase2.cvxCrv.balanceOf(aliceAddress));
         await phase2.cvx.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
-        const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
+        const balanceBefore = await phase6.cvxCrvRewards.balanceOf(aliceAddress);
 
         const options: OptionsStruct = {
             claimCvxCrv: false,
             claimLockedCvx: false,
             claimLockedCvxStake: false,
             lockCrvDeposit: false,
-            useAllWalletFunds: false,
+            useAllWalletFunds: true,
+            zapCvxToCrv: true,
+            zapCrvToCvx: false,
             lockCvx: false,
-            zapCvx: true,
+        };
+
+        const amounts: ClaimRewardsAmountsStruct = {
+            depositCrvMaxAmount: ethers.constants.MaxUint256,
+            minAmountOut: 0,
+            depositCvxMaxAmount: 0,
+            depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
+            zapCvxMaxAmount: ethers.constants.MaxUint256,
+            zapCrvMaxAmount: 0,
+        };
+
+        const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
+        const balanceAfter = await phase6.cvxCrvRewards.balanceOf(aliceAddress);
+
+        // cvxCrv balance should not change as the option to use wallet funds was not provided
+        expect(Number(balanceAfter)).to.be.greaterThan(Number(balanceBefore));
+
+        await expect(tx).to.emit(cvxCrvRewards, "Staked");
+    });
+
+    it("claim from lp staking pool and stake full cvxCrvRewards balance", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("2");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+
+        await phase6.booster.earmarkRewards(poolId);
+        const pool = await phase6.booster.poolInfo(poolId);
+
+        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
+        const cvxCrvRewards = BaseRewardPool__factory.connect(await claimZapV2.cvxCrvRewards(), dao.signer);
+
+        await increaseTime(ONE_WEEK.mul("2"));
+
+        // add some cvxCrv to alice
+        await phase2.cvx.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
+        const balanceBefore = await phase4.cvxLocker.balances(aliceAddress);
+
+        const options: OptionsStruct = {
+            claimCvxCrv: false,
+            claimLockedCvx: false,
+            claimLockedCvxStake: false,
+            lockCrvDeposit: false,
+            useAllWalletFunds: true,
+            zapCvxToCrv: false,
+            zapCrvToCvx: true,
+            lockCvx: true,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
             depositCrvMaxAmount: 0,
             minAmountOut: 0,
-            depositCvxMaxAmount: 0,
-            depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
+            depositCvxMaxAmount: ethers.constants.MaxUint256,
+            depositCvxCrvMaxAmount: 0,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: ethers.constants.MaxUint256,
         };
 
         const tx = await claimZapV2.connect(alice).claimRewards([pool.crvRewards], [], [], [], amounts, options);
-        const cvxCrvBalAfter = await phase2.cvxCrv.balanceOf(aliceAddress);
-
-        const balanceAfter = await balToken.balanceOf(aliceAddress);
+        const balanceAfter = await phase4.cvxLocker.balances(aliceAddress);
 
         // cvxCrv balance should not change as the option to use wallet funds was not provided
-        expect(cvxCrvBalAfter, "cvxcrv balance").to.be.greaterThan(cvxCrvBalBefore);
+        expect(Number(balanceAfter.locked)).to.be.greaterThan(Number(balanceBefore.locked));
 
-        await expect(tx).to.emit(cvxCrvRewards, "Staked");
+        await expect(tx).to.emit(phase4.cvxLocker, "Staked");
     });
 
     it("verifies only owner can set approvals", async () => {
@@ -518,8 +571,9 @@ describe("AuraClaimZapV2", () => {
             claimLockedCvxStake: false,
             lockCrvDeposit: false,
             useAllWalletFunds: false,
-            lockCvx: false,
-            zapCvx: false,
+            zapCvxToCrv: false,
+            zapCrvToCvx: true,
+            lockCvx: true,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {
@@ -528,6 +582,7 @@ describe("AuraClaimZapV2", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: 0,
             zapCvxMaxAmount: 0,
+            zapCrvMaxAmount: 0,
         };
         await expect(
             claimZapV2.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], amounts, options),

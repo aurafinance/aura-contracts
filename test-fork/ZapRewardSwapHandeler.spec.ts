@@ -181,7 +181,6 @@ describe("zapRewardSwapHandler", () => {
     });
 
     it("should be able to transfer ownership", async () => {
-        console.log(dao.address);
         await zapRewardSwapHandler.connect(deployer.signer).setPendingOwner(dao.address);
         expect(await zapRewardSwapHandler.pendingOwner()).to.be.eq(dao.address);
     });
