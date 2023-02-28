@@ -58,10 +58,10 @@ interface IBalancerVault {
 
     function queryBatchSwap(
         SwapKind kind,
-        BatchSwapStep[] swaps,
-        IAsset[] assets,
-        FundManagement funds
-    ) external view returns (int256[] assetDeltas);
+        BatchSwapStep[] memory swaps,
+        IAsset[] memory assets,
+        FundManagement memory funds
+    ) external view returns (int256[] calldata assetDeltas);
 
     struct SingleSwap {
         bytes32 poolId;

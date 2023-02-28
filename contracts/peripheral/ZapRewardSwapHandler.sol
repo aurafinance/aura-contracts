@@ -171,9 +171,46 @@ contract ZapRewardSwapHandler {
     function getAmountOut(
         address _token0,
         address _token1,
+        uint256 _amountIn
+    ) public view returns (uint256 amountOut) {
+        address[] memory path = paths[_token0][_token1];
+        uint256 length = path.length;
+
+        IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](length);
+        IAsset[] memory _zapAssets = new IAsset[](length);
+
+        for (uint256 i = 0; i < length - 1; i++) {
+            _swaps[i] = IBalancerVault.BatchSwapStep({
+                poolId: poolIds[path[i]][path[i + 1]],
+                assetInIndex: i,
+                assetOutIndex: i + 1,
+                amount: i == 0 ? _amountIn : 0,
+                userData: new bytes(0)
+            });
+        }
+
+        for (uint256 i = 0; i < length - 1; i++) {
+            _zapAssets[i] = IAsset(path[i]);
+        }
+
+        int256[] memory assetDeltas = balVault.queryBatchSwap(
+            IBalancerVault.SwapKind.GIVEN_IN,
+            _swaps,
+            _zapAssets,
+            _createSwapFunds()
+        );
+
+        amountOut = uint256(assetDeltas[assetDeltas.length - 1]);
+    }
+
+    function getMinOut(
+        address _token0,
+        address _token1,
         uint256 _amountIn,
-        uint256 _amountOut
-    ) public view returns (uint256 amountOut) {}
+        uint256 _bps
+    ) public view returns (uint256 minAmountOut) {
+        minAmountOut = (getAmountOut(_token0, _token1, _amountIn) * _bps) / 10000;
+    }
 
     function getPath(address token0, address token1) external view returns (address[] memory path) {
         path = paths[token0][token1];
