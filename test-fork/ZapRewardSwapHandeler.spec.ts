@@ -157,5 +157,33 @@ describe("zapRewardSwapHandler", () => {
 
     it("initial configuration is correct", async () => {
         expect(await zapRewardSwapHandler.owner()).to.be.eq(deployer.address);
+        expect(await zapRewardSwapHandler.pendingOwner()).to.be.eq(ZERO_ADDRESS);
+        expect(await zapRewardSwapHandler.balVault()).to.be.eq(config.addresses.balancerVault);
+    });
+
+    it("only owner should be able to transfer ownership", async () => {
+        await expect(zapRewardSwapHandler.connect(alice).setPendingOwner(dao.address)).to.be.revertedWith("only owner");
+    });
+
+    it("only non zero-addresses should be able to become pending owner", async () => {
+        await expect(zapRewardSwapHandler.connect(deployer.signer).setPendingOwner(ZERO_ADDRESS)).to.be.revertedWith(
+            "invalid owner",
+        );
+    });
+
+    it("should be able to transfer ownership", async () => {
+        console.log(dao.address);
+        await zapRewardSwapHandler.connect(deployer.signer).setPendingOwner(dao.address);
+        expect(await zapRewardSwapHandler.pendingOwner()).to.be.eq(dao.address);
+    });
+
+    it("only pendingOwner can accept ownership", async () => {
+        await expect(zapRewardSwapHandler.connect(alice).acceptOwnership()).to.be.revertedWith("only pendingOwner");
+    });
+
+    it("should be able to accept ownership", async () => {
+        await zapRewardSwapHandler.connect(dao.signer).acceptOwnership();
+        expect(await zapRewardSwapHandler.owner()).to.be.eq(dao.address);
+        expect(await zapRewardSwapHandler.pendingOwner()).to.be.eq(ZERO_ADDRESS);
     });
 });
