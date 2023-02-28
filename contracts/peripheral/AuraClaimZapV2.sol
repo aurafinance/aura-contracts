@@ -46,6 +46,7 @@ contract AuraClaimZapV2 {
         uint256 minAmountOut;
         uint256 depositCvxMaxAmount;
         uint256 depositCvxCrvMaxAmount;
+        uint256 zapCvxMaxAmount;
     }
 
     struct Options {
@@ -54,6 +55,7 @@ contract AuraClaimZapV2 {
         bool claimLockedCvxStake;
         bool lockCrvDeposit;
         bool useAllWalletFunds;
+        bool zapCvx;
         bool lockCvx;
     }
 
@@ -93,7 +95,7 @@ contract AuraClaimZapV2 {
      * @notice Approve spending of:
      *          crv     -> crvDepositor
      *          cvxCrv  -> cvxCrvRewards
-     *          cvx     -> Locker
+     *          cvx     -> Locker + zapRewardSwapHandler
      */
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
@@ -106,6 +108,9 @@ contract AuraClaimZapV2 {
 
         IERC20(cvx).safeApprove(locker, 0);
         IERC20(cvx).safeApprove(locker, type(uint256).max);
+
+        IERC20(cvx).safeApprove(zapRewardSwapHandler, 0);
+        IERC20(cvx).safeApprove(zapRewardSwapHandler, type(uint256).max);
     }
 
     /**
@@ -162,7 +167,8 @@ contract AuraClaimZapV2 {
             options.claimLockedCvxStake ||
             options.lockCrvDeposit ||
             options.lockCrvDeposit ||
-            options.lockCvx);
+            options.lockCvx ||
+            options.zapCvx);
     }
 
     /**
@@ -198,6 +204,18 @@ contract AuraClaimZapV2 {
                 if (cvxCrvBalance > 0) {
                     IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
                 }
+            }
+        }
+
+        if(options.zapCvx) {
+            uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
+            cvxBalance = AuraMath.min(cvxBalance, amounts.zapCvxMaxAmount);
+            if (cvxBalance > 0) {
+                //pull cvx
+                IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
+
+                //TODO: SLIPPAGE
+                IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(cvx, crv, cvxBalance, 0);
             }
         }
 
