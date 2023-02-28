@@ -217,6 +217,7 @@ yarn task timeTravel --duration 69420 --network forking
 | vaultStrategy            | [0xab07f0279023886222e80E25CB4a01CD007B6764](https://goerli.etherscan.io/address/0xab07f0279023886222e80E25CB4a01CD007B6764) |
 | vaultBbusdHandler        | [0x55850230cE77f670B8FBf47469F935cF41304e0a](https://goerli.etherscan.io/address/0x55850230cE77f670B8FBf47469F935cF41304e0a) |
 | vaultAuraRewards         | [0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0](https://goerli.etherscan.io/address/0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0) |
+| feeForwarder             | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://goerli.etherscan.io/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1) |
 
 ### Ethereum Mainnet (1) @deprecated
 

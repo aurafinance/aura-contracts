@@ -186,6 +186,9 @@ describe("AuraBalVault", () => {
             await phase6.booster.connect(dao.signer).setTreasury(feeForwarder.address);
             expect(await phase6.booster.treasury()).eq(feeForwarder.address);
         });
+        it("earmarkRewards with platform", async () => {
+            await phase6.booster.earmarkRewards(1);
+        });
     });
 
     describe("deploy vault", () => {
@@ -386,11 +389,14 @@ describe("AuraBalVault", () => {
             expect(balAfter.sub(balBefore)).eq(amount);
 
             const sBalBefore = await phase2.cvx.balanceOf(strategy.address);
+            const bBalBefore = await balToken.balanceOf(strategy.address);
             await feeForwarder.connect(dao.signer).forward(vault.address, phase2.cvx.address, amount);
             await feeForwarder.connect(dao.signer).forward(vault.address, config.addresses.token, amount);
             const sBalAfter = await phase2.cvx.balanceOf(strategy.address);
+            const bBalAfter = await balToken.balanceOf(strategy.address);
 
             expect(sBalAfter.sub(sBalBefore)).eq(amount);
+            expect(bBalAfter.sub(bBalBefore)).eq(amount);
 
             const underlyingBefore = await vault.totalUnderlying();
             await vault.connect(dao.signer)["harvest()"]();
