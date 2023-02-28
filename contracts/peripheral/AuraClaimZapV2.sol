@@ -131,7 +131,7 @@ contract AuraClaimZapV2 {
         uint256 crvBalance;
         uint256 cvxBalance;
         uint256 cvxCrvBalance;
-        if (!options.useAllWalletFunds) {
+        if (!options.useAllWalletFunds && _callExtras(options)) {
             crvBalance = IERC20(crv).balanceOf(msg.sender);
             cvxBalance = IERC20(cvx).balanceOf(msg.sender);
             cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
@@ -151,7 +151,18 @@ contract AuraClaimZapV2 {
         }
 
         // claim others/deposit/lock/stake
-        _claimExtras(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
+        if (_callExtras(options)) {
+            _claimExtras(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
+        }
+    }
+
+    function _callExtras(Options calldata options) internal view returns (bool) {
+        return (options.claimCvxCrv ||
+            options.claimLockedCvx ||
+            options.claimLockedCvxStake ||
+            options.lockCrvDeposit ||
+            options.lockCrvDeposit ||
+            options.lockCvx);
     }
 
     /**
