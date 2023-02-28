@@ -7,6 +7,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
 import { ICrvDepositorWrapper } from "../interfaces/ICrvDepositorWrapper.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IRewardStaking } from "../interfaces/IRewardStaking.sol";
+import { IZapRewardSwapHandler } from "../interfaces/IZapRewardSwapHandler.sol";
 
 /**
  * @title   ClaimZap
