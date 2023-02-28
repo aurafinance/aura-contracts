@@ -24,7 +24,7 @@ import {
     Phase8Deployed,
 } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ZERO, ONE_WEEK } from "../test-utils/constants";
+import { ZERO_ADDRESS, ZERO_KEY, DEAD_ADDRESS, ZERO, ONE_WEEK } from "../test-utils/constants";
 import { deployAuraClaimZapV2 } from "../scripts/deployAuraClaimZapV2";
 import { ClaimRewardsAmountsStruct, OptionsStruct } from "types/generated/AuraClaimZapV2";
 import { BaseRewardPool__factory } from "../types/generated/";
@@ -185,5 +185,55 @@ describe("zapRewardSwapHandler", () => {
         await zapRewardSwapHandler.connect(dao.signer).acceptOwnership();
         expect(await zapRewardSwapHandler.owner()).to.be.eq(dao.address);
         expect(await zapRewardSwapHandler.pendingOwner()).to.be.eq(ZERO_ADDRESS);
+    });
+
+    it("should be able to add multiple pool ids", async () => {
+        var bbusd = "0xA13a9247ea42D743238089903570127DdA72fE44";
+        var wsteth = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
+        var weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+        var bal = config.addresses.token;
+        var aura = phase2.cvx.address;
+
+        var bb_wsteth = "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387";
+        var wsteth_weth = "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080";
+        var weth_bal = "0x5c6ee304399dbdb9c8ef030ab642b10820db8f56000200000000000000000014";
+        var aura_weth = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9000200000000000000000274";
+
+        var token0s = [bbusd, wsteth, weth, aura];
+        var token1s = [wsteth, weth, bal, weth];
+        var poolIds = [bb_wsteth, wsteth_weth, weth_bal, aura_weth];
+
+        await zapRewardSwapHandler.connect(dao.signer).setMultiplePoolIds(token0s, token1s, poolIds);
+
+        for (var i = 0; i < token1s.length; i++) {
+            expect(await zapRewardSwapHandler.getPoolId(token0s[i], token1s[i])).to.eq(poolIds[i]);
+            expect(await zapRewardSwapHandler.getPoolId(token1s[i], token0s[i])).to.eq(poolIds[i]);
+        }
+
+        expect(await zapRewardSwapHandler.getPoolId(aura, bal)).to.eq(ZERO_KEY);
+    });
+
+    it("should be able to add multiple paths", async () => {
+        var bbusd = "0xA13a9247ea42D743238089903570127DdA72fE44";
+        var wsteth = "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0";
+        var weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+        var bal = config.addresses.token;
+        var aura = phase2.cvx.address;
+
+        var path0 = [bbusd, wsteth, weth, bal];
+        var path1 = [aura, weth, bal];
+        var pathList = [path0, path1];
+
+        await zapRewardSwapHandler.connect(dao.signer).addMultiplePaths(pathList);
+
+        for (var i = 0; i < pathList.length; i++) {
+            var length = pathList[i].length;
+            var path = await zapRewardSwapHandler.getPath(pathList[i][0], pathList[i][length - 1]);
+            for (var j = 0; j < path.length; j++) {
+                expect(path[j]).to.eq(pathList[i][j]);
+            }
+        }
+
+        expect((await zapRewardSwapHandler.getPath(weth, bal)).length).to.eq(0);
     });
 });
