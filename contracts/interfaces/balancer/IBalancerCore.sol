@@ -56,6 +56,13 @@ interface IBalancerVault {
         uint256 deadline
     ) external payable returns (int256[] memory);
 
+    function queryBatchSwap(
+        SwapKind kind,
+        BatchSwapStep[] swaps,
+        IAsset[] assets,
+        FundManagement funds
+    ) external view returns (int256[] assetDeltas);
+
     struct SingleSwap {
         bytes32 poolId;
         SwapKind kind;
