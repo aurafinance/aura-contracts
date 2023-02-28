@@ -12,16 +12,14 @@ contract ZapRewardSwapHandler {
     using SafeERC20 for IERC20;
     address public owner;
     address public pendingOwner;
-    address public immutable WETH_TOKEN;
     IBalancerVault public immutable balVault;
 
-    mapping(address => mapping(address => bytes32)) poolIds;
-    mapping(address => mapping(address => address[])) paths;
+    mapping(address => mapping(address => bytes32)) private poolIds;
+    mapping(address => mapping(address => address[])) private paths;
 
-    constructor(address _balVault, address _wethToken) {
+    constructor(address _balVault) {
         owner = msg.sender;
         balVault = IBalancerVault(_balVault);
-        WETH_TOKEN = _wethToken;
     }
 
     // Adapted from HandlerBase
@@ -67,11 +65,11 @@ contract ZapRewardSwapHandler {
         bytes32 _poolId
     ) public onlyOwner {
         require(_poolId != bytes32(0), "Invalid Pool");
-        (address[] memory tokens, , ) = IBalancerVault(balancerPool).getPoolTokens(_poolId);
+        (address[] memory tokens, , ) = balVault.getPoolTokens(_poolId);
         bool token0Found;
         bool token1Found;
 
-        for (var i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             if (tokens[i] == token0) {
                 token0Found = true;
             }
@@ -88,10 +86,10 @@ contract ZapRewardSwapHandler {
 
     function setMultiplePoolIds(
         address[] memory token0,
-        address memory token1,
+        address[] memory token1,
         bytes32[] memory _poolIds
     ) external onlyOwner {
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < token0.length; i++) {
             setPoolIds(token0[i], token1[i], _poolIds[i]);
         }
     }
@@ -109,18 +107,18 @@ contract ZapRewardSwapHandler {
     }
 
     function setMultiplePaths(address[][] memory pathList) external onlyOwner {
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < pathList.length; i++) {
             setPath(pathList[i]);
         }
     }
 
-    //Swap token 0 for token 1 using balancer
+    //Swap token 0 for token 1 using our stored paths
     function swapTokens(
-        address token0,
-        address token1,
-        uint256 amount
+        address _token0,
+        address _token1,
+        uint256 _amount
     ) external onlyOwner {
-        address[] memory path = paths[token0][token1];
+        address[] memory path = paths[_token0][_token1];
         uint256 length = path.length;
 
         IBalancerVault.BatchSwapStep[] memory _swaps = new IBalancerVault.BatchSwapStep[](length);
@@ -150,5 +148,13 @@ contract ZapRewardSwapHandler {
             _limits,
             block.timestamp + 1
         );
+    }
+
+    function getPath(address token0, address token1) external view returns (address[] memory path) {
+        path = paths[token0][token1];
+    }
+
+    function getPoolId(address token0, address token1) external view returns (bytes32 poolId) {
+        poolId = poolIds[token0][token1];
     }
 }
