@@ -90,7 +90,7 @@ contract AuraClaimZapV2 {
     }
 
     function getName() external pure returns (string memory) {
-        return "ClaimZap V2.1";
+        return "ClaimZap V3.0";
     }
 
     /**

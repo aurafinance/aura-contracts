@@ -183,7 +183,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("initial configuration is correct", async () => {
-        expect(await claimZapV2.getName()).to.be.eq("ClaimZap V2.1");
+        expect(await claimZapV2.getName()).to.be.eq("ClaimZap V3.0");
         expect(await claimZapV2.zapRewardSwapHandler()).to.be.eq(zapRewardSwapHandler.address);
     });
 
