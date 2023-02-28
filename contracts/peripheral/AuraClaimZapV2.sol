@@ -30,6 +30,7 @@ contract AuraClaimZapV2 {
     address public immutable cvxCrvRewards;
     address public immutable locker;
     address public immutable owner;
+    address public immutable zapRewardSwapHandler;
 
     /**
      * @dev Claim rewards amounts.
@@ -62,6 +63,7 @@ contract AuraClaimZapV2 {
      * @param _crvDepositWrapper  crvDepositWrapper (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
      * @param _cvxCrvRewards      cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
      * @param _locker             vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
+     * @param _zapRewardSwapHandler zapRewardSwapHandler contract
      */
     constructor(
         address _crv,
@@ -69,7 +71,8 @@ contract AuraClaimZapV2 {
         address _cvxCrv,
         address _crvDepositWrapper,
         address _cvxCrvRewards,
-        address _locker
+        address _locker,
+        address _zapRewardSwapHandler
     ) {
         crv = _crv;
         cvx = _cvx;
@@ -78,6 +81,7 @@ contract AuraClaimZapV2 {
         cvxCrvRewards = _cvxCrvRewards;
         locker = _locker;
         owner = msg.sender;
+        zapRewardSwapHandler = _zapRewardSwapHandler;
     }
 
     function getName() external pure returns (string memory) {

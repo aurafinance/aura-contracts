@@ -17,6 +17,16 @@ export async function deployAuraClaimZapV2(
     const phase6 = await config.getPhase6(signer);
     const { addresses } = config;
 
+    const zapRewardSwapHandler = await deployContract<ZapRewardSwapHandler>(
+        hre,
+        new ZapRewardSwapHandler__factory(signer),
+        "ZapRewardSwapHandler",
+        [addresses.balancerVault],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     const claimZapV2 = await deployContract<AuraClaimZapV2>(
         hre,
         new AuraClaimZapV2__factory(signer),
@@ -28,17 +38,8 @@ export async function deployAuraClaimZapV2(
             phase4.crvDepositorWrapper.address,
             phase6.cvxCrvRewards.address,
             phase4.cvxLocker.address,
+            zapRewardSwapHandler.address,
         ],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const zapRewardSwapHandler = await deployContract<ZapRewardSwapHandler>(
-        hre,
-        new ZapRewardSwapHandler__factory(signer),
-        "ZapRewardSwapHandler",
-        [addresses.balancerVault],
         {},
         debug,
         waitForBlocks,
