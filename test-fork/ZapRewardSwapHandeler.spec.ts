@@ -59,6 +59,7 @@ describe("zapRewardSwapHandler", () => {
     let wethToken: IERC20;
     let balToken: IERC20;
     let balWethBptToken: IERC20;
+    let bbusdtoken: IERC20;
     let alice: Signer;
     let aliceAddress: string;
     let LPToken: IERC20;
@@ -92,6 +93,13 @@ describe("zapRewardSwapHandler", () => {
         const whaleAddress = "0x11EC78492D53c9276dD7a184B1dbfB34E50B710D";
         const whale = await impersonateAccount(whaleAddress);
         await IERC20__factory.connect(LPAddress, whale.signer).transfer(to, amount);
+    }
+
+    async function getBBUSD(to: string, amount: BigNumberish) {
+        const TokenAddress = "0xA13a9247ea42D743238089903570127DdA72fE44";
+        const whaleAddress = "0x43b650399F2E4D6f03503f44042fabA8F7D73470";
+        const whale = await impersonateAccount(whaleAddress);
+        await IERC20__factory.connect(TokenAddress, whale.signer).transfer(to, amount);
     }
 
     async function getCvxCrv(to: string, amount: BigNumberish) {
@@ -137,6 +145,7 @@ describe("zapRewardSwapHandler", () => {
         wethToken = IERC20__factory.connect(config.addresses.weth, dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
         balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
+        bbusdtoken = IERC20__factory.connect("0xA13a9247ea42D743238089903570127DdA72fE44", dao.signer);
 
         const LPAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
         LPToken = await IERC20__factory.connect(LPAddress, dao.signer);
@@ -235,5 +244,32 @@ describe("zapRewardSwapHandler", () => {
         }
 
         expect((await zapRewardSwapHandler.getPath(weth, bal)).length).to.eq(0);
+    });
+
+    it("should be able to toggle operator", async () => {
+        await zapRewardSwapHandler.connect(dao.signer).toggleOperators(aliceAddress, true);
+        expect(await zapRewardSwapHandler.operators(aliceAddress)).to.be.eq(true);
+    });
+
+    it("should be able to toggle token approval", async () => {
+        await zapRewardSwapHandler.connect(dao.signer).toggleIgnoredApproval(bbusdtoken.address, true);
+        expect(await zapRewardSwapHandler.ignoreApproval(bbusdtoken.address)).to.be.eq(true);
+    });
+
+    it("should be able to swap using contract", async () => {
+        var amount = parseEther("1000");
+        await getBBUSD(aliceAddress, amount);
+        await bbusdtoken.connect(alice).approve(zapRewardSwapHandler.address, amount);
+        var startBalance = await balToken.balanceOf(aliceAddress);
+
+        var bbusd = "0xA13a9247ea42D743238089903570127DdA72fE44";
+        var bal = config.addresses.token;
+
+        var results = await zapRewardSwapHandler.connect(alice).callStatic.getMinOut(bbusd, bal, amount, 9900);
+
+        await zapRewardSwapHandler.connect(alice).swapTokens(bbusd, bal, amount, results.minAmountOut);
+        expect(Number((await balToken.balanceOf(aliceAddress)).sub(startBalance))).to.be.greaterThanOrEqual(
+            Number(results.minAmountOut),
+        );
     });
 });
