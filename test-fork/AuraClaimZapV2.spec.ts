@@ -404,7 +404,7 @@ describe("AuraClaimZapV2", () => {
         await expect(tx).to.not.emit(cvxCrvRewards, "Staked");
     });
 
-    it("claim from lp staking pool and stake full cvxCrvRewards balance", async () => {
+    it("claim rewards and then zap AURA to BAL and then deposit for AuraBal", async () => {
         const stake = true;
         const amount = ethers.utils.parseEther("2");
         const poolId = 45;
@@ -508,7 +508,7 @@ describe("AuraClaimZapV2", () => {
         await expect(tx).to.emit(cvxCrvRewards, "Staked");
     });
 
-    it("claim from lp staking pool and stake full cvxCrvRewards balance", async () => {
+    it("claim rewards and then zap BAL claimed for AURA and stake it", async () => {
         const stake = true;
         const amount = ethers.utils.parseEther("2");
         const poolId = 45;
