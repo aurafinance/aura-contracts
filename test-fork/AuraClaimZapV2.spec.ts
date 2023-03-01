@@ -230,6 +230,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: true,
             zapCvxToCrv: false,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -275,6 +276,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: false,
             zapCvxToCrv: false,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -329,6 +331,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: false,
             zapCvxToCrv: false,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -383,6 +386,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: false,
             zapCvxToCrv: false,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -437,6 +441,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: true,
             zapCvxToCrv: false,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -487,6 +492,7 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: true,
             zapCvxToCrv: true,
             zapCrvToCvx: false,
+            useCompounder: false,
             lockCvx: false,
         };
 
@@ -531,13 +537,14 @@ describe("AuraClaimZapV2", () => {
         const balanceBefore = await phase4.cvxLocker.balances(aliceAddress);
 
         const options: OptionsStruct = {
-            claimCvxCrv: false,
-            claimLockedCvx: false,
-            claimLockedCvxStake: false,
+            claimCvxCrv: true,
+            claimLockedCvx: true,
+            claimLockedCvxStake: true,
             lockCrvDeposit: false,
             useAllWalletFunds: true,
             zapCvxToCrv: false,
             zapCrvToCvx: true,
+            useCompounder: false,
             lockCvx: true,
         };
 
@@ -573,7 +580,8 @@ describe("AuraClaimZapV2", () => {
             useAllWalletFunds: false,
             zapCvxToCrv: false,
             zapCrvToCvx: true,
-            lockCvx: true,
+            useCompounder: false,
+            lockCvx: false,
         };
 
         const amounts: ClaimRewardsAmountsStruct = {

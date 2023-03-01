@@ -8,6 +8,7 @@ import { ICrvDepositorWrapper } from "../interfaces/ICrvDepositorWrapper.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IRewardStaking } from "../interfaces/IRewardStaking.sol";
 import { IZapRewardSwapHandler } from "../interfaces/IZapRewardSwapHandler.sol";
+import { IRewardPool4626 } from "../interfaces/IRewardPool4626.sol";
 
 /**
  * @title   ClaimZap
@@ -32,6 +33,7 @@ contract AuraClaimZapV2 {
     address public immutable locker;
     address public immutable owner;
     address public immutable zapRewardSwapHandler;
+    address public compounder;
 
     /**
      * @dev Claim rewards amounts.
@@ -58,6 +60,7 @@ contract AuraClaimZapV2 {
         bool useAllWalletFunds;
         bool zapCvxToCrv;
         bool zapCrvToCvx;
+        bool useCompounder;
         bool lockCvx;
     }
 
@@ -87,6 +90,13 @@ contract AuraClaimZapV2 {
         locker = _locker;
         owner = msg.sender;
         zapRewardSwapHandler = _zapRewardSwapHandler;
+    }
+
+    function setCompounder(address _compounder) external {
+        require(msg.sender == owner, "!auth");
+        require(compounder == address(0), "compounder set");
+        require(_compounder != address(0), "!0");
+        compounder = _compounder;
     }
 
     function getName() external pure returns (string memory) {
@@ -251,14 +261,11 @@ contract AuraClaimZapV2 {
         Options calldata options
     ) internal {
 
-        bool _lockCvxCrv;
-
         if (options.claimLockedCvxStake) {
             uint256 cvxCrvBalance = _balanceCheck(cvxCrv, removeCvxCrvBalance, amounts.depositCvxCrvMaxAmount);
 
             if (cvxCrvBalance > 0) {
                 IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
-                _lockCvxCrv = true;
             }
         }
         
@@ -277,15 +284,18 @@ contract AuraClaimZapV2 {
                     options.lockCrvDeposit,
                     address(0)
                 );
-
-                _lockCvxCrv = true;
             }
         }
 
         //Gas Optim: Reduce max calls to stakeFor to 1. We now stake once after we transfer and deposit.
-        if(_lockCvxCrv){
-            uint cvxCrvBalanceToLock = IERC20(cvxCrv).balanceOf(address(this));
-            IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalanceToLock);
+        uint cvxCrvBalanceToLock = IERC20(cvxCrv).balanceOf(address(this));
+        if(cvxCrvBalanceToLock > 0){
+            if(options.useCompounder && compounder != address(0)) {
+                IRewardPool4626(compounder).deposit(cvxCrvBalanceToLock, msg.sender);
+            }
+            else{
+                IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalanceToLock);
+            }   
         }
 
         //stake up to given amount of cvx
