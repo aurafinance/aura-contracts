@@ -208,9 +208,8 @@ contract AuraClaimZapV2 {
     ) internal {
         //Should only Zap Cvx OR Crv. Not both - counter one another
         if (options.zapCvxToCrv) {
-            //uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
-            //cvxBalance = AuraMath.min(cvxBalance, amounts.zapCvxMaxAmount);
             uint256 cvxBalance = _balanceCheck(cvx, removeCvxBalance, amounts.zapCvxMaxAmount);
+
             if (cvxBalance > 0) {
                 //pull cvx
                 IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
@@ -220,9 +219,8 @@ contract AuraClaimZapV2 {
                 IERC20(crv).safeTransfer(msg.sender, IERC20(crv).balanceOf((address(this))));
             }
         } else if (options.zapCrvToCvx) {
-            //uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
-            //crvBalance = AuraMath.min(crvBalance, amounts.zapCrvMaxAmount);
             uint256 crvBalance = _balanceCheck(crv, removeCrvBalance, amounts.zapCrvMaxAmount);
+
             if (crvBalance > 0) {
                 //pull cvx
                 IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
@@ -255,9 +253,8 @@ contract AuraClaimZapV2 {
 
 
         if (options.claimLockedCvxStake) {
-            //uint256 cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender).sub(removeCvxCrvBalance);
-            //cvxCrvBalance = AuraMath.min(cvxCrvBalance, amounts.depositCvxCrvMaxAmount);
             uint256 cvxCrvBalance = _balanceCheck(cvxCrv, removeCvxCrvBalance, amounts.depositCvxCrvMaxAmount);
+
             if (cvxCrvBalance > 0) {
                 IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
             }
@@ -265,9 +262,6 @@ contract AuraClaimZapV2 {
         
         //lock upto given amount of crv and stake
         if (amounts.depositCrvMaxAmount > 0) {
-            //uint256 crvBalance = IERC20(crv).balanceOf(msg.sender).sub(removeCrvBalance);
-            //crvBalance = AuraMath.min(crvBalance, amounts.depositCrvMaxAmount);
-            
             uint256 crvBalance = _balanceCheck(crv, removeCrvBalance, amounts.depositCrvMaxAmount);
 
             if (crvBalance > 0) {
@@ -292,9 +286,6 @@ contract AuraClaimZapV2 {
 
         //stake up to given amount of cvx
         if (amounts.depositCvxMaxAmount > 0 && options.lockCvx) {
-            //uint256 cvxBalance = IERC20(cvx).balanceOf(msg.sender).sub(removeCvxBalance);
-            //cvxBalance = AuraMath.min(cvxBalance, amounts.depositCvxMaxAmount);
-
             uint256 cvxBalance = _balanceCheck(cvx, removeCvxBalance, amounts.depositCvxMaxAmount);
             if (cvxBalance > 0) {
                 //pull cvx
