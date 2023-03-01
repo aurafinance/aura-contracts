@@ -21,7 +21,7 @@ import {
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
 import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
+import { fullScale, ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
 import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
@@ -539,6 +539,13 @@ describe("AuraBalVault", () => {
             const sarahBalanceBefore = await phase2.cvxCrv.balanceOf(SARAH.address);
             const peterBalanceBefore = await phase2.cvxCrv.balanceOf(PETER.address);
 
+            const aliceAuraBalanceBefore = await phase2.cvx.balanceOf(ALICE.address);
+            const davidAuraBalanceBefore = await phase2.cvx.balanceOf(DAVID.address);
+            const sarahAuraBalanceBefore = await phase2.cvx.balanceOf(SARAH.address);
+            const peterAuraBalanceBefore = await phase2.cvx.balanceOf(PETER.address);
+
+            await increaseTime(ONE_WEEK.mul(2));
+
             await vault
                 .connect(ALICE.signer)
                 .redeem(await vault.balanceOf(ALICE.address), ALICE.address, ALICE.address);
@@ -552,11 +559,27 @@ describe("AuraBalVault", () => {
                 .connect(PETER.signer)
                 .redeem(await vault.balanceOf(PETER.address), PETER.address, PETER.address);
 
-            const compare = (a: BigNumber, b: BigNumber) => {
+            const compare = (a: BigNumber, b: BigNumber, y: BigNumberish = "10") => {
                 // Round it down to deal with off by 1 kek
-                expect(a.div(10)).eq(b.div(10));
+                expect(a.div(y)).eq(b.div(y));
             };
 
+            // Aura rewards
+            await auraRewards.connect(ALICE.signer)["getReward()"]();
+            const aliceAuraBalance = (await phase2.cvx.balanceOf(ALICE.address)).sub(aliceAuraBalanceBefore);
+            await auraRewards.connect(DAVID.signer)["getReward()"]();
+            const davidAuraBalance = (await phase2.cvx.balanceOf(DAVID.address)).sub(davidAuraBalanceBefore);
+            compare(aliceAuraBalance, davidAuraBalance, fullScale);
+
+            await auraRewards.connect(SARAH.signer)["getReward()"]();
+            const sarahAuraBalance = (await phase2.cvx.balanceOf(SARAH.address)).sub(sarahAuraBalanceBefore);
+            compare(sarahAuraBalance, davidAuraBalance.mul(2), fullScale);
+
+            await auraRewards.connect(PETER.signer)["getReward()"]();
+            const peterAuraBalance = (await phase2.cvx.balanceOf(PETER.address)).sub(peterAuraBalanceBefore);
+            compare(peterAuraBalance, sarahAuraBalance.mul(2), fullScale);
+
+            // CvxCrv Rewards
             const aliceBalance = (await phase2.cvxCrv.balanceOf(ALICE.address)).sub(aliceBalanceBefore);
             const davidBalance = (await phase2.cvxCrv.balanceOf(DAVID.address)).sub(davidBalanceBefore);
             compare(aliceBalance, davidBalance);
@@ -608,7 +631,6 @@ describe("AuraBalVault", () => {
             await handler.connect(deployer.signer).sell();
             const wethAfter = await wethToken.balanceOf(strategyAddress);
             const bbUSDAfter = await feeToken.balanceOf(handler.address);
-            console.log(wethAfter, wethBefore, bbUSDAfter);
             expect(wethAfter).gt(wethBefore);
             expect(bbUSDAfter).eq(0);
         });
