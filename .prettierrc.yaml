@@ -10,3 +10,6 @@ overrides:
     - files: "*.sol"
       options:
           tabWidth: 4
+    - files: "tasks/snapshot/gauge_choices.json"
+      options:
+          printWidth: 1000
