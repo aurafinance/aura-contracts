@@ -218,23 +218,25 @@ contract AuraClaimZapV2 {
     ) internal {
         //Should only Zap Cvx OR Crv. Not both - counter one another
         if (options.zapCvxToCrv) {
-            uint256 cvxBalance = _balanceCheck(cvx, removeCvxBalance, amounts.zapCvxMaxAmount);
+            (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(
+                cvx,
+                removeCvxBalance,
+                amounts.zapCvxMaxAmount
+            );
 
-            if (cvxBalance > 0) {
-                //pull cvx
-                IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-
+            if (continued) {
                 //TODO: SLIPPAGE
                 IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(cvx, crv, cvxBalance, 0);
                 IERC20(crv).safeTransfer(msg.sender, IERC20(crv).balanceOf((address(this))));
             }
         } else if (options.zapCrvToCvx) {
-            uint256 crvBalance = _balanceCheck(crv, removeCrvBalance, amounts.zapCrvMaxAmount);
+            (uint256 crvBalance, bool continued) = _checkBalanceAndPullToken(
+                crv,
+                removeCrvBalance,
+                amounts.zapCrvMaxAmount
+            );
 
-            if (crvBalance > 0) {
-                //pull cvx
-                IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
-
+            if (continued) {
                 //TODO: SLIPPAGE
                 IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(crv, cvx, crvBalance, 0);
                 IERC20(cvx).safeTransfer(msg.sender, IERC20(cvx).balanceOf((address(this))));
@@ -262,30 +264,21 @@ contract AuraClaimZapV2 {
     ) internal {
 
         if (options.claimLockedCvxStake) {
-            uint256 cvxCrvBalance = _balanceCheck(cvxCrv, removeCvxCrvBalance, amounts.depositCvxCrvMaxAmount);
-
-            if (cvxCrvBalance > 0) {
-                IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
-            }
+            _checkBalanceAndPullToken(cvxCrv, removeCvxCrvBalance, amounts.depositCvxCrvMaxAmount);
         }
         
         //lock upto given amount of crv and stake
         if (amounts.depositCrvMaxAmount > 0) {
-            uint256 crvBalance = _balanceCheck(crv, removeCrvBalance, amounts.depositCrvMaxAmount);
+            (uint256 crvBalance, bool continued) = _checkBalanceAndPullToken(crv, removeCrvBalance, amounts.depositCrvMaxAmount);
 
-            if (crvBalance > 0) {
-                //pull crv
-                IERC20(crv).safeTransferFrom(msg.sender, address(this), crvBalance);
-
-                //deposit
-                ICrvDepositorWrapper(crvDepositWrapper).deposit(
+            if (continued) {ICrvDepositorWrapper(crvDepositWrapper).deposit(
                     crvBalance,
                     amounts.minAmountOut,
                     options.lockCrvDeposit,
                     address(0)
-                );
-            }
+                );}
         }
+        
 
         //Gas Optim: Reduce max calls to stakeFor to 1. We now stake once after we transfer and deposit.
         uint cvxCrvBalanceToLock = IERC20(cvxCrv).balanceOf(address(this));
@@ -300,21 +293,21 @@ contract AuraClaimZapV2 {
 
         //stake up to given amount of cvx
         if (amounts.depositCvxMaxAmount > 0 && options.lockCvx) {
-            uint256 cvxBalance = _balanceCheck(cvx, removeCvxBalance, amounts.depositCvxMaxAmount);
-            if (cvxBalance > 0) {
-                //pull cvx
-                IERC20(cvx).safeTransferFrom(msg.sender, address(this), cvxBalance);
-                IAuraLocker(locker).lock(msg.sender, cvxBalance);
-            }
+            (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(cvx, removeCvxBalance, amounts.depositCvxMaxAmount);
+            if(continued){IAuraLocker(locker).lock(msg.sender, cvxBalance);}
         }
     }
 
-    function _balanceCheck(
+    function _checkBalanceAndPullToken(
         address _token,
         uint256 _removeAmount,
         uint256 _maxAmount
-    ) internal view returns (uint256 _balance) {
+    ) internal returns (uint256 _balance, bool continued) {
         _balance = IERC20(_token).balanceOf(msg.sender).sub(_removeAmount);
         _balance = AuraMath.min(_balance, _maxAmount);
+        if (_balance > 0) {
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), _balance);
+            continued = true;
+        }
     }
 }
