@@ -251,12 +251,14 @@ contract AuraClaimZapV2 {
         Options calldata options
     ) internal {
 
+        bool _lockCvxCrv;
 
         if (options.claimLockedCvxStake) {
             uint256 cvxCrvBalance = _balanceCheck(cvxCrv, removeCvxCrvBalance, amounts.depositCvxCrvMaxAmount);
 
             if (cvxCrvBalance > 0) {
                 IERC20(cvxCrv).safeTransferFrom(msg.sender, address(this), cvxCrvBalance);
+                _lockCvxCrv = true;
             }
         }
         
@@ -275,13 +277,15 @@ contract AuraClaimZapV2 {
                     options.lockCrvDeposit,
                     address(0)
                 );
+
+                _lockCvxCrv = true;
             }
         }
 
         //Gas Optim: Reduce max calls to stakeFor to 1. We now stake once after we transfer and deposit.
-        uint endCvxCrvBalance = IERC20(cvxCrv).balanceOf(address(this));
-        if(endCvxCrvBalance > 0){
-            IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, endCvxCrvBalance);
+        if(_lockCvxCrv){
+            uint cvxCrvBalanceToLock = IERC20(cvxCrv).balanceOf(address(this));
+            IRewardStaking(cvxCrvRewards).stakeFor(msg.sender, cvxCrvBalanceToLock);
         }
 
         //stake up to given amount of cvx
