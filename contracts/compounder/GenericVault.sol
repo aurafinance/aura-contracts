@@ -108,7 +108,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// representing user's share of the pool in exchange
     /// @param _amount - the amount of underlying to deposit
     /// @return _shares - the amount of shares issued
-    function deposit(uint256 _amount, address _receiver) public returns (uint256 _shares) {
+    function deposit(uint256 _amount, address _receiver) public notToZeroAddress(_receiver) returns (uint256 _shares) {
         require(_amount > 0, "Deposit too small");
 
         // Stake into extra rewards before we update the users
@@ -169,7 +169,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         uint256 _shares,
         address _receiver,
         address _owner
-    ) public returns (uint256 withdrawn) {
+    ) public notToZeroAddress(_receiver) notToZeroAddress(_owner) returns (uint256 withdrawn) {
         // Check allowance if owner if not sender
         if (msg.sender != _owner) {
             uint256 currentAllowance = allowance(_owner, msg.sender);
