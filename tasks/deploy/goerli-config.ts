@@ -36,12 +36,12 @@ import {
     RewardPoolDepositWrapper__factory,
     AuraBalVault__factory,
     AuraBalStrategy__factory,
-    VirtualShareRewardPool__factory,
     BalancerSwapsHandler__factory,
     AuraBalVault,
     AuraBalStrategy,
     BalancerSwapsHandler,
-    VirtualShareRewardPool,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -186,14 +186,14 @@ export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
     bbusdHandler: BalancerSwapsHandler;
-    auraRewards: VirtualShareRewardPool;
+    auraRewards: VirtualBalanceRewardPool;
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xF891822bC811CF683a6DD9e4d28ebf3dF8B7C6c3", deployer),
     strategy: AuraBalStrategy__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     bbusdHandler: BalancerSwapsHandler__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
-    auraRewards: VirtualShareRewardPool__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
+    auraRewards: VirtualBalanceRewardPool__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
 });
 
 export const config = {

@@ -10,8 +10,8 @@ import {
     BalancerSwapsHandler__factory,
     FeeForwarder,
     FeeForwarder__factory,
-    VirtualShareRewardPool,
-    VirtualShareRewardPool__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
@@ -104,10 +104,10 @@ export async function deployVault(
         waitForBlocks,
     );
 
-    const auraRewards = await deployContract<VirtualShareRewardPool>(
+    const auraRewards = await deployContract<VirtualBalanceRewardPool>(
         hre,
-        new VirtualShareRewardPool__factory(signer),
-        "VirtualShareRewardPool",
+        new VirtualBalanceRewardPool__factory(signer),
+        "VirtualBalanceRewardPool",
         [vault.address, phase2.cvx.address, strategy.address],
         {},
         debug,
