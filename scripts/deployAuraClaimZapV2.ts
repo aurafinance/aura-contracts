@@ -2,8 +2,8 @@ import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { AuraClaimZapV2, AuraClaimZapV2__factory } from "../types";
-import { ZapRewardSwapHandler, ZapRewardSwapHandler__factory } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
+import { DEAD_ADDRESS } from "../test-utils/constants";
 import { config } from "../tasks/deploy/mainnet-config";
 
 export async function deployAuraClaimZapV2(
@@ -16,17 +16,6 @@ export async function deployAuraClaimZapV2(
     const phase4 = await config.getPhase4(signer);
     const phase6 = await config.getPhase6(signer);
     const { addresses } = config;
-
-    const zapRewardSwapHandler = await deployContract<ZapRewardSwapHandler>(
-        hre,
-        new ZapRewardSwapHandler__factory(signer),
-        "ZapRewardSwapHandler",
-        [addresses.balancerVault],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
     const claimZapV2 = await deployContract<AuraClaimZapV2>(
         hre,
         new AuraClaimZapV2__factory(signer),
@@ -38,7 +27,7 @@ export async function deployAuraClaimZapV2(
             phase4.crvDepositorWrapper.address,
             phase6.cvxCrvRewards.address,
             phase4.cvxLocker.address,
-            zapRewardSwapHandler.address,
+            DEAD_ADDRESS, //TODO: swap for an actual address of a compoundoor
         ],
         {},
         debug,
@@ -47,6 +36,5 @@ export async function deployAuraClaimZapV2(
 
     return {
         claimZapV2,
-        zapRewardSwapHandler,
     };
 }
