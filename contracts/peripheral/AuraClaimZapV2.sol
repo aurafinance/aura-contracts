@@ -130,7 +130,7 @@ contract AuraClaimZapV2 {
         uint256 crvBalance;
         uint256 cvxBalance;
         uint256 cvxCrvBalance;
-        if (!options.useAllWalletFunds && _callExtras(options)) {
+        if (!options.useAllWalletFunds && _callRelockRewards(options)) {
             crvBalance = IERC20(crv).balanceOf(msg.sender);
             cvxBalance = IERC20(cvx).balanceOf(msg.sender);
             cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
@@ -163,10 +163,6 @@ contract AuraClaimZapV2 {
         if (_callRelockRewards(options)) {
             _relockRewards(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
         }
-    }
-
-    function _callExtras(Options calldata options) internal view returns (bool) {
-        return (_callRelockRewards(options));
     }
 
     function _callRelockRewards(Options calldata options) internal view returns (bool) {
