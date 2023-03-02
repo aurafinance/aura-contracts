@@ -100,6 +100,7 @@ contract AuraClaimZapV2 {
         _approveToken(crv, crvDepositWrapper);
         _approveToken(cvxCrv, cvxCrvRewards);
         _approveToken(cvx, locker);
+        _approveToken(cvxCrv, compounder);
     }
 
     function _approveToken(address _token, address _spender) internal {

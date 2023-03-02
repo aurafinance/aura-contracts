@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { AuraClaimZapV2, AuraClaimZapV2__factory } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { ZERO_ADDRESS } from "../test-utils/constants";
+import { DEAD_ADDRESS } from "../test-utils/constants";
 import { config } from "../tasks/deploy/mainnet-config";
 
 export async function deployAuraClaimZapV2(
@@ -27,7 +27,7 @@ export async function deployAuraClaimZapV2(
             phase4.crvDepositorWrapper.address,
             phase6.cvxCrvRewards.address,
             phase4.cvxLocker.address,
-            ZERO_ADDRESS, //TODO: swap for an actual address of a compoundoor
+            DEAD_ADDRESS, //TODO: swap for an actual address of a compoundoor
         ],
         {},
         debug,
