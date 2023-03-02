@@ -111,21 +111,16 @@ contract AuraClaimZapV2 {
      */
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
+        _approveToken(crv, crvDepositWrapper);
+        _approveToken(cvxCrv, cvxCrvRewards);
+        _approveToken(cvx, locker);
+        _approveToken(cvx, zapRewardSwapHandler);
+        _approveToken(crv, zapRewardSwapHandler);
+    }
 
-        IERC20(crv).safeApprove(crvDepositWrapper, 0);
-        IERC20(crv).safeApprove(crvDepositWrapper, type(uint256).max);
-
-        IERC20(cvxCrv).safeApprove(cvxCrvRewards, 0);
-        IERC20(cvxCrv).safeApprove(cvxCrvRewards, type(uint256).max);
-
-        IERC20(cvx).safeApprove(locker, 0);
-        IERC20(cvx).safeApprove(locker, type(uint256).max);
-
-        IERC20(cvx).safeApprove(zapRewardSwapHandler, 0);
-        IERC20(cvx).safeApprove(zapRewardSwapHandler, type(uint256).max);
-
-        IERC20(crv).safeApprove(zapRewardSwapHandler, 0);
-        IERC20(crv).safeApprove(zapRewardSwapHandler, type(uint256).max);
+    function _approveToken(address _token, address _spender) internal {
+        IERC20(_token).safeApprove(address(_spender), 0);
+        IERC20(_token).safeApprove(address(_spender), type(uint256).max);
     }
 
     /**
