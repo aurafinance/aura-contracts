@@ -6,8 +6,8 @@ import {
     AuraBalVault__factory,
     MockStrategy,
     MockStrategy__factory,
-    VirtualShareRewardPool,
-    VirtualShareRewardPool__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { deployContract } from "../../tasks/utils";
@@ -39,7 +39,7 @@ describe("AuraBalVault", () => {
     let aliceAddress: string;
     let strategyAddress: string;
 
-    let auraRewards: VirtualShareRewardPool;
+    let auraRewards: VirtualBalanceRewardPool;
 
     // Testing contract
     let auraBalVault: AuraBalVault;
@@ -85,10 +85,10 @@ describe("AuraBalVault", () => {
         );
         await auraBalVault.setWithdrawalPenalty(0);
 
-        auraRewards = await deployContract<VirtualShareRewardPool>(
+        auraRewards = await deployContract<VirtualBalanceRewardPool>(
             hre,
-            new VirtualShareRewardPool__factory(deployer),
-            "VirtualShareRewardPool",
+            new VirtualBalanceRewardPool__factory(deployer),
+            "VirtualBalanceRewardPool",
             [auraBalVault.address, phase2.cvx.address, mockStrategy.address],
             {},
             debug,

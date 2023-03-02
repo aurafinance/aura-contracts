@@ -13,10 +13,10 @@ import {
     AuraBalVault,
     AuraBalStrategy,
     BBUSDHandlerv2,
-    VirtualShareRewardPool,
     FeeForwarder,
     BalancerSwapsHandler,
     BalancerSwapsHandler__factory,
+    VirtualBalanceRewardPool,
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
@@ -66,7 +66,7 @@ describe("AuraBalVault", () => {
     let vault: AuraBalVault;
     let strategy: AuraBalStrategy;
     let bbusdHandler: BBUSDHandlerv2;
-    let auraRewards: VirtualShareRewardPool;
+    let auraRewards: VirtualBalanceRewardPool;
 
     let dao: Account;
     let deployer: Account;
@@ -275,7 +275,7 @@ describe("AuraBalVault", () => {
             expect(await bbusdHandler.balVault()).eq(config.addresses.balancerVault);
         });
         it("check AURA virtual share pool is configured correctly", async () => {
-            expect(await auraRewards.vault()).eq(vault.address);
+            expect(await auraRewards.deposits()).eq(vault.address);
             expect(await auraRewards.rewardToken()).eq(phase2.cvx.address);
             expect(await auraRewards.operator()).eq(strategy.address);
         });
