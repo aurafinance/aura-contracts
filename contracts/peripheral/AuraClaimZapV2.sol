@@ -7,7 +7,6 @@ import { AuraMath } from "../utils/AuraMath.sol";
 import { ICrvDepositorWrapper } from "../interfaces/ICrvDepositorWrapper.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IRewardStaking } from "../interfaces/IRewardStaking.sol";
-import { IZapRewardSwapHandler } from "../interfaces/IZapRewardSwapHandler.sol";
 import { IRewardPool4626 } from "../interfaces/IRewardPool4626.sol";
 
 /**
@@ -32,8 +31,7 @@ contract AuraClaimZapV2 {
     address public immutable cvxCrvRewards;
     address public immutable locker;
     address public immutable owner;
-    address public immutable zapRewardSwapHandler;
-    address public compounder;
+    address public immutable compounder;
 
     /**
      * @dev Claim rewards amounts.
@@ -48,8 +46,6 @@ contract AuraClaimZapV2 {
         uint256 minAmountOut;
         uint256 depositCvxMaxAmount;
         uint256 depositCvxCrvMaxAmount;
-        uint256 zapCvxMaxAmount;
-        uint256 zapCrvMaxAmount;
     }
 
     struct Options {
@@ -58,8 +54,6 @@ contract AuraClaimZapV2 {
         bool claimLockedCvxStake;
         bool lockCrvDeposit;
         bool useAllWalletFunds;
-        bool zapCvxToCrv;
-        bool zapCrvToCvx;
         bool useCompounder;
         bool lockCvx;
     }
@@ -71,7 +65,6 @@ contract AuraClaimZapV2 {
      * @param _crvDepositWrapper  crvDepositWrapper (0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae);
      * @param _cvxCrvRewards      cvxCrvRewards (0x3Fe65692bfCD0e6CF84cB1E7d24108E434A7587e);
      * @param _locker             vlCVX (0xD18140b4B819b895A3dba5442F959fA44994AF50);
-     * @param _zapRewardSwapHandler zapRewardSwapHandler contract
      */
     constructor(
         address _crv,
@@ -80,7 +73,7 @@ contract AuraClaimZapV2 {
         address _crvDepositWrapper,
         address _cvxCrvRewards,
         address _locker,
-        address _zapRewardSwapHandler
+        address _compounder
     ) {
         crv = _crv;
         cvx = _cvx;
@@ -89,13 +82,6 @@ contract AuraClaimZapV2 {
         cvxCrvRewards = _cvxCrvRewards;
         locker = _locker;
         owner = msg.sender;
-        zapRewardSwapHandler = _zapRewardSwapHandler;
-    }
-
-    function setCompounder(address _compounder) external {
-        require(msg.sender == owner, "!auth");
-        require(compounder == address(0), "compounder set");
-        require(_compounder != address(0), "!0");
         compounder = _compounder;
     }
 
@@ -107,15 +93,13 @@ contract AuraClaimZapV2 {
      * @notice Approve spending of:
      *          crv     -> crvDepositor
      *          cvxCrv  -> cvxCrvRewards
-     *          cvx     -> Locker + zapRewardSwapHandler
+     *          cvx     -> Locker
      */
     function setApprovals() external {
         require(msg.sender == owner, "!auth");
         _approveToken(crv, crvDepositWrapper);
         _approveToken(cvxCrv, cvxCrvRewards);
         _approveToken(cvx, locker);
-        _approveToken(cvx, zapRewardSwapHandler);
-        _approveToken(crv, zapRewardSwapHandler);
     }
 
     function _approveToken(address _token, address _spender) internal {
@@ -175,11 +159,6 @@ contract AuraClaimZapV2 {
             IAuraLocker(locker).getReward(msg.sender);
         }
 
-        // zap rewards for user
-        if (_callZapRewards(options)) {
-            _zapRewards(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
-        }
-
         // claim others/deposit/lock/stake
         if (_callRelockRewards(options)) {
             _relockRewards(crvBalance, cvxBalance, cvxCrvBalance, amounts, options);
@@ -187,56 +166,11 @@ contract AuraClaimZapV2 {
     }
 
     function _callExtras(Options calldata options) internal view returns (bool) {
-        return (_callRelockRewards(options) || _callZapRewards(options));
+        return (_callRelockRewards(options));
     }
 
     function _callRelockRewards(Options calldata options) internal view returns (bool) {
-        return (options.claimLockedCvxStake ||
-            options.lockCrvDeposit ||
-            options.lockCrvDeposit ||
-            options.lockCvx ||
-            options.zapCvxToCrv ||
-            options.zapCrvToCvx);
-    }
-
-    function _callZapRewards(Options calldata options) internal view returns (bool) {
-        return (options.zapCvxToCrv || options.zapCrvToCvx);
-    }
-
-    function _zapRewards(
-        // solhint-disable-line
-        uint256 removeCrvBalance,
-        uint256 removeCvxBalance,
-        uint256 removeCvxCrvBalance,
-        ClaimRewardsAmounts calldata amounts,
-        Options calldata options
-    ) internal {
-        //Should only Zap Cvx OR Crv. Not both - counter one another
-        if (options.zapCvxToCrv) {
-            (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(
-                cvx,
-                removeCvxBalance,
-                amounts.zapCvxMaxAmount
-            );
-
-            if (continued) {
-                //TODO: SLIPPAGE
-                IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(cvx, crv, cvxBalance, 0);
-                IERC20(crv).safeTransfer(msg.sender, IERC20(crv).balanceOf((address(this))));
-            }
-        } else if (options.zapCrvToCvx) {
-            (uint256 crvBalance, bool continued) = _checkBalanceAndPullToken(
-                crv,
-                removeCrvBalance,
-                amounts.zapCrvMaxAmount
-            );
-
-            if (continued) {
-                //TODO: SLIPPAGE
-                IZapRewardSwapHandler(zapRewardSwapHandler).swapTokens(crv, cvx, crvBalance, 0);
-                IERC20(cvx).safeTransfer(msg.sender, IERC20(cvx).balanceOf((address(this))));
-            }
-        }
+        return (options.claimLockedCvxStake || options.lockCrvDeposit || options.lockCrvDeposit || options.lockCvx);
     }
 
     /**
