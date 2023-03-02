@@ -204,6 +204,27 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     }
 
     /* --------------------------------------------------------------
+     * ERC20 hooks 
+    ----------------------------------------------------------------- */
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        // Withdraw extra rewards for the "from" address to update their earned
+        // amount when updateReward is called
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).withdraw(from, amount);
+        }
+
+        // Stake extra rewards for the "to" address
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(to, amount);
+        }
+    }
+
+    /* --------------------------------------------------------------
      * EIP-4626 functions
     ----------------------------------------------------------------- */
 

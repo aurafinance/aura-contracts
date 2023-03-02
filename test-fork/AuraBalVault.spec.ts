@@ -1,7 +1,7 @@
 import hre, { network } from "hardhat";
 import { expect } from "chai";
-import { BigNumber, BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
+import { BigNumber, BigNumberish, ethers } from "ethers";
 
 import {
     Account,
@@ -20,8 +20,8 @@ import {
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
-import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { fullScale, ZERO_ADDRESS, DEAD_ADDRESS, ONE_WEEK } from "../test-utils/constants";
+import { getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
+import { fullScale, ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK } from "../test-utils/constants";
 import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
@@ -591,6 +591,7 @@ describe("AuraBalVault", () => {
             compare(peterBalance, sarahBalance.mul(2));
 
             expect(await vault.totalSupply()).eq(0);
+            expect(await phase2.cvx.balanceOf(auraRewards.address)).lt(parseEther("0.001"));
         });
     });
 
@@ -633,6 +634,63 @@ describe("AuraBalVault", () => {
             const bbUSDAfter = await feeToken.balanceOf(handler.address);
             expect(wethAfter).gt(wethBefore);
             expect(bbUSDAfter).eq(0);
+        });
+    });
+
+    describe("Transfers", () => {
+        const AURA_AMOUNT = simpleToExactAmount(10);
+        const recipient = "0x0000000000000000000000000000000000000020";
+
+        it("Deposit to receive stkauraBAL", async () => {
+            await phase2.cvxCrv.connect(depositor.signer).approve(vault.address, ethers.constants.MaxUint256);
+            await vault.connect(depositor.signer).deposit(DEPOSIT_AMOUNT, depositor.address);
+            expect(await vault.balanceOf(depositor.address)).eq(DEPOSIT_AMOUNT);
+            expect(await vault.balanceOfUnderlying(depositor.address)).eq(DEPOSIT_AMOUNT);
+            expect(await auraRewards.earned(depositor.address)).eq(0);
+        });
+        it("Harvest some AURA", async () => {
+            const ts = await getTimestamp();
+            const periodFinish = await auraRewards.periodFinish();
+            expect(ts).gt(periodFinish);
+
+            await getAura(strategy.address, AURA_AMOUNT);
+            const auraBefore = await phase2.cvx.balanceOf(auraRewards.address);
+            await vault.connect(dao.signer)["harvest()"]();
+            const auraAfter = await phase2.cvx.balanceOf(auraRewards.address);
+            const currentRewards = await auraRewards.currentRewards();
+            expect(auraAfter.sub(auraBefore)).eq(AURA_AMOUNT);
+            expect(currentRewards).eq(AURA_AMOUNT);
+        });
+        it("Transfer stkauraBAL", async () => {
+            await increaseTime(ONE_DAY);
+            expect(await auraRewards.earned(depositor.address)).gt(0);
+            const shares = await vault.balanceOf(depositor.address);
+            const balBefore = await vault.balanceOf(recipient);
+            await vault.connect(depositor.signer).transfer(recipient, shares);
+            const balAfter = await vault.balanceOf(recipient);
+            expect(balAfter.sub(balBefore)).eq(shares);
+        });
+        it("Get AURA rewards after transfer for depositor", async () => {
+            const earned = await auraRewards.earned(depositor.address);
+            expect(earned).gt(0);
+            const balBefore = await phase2.cvx.balanceOf(depositor.address);
+            await auraRewards.connect(depositor.signer)["getReward()"]();
+            const balAfter = await phase2.cvx.balanceOf(depositor.address);
+            expect(balAfter.sub(balBefore)).eq(earned);
+
+            await increaseTime(ONE_DAY);
+            expect(await auraRewards.earned(depositor.address)).eq(0);
+        });
+        it("Get AURA reward for new recepient", async () => {
+            await increaseTime(ONE_DAY);
+            const recipientSigner = await impersonate(recipient);
+
+            const recipientEarned = await auraRewards.earned(recipient);
+            expect(recipientEarned).gt(0);
+            const balBefore = await phase2.cvx.balanceOf(recipient);
+            await auraRewards.connect(recipientSigner)["getReward()"]();
+            const balAfter = await phase2.cvx.balanceOf(recipient);
+            expect(balAfter.sub(balBefore)).gte(recipientEarned);
         });
     });
 });
