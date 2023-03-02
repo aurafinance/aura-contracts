@@ -218,7 +218,7 @@ contract AuraClaimZapV2 {
         }
 
         //stake up to given amount of cvx
-        if (amounts.depositCvxMaxAmount > 0 && options.lockCvx) {
+        if (options.lockCvx) {
             (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(cvx, removeCvxBalance, amounts.depositCvxMaxAmount);
             if(continued){IAuraLocker(locker).lock(msg.sender, cvxBalance);}
         }
