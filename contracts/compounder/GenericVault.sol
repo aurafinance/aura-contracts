@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
@@ -17,7 +18,7 @@ import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
  *          - remove platform fee
  *          - add extra rewards logic
  */
-contract GenericUnionVault is ERC20, IERC4626, Ownable {
+contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public withdrawalPenalty = 100;
@@ -108,7 +109,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// representing user's share of the pool in exchange
     /// @param _amount - the amount of underlying to deposit
     /// @return _shares - the amount of shares issued
-    function deposit(uint256 _amount, address _receiver) public notToZeroAddress(_receiver) returns (uint256 _shares) {
+    function deposit(uint256 _amount, address _receiver)
+        public
+        notToZeroAddress(_receiver)
+        nonReentrant
+        returns (uint256 _shares)
+    {
         require(_amount > 0, "Deposit too small");
 
         // Stake into extra rewards before we update the users
@@ -169,7 +175,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         uint256 _shares,
         address _receiver,
         address _owner
-    ) public notToZeroAddress(_receiver) notToZeroAddress(_owner) returns (uint256 withdrawn) {
+    ) public notToZeroAddress(_receiver) notToZeroAddress(_owner) nonReentrant returns (uint256 withdrawn) {
         // Check allowance if owner if not sender
         if (msg.sender != _owner) {
             uint256 currentAllowance = allowance(_owner, msg.sender);
