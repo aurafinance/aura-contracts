@@ -15,7 +15,7 @@ module.exports = {
         "peripheral/BoosterHelper.sol",
         "peripheral/ClaimFeesHelper.sol",
         "peripheral/RewardPoolDepositWrapper.sol",
-        "compounder/BBUSDHandler.sol",
+        "compounder/rewardHandlers/BBUSDHandler.sol",
     ],
     configureYulOptimizer: true,
 };

@@ -67,7 +67,7 @@ contract MockBalancerVault {
     }
 
     function batchSwap(
-        IBalancerVault.SwapKind kind,
+        IBalancerVault.SwapKind, /* kind */
         IBalancerVault.BatchSwapStep[] memory swaps,
         IAsset[] memory assets,
         IBalancerVault.FundManagement memory funds,

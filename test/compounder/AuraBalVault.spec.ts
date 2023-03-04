@@ -97,13 +97,12 @@ describe("AuraBalVault", () => {
         // Send some aura to mocked strategy to simulate harvest
         await increaseTime(ONE_WEEK.mul(156));
         await phase4.minter.connect(daoSigner).mint(deployerAddress, simpleToExactAmount(1000000));
-        // await phase4.minter.connect(daoSigner).mint(strategy.address, simpleToExactAmount(1000000));
     };
 
     // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
     // to the reward contract the contract will then swap it for
     // auraBAL and queue it for rewards
-    async function forceHarvestRewards(amount = parseEther("10"), signer = deployer) {
+    async function forceHarvestRewards(amount = parseEther("10"), minOut = ZERO, signer = deployer) {
         const { crv } = mocks;
         const feeToken = MockERC20__factory.connect(mocks.addresses.feeToken, signer);
 
@@ -120,7 +119,7 @@ describe("AuraBalVault", () => {
         expect(await feeToken.balanceOf(strategy.address), " feeToken balance").to.be.gt(0);
         expect(await phase2.cvx.balanceOf(strategy.address), " cvx balance").to.be.gt(0);
 
-        const tx = await vault.connect(signer)["harvest(uint256)"](0);
+        const tx = await vault.connect(signer)["harvest(uint256)"](minOut);
         await expect(tx).to.emit(vault, "Harvest");
         // Queue new rewards
         await expect(tx).to.emit(auraRewards, "RewardAdded");
@@ -144,7 +143,6 @@ describe("AuraBalVault", () => {
                     ctx.recipient = { signer: alice, address: aliceAddress };
                     ctx.anotherAccount = { signer: daoSigner, address: await daoSigner.getAddress() };
 
-                    // await vault.setStrategy(strategy.address);
                     await phase2.cvxCrv.connect(deployer).approve(vault.address, initialSupply);
                     await vault.connect(deployer).deposit(initialSupply, deployerAddress);
                 };
@@ -257,7 +255,7 @@ describe("AuraBalVault", () => {
 
             expect(await vault.isHarvestPermissioned(), "isHarvestPermissioned").to.be.eq(false);
             expect(await vault.authorizedHarvesters(deployerAddress), "authorizedHarvesters").to.be.eq(false);
-            await forceHarvestRewards(simpleToExactAmount(1), deployer);
+            await forceHarvestRewards(simpleToExactAmount(1), ZERO, deployer);
         });
         it("Unstake and withdraw underlying tokens", async () => {
             const amount = simpleToExactAmount(10);
@@ -346,6 +344,39 @@ describe("AuraBalVault", () => {
             });
         });
         describe("harvest", async () => {
+            it("does not sell token without handlers", async () => {
+                //  Deposit to make sure totalSupply is not ZERO
+                const amount = simpleToExactAmount(10);
+                await phase2.cvxCrv.approve(vault.address, amount);
+                await vault.deposit(amount, deployerAddress);
+                await vault.setHarvestPermissions(false);
+
+                // Disable fee token handler
+                await strategy.updateRewardToken(mocks.addresses.feeToken, ZERO_ADDRESS);
+
+                // ----- Send some balance to the strategy to mock the harvest ----- //
+                const { crv } = mocks;
+                const feeToken = MockERC20__factory.connect(mocks.addresses.feeToken, deployer);
+                await crv.transfer(strategy.address, amount);
+                await phase2.cvx.transfer(strategy.address, amount);
+                await feeToken.transfer(strategy.address, amount);
+                // ----- Send some balance to the balancer vault to mock swaps ----- //
+                await phase2.cvxCrv.transfer(mocks.balancerVault.address, amount);
+                await mocks.weth.transfer(mocks.balancerVault.address, amount);
+                await mocks.balancerVault.setTokens(mocks.crvBpt.address, phase2.cvxCrv.address);
+
+                const feeTokenBalance = await feeToken.balanceOf(strategy.address);
+
+                expect(await feeToken.balanceOf(strategy.address), " feeToken balance").to.be.gt(0);
+
+                // Test harvest without fee token handler
+
+                const tx = await vault["harvest(uint256)"](0);
+                await expect(tx).to.emit(vault, "Harvest");
+                // Queue new rewards
+                await expect(tx).to.emit(auraRewards, "RewardAdded");
+                expect(await feeToken.balanceOf(strategy.address), " feeToken balance").to.be.eq(feeTokenBalance);
+            });
             it("fails if permissioned  and not whitelisted ", async () => {
                 //  Deposit to make sure totalSupply is not ZERO
                 const amount = simpleToExactAmount(10);
@@ -377,7 +408,7 @@ describe("AuraBalVault", () => {
             });
         });
         describe("clearExtraRewards", async () => {
-            it("clearExtraRewards should ...", async () => {
+            it("clearExtraRewards should remove all extra rewards", async () => {
                 await vault.clearExtraRewards();
                 expect(await vault.extraRewardsLength(), "extraRewardsLength").to.eq(0);
             });

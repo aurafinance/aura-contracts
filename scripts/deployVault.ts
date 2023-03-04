@@ -69,8 +69,6 @@ export async function deployVault(
             strategy.address,
             config.addresses.balancerVault,
             config.addresses.weth,
-            phase2.cvx.address,
-            phase2.cvxCrv.address,
             {
                 poolIds: config.addresses.feeTokenHandlerPath.poolIds,
                 assetsIn: config.addresses.feeTokenHandlerPath.assetsIn,
