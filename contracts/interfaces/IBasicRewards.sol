@@ -12,7 +12,7 @@ interface IBasicRewards {
 
     function withdraw(uint256, bool) external returns (bool);
 
-    function withdraw(address, uint256) external returns (bool);
+    function withdraw(address, uint256) external;
 
     function withdrawAndUnwrap(uint256 amount, bool claim) external returns (bool);
 
@@ -20,7 +20,7 @@ interface IBasicRewards {
 
     function stake(uint256) external returns (bool);
 
-    function stake(address, uint256) external returns (bool);
+    function stake(address, uint256) external;
 
     function extraRewards(uint256) external view returns (address);
 

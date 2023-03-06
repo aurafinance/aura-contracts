@@ -3,7 +3,6 @@ pragma solidity 0.8.11;
 
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IRewardHandler } from "../interfaces/balancer/IRewardHandler.sol";
@@ -114,27 +113,11 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         IERC20(AURABAL_TOKEN).safeTransfer(vault, _amount);
     }
 
-    function _levyFees(uint256 _auraBalBalance, address _caller) internal returns (uint256) {
-        uint256 callIncentive = IGenericVault(vault).callIncentive();
-        uint256 _stakingAmount = _auraBalBalance;
-        // if this is the last call, no fees
-        if (IGenericVault(vault).totalSupply() != 0) {
-            // Deduce and pay out incentive to caller (not needed for final exit)
-            if (callIncentive > 0) {
-                uint256 incentiveAmount = (_auraBalBalance * callIncentive) / FEE_DENOMINATOR;
-                IERC20(AURABAL_TOKEN).safeTransfer(_caller, incentiveAmount);
-                _stakingAmount = _stakingAmount - incentiveAmount;
-            }
-        }
-        return _stakingAmount;
-    }
-
     /// @notice Claim rewards and swaps them to FXS for restaking
     /// @dev Can be called by the vault only
-    /// @param _caller - the address calling the harvest on the vault
     /// @param _minAmountOut -  min amount of LP tokens to receive w/o revert
     /// @return harvested - the amount harvested
-    function harvest(address _caller, uint256 _minAmountOut) public onlyVault returns (uint256 harvested) {
+    function harvest(uint256 _minAmountOut) public onlyVault returns (uint256 harvested) {
         // claim rewards
         auraBalStaking.getReward();
 
@@ -178,10 +161,8 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         uint256 _auraBalBalance = _swapBptToAuraBal(_bptBalance, _minAmountOut);
 
         if (_auraBalBalance > 0) {
-            uint256 _stakingAmount = _levyFees(_auraBalBalance, _caller);
-            // stake what is left after fees
-            stake(_stakingAmount);
-            return _stakingAmount;
+            stake(_auraBalBalance);
+            return _auraBalBalance;
         }
 
         return 0;

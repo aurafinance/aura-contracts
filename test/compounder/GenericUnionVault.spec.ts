@@ -7,8 +7,8 @@ import {
     IERC4626,
     MockStrategy,
     MockStrategy__factory,
-    VirtualShareRewardPool,
-    VirtualShareRewardPool__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { deployContract } from "../../tasks/utils";
@@ -41,7 +41,7 @@ describe("GenericUnionVault", () => {
     let aliceAddress: string;
     let strategyAddress: string;
 
-    let auraRewards: VirtualShareRewardPool;
+    let auraRewards: VirtualBalanceRewardPool;
 
     // Testing contract
     let genericUnionVault: GenericUnionVault;
@@ -85,11 +85,12 @@ describe("GenericUnionVault", () => {
             {},
             debug,
         );
+        await genericUnionVault.setWithdrawalPenalty(0);
 
-        auraRewards = await deployContract<VirtualShareRewardPool>(
+        auraRewards = await deployContract<VirtualBalanceRewardPool>(
             hre,
-            new VirtualShareRewardPool__factory(deployer),
-            "VirtualShareRewardPool",
+            new VirtualBalanceRewardPool__factory(deployer),
+            "VirtualBalanceRewardPool",
             [genericUnionVault.address, phase2.cvx.address, mockStrategy.address],
             {},
             debug,
@@ -153,8 +154,6 @@ describe("GenericUnionVault", () => {
             await setup();
         });
         it("should properly store valid arguments", async () => {
-            expect(await genericUnionVault.callIncentive(), "callIncentive").to.eq(500);
-            expect(await genericUnionVault.MAX_CALL_INCENTIVE(), "MAX_CALL_INCENTIVE").to.eq(500);
             expect(await genericUnionVault.FEE_DENOMINATOR(), "FEE_DENOMINATOR").to.eq(10000);
             expect(await genericUnionVault.underlying(), "underlying").to.eq(mocks.lptoken.address);
             expect(await genericUnionVault.strategy(), "strategy").to.eq(ZERO_ADDRESS);

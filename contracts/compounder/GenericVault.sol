@@ -5,6 +5,7 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
@@ -17,11 +18,11 @@ import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
  *          - remove platform fee
  *          - add extra rewards logic
  */
-contract GenericUnionVault is ERC20, IERC4626, Ownable {
+contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public callIncentive = 500;
-    uint256 public constant MAX_CALL_INCENTIVE = 500;
+    uint256 public withdrawalPenalty = 100;
+    uint256 public constant MAX_WITHDRAWAL_PENALTY = 150;
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     address public immutable underlying;
@@ -29,9 +30,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
 
     address[] public extraRewards;
 
+    event WithdrawalPenaltyUpdated(uint256 _penalty);
     event Harvest(address indexed _caller, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
+    event ExtraRewardAdded(address indexed _reward);
+    event ExtraRewardCleared(address indexed _reward);
 
     constructor(address _token)
         ERC20(
@@ -42,12 +46,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         underlying = _token;
     }
 
-    /// @notice Updates the caller incentive for harvests
-    /// @param _incentive - the amount of the new incentive (in BIPS)
-    function setCallIncentive(uint256 _incentive) external onlyOwner {
-        require(_incentive <= MAX_CALL_INCENTIVE);
-        callIncentive = _incentive;
-        emit CallerIncentiveUpdated(_incentive);
+    /// @notice Updates the withdrawal penalty
+    /// @param _penalty - the amount of the new penalty (in BIPS)
+    function setWithdrawalPenalty(uint256 _penalty) external onlyOwner {
+        require(_penalty <= MAX_WITHDRAWAL_PENALTY);
+        withdrawalPenalty = _penalty;
+        emit WithdrawalPenaltyUpdated(_penalty);
     }
 
     /// @notice Set the address of the strategy contract
@@ -65,7 +69,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     }
 
     /// @notice Add extra reward contract
-    /// @param _reward VirtualShareRewardPool address
+    /// @param _reward VirtualBalanceRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
         if (extraRewards.length >= 12) {
@@ -73,11 +77,16 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         }
 
         extraRewards.push(_reward);
+        emit ExtraRewardAdded(_reward);
         return true;
     }
 
     /// @notice Clear extra rewards array
     function clearExtraRewards() external onlyOwner {
+        uint256 len = extraRewards.length;
+        for (uint256 i = 0; i < len; i++) {
+            emit ExtraRewardCleared(extraRewards[i]);
+        }
         delete extraRewards;
     }
 
@@ -100,7 +109,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// representing user's share of the pool in exchange
     /// @param _amount - the amount of underlying to deposit
     /// @return _shares - the amount of shares issued
-    function deposit(uint256 _amount, address _receiver) public returns (uint256 _shares) {
+    function deposit(uint256 _amount, address _receiver)
+        public
+        notToZeroAddress(_receiver)
+        nonReentrant
+        returns (uint256 _shares)
+    {
         require(_amount > 0, "Deposit too small");
 
         // Stake into extra rewards before we update the users
@@ -130,7 +144,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// @param _shares - the number of shares sent
     /// @return _withdrawable - the withdrawable underlying amount
     function _withdraw(address _from, uint256 _shares) internal returns (uint256 _withdrawable) {
-        require(totalSupply() > 0, "empty vault");
+        require(totalSupply() > 0);
         // Computes the amount withdrawable based on the number of shares sent
         uint256 amount = (_shares * totalUnderlying()) / totalSupply();
         // Burn the shares before retrieving tokens
@@ -147,6 +161,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
             // Substract a small withdrawal fee to prevent users "timing"
             // the harvests. The fee stays staked and is therefore
             // redistributed to all remaining participants.
+            uint256 _penalty = (_withdrawable * withdrawalPenalty) / FEE_DENOMINATOR;
+            _withdrawable = _withdrawable - _penalty;
             IStrategy(strategy).withdraw(_withdrawable);
         }
         return _withdrawable;
@@ -159,7 +175,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
         uint256 _shares,
         address _receiver,
         address _owner
-    ) public returns (uint256 withdrawn) {
+    ) public notToZeroAddress(_receiver) notToZeroAddress(_owner) nonReentrant returns (uint256 withdrawn) {
         // Check allowance if owner if not sender
         if (msg.sender != _owner) {
             uint256 currentAllowance = allowance(_owner, msg.sender);
@@ -184,13 +200,34 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable {
     /// @dev Can be called by anyone against an incentive in FXS
     /// @dev Harvest logic in the strategy contract
     function harvest() public virtual {
-        uint256 _harvested = IStrategy(strategy).harvest(msg.sender);
+        uint256 _harvested = IStrategy(strategy).harvest();
         emit Harvest(msg.sender, _harvested);
     }
 
     modifier notToZeroAddress(address _to) {
         require(_to != address(0), "Invalid address!");
         _;
+    }
+
+    /* --------------------------------------------------------------
+     * ERC20 hooks 
+    ----------------------------------------------------------------- */
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        // Withdraw extra rewards for the "from" address to update their earned
+        // amount when updateReward is called
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).withdraw(from, amount);
+        }
+
+        // Stake extra rewards for the "to" address
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(to, amount);
+        }
     }
 
     /* --------------------------------------------------------------

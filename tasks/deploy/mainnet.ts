@@ -27,7 +27,7 @@ import {
     AuraMerkleDropV2__factory,
 } from "../../types/generated";
 
-task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:1").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     // ~~~~~~~~~~~~~~~
@@ -36,7 +36,7 @@ task("deploy:mainnet:1").setAction(async function (taskArguments: TaskArguments,
     const phase1 = await deployPhase1(hre, deployer, config.addresses, false, true, 3);
     logContracts(phase1 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:2").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:2").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     const phase1 = await config.getPhase1(deployer);
@@ -57,7 +57,7 @@ task("deploy:mainnet:2").setAction(async function (taskArguments: TaskArguments,
     );
     logContracts(phase2 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:3").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:3").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     const phase2 = await config.getPhase2(deployer);
@@ -68,7 +68,7 @@ task("deploy:mainnet:3").setAction(async function (taskArguments: TaskArguments,
     const phase3 = await deployPhase3(hre, deployer, phase2, config.multisigs, config.addresses, true, 3);
     logContracts(phase3 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:4").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:4").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     const phase3 = await config.getPhase3(deployer);
@@ -79,7 +79,7 @@ task("deploy:mainnet:4").setAction(async function (taskArguments: TaskArguments,
     const phase4 = await deployPhase4(hre, deployer, phase3, config.addresses, true, 3);
     logContracts(phase4 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:6").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:6").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     const phase2 = await config.getPhase2(deployer);
@@ -99,7 +99,7 @@ task("deploy:mainnet:6").setAction(async function (taskArguments: TaskArguments,
     );
     logContracts(phase6 as unknown as { [key: string]: { address: string } });
 });
-task("deploy:mainnet:7").setAction(async function (taskArgs: TaskArguments, hre) {
+task("deploy:mainnet:7").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
 
     const phase2 = await config.getPhase2(deployer);
@@ -111,7 +111,7 @@ task("deploy:mainnet:7").setAction(async function (taskArgs: TaskArguments, hre)
     logContracts(phase7 as unknown as { [key: string]: { address: string } });
 });
 
-task("deploy:mainnet:temp-booster").setAction(async function (taskArguments: TaskArguments, hre) {
+task("deploy:mainnet:temp-booster").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const tempBooster = await deployTempBooster(hre, deployer, true, 3);
     logContracts({ tempBooster });
@@ -149,7 +149,7 @@ task("deploy:mainnet:merkledrop")
         logContracts({ airdrop });
     });
 
-task("mainnet:getgauges").setAction(async function (taskArguments: TaskArguments, hre) {
+task("mainnet:getgauges").setAction(async function (_: TaskArguments, hre) {
     const { ethers } = hre;
 
     // Connect to the network
@@ -169,7 +169,7 @@ task("mainnet:getgauges").setAction(async function (taskArguments: TaskArguments
     console.log(gaugeAddress);
 });
 
-task("mainnet:getStashes").setAction(async function (taskArguments: TaskArguments, hre) {
+task("mainnet:getStashes").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
     const { addresses } = config;
     const { gauges } = addresses;

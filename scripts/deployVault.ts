@@ -8,16 +8,39 @@ import {
     AuraBalVault__factory,
     BalancerSwapsHandler,
     BalancerSwapsHandler__factory,
-    VirtualShareRewardPool,
-    VirtualShareRewardPool__factory,
+    FeeForwarder,
+    FeeForwarder__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;
+    multisigs: MultisigConfig;
     getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
+}
+
+export async function deployFeeForwarder(
+    config: VaultConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const feeForwarder = await deployContract<FeeForwarder>(
+        hre,
+        new FeeForwarder__factory(signer),
+        "FeeForwarder",
+        [config.multisigs.daoMultisig],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { feeForwarder };
 }
 
 export async function deployVault(
@@ -79,10 +102,10 @@ export async function deployVault(
         waitForBlocks,
     );
 
-    const auraRewards = await deployContract<VirtualShareRewardPool>(
+    const auraRewards = await deployContract<VirtualBalanceRewardPool>(
         hre,
-        new VirtualShareRewardPool__factory(signer),
-        "VirtualShareRewardPool",
+        new VirtualBalanceRewardPool__factory(signer),
+        "VirtualBalanceRewardPool",
         [vault.address, phase2.cvx.address, strategy.address],
         {},
         debug,

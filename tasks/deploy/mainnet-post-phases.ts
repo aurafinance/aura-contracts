@@ -16,13 +16,15 @@ import {
     ClaimFeesHelper__factory,
     GaugeMigrator,
     GaugeMigrator__factory,
+    AuraMining,
+    AuraMining__factory,
     IStablePoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
     IERC20__factory,
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
-import { deployVault } from "../../scripts/deployVault";
+import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
 
@@ -127,6 +129,20 @@ task("deploy:mainnet:boosterSecondary").setAction(async function (_: TaskArgumen
     console.log("update boosterOwnerSecondary address to:", boosterOwnerSecondary.address);
 });
 
+task("deploy:mainnet:auraMining").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const auraMining = await deployContract<AuraMining>(
+        hre,
+        new AuraMining__factory(deployer),
+        "AuraMining",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    console.log("update auraMining address to:", auraMining.address);
+});
+
 task("deploy:vault")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
@@ -154,6 +170,16 @@ task("deploy:vault")
         console.log("Strategy:", strategy.address);
         console.log("BBUSD Handler:", bbusdHandler.address);
         console.log("AuraRewards:", auraRewards.address);
+    });
+
+task("deploy:feeForwarder")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+
+        const { feeForwarder } = await deployFeeForwarder(config, hre, deployer, debug, tskArgs.wait || waitForBlocks);
+
+        console.log("FeeForwarder:", feeForwarder.address);
     });
 
 task("deploy:goerli:AuraBalStablePool")

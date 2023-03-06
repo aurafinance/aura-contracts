@@ -46,6 +46,7 @@ describe("BalancerSwapsHandler", () => {
         const result = await deployVault(
             {
                 addresses: mocks.addresses,
+                multisigs,
                 getPhase2: async (__: Signer) => phase2,
                 getPhase6: async (__: Signer) => {
                     const phase6: Partial<Phase6Deployed> = {};
