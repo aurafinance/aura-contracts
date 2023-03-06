@@ -375,7 +375,7 @@ describe("GenericUnionVault", () => {
         });
         describe("deposit", async () => {
             it("fails if deposits ZERO", async () => {
-                await expect(genericUnionVault.connect(alice).deposit(ZERO, ZERO_ADDRESS), "fails").to.be.revertedWith(
+                await expect(genericUnionVault.connect(alice).deposit(ZERO, DEAD_ADDRESS), "fails").to.be.revertedWith(
                     "Deposit too small",
                 );
             });
