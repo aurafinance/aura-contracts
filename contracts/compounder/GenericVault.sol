@@ -161,11 +161,18 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
             // Substract a small withdrawal fee to prevent users "timing"
             // the harvests. The fee stays staked and is therefore
             // redistributed to all remaining participants.
-            uint256 _penalty = (_withdrawable * withdrawalPenalty) / FEE_DENOMINATOR;
+            uint256 _penalty = _getWithdrawalPenalty(_withdrawable);
             _withdrawable = _withdrawable - _penalty;
             IStrategy(strategy).withdraw(_withdrawable);
         }
         return _withdrawable;
+    }
+
+    /// @notice Get the withdraw penalty amount
+    /// @param _amount Amount of asset
+    /// @return penalty amount
+    function _getWithdrawalPenalty(uint256 _amount) internal view returns (uint256) {
+        return (_amount * withdrawalPenalty) / FEE_DENOMINATOR;
     }
 
     /// @notice Unstake underlying token in proportion to the amount of shares sent
@@ -297,7 +304,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Allows an on-chain or off-chain user to simulate the effects
     /// of their withdrawal at the current block, given current on-chain conditions.
     function previewWithdraw(uint256 _assets) public view returns (uint256) {
-        return convertToShares(_assets);
+        uint256 penalty = _getWithdrawalPenalty(_assets);
+        return convertToShares(_assets + penalty);
     }
 
     /// @notice Burns shares from owner and sends exactly assets of
@@ -320,6 +328,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Allows an on-chain or off-chain user to simulate the effects of
     /// their redeemption at the current block, given current on-chain conditions.
     function previewRedeem(uint256 _shares) public view returns (uint256) {
-        return convertToAssets(_shares);
+        uint256 amount = convertToAssets(_shares);
+        uint256 penalty = _getWithdrawalPenalty(amount);
+        return amount - penalty;
     }
 }
