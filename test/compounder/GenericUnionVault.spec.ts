@@ -189,6 +189,13 @@ describe("GenericUnionVault", () => {
             expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(extraRewardsLength.add(1));
             expect(await genericUnionVault.extraRewards(0), "extraRewards").to.eq(auraRewards.address);
         });
+        it("Checks empty vault", async () => {
+            expect(await genericUnionVault.totalSupply(), "balanceOfUnderlying").to.be.eq(ZERO);
+            await expect(genericUnionVault.balanceOfUnderlying(ZERO_ADDRESS), "balanceOfUnderlying").to.be.revertedWith(
+                "No users",
+            );
+        });
+
         it("First user deposit into the autocompounder 1:1", async () => {
             const amount = simpleToExactAmount(10);
             const totalUnderlyingBefore = await genericUnionVault.totalUnderlying();
@@ -355,7 +362,7 @@ describe("GenericUnionVault", () => {
             });
         });
         describe("clearExtraRewards", async () => {
-            it("clearExtraRewards should ...", async () => {
+            it("clearExtraRewards should remove all extra rewards", async () => {
                 await genericUnionVault.clearExtraRewards();
                 expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(0);
             });
@@ -364,6 +371,13 @@ describe("GenericUnionVault", () => {
                     genericUnionVault.connect(alice).clearExtraRewards(),
                     "fails due to owner",
                 ).to.be.revertedWith("Ownable: caller is not the owner");
+            });
+        });
+        describe("deposit", async () => {
+            it("fails if deposits ZERO", async () => {
+                await expect(genericUnionVault.connect(alice).deposit(ZERO, DEAD_ADDRESS), "fails").to.be.revertedWith(
+                    "Deposit too small",
+                );
             });
         });
     });

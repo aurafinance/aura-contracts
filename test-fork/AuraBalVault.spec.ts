@@ -433,7 +433,6 @@ describe("AuraBalVault", () => {
             const sharesBefore = await vault.balanceOf(depositor.address);
             await vault.connect(depositor.signer).mint(shares, depositor.address);
             const sharesAfter = await vault.balanceOf(depositor.address);
-            // TODO: fix precision?
             expect(shares).eq(sharesAfter.sub(sharesBefore).add(1));
         });
     });

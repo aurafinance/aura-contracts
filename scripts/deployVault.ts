@@ -92,8 +92,6 @@ export async function deployVault(
             strategy.address,
             config.addresses.balancerVault,
             config.addresses.weth,
-            phase2.cvx.address,
-            phase2.cvxCrv.address,
             {
                 poolIds: config.addresses.feeTokenHandlerPath.poolIds,
                 assetsIn: config.addresses.feeTokenHandlerPath.assetsIn,
@@ -124,6 +122,9 @@ export async function deployVault(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await strategy.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await bbusdHandler.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
     return {
