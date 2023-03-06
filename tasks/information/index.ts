@@ -1,11 +1,11 @@
 import { task, types } from "hardhat/config";
-import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
+import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { ChefForwarder__factory } from "../../types/generated";
 import { config } from "../deploy/mainnet-config";
 import { Phase2Deployed } from "scripts/deploySystem";
-import { BigNumber as BN, BigNumberish, utils } from "ethers";
+import { BigNumber as BN, utils } from "ethers";
 import { Proposal, fetchAuraProposals, isAuraBalProposal, isAuraEthProposal } from "./hiddenhandApi";
 import * as fs from "fs";
 import * as path from "path";
@@ -33,9 +33,9 @@ const roundDown = (amount: string) =>
 /**
  *  It gets the amount of rewards claimable by the chef forwarder.
  * @param {HardhatRuntime} hre - The Hardhat runtime environment
- * @return {*}  {Promise<Number>}
+ * @return {*}  {Promise<number>}
  */
-const getChefClaimableRewards = async (hre: HardhatRuntime): Promise<Number> => {
+const getChefClaimableRewards = async (hre: HardhatRuntime): Promise<number> => {
     const signer = await getSigner(hre);
     const phase2: Phase2Deployed = await config.getPhase2(signer);
     const chefForwarder = ChefForwarder__factory.connect(chefForwarderAddress, signer);
