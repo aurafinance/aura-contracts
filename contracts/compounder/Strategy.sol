@@ -3,7 +3,6 @@ pragma solidity 0.8.11;
 
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { ERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IRewardHandler } from "../interfaces/balancer/IRewardHandler.sol";

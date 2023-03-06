@@ -315,7 +315,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         address _receiver,
         address _owner
     ) public returns (uint256) {
-        uint256 shares = convertToShares(_assets);
+        uint256 shares = previewWithdraw(_assets);
         return redeem(shares, _receiver, _owner);
     }
 

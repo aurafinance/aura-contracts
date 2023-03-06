@@ -4,7 +4,6 @@ pragma solidity 0.8.11;
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
-import { IRewardHandler } from "../../interfaces/balancer/IRewardHandler.sol";
 import { HandlerBase } from "./HandlerBase.sol";
 
 contract BalancerSwapsHandler is HandlerBase {
@@ -18,8 +17,6 @@ contract BalancerSwapsHandler is HandlerBase {
         bytes32[] poolIds;
         address[] assetsIn;
     }
-    address public immutable AURA_TOKEN;
-    address public immutable AURABAL_TOKEN;
     SwapPath internal swapPath;
 
     constructor(
@@ -27,12 +24,8 @@ contract BalancerSwapsHandler is HandlerBase {
         address _strategy,
         address _balVault,
         address _wethToken,
-        address _auraToken,
-        address _auraBalToken,
         SwapPath memory _swapPath
     ) HandlerBase(_token, _strategy, _balVault, _wethToken) {
-        AURA_TOKEN = _auraToken;
-        AURABAL_TOKEN = _auraBalToken;
         swapPath = _swapPath;
     }
 
@@ -71,6 +64,11 @@ contract BalancerSwapsHandler is HandlerBase {
             limits,
             block.timestamp + 1
         );
+    }
+
+    function setApprovals() external {
+        IERC20(token).safeApprove(address(balVault), 0);
+        IERC20(token).safeApprove(address(balVault), type(uint256).max);
     }
 
     function sell() external override onlyStrategy {
