@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as path from "path";
 import { table } from "table";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
@@ -8,7 +6,7 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory } from "../../types/generated";
 import { configs } from "./constants";
-import { Gauge, getGaugeSnapshot, parseLabel, sortGaugeList } from "./utils";
+import { GaugeChoice, getGaugeChoices } from "./utils";
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
@@ -42,8 +40,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // ----------------------------------------------------------
         // Get Gauge Weight Votes
         // ----------------------------------------------------------
-        let gaugeList = getGaugeSnapshot();
-        gaugeList = sortGaugeList(gaugeList);
+        const gaugeList = getGaugeChoices();
 
         const results: { choice: string; score: number; percentage: number; address: string }[] = [];
 
@@ -51,7 +48,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             const score = proposal.scores[i];
             const choice = proposal.choices[i];
             const percentage = score / proposal.scores_total;
-            const resp = gaugeList.find((gauge: Gauge) => parseLabel(gauge) === choice);
+            const resp = gaugeList.find((gauge: GaugeChoice) => gauge.label === choice);
 
             results.push({ choice, score, percentage, address: resp?.address });
         }
@@ -69,7 +66,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         const gaugeControllerAddress = "0xc128468b7ce63ea702c1f104d55a2566b13d3abd";
         const gaugeController = IGaugeController__factory.connect(gaugeControllerAddress, signer);
         const gaugesWithExistingWeights = await Promise.all(
-            gaugeList.map(async (gauge: Gauge) => {
+            gaugeList.map(async (gauge: GaugeChoice) => {
                 const [, power] = await gaugeController.vote_user_slopes(voterProxyAddress, gauge.address);
                 return { ...gauge, existingWeight: power };
             }),
@@ -102,19 +99,25 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // ----------------------------------------------------------
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let votes: any[] = [];
+        interface Vote {
+            gauge: GaugeChoice;
+            voteDelta: number;
+            voteWeight: number;
+            percentage: number;
+        }
+        let votes: Vote[] = [];
         for (const gauge of gaugesWithExistingWeights) {
             const idx = successfulGauges.findIndex(g => gauge.address === g.address);
             if (~idx) {
                 // Gauge that we want to cast a vote for this time
                 const voteWeight = weights[idx];
                 const voteGauge = successfulGauges[idx];
-                const voteDelta = voteWeight - gauge.existingWeight;
+                const voteDelta = voteWeight - gauge.existingWeight.toNumber();
                 votes.push({ gauge, voteDelta, voteWeight, percentage: voteGauge.percentage });
             } else if (gauge.existingWeight.gt(0)) {
                 // Gauge not found in vote list but it has a weight already
                 // so we need to send a vote to reset it to 0.
-                votes.push({ gauge, voteDelta: gauge.existingWeight, voteWeight: 0, percentage: 0 });
+                votes.push({ gauge, voteDelta: gauge.existingWeight.toNumber(), voteWeight: 0, percentage: 0 });
             }
         }
 
@@ -130,7 +133,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         const tableData = [
             ["Gauge", "voteDelta", "percentage", "address", "weight"],
             ...votes.map(({ gauge, voteDelta, voteWeight, percentage }) => [
-                parseLabel(gauge),
+                gauge.label,
                 voteDelta,
                 (percentage * 100).toFixed(2) + "%",
                 gauge.address,

@@ -31,7 +31,7 @@ export function getGaugeSnapshot() {
     return JSON.parse(fs.readFileSync(savePath, "utf-8"));
 }
 
-export function getGaugeChoices() {
+export function getGaugeChoices(): Array<GaugeChoice> {
     // https://raw.githubusercontent.com/balancer/frontend-v2/develop/src/data/voting-gauges.json
     const savePath = path.resolve(__dirname, "./gauge_choices.json");
     return JSON.parse(fs.readFileSync(savePath, "utf-8"));
