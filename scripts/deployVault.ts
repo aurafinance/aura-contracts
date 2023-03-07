@@ -8,6 +8,7 @@ import {
     AuraBalVault__factory,
     BalancerSwapsHandler,
     BalancerSwapsHandler__factory,
+    ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
     VirtualBalanceRewardPool,
@@ -15,6 +16,7 @@ import {
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import { ZERO } from "../test-utils";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;
@@ -52,6 +54,7 @@ export async function deployVault(
 ) {
     const phase2 = await config.getPhase2(signer);
     const phase6 = await config.getPhase6(signer);
+    const feeToken = ERC20__factory.connect(config.addresses.feeToken, signer);
 
     const vault = await deployContract<AuraBalVault>(
         hre,
@@ -124,9 +127,10 @@ export async function deployVault(
     tx = await strategy.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await bbusdHandler.setApprovals();
-    await waitForTx(tx, debug, waitForBlocks);
-
+    if ((await feeToken.allowance(bbusdHandler.address, config.addresses.balancerVault)).eq(ZERO)) {
+        tx = await bbusdHandler.setApprovals();
+        await waitForTx(tx, debug, waitForBlocks);
+    }
     return {
         vault,
         strategy,
