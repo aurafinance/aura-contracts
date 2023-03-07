@@ -27,6 +27,7 @@ import {
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { config } from "./goerli-config";
 import { deployVault } from "../../scripts/deployVault";
+import { deployAuraClaimZapV2 } from "../../scripts/deployAuraClaimZapV2";
 
 const debug = true;
 const goerliBalancerConfig: ExtSystemConfig = {
@@ -221,3 +222,20 @@ task("deploy:goerli:vault")
         console.log("BBUSD Handler:", bbusdHandler.address);
         console.log("AuraRewards:", auraRewards.address);
     });
+
+task("deploy:goerli:auraClaimZapV2").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+
+    //todo: add vault address
+    var vault = await (await config.getAuraBalVault(deployer)).vault;
+    const { claimZapV2: claimZapV2 } = await deployAuraClaimZapV2(
+        config,
+        hre,
+        deployer,
+        vault.address,
+        debug,
+        waitForBlocks,
+    );
+
+    console.log("update claimZapV2 address to:", claimZapV2.address);
+});
