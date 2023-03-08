@@ -117,15 +117,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     {
         require(_amount > 0, "Deposit too small");
 
-        // Stake into extra rewards before we update the users
-        // balancers and update totalSupply/totalUnderlying
-        for (uint256 i = 0; i < extraRewards.length; i++) {
-            IBasicRewards(extraRewards[i]).stake(_receiver, _amount);
-        }
-
         uint256 _before = totalUnderlying();
-        IERC20(underlying).safeTransferFrom(msg.sender, strategy, _amount);
-        IStrategy(strategy).stake(_amount);
 
         // Issues shares in proportion of deposit to pool amount
         uint256 shares = 0;
@@ -134,6 +126,15 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         } else {
             shares = (_amount * totalSupply()) / _before;
         }
+
+        // Stake into extra rewards before we update the users
+        // balancers and update totalSupply/totalUnderlying
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(_receiver, shares);
+        }
+
+        IERC20(underlying).safeTransferFrom(msg.sender, strategy, _amount);
+        IStrategy(strategy).stake(_amount);
 
         _mint(_receiver, shares);
         emit Deposit(msg.sender, _receiver, _amount, shares);
