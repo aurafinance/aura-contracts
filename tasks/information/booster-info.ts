@@ -130,7 +130,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         pm.isMigrated ? pm.newPool.pid : "N/A", // New Pid
         pm.oldPool ? truncateNumber(pm.oldPool.poolTotalSupply) : "N/A", // New Old Pool TVL
         pm.isMigrated ? truncateNumber(pm.newPool.poolTotalSupply) : "N/A", // New Pool TVL
-        pm.isMigrated ? `✅` : `⛔️`,
+        pm.isMigrated ? "\u001b[42;1m Yes \u001b[43;1m" : "\u001b[41m No \u001b[0m",
     ]; // Migrated
 
     const poolsMappedData = [
