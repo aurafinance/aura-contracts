@@ -4,9 +4,8 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { Phase6Deployed } from "scripts/deploySystem";
 import { config } from "../deploy/mainnet-config";
-import { Contract, ethers } from "ethers";
+import { Contract } from "ethers";
 import { table } from "table";
-import { BigNumber as BN, utils } from "ethers";
 import axios from "axios";
 
 const crvRewardsABI = [
