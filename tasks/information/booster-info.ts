@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as path from "path";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
@@ -7,6 +5,8 @@ import { getSigner } from "../../tasks/utils";
 import { Phase6Deployed } from "scripts/deploySystem";
 import { config } from "../deploy/mainnet-config";
 import { Contract, ethers } from "ethers";
+import { table } from "table";
+import { BigNumber as BN, utils } from "ethers";
 
 const crvRewardsABI = [
     "function totalSupply() external view returns(uint256)",
@@ -27,6 +27,8 @@ const specialSymbolMatches = [
     { oldPoolSymbol: "wsteth-acx", newPoolSymbol: "50wsteth-50acx" },
     { oldPoolSymbol: "sfrxeth-steth-reth", newPoolSymbol: "wsteth-reth-sfrxeth" },
 ];
+const truncateNumber = (amount: BN, decimals = 18, fixed = 2) =>
+    Number(utils.formatUnits(amount, decimals)).toFixed(fixed);
 
 /**
  * Compares two pools by it symbol with the following criteria:
@@ -95,50 +97,69 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
     const poolsMapped = poolsOldStash.map(oldPool => {
         const newPool = poolsNewStash.find(newPool => poolBySymbolVariants(newPool, oldPool));
         const poolMapped = {
+            pid: oldPool.pid,
             name: oldPool.poolName as string,
-            symbol: oldPool.poolSymbol as string,
-            isMigrated: false,
-            migratedPc: 0,
+            symbol: cleanUpSymbol(oldPool.poolSymbol),
+            isMigrated: !!newPool,
             oldPool,
             newPool,
         };
-        // If it is migrated, mark it and calculate the TVLs
-        if (newPool) {
-            poolMapped.isMigrated = true;
-            poolMapped.migratedPc = newPool.poolTotalSupply
-                .mul(100)
-                .div(oldPool.poolTotalSupply.add(newPool.poolTotalSupply))
-                .toNumber();
-
-            console.log(` PoolMigrated  ${poolMapped.symbol} Old Pid:${oldPool.pid}, New Pid:${newPool.pid}, 
-    Migrated Pc:${poolMapped.migratedPc},    Old TVL: ${ethers.utils.formatEther(
-                oldPool.poolTotalSupply,
-            )}    New TVL: ${ethers.utils.formatEther(newPool.poolTotalSupply)}`);
-            newPool.poolTotalSupply = newPool.poolTotalSupply.toString();
-        }
-        oldPool.poolTotalSupply = oldPool.poolTotalSupply.toString();
         return poolMapped;
     });
 
     // Concat all pools that are not matched with old pools but are deployed with new stash version
-    const poolsMappedNew = poolsNewStash
-        .filter(newPool =>
-            poolsMapped.find(poolMapped => poolMapped.isMigrated && poolMapped.newPool.pid !== newPool.pid),
-        )
-        .map(newPool => {
-            newPool.poolTotalSupply = newPool.poolTotalSupply.toString();
-            const poolMapped = {
-                name: newPool.poolName as string,
-                symbol: newPool.poolSymbol as string,
-                isMigrated: true,
-                migratedPc: 100,
-                oldPool: undefined,
-                newPool,
-            };
+    const isPoolNotMigrated = newPool => !poolsMapped.find(pm => pm.isMigrated && pm.newPool.pid === newPool.pid);
+    const poolsMappedNew = poolsNewStash.filter(isPoolNotMigrated).map(newPool => {
+        const poolMapped = {
+            pid: newPool.pid,
+            name: newPool.poolName as string,
+            symbol: cleanUpSymbol(newPool.poolSymbol),
+            isMigrated: true,
+            oldPool: undefined,
+            newPool,
+        };
 
-            return poolMapped;
+        return poolMapped;
+    });
+
+    const allPoolsMapped = [].concat(poolsMapped.concat(poolsMappedNew));
+
+    const toConsoleData = pm => [
+        pm.pid, // PID
+        pm.symbol, // Name
+        pm.isMigrated ? pm.newPool.pid : "N/A", // New Pid
+        pm.oldPool ? truncateNumber(pm.oldPool.poolTotalSupply) : "N/A", // New Old Pool TVL
+        pm.isMigrated ? truncateNumber(pm.newPool.poolTotalSupply) : "N/A", // New Pool TVL
+        pm.isMigrated ? `✅` : `⛔️`,
+    ]; // Migrated
+
+    const poolsMappedData = [
+        ["PID", "Name", "New PID", "Old Pool TVL", "New Pool TVL", "Migrated"],
+        ...allPoolsMapped.map(toConsoleData),
+    ];
+
+    const totalsTVL = allPoolsMapped
+        .map(pm => ({
+            oldTvl: pm.oldPool ? pm.oldPool.poolTotalSupply : 0,
+            newTvl: pm.isMigrated ? pm.newPool.poolTotalSupply : 0,
+        }))
+        .reduce((prev, curr) => ({ oldTvl: prev.oldTvl.add(curr.oldTvl), newTvl: prev.newTvl.add(curr.newTvl) }), {
+            oldTvl: ethers.utils.parseEther("0"),
+            newTvl: ethers.utils.parseEther("0"),
         });
 
-    console.log("Total amount of pools after PID 47", poolsMappedNew.length);
-    fs.writeFileSync(path.resolve(__dirname, "./pools_mapped.json"), JSON.stringify(poolsMapped));
+    const totalsData = [
+        ["Totals", "", ""],
+        ["Old TVL (1-47)", "New TVL (48+)", "Percentage Completed"],
+        [
+            truncateNumber(totalsTVL.oldTvl),
+            truncateNumber(totalsTVL.newTvl),
+            truncateNumber(
+                totalsTVL.newTvl.mul(ethers.utils.parseEther("100")).div(totalsTVL.newTvl.add(totalsTVL.oldTvl)),
+            ) + " %",
+        ],
+    ];
+
+    console.log(table(poolsMappedData));
+    console.log(table(totalsData));
 });
