@@ -1,6 +1,6 @@
 import hre, { ethers } from "hardhat";
-import { expect, util } from "chai";
-import { Signer, utils } from "ethers";
+import { expect } from "chai";
+import { Signer } from "ethers";
 import {
     GenericUnionVault,
     GenericUnionVault__factory,
