@@ -73,7 +73,8 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @param _reward VirtualBalanceRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
-        if (extraRewards.length >= 12 || isExtraReward[_reward]) {
+        require(!isExtraReward[_reward], "Reward Already Added");
+        if (extraRewards.length >= 12) {
             return false;
         }
 

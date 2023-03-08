@@ -354,16 +354,10 @@ describe("GenericUnionVault", () => {
                 );
             });
             it("Cannot add duplicate reward", async () => {
-                const extraRewardsLength = await genericUnionVault.extraRewardsLength();
-
                 await genericUnionVault.addExtraReward(auraRewards.address);
-                await genericUnionVault.addExtraReward(auraRewards.address);
-
-                // Verify events, storage change.
-                expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(
-                    extraRewardsLength.add(1),
+                await expect(genericUnionVault.addExtraReward(auraRewards.address), "fails due to").to.be.revertedWith(
+                    "Reward Already Added",
                 );
-                expect(await genericUnionVault.isExtraReward(auraRewards.address), "isExtraRewards").to.eq(true);
             });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await genericUnionVault.extraRewardsLength();
