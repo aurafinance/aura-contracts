@@ -60,6 +60,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
     _: TaskArguments,
     hre: HardhatRuntime,
 ) {
+    // Handy constant to include or not on the report  pools above `maxOldStashPid`, default value false.
+    const showAllPools = false;
     const signer = await getSigner(hre);
 
     // Get pools to shutdown
@@ -122,7 +124,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         return poolMapped;
     });
 
-    const allPoolsMapped = [].concat(poolsMapped.concat(poolsMappedNew));
+    const allPoolsMapped = [].concat(poolsMapped.concat(showAllPools ? poolsMappedNew : []));
 
     const toConsoleData = pm => [
         pm.pid, // PID
@@ -142,21 +144,31 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         .map(pm => ({
             oldTvl: pm.oldPool ? pm.oldPool.poolTotalSupply : 0,
             newTvl: pm.isMigrated ? pm.newPool.poolTotalSupply : 0,
+            count: pm.isMigrated ? 1 : 0,
         }))
-        .reduce((prev, curr) => ({ oldTvl: prev.oldTvl.add(curr.oldTvl), newTvl: prev.newTvl.add(curr.newTvl) }), {
-            oldTvl: ethers.utils.parseEther("0"),
-            newTvl: ethers.utils.parseEther("0"),
-        });
+        .reduce(
+            (prev, curr) => ({
+                oldTvl: prev.oldTvl.add(curr.oldTvl),
+                newTvl: prev.newTvl.add(curr.newTvl),
+                count: prev.count + curr.count,
+            }),
+            {
+                oldTvl: ethers.utils.parseEther("0"),
+                newTvl: ethers.utils.parseEther("0"),
+                count: 0,
+            },
+        );
 
     const totalsData = [
-        ["Totals", "", ""],
-        ["Old TVL (1-47)", "New TVL (48+)", "Percentage Completed"],
+        ["Totals", "", "", ""],
+        ["Old TVL (1-47)", "New TVL (48+)", "Percentage Completed", "Pools Migrated"],
         [
             truncateNumber(totalsTVL.oldTvl),
             truncateNumber(totalsTVL.newTvl),
             truncateNumber(
                 totalsTVL.newTvl.mul(ethers.utils.parseEther("100")).div(totalsTVL.newTvl.add(totalsTVL.oldTvl)),
             ) + " %",
+            totalsTVL.count + ` / ` + allPoolsMapped.length,
         ],
     ];
 
