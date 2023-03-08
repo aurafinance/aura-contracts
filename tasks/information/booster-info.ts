@@ -7,12 +7,23 @@ import { config } from "../deploy/mainnet-config";
 import { Contract, ethers } from "ethers";
 import { table } from "table";
 import { BigNumber as BN, utils } from "ethers";
+import axios from "axios";
 
 const crvRewardsABI = [
     "function totalSupply() external view returns(uint256)",
     "function name() external view returns(string memory)",
     "function symbol() external view returns(string memory)",
 ];
+const specialSymbolMatches = [
+    { oldPoolSymbol: "wsteth-acx", newPoolSymbol: "50wsteth-50acx" },
+    { oldPoolSymbol: "sfrxeth-steth-reth", newPoolSymbol: "wsteth-reth-sfrxeth" },
+];
+
+const fetchAuraAPRs = async () => {
+    const url = "https://aura-balancer-apr.onrender.com/aprs";
+    const response = await axios.get(url);
+    return response.data.pools;
+};
 
 const cleanUpSymbol = (poolSymbol: string): string =>
     poolSymbol
@@ -23,12 +34,7 @@ const cleanUpSymbol = (poolSymbol: string): string =>
         .replace("bb-a-usd", "bbausd")
         .replace("bb-euler-usd", "bbausd");
 
-const specialSymbolMatches = [
-    { oldPoolSymbol: "wsteth-acx", newPoolSymbol: "50wsteth-50acx" },
-    { oldPoolSymbol: "sfrxeth-steth-reth", newPoolSymbol: "wsteth-reth-sfrxeth" },
-];
-const truncateNumber = (amount: BN, decimals = 18, fixed = 2) =>
-    Number(utils.formatUnits(amount, decimals)).toFixed(fixed);
+const truncateNumber = (amount: number, fixed = 2) => Number.parseFloat(Number(amount).toFixed(fixed)).toLocaleString();
 
 /**
  * Compares two pools by it symbol with the following criteria:
@@ -68,6 +74,10 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
     const phase6: Phase6Deployed = await config.getPhase6(signer);
     const poolLength = await phase6.booster.poolLength();
     const maxOldStashPid = 47;
+    const poolsTvlData = await fetchAuraAPRs();
+
+    const poolByLpToken = (poolTvlData, lptoken: string) =>
+        poolTvlData.id.substring(0, 42).toLowerCase() == lptoken.toLowerCase();
 
     // Get all pools
     const pools = await Promise.all(
@@ -77,6 +87,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                 const poolInfo = await phase6.booster.poolInfo(i);
                 const crvRewards = new Contract(poolInfo.crvRewards, crvRewardsABI, signer);
                 const totalSupply = await crvRewards.totalSupply();
+                const poolValue = poolsTvlData.find(poolTvlData => poolByLpToken(poolTvlData, poolInfo.lptoken))
+                    ?.poolAprs.poolValue;
                 return {
                     lptoken: poolInfo.lptoken,
                     token: poolInfo.token,
@@ -87,6 +99,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                     // ---- additional information ------//
                     pid: i,
                     poolTotalSupply: totalSupply,
+                    poolValue: poolValue ?? 0,
                     poolName: await crvRewards.name(),
                     poolSymbol: await crvRewards.symbol(),
                 };
@@ -130,8 +143,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         pm.pid, // PID
         pm.symbol, // Name
         pm.isMigrated ? pm.newPool.pid : "N/A", // New Pid
-        pm.oldPool ? truncateNumber(pm.oldPool.poolTotalSupply) : "N/A", // New Old Pool TVL
-        pm.isMigrated ? truncateNumber(pm.newPool.poolTotalSupply) : "N/A", // New Pool TVL
+        pm.oldPool ? truncateNumber(pm.oldPool.poolValue) : "N/A", // New Old Pool TVL
+        pm.isMigrated ? truncateNumber(pm.newPool.poolValue) : "N/A", // New Pool TVL
         pm.isMigrated ? "\u001b[42;1m Yes \u001b[43;1m" : "\u001b[41m No \u001b[0m",
     ]; // Migrated
 
@@ -142,19 +155,19 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
 
     const totalsTVL = allPoolsMapped
         .map(pm => ({
-            oldTvl: pm.oldPool ? pm.oldPool.poolTotalSupply : 0,
-            newTvl: pm.isMigrated ? pm.newPool.poolTotalSupply : 0,
+            oldTvl: pm.oldPool ? pm.oldPool.poolValue : 0,
+            newTvl: pm.isMigrated ? pm.newPool.poolValue : 0,
             count: pm.isMigrated ? 1 : 0,
         }))
         .reduce(
             (prev, curr) => ({
-                oldTvl: prev.oldTvl.add(curr.oldTvl),
-                newTvl: prev.newTvl.add(curr.newTvl),
+                oldTvl: prev.oldTvl + curr.oldTvl,
+                newTvl: prev.newTvl + curr.newTvl,
                 count: prev.count + curr.count,
             }),
             {
-                oldTvl: ethers.utils.parseEther("0"),
-                newTvl: ethers.utils.parseEther("0"),
+                oldTvl: 0,
+                newTvl: 0,
                 count: 0,
             },
         );
@@ -165,9 +178,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         [
             truncateNumber(totalsTVL.oldTvl),
             truncateNumber(totalsTVL.newTvl),
-            truncateNumber(
-                totalsTVL.newTvl.mul(ethers.utils.parseEther("100")).div(totalsTVL.newTvl.add(totalsTVL.oldTvl)),
-            ) + " %",
+            truncateNumber((totalsTVL.newTvl * 100) / (totalsTVL.newTvl + totalsTVL.oldTvl)) + " %",
             totalsTVL.count + ` / ` + allPoolsMapped.length,
         ],
     ];
