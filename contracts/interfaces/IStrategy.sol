@@ -13,4 +13,6 @@ interface IStrategy {
     function withdraw(uint256 _amount) external;
 
     function setApprovals() external;
+
+    function vault() external view returns (address);
 }

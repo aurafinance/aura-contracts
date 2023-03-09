@@ -355,7 +355,7 @@ describe("AuraBalVault", () => {
             await expect(vault.connect(account.signer)["harvest()"]()).to.be.revertedWith("permissioned harvest");
         });
         it("can not call harvest on the strategy", async () => {
-            await expect(strategy.harvest(0)).to.be.revertedWith("Vault calls only");
+            await expect(strategy["harvest(uint256)"]).to.be.revertedWith("Vault calls only");
         });
     });
 

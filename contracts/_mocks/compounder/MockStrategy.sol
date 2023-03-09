@@ -53,4 +53,8 @@ contract MockStrategy is IStrategy, ERC20 {
     function setApprovals() external {
         // setApprovals not used so far
     }
+
+    function vault() external view returns (address) {
+        // nothing to do here
+    }
 }

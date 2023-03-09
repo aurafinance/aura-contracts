@@ -142,9 +142,10 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     }
 
     /// @notice Unstake underlying in proportion to the amount of shares sent
-    /// @param _shares - the number of shares sent
-    /// @return _withdrawable - the withdrawable underlying amount
-    function _withdraw(address _from, uint256 _shares) internal returns (uint256 _withdrawable) {
+    /// @param _from - The owner of the shares
+    /// @param _shares - The number of shares to redeem
+    /// @return assets - The amount of underlying assets withdrawn
+    function _redeem(address _from, uint256 _shares) internal returns (uint256 assets) {
         require(totalSupply() > 0);
         // Computes the amount withdrawable based on the number of shares sent
         uint256 amount = (_shares * totalUnderlying()) / totalSupply();
@@ -154,19 +155,19 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         if (totalSupply() == 0) {
             harvest();
             IStrategy(strategy).withdraw(totalUnderlying());
-            _withdrawable = IERC20(underlying).balanceOf(address(this));
+            assets = IERC20(underlying).balanceOf(address(this));
         }
         // Otherwise compute share and unstake
         else {
-            _withdrawable = amount;
+            assets = amount;
             // Substract a small withdrawal fee to prevent users "timing"
             // the harvests. The fee stays staked and is therefore
             // redistributed to all remaining participants.
-            uint256 _penalty = _getWithdrawalPenalty(_withdrawable);
-            _withdrawable = _withdrawable - _penalty;
-            IStrategy(strategy).withdraw(_withdrawable);
+            uint256 _penalty = _getWithdrawalPenalty(assets);
+            assets = assets - _penalty;
+            IStrategy(strategy).withdraw(assets);
         }
-        return _withdrawable;
+        return assets;
     }
 
     /// @notice Get the withdraw penalty amount
@@ -196,12 +197,12 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
             IBasicRewards(extraRewards[i]).withdraw(_owner, _shares);
         }
 
-        // Withdraw requested amount of underlying
-        uint256 _withdrawable = _withdraw(_owner, _shares);
+        // Redeem shares for underlying assets amount
+        uint256 assets = _redeem(_owner, _shares);
         // And sends back underlying to user
-        IERC20(underlying).safeTransfer(_receiver, _withdrawable);
-        emit Withdraw(msg.sender, _receiver, _owner, _withdrawable, _shares);
-        return _withdrawable;
+        IERC20(underlying).safeTransfer(_receiver, assets);
+        emit Withdraw(msg.sender, _receiver, _owner, assets, _shares);
+        return assets;
     }
 
     /// @notice Claim rewards and swaps them to FXS for restaking

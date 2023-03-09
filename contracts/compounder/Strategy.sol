@@ -8,6 +8,7 @@ import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IRewardHandler } from "../interfaces/balancer/IRewardHandler.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { AuraBalStrategyBase } from "./StrategyBase.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 
 /**
  * @title   AuraBalStrategy
@@ -16,7 +17,7 @@ import { AuraBalStrategyBase } from "./StrategyBase.sol";
  *          - remove option to lock auraBAL instead of swapping it
  *          - remove paltform fee
  */
-contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
+contract AuraBalStrategy is IStrategy, Ownable, AuraBalStrategyBase {
     using SafeERC20 for IERC20;
 
     address public immutable vault;
@@ -123,7 +124,7 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
 
         // process extra rewards
         uint256 extraRewardCount = IGenericVault(vault).extraRewardsLength();
-        for (uint256 i; i < extraRewardCount; ++i) {
+        for (uint256 i = 0; i < extraRewardCount; ++i) {
             address rewards = IGenericVault(vault).extraRewards(i);
             address token = IVirtualRewards(rewards).rewardToken();
             uint256 balance = IERC20(token).balanceOf(address(this));
@@ -135,7 +136,7 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
 
         // process rewards
         address[] memory _rewardTokens = rewardTokens;
-        for (uint256 i; i < _rewardTokens.length; ++i) {
+        for (uint256 i = 0; i < _rewardTokens.length; ++i) {
             address _tokenHandler = rewardHandlers[_rewardTokens[i]];
             if (_tokenHandler == address(0)) {
                 continue;
@@ -166,6 +167,12 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
         }
 
         return 0;
+    }
+
+    /// @notice Claim rewards and swaps them to FXS for restaking, without Mev protection.
+    /// @dev Can be called by the vault only
+    function harvest() external onlyVault returns (uint256 harvested) {
+        harvested = harvest(0);
     }
 
     modifier onlyVault() {
