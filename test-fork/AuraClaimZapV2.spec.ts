@@ -33,8 +33,8 @@ describe("AuraClaimZapV2", () => {
     let balToken: IERC20;
     let alice: Signer;
     let aliceAddress: string;
-    let LPTokenAddress: string;
-    let LPToken: IERC20;
+    let lpTokenAddress: string;
+    let lpToken: IERC20;
 
     /* -------------------------------------------------------------------------
      * Helper functions
@@ -55,7 +55,7 @@ describe("AuraClaimZapV2", () => {
     async function getDolaUsdcLP(to: string, amount: BigNumberish) {
         const whaleAddress = "0x11EC78492D53c9276dD7a184B1dbfB34E50B710D";
         const whale = await impersonateAccount(whaleAddress);
-        await IERC20__factory.connect(LPTokenAddress, whale.signer).transfer(to, amount);
+        await IERC20__factory.connect(lpTokenAddress, whale.signer).transfer(to, amount);
     }
 
     async function getCvxCrv(to: string, amount: BigNumberish) {
@@ -95,8 +95,8 @@ describe("AuraClaimZapV2", () => {
         phase6 = await config.getPhase6(dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
 
-        LPTokenAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
-        LPToken = await IERC20__factory.connect(LPTokenAddress, dao.signer);
+        lpTokenAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
+        lpToken = await IERC20__factory.connect(lpTokenAddress, dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
         await getAuraBal(depositor.address, parseEther("100"));
@@ -143,7 +143,7 @@ describe("AuraClaimZapV2", () => {
 
         await getDolaUsdcLP(aliceAddress, amount);
 
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await lpToken.connect(alice).approve(phase6.booster.address, amount);
         await phase6.booster.connect(alice).deposit(poolId, amount, stake);
     });
 
