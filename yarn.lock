@@ -38,6 +38,7 @@ __metadata:
     convex-platform: "file:convex-platform/contracts"
     cross-env: ^7.0.3
     cz-conventional-changelog: ^3.3.0
+    dayjs: ^1.11.7
     defender-relay-client: ^1.26.1
     dotenv: ^10.0.0
     eslint: ^8.3.0
@@ -4625,11 +4626,11 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=a31178&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=a8c5d8&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
     "@openzeppelin/contracts-upgradeable-0.6": "npm:@openzeppelin/contracts-upgradeable@3.4.0"
-  checksum: fba5666c9ecaa70370069aff64d4047d6bd7431ffa76bd36b46c3a292685cce5588870859f2b4084661973ad4930a36aa9c127dec1ef424e9abff070308598d1
+  checksum: 35f36773a96258ac7b7345ad4f0c371d8131b60074df121df82d38e281e1fd70f5c81003b58914d5d2d0cf47be3e48d11ec8afcec5c7b575581a1ddb8a577ee1
   languageName: node
   linkType: hard
 
@@ -4948,6 +4949,13 @@ __metadata:
   dependencies:
     assert-plus: ^1.0.0
   checksum: 3634c249570f7f34e3d34f866c93f866c5b417f0dd616275decae08147dcdf8fccfaa5947380ccfb0473998ea3a8057c0b4cd90c875740ee685d0624b2983598
+  languageName: node
+  linkType: hard
+
+"dayjs@npm:^1.11.7":
+  version: 1.11.7
+  resolution: "dayjs@npm:1.11.7"
+  checksum: 5003a7c1dd9ed51385beb658231c3548700b82d3548c0cfbe549d85f2d08e90e972510282b7506941452c58d32136d6362f009c77ca55381a09c704e9f177ebb
   languageName: node
   linkType: hard
 

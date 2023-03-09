@@ -7,12 +7,18 @@ import { config } from "../deploy/mainnet-config";
 import { Contract } from "ethers";
 import { table } from "table";
 import axios from "axios";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { ICurveGauge__factory } from "types";
+dayjs.extend(relativeTime);
 
 const crvRewardsABI = [
     "function totalSupply() external view returns(uint256)",
     "function name() external view returns(string memory)",
     "function symbol() external view returns(string memory)",
+    "function periodFinish() external view returns (uint256)",
 ];
+const gaugeABI = ["function is_killed() external view returns (bool)"];
 const specialSymbolMatches = [
     { oldPoolSymbol: "wsteth-acx", newPoolSymbol: "50wsteth-50acx" },
     { oldPoolSymbol: "sfrxeth-steth-reth", newPoolSymbol: "wsteth-reth-sfrxeth" },
@@ -85,6 +91,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             .map(async (_, i) => {
                 const poolInfo = await phase6.booster.poolInfo(i);
                 const crvRewards = new Contract(poolInfo.crvRewards, crvRewardsABI, signer);
+                const gauge = new Contract(poolInfo.gauge, gaugeABI, signer);
                 const totalSupply = await crvRewards.totalSupply();
                 const poolValue = poolsTvlData.find(poolTvlData => poolByLpToken(poolTvlData, poolInfo.lptoken))
                     ?.poolAprs.poolValue;
@@ -101,6 +108,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                     poolValue: poolValue ?? 0,
                     poolName: await crvRewards.name(),
                     poolSymbol: await crvRewards.symbol(),
+                    periodFinish: await crvRewards.periodFinish(),
+                    isKilled: await gauge.is_killed(),
                 };
             }),
     );
@@ -117,6 +126,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             isMigrated: !!newPool,
             oldPool,
             newPool,
+            periodFinish: oldPool.periodFinish,
+            isKilled: oldPool.isKilled,
         };
         return poolMapped;
     });
@@ -131,6 +142,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             isMigrated: true,
             oldPool: undefined,
             newPool,
+            periodFinish: newPool.periodFinish,
+            isKilled: newPool.isKilled,
         };
 
         return poolMapped;
@@ -144,11 +157,13 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         pm.isMigrated ? pm.newPool.pid : "N/A", // New Pid
         pm.oldPool ? truncateNumber(pm.oldPool.poolValue) : "N/A", // New Old Pool TVL
         pm.isMigrated ? truncateNumber(pm.newPool.poolValue) : "N/A", // New Pool TVL
+        dayjs().to(dayjs(new Date(pm.periodFinish.mul(1000).toNumber()).toISOString())),
+        pm.isKilled ? "\u001b[41m Killed \u001b[0m" : "",
         pm.isMigrated ? "\u001b[42;1m Yes \u001b[43;1m" : "\u001b[41m No \u001b[0m",
     ]; // Migrated
 
     const poolsMappedData = [
-        ["PID", "Name", "New PID", "Old Pool TVL", "New Pool TVL", "Migrated"],
+        ["PID", "Name", "New PID", "Old Pool TVL", "New Pool TVL", "Reward Period Finish", "Status", "Migrated"],
         ...allPoolsMapped.map(toConsoleData),
     ];
 
