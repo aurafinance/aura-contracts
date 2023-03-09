@@ -49,7 +49,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Updates the withdrawal penalty
     /// @param _penalty - the amount of the new penalty (in BIPS)
     function setWithdrawalPenalty(uint256 _penalty) external onlyOwner {
-        require(_penalty <= MAX_WITHDRAWAL_PENALTY);
+        require(_penalty <= MAX_WITHDRAWAL_PENALTY, "!penalty");
         withdrawalPenalty = _penalty;
         emit WithdrawalPenaltyUpdated(_penalty);
     }
@@ -142,15 +142,15 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     }
 
     /// @notice Unstake underlying in proportion to the amount of shares sent
-    /// @param _from - The owner of the shares
+    /// @param _owner - The owner of the shares
     /// @param _shares - The number of shares to redeem
     /// @return assets - The amount of underlying assets withdrawn
-    function _redeem(address _from, uint256 _shares) internal returns (uint256 assets) {
-        require(totalSupply() > 0);
+    function _redeem(address _owner, uint256 _shares) internal returns (uint256 assets) {
+        require(totalSupply() > 0, "empty vault");
         // Computes the amount withdrawable based on the number of shares sent
         uint256 amount = (_shares * totalUnderlying()) / totalSupply();
         // Burn the shares before retrieving tokens
-        _burn(_from, _shares);
+        _burn(_owner, _shares);
         // If user is last to withdraw, harvest before exit
         if (totalSupply() == 0) {
             harvest();
