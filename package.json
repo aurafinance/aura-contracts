@@ -30,6 +30,7 @@
     "dependencies": {
         "@types/lodash": "^4.14.185",
         "convex-platform": "file:convex-platform/contracts",
+        "dayjs": "^1.11.7",
         "graphql": "^16.5.0",
         "graphql-request": "^4.3.0",
         "lodash": "^4.17.21",
