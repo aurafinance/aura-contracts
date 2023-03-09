@@ -188,6 +188,7 @@ describe("GenericUnionVault", () => {
             // Verify events, storage change.
             expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(extraRewardsLength.add(1));
             expect(await genericUnionVault.extraRewards(0), "extraRewards").to.eq(auraRewards.address);
+            expect(await genericUnionVault.isExtraReward(auraRewards.address), "isExtraRewards").to.eq(true);
         });
         it("Checks empty vault", async () => {
             expect(await genericUnionVault.totalSupply(), "balanceOfUnderlying").to.be.eq(ZERO);
@@ -352,11 +353,19 @@ describe("GenericUnionVault", () => {
                     "Invalid address!",
                 );
             });
+            it("Cannot add duplicate reward", async () => {
+                await genericUnionVault.addExtraReward(auraRewards.address);
+                await expect(genericUnionVault.addExtraReward(auraRewards.address), "fails due to").to.be.revertedWith(
+                    "Reward Already Added",
+                );
+            });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await genericUnionVault.extraRewardsLength();
+                const zero_padded = "0x00000000000000000000000000000000000000";
                 // 12 is the max number of extra
                 for (let i = extraRewardsLength.toNumber(); i <= 14; i++) {
-                    await genericUnionVault.addExtraReward(auraRewards.address);
+                    let iterative_reward_address = zero_padded + (i + 10).toString();
+                    await genericUnionVault.addExtraReward(iterative_reward_address);
                 }
                 expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(12);
             });
@@ -365,6 +374,7 @@ describe("GenericUnionVault", () => {
             it("clearExtraRewards should remove all extra rewards", async () => {
                 await genericUnionVault.clearExtraRewards();
                 expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(0);
+                expect(await genericUnionVault.isExtraReward(auraRewards.address), "isExtraReward").to.eq(false);
             });
             it("fails if caller is not owner", async () => {
                 await expect(

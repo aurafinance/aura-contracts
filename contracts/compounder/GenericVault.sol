@@ -29,6 +29,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     address public strategy;
 
     address[] public extraRewards;
+    mapping(address => bool) public isExtraReward;
 
     event WithdrawalPenaltyUpdated(uint256 _penalty);
     event Harvest(address indexed _caller, uint256 _value);
@@ -72,11 +73,13 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @param _reward VirtualBalanceRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
+        require(!isExtraReward[_reward], "Reward Already Added");
         if (extraRewards.length >= 12) {
             return false;
         }
 
         extraRewards.push(_reward);
+        isExtraReward[_reward] = true;
         emit ExtraRewardAdded(_reward);
         return true;
     }
@@ -85,7 +88,9 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     function clearExtraRewards() external onlyOwner {
         uint256 len = extraRewards.length;
         for (uint256 i = 0; i < len; i++) {
-            emit ExtraRewardCleared(extraRewards[i]);
+            address _reward = extraRewards[i];
+            isExtraReward[_reward] = false;
+            emit ExtraRewardCleared(_reward);
         }
         delete extraRewards;
     }

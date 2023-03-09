@@ -239,6 +239,7 @@ describe("AuraBalVault", () => {
         it("check AURA as extra reward", async () => {
             expect(await vault.extraRewardsLength()).eq(1);
             expect(await vault.extraRewards(0)).eq(auraRewards.address);
+            expect(await vault.isExtraReward(auraRewards.address)).eq(true);
         });
         it("check approvals", async () => {
             const max = ethers.constants.MaxUint256;
