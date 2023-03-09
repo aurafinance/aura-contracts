@@ -227,7 +227,7 @@ task("deploy:goerli:auraClaimZapV2").setAction(async function (_: TaskArguments,
     const deployer = await getSigner(hre);
 
     //todo: add vault address
-    var vault = await (await config.getAuraBalVault(deployer)).vault;
+    const vault = await (await config.getAuraBalVault(deployer)).vault;
     const { claimZapV2: claimZapV2 } = await deployAuraClaimZapV2(
         config,
         hre,

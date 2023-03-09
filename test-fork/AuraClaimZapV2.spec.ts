@@ -4,27 +4,11 @@ import { expect } from "chai";
 import { BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
-import {
-    Account,
-    IBalancerVault,
-    MockERC20__factory,
-    IBalancerVault__factory,
-    IERC20,
-    IERC20__factory,
-    AuraClaimZapV2,
-    AuraBalVault,
-} from "../types";
+import { Account, IERC20, IERC20__factory, AuraClaimZapV2, AuraBalVault } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
-import {
-    Phase2Deployed,
-    Phase3Deployed,
-    Phase4Deployed,
-    Phase6Deployed,
-    Phase7Deployed,
-    Phase8Deployed,
-} from "../scripts/deploySystem";
-import { impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ZERO, ONE_WEEK } from "../test-utils/constants";
+import { Phase2Deployed, Phase4Deployed, Phase6Deployed } from "../scripts/deploySystem";
+import { impersonateAccount, increaseTime } from "../test-utils";
+import { ZERO_ADDRESS, ZERO, ONE_WEEK } from "../test-utils/constants";
 import { deployVault } from "../scripts/deployVault";
 import { deployAuraClaimZapV2 } from "../scripts/deployAuraClaimZapV2";
 import { ClaimRewardsAmountsStruct, OptionsStruct } from "types/generated/AuraClaimZapV2";
@@ -37,12 +21,6 @@ const FORK_BLOCK = 16700000;
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
 const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
 
-async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
-    const tokenWhaleSigner = await impersonateAccount(from);
-    const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
-    await token.transfer(to, amount);
-}
-
 describe("AuraClaimZapV2", () => {
     let claimZapV2: AuraClaimZapV2;
     let vault: AuraBalVault;
@@ -51,29 +29,16 @@ describe("AuraClaimZapV2", () => {
     let depositor: Account;
     let phase2: Phase2Deployed;
     let phase4: Phase4Deployed;
-    let phase3: Phase3Deployed;
     let phase6: Phase6Deployed;
-    let phase7: Phase7Deployed;
-    let phase8: Phase8Deployed;
-    let bVault: IBalancerVault;
-    let wethToken: IERC20;
     let balToken: IERC20;
-    let balWethBptToken: IERC20;
     let alice: Signer;
     let aliceAddress: string;
+    let LPTokenAddress: string;
     let LPToken: IERC20;
 
     /* -------------------------------------------------------------------------
      * Helper functions
      * ----------------------------------------------------------------------- */
-
-    async function getEth(recipient: string, amount: BigNumberish) {
-        const ethWhale = await impersonate(config.addresses.weth);
-        await ethWhale.sendTransaction({
-            to: recipient,
-            value: amount,
-        });
-    }
 
     async function getAuraBal(to: string, amount: BigNumberish) {
         const auraBalWhaleAddr = "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7";
@@ -88,10 +53,9 @@ describe("AuraClaimZapV2", () => {
     }
 
     async function getDolaUsdcLP(to: string, amount: BigNumberish) {
-        const LPAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
         const whaleAddress = "0x11EC78492D53c9276dD7a184B1dbfB34E50B710D";
         const whale = await impersonateAccount(whaleAddress);
-        await IERC20__factory.connect(LPAddress, whale.signer).transfer(to, amount);
+        await IERC20__factory.connect(LPTokenAddress, whale.signer).transfer(to, amount);
     }
 
     async function getCvxCrv(to: string, amount: BigNumberish) {
@@ -127,19 +91,12 @@ describe("AuraClaimZapV2", () => {
         depositor = await impersonateAccount(await accounts[0].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         phase2 = await config.getPhase2(dao.signer);
-        phase3 = await config.getPhase3(dao.signer);
         phase4 = await config.getPhase4(dao.signer);
         phase6 = await config.getPhase6(dao.signer);
-        phase7 = await config.getPhase7(dao.signer);
-        phase8 = await config.getPhase8(dao.signer);
-
-        bVault = IBalancerVault__factory.connect(config.addresses.balancerVault, dao.signer);
-        wethToken = IERC20__factory.connect(config.addresses.weth, dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
-        balWethBptToken = IERC20__factory.connect(config.addresses.tokenBpt, dao.signer);
 
-        const LPAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
-        LPToken = await IERC20__factory.connect(LPAddress, dao.signer);
+        LPTokenAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
+        LPToken = await IERC20__factory.connect(LPTokenAddress, dao.signer);
 
         await getAuraBal(deployer.address, parseEther("100"));
         await getAuraBal(depositor.address, parseEther("100"));
@@ -147,7 +104,6 @@ describe("AuraClaimZapV2", () => {
 
     /* -------------------------------------------------------------------------
      * Tests
-     * todo: Clean up
      * ----------------------------------------------------------------------- */
 
     it("deploy vault", async () => {
@@ -287,9 +243,6 @@ describe("AuraClaimZapV2", () => {
         const balanceBefore = await balToken.balanceOf(aliceAddress);
         const expectedRewards = await crvRewards.earned(aliceAddress);
 
-        // add some cvxCrv to alice
-        //const cvxCrvBal = await phase2.cvxCrv.balanceOf(await dao.signer.getAddress());
-        //await phase2.cvxCrv.connect(dao.signer).transfer(aliceAddress, cvxCrvBal);
         await getCvxCrv(aliceAddress, ethers.utils.parseEther("5"));
 
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
@@ -316,7 +269,7 @@ describe("AuraClaimZapV2", () => {
 
         const balanceAfter = await balToken.balanceOf(aliceAddress);
         expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
-        // cvxCrv balance should not change as the option to use wallet funds was not provided
+
         expect(cvxCrvBalAfter, "cvxcrv balance").eq(cvxCrvBalBefore);
         await expect(tx).to.not.emit(cvxCrvRewards, "Staked");
     });
@@ -342,7 +295,6 @@ describe("AuraClaimZapV2", () => {
         const balanceBefore = await balToken.balanceOf(aliceAddress);
         const expectedRewards = await crvRewards.earned(aliceAddress);
 
-        // add some cvxCrv to alice
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
         const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
 
@@ -367,7 +319,7 @@ describe("AuraClaimZapV2", () => {
 
         const balanceAfter = await balToken.balanceOf(aliceAddress);
         expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
-        // cvxCrv balance should not change as the option to use wallet funds was not provided
+
         expect(cvxCrvBalAfter, "cvxcrv balance").eq(cvxCrvBalBefore);
         await expect(tx).to.not.emit(cvxCrvRewards, "Staked");
     });
@@ -393,9 +345,7 @@ describe("AuraClaimZapV2", () => {
         const balanceBefore = await balToken.balanceOf(aliceAddress);
         const expectedRewards = await crvRewards.earned(aliceAddress);
 
-        // add some cvxCrv to alice
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
-        const cvxCrvBalBefore = await phase2.cvxCrv.balanceOf(aliceAddress);
 
         const options: OptionsStruct = {
             claimCvxCrv: false,
@@ -417,7 +367,7 @@ describe("AuraClaimZapV2", () => {
 
         const balanceAfter = await balToken.balanceOf(aliceAddress);
         expect(balanceAfter.sub(balanceBefore)).eq(expectedRewards);
-        // User waller funds option was provided, hence  zero balance is expected.
+
         expect(await phase2.cvxCrv.balanceOf(aliceAddress)).eq(ZERO);
         await expect(tx).to.emit(cvxCrvRewards, "Staked");
     });
@@ -435,14 +385,10 @@ describe("AuraClaimZapV2", () => {
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
 
-        const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
         const cvxCrvRewards = BaseRewardPool__factory.connect(await claimZapV2.cvxCrvRewards(), dao.signer);
 
         await increaseTime(ONE_WEEK.mul("2"));
 
-        const expectedRewards = await crvRewards.earned(aliceAddress);
-
-        // add some cvxCrv to alice
         await phase2.cvxCrv.connect(alice).approve(claimZapV2.address, ethers.constants.MaxUint256);
         const balanceBefore = await vault.balanceOf(aliceAddress);
 
@@ -467,7 +413,6 @@ describe("AuraClaimZapV2", () => {
         const balanceAfter = await vault.balanceOf(aliceAddress);
         expect(balanceAfter).to.be.gt(balanceBefore);
 
-        // User waller funds option was provided, hence  zero balance is expected.
         expect(await phase2.cvxCrv.balanceOf(aliceAddress)).eq(ZERO);
         await expect(tx).to.emit(cvxCrvRewards, "Staked");
     });

@@ -222,7 +222,11 @@ contract AuraClaimZapV2 {
         
         //lock upto given amount of crv as cvxCrv
         if (amounts.depositCrvMaxAmount > 0) {
-            (uint256 crvBalance, bool continued) = _checkBalanceAndPullToken(crv, removeCrvBalance, amounts.depositCrvMaxAmount);
+            (uint256 crvBalance, bool continued) = _checkBalanceAndPullToken(
+                crv,
+                removeCrvBalance, 
+                amounts.depositCrvMaxAmount
+            );
 
             if (continued) {ICrvDepositorWrapper(crvDepositWrapper).deposit(
                     crvBalance,
@@ -253,7 +257,11 @@ contract AuraClaimZapV2 {
 
         //stake up to given amount of cvx
         if (options.lockCvx) {
-            (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(cvx, removeCvxBalance, amounts.depositCvxMaxAmount);
+            (uint256 cvxBalance, bool continued) = _checkBalanceAndPullToken(
+                cvx, 
+                removeCvxBalance, 
+                amounts.depositCvxMaxAmount
+            );
             if(continued){IAuraLocker(locker).lock(msg.sender, cvxBalance);}
         }
     }

@@ -3,8 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { AuraClaimZapV2, AuraClaimZapV2__factory } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
-import { DEAD_ADDRESS } from "../test-utils/constants";
-import { config } from "../tasks/deploy/mainnet-config";
 
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase4Deployed, Phase6Deployed } from "./deploySystem";
 
@@ -46,7 +44,7 @@ export async function deployAuraClaimZapV2(
         waitForBlocks,
     );
 
-    let tx = await claimZapV2.setApprovals();
+    const tx = await claimZapV2.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
     return {
