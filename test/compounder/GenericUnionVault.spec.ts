@@ -184,11 +184,12 @@ describe("GenericUnionVault", () => {
         it("Adds extra rewards", async () => {
             const extraRewardsLength = await genericUnionVault.extraRewardsLength();
 
-            await genericUnionVault.addExtraReward(auraRewards.address);
+            await genericUnionVault.addExtraReward(phase2.cvx.address);
+            auraRewards = VirtualBalanceRewardPool__factory.connect(await genericUnionVault.extraRewards(0), deployer);
             // Verify events, storage change.
             expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(extraRewardsLength.add(1));
             expect(await genericUnionVault.extraRewards(0), "extraRewards").to.eq(auraRewards.address);
-            expect(await genericUnionVault.isExtraReward(auraRewards.address), "isExtraRewards").to.eq(true);
+            expect(await genericUnionVault.isExtraReward(phase2.cvx.address), "isExtraRewards").to.eq(true);
         });
         it("Checks empty vault", async () => {
             expect(await genericUnionVault.totalSupply(), "balanceOfUnderlying").to.be.eq(ZERO);
@@ -356,18 +357,20 @@ describe("GenericUnionVault", () => {
             it("Cannot add duplicate reward", async () => {
                 await genericUnionVault.addExtraReward(auraRewards.address);
                 await expect(genericUnionVault.addExtraReward(auraRewards.address), "fails due to").to.be.revertedWith(
-                    "Reward Already Added",
+                    "reward exists",
                 );
             });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await genericUnionVault.extraRewardsLength();
                 const zero_padded = "0x00000000000000000000000000000000000000";
                 // 12 is the max number of extra
-                for (let i = extraRewardsLength.toNumber(); i <= 14; i++) {
-                    let iterative_reward_address = zero_padded + (i + 10).toString();
-                    await genericUnionVault.addExtraReward(iterative_reward_address);
+                for (let i = extraRewardsLength.toNumber(); i <= 11; i++) {
+                    const rewardAddress = zero_padded + (i + 10).toString();
+                    await genericUnionVault.addExtraReward(rewardAddress);
                 }
-                expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(12);
+                await expect(genericUnionVault.addExtraReward(zero_padded + (13 + 10).toString())).to.be.revertedWith(
+                    "too many rewards",
+                );
             });
         });
         describe("clearExtraRewards", async () => {

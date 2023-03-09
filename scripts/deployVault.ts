@@ -11,7 +11,6 @@ import {
     ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
-    VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
@@ -105,23 +104,13 @@ export async function deployVault(
         waitForBlocks,
     );
 
-    const auraRewards = await deployContract<VirtualBalanceRewardPool>(
-        hre,
-        new VirtualBalanceRewardPool__factory(signer),
-        "VirtualBalanceRewardPool",
-        [vault.address, phase2.cvx.address, strategy.address],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
     let tx = await vault.setStrategy(strategy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await strategy.addRewardToken(config.addresses.feeToken, bbusdHandler.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await vault.addExtraReward(auraRewards.address);
+    tx = await vault.addExtraReward(phase2.cvx.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await strategy.setApprovals();
@@ -131,6 +120,10 @@ export async function deployVault(
         tx = await bbusdHandler.setApprovals();
         await waitForTx(tx, debug, waitForBlocks);
     }
+
+    const extraReward = await vault.extraRewards(0);
+    const auraRewards = VirtualBalanceRewardPool__factory.connect(extraReward, signer);
+
     return {
         vault,
         strategy,

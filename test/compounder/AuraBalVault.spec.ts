@@ -429,17 +429,20 @@ describe("AuraBalVault", () => {
                     "fails due to owner",
                 ).to.be.revertedWith("Ownable: caller is not the owner");
             });
-
             it("fails if wrong address", async () => {
                 await expect(vault.addExtraReward(ZERO_ADDRESS), "fails due to").to.be.revertedWith("Invalid address!");
             });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await vault.extraRewardsLength();
+                const zero_padded = "0x00000000000000000000000000000000000000";
                 // 12 is the max number of extra
-                for (let i = extraRewardsLength.toNumber(); i <= 14; i++) {
-                    await vault.addExtraReward(auraRewards.address);
+                for (let i = extraRewardsLength.toNumber(); i <= 11; i++) {
+                    const rewardAddress = zero_padded + (i + 10).toString();
+                    await vault.addExtraReward(rewardAddress);
                 }
-                expect(await vault.extraRewardsLength(), "extraRewardsLength").to.eq(12);
+                await expect(vault.addExtraReward(zero_padded + (13 + 10).toString())).to.be.revertedWith(
+                    "too many rewards",
+                );
             });
         });
         describe("clearExtraRewards", async () => {
