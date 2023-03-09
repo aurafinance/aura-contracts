@@ -136,6 +136,17 @@ describe("AuraClaimZapV2", () => {
         expect(await phase4.cvxCrv.allowance(claimZapV2.address, vault.address)).gte(ethers.constants.MaxUint256);
     });
 
+    it("deposit some lp into staking pool", async () => {
+        const stake = true;
+        const amount = ethers.utils.parseEther("10");
+        const poolId = 45;
+
+        await getDolaUsdcLP(aliceAddress, amount);
+
+        await LPToken.connect(alice).approve(phase6.booster.address, amount);
+        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
+    });
+
     it("claim rewards from cvxCrvStaking", async () => {
         const lock = true;
 
@@ -183,15 +194,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("claim from lp staking pool", async () => {
-        const stake = true;
-        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
-
-        await getDolaUsdcLP(aliceAddress, amount);
-
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
-        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
-
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
         const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, dao.signer);
@@ -223,15 +226,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("claim from lp staking pool no stake cvxCrvRewards", async () => {
-        const stake = true;
-        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
-
-        await getDolaUsdcLP(aliceAddress, amount);
-
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
-        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
-
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
 
@@ -275,15 +270,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("claim from lp staking pool and stake cvxCrvRewards", async () => {
-        const stake = true;
-        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
-
-        await getDolaUsdcLP(aliceAddress, amount);
-
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
-        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
-
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
 
@@ -325,15 +312,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("claim from lp staking pool and stake full cvxCrvRewards balance", async () => {
-        const stake = true;
-        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
-
-        await getDolaUsdcLP(aliceAddress, amount);
-
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
-        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
-
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
 
@@ -373,15 +352,7 @@ describe("AuraClaimZapV2", () => {
     });
 
     it("claim from pools and then deposit into new vault", async () => {
-        const stake = true;
-        const amount = ethers.utils.parseEther("2");
         const poolId = 45;
-
-        await getDolaUsdcLP(aliceAddress, amount);
-
-        await LPToken.connect(alice).approve(phase6.booster.address, amount);
-        await phase6.booster.connect(alice).deposit(poolId, amount, stake);
-
         await phase6.booster.earmarkRewards(poolId);
         const pool = await phase6.booster.poolInfo(poolId);
 
