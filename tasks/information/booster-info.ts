@@ -4,13 +4,28 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { Phase6Deployed } from "scripts/deploySystem";
 import { config } from "../deploy/mainnet-config";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { table } from "table";
 import axios from "axios";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { ICurveGauge__factory } from "types";
 dayjs.extend(relativeTime);
+
+interface PoolMetadata {
+    lptoken: string;
+    token: string;
+    gauge: string;
+    crvRewards: string;
+    stash: string;
+    shutdown: boolean;
+    pid: number;
+    poolTotalSupply: BigNumber;
+    poolValue: BigNumber;
+    poolName: string;
+    poolSymbol: string;
+    periodFinish: BigNumber;
+    isKilled: boolean;
+}
 
 const crvRewardsABI = [
     "function totalSupply() external view returns(uint256)",
@@ -25,9 +40,9 @@ const specialSymbolMatches = [
 ];
 
 const fetchAuraAPRs = async () => {
-    const url = "https://aura-balancer-apr.onrender.com/aprs";
+    const url = "https://aura-metrics.onrender.com/tvl";
     const response = await axios.get(url);
-    return response.data.pools;
+    return response.data;
 };
 
 const cleanUpSymbol = (poolSymbol: string): string =>
@@ -47,11 +62,14 @@ const truncateNumber = (amount: number, fixed = 2) => Number.parseFloat(Number(a
  * - Symbol is reversed,  ie: wsteth-acx == acx-wsteth returns true
  * - Symbol Matches special criteria defined on constant `specialSymbolMatches`
  *
- * @param {*} newPool
- * @param {*} oldPool
+ * @param {PoolMetadata} newPool
+ * @param {PoolMetadata} oldPool
  * @return {boolean}
  */
-const poolBySymbolVariants = (newPool, oldPool): boolean => {
+const poolBySymbolVariants = (newPool: PoolMetadata, oldPool: PoolMetadata): boolean => {
+    const ignorePIds = [2];
+    if (ignorePIds.includes(oldPool.pid)) return false;
+
     const isSameSymbol = cleanUpSymbol(newPool.poolSymbol) === cleanUpSymbol(oldPool.poolSymbol);
     if (isSameSymbol) return true;
     // aura
@@ -79,13 +97,16 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         const phase6: Phase6Deployed = await config.getPhase6(signer);
         const poolLength = await phase6.booster.poolLength();
         const maxOldStashPid = 47;
-        const poolsTvlData = await fetchAuraAPRs();
-
+        const result = await fetchAuraAPRs();
+        const poolsTvlData = Object.keys(result.balancer.breakdown).map(lptoken => ({
+            lptoken: lptoken,
+            poolValue: result.balancer.breakdown[lptoken],
+        }));
         const poolByLpToken = (poolTvlData, lptoken: string) =>
-            poolTvlData.id.substring(0, 42).toLowerCase() == lptoken.toLowerCase();
+            poolTvlData.lptoken.toLowerCase() == lptoken.toLowerCase();
 
         // Get all pools
-        const pools = await Promise.all(
+        const pools: Array<PoolMetadata> = await Promise.all(
             Array(poolLength.toNumber())
                 .fill(null)
                 .map(async (_, i) => {
@@ -93,8 +114,9 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                     const crvRewards = new Contract(poolInfo.crvRewards, crvRewardsABI, signer);
                     const gauge = new Contract(poolInfo.gauge, gaugeABI, signer);
                     const totalSupply = await crvRewards.totalSupply();
-                    const poolValue = poolsTvlData.find(poolTvlData => poolByLpToken(poolTvlData, poolInfo.lptoken))
-                        ?.poolAprs.poolValue;
+                    const poolTvlData = poolsTvlData.find(poolTvlData => poolByLpToken(poolTvlData, poolInfo.lptoken));
+
+                    const poolValue = poolTvlData?.poolValue;
                     return {
                         lptoken: poolInfo.lptoken,
                         token: poolInfo.token,
@@ -133,7 +155,8 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         });
 
         // Concat all pools that are not matched with old pools but are deployed with new stash version
-        const isPoolNotMigrated = newPool => !poolsMapped.find(pm => pm.isMigrated && pm.newPool.pid === newPool.pid);
+        const isPoolNotMigrated = (newPool: PoolMetadata) =>
+            !poolsMapped.find(pm => pm.isMigrated && pm.newPool.pid === newPool.pid);
         const poolsMappedNew = poolsNewStash.filter(isPoolNotMigrated).map(newPool => {
             const poolMapped = {
                 pid: newPool.pid,
