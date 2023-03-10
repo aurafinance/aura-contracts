@@ -95,6 +95,7 @@ contract AuraVirtualBalanceRewardPool is VirtualBalanceWrapper {
     uint256 public constant newRewardRatio = 830;
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
+    mapping(uint256 => uint256) public epochRewards;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
@@ -199,6 +200,10 @@ contract AuraVirtualBalanceRewardPool is VirtualBalanceWrapper {
     function queueNewRewards(uint256 _rewards) external {
         require(msg.sender == operator, "!authorized");
 
+        uint256 epoch = block.timestamp.div(duration);
+        epochRewards[epoch] = epochRewards[epoch].add(_rewards);
+        require(epochRewards[epoch] < 1e31, "too many rewards");
+
         _rewards = _rewards.add(queuedRewards);
 
         if (block.timestamp >= periodFinish) {
@@ -221,7 +226,6 @@ contract AuraVirtualBalanceRewardPool is VirtualBalanceWrapper {
     }
 
     function notifyRewardAmount(uint256 reward) internal updateReward(address(0)) {
-        // TODO: check reward amount
         historicalRewards = historicalRewards.add(reward);
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(duration);
@@ -231,14 +235,6 @@ contract AuraVirtualBalanceRewardPool is VirtualBalanceWrapper {
             reward = reward.add(leftover);
             rewardRate = reward.div(duration);
         }
-
-        // https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol
-        // Ensure the provided reward amount is not more than the balance in the contract.
-        // This keeps the reward rate in the right range, preventing overflows due to
-        // very high values of rewardRate in the earned and rewardsPerToken functions;
-        // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
-        uint256 balance = rewardToken.balanceOf(address(this));
-        require(rewardRate <= balance.div(duration), "Provided reward too high");
 
         currentRewards = reward;
         lastUpdateTime = block.timestamp;
