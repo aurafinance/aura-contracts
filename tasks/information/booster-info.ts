@@ -150,6 +150,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                 newPool,
                 periodFinish: oldPool.periodFinish,
                 isKilled: oldPool.isKilled,
+                shutdown: oldPool.shutdown,
             };
             return poolMapped;
         });
@@ -167,6 +168,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
                 newPool,
                 periodFinish: newPool.periodFinish,
                 isKilled: newPool.isKilled,
+                shutdown: newPool.shutdown,
             };
 
             return poolMapped;
@@ -185,11 +187,22 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             pm.isMigrated ? truncateNumber(pm.newPool.poolValue) : "N/A", // New Pool TVL
             dayjs().to(dayjs(new Date(pm.periodFinish.mul(1000).toNumber()).toISOString())),
             pm.isKilled ? "\u001b[41m Killed \u001b[0m" : "",
+            pm.shutdown ? "\u001b[41m Shutdown \u001b[0m" : "",
             pm.isMigrated ? "\u001b[42;1m Yes \u001b[43;1m" : "\u001b[41m No \u001b[0m",
         ]; // Migrated
 
         const poolsMappedData = [
-            ["PID", "Name", "New PID", "Old Pool TVL", "New Pool TVL", "Reward Period Finish", "Status", "Migrated"],
+            [
+                "PID",
+                "Name",
+                "New PID",
+                "Old Pool TVL",
+                "New Pool TVL",
+                "Reward Period Finish",
+                "Status",
+                "Shutdown",
+                "Migrated",
+            ],
             ...allPoolsMapped.map(toConsoleData),
         ];
 
