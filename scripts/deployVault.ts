@@ -12,6 +12,8 @@ import {
     FeeForwarder,
     FeeForwarder__factory,
     VirtualBalanceRewardPool__factory,
+    VirtualRewardFactory,
+    VirtualRewardFactory__factory,
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
@@ -55,15 +57,26 @@ export async function deployVault(
     const phase6 = await config.getPhase6(signer);
     const feeToken = ERC20__factory.connect(config.addresses.feeToken, signer);
 
-    const vault = await deployContract<AuraBalVault>(
+    const virtualRewardFactory = await deployContract<VirtualRewardFactory>(
         hre,
-        new AuraBalVault__factory(signer),
-        "AuraBalVault",
-        [phase2.cvxCrv.address],
+        new VirtualRewardFactory__factory(signer),
+        "VirtualRewardFactory",
+        [],
         {},
         debug,
         waitForBlocks,
     );
+
+    const vault = await deployContract<AuraBalVault>(
+        hre,
+        new AuraBalVault__factory(signer),
+        "AuraBalVault",
+        [phase2.cvxCrv.address, virtualRewardFactory.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     const strategy = await deployContract<AuraBalStrategy>(
         hre,
         new AuraBalStrategy__factory(signer),
@@ -129,5 +142,6 @@ export async function deployVault(
         strategy,
         bbusdHandler,
         auraRewards,
+        virtualRewardFactory,
     };
 }

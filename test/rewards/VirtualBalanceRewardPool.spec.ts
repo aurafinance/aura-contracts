@@ -2,16 +2,16 @@ import { ethers } from "hardhat";
 import { expect } from "chai";
 import {
     Account,
-    AuraVirtualBalanceRewardPool,
     MockERC20__factory,
-    AuraVirtualBalanceRewardPool__factory,
     MockERC20,
+    VirtualBalanceRewardPool__factory,
+    VirtualBalanceRewardPool,
 } from "../../types";
 import { simpleToExactAmount, impersonate, getTimestamp } from "../../test-utils";
 
-describe("AuraVirtualBalanceRewardPool", () => {
+describe("VirtualBalanceRewardPool", () => {
     let deployer: Account;
-    let virtualRewardPool: AuraVirtualBalanceRewardPool;
+    let virtualRewardPool: VirtualBalanceRewardPool;
     let token: MockERC20;
 
     before(async () => {
@@ -23,7 +23,7 @@ describe("AuraVirtualBalanceRewardPool", () => {
 
         token = await new MockERC20__factory(deployer.signer).deploy("token", "token", 18, deployer.address, 0);
 
-        virtualRewardPool = await new AuraVirtualBalanceRewardPool__factory(deployer.signer).deploy(
+        virtualRewardPool = await new VirtualBalanceRewardPool__factory(deployer.signer).deploy(
             token.address,
             token.address,
             deployer.address,
@@ -57,9 +57,13 @@ describe("AuraVirtualBalanceRewardPool", () => {
     });
 
     it("cannot queue max rewards", async () => {
+        const epoch = (await getTimestamp()).div(await virtualRewardPool.duration());
+        const rewardsBefore = await virtualRewardPool.epochRewards(epoch);
         const amount = ethers.constants.MaxUint256.sub(await token.totalSupply());
         await token.mint(amount);
         await token.transfer(virtualRewardPool.address, amount);
-        await expect(virtualRewardPool.queueNewRewards(amount)).to.be.revertedWith("too many rewards");
+        await virtualRewardPool.queueNewRewards(amount);
+        const rewardsAfter = await virtualRewardPool.epochRewards(epoch);
+        expect(rewardsAfter.sub(rewardsBefore)).eq(amount);
     });
 });

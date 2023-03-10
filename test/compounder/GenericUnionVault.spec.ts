@@ -9,6 +9,8 @@ import {
     MockStrategy__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
+    VirtualRewardFactory,
+    VirtualRewardFactory__factory,
 } from "../../types/generated";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { deployContract } from "../../tasks/utils";
@@ -40,7 +42,7 @@ describe("GenericUnionVault", () => {
     let alice: Signer;
     let aliceAddress: string;
     let strategyAddress: string;
-
+    let virtualRewardFactory: VirtualRewardFactory;
     let auraRewards: VirtualBalanceRewardPool;
 
     // Testing contract
@@ -76,25 +78,18 @@ describe("GenericUnionVault", () => {
         );
         strategyAddress = mockStrategy.address;
 
+        virtualRewardFactory = await new VirtualRewardFactory__factory(deployer).deploy();
+
         // Deploy test contract.
         genericUnionVault = await deployContract<GenericUnionVault>(
             hre,
             new GenericUnionVault__factory(deployer),
             "GenericUnionVault",
-            [mocks.lptoken.address],
+            [mocks.lptoken.address, virtualRewardFactory.address],
             {},
             debug,
         );
         await genericUnionVault.setWithdrawalPenalty(0);
-
-        auraRewards = await deployContract<VirtualBalanceRewardPool>(
-            hre,
-            new VirtualBalanceRewardPool__factory(deployer),
-            "VirtualBalanceRewardPool",
-            [genericUnionVault.address, phase2.cvx.address, mockStrategy.address],
-            {},
-            debug,
-        );
 
         // Send some aura to mocked strategy to simulate harvest
         await increaseTime(ONE_WEEK.mul(156));

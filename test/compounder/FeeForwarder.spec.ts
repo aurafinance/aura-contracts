@@ -1,7 +1,13 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import { AuraBalStrategy, AuraBalVault, FeeForwarder, AuraBalVault__factory } from "../../types/generated";
+import {
+    AuraBalStrategy,
+    AuraBalVault,
+    FeeForwarder,
+    AuraBalVault__factory,
+    VirtualRewardFactory,
+} from "../../types/generated";
 import { increaseTime, impersonateAccount, simpleToExactAmount, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import {
     deployPhase1,
@@ -29,6 +35,7 @@ describe("FeeForwarder", () => {
     let multisigs: MultisigConfig;
     let strategy: AuraBalStrategy;
     let vault: AuraBalVault;
+    let virtualRewardFactory: VirtualRewardFactory;
 
     // Testing contract
     let feeForwarder: FeeForwarder;
@@ -66,6 +73,7 @@ describe("FeeForwarder", () => {
         vault = result.vault;
         strategy = result.strategy;
         feeForwarder = resultF.feeForwarder;
+        virtualRewardFactory = result.virtualRewardFactory;
 
         // Send crvCvx to account, so it can make deposits
         const crvDepositorAccount = await impersonateAccount(phase2.crvDepositor.address);
@@ -102,14 +110,20 @@ describe("FeeForwarder", () => {
             expect(strategyBalanceAfter, "strategy Balance").to.be.eq(strategyBalanceBefore.add(amount));
         });
         it("fails if vault does not have a strategy", async () => {
-            const mockVault = await new AuraBalVault__factory(deployer).deploy(mocks.crv.address);
+            const mockVault = await new AuraBalVault__factory(deployer).deploy(
+                mocks.crv.address,
+                virtualRewardFactory.address,
+            );
             await expect(
                 feeForwarder.connect(daoSigner).forward(mockVault.address, ZERO_ADDRESS, ZERO),
                 "fails due to strategy",
             ).to.be.revertedWith("!strategy");
         });
         it("fails if strategy is not connected to the vault", async () => {
-            const mockVault = await new AuraBalVault__factory(deployer).deploy(mocks.crv.address);
+            const mockVault = await new AuraBalVault__factory(deployer).deploy(
+                mocks.crv.address,
+                virtualRewardFactory.address,
+            );
             await mockVault.setStrategy(strategy.address);
             expect(strategy.vault(), "vault ").to.not.be.eq(mockVault.address);
             await expect(

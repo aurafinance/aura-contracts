@@ -9,8 +9,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
-import { AuraVirtualBalanceRewardPool } from "../rewards/AuraVirtualBalanceRewardPool.sol";
-import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
+import { IVirtualRewards, IVirtualRewardFactory } from "../interfaces/IVirtualRewards.sol";
 
 /**
  * @title   GenericUnionVault
@@ -28,6 +27,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     address public immutable underlying;
+    address public immutable virtualRewardFactory;
     address public strategy;
 
     address[] public extraRewards;
@@ -40,13 +40,14 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     event ExtraRewardAdded(address indexed _reward, address extraReward);
     event ExtraRewardCleared(address indexed _reward);
 
-    constructor(address _token)
+    constructor(address _token, address _virtualRewardFactory)
         ERC20(
             string(abi.encodePacked("Staked ", ERC20(_token).name())),
             string(abi.encodePacked("stk", ERC20(_token).symbol()))
         )
     {
         underlying = _token;
+        virtualRewardFactory = _virtualRewardFactory;
     }
 
     /// @notice Updates the withdrawal penalty
@@ -79,7 +80,11 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         require(!isExtraReward[_reward], "reward exists");
         require(strategy != address(0), "strategy not set");
 
-        address extraReward = address(new AuraVirtualBalanceRewardPool(address(this), _reward, strategy));
+        address extraReward = IVirtualRewardFactory(virtualRewardFactory).createVirtualReward(
+            address(this),
+            _reward,
+            strategy
+        );
         address reward = IVirtualRewards(extraReward).rewardToken();
 
         extraRewards.push(extraReward);
