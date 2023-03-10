@@ -21,7 +21,7 @@ import {
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
 import { assertBNClosePercent, getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { fullScale, ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK } from "../test-utils/constants";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK } from "../test-utils/constants";
 import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
