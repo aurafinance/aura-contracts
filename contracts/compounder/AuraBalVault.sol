@@ -15,7 +15,7 @@ contract AuraBalVault is GenericUnionVault {
     bool public isHarvestPermissioned = true;
     mapping(address => bool) public authorizedHarvesters;
 
-    constructor(address _token) GenericUnionVault(_token) {}
+    constructor(address _token, address _virtualRewardFactory) GenericUnionVault(_token, _virtualRewardFactory) {}
 
     /// @notice Sets whether only whitelisted addresses can harvest
     /// @param _status Whether or not harvests are permissioned

@@ -9,6 +9,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
+import { IVirtualRewards, IVirtualRewardFactory } from "../interfaces/IVirtualRewards.sol";
 
 /**
  * @title   GenericUnionVault
@@ -26,6 +27,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     address public immutable underlying;
+    address public immutable virtualRewardFactory;
     address public strategy;
 
     address[] public extraRewards;
@@ -35,16 +37,17 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     event Harvest(address indexed _caller, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
-    event ExtraRewardAdded(address indexed _reward);
+    event ExtraRewardAdded(address indexed _reward, address extraReward);
     event ExtraRewardCleared(address indexed _reward);
 
-    constructor(address _token)
+    constructor(address _token, address _virtualRewardFactory)
         ERC20(
             string(abi.encodePacked("Staked ", ERC20(_token).name())),
             string(abi.encodePacked("stk", ERC20(_token).symbol()))
         )
     {
         underlying = _token;
+        virtualRewardFactory = _virtualRewardFactory;
     }
 
     /// @notice Updates the withdrawal penalty
@@ -73,14 +76,20 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @param _reward VirtualBalanceRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
-        require(!isExtraReward[_reward], "Reward Already Added");
-        if (extraRewards.length >= 12) {
-            return false;
-        }
+        require(extraRewards.length < 12, "too many rewards");
+        require(!isExtraReward[_reward], "reward exists");
+        require(strategy != address(0), "strategy not set");
 
-        extraRewards.push(_reward);
-        isExtraReward[_reward] = true;
-        emit ExtraRewardAdded(_reward);
+        address extraReward = IVirtualRewardFactory(virtualRewardFactory).createVirtualReward(
+            address(this),
+            _reward,
+            strategy
+        );
+        address reward = IVirtualRewards(extraReward).rewardToken();
+
+        extraRewards.push(extraReward);
+        isExtraReward[reward] = true;
+        emit ExtraRewardAdded(reward, extraReward);
         return true;
     }
 
@@ -88,9 +97,9 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     function clearExtraRewards() external onlyOwner {
         uint256 len = extraRewards.length;
         for (uint256 i = 0; i < len; i++) {
-            address _reward = extraRewards[i];
-            isExtraReward[_reward] = false;
-            emit ExtraRewardCleared(_reward);
+            address reward = IVirtualRewards(extraRewards[i]).rewardToken();
+            isExtraReward[reward] = false;
+            emit ExtraRewardCleared(reward);
         }
         delete extraRewards;
     }
