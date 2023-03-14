@@ -153,7 +153,7 @@ describe("AuraBalVault", () => {
             });
             shouldBehaveLikeERC20(() => ctx as IERC20BehaviourContext, "ERC20", initialSupply);
         });
-        describe.skip("should behave like ERC4626 ", async () => {
+        describe("should behave like ERC4626 ", async () => {
             const ctx: Partial<IERC4626BehaviourContext> = {};
             const initialSupply = simpleToExactAmount(2, 18);
             const depositAmount = simpleToExactAmount(10, 18);
@@ -162,7 +162,7 @@ describe("AuraBalVault", () => {
                 ctx.fixture = async function fixture() {
                     await setup();
                     ctx.vault = vault as unknown as IERC4626;
-                    ctx.asset = mocks.lptoken;
+                    ctx.asset = phase2.cvxCrv;
                     ctx.initialHolder = { signer: deployer, address: deployerAddress };
                     ctx.recipient = { signer: alice, address: aliceAddress };
                     ctx.anotherAccount = { signer: daoSigner, address: await daoSigner.getAddress() };
@@ -173,7 +173,7 @@ describe("AuraBalVault", () => {
                         withdraw: depositAmount,
                         redeem: depositAmount,
                     };
-
+                    ctx.variances = { withdraw: "0.02" };
                     return ctx as IERC4626BehaviourContext;
                 };
             });
@@ -429,17 +429,20 @@ describe("AuraBalVault", () => {
                     "fails due to owner",
                 ).to.be.revertedWith("Ownable: caller is not the owner");
             });
-
             it("fails if wrong address", async () => {
                 await expect(vault.addExtraReward(ZERO_ADDRESS), "fails due to").to.be.revertedWith("Invalid address!");
             });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await vault.extraRewardsLength();
+                const zero_padded = "0x00000000000000000000000000000000000000";
                 // 12 is the max number of extra
-                for (let i = extraRewardsLength.toNumber(); i <= 14; i++) {
-                    await vault.addExtraReward(auraRewards.address);
+                for (let i = extraRewardsLength.toNumber(); i <= 11; i++) {
+                    const rewardAddress = zero_padded + (i + 10).toString();
+                    await vault.addExtraReward(rewardAddress);
                 }
-                expect(await vault.extraRewardsLength(), "extraRewardsLength").to.eq(12);
+                await expect(vault.addExtraReward(zero_padded + (13 + 10).toString())).to.be.revertedWith(
+                    "too many rewards",
+                );
             });
         });
         describe("clearExtraRewards", async () => {

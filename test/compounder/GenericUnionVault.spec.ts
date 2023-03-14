@@ -9,6 +9,8 @@ import {
     MockStrategy__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
+    VirtualRewardFactory,
+    VirtualRewardFactory__factory,
 } from "../../types/generated";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { deployContract } from "../../tasks/utils";
@@ -40,7 +42,7 @@ describe("GenericUnionVault", () => {
     let alice: Signer;
     let aliceAddress: string;
     let strategyAddress: string;
-
+    let virtualRewardFactory: VirtualRewardFactory;
     let auraRewards: VirtualBalanceRewardPool;
 
     // Testing contract
@@ -76,25 +78,18 @@ describe("GenericUnionVault", () => {
         );
         strategyAddress = mockStrategy.address;
 
+        virtualRewardFactory = await new VirtualRewardFactory__factory(deployer).deploy();
+
         // Deploy test contract.
         genericUnionVault = await deployContract<GenericUnionVault>(
             hre,
             new GenericUnionVault__factory(deployer),
             "GenericUnionVault",
-            [mocks.lptoken.address],
+            [mocks.lptoken.address, virtualRewardFactory.address],
             {},
             debug,
         );
         await genericUnionVault.setWithdrawalPenalty(0);
-
-        auraRewards = await deployContract<VirtualBalanceRewardPool>(
-            hre,
-            new VirtualBalanceRewardPool__factory(deployer),
-            "VirtualBalanceRewardPool",
-            [genericUnionVault.address, phase2.cvx.address, mockStrategy.address],
-            {},
-            debug,
-        );
 
         // Send some aura to mocked strategy to simulate harvest
         await increaseTime(ONE_WEEK.mul(156));
@@ -184,10 +179,12 @@ describe("GenericUnionVault", () => {
         it("Adds extra rewards", async () => {
             const extraRewardsLength = await genericUnionVault.extraRewardsLength();
 
-            await genericUnionVault.addExtraReward(auraRewards.address);
+            await genericUnionVault.addExtraReward(phase2.cvx.address);
+            auraRewards = VirtualBalanceRewardPool__factory.connect(await genericUnionVault.extraRewards(0), deployer);
             // Verify events, storage change.
             expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(extraRewardsLength.add(1));
             expect(await genericUnionVault.extraRewards(0), "extraRewards").to.eq(auraRewards.address);
+            expect(await genericUnionVault.isExtraReward(phase2.cvx.address), "isExtraRewards").to.eq(true);
         });
         it("Checks empty vault", async () => {
             expect(await genericUnionVault.totalSupply(), "balanceOfUnderlying").to.be.eq(ZERO);
@@ -352,19 +349,30 @@ describe("GenericUnionVault", () => {
                     "Invalid address!",
                 );
             });
+            it("Cannot add duplicate reward", async () => {
+                await genericUnionVault.addExtraReward(auraRewards.address);
+                await expect(genericUnionVault.addExtraReward(auraRewards.address), "fails due to").to.be.revertedWith(
+                    "reward exists",
+                );
+            });
             it("does not add more than 12 rewards", async () => {
                 const extraRewardsLength = await genericUnionVault.extraRewardsLength();
+                const zero_padded = "0x00000000000000000000000000000000000000";
                 // 12 is the max number of extra
-                for (let i = extraRewardsLength.toNumber(); i <= 14; i++) {
-                    await genericUnionVault.addExtraReward(auraRewards.address);
+                for (let i = extraRewardsLength.toNumber(); i <= 11; i++) {
+                    const rewardAddress = zero_padded + (i + 10).toString();
+                    await genericUnionVault.addExtraReward(rewardAddress);
                 }
-                expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(12);
+                await expect(genericUnionVault.addExtraReward(zero_padded + (13 + 10).toString())).to.be.revertedWith(
+                    "too many rewards",
+                );
             });
         });
         describe("clearExtraRewards", async () => {
             it("clearExtraRewards should remove all extra rewards", async () => {
                 await genericUnionVault.clearExtraRewards();
                 expect(await genericUnionVault.extraRewardsLength(), "extraRewardsLength").to.eq(0);
+                expect(await genericUnionVault.isExtraReward(auraRewards.address), "isExtraReward").to.eq(false);
             });
             it("fails if caller is not owner", async () => {
                 await expect(

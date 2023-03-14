@@ -158,8 +158,9 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
 
         // Swap the LP tokens for aura BAL
         uint256 _bptBalance = IERC20(BAL_ETH_POOL_TOKEN).balanceOf(address(this));
-        uint256 _auraBalBalance = _swapBptToAuraBal(_bptBalance, _minAmountOut);
+        _swapBptToAuraBal(_bptBalance, _minAmountOut);
 
+        uint256 _auraBalBalance = IERC20(AURABAL_TOKEN).balanceOf(address(this));
         if (_auraBalBalance > 0) {
             stake(_auraBalBalance);
             return _auraBalBalance;
