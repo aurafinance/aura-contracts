@@ -351,6 +351,22 @@ describe("AuraBalVault", () => {
             const underlyingBalance = await vault.balanceOfUnderlying(depositor.address);
             expect(underlyingBalance).gt(DEPOSIT_AMOUNT);
         });
+        it("should consume cvxcrv balance on contract", async () => {
+            await getAuraBal(strategy.address, simpleToExactAmount(1000));
+
+            const stakedBalanceBefore = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const totalUnderlyingBefore = await vault.totalUnderlying();
+            const auraBalBalanceBefore = await phase2.cvxCrv.balanceOf(strategy.address);
+            await vault.connect(dao.signer)["harvest(uint256)"](0);
+            const stakedBalanceAfter = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const totalUnderlyingAfter = await vault.totalUnderlying();
+            const auraBalBalanceAfter = await phase2.cvxCrv.balanceOf(strategy.address);
+
+            expect(totalUnderlyingAfter).gt(totalUnderlyingBefore.add(auraBalBalanceBefore));
+            expect(auraBalBalanceBefore).gt(auraBalBalanceAfter);
+            expect(auraBalBalanceAfter).to.be.eq(0);
+            expect(stakedBalanceAfter).gt(stakedBalanceBefore.add(auraBalBalanceBefore));
+        });
         it("can not call harvest while protected", async () => {
             expect(await vault.totalSupply()).gt(0);
             await expect(vault.connect(account.signer)["harvest()"]()).to.be.revertedWith("permissioned harvest");
