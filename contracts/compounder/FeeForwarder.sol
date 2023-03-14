@@ -15,7 +15,8 @@ interface IStrategy {
 
 /**
  * @title FeeForwarder
- * @dev Forwards collected fees to Vault.
+ * @author  AuraFinance
+ * @notice Forwards collected fees to Vault.
  */
 contract FeeForwarder is Ownable {
     using SafeERC20 for IERC20;

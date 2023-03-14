@@ -9,6 +9,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/Reentrancy
 import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 import { IBasicRewards } from "../interfaces/IBasicRewards.sol";
+import { IVirtualRewards, IVirtualRewardFactory } from "../interfaces/IVirtualRewards.sol";
 
 /**
  * @title   GenericUnionVault
@@ -26,24 +27,27 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     uint256 public constant FEE_DENOMINATOR = 10000;
 
     address public immutable underlying;
+    address public immutable virtualRewardFactory;
     address public strategy;
 
     address[] public extraRewards;
+    mapping(address => bool) public isExtraReward;
 
     event WithdrawalPenaltyUpdated(uint256 _penalty);
     event Harvest(address indexed _caller, uint256 _value);
     event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
-    event ExtraRewardAdded(address indexed _reward);
+    event ExtraRewardAdded(address indexed _reward, address extraReward);
     event ExtraRewardCleared(address indexed _reward);
 
-    constructor(address _token)
+    constructor(address _token, address _virtualRewardFactory)
         ERC20(
             string(abi.encodePacked("Staked ", ERC20(_token).name())),
             string(abi.encodePacked("stk", ERC20(_token).symbol()))
         )
     {
         underlying = _token;
+        virtualRewardFactory = _virtualRewardFactory;
     }
 
     /// @notice Updates the withdrawal penalty
@@ -72,12 +76,20 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @param _reward VirtualBalanceRewardPool address
     /// @return bool success
     function addExtraReward(address _reward) external onlyOwner notToZeroAddress(_reward) returns (bool) {
-        if (extraRewards.length >= 12) {
-            return false;
-        }
+        require(extraRewards.length < 12, "too many rewards");
+        require(!isExtraReward[_reward], "reward exists");
+        require(strategy != address(0), "strategy not set");
 
-        extraRewards.push(_reward);
-        emit ExtraRewardAdded(_reward);
+        address extraReward = IVirtualRewardFactory(virtualRewardFactory).createVirtualReward(
+            address(this),
+            _reward,
+            strategy
+        );
+        address reward = IVirtualRewards(extraReward).rewardToken();
+
+        extraRewards.push(extraReward);
+        isExtraReward[reward] = true;
+        emit ExtraRewardAdded(reward, extraReward);
         return true;
     }
 
@@ -85,7 +97,9 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     function clearExtraRewards() external onlyOwner {
         uint256 len = extraRewards.length;
         for (uint256 i = 0; i < len; i++) {
-            emit ExtraRewardCleared(extraRewards[i]);
+            address reward = IVirtualRewards(extraRewards[i]).rewardToken();
+            isExtraReward[reward] = false;
+            emit ExtraRewardCleared(reward);
         }
         delete extraRewards;
     }
@@ -117,15 +131,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     {
         require(_amount > 0, "Deposit too small");
 
-        // Stake into extra rewards before we update the users
-        // balancers and update totalSupply/totalUnderlying
-        for (uint256 i = 0; i < extraRewards.length; i++) {
-            IBasicRewards(extraRewards[i]).stake(_receiver, _amount);
-        }
-
         uint256 _before = totalUnderlying();
-        IERC20(underlying).safeTransferFrom(msg.sender, strategy, _amount);
-        IStrategy(strategy).stake(_amount);
 
         // Issues shares in proportion of deposit to pool amount
         uint256 shares = 0;
@@ -134,6 +140,15 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         } else {
             shares = (_amount * totalSupply()) / _before;
         }
+
+        // Stake into extra rewards before we update the users
+        // balancers and update totalSupply/totalUnderlying
+        for (uint256 i = 0; i < extraRewards.length; i++) {
+            IBasicRewards(extraRewards[i]).stake(_receiver, shares);
+        }
+
+        IERC20(underlying).safeTransferFrom(msg.sender, strategy, _amount);
+        IStrategy(strategy).stake(_amount);
 
         _mint(_receiver, shares);
         emit Deposit(msg.sender, _receiver, _amount, shares);

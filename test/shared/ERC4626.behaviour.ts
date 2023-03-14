@@ -450,15 +450,10 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
             expect(await vault.maxWithdraw(alice.address), "max withdraw").to.gt(0);
             expect(await vault.totalAssets(), "totalAssets").to.gt(totalAssets);
             const shares = await vault.previewWithdraw(assetsAmount);
-            assertBNClosePercent(
-                await vault.maxRedeem(alice.address),
-                aliceSharesBalance.add(shares),
-                variances.maxRedeem,
-                "max redeem",
-            );
+            const maxRedeem = await vault.maxRedeem(alice.address);
+            expect(maxRedeem, "max redeem").to.be.eq(await vault.balanceOf(alice.address));
 
             aliceAssetBalance = await asset.balanceOf(alice.address);
-
             // Test
             // Verify events, storage change, balance, etc.
             await expectWithdraw(ctx(), alice, bob, alice, assetsAmount, shares);

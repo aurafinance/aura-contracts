@@ -20,8 +20,8 @@ import {
 } from "../types";
 import { simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
-import { getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { fullScale, ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK } from "../test-utils/constants";
+import { assertBNClosePercent, getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK } from "../test-utils/constants";
 import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
@@ -239,6 +239,7 @@ describe("AuraBalVault", () => {
         it("check AURA as extra reward", async () => {
             expect(await vault.extraRewardsLength()).eq(1);
             expect(await vault.extraRewards(0)).eq(auraRewards.address);
+            expect(await vault.isExtraReward(phase2.cvx.address)).eq(true);
         });
         it("check approvals", async () => {
             const max = ethers.constants.MaxUint256;
@@ -349,6 +350,22 @@ describe("AuraBalVault", () => {
             // Depositor balances
             const underlyingBalance = await vault.balanceOfUnderlying(depositor.address);
             expect(underlyingBalance).gt(DEPOSIT_AMOUNT);
+        });
+        it("should consume cvxcrv balance on contract", async () => {
+            await getAuraBal(strategy.address, simpleToExactAmount(1000));
+
+            const stakedBalanceBefore = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const totalUnderlyingBefore = await vault.totalUnderlying();
+            const auraBalBalanceBefore = await phase2.cvxCrv.balanceOf(strategy.address);
+            await vault.connect(dao.signer)["harvest(uint256)"](0);
+            const stakedBalanceAfter = await phase6.cvxCrvRewards.balanceOf(strategy.address);
+            const totalUnderlyingAfter = await vault.totalUnderlying();
+            const auraBalBalanceAfter = await phase2.cvxCrv.balanceOf(strategy.address);
+
+            expect(totalUnderlyingAfter).gt(totalUnderlyingBefore.add(auraBalBalanceBefore));
+            expect(auraBalBalanceBefore).gt(auraBalBalanceAfter);
+            expect(auraBalBalanceAfter).to.be.eq(0);
+            expect(stakedBalanceAfter).gt(stakedBalanceBefore.add(auraBalBalanceBefore));
         });
         it("can not call harvest while protected", async () => {
             expect(await vault.totalSupply()).gt(0);
@@ -558,9 +575,9 @@ describe("AuraBalVault", () => {
                 .connect(PETER.signer)
                 .redeem(await vault.balanceOf(PETER.address), PETER.address, PETER.address);
 
-            const compare = (a: BigNumber, b: BigNumber, y: BigNumberish = "10") => {
+            const compare = (a: BigNumber, b: BigNumber) => {
                 // Round it down to deal with off by 1 kek
-                expect(a.div(y)).eq(b.div(y));
+                assertBNClosePercent(a, b, "0.01");
             };
 
             // Aura rewards
@@ -568,15 +585,15 @@ describe("AuraBalVault", () => {
             const aliceAuraBalance = (await phase2.cvx.balanceOf(ALICE.address)).sub(aliceAuraBalanceBefore);
             await auraRewards.connect(DAVID.signer)["getReward()"]();
             const davidAuraBalance = (await phase2.cvx.balanceOf(DAVID.address)).sub(davidAuraBalanceBefore);
-            compare(aliceAuraBalance, davidAuraBalance, fullScale);
+            compare(aliceAuraBalance, davidAuraBalance);
 
             await auraRewards.connect(SARAH.signer)["getReward()"]();
             const sarahAuraBalance = (await phase2.cvx.balanceOf(SARAH.address)).sub(sarahAuraBalanceBefore);
-            compare(sarahAuraBalance, davidAuraBalance.mul(2), fullScale);
+            compare(sarahAuraBalance, davidAuraBalance.mul(2));
 
             await auraRewards.connect(PETER.signer)["getReward()"]();
             const peterAuraBalance = (await phase2.cvx.balanceOf(PETER.address)).sub(peterAuraBalanceBefore);
-            compare(peterAuraBalance, sarahAuraBalance.mul(2), fullScale);
+            compare(peterAuraBalance, sarahAuraBalance.mul(2));
 
             // CvxCrv Rewards
             const aliceBalance = (await phase2.cvxCrv.balanceOf(ALICE.address)).sub(aliceBalanceBefore);
