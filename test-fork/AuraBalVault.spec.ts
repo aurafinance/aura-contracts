@@ -221,18 +221,18 @@ describe("AuraBalVault", () => {
             console.log("No Fee Token earned");
             minAmountFeeTokenWeth = await getBbaUsdToWethAmount(
                 bVault,
-                auraRewards.address,
+                strategy.address,
                 feeTokenEarned.add(strategyFeeTokenBalance),
             );
         }
 
         // Calc BAL/WETH liq to 8020BALWETH
-        const minBptBalWethAmount = await getBalWethJoinBptAmount(balancerHelpers, auraRewards.address, [
+        const minBptBalWethAmount = await getBalWethJoinBptAmount(balancerHelpers, strategy.address, [
             BN.from(crvEarned),
             minAmountFeeTokenWeth,
         ]);
         // Calc 8020BALWETH-BPT for auraBAL
-        const minAmountAuraBal = await getBptToAuraBalAmount(bVault, auraRewards.address, minBptBalWethAmount);
+        const minAmountAuraBal = await getBptToAuraBalAmount(bVault, strategy.address, minBptBalWethAmount);
 
         return applySwapSlippage(minAmountAuraBal);
     }
