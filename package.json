@@ -34,6 +34,7 @@
         "graphql": "^16.5.0",
         "graphql-request": "^4.3.0",
         "lodash": "^4.17.21",
+        "node-fetch": "2",
         "table": "^6.8.0"
     },
     "devDependencies": {
