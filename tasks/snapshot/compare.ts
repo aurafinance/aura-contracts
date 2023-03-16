@@ -26,8 +26,8 @@ task("snapshot:compare")
         const choices0 = await getChoicesFromIpfs(taskArguments.hash0);
         const choices1 = await getChoicesFromIpfs(taskArguments.hash1);
 
-        const notIn0 = difference(choices0, choices1);
-        const notIn1 = difference(choices1, choices0);
+        const notIn0 = difference(choices1, choices0);
+        const notIn1 = difference(choices0, choices1);
 
         const SEP = "----------------------------------------";
 
