@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { networkLabels, priorityGuagesAddresses, symbolOverrides } from "./constants";
+import { networkLabels, priorityGuagesAddresses, symbolOverrides, validNetworks } from "./constants";
 
 export interface Gauge {
     pool: {
@@ -62,6 +62,11 @@ export const parseLabel = (gauge: Gauge) => {
 
 export const sortGaugeList = (gaugeList: Gauge[]) => {
     const gauges = gaugeList.map(gauge => {
+        if (gauge.address === "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242") {
+            // auraBAL gauge
+            return { ...gauge, pool: { ...gauge.pool, tokens: [gauge.pool.tokens[1], gauge.pool.tokens[0]] } };
+        }
+
         // Deal with stable pools
         if (gauge.pool.tokens[0].weight === "null") {
             return gauge;
@@ -80,7 +85,11 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         return { ...gauge, pool: { ...gauge.pool, tokens } };
     });
 
-    const chainOrder = [1, 42161, 137, 10];
+    const chainOrder = [1, 42161, 137, 10, 100];
+
+    if (chainOrder.length !== validNetworks.length) {
+        throw Error("Chain order wrong length");
+    }
 
     const networkOrder = chainOrder.reduce((acc, chainId) => {
         return [...acc, ...gauges.filter(g => g.network === chainId)];
