@@ -108,6 +108,4 @@ contract AuraBalStrategyBase {
                 toInternalBalance: false
             });
     }
-
-    receive() external payable {}
 }
