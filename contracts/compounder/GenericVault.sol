@@ -313,14 +313,14 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Maximum amount of the underlying asset that can be withdrawn
     /// from the owner balance in the Vault, through a withdraw call.
     function maxWithdraw(address _owner) public view returns (uint256) {
-        return convertToAssets(balanceOf(_owner));
+        return previewRedeem(maxRedeem((_owner)));
     }
 
     /// @notice Allows an on-chain or off-chain user to simulate the effects
     /// of their withdrawal at the current block, given current on-chain conditions.
     function previewWithdraw(uint256 _assets) public view returns (uint256) {
-        uint256 penalty = _getWithdrawalPenalty(_assets);
-        return convertToShares(_assets + penalty);
+        _assets = ((FEE_DENOMINATOR * _assets) / (FEE_DENOMINATOR - withdrawalPenalty));
+        return convertToShares(_assets);
     }
 
     /// @notice Burns shares from owner and sends exactly assets of
