@@ -572,7 +572,7 @@ describe("AuraBalVault", () => {
             const sharesBefore = await vault.balanceOf(depositor.address);
             await vault.connect(depositor.signer).mint(shares, depositor.address);
             const sharesAfter = await vault.balanceOf(depositor.address);
-            expect(shares).eq(sharesAfter.sub(sharesBefore).add(1));
+            expect(shares).eq(sharesAfter.sub(sharesBefore));
         });
     });
 
@@ -745,7 +745,7 @@ describe("AuraBalVault", () => {
 
             const compare = (a: BigNumber, b: BigNumber) => {
                 // Round it down to deal with off by 1 kek
-                assertBNClosePercent(a, b, "0.01");
+                assertBNClosePercent(a, b, "0.001");
             };
 
             // Aura rewards
@@ -761,13 +761,12 @@ describe("AuraBalVault", () => {
             const peterBalance = (await phase2.cvxCrv.balanceOf(PETER.address)).sub(peterBalanceBefore);
             compare(peterBalance, sarahBalance.mul(2));
 
-            // expect(await vault.totalSupply()).eq(0);
-            expect(await vault.totalSupply()).lte(1); // TODO - FIX after round up
+            expect(await vault.totalSupply()).eq(0);
             expect(await phase2.cvx.balanceOf(auraRewards.address)).lt(parseEther("0.001"));
         });
     });
 
-    describe.skip("BBUSDHandler", async () => {
+    describe("BBUSDHandler", async () => {
         let handler: BalancerSwapsHandler;
         const strategyAddress = deployer.address;
         before(async () => {

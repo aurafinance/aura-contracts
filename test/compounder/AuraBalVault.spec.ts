@@ -174,7 +174,6 @@ describe("AuraBalVault", () => {
                         withdraw: depositAmount,
                         redeem: depositAmount,
                     };
-                    // ctx.variances = { withdraw: "0.000001" };
                     return ctx as IERC4626BehaviourContext;
                 };
             });
@@ -296,10 +295,9 @@ describe("AuraBalVault", () => {
             const shares = await vault.previewWithdraw(amount);
             const tx = await vault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            // await expect(tx)
-            //     .to.emit(vault, "Withdraw")
-            //     .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, shares);
-            await expect(tx).to.emit(vault, "Withdraw");
+            await expect(tx)
+                .to.emit(vault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, shares);
 
             const totalUnderlyingAfter = await vault.totalUnderlying();
             const totalSupplyAfter = await vault.totalSupply();
