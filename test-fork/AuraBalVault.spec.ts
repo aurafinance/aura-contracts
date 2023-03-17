@@ -684,6 +684,9 @@ describe("AuraBalVault", () => {
             expect(totalSupplyBefore, "no change on total supply").eq(totalSupplyAfter);
             expect(totalUnderlyingBefore, "total underlying should increase after compound").lt(totalUnderlyingAfter);
         });
+
+        let aliceBalance: BigNumber;
+
         it("Multiple withdraw", async () => {
             const aliceBalanceBefore = await phase2.cvxCrv.balanceOf(ALICE.address);
             const davidBalanceBefore = await phase2.cvxCrv.balanceOf(DAVID.address);
@@ -717,7 +720,7 @@ describe("AuraBalVault", () => {
             compare(aliceAuraBalance, davidAuraBalance);
 
             // CvxCrv Rewards
-            const aliceBalance = (await phase2.cvxCrv.balanceOf(ALICE.address)).sub(aliceBalanceBefore);
+            aliceBalance = (await phase2.cvxCrv.balanceOf(ALICE.address)).sub(aliceBalanceBefore);
             const davidBalance = (await phase2.cvxCrv.balanceOf(DAVID.address)).sub(davidBalanceBefore);
             // David only withdraw half
             compare(aliceBalance, davidBalance.add(davidWithdraw));
@@ -758,6 +761,8 @@ describe("AuraBalVault", () => {
 
             // CvxCrv Rewards
             const sarahBalance = (await phase2.cvxCrv.balanceOf(SARAH.address)).sub(sarahBalanceBefore);
+            // Check that Sarahs balance is 2x alice Balance
+            compare(sarahBalance, aliceBalance.mul(2));
             const peterBalance = (await phase2.cvxCrv.balanceOf(PETER.address)).sub(peterBalanceBefore);
             compare(peterBalance, sarahBalance.mul(2));
 
