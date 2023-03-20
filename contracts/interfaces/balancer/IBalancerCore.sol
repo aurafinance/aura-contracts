@@ -113,6 +113,13 @@ interface IBalancerVault {
 
     function getInternalBalance(address user, address[] memory tokens) external view returns (uint256[] memory);
 
+    function queryBatchSwap(
+        SwapKind kind,
+        BatchSwapStep[] memory swaps,
+        IAsset[] memory assets,
+        FundManagement memory funds
+    ) external returns (int256[] memory assetDeltas);
+
     struct ExitPoolRequest {
         IAsset[] assets;
         uint256[] minAmountsOut;

@@ -40,7 +40,7 @@ export const assertBNClosePercent = (a: BN, b: BN, variance: string | number = "
     const str = reason ? `\n\tReason: ${reason}\n\t${a.toString()} vs ${b.toString()}` : "";
     assert.ok(
         diff.lte(varianceBN),
-        `Numbers exceed ${variance}% diff (Delta between a and b is ${diff.toString()}%, but variance was only ${varianceBN.toString()})${str}`,
+        `Numbers exceed ${variance}% diff (Delta between a and b is ${diff.toString()} %, but variance was only ${varianceBN.toString()})${str}`,
     );
 };
 

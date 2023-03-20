@@ -138,7 +138,7 @@ async function expectRedeem(
     );
     assertBNClosePercent(
         await ctx.vault.maxWithdraw(sender.address),
-        await ctx.vault.convertToAssets(data.callerSharesBalance),
+        await ctx.vault.previewRedeem(data.callerSharesBalance),
         ctx.variances.maxWithdraw,
         "max withdraw",
     );
@@ -187,7 +187,7 @@ async function expectWithdraw(
     );
     assertBNClosePercent(
         await ctx.vault.maxWithdraw(sender.address),
-        await ctx.vault.convertToAssets(data.callerSharesBalance),
+        await ctx.vault.previewRedeem(data.callerSharesBalance),
         ctx.variances.maxWithdraw,
         "max withdraw",
     );
@@ -273,7 +273,7 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
             expect(await vault.maxRedeem(alice.address), "max redeem").to.eq(aliceSharesBalance);
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance),
+                await vault.previewRedeem(aliceSharesBalance),
                 variances.convertToAssets,
                 "max withdraw",
             );
@@ -371,7 +371,7 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
             expect(await vault.maxRedeem(alice.address), "max redeem").to.eq(aliceSharesBalance.add(sharesAmount));
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance.add(sharesAmount)),
+                await vault.previewRedeem(aliceSharesBalance.add(sharesAmount)),
                 variances.maxWithdraw,
                 "max withdraw",
             );
@@ -418,7 +418,7 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
             }
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance),
+                await vault.previewRedeem(aliceSharesBalance),
                 variances.maxWithdraw,
                 "max withdraw",
             );
@@ -440,7 +440,7 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
             }
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance),
+                await vault.previewRedeem(aliceSharesBalance),
                 variances.maxWithdraw,
                 "max withdraw",
             );
@@ -469,7 +469,7 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
 
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance),
+                await vault.previewRedeem(aliceSharesBalance),
                 variances.maxWithdraw,
                 "max withdraw",
             );
@@ -494,10 +494,10 @@ export function shouldBehaveLikeERC4626(ctx: () => IERC4626BehaviourContext): vo
 
             assertBNClosePercent(
                 await vault.maxWithdraw(alice.address),
-                await vault.convertToAssets(aliceSharesBalance),
+                await vault.previewRedeem(aliceSharesBalance),
                 variances.maxWithdraw,
                 "max withdraw",
-            ); //maxWithdraw
+            );
 
             // Given that
             await vault.connect(alice.signer)["deposit(uint256,address)"](assetsAmount, alice.address);

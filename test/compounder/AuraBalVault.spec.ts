@@ -18,6 +18,7 @@ import {
     ZERO,
     ZERO_ADDRESS,
     assertBNClosePercent,
+    assertBNClose,
 } from "../../test-utils";
 import {
     deployPhase1,
@@ -153,7 +154,7 @@ describe("AuraBalVault", () => {
             });
             shouldBehaveLikeERC20(() => ctx as IERC20BehaviourContext, "ERC20", initialSupply);
         });
-        describe("should behave like ERC4626 ", async () => {
+        describe("should behave like ERC4626 with fees", async () => {
             const ctx: Partial<IERC4626BehaviourContext> = {};
             const initialSupply = simpleToExactAmount(2, 18);
             const depositAmount = simpleToExactAmount(10, 18);
@@ -173,7 +174,6 @@ describe("AuraBalVault", () => {
                         withdraw: depositAmount,
                         redeem: depositAmount,
                     };
-                    ctx.variances = { withdraw: "0.02" };
                     return ctx as IERC4626BehaviourContext;
                 };
             });
@@ -295,25 +295,19 @@ describe("AuraBalVault", () => {
             const shares = await vault.previewWithdraw(amount);
             const tx = await vault.withdraw(amount, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            // await expect(tx)
-            //     .to.emit(vault, "Withdraw")
-            //     .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, shares);
-            await expect(tx).to.emit(vault, "Withdraw");
+            await expect(tx)
+                .to.emit(vault, "Withdraw")
+                .withArgs(deployerAddress, deployerAddress, deployerAddress, amount, shares);
 
             const totalUnderlyingAfter = await vault.totalUnderlying();
             const totalSupplyAfter = await vault.totalSupply();
             const userBalanceAfter = await vault.balanceOf(deployerAddress);
             const cvxCrvUserBalanceAfter = await phase2.cvxCrv.balanceOf(deployerAddress);
 
-            assertBNClosePercent(totalUnderlyingBefore.sub(totalUnderlyingAfter), amount, "0.02", "totalUnderlying");
+            assertBNClose(totalUnderlyingBefore.sub(totalUnderlyingAfter), amount, 1, "totalUnderlying");
             expect(totalSupplyBefore.sub(totalSupplyAfter), "totalSupply").to.be.eq(shares);
             expect(userSharesBefore.sub(userBalanceAfter), "userBalance").to.be.eq(shares);
-            assertBNClosePercent(
-                cvxCrvUserBalanceAfter.sub(cvxCrvUserBalanceBefore),
-                amount,
-                "0.02",
-                "cvxCrvUserBalance",
-            );
+            assertBNClose(cvxCrvUserBalanceAfter.sub(cvxCrvUserBalanceBefore), amount, 1, "cvxCrvUserBalance");
 
             // For each extra reward
             await expect(tx).to.emit(auraRewards, "Withdrawn");
@@ -324,39 +318,32 @@ describe("AuraBalVault", () => {
             const userSharesBefore = await vault.balanceOf(deployerAddress);
             const cvxCrvUserBalanceBefore = await phase2.cvxCrv.balanceOf(deployerAddress);
 
-            // Make sure last user can harvest before withdrawAll
-            await vault.updateAuthorizedHarvesters(deployerAddress, false);
-            await vault.setHarvestPermissions(true);
-
             const assets = await vault.previewRedeem(userSharesBefore);
 
             const tx = await vault.redeem(userSharesBefore, deployerAddress, deployerAddress);
             // Withdraw from extra rewards
-            // await expect(tx)
-            //     .to.emit(vault, "Withdraw")
-            //     .withArgs(deployerAddress, deployerAddress, deployerAddress, assets, userSharesBefore);
-
             await expect(tx).to.emit(vault, "Withdraw");
-
+            // As it is the last withdraw from the vault, it will invoke first harvest and then the withdraw
+            // this will also impact on the variance of preview withdraw
             await expect(tx).to.emit(vault, "Harvest");
+
+            // For each extra reward
+            await expect(tx).to.emit(auraRewards, "Withdrawn");
 
             const totalUnderlyingAfter = await vault.totalUnderlying();
             const totalSupplyAfter = await vault.totalSupply();
             const userBalanceAfter = await vault.balanceOf(deployerAddress);
             const cvxCrvUserBalanceAfter = await phase2.cvxCrv.balanceOf(deployerAddress);
 
-            assertBNClosePercent(totalUnderlyingBefore.sub(totalUnderlyingAfter), assets, "2.0", "totalUnderlying");
+            assertBNClosePercent(totalUnderlyingBefore.sub(totalUnderlyingAfter), assets, "1.1", "totalUnderlying");
             expect(totalSupplyBefore.sub(totalSupplyAfter), "totalSupply").to.be.eq(userSharesBefore);
             expect(userSharesBefore.sub(userBalanceAfter), "userBalance").to.be.eq(userSharesBefore);
             assertBNClosePercent(
                 cvxCrvUserBalanceAfter.sub(cvxCrvUserBalanceBefore),
                 assets,
-                "2.0",
+                "1.1",
                 "cvxCrvUserBalance",
             );
-
-            // For each extra reward
-            await expect(tx).to.emit(auraRewards, "Withdrawn");
         });
     });
     describe("edge cases", async () => {

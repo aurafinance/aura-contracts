@@ -270,13 +270,51 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice The amount of shares that the Vault would exchange for the amount
     /// of assets provided, in an ideal scenario where all the conditions are met.
     function convertToShares(uint256 _assets) public view returns (uint256) {
-        return totalSupply() == 0 ? _assets : (_assets * totalSupply()) / totalAssets();
+        return _convertToShares(_assets, false);
+    }
+
+    /// @param _assets The amount of underlying assets to be convert to vault shares.
+    /// @param isRoundUp bool to indicate round up the shares
+    /// @dev isRoundUp is used to round-up the shares amount for withdraw and previewWithdraw
+    function _convertToShares(uint256 _assets, bool isRoundUp) internal view virtual returns (uint256 shares) {
+        uint256 totalShares = totalSupply();
+
+        if (totalShares == 0) {
+            shares = _assets; // 1:1 value of shares and assets
+        } else {
+            uint256 totalAssetsMem = totalUnderlying();
+            shares = (_assets * totalShares) / totalAssetsMem;
+
+            // Round Up if needed
+            if (isRoundUp && mulmod(_assets, totalShares, totalAssetsMem) > 0) {
+                shares += 1;
+            }
+        }
     }
 
     /// @notice The amount of assets that the Vault would exchange for the amount
     /// of shares provided, in an ideal scenario where all the conditions are met.
     function convertToAssets(uint256 _shares) public view returns (uint256) {
-        return totalSupply() == 0 ? _shares : (_shares * totalUnderlying()) / totalSupply();
+        return _convertToAssets(_shares, false);
+    }
+
+    /// @param _shares The amount of vault shares to be converted to the underlying assets.
+    /// @param isRoundUp bool to indicate round up the assets
+    /// @dev isRoundUp is used to round-up the assets amount for mint and previewMint
+    function _convertToAssets(uint256 _shares, bool isRoundUp) internal view virtual returns (uint256 assets) {
+        uint256 totalShares = totalSupply();
+
+        if (totalShares == 0) {
+            assets = _shares; // 1:1 value of shares and assets
+        } else {
+            uint256 totalAssetsMem = totalUnderlying();
+            assets = (_shares * totalAssetsMem) / totalShares;
+
+            // Round Up if needed
+            if (isRoundUp && mulmod(_shares, totalAssetsMem, totalShares) > 0) {
+                assets += 1;
+            }
+        }
     }
 
     /// @notice Maximum amount of the underlying asset that can be deposited into
@@ -288,7 +326,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Allows an on-chain or off-chain user to simulate the effects of
     /// their deposit at the current block, given current on-chain conditions.
     function previewDeposit(uint256 _assets) public view returns (uint256) {
-        return convertToShares(_assets);
+        return _convertToShares(_assets, false);
     }
 
     /// @notice Maximum amount of shares that can be minted from the Vault
@@ -300,27 +338,27 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Allows an on-chain or off-chain user to simulate the effects of
     /// their mint at the current block, given current on-chain conditions.
     function previewMint(uint256 _shares) public view returns (uint256) {
-        return convertToAssets(_shares);
+        return _convertToAssets(_shares, true);
     }
 
     /// @notice Mints exactly shares Vault shares to receiver by depositing
     /// assets of underlying tokens.
     function mint(uint256 _shares, address _receiver) public returns (uint256) {
-        uint256 assets = convertToAssets(_shares);
+        uint256 assets = previewMint(_shares);
         return deposit(assets, _receiver);
     }
 
     /// @notice Maximum amount of the underlying asset that can be withdrawn
     /// from the owner balance in the Vault, through a withdraw call.
     function maxWithdraw(address _owner) public view returns (uint256) {
-        return convertToAssets(balanceOf(_owner));
+        return previewRedeem(maxRedeem((_owner)));
     }
 
     /// @notice Allows an on-chain or off-chain user to simulate the effects
     /// of their withdrawal at the current block, given current on-chain conditions.
     function previewWithdraw(uint256 _assets) public view returns (uint256) {
-        uint256 penalty = _getWithdrawalPenalty(_assets);
-        return convertToShares(_assets + penalty);
+        _assets = ((FEE_DENOMINATOR * _assets) / (FEE_DENOMINATOR - withdrawalPenalty));
+        return _convertToShares(_assets, true);
     }
 
     /// @notice Burns shares from owner and sends exactly assets of
@@ -343,7 +381,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
     /// @notice Allows an on-chain or off-chain user to simulate the effects of
     /// their redeemption at the current block, given current on-chain conditions.
     function previewRedeem(uint256 _shares) public view returns (uint256) {
-        uint256 amount = convertToAssets(_shares);
+        uint256 amount = _convertToAssets(_shares, false);
         uint256 penalty = _getWithdrawalPenalty(amount);
         return amount - penalty;
     }
