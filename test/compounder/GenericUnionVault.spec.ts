@@ -166,6 +166,10 @@ describe("GenericUnionVault", () => {
         before("init contract", async () => {
             await setup();
         });
+        it("fails to adds extra rewards, if the strategy is not set", async () => {
+            expect(ZERO_ADDRESS, "strategy").to.be.eq(await genericUnionVault.strategy());
+            await expect(genericUnionVault.addExtraReward(phase2.cvx.address)).to.be.revertedWith("strategy not set");
+        });
         it("Set a new strategy", async () => {
             // Given that
             expect(deployerAddress, "owner").to.be.eq(await genericUnionVault.owner());
@@ -187,7 +191,11 @@ describe("GenericUnionVault", () => {
             expect(await genericUnionVault.isExtraReward(phase2.cvx.address), "isExtraRewards").to.eq(true);
         });
         it("Checks empty vault", async () => {
+            const amount = simpleToExactAmount(100);
             expect(await genericUnionVault.totalSupply(), "balanceOfUnderlying").to.be.eq(ZERO);
+            expect(await genericUnionVault.convertToAssets(amount), "1:1 ratio").to.be.eq(amount);
+            expect(await genericUnionVault.convertToShares(amount), "1:1 ratio").to.be.eq(amount);
+
             await expect(genericUnionVault.balanceOfUnderlying(ZERO_ADDRESS), "balanceOfUnderlying").to.be.revertedWith(
                 "No users",
             );
@@ -212,9 +220,11 @@ describe("GenericUnionVault", () => {
             const totalUnderlyingAfter = await genericUnionVault.totalUnderlying();
             const totalSupplyAfter = await genericUnionVault.totalSupply();
             const userBalanceAfter = await genericUnionVault.balanceOf(deployerAddress);
+            const userBalanceOfUnderlyingAfter = await genericUnionVault.balanceOfUnderlying(deployerAddress);
             const lpUserBalanceAfter = await mocks.lptoken.balanceOf(deployerAddress);
 
             expect(totalUnderlyingAfter.sub(totalUnderlyingBefore), "totalUnderlying").to.be.eq(amount);
+            expect(userBalanceAfter, "balanceOfUnderlying").to.be.eq(userBalanceOfUnderlyingAfter);
             expect(totalSupplyAfter.sub(totalSupplyBefore), "totalSupply").to.be.eq(amount);
             expect(userBalanceAfter.sub(userBalanceBefore), "userBalance").to.be.eq(amount);
             expect(lpUserBalanceBefore.sub(lpUserBalanceAfter), "lpUserBalance").to.be.eq(amount);
@@ -336,6 +346,19 @@ describe("GenericUnionVault", () => {
                 ).to.be.revertedWith("Strategy already set");
             });
         });
+        describe("setWithdrawalPenalty", async () => {
+            it("fails if caller is not owner", async () => {
+                await expect(
+                    genericUnionVault.connect(alice).setWithdrawalPenalty(ZERO),
+                    "fails due to owner",
+                ).to.be.revertedWith("Ownable: caller is not the owner");
+            });
+            it("fails if penalty is too high", async () => {
+                const maxWithdrawalPenalty = await genericUnionVault.MAX_WITHDRAWAL_PENALTY();
+                await expect(genericUnionVault.setWithdrawalPenalty(maxWithdrawalPenalty.add(1)), "fails due to").to.be
+                    .reverted;
+            });
+        });
         describe("addExtraReward", async () => {
             it("fails if caller is not owner", async () => {
                 await expect(
@@ -345,13 +368,13 @@ describe("GenericUnionVault", () => {
             });
 
             it("fails if wrong address", async () => {
-                await expect(genericUnionVault.addExtraReward(ZERO_ADDRESS), "fails due to").to.be.revertedWith(
+                await expect(genericUnionVault.addExtraReward(ZERO_ADDRESS), "invalid address").to.be.revertedWith(
                     "Invalid address!",
                 );
             });
             it("Cannot add duplicate reward", async () => {
                 await genericUnionVault.addExtraReward(auraRewards.address);
-                await expect(genericUnionVault.addExtraReward(auraRewards.address), "fails due to").to.be.revertedWith(
+                await expect(genericUnionVault.addExtraReward(auraRewards.address), "reward exists").to.be.revertedWith(
                     "reward exists",
                 );
             });
@@ -381,10 +404,15 @@ describe("GenericUnionVault", () => {
                 ).to.be.revertedWith("Ownable: caller is not the owner");
             });
         });
-        describe("deposit", async () => {
-            it("fails if deposits ZERO", async () => {
+        describe("fails", async () => {
+            it("deposits ZERO", async () => {
                 await expect(genericUnionVault.connect(alice).deposit(ZERO, DEAD_ADDRESS), "fails").to.be.revertedWith(
                     "Deposit too small",
+                );
+            });
+            it("balance user underlying is zero", async () => {
+                await expect(genericUnionVault.balanceOfUnderlying(aliceAddress), "fails").to.be.revertedWith(
+                    "No users",
                 );
             });
         });

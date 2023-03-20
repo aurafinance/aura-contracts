@@ -25,7 +25,9 @@ contract MockStrategy is IStrategy, ERC20 {
 
     /// @dev Mocks the harvests based on the balance of the msg.sender,
     ///  this mock must have balance of each different reward token.
-    function _harvest(uint256 _minAmountOut) internal returns (uint256 harvested) {
+    function _harvest(
+        uint256 /** _minAmountOut */
+    ) internal returns (uint256 harvested) {
         // harvest based on the balance of the `msg.sender`
         uint256 balance = balanceOf(msg.sender);
 
