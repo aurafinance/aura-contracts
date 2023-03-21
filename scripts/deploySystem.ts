@@ -160,6 +160,7 @@ interface ExtSystemConfig {
     staBAL3Whale?: string;
     feeToken?: string;
     feeTokenWhale?: string;
+    feeTokenHandlerPath?: { poolIds: string[]; assetsIn: string[] };
     ldo?: string;
     ldoWhale?: string;
     stEthGaugeLdoDepositor?: string;

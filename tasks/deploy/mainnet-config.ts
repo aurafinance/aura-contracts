@@ -47,6 +47,15 @@ import {
     PoolMigrator__factory,
     PoolManagerV4__factory,
     BoosterOwnerSecondary__factory,
+    FeeForwarder__factory,
+    AuraBalVault__factory,
+    AuraBalStrategy__factory,
+    BalancerSwapsHandler__factory,
+    AuraBalVault,
+    AuraBalStrategy,
+    BalancerSwapsHandler,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -135,6 +144,13 @@ const addresses: ExtSystemConfig = {
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
+    feeTokenHandlerPath: {
+        poolIds: [
+            "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387",
+            "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080",
+        ],
+        assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
+    },
 };
 
 const multisigs = {
@@ -349,6 +365,24 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
     ),
 });
 
+const getFeeForwarder = async (deployer: Signer) => ({
+    feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
+});
+
+export interface AuraBalVaultDeployed {
+    vault: AuraBalVault;
+    strategy: AuraBalStrategy;
+    bbusdHandler: BalancerSwapsHandler;
+    auraRewards: VirtualBalanceRewardPool;
+}
+
+const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
+    vault: AuraBalVault__factory.connect("0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC", deployer),
+    strategy: AuraBalStrategy__factory.connect("0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E", deployer),
+    auraRewards: VirtualBalanceRewardPool__factory.connect("0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -362,4 +396,6 @@ export const config = {
     getPhase6,
     getPhase7,
     getPhase8,
+    getFeeForwarder,
+    getAuraBalVault,
 };

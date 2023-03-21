@@ -3,6 +3,7 @@ import {
     Phase1Deployed,
     Phase2Deployed,
     Phase3Deployed,
+    Phase6Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -33,6 +34,14 @@ import {
     AuraClaimZap__factory,
     ClaimFeesHelper__factory,
     RewardPoolDepositWrapper__factory,
+    AuraBalVault__factory,
+    AuraBalStrategy__factory,
+    BalancerSwapsHandler__factory,
+    AuraBalVault,
+    AuraBalStrategy,
+    BalancerSwapsHandler,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -62,6 +71,14 @@ const addresses: ExtSystemConfig = {
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     sushiswapRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
+    feeToken: "0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd",
+    feeTokenHandlerPath: {
+        poolIds: [
+            "0x13acd41c585d7ebb4a9460f7c8f50be60dc080cd00000000000000000000005f",
+            "0xe8075304a388f2f9b2af61f502741a88ff21d9a4000200000000000000000070",
+        ],
+        assetsIn: ["0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd", "0x0595D1Df64279ddB51F1bdC405Fe2D0b4Cc86681"],
+    },
 };
 
 const naming = {
@@ -102,8 +119,8 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     arbitratorVault: ArbitratorVault__factory.connect("0xc2939C598e2D044A87C8E22a90A9e36b9579F197", deployer),
     cvxCrv: CvxCrvToken__factory.connect("0xf80D3083b18fe3f11196E57438258330Ba4f15Ec", deployer),
     cvxCrvBpt: {
-        poolId: ZERO_ADDRESS,
-        address: "0xAc98C986d8318ff08109AE6F4E7043468dA9d0a2",
+        poolId: "0xdffd908d17c93d1f9253148826a00d920a19e85e00020000000000000000060c",
+        address: "0xdffd908d17c93d1f9253148826a00d920a19e85e",
     },
     cvxCrvRewards: BaseRewardPool__factory.connect("0x09421e5d9c2b11f502482dce2b718b037fd10a25", deployer),
     crvDepositor: CrvDepositor__factory.connect("0xD2e06829a8464bd802Ef68A6C900F36db3a86cb1", deployer),
@@ -149,6 +166,35 @@ const getPhase4 = async (deployer: Signer): Promise<SystemDeployed> => ({
         deployer,
     ),
 });
+const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
+    // same as phase 2  as goerli was never migrated.
+    booster: Booster__factory.connect("0x2ad214dA65effA92159057957E50994440E99A1b", deployer),
+    boosterOwner: undefined,
+    boosterHelper: undefined,
+    feeCollector: undefined,
+    factories: undefined,
+    cvxCrvRewards: BaseRewardPool__factory.connect("0x09421e5d9c2b11f502482dce2b718b037fd10a25", deployer),
+    poolManager: undefined,
+    poolManagerProxy: undefined,
+    poolManagerSecondaryProxy: undefined,
+    claimZap: undefined,
+    stashV3: undefined,
+    poolMigrator: undefined,
+});
+
+export interface AuraBalVaultDeployed {
+    vault: AuraBalVault;
+    strategy: AuraBalStrategy;
+    bbusdHandler: BalancerSwapsHandler;
+    auraRewards: VirtualBalanceRewardPool;
+}
+
+const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
+    vault: AuraBalVault__factory.connect("0xF891822bC811CF683a6DD9e4d28ebf3dF8B7C6c3", deployer),
+    strategy: AuraBalStrategy__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
+    auraRewards: VirtualBalanceRewardPool__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
+});
 
 export const config = {
     addresses,
@@ -159,4 +205,6 @@ export const config = {
     getPhase2,
     getPhase3,
     getPhase4,
+    getPhase6,
+    getAuraBalVault,
 };

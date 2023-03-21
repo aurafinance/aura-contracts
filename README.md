@@ -180,7 +180,12 @@ yarn task timeTravel --duration 69420 --network forking
 | poolMigrator                    | [0x12addE99768a82871EAaecFbDB065b12C56F0578](https://etherscan.io/address/0x12addE99768a82871EAaecFbDB065b12C56F0578) |
 | siphonToken                     | [TBD](https://etherscan.io/address/TBD)                                                                               |
 | uniswapMigrator                 | [0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6](https://etherscan.io/address/0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6) |
-| auraMining                      | [TBD](https://etherscan.io/address/TBD)                                                                               |
+| auraMining                      | [0x744Be650cea753de1e69BF6BAd3c98490A855f52](https://etherscan.io/address/0x744Be650cea753de1e69BF6BAd3c98490A855f52) |
+| VirtualRewardsFactory           | [0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3](https://etherscan.io/address/0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3) |
+| auraBalVault                    | [0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC](https://etherscan.io/address/0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC) |
+| auraBalVault Strategy           | [0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160](https://etherscan.io/address/0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160) |
+| auraBalVault BBUSDHandler       | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
+| auraBalVault VirtualRewards     | [0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37](https://etherscan.io/address/0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37) |
 
 ### Goerli (5)
 
@@ -213,6 +218,11 @@ yarn task timeTravel --duration 69420 --network forking
 | rewardPoolDepositWrapper | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://goerli.etherscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | GaugeMigrator            | [0x432d9d821ed4a6fc29f41631e27ba91d4800f081](https://goerli.etherscan.io/address/0x432d9d821ed4a6fc29f41631e27ba91d4800f081) |
 | sushiSwapMigrator        | [0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58](https://goerli.etherscan.io/address/0x68664CA1fCa837de57d8cdE8B83d3A9587De2E58) |
+| auraBalVault             | [0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B](https://goerli.etherscan.io/address/0x064D9Aea351205c01dA2270fFe19C8e4Ca91904B) |
+| vaultStrategy            | [0xab07f0279023886222e80E25CB4a01CD007B6764](https://goerli.etherscan.io/address/0xab07f0279023886222e80E25CB4a01CD007B6764) |
+| vaultBbusdHandler        | [0x55850230cE77f670B8FBf47469F935cF41304e0a](https://goerli.etherscan.io/address/0x55850230cE77f670B8FBf47469F935cF41304e0a) |
+| vaultAuraRewards         | [0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0](https://goerli.etherscan.io/address/0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0) |
+| feeForwarder             | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://goerli.etherscan.io/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1) |
 
 ### Ethereum Mainnet (1) @deprecated
 

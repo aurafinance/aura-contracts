@@ -251,6 +251,14 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         {},
         debug,
     );
+    const feeToken = await deployContract<MockERC20>(
+        hre,
+        new MockERC20__factory(deployer),
+        "MockFeeToken",
+        ["mockFeeToken", "mockFeeToken", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
 
     return {
         lptoken,
@@ -292,6 +300,11 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
             uniswapRouter: ZERO_ADDRESS,
             sushiswapRouter: ZERO_ADDRESS,
             auraBalGauge: gauges[0].address,
+            feeToken: feeToken.address,
+            feeTokenHandlerPath: {
+                poolIds: [ZERO_KEY],
+                assetsIn: [feeToken.address],
+            },
         },
         namingConfig: {
             cvxName: "Convex Finance",

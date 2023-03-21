@@ -39,6 +39,23 @@ interface IBalancerVault {
         GIVEN_OUT
     }
 
+    struct BatchSwapStep {
+        bytes32 poolId;
+        uint256 assetInIndex;
+        uint256 assetOutIndex;
+        uint256 amount;
+        bytes userData;
+    }
+
+    function batchSwap(
+        SwapKind kind,
+        BatchSwapStep[] memory swaps,
+        IAsset[] memory assets,
+        FundManagement memory funds,
+        int256[] memory limits,
+        uint256 deadline
+    ) external payable returns (int256[] memory);
+
     struct SingleSwap {
         bytes32 poolId;
         SwapKind kind;
@@ -95,6 +112,13 @@ interface IBalancerVault {
     ) external;
 
     function getInternalBalance(address user, address[] memory tokens) external view returns (uint256[] memory);
+
+    function queryBatchSwap(
+        SwapKind kind,
+        BatchSwapStep[] memory swaps,
+        IAsset[] memory assets,
+        FundManagement memory funds
+    ) external returns (int256[] memory assetDeltas);
 
     struct ExitPoolRequest {
         IAsset[] assets;
