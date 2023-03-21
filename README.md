@@ -181,6 +181,11 @@ yarn task timeTravel --duration 69420 --network forking
 | siphonToken                     | [TBD](https://etherscan.io/address/TBD)                                                                               |
 | uniswapMigrator                 | [0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6](https://etherscan.io/address/0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6) |
 | auraMining                      | [0x744Be650cea753de1e69BF6BAd3c98490A855f52](https://etherscan.io/address/0x744Be650cea753de1e69BF6BAd3c98490A855f52) |
+| VirtualRewardsFactory           | [0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3](https://etherscan.io/address/0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3) |
+| auraBalVault                    | [0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC](https://etherscan.io/address/0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC) |
+| auraBalVault Strategy           | [0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160](https://etherscan.io/address/0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160) |
+| auraBalVault BBUSDHandler       | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
+| auraBalVault VirtualRewards     | [0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37](https://etherscan.io/address/0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37) |
 
 ### Goerli (5)
 

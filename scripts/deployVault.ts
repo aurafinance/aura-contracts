@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
-import { ZERO } from "../test-utils";
+import { ZERO } from "../test-utils/constants";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;

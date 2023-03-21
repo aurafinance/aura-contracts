@@ -24,7 +24,6 @@ import { BN, simpleToExactAmount } from "../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
 import { assertBNClosePercent, getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
 import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO } from "../test-utils/constants";
-import { deployFeeForwarder, deployVault } from "../scripts/deployVault";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { config as goerliConfig } from "../tasks/deploy/goerli-config";
 import { deployContract } from "../tasks/utils";
@@ -33,12 +32,11 @@ import { JoinPoolRequestStruct } from "types/generated/IBalancerHelpers";
 import { BatchSwapStepStruct, FundManagementStruct } from "types/generated/MockBalancerVault";
 
 // Constants
-const DEBUG = false;
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
 
 const testConfigs = {
     mainnet: {
-        forkBlock: 16725720,
+        forkBlock: 16875603,
         auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
         auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
         bbaUsdWhale: "0x43b650399F2E4D6f03503f44042fabA8F7D73470",
@@ -300,15 +298,10 @@ describe("AuraBalVault", () => {
 
     describe("deploy reward forwarder", () => {
         it("deploy reward forwarder", async () => {
-            if (TEST_CONFIG === "goerli") {
-                const result = await deployFeeForwarder(config, hre, deployer.signer, false);
-                feeForwarder = result.feeForwarder;
-            } else {
-                const result = await config.getFeeForwarder(deployer.signer);
-                feeForwarder = result.feeForwarder;
-            }
+            const result = await config.getFeeForwarder(deployer.signer);
+            feeForwarder = result.feeForwarder;
         });
-        it("update booster platform to reward forwarder", async () => {
+        it.skip("update booster platform to reward forwarder", async () => {
             expect(await phase6.booster.treasury()).not.eq(feeForwarder.address);
             await phase6.booster.connect(dao.signer).setTreasury(feeForwarder.address);
             expect(await phase6.booster.treasury()).eq(feeForwarder.address);
@@ -320,21 +313,12 @@ describe("AuraBalVault", () => {
 
     describe("deploy vault", () => {
         it("deploy vault", async () => {
-            if (TEST_CONFIG === "goerli") {
-                const result = await config.getAuraBalVault(deployer.signer);
+            const result = await config.getAuraBalVault(deployer.signer);
 
-                vault = result.vault;
-                strategy = result.strategy;
-                bbusdHandler = result.bbusdHandler;
-                auraRewards = result.auraRewards;
-            } else {
-                const result = await deployVault(config, hre, deployer.signer, DEBUG);
-
-                vault = result.vault;
-                strategy = result.strategy;
-                bbusdHandler = result.bbusdHandler;
-                auraRewards = result.auraRewards;
-            }
+            vault = result.vault;
+            strategy = result.strategy;
+            bbusdHandler = result.bbusdHandler;
+            auraRewards = result.auraRewards;
         });
         it("update booster platform to vault", async () => {
             expect(await phase6.booster.treasury()).not.eq(vault.address);
