@@ -6,7 +6,7 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory } from "../../types/generated";
 import { configs } from "./constants";
-import { GaugeChoice, getGaugeChoices } from "./utils";
+import { Gauge, GaugeChoice, getGaugeChoices, getGaugeSnapshot, parseLabel } from "./utils";
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
@@ -62,13 +62,14 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Look up the existing vote weight that was previous given to all the gauges
         // ----------------------------------------------------------
 
+        const gaugeSnapshot = getGaugeSnapshot();
         const voterProxyAddress = "0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2";
         const gaugeControllerAddress = "0xc128468b7ce63ea702c1f104d55a2566b13d3abd";
         const gaugeController = IGaugeController__factory.connect(gaugeControllerAddress, signer);
         const gaugesWithExistingWeights = await Promise.all(
-            gaugeList.map(async (gauge: GaugeChoice) => {
+            gaugeSnapshot.map(async (gauge: Gauge) => {
                 const [, power] = await gaugeController.vote_user_slopes(voterProxyAddress, gauge.address);
-                return { ...gauge, existingWeight: power };
+                return { address: gauge.address, label: parseLabel(gauge), existingWeight: power };
             }),
         );
 
