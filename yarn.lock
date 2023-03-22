@@ -64,6 +64,7 @@ __metadata:
     solhint: ^3.3.6
     solhint-plugin-prettier: ^0.0.5
     solidity-coverage: ^0.7.17
+    solidity-docgen: ^0.6.0-beta.29
     table: ^6.8.0
     ts-generator: ^0.1.1
     ts-node: ^10.4.0
@@ -7769,7 +7770,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"handlebars@npm:^4.0.1":
+"handlebars@npm:^4.0.1, handlebars@npm:^4.7.7":
   version: 4.7.7
   resolution: "handlebars@npm:4.7.7"
   dependencies:
@@ -13358,6 +13359,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"solidity-ast@npm:^0.4.38":
+  version: 0.4.46
+  resolution: "solidity-ast@npm:0.4.46"
+  checksum: 9c2ab90731fd23fdceef0e74ea626cc1810ec413daaa9b7d838f4fd9c342a63095fae0f0690ec0166db9f316ef6a06d7740a2c4f74cf5609831121389bf0cb7b
+  languageName: node
+  linkType: hard
+
 "solidity-comments-extractor@npm:^0.0.7":
   version: 0.0.7
   resolution: "solidity-comments-extractor@npm:0.0.7"
@@ -13390,6 +13398,18 @@ __metadata:
   bin:
     solidity-coverage: plugins/bin.js
   checksum: b7edad0add5ef761609a116915979cc6d52ea41a041ed6b45796eb2a9c2fc726c2e300c8a1d6b5e48402e9fd0526c7ee38ecdd01b50e52ac32b8e4084d603d27
+  languageName: node
+  linkType: hard
+
+"solidity-docgen@npm:^0.6.0-beta.29":
+  version: 0.6.0-beta.35
+  resolution: "solidity-docgen@npm:0.6.0-beta.35"
+  dependencies:
+    handlebars: ^4.7.7
+    solidity-ast: ^0.4.38
+  peerDependencies:
+    hardhat: ^2.8.0
+  checksum: 5b773b8b2959109efca409ebd6eaa9eaa535989b52de7653bed75ad9195a145653c6436c258eb78cc819e220d79ecb4ed0efe9fcb8f9aed56e5b5d386149349d
   languageName: node
   linkType: hard
 
