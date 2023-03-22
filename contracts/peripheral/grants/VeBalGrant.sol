@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { IFeeDistributor } from "../interfaces/balancer/IFeeDistributor.sol";
+import { IBalancerVault, IPriceOracle, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
+import { IFeeDistributor } from "../../interfaces/balancer/IFeeDistributor.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 // prettier-ignore
 interface IVotingEscrow {
@@ -20,7 +22,12 @@ interface IBalMinter {
     function mint(address) external;
 }
 
+interface IHiddenHand {
+    function setRewardForwarding(address to) external;
+}
+
 contract VeBalGrant {
+    using SafeERC20 for IERC20;
     /* ----------------------------------------------------------------
        Storage 
     ---------------------------------------------------------------- */
@@ -43,7 +50,13 @@ contract VeBalGrant {
 
     address public immutable balancer;
 
+    address public immutable hiddenHand;
+
     bool public active;
+
+    IBalancerVault public immutable BALANCER_VAULT;
+
+    bytes32 public immutable BAL_ETH_POOL_ID;
 
     /* ----------------------------------------------------------------
        Constructor 
@@ -58,7 +71,10 @@ contract VeBalGrant {
         address _balMinter,
         address _veBalGauge,
         address _project,
-        address _balancer
+        address _balancer,
+        address _hiddenHand,
+        IBalancerVault _balancerVault,
+        bytes32 _balETHPoolId
     ) {
         WETH = IERC20(_weth);
         BAL = IERC20(_bal);
@@ -69,6 +85,9 @@ contract VeBalGrant {
         veBalGauge = _veBalGauge;
         project = _project;
         balancer = _balancer;
+        hiddenHand = _hiddenHand;
+        BALANCER_VAULT = _balancerVault;
+        BAL_ETH_POOL_ID = _balETHPoolId;
         active = true;
     }
 
@@ -96,6 +115,11 @@ contract VeBalGrant {
         _;
     }
 
+    modifier whileInactive() {
+        require(!active, "active");
+        _;
+    }
+
     /* ----------------------------------------------------------------
        Shared Functions
     ---------------------------------------------------------------- */
@@ -111,12 +135,12 @@ contract VeBalGrant {
     }
 
     // @notice Exit BPT for BAL ETH
-    function redeem() external onlyAuth {
-        // TODO: exit bal eth pool
+    function redeem() external onlyAuth whileInactive {
+        _exitBalEthPool();
     }
 
     /// @notice Release veBAL lock
-    function release() external onlyAuth {
+    function release() external onlyAuth whileInactive {
         votingEscrow.withdraw();
     }
 
@@ -167,14 +191,14 @@ contract VeBalGrant {
     }
 
     /// @notice Forward HH voting incentives
-    function forwardIncentives() external {
+    function forwardIncentives(address _to) external {
         if (active) {
             require(msg.sender == project);
         } else {
             require(msg.sender == balancer);
         }
 
-        // TODO:
+        IHiddenHand(hiddenHand).setRewardForwarding(_to);
     }
 
     /* ----------------------------------------------------------------
@@ -191,7 +215,44 @@ contract VeBalGrant {
     ---------------------------------------------------------------- */
 
     function _joinBalEthPool() internal {
-        // TODO:
+        IAsset[] memory assets = new IAsset[](2);
+        assets[0] = IAsset(address(BAL));
+        assets[1] = IAsset(address(WETH));
+        uint256[] memory maxAmountsIn = new uint256[](2);
+        maxAmountsIn[0] = BAL.balanceOf(address(this));
+        maxAmountsIn[1] = WETH.balanceOf(address(this));
+
+        BALANCER_VAULT.joinPool(
+            BAL_ETH_POOL_ID,
+            address(this),
+            address(this),
+            IBalancerVault.JoinPoolRequest(
+                assets,
+                maxAmountsIn,
+                abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, 0),
+                false // Don't use internal balances
+            )
+        );
+    }
+
+    function _exitBalEthPool() internal {
+        IAsset[] memory assets = new IAsset[](2);
+        assets[0] = IAsset(address(BAL));
+        assets[1] = IAsset(address(WETH));
+        uint256[] memory minAmountsOut = new uint256[](2);
+        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
+
+        BALANCER_VAULT.exitPool(
+            BAL_ETH_POOL_ID,
+            address(this),
+            payable(address(this)),
+            IBalancerVault.ExitPoolRequest(
+                assets,
+                minAmountsOut,
+                abi.encode(IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, balance),
+                false // Don't use internal balances
+            )
+        );
     }
 
     function _increaseLock(uint256 amount) internal {
