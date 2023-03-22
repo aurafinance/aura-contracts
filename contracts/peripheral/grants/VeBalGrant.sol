@@ -163,6 +163,17 @@ contract VeBalGrant {
         BAL.approve(balancer, type(uint256).max);
     }
 
+    /// @notice Forward HH voting incentives
+    function forwardIncentives(address _to) external {
+        if (active) {
+            require(msg.sender == project);
+        } else {
+            require(msg.sender == balancer);
+        }
+
+        IHiddenHand(hiddenHand).setRewardForwarding(_to);
+    }
+
     /* ----------------------------------------------------------------
        Project Functions
     ---------------------------------------------------------------- */
@@ -191,17 +202,6 @@ contract VeBalGrant {
     function fundWeth(uint256 _amount) external onlyProject whileActive {
         require(_amount >= minimumProjectFunding, "!enough");
         WETH.safeTransferFrom(project, address(this), _amount);
-    }
-
-    /// @notice Forward HH voting incentives
-    function forwardIncentives(address _to) external {
-        if (active) {
-            require(msg.sender == project);
-        } else {
-            require(msg.sender == balancer);
-        }
-
-        IHiddenHand(hiddenHand).setRewardForwarding(_to);
     }
 
     /* ----------------------------------------------------------------
