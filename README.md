@@ -190,6 +190,77 @@ yarn task timeTravel --duration 69420 --network forking
 
 ### Goerli (5)
 
+| Contract                  | Address                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| voterProxy                | [0xB6856b8725504Fc496f810d07a6659e1145b671d](https://goerli.etherscan.io/address/0xB6856b8725504Fc496f810d07a6659e1145b671d) |
+| aura                      | [0x8Ef4f64D86016D30266c91cDDbE555B52a3Ce833](https://goerli.etherscan.io/address/0x8Ef4f64D86016D30266c91cDDbE555B52a3Ce833) |
+| minter                    | [0x4D790084E4E7a5caCb85156AaA4DD14eDf813bf8](https://goerli.etherscan.io/address/0x4D790084E4E7a5caCb85156AaA4DD14eDf813bf8) |
+| booster                   | [0xA0357552c3e4ACB2f5828D1322D90A22801AD196](https://goerli.etherscan.io/address/0xA0357552c3e4ACB2f5828D1322D90A22801AD196) |
+| boosterOwner              | [0xeAb0b6c2528C54887d5DD3765ed9Bd1884A1d125](https://goerli.etherscan.io/address/0xeAb0b6c2528C54887d5DD3765ed9Bd1884A1d125) |
+| arbitratorVault           | [0x8e258eaBDc2aeE5528A9517C0199DB8f5CdC2cC9](https://goerli.etherscan.io/address/0x8e258eaBDc2aeE5528A9517C0199DB8f5CdC2cC9) |
+| auraBAL                   | [0x13CCfb302Ab3EC5e646bD9Bdc87180fD255ee6A8](https://goerli.etherscan.io/address/0x13CCfb302Ab3EC5e646bD9Bdc87180fD255ee6A8) |
+| auraBALBpt                | [0xD30d0B8667fd215ECEe125f56ae1e30d42659850](https://goerli.etherscan.io/address/0xD30d0B8667fd215ECEe125f56ae1e30d42659850) |
+| cvxCrvRewards             | [0xA2F294C74fe9d63Dc272b6a5C3aE494BfA0DF14B](https://goerli.etherscan.io/address/0xA2F294C74fe9d63Dc272b6a5C3aE494BfA0DF14B) |
+| initialCvxCrvStaking      | [0xEC24eBf4c3AE1fF5B8FeFdA36B63a36261Fb95c1](https://goerli.etherscan.io/address/0xEC24eBf4c3AE1fF5B8FeFdA36B63a36261Fb95c1) |
+| crvDepositor              | [0x46af03341e0Afb410c87c5A6dF412Bf5C8858cCc](https://goerli.etherscan.io/address/0x46af03341e0Afb410c87c5A6dF412Bf5C8858cCc) |
+| crvDepositorWrapper       | [0x79CC68A74F388d260e6Ed8F8aE2ce810E8d6FE38](https://goerli.etherscan.io/address/0x79CC68A74F388d260e6Ed8F8aE2ce810E8d6FE38) |
+| poolManager               | [0x68707046fF3fC67c931f0eb5f6d227bbe1DE6a7B](https://goerli.etherscan.io/address/0x68707046fF3fC67c931f0eb5f6d227bbe1DE6a7B) |
+| poolManagerProxy          | [0xA5e7926f7385c96c9a0DB751234EFc3eB503bA89](https://goerli.etherscan.io/address/0xA5e7926f7385c96c9a0DB751234EFc3eB503bA89) |
+| poolManagerSecondaryProxy | [0x06531Dbfce795B84b4d29943eDF08239855c4D62](https://goerli.etherscan.io/address/0x06531Dbfce795B84b4d29943eDF08239855c4D62) |
+| auraLocker                | [0x984B0aDFf6137BB1E00c977c594f4C1664894CEc](https://goerli.etherscan.io/address/0x984B0aDFf6137BB1E00c977c594f4C1664894CEc) |
+| cvxStakingProxy           | [0x3DF79aFA5ECaCfB67719F0c34b562BA8cA5F0945](https://goerli.etherscan.io/address/0x3DF79aFA5ECaCfB67719F0c34b562BA8cA5F0945) |
+| chef                      | [0x8155a8fc133648aA21272dD5afE2a700B28c6250](https://goerli.etherscan.io/address/0x8155a8fc133648aA21272dD5afE2a700B28c6250) |
+| vestedEscrows             | [0xad45617A84F30868Ee69d5A22dCB49AE0AD78D57](https://goerli.etherscan.io/address/0xad45617A84F30868Ee69d5A22dCB49AE0AD78D57) |
+|                           | [0xaB79aa6238D0d4BB27651534Fb08F4Bf1Ece122B](https://goerli.etherscan.io/address/0xaB79aa6238D0d4BB27651534Fb08F4Bf1Ece122B) |
+|                           | [0x0Ee0CaE533B5c86910De029bbB3238c8824C11c4](https://goerli.etherscan.io/address/0x0Ee0CaE533B5c86910De029bbB3238c8824C11c4) |
+|                           | [0xEEf969A8ebdf73C5c5D8A2855206F1154Cd1a297](https://goerli.etherscan.io/address/0xEEf969A8ebdf73C5c5D8A2855206F1154Cd1a297) |
+| drops                     | [0xae6d5d7a8108c074220D3692C045696389d6D933](https://goerli.etherscan.io/address/0xae6d5d7a8108c074220D3692C045696389d6D933) |
+|                           | [0x68AAf3ac16b57f3eC47F766b11f18f3DFFdC18db](https://goerli.etherscan.io/address/0x68AAf3ac16b57f3eC47F766b11f18f3DFFdC18db) |
+| lbpBpt                    | N/A                                                                                                                          |
+| balLiquidityProvider      | [0xaffFf00e97A82535AB9e6B22D26fB37B8b66B9dF](https://goerli.etherscan.io/address/0xaffFf00e97A82535AB9e6B22D26fB37B8b66B9dF) |
+| penaltyForwarder          | [0xB3Fa61fAC621e23A8fAcc26e54902D69851ac572](https://goerli.etherscan.io/address/0xB3Fa61fAC621e23A8fAcc26e54902D69851ac572) |
+| extraRewardsDistributor   | [0xa7AAa5feE1676938Eec8E45F984552C216da3796](https://goerli.etherscan.io/address/0xa7AAa5feE1676938Eec8E45F984552C216da3796) |
+| pool8020Bpt               | [0xf8a0623ab66f985effc1c69d05f1af4badb01b00](https://goerli.etherscan.io/address/0xf8a0623ab66f985effc1c69d05f1af4badb01b00) |
+| claimZap                  | [0x39c8bE679120fcE63c9bB6ED5c6bE8225C9f16b9](https://goerli.etherscan.io/address/0x39c8bE679120fcE63c9bB6ED5c6bE8225C9f16b9) |
+| feeCollector              | [0x43Cd36E200EE1e590a930c21Fd1f67bb90d7f8B3](https://goerli.etherscan.io/address/0x43Cd36E200EE1e590a930c21Fd1f67bb90d7f8B3) |
+| rewardDepositWrapper      | [0x9161Fb533BA46B48464F945E4520CDD0E8d4F223](https://goerli.etherscan.io/address/0x9161Fb533BA46B48464F945E4520CDD0E8d4F223) |
+| extraRewardStashV3        | [0x006aCF075161129190432D52F49dC4Ed267AC23A](https://goerli.etherscan.io/address/0x006aCF075161129190432D52F49dC4Ed267AC23A) |
+| boosterOwnerSecondary     | [0x3F8fa3CBd1157C8BaA5374feea0058A9AE68eb93](https://goerli.etherscan.io/address/0x3F8fa3CBd1157C8BaA5374feea0058A9AE68eb93) |
+| poolManagerV4             | [0x67b36B5A54Ab33C0cD38682693eEc78D08B008d1](https://goerli.etherscan.io/address/0x67b36B5A54Ab33C0cD38682693eEc78D08B008d1) |
+| 50slkBUL-50B-80BAL-20WETH | [0x16442f5670083dB2eF1fe6820a59cb9Baa0113B5](https://goerli.etherscan.io/address/0x16442f5670083dB2eF1fe6820a59cb9Baa0113B5) |
+| vault                     | [0x0E69F37f5009c174537277BA956A13663AAAa814](https://goerli.etherscan.io/address/0x0E69F37f5009c174537277BA956A13663AAAa814) |
+| strategy                  | [0x098810A74E7682fD650439E2b7440519cf4B022A](https://goerli.etherscan.io/address/0x098810A74E7682fD650439E2b7440519cf4B022A) |
+| bbusdHandler              | [0xb30a0c7ac99D61650A528AbB31A46470C55f4834](https://goerli.etherscan.io/address/0xb30a0c7ac99D61650A528AbB31A46470C55f4834) |
+| auraRewards               | [0x6fE74EA452b21698bbC27617b2B23FB797393094](https://goerli.etherscan.io/address/0x6fE74EA452b21698bbC27617b2B23FB797393094) |
+| virtualRewardFactory      | [0x3f897302B09e763650D825Cd3c738EfDf8510Ad8](https://goerli.etherscan.io/address/0x3f897302B09e763650D825Cd3c738EfDf8510Ad8) |
+
+### Ethereum Mainnet (1) @deprecated
+
+| Contract                  | Address                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| auraClaimZap              | [0x623B83755a39B12161A63748f3f595A530917Ab2](https://etherscan.io/address/0x623B83755a39B12161A63748f3f595A530917Ab2) |
+| booster                   | [0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10](https://etherscan.io/address/0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10) |
+| boosterOwner              | [0xFa838Af70314135159b309bf27f1DbF1F954eC34](https://etherscan.io/address/0xFa838Af70314135159b309bf27f1DbF1F954eC34) |
+| boosterHelper             | [0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c](https://etherscan.io/address/0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c) |
+| claimFeesHelper           | [0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf](https://etherscan.io/address/0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf) |
+| cvxCrvRewards             | [0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC](https://etherscan.io/address/0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC) |
+| extraRewardStashV3        | [0xF9C0f3431F859e773eD052758052e06B6D175742](https://etherscan.io/address/0xF9C0f3431F859e773eD052758052e06B6D175742) |
+| masterChefRewardHook      | [0x6a29cFd8A5F666A7D69da9437CD4c46616326815](https://etherscan.io/address/0x6a29cFd8A5F666A7D69da9437CD4c46616326815) |
+| poolManager               | [0xf843F61508Fc17543412DE55B10ED87f4C28DE50](https://etherscan.io/address/0xf843F61508Fc17543412DE55B10ED87f4C28DE50) |
+| poolManagerProxy          | [0x16A04E58a77aB1CE561A37371dFb479a8594947A](https://etherscan.io/address/0x16A04E58a77aB1CE561A37371dFb479a8594947A) |
+| poolManagerSecondaryProxy | [0xdc274F4854831FED60f9Eca12CaCbD449134cF67](https://etherscan.io/address/0xdc274F4854831FED60f9Eca12CaCbD449134cF67) |
+| proxyFactory              | [0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F](https://etherscan.io/address/0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F) |
+| rewardFactory             | [0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356](https://etherscan.io/address/0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356) |
+| stashFactory              | [0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5](https://etherscan.io/address/0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5) |
+| tokenFactory              | [0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC](https://etherscan.io/address/0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC) |
+
+### Ethereum Mainnet (2) @deprecated
+
+| extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
+| poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
+
+### Goerli (5) @deprecated
+
 | Contract                 | Address                                                                                                                      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | voterProxy               | [0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9](https://goerli.etherscan.io/address/0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9) |
@@ -224,28 +295,3 @@ yarn task timeTravel --duration 69420 --network forking
 | vaultBbusdHandler        | [0x55850230cE77f670B8FBf47469F935cF41304e0a](https://goerli.etherscan.io/address/0x55850230cE77f670B8FBf47469F935cF41304e0a) |
 | vaultAuraRewards         | [0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0](https://goerli.etherscan.io/address/0xdE23dd408747886a6E1F4337D80B9b0F7a4cBbF0) |
 | feeForwarder             | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://goerli.etherscan.io/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1) |
-
-### Ethereum Mainnet (1) @deprecated
-
-| Contract                  | Address                                                                                                               |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| auraClaimZap              | [0x623B83755a39B12161A63748f3f595A530917Ab2](https://etherscan.io/address/0x623B83755a39B12161A63748f3f595A530917Ab2) |
-| booster                   | [0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10](https://etherscan.io/address/0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10) |
-| boosterOwner              | [0xFa838Af70314135159b309bf27f1DbF1F954eC34](https://etherscan.io/address/0xFa838Af70314135159b309bf27f1DbF1F954eC34) |
-| boosterHelper             | [0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c](https://etherscan.io/address/0x00a31B98c325A8dcb8d1Dd41d65156A5C898F38c) |
-| claimFeesHelper           | [0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf](https://etherscan.io/address/0xCEeCeA8035e81C1148210DB3b2f870F470CC81bf) |
-| cvxCrvRewards             | [0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC](https://etherscan.io/address/0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC) |
-| extraRewardStashV3        | [0xF9C0f3431F859e773eD052758052e06B6D175742](https://etherscan.io/address/0xF9C0f3431F859e773eD052758052e06B6D175742) |
-| masterChefRewardHook      | [0x6a29cFd8A5F666A7D69da9437CD4c46616326815](https://etherscan.io/address/0x6a29cFd8A5F666A7D69da9437CD4c46616326815) |
-| poolManager               | [0xf843F61508Fc17543412DE55B10ED87f4C28DE50](https://etherscan.io/address/0xf843F61508Fc17543412DE55B10ED87f4C28DE50) |
-| poolManagerProxy          | [0x16A04E58a77aB1CE561A37371dFb479a8594947A](https://etherscan.io/address/0x16A04E58a77aB1CE561A37371dFb479a8594947A) |
-| poolManagerSecondaryProxy | [0xdc274F4854831FED60f9Eca12CaCbD449134cF67](https://etherscan.io/address/0xdc274F4854831FED60f9Eca12CaCbD449134cF67) |
-| proxyFactory              | [0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F](https://etherscan.io/address/0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F) |
-| rewardFactory             | [0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356](https://etherscan.io/address/0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356) |
-| stashFactory              | [0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5](https://etherscan.io/address/0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5) |
-| tokenFactory              | [0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC](https://etherscan.io/address/0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC) |
-
-### Ethereum Mainnet (2) @deprecated
-
-| extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
-| poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
