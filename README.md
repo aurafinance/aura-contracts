@@ -186,6 +186,7 @@ yarn task timeTravel --duration 69420 --network forking
 | auraBalVault Strategy           | [0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160](https://etherscan.io/address/0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160) |
 | auraBalVault BBUSDHandler       | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
 | auraBalVault VirtualRewards     | [0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37](https://etherscan.io/address/0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37) |
+| auraClaimZapV3                  | [0x3eB33F9a2479Af1f98297834861fb4e053A0215f](https://etherscan.io/address/0x3eB33F9a2479Af1f98297834861fb4e053A0215f) |
 
 ### Goerli (5)
 
