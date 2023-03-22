@@ -58,6 +58,8 @@ contract VeBalGrant {
 
     bytes32 public immutable BAL_ETH_POOL_ID;
 
+    uint256 public minimumProjectFunding;
+
     /* ----------------------------------------------------------------
        Constructor 
     ---------------------------------------------------------------- */
@@ -190,6 +192,7 @@ contract VeBalGrant {
     }
 
     function fundWeth(uint256 _amount) external onlyProject whileActive {
+        require(_amount >= minimumProjectFunding, "!enough");
         WETH.safeTransferFrom(project, address(this), _amount);
     }
 
@@ -213,8 +216,9 @@ contract VeBalGrant {
         active = _active;
     }
 
-    function fundGrant(uint256 _amount) external onlyBalancer whileInactive {
+    function fundGrant(uint256 _amount, uint256 _minimumProjectFunding) external onlyBalancer whileInactive {
         BAL.safeTransferFrom(balancer, address(this), _amount);
+        minimumProjectFunding = _minimumProjectFunding;
         active = true;
     }
 

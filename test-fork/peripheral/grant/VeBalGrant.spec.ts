@@ -113,10 +113,12 @@ describe("VeBalGrant", () => {
 
     it("balancer may fund the grant", async () => {
         const grantAmount = parseEther("50000");
+        const wethAmount = parseEther("40");
         await balToken.connect(balancer).approve(veBalGrant.address, grantAmount);
-        await veBalGrant.connect(balancer).fundGrant(grantAmount);
+        await veBalGrant.connect(balancer).fundGrant(grantAmount, wethAmount);
 
         expect(await balToken.balanceOf(veBalGrant.address)).to.be.eq(grantAmount);
+        expect(await veBalGrant.minimumProjectFunding()).to.be.eq(wethAmount);
         expect(await veBalGrant.active()).to.be.eq(true);
     });
 
