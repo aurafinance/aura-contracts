@@ -5,6 +5,7 @@ import { IBalancerVault, IPriceOracle, IAsset } from "../../interfaces/balancer/
 import { IFeeDistributor } from "../../interfaces/balancer/IFeeDistributor.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import "hardhat/console.sol";
 
 // prettier-ignore
 interface IVotingEscrow {
@@ -12,6 +13,7 @@ interface IVotingEscrow {
     function increase_amount(uint256) external;
     function increase_unlock_time(uint256) external;
     function withdraw() external;
+    function locked__end(address) external view returns(uint256);
 }
 
 interface IBalGaugeController {
@@ -44,7 +46,7 @@ contract VeBalGrant {
 
     IBalMinter public immutable balMinter;
 
-    address public immutable veBalGauge;
+    address public immutable feeDistributor;
 
     address public immutable project;
 
@@ -71,7 +73,7 @@ contract VeBalGrant {
         address _votingEscrow,
         address _gaugeController,
         address _balMinter,
-        address _veBalGauge,
+        address _feeDistributor,
         address _project,
         address _balancer,
         address _hiddenHand,
@@ -84,7 +86,7 @@ contract VeBalGrant {
         votingEscrow = IVotingEscrow(_votingEscrow);
         gaugeController = IBalGaugeController(_gaugeController);
         balMinter = IBalMinter(_balMinter);
-        veBalGauge = _veBalGauge;
+        feeDistributor = _feeDistributor;
         project = _project;
         balancer = _balancer;
         hiddenHand = _hiddenHand;
@@ -126,7 +128,7 @@ contract VeBalGrant {
     ---------------------------------------------------------------- */
 
     /// @notice Increate amount locked in veBAL
-    function increaseLock(uint256 amount) external onlyAuth whileActive {
+    function increaseLock(uint256 amount) public onlyAuth whileActive {
         _increaseLock(amount);
     }
 
@@ -146,10 +148,11 @@ contract VeBalGrant {
     }
 
     /// @notice Claim BAL from the veBAL gauge
-    function claimBalAndLock(address to) external onlyAuth whileActive {
-        balMinter.mint(veBalGauge);
+    function claimBalAndLock() external onlyAuth whileActive {
+        IFeeDistributor(feeDistributor).claimToken(address(this), BAL);
         _joinBalEthPool();
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
+        console.log(balance);
         _increaseLock(balance);
     }
 
@@ -209,8 +212,8 @@ contract VeBalGrant {
     ---------------------------------------------------------------- */
 
     /// @notice Queue a release to stop any new locks
-    function setActive(bool _active) external onlyBalancer {
-        active = _active;
+    function deactivate() external onlyBalancer whileInactive {
+        active = false;
     }
 
     function fundGrant(uint256 _amount, uint256 _minimumProjectFunding) external onlyBalancer whileInactive {
@@ -275,5 +278,14 @@ contract VeBalGrant {
     function _increaseLock(uint256 amount) internal {
         BAL_ETH_BPT.approve(address(votingEscrow), amount);
         votingEscrow.increase_amount(amount);
+    }
+
+    /* ----------------------------------------------------------------
+       View Functions 
+    ---------------------------------------------------------------- */
+    function unlockTime() external view returns (uint256) {
+        console.log(votingEscrow.locked__end(address(this)));
+        console.log(block.timestamp);
+        return votingEscrow.locked__end(address(this));
     }
 }

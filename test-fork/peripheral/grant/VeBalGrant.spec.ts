@@ -112,7 +112,7 @@ describe("VeBalGrant", () => {
         expect(await veBalGrant.votingEscrow()).to.be.eq(config.addresses.votingEscrow);
         expect(await veBalGrant.gaugeController()).to.be.eq(config.addresses.gaugeController);
         expect(await veBalGrant.balMinter()).to.be.eq(config.addresses.minter);
-        expect(await veBalGrant.veBalGauge()).to.be.eq(config.addresses.feeDistribution);
+        expect(await veBalGrant.feeDistributor()).to.be.eq(config.addresses.feeDistribution);
         expect(await veBalGrant.project()).to.be.eq(projectAddress);
         expect(await veBalGrant.balancer()).to.be.eq(balancerAddress);
         expect(await veBalGrant.hiddenHand()).to.be.eq(hiddenHandAddress);
@@ -157,8 +157,26 @@ describe("VeBalGrant", () => {
 
     it("balancer can create initial lock", async () => {
         await allowContract(veBalGrant.address);
-
-        const unlockTime = 1704067200; // 1/1/2024
+        const unlockTime = 1703721600; // Thursday, 28 December 2023 00:00:00
         await veBalGrant.connect(balancer).createLock(unlockTime);
+        expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
+    });
+
+    it("can increase lock length", async () => {
+        const unlockTime = 1709769600; // Thursday, 7 March 2024 00:00:00
+        await veBalGrant.connect(project).increaseTime(unlockTime);
+        expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
+    });
+
+    it("can claim bal and lock it", async () => {
+        getBal(balancerAddress, parseEther("1"));
+        const abi = ["function depositToken(address token, uint amount)"];
+        const dist = new ethers.Contract(config.addresses.feeDistribution, abi);
+
+        balToken.connect(balancer).approve(dist.address, parseEther("1"));
+        await dist.connect(balancer).depositToken(config.addresses.token, parseEther("0.0001"));
+
+        //await increaseTime(ONE_WEEK.mul("4"));
+        //await veBalGrant.connect(project).claimBalAndLock();
     });
 });
