@@ -189,6 +189,10 @@ contract VeBalGrant {
         IERC20(token).transfer(to, IERC20(token).balanceOf(address(this)));
     }
 
+    function fundWeth(uint256 _amount) external onlyProject whileActive {
+        WETH.safeTransferFrom(project, address(this), _amount);
+    }
+
     /// @notice Forward HH voting incentives
     function forwardIncentives(address _to) external {
         if (active) {

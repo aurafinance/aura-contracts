@@ -45,7 +45,7 @@ describe("VeBalGrant", () => {
     async function getWeth(to: string, amount: BigNumberish) {
         const wethWhale = await impersonateAccount(config.addresses.wethWhale);
         const weth = IERC20__factory.connect(config.addresses.weth, wethWhale.signer);
-        await IERC20__factory.connect(config.addresses.token, wethWhale.signer).transfer(to, amount);
+        await IERC20__factory.connect(config.addresses.weth, wethWhale.signer).transfer(to, amount);
     }
     /* -------------------------------------------------------------------------
      * Before
@@ -82,6 +82,7 @@ describe("VeBalGrant", () => {
         hiddenHandAddress = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
 
         getBal(balancerAddress, parseEther("50000"));
+        getWeth(projectAddress, parseEther("45"));
     });
 
     /* -------------------------------------------------------------------------
@@ -117,5 +118,15 @@ describe("VeBalGrant", () => {
 
         expect(await balToken.balanceOf(veBalGrant.address)).to.be.eq(grantAmount);
         expect(await veBalGrant.active()).to.be.eq(true);
+    });
+
+    it("project may fund the escrow with weth", async () => {
+        const wethAmount = parseEther("45");
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
+
+        await wethToken.connect(project).approve(veBalGrant.address, wethAmount);
+        await veBalGrant.connect(project).fundWeth(wethAmount);
+
+        expect(await wethToken.balanceOf(veBalGrant.address)).to.be.eq(wethAmount);
     });
 });
