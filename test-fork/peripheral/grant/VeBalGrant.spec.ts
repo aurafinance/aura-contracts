@@ -121,6 +121,19 @@ describe("VeBalGrant", () => {
         expect(await veBalGrant.active()).to.be.eq(false);
     });
 
+    it("set approval for deposits", async () => {
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
+
+        await veBalGrant.connect(balancer).setApprovals();
+
+        expect(await balToken.allowance(veBalGrant.address, config.addresses.balancerVault)).gte(
+            ethers.constants.MaxUint256,
+        );
+        expect(await wethToken.allowance(veBalGrant.address, config.addresses.balancerVault)).gte(
+            ethers.constants.MaxUint256,
+        );
+    });
+
     it("balancer may fund the grant", async () => {
         const grantAmount = parseEther("50000");
         const wethAmount = parseEther("40");

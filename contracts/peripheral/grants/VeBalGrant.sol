@@ -162,6 +162,11 @@ contract VeBalGrant {
     }
 
     function setApprovals() external onlyAuth {
+        WETH.approve(address(BALANCER_VAULT), type(uint256).max);
+        BAL.approve(address(BALANCER_VAULT), type(uint256).max);
+    }
+
+    function approveParties() external onlyAuth whileInactive {
         WETH.approve(project, type(uint256).max);
         BAL.approve(balancer, type(uint256).max);
     }
