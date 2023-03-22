@@ -258,8 +258,7 @@ task("deploy:mainnet:auraClaimZapV3")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-        //todo: add vault address
-        var vault = (await config.getAuraBalVault(deployer)).vault;
+        const vault = (await config.getAuraBalVault(deployer)).vault;
         const { claimZapV3: claimZapV3 } = await deployAuraClaimZapV3(
             config,
             hre,

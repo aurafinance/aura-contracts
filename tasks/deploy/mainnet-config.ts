@@ -56,6 +56,8 @@ import {
     BalancerSwapsHandler,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
+    AuraClaimZapV3,
+    AuraClaimZapV3__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -383,6 +385,9 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
     auraRewards: VirtualBalanceRewardPool__factory.connect("0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37", deployer),
 });
 
+const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
+    AuraClaimZapV3__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", deployer);
+
 export const config = {
     addresses,
     naming,
@@ -398,4 +403,5 @@ export const config = {
     getPhase8,
     getFeeForwarder,
     getAuraBalVault,
+    getAuraClaimZapV3,
 };

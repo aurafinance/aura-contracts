@@ -8,16 +8,13 @@ import { Account, IERC20, IERC20__factory, AuraClaimZapV3, AuraBalVault } from "
 import { Phase2Deployed, Phase4Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { impersonateAccount, increaseTime } from "../../test-utils";
 import { ZERO_ADDRESS, ZERO, ONE_WEEK } from "../../test-utils/constants";
-import { deployVault } from "../../scripts/deployVault";
-import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { ClaimRewardsAmountsStruct, OptionsStruct } from "../../types/generated/AuraClaimZapV3";
 import { BaseRewardPool__factory } from "../../types/generated";
 import { config } from "../../tasks/deploy/mainnet-config";
 
 // Constants
-const DEBUG = false;
-const FORK_BLOCK = 16700000;
-const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
+const FORK_BLOCK = 16883778;
+const DEPLOYER = "0x30019eb135532bddf2da17659101cc000c73c8e4";
 
 describe("AuraClaimZapV3", () => {
     let claimZapV3: AuraClaimZapV3;
@@ -88,7 +85,7 @@ describe("AuraClaimZapV3", () => {
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
 
         lpTokenAddress = "0xff4ce5aaab5a627bf82f4a571ab1ce94aa365ea6";
-        lpToken = await IERC20__factory.connect(lpTokenAddress, dao.signer);
+        lpToken = IERC20__factory.connect(lpTokenAddress, dao.signer);
 
         await getCvxCrv(deployer.address, parseEther("100"));
         await getCvxCrv(depositor.address, parseEther("100"));
@@ -99,14 +96,13 @@ describe("AuraClaimZapV3", () => {
      * ----------------------------------------------------------------------- */
 
     it("deploy vault", async () => {
-        const result = await deployVault(config, hre, deployer.signer, DEBUG);
+        const result = await config.getAuraBalVault(deployer.signer);
         vault = result.vault;
     });
 
     it("Deploy Claimzap", async () => {
         //Deploy
-        const result = await deployAuraClaimZapV3(config, hre, deployer.signer, vault.address, DEBUG);
-        claimZapV3 = result.claimZapV3;
+        claimZapV3 = await config.getAuraClaimZapV3(deployer.signer);
     });
 
     it("initial configuration is correct", async () => {
