@@ -30,6 +30,7 @@ describe("VeBalGrant", () => {
     let balancerAddress: string;
     let project: Signer;
     let projectAddress: string;
+    let hiddenHandAddress: string;
 
     /* -------------------------------------------------------------------------
      * Helper functions
@@ -73,6 +74,7 @@ describe("VeBalGrant", () => {
         phase4 = await config.getPhase4(dao.signer);
         phase6 = await config.getPhase6(dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
+        hiddenHandAddress = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
     });
 
     /* -------------------------------------------------------------------------
@@ -81,7 +83,23 @@ describe("VeBalGrant", () => {
 
     it("Deploy VeBalEscrow", async () => {
         //Deploy
-        const result = await deployVeBalGrant(hre, deployer.signer, balancerAddress, projectAddress, DEBUG);
+        const result = await deployVeBalGrant(hre, deployer.signer, projectAddress, balancerAddress, DEBUG);
         veBalGrant = result.veBalGrant;
+    });
+
+    it("initial configuration is correct", async () => {
+        expect(await veBalGrant.WETH()).to.be.eq(config.addresses.weth);
+        expect(await veBalGrant.BAL()).to.be.eq(config.addresses.token);
+        expect(await veBalGrant.BAL_ETH_BPT()).to.be.eq(config.addresses.tokenBpt);
+        expect(await veBalGrant.votingEscrow()).to.be.eq(config.addresses.votingEscrow);
+        expect(await veBalGrant.gaugeController()).to.be.eq(config.addresses.gaugeController);
+        expect(await veBalGrant.balMinter()).to.be.eq(config.addresses.minter);
+        expect(await veBalGrant.veBalGauge()).to.be.eq(config.addresses.feeDistribution);
+        expect(await veBalGrant.project()).to.be.eq(projectAddress);
+        expect(await veBalGrant.balancer()).to.be.eq(balancerAddress);
+        expect(await veBalGrant.hiddenHand()).to.be.eq(hiddenHandAddress);
+        expect(await veBalGrant.BALANCER_VAULT()).to.be.eq(config.addresses.balancerVault);
+        expect(await veBalGrant.BAL_ETH_POOL_ID()).to.be.eq(config.addresses.balancerPoolId);
+        expect(await veBalGrant.active()).to.be.eq(false);
     });
 });
