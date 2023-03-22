@@ -5,6 +5,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
 import "./tasks/coverage";
+import "solidity-docgen";
 
 import { resolve } from "path";
 
@@ -92,6 +93,10 @@ const config: HardhatUserConfig = {
     },
     mocha: {
         timeout: 480000, // 8 min timeout
+    },
+    docgen: {
+        outputDir: "./docs/natspec",
+        templates: "./docs/templates",
     },
 };
 

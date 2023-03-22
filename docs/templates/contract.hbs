@@ -1,0 +1,9 @@
+{{>common}}
+
+{{#each items}}
+{{#unless (eq visibility "internal")}}
+{{#hsection}}
+{{>item}}
+{{/hsection}}
+{{/unless}}
+{{/each}}
