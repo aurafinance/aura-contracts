@@ -88,7 +88,6 @@ contract VeBalGrant {
         hiddenHand = _hiddenHand;
         BALANCER_VAULT = _balancerVault;
         BAL_ETH_POOL_ID = _balETHPoolId;
-        active = true;
     }
 
     /* ----------------------------------------------------------------
@@ -208,6 +207,11 @@ contract VeBalGrant {
     /// @notice Queue a release to stop any new locks
     function setActive(bool _active) external onlyBalancer {
         active = _active;
+    }
+
+    function fundGrant(uint256 _amount) external onlyBalancer whileInactive {
+        BAL.safeTransferFrom(balancer, address(this), _amount);
+        active = true;
     }
 
     /* ----------------------------------------------------------------
