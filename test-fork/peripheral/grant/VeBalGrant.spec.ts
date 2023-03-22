@@ -47,6 +47,16 @@ describe("VeBalGrant", () => {
         const weth = IERC20__factory.connect(config.addresses.weth, wethWhale.signer);
         await IERC20__factory.connect(config.addresses.weth, wethWhale.signer).transfer(to, amount);
     }
+
+    async function allowContract(contract: string) {
+        const smartContractCheckerAddress = "0x7869296Efd0a76872fEE62A058C8fBca5c1c826C";
+        const balancerMultisig = "0x10a19e7ee7d7f8a52822f6817de8ea18204f2e4f";
+        const msig = await impersonateAccount(balancerMultisig);
+        const abi = ["function allowlistAddress(address contractAddress)"];
+
+        const scChecker = new ethers.Contract(smartContractCheckerAddress, abi);
+        await scChecker.connect(msig.signer).allowlistAddress(contract);
+    }
     /* -------------------------------------------------------------------------
      * Before
      * ----------------------------------------------------------------------- */
