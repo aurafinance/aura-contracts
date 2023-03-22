@@ -25,6 +25,7 @@ import {
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
+//import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
 
@@ -252,3 +253,20 @@ task("deploy:goerli:AuraBalStablePool")
         await waitForTx(tx, debug, waitForBlocks);
         console.log("Joined pool");
     });
+
+/* Note: Requires getAuraBalVault to be set in mainnet config before this task can be run.
+task("deploy:mainnet:auraClaimZapV3").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    //todo: add vault address
+    var vault = await (await config.getAuraBalVault(deployer)).vault;
+    const { claimZapV3: claimZapV3 } = await deployAuraClaimZapV3(
+        config,
+        hre,
+        deployer,
+        vault.address,
+        debug,
+        waitForBlocks,
+    );
+    console.log("update claimZapV3 address to:", claimZapV3.address);
+});
+*/
