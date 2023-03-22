@@ -1,3 +1,4 @@
+/* eslint-disable no-undef, @typescript-eslint/no-var-requires */
 const { findAll } = require("solidity-ast/utils");
 
 module.exports = {

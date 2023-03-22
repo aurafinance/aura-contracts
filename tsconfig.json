@@ -30,7 +30,8 @@
         "./test-fork/**/*",
         "types/**/*",
         "test-utils/**/*",
-        "scripts/**/*"
+        "scripts/**/*",
+        "docs/**/*.js"
     ],
     "files": [
         "./index.ts",
