@@ -154,4 +154,11 @@ describe("VeBalGrant", () => {
 
         expect(await wethToken.balanceOf(veBalGrant.address)).to.be.eq(wethAmount);
     });
+
+    it("balancer can create initial lock", async () => {
+        await allowContract(veBalGrant.address);
+
+        const unlockTime = 1704067200; // 1/1/2024
+        await veBalGrant.connect(balancer).createLock(unlockTime);
+    });
 });

@@ -145,14 +145,6 @@ contract VeBalGrant {
         votingEscrow.withdraw();
     }
 
-    /// @notice Create the initial lock
-    function createLock(uint256 unlockTime) external onlyAuth whileActive {
-        _joinBalEthPool();
-        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
-        BAL_ETH_BPT.approve(address(votingEscrow), balance);
-        votingEscrow.create_lock(balance, unlockTime);
-    }
-
     /// @notice Claim BAL from the veBAL gauge
     function claimBalAndLock(address to) external onlyAuth whileActive {
         balMinter.mint(veBalGauge);
@@ -225,6 +217,14 @@ contract VeBalGrant {
         BAL.safeTransferFrom(balancer, address(this), _amount);
         minimumProjectFunding = _minimumProjectFunding;
         active = true;
+    }
+
+    /// @notice Create the initial lock
+    function createLock(uint256 unlockTime) external onlyBalancer whileActive {
+        _joinBalEthPool();
+        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
+        BAL_ETH_BPT.approve(address(votingEscrow), balance);
+        votingEscrow.create_lock(balance, unlockTime);
     }
 
     /* ----------------------------------------------------------------
