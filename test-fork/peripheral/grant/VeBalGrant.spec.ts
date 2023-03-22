@@ -169,14 +169,17 @@ describe("VeBalGrant", () => {
     });
 
     it("can claim bal and lock it", async () => {
-        getBal(balancerAddress, parseEther("1"));
-        const abi = ["function depositToken(address token, uint amount)"];
+        await increaseTime(ONE_WEEK.mul("4"));
+
+        const abi = ["function depositToken(address token, uint amount)", "function checkpointToken(address token)"];
         const dist = new ethers.Contract(config.addresses.feeDistribution, abi);
 
-        balToken.connect(balancer).approve(dist.address, parseEther("1"));
-        await dist.connect(balancer).depositToken(config.addresses.token, parseEther("0.0001"));
+        await dist.connect(balancer).checkpointToken(balToken.address);
+        getBal(config.addresses.feeDistribution, parseEther("1000"));
+        await dist.connect(balancer).checkpointToken(balToken.address);
 
-        //await increaseTime(ONE_WEEK.mul("4"));
-        //await veBalGrant.connect(project).claimBalAndLock();
+        await increaseTime(ONE_WEEK.mul("4"));
+
+        await veBalGrant.connect(project).claimBalAndLock();
     });
 });
