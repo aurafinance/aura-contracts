@@ -15,8 +15,6 @@ export async function deployVeBalGrant(
 ) {
     const { addresses, multisigs } = config;
 
-    let bribeMarket = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
-
     const veBalGrant = await deployContract<VeBalGrant>(
         hre,
         new VeBalGrant__factory(signer),
@@ -27,11 +25,8 @@ export async function deployVeBalGrant(
             addresses.tokenBpt,
             addresses.votingEscrow,
             addresses.gaugeController,
-            addresses.minter,
-            addresses.feeDistribution,
             project,
             balancer,
-            bribeMarket,
             addresses.balancerVault,
             addresses.balancerPoolId,
         ],

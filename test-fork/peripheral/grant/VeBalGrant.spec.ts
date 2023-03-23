@@ -5,11 +5,9 @@ import { BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
 import { Account, IERC20, IERC20__factory, VeBalGrant, VeBalGrant__factory } from "../../../types";
-import { Phase2Deployed, Phase4Deployed, Phase6Deployed } from "../../../scripts/deploySystem";
 import { impersonateAccount, increaseTime } from "../../../test-utils";
-import { ZERO_ADDRESS, ZERO, ONE_WEEK } from "../../../test-utils/constants";
+import { ZERO_ADDRESS, ONE_WEEK } from "../../../test-utils/constants";
 import { deployVeBalGrant } from "../../../scripts/deployVeBalGrant";
-import { BaseRewardPool__factory } from "../../../types/generated";
 import { config } from "../../../tasks/deploy/mainnet-config";
 
 // Constants
@@ -21,16 +19,11 @@ describe("VeBalGrant", () => {
     let veBalGrant: VeBalGrant;
     let dao: Account;
     let deployer: Account;
-    let depositor: Account;
-    let phase2: Phase2Deployed;
-    let phase4: Phase4Deployed;
-    let phase6: Phase6Deployed;
     let balToken: IERC20;
     let balancer: Signer;
     let balancerAddress: string;
     let project: Signer;
     let projectAddress: string;
-    let hiddenHandAddress: string;
 
     /* -------------------------------------------------------------------------
      * Helper functions
@@ -44,8 +37,13 @@ describe("VeBalGrant", () => {
 
     async function getWeth(to: string, amount: BigNumberish) {
         const wethWhale = await impersonateAccount(config.addresses.wethWhale);
-        const weth = IERC20__factory.connect(config.addresses.weth, wethWhale.signer);
         await IERC20__factory.connect(config.addresses.weth, wethWhale.signer).transfer(to, amount);
+    }
+
+    async function getBpt(to: string, amount: BigNumberish) {
+        const bptWhaleAddress = "0x24FAf482304Ed21F82c86ED5fEb0EA313231a808";
+        const bptWhale = await impersonateAccount(bptWhaleAddress);
+        await IERC20__factory.connect(config.addresses.tokenBpt, bptWhale.signer).transfer(to, amount);
     }
 
     async function allowContract(contract: string) {
@@ -81,18 +79,9 @@ describe("VeBalGrant", () => {
 
         project = accounts[2];
         projectAddress = await project.getAddress();
-
         deployer = await impersonateAccount(DEPLOYER, true);
-        depositor = await impersonateAccount(await accounts[0].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
-        phase2 = await config.getPhase2(dao.signer);
-        phase4 = await config.getPhase4(dao.signer);
-        phase6 = await config.getPhase6(dao.signer);
         balToken = IERC20__factory.connect(config.addresses.token, dao.signer);
-        hiddenHandAddress = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
-
-        getBal(balancerAddress, parseEther("50000"));
-        getWeth(projectAddress, parseEther("45"));
     });
 
     /* -------------------------------------------------------------------------
@@ -111,61 +100,68 @@ describe("VeBalGrant", () => {
         expect(await veBalGrant.BAL_ETH_BPT()).to.be.eq(config.addresses.tokenBpt);
         expect(await veBalGrant.votingEscrow()).to.be.eq(config.addresses.votingEscrow);
         expect(await veBalGrant.gaugeController()).to.be.eq(config.addresses.gaugeController);
-        expect(await veBalGrant.balMinter()).to.be.eq(config.addresses.minter);
-        expect(await veBalGrant.feeDistributor()).to.be.eq(config.addresses.feeDistribution);
         expect(await veBalGrant.project()).to.be.eq(projectAddress);
         expect(await veBalGrant.balancer()).to.be.eq(balancerAddress);
-        expect(await veBalGrant.hiddenHand()).to.be.eq(hiddenHandAddress);
         expect(await veBalGrant.BALANCER_VAULT()).to.be.eq(config.addresses.balancerVault);
         expect(await veBalGrant.BAL_ETH_POOL_ID()).to.be.eq(config.addresses.balancerPoolId);
-        expect(await veBalGrant.active()).to.be.eq(false);
+        expect(await veBalGrant.active()).to.be.eq(true);
     });
 
-    it("set approval for deposits", async () => {
-        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
-
-        await veBalGrant.connect(balancer).setApprovals();
-
+    it("approvals should be correct", async () => {
         expect(await balToken.allowance(veBalGrant.address, config.addresses.balancerVault)).gte(
             ethers.constants.MaxUint256,
         );
+
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
         expect(await wethToken.allowance(veBalGrant.address, config.addresses.balancerVault)).gte(
             ethers.constants.MaxUint256,
         );
     });
 
-    it("balancer may fund the grant", async () => {
-        const grantAmount = parseEther("50000");
-        const wethAmount = parseEther("40");
-        await balToken.connect(balancer).approve(veBalGrant.address, grantAmount);
-        await veBalGrant.connect(balancer).fundGrant(grantAmount, wethAmount);
+    it("project can create initial lock", async () => {
+        //fund the vebalgrant
+        await getBal(veBalGrant.address, parseEther("50000"));
+        await getWeth(veBalGrant.address, parseEther("45"));
 
-        expect(await balToken.balanceOf(veBalGrant.address)).to.be.eq(grantAmount);
-        expect(await veBalGrant.minimumProjectFunding()).to.be.eq(wethAmount);
-        expect(await veBalGrant.active()).to.be.eq(true);
-    });
-
-    it("project may fund the escrow with weth", async () => {
-        const wethAmount = parseEther("45");
-        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
-
-        await wethToken.connect(project).approve(veBalGrant.address, wethAmount);
-        await veBalGrant.connect(project).fundWeth(wethAmount);
-
-        expect(await wethToken.balanceOf(veBalGrant.address)).to.be.eq(wethAmount);
-    });
-
-    it("balancer can create initial lock", async () => {
+        //allow the sc in the allowlist
         await allowContract(veBalGrant.address);
+
         const unlockTime = 1703721600; // Thursday, 28 December 2023 00:00:00
-        await veBalGrant.connect(balancer).createLock(unlockTime);
+        const startVeBalance = await veBalGrant.veBalance();
+
+        await veBalGrant.connect(project).createLock(unlockTime);
+
+        const endVeBalance = await veBalGrant.veBalance();
         expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
+        expect(endVeBalance).to.be.gt(startVeBalance);
     });
 
-    it("can increase lock length", async () => {
+    it("project can increase lock length", async () => {
         const unlockTime = 1709769600; // Thursday, 7 March 2024 00:00:00
+        const startVeBalance = await veBalGrant.veBalance();
+
         await veBalGrant.connect(project).increaseTime(unlockTime);
+
+        const endVeBalance = await veBalGrant.veBalance();
         expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
+        expect(endVeBalance).to.be.gt(startVeBalance);
+    });
+
+    it("able to increase lock size", async () => {
+        const bptToken = await IERC20__factory.connect(config.addresses.tokenBpt, project);
+
+        await getBpt(veBalGrant.address, parseEther("10"));
+
+        const escrowStartBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+        const startVeBalance = await veBalGrant.veBalance();
+
+        await veBalGrant.connect(project).increaseLock(parseEther("10"));
+
+        const escrowEndBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+        const endVeBalance = await veBalGrant.veBalance();
+        expect(escrowEndBPTBalance).to.be.eq("0");
+        expect(escrowStartBPTBalance).to.be.eq(parseEther("10"));
+        expect(endVeBalance).to.be.gt(startVeBalance);
     });
 
     it("can claim bal and lock it", async () => {
@@ -175,11 +171,118 @@ describe("VeBalGrant", () => {
         const dist = new ethers.Contract(config.addresses.feeDistribution, abi);
 
         await dist.connect(balancer).checkpointToken(balToken.address);
-        getBal(config.addresses.feeDistribution, parseEther("1000"));
+        await getBal(config.addresses.feeDistribution, parseEther("1000"));
         await dist.connect(balancer).checkpointToken(balToken.address);
 
         await increaseTime(ONE_WEEK.mul("4"));
 
-        await veBalGrant.connect(project).claimBalAndLock();
+        const startVeBalance = await veBalGrant.veBalance();
+
+        await veBalGrant
+            .connect(project)
+            .claimFees(config.addresses.feeDistribution, config.addresses.token, ZERO_ADDRESS);
+
+        const endVeBalance = await veBalGrant.veBalance();
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
+        const bptToken = await IERC20__factory.connect(config.addresses.tokenBpt, project);
+        const escrowWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const escrowBalBalance = await balToken.balanceOf(veBalGrant.address);
+        const escrowBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+        expect(escrowWethBalance).to.be.eq("0");
+        expect(escrowBalBalance).to.be.eq("0");
+        expect(escrowBPTBalance).to.be.eq("0");
+        expect(endVeBalance).to.be.gt(startVeBalance);
+    });
+
+    it("project can call execute to call hidden hand and forward rewards", async () => {
+        const hiddenHandBalancer = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
+        const abi = ["function setRewardForwarding(address to)"];
+        const iface = new ethers.utils.Interface(abi);
+        const data = iface.encodeFunctionData("setRewardForwarding", [balancerAddress]);
+
+        await veBalGrant.connect(project).execute(hiddenHandBalancer, "0", data);
+    });
+
+    it("project can vote for a gauge", async () => {
+        const gauge = config.addresses.gauges[0];
+
+        await veBalGrant.connect(project).voteGaugeWeight(gauge, "100");
+    });
+
+    it("balancer are able to toggle the contract active state", async () => {
+        await veBalGrant.connect(balancer).setActive(false);
+
+        expect(await veBalGrant.active()).to.be.eq(false);
+    });
+
+    it("balancer can call execute to call hidden hand and forward rewards", async () => {
+        const hiddenHandBalancer = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
+        const abi = ["function setRewardForwarding(address to)"];
+        const iface = new ethers.utils.Interface(abi);
+        const data = iface.encodeFunctionData("setRewardForwarding", [balancerAddress]);
+
+        await veBalGrant.connect(balancer).execute(hiddenHandBalancer, "0", data);
+    });
+
+    it("balancer can vote for a gauge", async () => {
+        await increaseTime(ONE_WEEK.mul("4"));
+        const gauge = config.addresses.gauges[0];
+
+        await veBalGrant.connect(balancer).voteGaugeWeight(gauge, "100");
+    });
+
+    it("can withdraw from ve when lock ends", async () => {
+        await increaseTime(ONE_WEEK.mul("52"));
+        const bptToken = await IERC20__factory.connect(config.addresses.tokenBpt, project);
+        const escrowStartBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+
+        await veBalGrant.connect(balancer).release();
+
+        const escrowEndBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+        expect(escrowEndBPTBalance).to.be.gt(escrowStartBPTBalance);
+    });
+
+    it("can redeem bpt to underlying tokens", async () => {
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
+        const bptToken = await IERC20__factory.connect(config.addresses.tokenBpt, project);
+        const escrowStartWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const escrowStartBalBalance = await balToken.balanceOf(veBalGrant.address);
+
+        await veBalGrant.connect(balancer).redeem();
+
+        const escrowEndWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const escrowEndBalBalance = await balToken.balanceOf(veBalGrant.address);
+        const escrowEndBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+
+        expect(escrowEndWethBalance).to.be.gt(escrowStartWethBalance);
+        expect(escrowEndBalBalance).to.be.gt(escrowStartBalBalance);
+        expect(escrowEndBPTBalance).to.be.eq("0");
+    });
+
+    it("can withdraw underlying tokens to project and balancer", async () => {
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
+        const balancerStartWethBalance = await wethToken.balanceOf(balancerAddress);
+        const projectStartWethBalance = await wethToken.balanceOf(projectAddress);
+        const balancerStartBalBalance = await balToken.balanceOf(balancerAddress);
+        const escrowStartWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const ethContributed = await veBalGrant.ethContributed();
+
+        await veBalGrant.connect(balancer).withdrawBalances();
+
+        const balancerEndWethBalance = await wethToken.balanceOf(balancerAddress);
+        const projectEndWethBalance = await wethToken.balanceOf(projectAddress);
+        const balancerEndBalBalance = await balToken.balanceOf(balancerAddress);
+        const escrowEndWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const escrowEndBalBalance = await balToken.balanceOf(veBalGrant.address);
+
+        expect(projectEndWethBalance).to.be.gt(projectStartWethBalance);
+        expect(projectEndWethBalance.sub(projectStartWethBalance)).to.be.lte(ethContributed);
+        expect(balancerEndBalBalance).to.be.gt(balancerStartBalBalance);
+        expect(balancerEndWethBalance.sub(balancerStartWethBalance)).to.be.eq(
+            escrowStartWethBalance.sub(ethContributed),
+        );
+        expect(escrowEndWethBalance).to.be.eq("0");
+        expect(escrowEndBalBalance).to.be.eq("0");
+        expect(await veBalGrant.ethContributed()).to.be.eq("0");
     });
 });

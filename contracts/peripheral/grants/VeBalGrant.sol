@@ -3,80 +3,62 @@ pragma solidity 0.8.11;
 
 import { IBalancerVault, IPriceOracle, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
 import { IFeeDistributor } from "../../interfaces/balancer/IFeeDistributor.sol";
+import { IBalGaugeController } from "../../interfaces/balancer/IBalGaugeController.sol";
+import { IVotingEscrow } from "../../interfaces/balancer/IVotingEscrow.sol";
+import { AuraMath } from "../../utils/AuraMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import "hardhat/console.sol";
 
-// prettier-ignore
-interface IVotingEscrow {
-    function create_lock(uint256, uint256) external;
-    function increase_amount(uint256) external;
-    function increase_unlock_time(uint256) external;
-    function withdraw() external;
-    function locked__end(address) external view returns(uint256);
-}
-
-interface IBalGaugeController {
-    function vote_for_gauge_weights(address, uint256) external;
-}
-
-interface IBalMinter {
-    function mint(address) external;
-}
-
-interface IHiddenHand {
-    function setRewardForwarding(address to) external;
-}
-
+/**
+ * @title   VeBalGrant
+ * @author  AuraFinance
+ * @notice  An escrow contract for the BAL grant provided to projects
+ * @dev     Allows projects
+ */
 contract VeBalGrant {
     using SafeERC20 for IERC20;
+    using AuraMath for uint256;
+
     /* ----------------------------------------------------------------
        Storage 
     ---------------------------------------------------------------- */
 
     IERC20 public immutable WETH;
-
     IERC20 public immutable BAL;
-
     IERC20 public immutable BAL_ETH_BPT;
-
     IVotingEscrow public immutable votingEscrow;
-
     IBalGaugeController public immutable gaugeController;
-
-    IBalMinter public immutable balMinter;
-
-    address public immutable feeDistributor;
-
     address public immutable project;
-
     address public immutable balancer;
-
-    address public immutable hiddenHand;
-
     bool public active;
-
+    bool public hasLock;
     IBalancerVault public immutable BALANCER_VAULT;
-
     bytes32 public immutable BAL_ETH_POOL_ID;
-
-    uint256 public minimumProjectFunding;
+    uint256 public ethContributed;
 
     /* ----------------------------------------------------------------
        Constructor 
     ---------------------------------------------------------------- */
 
+    /**
+     * @param _weth               Weth token
+     * @param _bal                Bal token
+     * @param _balEthBpt          80BAL:20WETH BPT token
+     * @param _votingEscrow       voting escrow contract for 8020 locking
+     * @param _gaugeController    gaugeController
+     * @param _project            the multisig that manages the project  functions
+     * @param _balancer           the multisig that manages the balancer functions
+     * @param _balancerVault      core balancer vault
+     * @param _balETHPoolId       poolID of the 8020 pool
+     */
     constructor(
         address _weth,
         address _bal,
         address _balEthBpt,
         address _votingEscrow,
         address _gaugeController,
-        address _balMinter,
-        address _feeDistributor,
         address _project,
         address _balancer,
-        address _hiddenHand,
         IBalancerVault _balancerVault,
         bytes32 _balETHPoolId
     ) {
@@ -85,39 +67,56 @@ contract VeBalGrant {
         BAL_ETH_BPT = IERC20(_balEthBpt);
         votingEscrow = IVotingEscrow(_votingEscrow);
         gaugeController = IBalGaugeController(_gaugeController);
-        balMinter = IBalMinter(_balMinter);
-        feeDistributor = _feeDistributor;
         project = _project;
         balancer = _balancer;
-        hiddenHand = _hiddenHand;
         BALANCER_VAULT = _balancerVault;
         BAL_ETH_POOL_ID = _balETHPoolId;
+        active = true;
+
+        //Approvals
+        WETH.approve(address(BALANCER_VAULT), type(uint256).max);
+        BAL.approve(address(BALANCER_VAULT), type(uint256).max);
     }
 
     /* ----------------------------------------------------------------
        Modifiers 
     ---------------------------------------------------------------- */
 
+    /**
+     * @notice Modifier that allows only Project or Balancer can trigger a function
+     */
     modifier onlyAuth() {
         require(msg.sender == project || msg.sender == balancer, "!auth");
         _;
     }
 
+    /**
+     * @notice Modifier that allows only Project to trigger a function
+     */
     modifier onlyProject() {
         require(msg.sender == project, "!project");
         _;
     }
 
+    /**
+     * @notice Modifier that allows only Balancer to trigger a function
+     */
     modifier onlyBalancer() {
         require(msg.sender == balancer, "!balancer");
         _;
     }
 
+    /**
+     * @notice Modifier that only allows something to be called when the contract is active
+     */
     modifier whileActive() {
         require(active, "!active");
         _;
     }
 
+    /**
+     * @notice Modifier that only allows something to be called when the contract is inactive
+     */
     modifier whileInactive() {
         require(!active, "active");
         _;
@@ -127,113 +126,160 @@ contract VeBalGrant {
        Shared Functions
     ---------------------------------------------------------------- */
 
-    /// @notice Increate amount locked in veBAL
-    function increaseLock(uint256 amount) public onlyAuth whileActive {
-        _increaseLock(amount);
+    /**
+     * @notice Releases veBAL lock
+     * grant must be inactive in order for this to be called
+     */
+    function release() external onlyAuth whileInactive {
+        votingEscrow.withdraw();
+        hasLock = false;
     }
 
-    /// @notice Increase veBAL lock time
-    function increaseTime(uint256 to) external onlyAuth whileActive {
-        votingEscrow.increase_unlock_time(to);
-    }
-
-    // @notice Exit BPT for BAL ETH
+    /**
+     * @notice exits BPT position in return for WETH and BAL
+     * grant must be inactive in order for this to be called
+     */
     function redeem() external onlyAuth whileInactive {
         _exitBalEthPool();
     }
 
-    /// @notice Release veBAL lock
-    function release() external onlyAuth whileInactive {
-        votingEscrow.withdraw();
+    /**
+     * @notice Sends WETH and BAL to project and balancer
+     * Project gets WETH up to the amount they contributed in the initial lock
+     * Balancer gets all BAL and any remaining WETH
+     * grant must be inactive in order for this to be called
+     */
+    function withdrawBalances() external onlyAuth whileInactive {
+        uint256 wethForProjectBalance = AuraMath.min(ethContributed, WETH.balanceOf(address(this)));
+        WETH.transfer(project, wethForProjectBalance);
+        WETH.transfer(balancer, WETH.balanceOf(address(this)));
+        BAL.transfer(balancer, BAL.balanceOf(address(this)));
+        ethContributed = 0;
     }
 
-    /// @notice Claim BAL from the veBAL gauge
-    function claimBalAndLock() external onlyAuth whileActive {
-        IFeeDistributor(feeDistributor).claimToken(address(this), BAL);
-        _joinBalEthPool();
-        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
-        console.log(balance);
-        _increaseLock(balance);
+    /**
+     * @notice Allows Balancer or Project to vote for a gauge
+     * @param gauge      gauge that will be voted for
+     * @param weight     vote weight
+     */
+    function voteGaugeWeight(address gauge, uint256 weight) external {
+        active ? require(msg.sender == project, "!caller") : require(msg.sender == balancer, "!caller");
+        gaugeController.vote_for_gauge_weights(gauge, weight);
     }
 
-    function setApprovals() external onlyAuth {
-        WETH.approve(address(BALANCER_VAULT), type(uint256).max);
-        BAL.approve(address(BALANCER_VAULT), type(uint256).max);
-    }
+    /**
+     * @notice Allows Balancer or Project to call other contracts via the grant
+     * @notice some addresses and function selectors are barred from being called
+     * @param _to      Target Contract
+     * @param _value   Eth to be sent
+     * @param _data    Call data
+     */
+    function execute(
+        address _to,
+        uint256 _value,
+        bytes memory _data
+    ) external returns (bool, bytes memory) {
+        active ? require(msg.sender == project, "!caller") : require(msg.sender == balancer, "!caller");
+        require(
+            _to != address(WETH) && _to != address(BAL) && _to != address(BAL_ETH_BPT) && _to != address(votingEscrow),
+            "invalid target"
+        );
 
-    function approveParties() external onlyAuth whileInactive {
-        WETH.approve(project, type(uint256).max);
-        BAL.approve(balancer, type(uint256).max);
-    }
-
-    /// @notice Forward HH voting incentives
-    function forwardIncentives(address _to) external {
-        if (active) {
-            require(msg.sender == project);
-        } else {
-            require(msg.sender == balancer);
+        bytes4 sig;
+        assembly {
+            sig := mload(add(_data, 32))
         }
 
-        IHiddenHand(hiddenHand).setRewardForwarding(_to);
+        require(sig != IFeeDistributor.claimToken.selector, "!allowed");
+
+        (bool success, bytes memory result) = _to.call{ value: _value }(_data);
+        require(success, "!success");
+        return (success, result);
     }
 
     /* ----------------------------------------------------------------
        Project Functions
     ---------------------------------------------------------------- */
 
-    /// @notice Vote for a gauge weight
-    function voteGaugeWeight(address gauge, uint256 weight) external {
-        if (active) {
-            require(msg.sender == project);
-        } else {
-            require(msg.sender == balancer);
-        }
-        gaugeController.vote_for_gauge_weights(gauge, weight);
+    /**
+     * @notice Increase amount locked in veBAL using BPT balance of contract
+     * @notice Only the project may call this while the grant is active
+     * @param amount number of BPT tokens to lock
+     */
+    function increaseLock(uint256 amount) public onlyProject whileActive {
+        _increaseLock(amount);
     }
 
-    /// @notice Claim fees
+    /**
+     * @notice Increase veBAL lock time
+     * @notice Only the project may call this while the grant is active
+     * @param to the new unlock time
+     */
+    function increaseTime(uint256 to) external onlyProject whileActive {
+        votingEscrow.increase_unlock_time(to);
+    }
+
+    /**
+     * @notice claim fees from distributor
+     * @notice Locks as BPT if the fee is bal or weth
+     * @notice Sends if token is not weth or bal
+     * @notice Only the project may call this while the grant is active
+     * @param distro fee distributor being called
+     * @param token token being claimed from distributor
+     * @param to receiver in the send situation
+     */
     function claimFees(
         address distro,
         address token,
         address to
     ) external onlyProject whileActive {
-        require(token != address(BAL) && token != address(WETH), "!token");
         IFeeDistributor(distro).claimToken(address(this), IERC20(token));
-        IERC20(token).transfer(to, IERC20(token).balanceOf(address(this)));
+
+        if (token == address(BAL) || token == address(WETH)) {
+            _joinBalEthPool();
+            uint256 _balance = BAL_ETH_BPT.balanceOf(address(this));
+            _increaseLock(_balance);
+        } else {
+            require(to != address(0), "!0");
+            IERC20(token).transfer(to, IERC20(token).balanceOf(address(this)));
+        }
     }
 
-    function fundWeth(uint256 _amount) external onlyProject whileActive {
-        require(_amount >= minimumProjectFunding, "!enough");
-        WETH.safeTransferFrom(project, address(this), _amount);
+    /**
+     * @notice creates the initial lock for the grant
+     * @notice tracks lock state and weth contributed by project
+     * @notice Only the project may call this while the grant is active
+     * @param unlockTime When the lock will be lifted
+     */
+    function createLock(uint256 unlockTime) external onlyProject whileActive {
+        require(!hasLock && ethContributed == 0, "lock");
+        ethContributed = WETH.balanceOf(address(this));
+        _joinBalEthPool();
+        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
+        BAL_ETH_BPT.approve(address(votingEscrow), balance);
+        votingEscrow.create_lock(balance, unlockTime);
+        hasLock = true;
     }
 
     /* ----------------------------------------------------------------
        Balancer Functions 
     ---------------------------------------------------------------- */
 
-    /// @notice Queue a release to stop any new locks
-    function deactivate() external onlyBalancer whileInactive {
-        active = false;
-    }
-
-    function fundGrant(uint256 _amount, uint256 _minimumProjectFunding) external onlyBalancer whileInactive {
-        BAL.safeTransferFrom(balancer, address(this), _amount);
-        minimumProjectFunding = _minimumProjectFunding;
-        active = true;
-    }
-
-    /// @notice Create the initial lock
-    function createLock(uint256 unlockTime) external onlyBalancer whileActive {
-        _joinBalEthPool();
-        uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
-        BAL_ETH_BPT.approve(address(votingEscrow), balance);
-        votingEscrow.create_lock(balance, unlockTime);
+    /**
+     * @notice Allows balancer to change the state of the grant
+     * @param _active the new grant state
+     */
+    function setActive(bool _active) external onlyBalancer {
+        active = _active;
     }
 
     /* ----------------------------------------------------------------
        Internal Functions 
     ---------------------------------------------------------------- */
 
+    /**
+     * @notice deposits contract WETH and BAL balances for BPT tokens
+     */
     function _joinBalEthPool() internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
@@ -255,6 +301,9 @@ contract VeBalGrant {
         );
     }
 
+    /**
+     * @notice withdraws BAL and WETH from BPT position
+     */
     function _exitBalEthPool() internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
@@ -275,6 +324,9 @@ contract VeBalGrant {
         );
     }
 
+    /**
+     * @notice helper function for increasing lock amount
+     */
     function _increaseLock(uint256 amount) internal {
         BAL_ETH_BPT.approve(address(votingEscrow), amount);
         votingEscrow.increase_amount(amount);
@@ -283,9 +335,18 @@ contract VeBalGrant {
     /* ----------------------------------------------------------------
        View Functions 
     ---------------------------------------------------------------- */
+
+    /**
+     * @notice View function for seeing grant unlock time
+     */
     function unlockTime() external view returns (uint256) {
-        console.log(votingEscrow.locked__end(address(this)));
-        console.log(block.timestamp);
         return votingEscrow.locked__end(address(this));
+    }
+
+    /**
+     * @notice View function for seeing current veBalance of grant
+     */
+    function veBalance() external view returns (uint256) {
+        return votingEscrow.balanceOf(address(this));
     }
 }
