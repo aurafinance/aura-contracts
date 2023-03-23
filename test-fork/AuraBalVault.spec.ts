@@ -30,7 +30,6 @@ import { deployContract } from "../tasks/utils";
 import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
 import { JoinPoolRequestStruct } from "types/generated/IBalancerHelpers";
 import { BatchSwapStepStruct, FundManagementStruct } from "types/generated/MockBalancerVault";
-import { deployVault } from "../scripts/deployVault";
 
 // Constants
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
@@ -314,7 +313,7 @@ describe("AuraBalVault", () => {
 
     describe("deploy vault", () => {
         it("deploy vault", async () => {
-            const result = await deployVault(config, hre, deployer.signer);
+            const result = await config.getAuraBalVault(deployer.signer);
 
             vault = result.vault;
             strategy = result.strategy;
