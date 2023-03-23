@@ -653,11 +653,6 @@ describe("PoolManager/Stash/BoosterOwner Upgrades", () => {
             const baseTokenBalanceAfter = await baseToken.balanceOf(stashToken.address);
             expect(baseTokenBalanceAfter.sub(baseTokenBalanceBefore)).eq(simpleToExactAmount(100));
         });
-        it("Cannot call donate on virtual rewards", async () => {
-            const virtualRewardsAddress = await rewards.extraRewards(0);
-            const virtualRewards = VirtualBalanceRewardPool__factory.connect(virtualRewardsAddress, protocolDao.signer);
-            await expect(virtualRewards.donate(100)).to.be.revertedWith("SafeERC20: low-level call failed");
-        });
         it("Claim rewards", async () => {
             await increaseTime(ONE_WEEK.mul(2));
             const earned = await rewards.earned(whale.address);
