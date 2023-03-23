@@ -379,10 +379,10 @@ export interface AuraBalVaultDeployed {
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
-    vault: AuraBalVault__factory.connect("0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC", deployer),
-    strategy: AuraBalStrategy__factory.connect("0xca6481967E9Ed5FAEDbC5dfFA1Dd8368979A2160", deployer),
-    bbusdHandler: BalancerSwapsHandler__factory.connect("0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E", deployer),
-    auraRewards: VirtualBalanceRewardPool__factory.connect("0x6aA103F8a0CE31aEF4E02c28B9dA83951F1c3e37", deployer),
+    vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
+    strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d", deployer),
+    auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>

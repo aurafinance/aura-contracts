@@ -15,7 +15,6 @@ import { IVirtualRewards, IVirtualRewardFactory } from "../interfaces/IVirtualRe
  * @title   GenericUnionVault
  * @author  llama.airforce -> AuraFinance
  * @notice  Changes:
- *          - remove withdraw penalty
  *          - remove platform fee
  *          - add extra rewards logic
  */
@@ -35,7 +34,6 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
 
     event WithdrawalPenaltyUpdated(uint256 _penalty);
     event Harvest(address indexed _caller, uint256 _value);
-    event CallerIncentiveUpdated(uint256 _incentive);
     event StrategySet(address indexed _strategy);
     event ExtraRewardAdded(address indexed _reward, address extraReward);
     event ExtraRewardCleared(address indexed _reward);
@@ -142,7 +140,7 @@ contract GenericUnionVault is ERC20, IERC4626, Ownable, ReentrancyGuard {
         }
 
         // Stake into extra rewards before we update the users
-        // balancers and update totalSupply/totalUnderlying
+        // balances and update totalSupply/totalUnderlying
         for (uint256 i = 0; i < extraRewards.length; i++) {
             IBasicRewards(extraRewards[i]).stake(_receiver, shares);
         }
