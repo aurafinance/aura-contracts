@@ -3,32 +3,31 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { VeBalGrant, VeBalGrant__factory } from "../types";
 import { deployContract } from "../tasks/utils";
-import { config } from "../tasks/deploy/mainnet-config";
+import { ExtSystemConfig } from "./deploySystem";
 
 export async function deployVeBalGrant(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    extSystem: ExtSystemConfig,
     project: string,
     balancer: string,
     debug = false,
     waitForBlocks = 0,
 ) {
-    const { addresses } = config;
-
     const veBalGrant = await deployContract<VeBalGrant>(
         hre,
         new VeBalGrant__factory(signer),
         "VeBalGrant",
         [
-            addresses.weth,
-            addresses.token,
-            addresses.tokenBpt,
-            addresses.votingEscrow,
-            addresses.gaugeController,
+            extSystem.weth,
+            extSystem.token,
+            extSystem.tokenBpt,
+            extSystem.votingEscrow,
+            extSystem.gaugeController,
             project,
             balancer,
-            addresses.balancerVault,
-            addresses.balancerPoolId,
+            extSystem.balancerVault,
+            extSystem.balancerPoolId,
         ],
         {},
         debug,
