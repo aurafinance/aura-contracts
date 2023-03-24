@@ -106,6 +106,14 @@ contract VeBalGrant {
     }
 
     /**
+     * @notice Modifier that allows project to trigger a function if active or balancer if inactive,
+     */
+    modifier onlyCurrentParty() {
+        require(msg.sender == (active ? project : balancer), "!caller");
+        _;
+    }
+
+    /**
      * @notice Modifier that only allows something to be called when the contract is active
      */
     modifier whileActive() {
@@ -163,8 +171,7 @@ contract VeBalGrant {
      * @param gauge      gauge that will be voted for
      * @param weight     vote weight
      */
-    function voteGaugeWeight(address gauge, uint256 weight) external {
-        require(msg.sender == (active ? project : balancer), "!caller");
+    function voteGaugeWeight(address gauge, uint256 weight) external onlyCurrentParty {
         gaugeController.vote_for_gauge_weights(gauge, weight);
     }
 
@@ -179,8 +186,7 @@ contract VeBalGrant {
         address _to,
         uint256 _value,
         bytes memory _data
-    ) external returns (bool, bytes memory) {
-        require(msg.sender == (active ? project : balancer), "!caller");
+    ) external onlyCurrentParty returns (bool, bytes memory) {
         require(
             _to != address(WETH) && _to != address(BAL) && _to != address(BAL_ETH_BPT) && _to != address(votingEscrow),
             "invalid target"
