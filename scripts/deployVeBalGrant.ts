@@ -13,7 +13,7 @@ export async function deployVeBalGrant(
     debug = false,
     waitForBlocks = 0,
 ) {
-    const { addresses, multisigs } = config;
+    const { addresses } = config;
 
     const veBalGrant = await deployContract<VeBalGrant>(
         hre,
