@@ -197,7 +197,7 @@ contract VeBalGrant {
             sig := mload(add(_data, 32))
         }
 
-        require(sig != IFeeDistributor.claimToken.selector, "!allowed");
+        require(sig != IFeeDistributor.claimToken.selector && sig != IFeeDistributor.claimTokens.selector, "!allowed");
 
         (bool success, bytes memory result) = _to.call{ value: _value }(_data);
         require(success, "!success");
@@ -261,8 +261,6 @@ contract VeBalGrant {
      * @param  _unlockTime When the lock will be lifted
      */
     function createLock(uint256 _unlockTime, uint256 _minAmountOut) external onlyProject whileActive {
-        require(ethContributed == 0, "lock");
-        ethContributed = WETH.balanceOf(address(this));
         _joinBalEthPool(_minAmountOut);
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
         BAL_ETH_BPT.safeApprove(address(votingEscrow), balance);
@@ -290,12 +288,13 @@ contract VeBalGrant {
      * @param  _minAmountOut slippage check for BPT output
      */
     function _joinBalEthPool(uint256 _minAmountOut) internal {
+        uint256 _wethBalance = WETH.balanceOf(address(this));
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
         assets[1] = IAsset(address(WETH));
         uint256[] memory maxAmountsIn = new uint256[](2);
         maxAmountsIn[0] = BAL.balanceOf(address(this));
-        maxAmountsIn[1] = WETH.balanceOf(address(this));
+        maxAmountsIn[1] = _wethBalance;
 
         BALANCER_VAULT.joinPool(
             BAL_ETH_POOL_ID,
@@ -308,6 +307,8 @@ contract VeBalGrant {
                 false // Don't use internal balances
             )
         );
+
+        ethContributed = ethContributed + (_wethBalance - WETH.balanceOf(address(this)));
     }
 
     /**
