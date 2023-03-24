@@ -262,7 +262,7 @@ contract VeBalGrant {
         _joinBalEthPool(_minAmountOut);
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
         BAL_ETH_BPT.safeApprove(address(votingEscrow), balance);
-        votingEscrow.create_lock(balance, unlockTime);
+        votingEscrow.create_lock(balance, _unlockTime);
         hasLock = true;
     }
 
@@ -336,10 +336,11 @@ contract VeBalGrant {
 
     /**
      * @notice helper function for increasing lock amount
+     * @param  _amount  BPT quantity to increase lock by
      */
-    function _increaseLock(uint256 amount) internal {
-        BAL_ETH_BPT.safeApprove(address(votingEscrow), amount);
-        votingEscrow.increase_amount(amount);
+    function _increaseLock(uint256 _amount) internal {
+        BAL_ETH_BPT.safeApprove(address(votingEscrow), _amount);
+        votingEscrow.increase_amount(_amount);
     }
 
     /* ----------------------------------------------------------------
