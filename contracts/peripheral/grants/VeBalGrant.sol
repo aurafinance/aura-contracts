@@ -30,10 +30,10 @@ contract VeBalGrant {
     IBalGaugeController public immutable gaugeController;
     address public immutable project;
     address public immutable balancer;
-    bool public active;
-    bool public hasLock;
     IBalancerVault public immutable BALANCER_VAULT;
     bytes32 public immutable BAL_ETH_POOL_ID;
+    bool public active;
+    bool public hasLock;
     uint256 public ethContributed;
 
     /* ----------------------------------------------------------------
