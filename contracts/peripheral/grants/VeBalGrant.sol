@@ -74,8 +74,8 @@ contract VeBalGrant {
         active = true;
 
         //Approvals
-        WETH.approve(address(BALANCER_VAULT), type(uint256).max);
-        BAL.approve(address(BALANCER_VAULT), type(uint256).max);
+        WETH.safeApprove(address(BALANCER_VAULT), type(uint256).max);
+        BAL.safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
     /* ----------------------------------------------------------------
@@ -138,9 +138,11 @@ contract VeBalGrant {
     /**
      * @notice exits BPT position in return for WETH and BAL
      * grant must be inactive in order for this to be called
+     * @param  _minBalOut  slippage check for Bal output
+     * @param  _minWethOut slippage check for Weth output
      */
-    function redeem() external onlyAuth whileInactive {
-        _exitBalEthPool();
+    function redeem(uint256 _minBalOut, uint256 _minWethOut) external onlyAuth whileInactive {
+        _exitBalEthPool(_minBalOut, _minWethOut);
     }
 
     /**
@@ -150,11 +152,12 @@ contract VeBalGrant {
      * grant must be inactive in order for this to be called
      */
     function withdrawBalances() external onlyAuth whileInactive {
-        uint256 wethForProjectBalance = AuraMath.min(ethContributed, WETH.balanceOf(address(this)));
-        WETH.transfer(project, wethForProjectBalance);
-        WETH.transfer(balancer, WETH.balanceOf(address(this)));
-        BAL.transfer(balancer, BAL.balanceOf(address(this)));
+        uint256 _wethBalance = WETH.balanceOf(address(this));
+        uint256 wethForProjectBalance = AuraMath.min(ethContributed, _wethBalance);
         ethContributed = 0;
+        WETH.safeTransfer(project, wethForProjectBalance);
+        WETH.safeTransfer(balancer, _wethBalance - wethForProjectBalance);
+        BAL.safeTransfer(balancer, BAL.balanceOf(address(this)));
     }
 
     /**
@@ -163,7 +166,7 @@ contract VeBalGrant {
      * @param weight     vote weight
      */
     function voteGaugeWeight(address gauge, uint256 weight) external {
-        active ? require(msg.sender == project, "!caller") : require(msg.sender == balancer, "!caller");
+        require(msg.sender == (active ? project : balancer), "!caller");
         gaugeController.vote_for_gauge_weights(gauge, weight);
     }
 
@@ -179,7 +182,7 @@ contract VeBalGrant {
         uint256 _value,
         bytes memory _data
     ) external returns (bool, bytes memory) {
-        active ? require(msg.sender == project, "!caller") : require(msg.sender == balancer, "!caller");
+        require(msg.sender == (active ? project : balancer), "!caller");
         require(
             _to != address(WETH) && _to != address(BAL) && _to != address(BAL_ETH_BPT) && _to != address(votingEscrow),
             "invalid target"
@@ -204,19 +207,19 @@ contract VeBalGrant {
     /**
      * @notice Increase amount locked in veBAL using BPT balance of contract
      * @notice Only the project may call this while the grant is active
-     * @param amount number of BPT tokens to lock
+     * @param  _amount number of BPT tokens to lock
      */
-    function increaseLock(uint256 amount) public onlyProject whileActive {
-        _increaseLock(amount);
+    function increaseLock(uint256 _amount) public onlyProject whileActive {
+        _increaseLock(_amount);
     }
 
     /**
      * @notice Increase veBAL lock time
      * @notice Only the project may call this while the grant is active
-     * @param to the new unlock time
+     * @param  _to the new unlock time
      */
-    function increaseTime(uint256 to) external onlyProject whileActive {
-        votingEscrow.increase_unlock_time(to);
+    function increaseTime(uint256 _to) external onlyProject whileActive {
+        votingEscrow.increase_unlock_time(_to);
     }
 
     /**
@@ -224,24 +227,26 @@ contract VeBalGrant {
      * @notice Locks as BPT if the fee is bal or weth
      * @notice Sends if token is not weth or bal
      * @notice Only the project may call this while the grant is active
-     * @param distro fee distributor being called
-     * @param token token being claimed from distributor
-     * @param to receiver in the send situation
+     * @param  _feeDistributor fee distributor being called
+     * @param  _token token being claimed from distributor
+     * @param  _to receiver in the send situation
+     * @param  _minAmountOut slippage check for BPT output
      */
     function claimFees(
-        address distro,
-        address token,
-        address to
+        address _feeDistributor,
+        address _token,
+        address _to,
+        uint256 _minAmountOut
     ) external onlyProject whileActive {
-        IFeeDistributor(distro).claimToken(address(this), IERC20(token));
+        IFeeDistributor(_feeDistributor).claimToken(address(this), IERC20(_token));
 
-        if (token == address(BAL) || token == address(WETH)) {
-            _joinBalEthPool();
+        if (_token == address(BAL) || _token == address(WETH)) {
+            _joinBalEthPool(_minAmountOut);
             uint256 _balance = BAL_ETH_BPT.balanceOf(address(this));
             _increaseLock(_balance);
         } else {
-            require(to != address(0), "!0");
-            IERC20(token).transfer(to, IERC20(token).balanceOf(address(this)));
+            require(_to != address(0), "!0");
+            IERC20(_token).safeTransfer(_to, IERC20(_token).balanceOf(address(this)));
         }
     }
 
@@ -249,15 +254,15 @@ contract VeBalGrant {
      * @notice creates the initial lock for the grant
      * @notice tracks lock state and weth contributed by project
      * @notice Only the project may call this while the grant is active
-     * @param unlockTime When the lock will be lifted
+     * @param  _unlockTime When the lock will be lifted
      */
-    function createLock(uint256 unlockTime) external onlyProject whileActive {
+    function createLock(uint256 _unlockTime, uint256 _minAmountOut) external onlyProject whileActive {
         require(!hasLock && ethContributed == 0, "lock");
         ethContributed = WETH.balanceOf(address(this));
-        _joinBalEthPool();
+        _joinBalEthPool(_minAmountOut);
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
-        BAL_ETH_BPT.approve(address(votingEscrow), balance);
-        votingEscrow.create_lock(balance, unlockTime);
+        BAL_ETH_BPT.safeApprove(address(votingEscrow), balance);
+        votingEscrow.create_lock(balance, _unlockTime);
         hasLock = true;
     }
 
@@ -279,8 +284,9 @@ contract VeBalGrant {
 
     /**
      * @notice deposits contract WETH and BAL balances for BPT tokens
+     * @param  _minAmountOut slippage check for BPT output
      */
-    function _joinBalEthPool() internal {
+    function _joinBalEthPool(uint256 _minAmountOut) internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
         assets[1] = IAsset(address(WETH));
@@ -295,7 +301,7 @@ contract VeBalGrant {
             IBalancerVault.JoinPoolRequest(
                 assets,
                 maxAmountsIn,
-                abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, 0),
+                abi.encode(IBalancerVault.JoinKind.EXACT_TOKENS_IN_FOR_BPT_OUT, maxAmountsIn, _minAmountOut),
                 false // Don't use internal balances
             )
         );
@@ -303,12 +309,16 @@ contract VeBalGrant {
 
     /**
      * @notice withdraws BAL and WETH from BPT position
+     * @param  _minBalOut  slippage check for Bal output
+     * @param  _minWethOut slippage check for Weth output
      */
-    function _exitBalEthPool() internal {
+    function _exitBalEthPool(uint256 _minBalOut, uint256 _minWethOut) internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
         assets[1] = IAsset(address(WETH));
         uint256[] memory minAmountsOut = new uint256[](2);
+        minAmountsOut[0] = _minBalOut;
+        minAmountsOut[1] = _minWethOut;
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
 
         BALANCER_VAULT.exitPool(
@@ -326,10 +336,11 @@ contract VeBalGrant {
 
     /**
      * @notice helper function for increasing lock amount
+     * @param  _amount  BPT quantity to increase lock by
      */
-    function _increaseLock(uint256 amount) internal {
-        BAL_ETH_BPT.approve(address(votingEscrow), amount);
-        votingEscrow.increase_amount(amount);
+    function _increaseLock(uint256 _amount) internal {
+        BAL_ETH_BPT.safeApprove(address(votingEscrow), _amount);
+        votingEscrow.increase_amount(_amount);
     }
 
     /* ----------------------------------------------------------------

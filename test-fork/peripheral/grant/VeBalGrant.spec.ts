@@ -129,7 +129,7 @@ describe("VeBalGrant", () => {
         const unlockTime = 1703721600; // Thursday, 28 December 2023 00:00:00
         const startVeBalance = await veBalGrant.veBalance();
 
-        await veBalGrant.connect(project).createLock(unlockTime);
+        await veBalGrant.connect(project).createLock(unlockTime, "0");
 
         const endVeBalance = await veBalGrant.veBalance();
         expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
@@ -180,7 +180,7 @@ describe("VeBalGrant", () => {
 
         await veBalGrant
             .connect(project)
-            .claimFees(config.addresses.feeDistribution, config.addresses.token, ZERO_ADDRESS);
+            .claimFees(config.addresses.feeDistribution, config.addresses.token, ZERO_ADDRESS, "0");
 
         const endVeBalance = await veBalGrant.veBalance();
         const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
@@ -248,7 +248,7 @@ describe("VeBalGrant", () => {
         const escrowStartWethBalance = await wethToken.balanceOf(veBalGrant.address);
         const escrowStartBalBalance = await balToken.balanceOf(veBalGrant.address);
 
-        await veBalGrant.connect(balancer).redeem();
+        await veBalGrant.connect(balancer).redeem("0", "0");
 
         const escrowEndWethBalance = await wethToken.balanceOf(veBalGrant.address);
         const escrowEndBalBalance = await balToken.balanceOf(veBalGrant.address);
