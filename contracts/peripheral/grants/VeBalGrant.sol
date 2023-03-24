@@ -33,7 +33,6 @@ contract VeBalGrant {
     IBalancerVault public immutable BALANCER_VAULT;
     bytes32 public immutable BAL_ETH_POOL_ID;
     bool public active;
-    bool public hasLock;
     uint256 public ethContributed;
 
     /* ----------------------------------------------------------------
@@ -132,7 +131,6 @@ contract VeBalGrant {
      */
     function release() external onlyAuth whileInactive {
         votingEscrow.withdraw();
-        hasLock = false;
     }
 
     /**
@@ -257,13 +255,12 @@ contract VeBalGrant {
      * @param  _unlockTime When the lock will be lifted
      */
     function createLock(uint256 _unlockTime, uint256 _minAmountOut) external onlyProject whileActive {
-        require(!hasLock && ethContributed == 0, "lock");
+        require(ethContributed == 0, "lock");
         ethContributed = WETH.balanceOf(address(this));
         _joinBalEthPool(_minAmountOut);
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
         BAL_ETH_BPT.safeApprove(address(votingEscrow), balance);
         votingEscrow.create_lock(balance, _unlockTime);
-        hasLock = true;
     }
 
     /* ----------------------------------------------------------------
