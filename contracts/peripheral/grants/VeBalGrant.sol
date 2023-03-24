@@ -138,9 +138,11 @@ contract VeBalGrant {
     /**
      * @notice exits BPT position in return for WETH and BAL
      * grant must be inactive in order for this to be called
+     * @param  _minBalOut  slippage check for Bal output
+     * @param  _minWethOut slippage check for Weth output
      */
-    function redeem() external onlyAuth whileInactive {
-        _exitBalEthPool();
+    function redeem(uint256 _minBalOut, uint256 _minWethOut) external onlyAuth whileInactive {
+        _exitBalEthPool(_minBalOut, _minWethOut);
     }
 
     /**
@@ -307,12 +309,16 @@ contract VeBalGrant {
 
     /**
      * @notice withdraws BAL and WETH from BPT position
+     * @param  _minBalOut  slippage check for Bal output
+     * @param  _minWethOut slippage check for Weth output
      */
-    function _exitBalEthPool() internal {
+    function _exitBalEthPool(uint256 _minBalOut, uint256 _minWethOut) internal {
         IAsset[] memory assets = new IAsset[](2);
         assets[0] = IAsset(address(BAL));
         assets[1] = IAsset(address(WETH));
         uint256[] memory minAmountsOut = new uint256[](2);
+        minAmountsOut[0] = _minBalOut;
+        minAmountsOut[1] = _minWethOut;
         uint256 balance = BAL_ETH_BPT.balanceOf(address(this));
 
         BALANCER_VAULT.exitPool(

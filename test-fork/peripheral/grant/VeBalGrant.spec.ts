@@ -248,7 +248,7 @@ describe("VeBalGrant", () => {
         const escrowStartWethBalance = await wethToken.balanceOf(veBalGrant.address);
         const escrowStartBalBalance = await balToken.balanceOf(veBalGrant.address);
 
-        await veBalGrant.connect(balancer).redeem();
+        await veBalGrant.connect(balancer).redeem(0, 0);
 
         const escrowEndWethBalance = await wethToken.balanceOf(veBalGrant.address);
         const escrowEndBalBalance = await balToken.balanceOf(veBalGrant.address);
