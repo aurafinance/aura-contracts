@@ -47,9 +47,6 @@ describe("VeBalGrant", () => {
         await mocks.crv.connect(balancerAccount.signer).approve(veBalGrant.address, ethers.constants.MaxUint256);
         await mocks.weth.connect(balancerAccount.signer).approve(veBalGrant.address, ethers.constants.MaxUint256);
     };
-    after(async () => {
-        await hre.network.provider.send("hardhat_reset");
-    });
     describe("constructor", async () => {
         before("init contract", async () => {
             await setup();

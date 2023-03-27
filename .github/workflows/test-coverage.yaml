@@ -24,7 +24,7 @@ jobs:
                       ${{ runner.os }}-yarn-
             - run: yarn
             - run: yarn compile
-            - run: yarn coverage --max-memory 6144
+            - run: yarn coverage --max-memory 7168
             - name: Coveralls
               uses: coverallsapp/github-action@master
               with:
