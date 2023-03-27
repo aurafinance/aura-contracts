@@ -19,14 +19,21 @@ import {
     BalancerSwapsHandler__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
-} from "../types";
-import { BN, simpleToExactAmount } from "../test-utils/math";
-import { Phase2Deployed, Phase6Deployed } from "../scripts/deploySystem";
-import { assertBNClosePercent, getTimestamp, impersonate, impersonateAccount, increaseTime } from "../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO } from "../test-utils/constants";
-import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
-import { config as goerliConfig } from "../tasks/deploy/goerli-config";
-import { deployContract } from "../tasks/utils";
+} from "../../types";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import {
+    assertBNClosePercent,
+    getTimestamp,
+    impersonate,
+    impersonateAccount,
+    impersonateAndTransfer,
+    increaseTime,
+} from "../../test-utils";
+import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO } from "../../test-utils/constants";
+import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
+import { deployContract } from "../../tasks/utils";
 import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
 import { JoinPoolRequestStruct } from "types/generated/IBalancerHelpers";
 import { BatchSwapStepStruct, FundManagementStruct } from "types/generated/MockBalancerVault";
@@ -58,12 +65,6 @@ const testConfig = testConfigs[TEST_CONFIG || "mainnet"];
 if (!testConfig) throw new Error(`Test config not found for value: ${TEST_CONFIG}`);
 const config = testConfig.config;
 
-async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
-    const tokenWhaleSigner = await impersonateAccount(from);
-    const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
-    await token.transfer(to, amount);
-}
-
 describe("AuraBalVault", () => {
     let feeForwarder: FeeForwarder;
     let vault: AuraBalVault;
@@ -88,36 +89,17 @@ describe("AuraBalVault", () => {
      * Helper functions
      * ----------------------------------------------------------------------- */
 
-    async function getEth(recipient: string) {
-        const ethWhale = await impersonate(config.addresses.weth);
-        await ethWhale.sendTransaction({
-            to: recipient,
-            value: simpleToExactAmount(1),
-        });
-    }
+    const getAuraBal = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(phase2.cvxCrv.address, testConfig.auraBalWhale, to, amount);
 
-    async function getAuraBal(to: string, amount: BigNumberish) {
-        const auraBalWhaleAddr = testConfig.auraBalWhale;
-        const auraBalWhale = await impersonateAccount(auraBalWhaleAddr);
-        await phase2.cvxCrv.connect(auraBalWhale.signer).transfer(to, amount);
-    }
+    const getBal = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(config.addresses.token, config.addresses.balancerVault, to, amount);
 
-    async function getBal(to: string, amount: BigNumberish) {
-        await getEth(config.addresses.balancerVault);
-        const tokenWhaleSigner = await impersonateAccount(config.addresses.balancerVault);
-        const crv = MockERC20__factory.connect(config.addresses.token, tokenWhaleSigner.signer);
-        await crv.transfer(to, amount);
-    }
+    const getAura = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(phase2.cvx.address, testConfig.auraWhale, to, amount);
 
-    async function getAura(to: string, amount: BigNumberish) {
-        const whaleAddress = testConfig.auraWhale;
-        await impersonateAndTransfer(phase2.cvx.address, whaleAddress, to, amount);
-    }
-
-    async function getBBaUSD(to: string, amount: BigNumberish) {
-        const whaleAddress = testConfig.bbaUsdWhale;
-        await impersonateAndTransfer(config.addresses.feeToken, whaleAddress, to, amount);
-    }
+    const getBBaUSD = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(config.addresses.feeToken, testConfig.bbaUsdWhale, to, amount);
 
     const SLIPPAGE_OUTPUT_SWAP = 9900;
     const SLIPPAGE_OUTPUT_SCALE = 10000;

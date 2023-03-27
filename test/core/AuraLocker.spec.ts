@@ -713,7 +713,7 @@ describe("AuraLocker", () => {
             // first lock
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
-            const nextEpoch = await floorToWeek(await oneWeekInAdvance());
+            const nextEpoch = floorToWeek(await oneWeekInAdvance());
             const checkpointCount0 = await auraLocker.numCheckpoints(aliceAddress);
             const checkpoint0 = await auraLocker.checkpoints(aliceAddress, checkpointCount0 - 1);
 
@@ -842,7 +842,7 @@ describe("AuraLocker", () => {
             // first lock
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
-            const nextEpoch = await floorToWeek(await oneWeekInAdvance());
+            const nextEpoch = floorToWeek(await oneWeekInAdvance());
             const checkpointCount0 = await auraLocker.numCheckpoints(aliceAddress);
             const checkpoint0 = await auraLocker.checkpoints(aliceAddress, checkpointCount0 - 1);
 
@@ -907,7 +907,6 @@ describe("AuraLocker", () => {
             expect(aliceLockedBalances.locked, "alice total balance").eq(simpleToExactAmount(130));
         });
         it("allows delegation even with 0 balance", async () => {
-            // await getSnapShot(bobAddress, "beforeEach");
             expect(await auraLocker.getVotes(aliceAddress)).eq(dataBefore.delegatee.unlocks[0]);
             await increaseTime(ONE_WEEK.mul(2));
             expect(await auraLocker.getVotes(aliceAddress), "expect 0 balance").eq(0);
@@ -935,11 +934,11 @@ describe("AuraLocker", () => {
     context("queueing new rewards", () => {
         async function mockDepositCVRToStakeContract(amount: number) {
             const crvDepositorAccount = await impersonateAccount(crvDepositor.address);
-            const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
+            const cvxCrvConnected = cvxCrv.connect(crvDepositorAccount.signer);
             await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
             await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
         }
-        // let dataBefore: SnapshotData;
+
         let cvxStakingProxyAccount: Account;
         // t = 0.5, Lock, delegate to self, wait 15 weeks (1.5 weeks before lockup)
         beforeEach(async () => {
@@ -1493,13 +1492,13 @@ describe("AuraLocker", () => {
 
             // approves  distributor
             await auraLocker.connect(accounts[7]).approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, true);
-            await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(true);
+            expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(true);
 
             // disapproves  distributor
             await auraLocker
                 .connect(accounts[7])
                 .approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, false);
-            await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(false);
+            expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(false);
         });
         it("set Kick Incentive", async () => {
             await expect(auraLocker.connect(accounts[7]).setKickIncentive(100, 3))
@@ -1554,7 +1553,7 @@ describe("AuraLocker", () => {
             const cvxAmount = simpleToExactAmount(100);
             const relock = false;
             await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
-            let tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
+            await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
 
             await expect(auraLocker.connect(alice).processExpiredLocks(relock)).revertedWith("no exp locks");
 
@@ -1564,7 +1563,7 @@ describe("AuraLocker", () => {
             // Then it should be able to process unexpired locks
 
             const dataBefore = await getSnapShot(aliceAddress);
-            tx = await auraLocker.connect(alice).processExpiredLocks(relock);
+            const tx = await auraLocker.connect(alice).processExpiredLocks(relock);
 
             const balance = await cvx.balanceOf(aliceAddress);
             expect(await auraLocker.balanceOf(aliceAddress), "auraLocker balance for user is zero").to.equal(0);
@@ -1587,13 +1586,13 @@ describe("AuraLocker", () => {
             const cvxAmount = simpleToExactAmount(100);
             const relock = false;
             await cvx.connect(alice).approve(auraLocker.address, cvxAmount);
-            let tx = await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
+            await auraLocker.connect(alice).lock(aliceAddress, cvxAmount);
             // Given that the aura locker is shutdown
             await auraLocker.connect(accounts[7]).shutdown();
             expect(await auraLocker.isShutdown()).to.eq(true);
             // Then it should be able to withdraw in an emergency
             const dataBefore = await getSnapShot(aliceAddress);
-            tx = await auraLocker.connect(alice).emergencyWithdraw();
+            const tx = await auraLocker.connect(alice).emergencyWithdraw();
             expect(await auraLocker.balanceOf(aliceAddress)).eq(0);
             const balance = await cvx.balanceOf(aliceAddress);
 

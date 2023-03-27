@@ -177,6 +177,6 @@ describe("AuraToken", () => {
         // it should does not to mint more tokens via scheduled mints as the max amount has been reached previously,
         const totalSupply = await cvx.totalSupply();
         await cvx.connect(operatorAccount.signer).mint(aliceAddress, simpleToExactAmount(1, 18));
-        await expect(await cvx.totalSupply()).to.eq(totalSupply);
+        expect(await cvx.totalSupply()).to.eq(totalSupply);
     });
 });

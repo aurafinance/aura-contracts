@@ -138,7 +138,6 @@ describe("StashToken", () => {
     it("process stash, mint stash token", async () => {
         // Given the stashV3 has some balance and the stash token is valid
         const amount = simpleToExactAmount(100);
-        // await stashToken.mint(amount);
         const stashBaseTokenBalBefore = await mockErc20.balanceOf(stashToken.address);
         const stashTokenTotalSupplyBefore = await stashToken.totalSupply();
         await mockErc20.transfer(phase6.stashV3.address, amount);
@@ -192,7 +191,6 @@ describe("StashToken", () => {
     it("does not mint if stash is disabled", async () => {
         // Given the stashV3 has some balance and the stash token is valid
         const amount = simpleToExactAmount(100);
-        // await stashToken.mint(amount);
         const stashBaseTokenBalBefore = await mockErc20.balanceOf(stashToken.address);
         const stashTokenTotalSupplyBefore = await stashToken.totalSupply();
         await mockErc20.transfer(phase6.stashV3.address, amount);

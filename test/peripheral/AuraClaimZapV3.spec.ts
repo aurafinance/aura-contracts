@@ -34,7 +34,6 @@ describe("AuraClaimZapV3", () => {
     let mocks: DeployMocksResult;
     let deployer: Signer;
     let phase4: SystemDeployed;
-    // let phase6: Phase6Deployed;
     let alice: Account;
     let vault: AuraBalVault;
     // Testing contract
@@ -249,7 +248,7 @@ describe("AuraClaimZapV3", () => {
         const tx = await claimZapV3.connect(alice.signer).claimRewards([pool.crvRewards], [], [], [], amounts, options);
 
         const dataAfter = await snapData(alice);
-        await expect(tx, "rewardphase4[pool.crvRewards]")
+        await expect(tx, "rewardPhase4[pool.crvRewards]")
             .to.emit(crvRewards, "RewardPaid")
             .withArgs(alice.address, expectedRewards);
         await expect(tx, "lockCvxCrv: false").to.not.emit(cvxCrvRewards, "Staked");
@@ -281,7 +280,7 @@ describe("AuraClaimZapV3", () => {
 
         const tx = await claimZapV3.connect(alice.signer).claimRewards([pool.crvRewards], [], [], [], amounts, options);
         const dataAfter = await snapData(alice);
-        await expect(tx, "rewardphase4[pool.crvRewards]")
+        await expect(tx, "rewardPhase4[pool.crvRewards]")
             .to.emit(crvRewards, "RewardPaid")
             .withArgs(alice.address, expectedRewards);
         // Use

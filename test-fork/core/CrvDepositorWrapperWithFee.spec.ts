@@ -1,4 +1,4 @@
-import { simpleToExactAmount } from "../test-utils/math";
+import { simpleToExactAmount } from "../../test-utils/math";
 import hre, { network } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
@@ -8,10 +8,10 @@ import {
     ERC20,
     CrvDepositorWrapperWithFee__factory,
     AuraStakingProxy,
-} from "../types/generated";
-import { impersonate, impersonateAccount } from "../test-utils";
-import { deployContract } from "../tasks/utils";
-import { config } from "../tasks/deploy/mainnet-config";
+} from "../../types/generated";
+import { impersonate, impersonateAccount } from "../../test-utils";
+import { deployContract } from "../../tasks/utils";
+import { config } from "../../tasks/deploy/mainnet-config";
 import { SystemDeployed } from "scripts/deploySystem";
 
 const debug = false;

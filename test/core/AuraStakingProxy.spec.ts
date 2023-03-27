@@ -286,7 +286,6 @@ describe("AuraStakingProxy", () => {
         let randomToken: MockERC20;
         let deployerAddress: string;
         before(async () => {
-            // const amount = ethers.utils.parseEther("100");
             deployerAddress = await accounts[0].getAddress();
             randomToken = await deployContract(
                 hre,
@@ -309,7 +308,7 @@ describe("AuraStakingProxy", () => {
             await contracts.cvxStakingProxy.distributeOther(randomToken.address);
         });
         it("distribute other rewards", async () => {
-            const user = await accounts[1];
+            const user = accounts[1];
             const userAddress = await user.getAddress();
             const amount = ethers.utils.parseEther("100");
 

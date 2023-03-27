@@ -7,7 +7,6 @@ import {
     CrvDepositor,
     VoterProxy,
     CvxCrvToken,
-    ERC20__factory,
     ERC20,
     CrvDepositorWrapper,
     BaseRewardPool,

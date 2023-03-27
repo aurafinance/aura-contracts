@@ -1,11 +1,11 @@
-import { BaseRewardPool4626__factory } from "./../types/generated/factories/BaseRewardPool4626__factory";
+import { BaseRewardPool4626__factory } from "../../types/generated/factories/BaseRewardPool4626__factory";
 import hre, { ethers, network } from "hardhat";
-import { ERC20, ERC20__factory, IBalancerVault__factory, MockERC20__factory } from "../types/generated";
-import { impersonate, impersonateAccount, simpleToExactAmount } from "../test-utils";
+import { ERC20, ERC20__factory, IBalancerVault__factory, MockERC20__factory } from "../../types/generated";
+import { impersonate, impersonateAccount, simpleToExactAmount } from "../../test-utils";
 import { Signer } from "ethers";
-import { waitForTx } from "../tasks/utils";
-import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../scripts/deploySystem";
-import { config } from "../tasks/deploy/mainnet-config";
+import { waitForTx } from "../../tasks/utils";
+import { deployPhase3, deployPhase4, Phase2Deployed, Phase3Deployed, SystemDeployed } from "../../scripts/deploySystem";
+import { config } from "../../tasks/deploy/mainnet-config";
 import { expect } from "chai";
 import { JoinPoolRequestStruct } from "types/generated/IBalancerVault";
 
