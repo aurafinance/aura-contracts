@@ -282,7 +282,9 @@ describe("AuraLocker", () => {
 
         await setup();
     });
-
+    after(async () => {
+        await hre.network.provider.send("hardhat_reset");
+    });
     it("checks all initial config", async () => {
         expect(await auraLocker.name(), "AuraLocker name").to.equal(mocks.namingConfig.vlCvxName);
         expect(await auraLocker.symbol(), "AuraLocker symbol").to.equal(mocks.namingConfig.vlCvxSymbol);
@@ -713,7 +715,7 @@ describe("AuraLocker", () => {
             // first lock
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
-            const nextEpoch = await floorToWeek(await oneWeekInAdvance());
+            const nextEpoch = floorToWeek(await oneWeekInAdvance());
             const checkpointCount0 = await auraLocker.numCheckpoints(aliceAddress);
             const checkpoint0 = await auraLocker.checkpoints(aliceAddress, checkpointCount0 - 1);
 
@@ -842,7 +844,7 @@ describe("AuraLocker", () => {
             // first lock
             await cvx.connect(alice).approve(auraLocker.address, simpleToExactAmount(100));
             await auraLocker.connect(alice).lock(aliceAddress, simpleToExactAmount(10));
-            const nextEpoch = await floorToWeek(await oneWeekInAdvance());
+            const nextEpoch = floorToWeek(await oneWeekInAdvance());
             const checkpointCount0 = await auraLocker.numCheckpoints(aliceAddress);
             const checkpoint0 = await auraLocker.checkpoints(aliceAddress, checkpointCount0 - 1);
 
@@ -935,7 +937,7 @@ describe("AuraLocker", () => {
     context("queueing new rewards", () => {
         async function mockDepositCVRToStakeContract(amount: number) {
             const crvDepositorAccount = await impersonateAccount(crvDepositor.address);
-            const cvxCrvConnected = await cvxCrv.connect(crvDepositorAccount.signer);
+            const cvxCrvConnected = cvxCrv.connect(crvDepositorAccount.signer);
             await cvxCrvConnected.mint(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
             await cvxCrvConnected.approve(cvxStakingProxyAccount.address, simpleToExactAmount(amount));
         }
@@ -1493,13 +1495,13 @@ describe("AuraLocker", () => {
 
             // approves  distributor
             await auraLocker.connect(accounts[7]).approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, true);
-            await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(true);
+            expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(true);
 
             // disapproves  distributor
             await auraLocker
                 .connect(accounts[7])
                 .approveRewardDistributor(cvxCrv.address, cvxCrvRewards.address, false);
-            await expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(false);
+            expect(await auraLocker.rewardDistributors(cvxCrv.address, cvxCrvRewards.address)).to.eq(false);
         });
         it("set Kick Incentive", async () => {
             await expect(auraLocker.connect(accounts[7]).setKickIncentive(100, 3))

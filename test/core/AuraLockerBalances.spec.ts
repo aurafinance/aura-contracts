@@ -108,7 +108,9 @@ describe("AuraLockerBalances", () => {
         await cvx.connect(operatorAccount.signer).transfer(daniel.address, simpleToExactAmount(10000));
         await cvx.connect(daniel.signer).approve(auraLocker.address, simpleToExactAmount(10000));
     });
-
+    after(async () => {
+        await hre.network.provider.send("hardhat_reset");
+    });
     const getGroupedData = (): EpochGroup[] => {
         const scale = simpleToExactAmount(1);
         const parsedData = balanceData.map(d => ({
@@ -121,7 +123,7 @@ describe("AuraLockerBalances", () => {
             votes: d.votes == null ? undefined : BN.from(d.votes).mul(scale),
         }));
         const groupedData = [];
-        parsedData.map(d => {
+        parsedData.forEach(d => {
             let len = groupedData.length;
             if (len == 0 || groupedData[len - 1].epoch != d.epoch) {
                 groupedData.push({
@@ -231,8 +233,8 @@ describe("AuraLockerBalances", () => {
                             const votes = await Promise.all(userAddresses.map(a => auraLocker.getVotes(a)));
                             const supply = await auraLocker.totalSupply();
 
-                            balances.map((b, i) => expect(b).eq(epochData.balances[i].balanceOf));
-                            votes.map((b, i) => expect(b).eq(epochData.balances[i].votes));
+                            balances.forEach((b, i) => expect(b).eq(epochData.balances[i].balanceOf));
+                            votes.forEach((b, i) => expect(b).eq(epochData.balances[i].votes));
                             expect(supply).eq(epochData.balances[0].totalSupply);
                         });
                         it(`looks up ALL historical total supply between epoch 0 and ${epochData.epoch}`, async () => {
@@ -241,7 +243,7 @@ describe("AuraLockerBalances", () => {
                                 lookupData.map((d, i) => auraLocker.totalSupplyAtEpoch(i)),
                             );
 
-                            totalSupplies.map((t, i) => expect(t).eq(lookupData[i].balances[0].totalSupply));
+                            totalSupplies.forEach((t, i) => expect(t).eq(lookupData[i].balances[0].totalSupply));
                         });
 
                         const checkHistorical = async (user: UserName, id: number) => {
@@ -253,13 +255,13 @@ describe("AuraLockerBalances", () => {
                                 ),
                             );
 
-                            votesAt.map((v, i) => expect(v).eq(lookupData[i].balances[id].votes));
+                            votesAt.forEach((v, i) => expect(v).eq(lookupData[i].balances[id].votes));
 
                             const balancesAt = await Promise.all(
                                 lookupData.map((d, i) => auraLocker.balanceAtEpochOf(i, userAddress)),
                             );
 
-                            balancesAt.map((b, i) => expect(b).eq(lookupData[i].balances[id].balanceOf));
+                            balancesAt.forEach((b, i) => expect(b).eq(lookupData[i].balances[id].balanceOf));
                         };
                         it("looks up ALL historical balances for alice", async () => {
                             await checkHistorical(UserName.alice, 0);
