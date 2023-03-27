@@ -24,4 +24,4 @@ jobs:
                       ${{ runner.os }}-yarn-
             - run: yarn
             - run: yarn compile
-            - run: yarn test
+            - run: yarn test --max-memory 4096
