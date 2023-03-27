@@ -282,7 +282,6 @@ describe("AuraLocker", () => {
 
         await setup();
     });
-
     it("checks all initial config", async () => {
         expect(await auraLocker.name(), "AuraLocker name").to.equal(mocks.namingConfig.vlCvxName);
         expect(await auraLocker.symbol(), "AuraLocker symbol").to.equal(mocks.namingConfig.vlCvxSymbol);

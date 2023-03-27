@@ -50,6 +50,7 @@ describe("AuraBalVault", () => {
     let auraRewards: VirtualBalanceRewardPool;
     let strategy: AuraBalStrategy;
     let feeTokenHandler: BalancerSwapsHandler;
+    let idSnapShot: number;
 
     // Testing contract
     let vault: AuraBalVault;
@@ -134,7 +135,12 @@ describe("AuraBalVault", () => {
         expect(await phase2.cvx.balanceOf(strategy.address), " cvx balance").to.be.eq(0);
         return tx;
     }
-
+    before(async () => {
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like ERC20 ", async () => {
             const ctx: Partial<IERC20BehaviourContext> = {};

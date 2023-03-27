@@ -54,8 +54,10 @@ describe("ConvexMasterChef", () => {
     let daoMultisig: Signer;
     let distro: DistroList;
     let contracts: SystemDeployed;
+    let idSnapShot: number;
 
     before(async () => {
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
@@ -93,6 +95,9 @@ describe("ConvexMasterChef", () => {
 
         await mocks.crvBpt.connect(alice).approve(chef.address, initialBal);
         await mocks.crvBpt.connect(bob).approve(chef.address, initialBal);
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });
     describe("deployed ConvexMasterChef", () => {
         it("should properly store valid arguments", async () => {
