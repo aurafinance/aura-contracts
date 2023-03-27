@@ -47,11 +47,13 @@ describe("VeBalGrant", () => {
         await mocks.crv.connect(balancerAccount.signer).approve(veBalGrant.address, ethers.constants.MaxUint256);
         await mocks.weth.connect(balancerAccount.signer).approve(veBalGrant.address, ethers.constants.MaxUint256);
     };
-
-    before("init contract", async () => {
-        await setup();
+    after(async () => {
+        await hre.network.provider.send("hardhat_reset");
     });
     describe("constructor", async () => {
+        before("init contract", async () => {
+            await setup();
+        });
         it("should properly store valid arguments", async () => {
             expect(await veBalGrant.WETH(), "WETH").to.eq(mocks.addresses.weth);
             expect(await veBalGrant.BAL(), "BAL").to.eq(mocks.addresses.token);
@@ -130,7 +132,7 @@ describe("VeBalGrant", () => {
             const escrowEndBPTBalance = await bptToken.balanceOf(veBalGrant.address);
             const endVeBalance = await veBalGrant.veBalance();
             expect(escrowEndBPTBalance).to.be.eq("0");
-            expect(endVeBalance, "veBalance increaes").to.be.gt(startVeBalance);
+            expect(endVeBalance, "veBalance increases").to.be.gt(startVeBalance);
             expect(endVeBalance, "veBalance").to.be.eq(startVeBalance.add(amount));
         });
         it("can claim bal and lock it", async () => {
@@ -189,17 +191,17 @@ describe("VeBalGrant", () => {
             await dist.connect(balancerAccount.signer).checkpointToken(mocks.lptoken.address);
 
             const startVeBalance = await veBalGrant.veBalance();
-            const lpTokebBalanceBefore = await mocks.lptoken.balanceOf(projectAccount.address);
+            const lpTokenBalanceBefore = await mocks.lptoken.balanceOf(projectAccount.address);
 
             await veBalGrant
                 .connect(projectAccount.signer)
                 .claimFees(mocks.feeDistribution.address, mocks.lptoken.address, projectAccount.address, ZERO);
 
-            const lpTokebBalanceAfter = await mocks.lptoken.balanceOf(projectAccount.address);
+            const lpTokenBalanceAfter = await mocks.lptoken.balanceOf(projectAccount.address);
 
             const endVeBalance = await veBalGrant.veBalance();
             // Expect all weth and bal is locked
-            expect(lpTokebBalanceAfter, "veBalance eq").to.be.gt(lpTokebBalanceBefore);
+            expect(lpTokenBalanceAfter, "veBalance eq").to.be.gt(lpTokenBalanceBefore);
             expect(endVeBalance, "veBalance eq").to.be.eq(startVeBalance);
         });
         it("project can call an arbitrary fn", async () => {
@@ -221,7 +223,7 @@ describe("VeBalGrant", () => {
             const voteBefore = await mocks.voting.get_gauge_weight(gauge);
             await veBalGrant.connect(projectAccount.signer).voteGaugeWeight(gauge, "100");
             const voteAfter = await mocks.voting.get_gauge_weight(gauge);
-            expect(voteAfter, "vote gague").to.be.eq(voteBefore.add(100));
+            expect(voteAfter, "vote gauge").to.be.eq(voteBefore.add(100));
         });
         it("balancer can call an arbitrary fn", async () => {
             const amount = parseEther("100");
@@ -242,7 +244,7 @@ describe("VeBalGrant", () => {
 
             await veBalGrant.connect(balancerAccount.signer).voteGaugeWeight(gauge, "100");
             const voteAfter = await mocks.voting.get_gauge_weight(gauge);
-            expect(voteAfter, "vote gague").to.be.eq(voteBefore.add(100));
+            expect(voteAfter, "vote gauge").to.be.eq(voteBefore.add(100));
         });
         it("can withdraw from ve when lock ends", async () => {
             const unlockTime = await mocks.votingEscrow.lockTimes(veBalGrant.address);
@@ -310,7 +312,6 @@ describe("VeBalGrant", () => {
             expect(await veBalGrant.ethContributed()).to.be.eq("0");
         });
     });
-
     describe("edge cases", async () => {
         beforeEach(async () => {
             await setup();
@@ -331,10 +332,6 @@ describe("VeBalGrant", () => {
             });
         });
         describe("increaseTime fails if ", async () => {
-            before(async () => {
-                await setup();
-            });
-
             it("caller is not the project", async () => {
                 await expect(
                     veBalGrant.connect(balancerAccount.signer).increaseTime(ZERO),
@@ -350,10 +347,6 @@ describe("VeBalGrant", () => {
             });
         });
         describe("increaseLock fails if ", async () => {
-            before(async () => {
-                await setup();
-            });
-
             it("caller is not the project", async () => {
                 await expect(
                     veBalGrant.connect(balancerAccount.signer).increaseLock(ZERO),
@@ -486,43 +479,43 @@ describe("VeBalGrant", () => {
                 "!balancer",
             );
         });
-    });
-    describe("release", async () => {
-        it("fails if caller is not authorized ", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(false);
-            await expect(veBalGrant.connect(deployer).release(), "onlyAuth").to.be.revertedWith("!auth");
+        describe("release", async () => {
+            it("fails if caller is not authorized ", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(false);
+                await expect(veBalGrant.connect(deployer).release(), "onlyAuth").to.be.revertedWith("!auth");
+            });
+            it("fails grant is active", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(true);
+                await expect(veBalGrant.connect(balancerAccount.signer).release(), "whileInactive").to.be.revertedWith(
+                    "active",
+                );
+            });
         });
-        it("fails grant is active", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(true);
-            await expect(veBalGrant.connect(balancerAccount.signer).release(), "whileInactive").to.be.revertedWith(
-                "active",
-            );
+        describe("redeem", async () => {
+            it("fails if caller is not authorized ", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(false);
+                await expect(veBalGrant.connect(deployer).redeem(ZERO, ZERO), "onlyAuth").to.be.revertedWith("!auth");
+            });
+            it("fails grant is active", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(true);
+                await expect(
+                    veBalGrant.connect(balancerAccount.signer).redeem(ZERO, ZERO),
+                    "whileInactive",
+                ).to.be.revertedWith("active");
+            });
         });
-    });
-    describe("redeem", async () => {
-        it("fails if caller is not authorized ", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(false);
-            await expect(veBalGrant.connect(deployer).redeem(ZERO, ZERO), "onlyAuth").to.be.revertedWith("!auth");
-        });
-        it("fails grant is active", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(true);
-            await expect(
-                veBalGrant.connect(balancerAccount.signer).redeem(ZERO, ZERO),
-                "whileInactive",
-            ).to.be.revertedWith("active");
-        });
-    });
-    describe("withdrawBalances", async () => {
-        it("fails if caller is not authorized ", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(false);
-            await expect(veBalGrant.connect(deployer).withdrawBalances(), "onlyAuth").to.be.revertedWith("!auth");
-        });
-        it("fails grant is active", async () => {
-            await veBalGrant.connect(balancerAccount.signer).setActive(true);
-            await expect(
-                veBalGrant.connect(balancerAccount.signer).withdrawBalances(),
-                "whileInactive",
-            ).to.be.revertedWith("active");
+        describe("withdrawBalances", async () => {
+            it("fails if caller is not authorized ", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(false);
+                await expect(veBalGrant.connect(deployer).withdrawBalances(), "onlyAuth").to.be.revertedWith("!auth");
+            });
+            it("fails grant is active", async () => {
+                await veBalGrant.connect(balancerAccount.signer).setActive(true);
+                await expect(
+                    veBalGrant.connect(balancerAccount.signer).withdrawBalances(),
+                    "whileInactive",
+                ).to.be.revertedWith("active");
+            });
         });
     });
 });
