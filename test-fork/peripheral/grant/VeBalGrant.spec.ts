@@ -118,7 +118,7 @@ describe("VeBalGrant", () => {
         );
     });
 
-    it("project can create initial lock", async () => {
+    it("balancer can create initial lock", async () => {
         //fund the vebalgrant
         await getBal(veBalGrant.address, parseEther("50000"));
         await getWeth(veBalGrant.address, parseEther("45"));
@@ -129,7 +129,7 @@ describe("VeBalGrant", () => {
         const unlockTime = 1703721600; // Thursday, 28 December 2023 00:00:00
         const startVeBalance = await veBalGrant.veBalance();
 
-        await veBalGrant.connect(project).createLock(unlockTime, "0");
+        await veBalGrant.connect(balancer).createLock(unlockTime, "0");
 
         const endVeBalance = await veBalGrant.veBalance();
         expect(await veBalGrant.unlockTime()).to.be.eq(unlockTime);
@@ -147,20 +147,27 @@ describe("VeBalGrant", () => {
         expect(endVeBalance).to.be.gt(startVeBalance);
     });
 
-    it("able to increase lock size", async () => {
+    it("balancer are able to increase lock size", async () => {
         const bptToken = await IERC20__factory.connect(config.addresses.tokenBpt, project);
+        const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
 
-        await getBpt(veBalGrant.address, parseEther("10"));
+        await getBal(veBalGrant.address, parseEther("100"));
+        await getWeth(veBalGrant.address, parseEther("2"));
+        await getBpt(veBalGrant.address, parseEther("1"));
 
-        const escrowStartBPTBalance = await bptToken.balanceOf(veBalGrant.address);
         const startVeBalance = await veBalGrant.veBalance();
 
-        await veBalGrant.connect(project).increaseLock(parseEther("10"));
+        await veBalGrant.connect(balancer).increaseLock("0");
 
-        const escrowEndBPTBalance = await bptToken.balanceOf(veBalGrant.address);
         const endVeBalance = await veBalGrant.veBalance();
-        expect(escrowEndBPTBalance).to.be.eq("0");
-        expect(escrowStartBPTBalance).to.be.eq(parseEther("10"));
+        expect(endVeBalance).to.be.gt(startVeBalance);
+
+        const escrowWethBalance = await wethToken.balanceOf(veBalGrant.address);
+        const escrowBalBalance = await balToken.balanceOf(veBalGrant.address);
+        const escrowBPTBalance = await bptToken.balanceOf(veBalGrant.address);
+        expect(escrowWethBalance).to.be.eq("0");
+        expect(escrowBalBalance).to.be.eq("0");
+        expect(escrowBPTBalance).to.be.eq("0");
         expect(endVeBalance).to.be.gt(startVeBalance);
     });
 
@@ -261,28 +268,20 @@ describe("VeBalGrant", () => {
 
     it("can withdraw underlying tokens to project and balancer", async () => {
         const wethToken = await IERC20__factory.connect(config.addresses.weth, project);
-        const balancerStartWethBalance = await wethToken.balanceOf(balancerAddress);
         const projectStartWethBalance = await wethToken.balanceOf(projectAddress);
         const balancerStartBalBalance = await balToken.balanceOf(balancerAddress);
-        const escrowStartWethBalance = await wethToken.balanceOf(veBalGrant.address);
-        const ethContributed = await veBalGrant.ethContributed();
 
         await veBalGrant.connect(balancer).withdrawBalances();
 
-        const balancerEndWethBalance = await wethToken.balanceOf(balancerAddress);
         const projectEndWethBalance = await wethToken.balanceOf(projectAddress);
         const balancerEndBalBalance = await balToken.balanceOf(balancerAddress);
         const escrowEndWethBalance = await wethToken.balanceOf(veBalGrant.address);
         const escrowEndBalBalance = await balToken.balanceOf(veBalGrant.address);
 
         expect(projectEndWethBalance).to.be.gt(projectStartWethBalance);
-        expect(projectEndWethBalance.sub(projectStartWethBalance)).to.be.lte(ethContributed);
         expect(balancerEndBalBalance).to.be.gt(balancerStartBalBalance);
-        expect(balancerEndWethBalance.sub(balancerStartWethBalance)).to.be.eq(
-            escrowStartWethBalance.sub(ethContributed),
-        );
         expect(escrowEndWethBalance).to.be.eq("0");
         expect(escrowEndBalBalance).to.be.eq("0");
-        expect(await veBalGrant.ethContributed()).to.be.eq("0");
+        expect(await veBalGrant.totalEthContributed()).to.be.eq("0");
     });
 });
