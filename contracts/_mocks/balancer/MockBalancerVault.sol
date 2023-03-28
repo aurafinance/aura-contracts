@@ -34,7 +34,7 @@ contract MockBalancerVault {
         IBalancerVault.JoinPoolRequest memory request
     ) external payable {
         uint256 len = request.maxAmountsIn.length;
-        uint256 amount = request.maxAmountsIn[0];
+        uint256 amount = request.maxAmountsIn[0] > 0 ? request.maxAmountsIn[0] : request.maxAmountsIn[1];
         uint256 price = MockBalancerPoolToken(poolToken).price();
         // Pull tokens from sender
         for (uint256 i = 0; i < len; i++) {
@@ -44,6 +44,19 @@ contract MockBalancerVault {
         }
 
         MockBalancerPoolToken(poolToken).mint(recipient, (amount * 1e18) / price);
+    }
+
+    function exitPool(
+        bytes32, /* poolId */
+        address sender,
+        address recipient,
+        IBalancerVault.ExitPoolRequest memory request
+    ) external payable {
+        uint256 amount = MockBalancerPoolToken(poolToken).balanceOf(msg.sender);
+        uint256 price = MockBalancerPoolToken(poolToken).price();
+        MockBalancerPoolToken(poolToken).burn(sender, amount);
+        IERC20(tokenA).transfer(recipient, (amount * price) / 2e18);
+        IERC20(tokenB).transfer(recipient, (amount * price) / 2e18);
     }
 
     function swap(

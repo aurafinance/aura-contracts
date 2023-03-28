@@ -160,13 +160,22 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         debug,
     );
 
+    const weth = await deployContract<MockERC20>(
+        hre,
+        new MockERC20__factory(deployer),
+        "MockWETH",
+        ["mockWETH", "mockWETH", 18, deployerAddress, 10000000],
+        {},
+        debug,
+    );
+
     const feeDistro = await deployContract<MockFeeDistributor>(
         hre,
         new MockFeeDistributor__factory(deployer),
         "MockFeeDistributor",
         [
-            [lptoken.address, crv.address],
-            [simpleToExactAmount(1), simpleToExactAmount(1)],
+            [lptoken.address, crv.address, weth.address],
+            [simpleToExactAmount(1), simpleToExactAmount(1), simpleToExactAmount(1)],
         ],
         {},
         debug,
@@ -243,14 +252,6 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         debug,
     );
 
-    const weth = await deployContract<MockERC20>(
-        hre,
-        new MockERC20__factory(deployer),
-        "MockWETH",
-        ["mockWETH", "mockWETH", 18, deployerAddress, 10000000],
-        {},
-        debug,
-    );
     const feeToken = await deployContract<MockERC20>(
         hre,
         new MockERC20__factory(deployer),

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { IBalancerVault, IPriceOracle, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
 import { IFeeDistributor } from "../../interfaces/balancer/IFeeDistributor.sol";
 import { IBalGaugeController } from "../../interfaces/balancer/IBalGaugeController.sol";
 import { IVotingEscrow } from "../../interfaces/balancer/IVotingEscrow.sol";
@@ -13,7 +13,6 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
  * @title   VeBalGrant
  * @author  AuraFinance
  * @notice  An escrow contract for the BAL grant provided to projects
- * @dev     Allows projects
  */
 contract VeBalGrant {
     using SafeERC20 for IERC20;
@@ -259,6 +258,7 @@ contract VeBalGrant {
      * @notice tracks lock state and weth contributed by project
      * @notice Only the project may call this while the grant is active
      * @param  _unlockTime When the lock will be lifted
+     * @param  _minAmountOut slippage check for BPT output
      */
     function createLock(uint256 _unlockTime, uint256 _minAmountOut) external onlyProject whileActive {
         _joinBalEthPool(_minAmountOut);
