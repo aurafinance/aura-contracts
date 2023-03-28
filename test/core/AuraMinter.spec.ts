@@ -14,8 +14,10 @@ describe("AuraMinter", () => {
     let deployer: Signer;
     let alice: Signer;
     let aliceAddress: string;
+    let idSnapShot: number;
 
     before(async () => {
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
@@ -41,7 +43,9 @@ describe("AuraMinter", () => {
         cvx = contracts.cvx;
         minter = contracts.minter;
     });
-
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     it("initial configuration is correct", async () => {
         expect(await minter.aura()).to.equal(cvx.address);
         expect(await minter.inflationProtectionTime()).to.gt((await getTimestamp()).add(ONE_WEEK.mul(155)));

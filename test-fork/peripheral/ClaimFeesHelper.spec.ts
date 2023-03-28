@@ -8,10 +8,10 @@ import {
     IERC20__factory,
     Booster,
     Booster__factory,
-} from "../types/generated";
-import { impersonate, impersonateAccount, increaseTime, ONE_DAY, ZERO } from "../test-utils";
+} from "../../types/generated";
+import { impersonate, impersonateAccount, increaseTime, ONE_DAY, ZERO } from "../../test-utils";
 import { Signer } from "ethers";
-import { simpleToExactAmount } from "../test-utils/math";
+import { simpleToExactAmount } from "../../test-utils/math";
 
 const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
 const voterProxyAddress = "0xaf52695e1bb01a16d33d7194c28c42b10e0dbec2";

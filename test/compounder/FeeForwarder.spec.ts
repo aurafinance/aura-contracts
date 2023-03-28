@@ -36,6 +36,7 @@ describe("FeeForwarder", () => {
     let strategy: AuraBalStrategy;
     let vault: AuraBalVault;
     let virtualRewardFactory: VirtualRewardFactory;
+    let idSnapShot: number;
 
     // Testing contract
     let feeForwarder: FeeForwarder;
@@ -86,7 +87,11 @@ describe("FeeForwarder", () => {
     };
 
     before("init contract", async () => {
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
         await setup();
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });
     describe("constructor", async () => {
         it("should properly store valid arguments", async () => {

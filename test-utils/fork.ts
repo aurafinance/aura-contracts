@@ -1,5 +1,5 @@
-import { Signer } from "ethers";
-import { Account } from "types";
+import { BigNumberish, Signer } from "ethers";
+import { Account, MockERC20__factory } from "../types";
 
 // impersonates a specific account
 export const impersonate = async (addr: string, fund = true): Promise<Signer> => {
@@ -30,3 +30,9 @@ export const impersonateAccount = async (address: string, fund = true): Promise<
         address,
     };
 };
+
+export async function impersonateAndTransfer(tokenAddress: string, from: string, to: string, amount: BigNumberish) {
+    const tokenWhaleSigner = await impersonateAccount(from);
+    const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
+    await token.transfer(to, amount);
+}

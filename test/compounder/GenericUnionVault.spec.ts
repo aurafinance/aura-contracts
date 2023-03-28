@@ -44,6 +44,7 @@ describe("GenericUnionVault", () => {
     let strategyAddress: string;
     let virtualRewardFactory: VirtualRewardFactory;
     let auraRewards: VirtualBalanceRewardPool;
+    let idSnapShot: number;
 
     // Testing contract
     let genericUnionVault: GenericUnionVault;
@@ -95,7 +96,12 @@ describe("GenericUnionVault", () => {
         await increaseTime(ONE_WEEK.mul(156));
         await phase4.minter.connect(daoSigner).mint(strategyAddress, simpleToExactAmount(1000000));
     };
-
+    before(async () => {
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like ERC20 ", async () => {
             const ctx: Partial<IERC20BehaviourContext> = {};

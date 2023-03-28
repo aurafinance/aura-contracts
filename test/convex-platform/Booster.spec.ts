@@ -287,21 +287,21 @@ describe("Booster", () => {
         });
         describe("earmarking fees", () => {
             it("allows for crv to be earmarked to cvxCrv rewards", async () => {
-                const balbefore = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
+                const balBefore = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
                 await booster.earmarkFees(mocks.crv.address);
-                const balafter = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
+                const balAfter = await mocks.crv.balanceOf(contracts.cvxCrvRewards.address);
 
-                expect(balafter).eq(balbefore.add(simpleToExactAmount(1)));
+                expect(balAfter).eq(balBefore.add(simpleToExactAmount(1)));
             });
             it("sends 100% of the rewards to the reward contract", async () => {
                 const feeDistro = await booster.feeTokens(mocks.lptoken.address);
                 const token = MockERC20__factory.connect(mocks.lptoken.address, alice);
 
-                const balbefore = await token.balanceOf(feeDistro.rewards);
+                const balBefore = await token.balanceOf(feeDistro.rewards);
                 await booster.earmarkFees(mocks.lptoken.address);
-                const balafter = await token.balanceOf(feeDistro.rewards);
+                const balAfter = await token.balanceOf(feeDistro.rewards);
 
-                expect(balafter).eq(balbefore.add(simpleToExactAmount(1)));
+                expect(balAfter).eq(balBefore.add(simpleToExactAmount(1)));
             });
             it("fails if the distro is inactive", async () => {
                 await boosterOwner.connect(daoSigner).updateFeeInfo(mocks.crv.address, false);

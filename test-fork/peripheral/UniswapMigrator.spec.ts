@@ -12,8 +12,8 @@ import {
     IBalancerHelpers__factory,
     IBalancerPool,
     IBalancerPool__factory,
-} from "../types/generated";
-import { deployContract, waitForTx } from "../tasks/utils";
+} from "../../types/generated";
+import { deployContract, waitForTx } from "../../tasks/utils";
 import {
     impersonateAccount,
     impersonate,
@@ -22,11 +22,11 @@ import {
     ONE_HOUR,
     BN,
     simpleToExactAmount,
-} from "../test-utils";
+} from "../../test-utils";
 import { Signer } from "ethers";
 import { Account } from "types";
-import { config } from "../tasks/deploy/mainnet-config";
-import { JoinPoolRequestStruct } from "../types/generated/IBalancerVault";
+import { config } from "../../tasks/deploy/mainnet-config";
+import { JoinPoolRequestStruct } from "../../types/generated/IBalancerVault";
 import { getAddress } from "ethers/lib/utils";
 
 const debug = false;
