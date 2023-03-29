@@ -29,10 +29,20 @@ contract BalancerSwapsHandler is HandlerBase {
         swapPath = _swapPath;
     }
 
+    /**
+     * @notice getSwapPath() function
+     *
+     * @dev This function returns the SwapPath memory.
+     */
     function getSwapPath() external view returns (SwapPath memory) {
         return swapPath;
     }
 
+    /**
+     * @notice Swap token to WETH
+     * @dev Swaps token to WETH using the BalancerVault
+     * @param _amount Amount of token to swap
+     */
     function _swapTokenToWEth(uint256 _amount) internal {
         uint256 len = swapPath.poolIds.length;
         IBalancerVault.BatchSwapStep[] memory swaps = new IBalancerVault.BatchSwapStep[](len);

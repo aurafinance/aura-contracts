@@ -4,6 +4,10 @@ pragma solidity 0.8.11;
 import { GenericUnionVault } from "./GenericVault.sol";
 
 interface IAuraBalStrategy {
+    /**
+     * @notice This function allows users to harvest their rewards from the contract.
+     * @dev The harvest function takes in a minimum amount out as an argument and returns the amount harvested.
+     */
     function harvest(uint256 _minAmountOut) external returns (uint256 harvested);
 }
 

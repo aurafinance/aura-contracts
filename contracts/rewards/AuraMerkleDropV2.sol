@@ -87,12 +87,20 @@ contract AuraMerkleDropV2 {
         emit RootSet(_merkleRoot);
     }
 
+    /**
+     * @notice This function starts the early period of the contract.
+     * @dev This function requires the sender to be the DAO and sets the startTime to the current block timestamp. It also emits the StartedEarly event.
+     */
     function startEarly() external {
         require(msg.sender == dao, "!auth");
         startTime = block.timestamp;
         emit StartedEarly();
     }
 
+    /**
+     * @notice This function allows the DAO to withdraw funds from the contract after the expiry time has passed.
+     * @dev The function requires that the sender is the DAO, and that the block timestamp is greater than the expiry time. The amount of funds withdrawn is equal to the balance of the contract. The funds are then transferred to the DAO and an event is emitted.
+     */
     function withdrawExpired() external {
         require(msg.sender == dao, "!auth");
         require(block.timestamp > expiryTime, "!expired");
@@ -107,6 +115,10 @@ contract AuraMerkleDropV2 {
         emit LockerSet(_newLocker);
     }
 
+    /**
+     * @notice This function allows the DAO to rescue the reward from the contract.
+     * @dev This function requires the sender to be the DAO, and the block timestamp to be before the deployment time plus one week or the start time, whichever is earlier. It then transfers the balance of the contract to the DAO.
+     */
     function rescueReward() public {
         require(msg.sender == dao, "!auth");
         require(block.timestamp < AuraMath.min(deployTime + 1 weeks, startTime), "too late");

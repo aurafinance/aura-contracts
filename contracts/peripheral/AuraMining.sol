@@ -9,8 +9,17 @@ import { AuraMath } from "../utils/AuraMath.sol";
 interface ICvx {
     function reductionPerCliff() external view returns (uint256);
 
+    /**
+     * @notice This function returns the total supply of a token.
+     * @dev This function is used to get the total supply of a token.
+     * @return uint256 The total supply of the token.
+     */
     function totalSupply() external view returns (uint256);
 
+    /**
+     * @notice This function returns the total number of cliffs in the system.
+     * @dev This function is used to get the total number of cliffs in the system. It is an external view function and returns a uint256.
+     */
     function totalCliffs() external view returns (uint256);
 
     function INIT_MINT_AMOUNT() external view returns (uint256);

@@ -153,6 +153,10 @@ contract AuraStakingProxy {
         IERC20(_token).safeTransfer(_to, bal);
     }
 
+    /**
+     * @notice This function is used to distribute funds to the users.
+     * @dev This function requires the sender to be the keeper and passes in a minimum output value.
+     */
     function distribute(uint256 _minOut) external {
         require(msg.sender == keeper, "!auth");
         _distribute(_minOut);
@@ -170,6 +174,10 @@ contract AuraStakingProxy {
         _distribute(0);
     }
 
+    /**
+     * @notice This function distributes rewards to the sender.
+     * @dev This function converts crv to cvxCrv, distributes cvxCrv, and sends incentives.
+     */
     function _distribute(uint256 _minOut) internal {
         //convert crv to cvxCrv
         uint256 crvBal = IERC20(crv).balanceOf(address(this));

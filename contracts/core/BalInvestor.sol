@@ -20,6 +20,14 @@ abstract contract BalInvestor {
     address public immutable BALANCER_POOL_TOKEN;
     bytes32 public immutable BAL_ETH_POOL_ID;
 
+    /**
+     * @notice Constructor for the BalancerVaultWrapper contract.
+     * @dev This constructor sets the BalancerVault, BAL, WETH, and BAL_ETH_POOL_ID variables.
+     * @param _balancerVault The address of the BalancerVault contract.
+     * @param _bal The address of the BAL token.
+     * @param _weth The address of the WETH token.
+     * @param _balETHPoolId The bytes32 ID of the BAL/ETH pool.
+     */
     constructor(
         IBalancerVault _balancerVault,
         address _bal,
@@ -44,6 +52,10 @@ abstract contract BalInvestor {
         IERC20(BAL).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
 
+    /**
+     * @notice This function returns the BPT price from the Price Oracle.
+     * @dev This function queries the Price Oracle for the BPT price denominated in BAL. It uses the getTimeWeightedAverage function from the Price Oracle contract.
+     */
     function _getBptPrice() internal view returns (uint256) {
         IPriceOracle.OracleAverageQuery[] memory queries = new IPriceOracle.OracleAverageQuery[](1);
 

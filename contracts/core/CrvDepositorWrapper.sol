@@ -39,6 +39,10 @@ contract CrvDepositorWrapper is ICrvDepositorWrapper, BalInvestor {
         return _getMinOut(_amount, _outputBps);
     }
 
+    /**
+     * @notice This function allows users to deposit a given amount of tokens into the pool.
+     * @dev The function first calls the _investBalToPool function to add the given amount of tokens to the pool. It then calculates the balance of the pool token and calls the depositFor function of the ICrvDepositor contract to deposit the balance of the pool token. The depositFor function also takes in a boolean value to lock the tokens and an address to stake the tokens.
+     */
     function deposit(
         uint256 _amount,
         uint256 _minOut,

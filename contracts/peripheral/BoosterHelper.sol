@@ -27,6 +27,10 @@ contract BoosterHelper {
         crv = _crv;
     }
 
+    /**
+     * @notice This function earmarks rewards for the given list of pids.
+     * @dev This function requires that the list of pids is not empty. It then iterates through the list and earmarks rewards for each pid. Finally, it returns all incentives to the sender.
+     */
     function earmarkRewards(uint256[] memory _pids) external returns (uint256) {
         uint256 len = _pids.length;
         require(len > 0, "!pids");

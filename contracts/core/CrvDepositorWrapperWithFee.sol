@@ -84,6 +84,12 @@ contract CrvDepositorWrapperWithFee is ICrvDepositorWrapper, BalInvestor, Ownabl
         }
     }
 
+    /**
+     * @notice _applyFee() calculates the fee amount and new input amount based on the feeRatio.
+     * @dev _applyFee() takes in an uint256 _input and returns an uint256 newInput and uint256 feeAmount.
+     * The feeAmount is calculated by multiplying the _input by the feeRatio and dividing by 10000.
+     * The newInput is calculated by subtracting the feeAmount from the _input.
+     */
     function _applyFee(uint256 _input) internal view returns (uint256 newInput, uint256 feeAmount) {
         feeAmount = (_input * feeRatio) / 10000;
         newInput = _input - feeAmount;

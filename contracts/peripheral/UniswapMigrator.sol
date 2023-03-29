@@ -124,9 +124,14 @@ contract UniswapMigrator {
         uint256[] memory maxAmountsIn = new uint256[](2);
 
         // sort from uniswap order to balancer order
-        (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
-            ? (amount0, amount1)
-            : (amount1, amount0);
+        if (address(request.tokens[0]) == token0) {
+            (maxAmountsIn[0], maxAmountsIn[1]) = (amount0, amount1);
+        } else {
+            (maxAmountsIn[0], maxAmountsIn[1]) = (amount1, amount0);
+        }
+        // (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
+        //     ? (amount0, amount1)
+        //     : (amount1, amount0);
 
         // 2. Create balancer pool
         pool = _createBalancerPool(
@@ -171,9 +176,15 @@ contract UniswapMigrator {
 
         // sort amounts for balancer pool
         uint256[] memory maxAmountsIn = new uint256[](2);
-        (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
-            ? (amount0, amount1)
-            : (amount1, amount0);
+        if (address(request.tokens[0]) == token0) {
+            (maxAmountsIn[0], maxAmountsIn[1]) = (amount0, amount1);
+        } else {
+            (maxAmountsIn[0], maxAmountsIn[1]) = (amount1, amount0);
+        }
+
+        // (maxAmountsIn[0], maxAmountsIn[1]) = address(request.tokens[0]) == token0
+        //     ? (amount0, amount1)
+        //     : (amount1, amount0);
 
         // 2. Deposit to balancer pool
         _addLiquidityBalancer(request.pool, request.tokens, maxAmountsIn, address(this), request.amountMinOut);
@@ -190,6 +201,20 @@ contract UniswapMigrator {
         }
     }
 
+    /**
+     * @notice Removes liquidity from UniswapV2
+     * @dev This function removes liquidity from UniswapV2. It requires the sender to approve uniswapRouter at least for liquidity. It also sorts tokens and amounts for Uniswap router.
+     * @param source The source of the liquidity pool
+     * @param fromLpToken The address of the liquidity pool token
+     * @param liquidity The amount of liquidity to remove
+     * @param tokens The array of tokens
+     * @param amountsMin The array of minimum amounts
+     * @param deadline The deadline for the transaction
+     * @return token0 The address of the first token
+     * @return amount0 The amount of the first token
+     * @return token1 The address of the second token
+     * @return amount1 The amount of the second token
+     */
     function _removeLiquidityUniswapV2(
         LpSource source,
         address fromLpToken,
@@ -262,6 +287,15 @@ contract UniswapMigrator {
         );
     }
 
+    /**
+     * @notice Adds liquidity to a Balancer pool.
+     * @dev Increases the allowance of the tokens to the Balancer Vault, and calls the joinPool function on the Balancer Vault.
+     * @param pool The address of the Balancer pool.
+     * @param tokens An array of IERC20 tokens.
+     * @param maxAmountsIn An array of maximum amounts of tokens to be added to the pool.
+     * @param recipient The address of the recipient of the BPT tokens.
+     * @param amountMinOut The minimum amount of BPT tokens to be received.
+     */
     function _addLiquidityBalancer(
         address pool,
         IERC20[] memory tokens,

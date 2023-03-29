@@ -37,18 +37,30 @@ contract HandlerBase is IRewardHandler {
         pendingOwner = _po;
     }
 
+    /**
+     * @notice This function sets the pending owner to the owner and sets the pending owner to address(0).
+     * @dev This function should only be called by the owner.
+     */
     function applyPendingOwner() external onlyOwner {
         require(pendingOwner != address(0), "invalid owner");
         owner = pendingOwner;
         pendingOwner = address(0);
     }
 
+    /**
+     * @notice This function is used to transfer tokens from the contract to a specified address.
+     * @dev This function is only accessible to the owner of the contract. It requires the address of the token to be transferred and the address of the recipient. It then checks that the token address is not the same as the contract address and then calls the safeTransfer function of the IERC20 interface to transfer the balance of the contract to the specified address.
+     */
     function rescueToken(address _token, address _to) external onlyOwner {
         require(_token != token, "not allowed");
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_to, _balance);
     }
 
+    /**
+     * @notice _createSwapFunds() function creates a FundManagement struct and returns it.
+     * @dev The FundManagement struct contains the sender address, fromInternalBalance, recipient address and toInternalBalance.
+     */
     function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
         return
             IBalancerVault.FundManagement({

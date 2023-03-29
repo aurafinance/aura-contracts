@@ -94,12 +94,20 @@ contract AuraMerkleDrop {
         emit RootSet(_merkleRoot);
     }
 
+    /**
+     * @notice This function is used to start the early process.
+     * @dev This function requires that the message sender is the DAO and will set the start time to the current block timestamp. It will also emit the StartedEarly event.
+     */
     function startEarly() external {
         require(msg.sender == dao, "!auth");
         startTime = block.timestamp;
         emit StartedEarly();
     }
 
+    /**
+     * @notice This function allows the DAO to withdraw the amount of tokens that have expired.
+     * @dev This function requires the sender to be the DAO, and that the current block timestamp is greater than the expiry time. The amount of tokens withdrawn is the balance of the contract minus the pending penalty. The tokens are then transferred to the DAO, and an event is emitted.
+     */
     function withdrawExpired() external {
         require(msg.sender == dao, "!auth");
         require(block.timestamp > expiryTime, "!expired");
@@ -108,12 +116,21 @@ contract AuraMerkleDrop {
         emit ExpiredWithdrawn(amt);
     }
 
+    /**
+     * @notice Sets the locker address to the given address.
+     * @dev Only the DAO can call this function.
+     * @param _newLocker The address of the new locker.
+     */
     function setLocker(address _newLocker) external {
         require(msg.sender == dao, "!auth");
         auraLocker = IAuraLocker(_newLocker);
         emit LockerSet(_newLocker);
     }
 
+    /**
+     * @notice This function allows the DAO to rescue the reward tokens from the contract.
+     * @dev This function requires the sender to be the DAO, and the block timestamp to be before the deployment time plus one week or the start time, whichever is earlier. It then transfers the balance of the contract to the DAO.
+     */
     function rescueReward() public {
         require(msg.sender == dao, "!auth");
         require(block.timestamp < AuraMath.min(deployTime + 1 weeks, startTime), "too late");
@@ -165,6 +182,11 @@ contract AuraMerkleDrop {
                     FORWARD
     ****************************************/
 
+    /**
+     * @notice This function forwards the pending penalty to the penalty forwarder.
+     * @dev The function sets the pending penalty to 0 and then transfers the amount to the penalty forwarder.
+     * It then emits an event PenaltyForwarded with the amount transferred.
+     */
     function forwardPenalty() public {
         uint256 toForward = pendingPenalty;
         pendingPenalty = 0;

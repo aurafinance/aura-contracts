@@ -116,6 +116,10 @@ contract AuraBalRewardPool {
             );
     }
 
+    /**
+     * @notice Stakes a given amount of tokens to the RewardPool contract.
+     * @dev The amount of tokens staked is added to the total supply and the sender's balance. The staking tokens are transferred from the sender to the RewardPool contract.
+     */
     function stake(uint256 _amount) public updateReward(msg.sender) returns (bool) {
         require(_amount > 0, "RewardPool : Cannot stake 0");
 
@@ -128,12 +132,20 @@ contract AuraBalRewardPool {
         return true;
     }
 
+    /**
+     * @notice This function allows a user to stake all of their tokens at once.
+     * @dev This function calls the stake() function with the user's balance of tokens as the argument. It returns true if the staking is successful.
+     */
     function stakeAll() external returns (bool) {
         uint256 balance = stakingToken.balanceOf(msg.sender);
         stake(balance);
         return true;
     }
 
+    /**
+     * @notice This function allows a user to stake a certain amount of tokens for a given address.
+     * @dev The function requires that the amount of tokens to be staked is greater than 0. The function then adds the amount to the total supply and the balance of the given address. The function then transfers the amount from the sender to the contract address. Finally, the function emits an event to indicate that the staking has been successful.
+     */
     function stakeFor(address _for, uint256 _amount) public updateReward(_for) returns (bool) {
         require(_amount > 0, "RewardPool : Cannot stake 0");
 
@@ -148,6 +160,10 @@ contract AuraBalRewardPool {
         return true;
     }
 
+    /**
+     * @notice Withdraws a specified amount of tokens from the reward pool.
+     * @dev The amount of tokens withdrawn is subtracted from the total supply and the sender's balance. The tokens are then transferred to the sender. If the claim parameter is set to true, the sender will also receive a reward.
+     */
     function withdraw(
         uint256 amount,
         bool claim,

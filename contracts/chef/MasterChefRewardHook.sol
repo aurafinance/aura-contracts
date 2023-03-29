@@ -29,6 +29,10 @@ contract MasterChefRewardHook is Ownable {
         pid = _pid;
     }
 
+    /**
+     * @notice This function allows the owner to deposit tokens to the Chef contract.
+     * @dev The function first approves the Chef contract to transfer the maximum amount of tokens from the current contract. It then checks the balance of the current contract and requires it to be greater than 0. Finally, it calls the deposit function on the Chef contract with the current contract's pid and the balance of tokens.
+     */
     function deposit(address siphonToken) external onlyOwner {
         IERC20(siphonToken).approve(chef, type(uint256).max);
         uint256 bal = IERC20(siphonToken).balanceOf(address(this));
@@ -36,6 +40,10 @@ contract MasterChefRewardHook is Ownable {
         IChef(chef).deposit(pid, bal);
     }
 
+    /**
+     * @notice This function allows the stash to claim rewards from the Chef contract.
+     * @dev The function requires that the msg.sender is the stash. It then calls the Chef contract's claim function with the pid and address of this contract. It then checks the balance of the reward token and if it is greater than 0, it transfers the balance to the stash.
+     */
     function onRewardClaim() external {
         require(msg.sender == stash, "!auth");
 

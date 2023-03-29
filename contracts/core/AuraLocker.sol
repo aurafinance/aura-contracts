@@ -251,6 +251,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
+    /**
+     * @notice recoverERC20 allows the owner to withdraw ERC20 tokens from the contract.
+     * @dev recoverERC20 requires the _tokenAddress to not be the stakingToken address and the lastUpdateTime to be 0. If these conditions are met, the owner can safely transfer the _tokenAmount of the _tokenAddress to their address. An event is emitted when the transfer is successful.
+     */
     function recoverERC20(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         require(_tokenAddress != address(stakingToken), "Cannot withdraw staking token");
         require(rewardData[_tokenAddress].lastUpdateTime == 0, "Cannot withdraw reward token");
@@ -269,6 +273,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     ****************************************/
 
     // Locked tokens cannot be withdrawn for lockDuration and are eligible to receive stakingReward rewards
+    /**
+     * @notice This function is used to lock an account and transfer tokens to the contract.
+     * @dev This function is used to transfer tokens from the sender to the contract and lock the account. The function calls the _lock function to lock the account and the stakingToken.safeTransferFrom function to transfer the tokens.
+     */
     function lock(address _account, uint256 _amount) external nonReentrant updateReward(_account) {
         //pull tokens
         stakingToken.safeTransferFrom(msg.sender, address(this), _amount);
@@ -319,11 +327,19 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // claim all pending rewards
+    /**
+     * @notice This function allows a user to get a reward from the contract.
+     * @dev The function takes in an address as an argument and calls the getReward function with the address and false as arguments.
+     */
     function getReward(address _account) external {
         getReward(_account, false);
     }
 
     // Claim all pending rewards
+    /**
+     * @notice This function allows users to get rewards from the rewardTokens array.
+     * @dev If the reward token is cvxCrv and the user is staking, the reward will be staked for the user. Otherwise, the reward will be transferred to the user.
+     */
     function getReward(address _account, bool _stake) public nonReentrant updateReward(_account) {
         uint256 rewardTokensLength = rewardTokens.length;
         for (uint256 i; i < rewardTokensLength; i++) {
@@ -341,6 +357,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         }
     }
 
+    /**
+     * @notice This function is used to get rewards for a given account.
+     * @dev The function requires an address and a boolean array as parameters. The boolean array is used to skip certain indices. The function then iterates through the rewardTokens array and checks if the boolean array has a true value at the same index. If it does, the function skips that index. If not, the function checks if the reward is greater than 0 and if it is, it transfers the reward to the given account and emits a RewardPaid event.
+     */
     function getReward(address _account, bool[] calldata _skipIdx) external nonReentrant updateReward(_account) {
         uint256 rewardTokensLength = rewardTokens.length;
         require(_skipIdx.length == rewardTokensLength, "!arr");
@@ -356,6 +376,9 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         }
     }
 
+    /**
+     * @notice This function is used to checkpoint the epoch.
+     * @dev This function is called by the contract owner to checkpoint the epoch. It is important to checkpoint the epoch in order to ensure that the contract is running correctly and that all data is up to date.*/
     function checkpointEpoch() external {
         _checkpointEpoch();
     }
@@ -376,10 +399,17 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // Withdraw/relock all currently locked tokens where the unlock time has passed
+    /**
+     * @notice This function is used to process expired locks.
+     * @dev This function is used to process expired locks. It takes a boolean parameter _relock which determines whether the expired locks should be relocked or not. It also takes the sender address and a value of 0.
+     */
     function processExpiredLocks(bool _relock) external nonReentrant {
         _processExpiredLocks(msg.sender, _relock, msg.sender, 0);
     }
 
+    /**
+     * @notice kickExpiredLocks() is a function that allows a user to kick expired locks from their account.
+     * @dev kickExpiredLocks() is a function that allows a user to kick expired locks from their account. It takes in an address as an argument and allows the user to kick the expired locks after a grace period of 'kickRewardEpochDelay'. The function is non-reentrant and is called externally.*/
     function kickExpiredLocks(address _account) external nonReentrant {
         //allow kick after grace period of 'kickRewardEpochDelay'
         _processExpiredLocks(_account, false, msg.sender, rewardsDuration.mul(kickRewardEpochDelay));
@@ -682,6 +712,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     ****************************************/
 
     // Balance of an account which only includes properly locked tokens as of the most recent eligible epoch
+    /**
+     * @notice balanceOf() is a function that returns the balance of a given user at a given epoch.
+     * @dev balanceOf() takes in an address _user and returns the balance of that user at the current epoch. It does this by calling the findEpochId() function to get the current epoch and then calling the balanceAtEpochOf() function to get the balance of the user at that epoch.
+     */
     function balanceOf(address _user) external view returns (uint256 amount) {
         return balanceAtEpochOf(findEpochId(block.timestamp), _user);
     }
@@ -746,6 +780,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // Supply of all properly locked balances at most recent eligible epoch
+    /**
+     * @notice This function returns the total supply of a token at a given epoch.
+     * @dev The totalSupplyAtEpoch() function is used to find the total supply of a token at a given epoch. It takes in the epoch ID as an argument and returns the total supply of the token at that epoch. The findEpochId() function is used to find the epoch ID corresponding to the current block timestamp.
+     */
     function totalSupply() external view returns (uint256 supply) {
         return totalSupplyAtEpoch(findEpochId(block.timestamp));
     }
@@ -773,6 +811,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     }
 
     // Get an epoch index based on timestamp
+    /**
+     * @notice findEpochId() returns the epoch ID for a given timestamp.
+     * @dev The function takes a uint256 timestamp as an argument and returns the epoch ID associated with that timestamp. The epoch ID is calculated by subtracting the timestamp from the first epoch's date and dividing the result by the rewards duration.
+     */
     function findEpochId(uint256 _time) public view returns (uint256 epoch) {
         return _time.sub(epochs[0].date).div(rewardsDuration);
     }
@@ -782,6 +824,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     ****************************************/
 
     // Number of epochs
+    /**
+     * @notice This function returns the number of epochs stored in the contract.
+     * @dev This function is used to get the number of epochs stored in the contract. It is an external view function and returns a uint256.
+     */
     function epochCount() external view returns (uint256) {
         return epochs.length;
     }
@@ -803,6 +849,10 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
     ****************************************/
 
     // Address and claimable amount of all reward tokens for the given account
+    /**
+     * @notice This function returns an array of EarnedData structs containing the token and amount of rewards earned by a given account.
+     * @dev This function takes an address as an argument and returns an array of EarnedData structs containing the token and amount of rewards earned by the given account. It first creates an array of EarnedData structs and then iterates through the rewardTokens array to get the token and amount of rewards earned by the given account. Finally, it returns the array of EarnedData structs.
+     */
     function claimableRewards(address _account) external view returns (EarnedData[] memory userRewards) {
         userRewards = new EarnedData[](rewardTokens.length);
         Balances storage userBalance = balances[_account];
@@ -815,10 +865,18 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         return userRewards;
     }
 
+    /**
+     * @notice This function returns the last time a reward was applicable for a given rewards token.
+     * @dev The function takes in an address of a rewards token and returns the last time a reward was applicable for that token. It does this by accessing the rewardData mapping and returning the periodFinish value.
+     */
     function lastTimeRewardApplicable(address _rewardsToken) external view returns (uint256) {
         return _lastTimeRewardApplicable(rewardData[_rewardsToken].periodFinish);
     }
 
+    /**
+     * @notice rewardPerToken() allows users to view the reward per token for a given rewards token.
+     * @dev rewardPerToken() calls the _rewardPerToken() internal function to retrieve the reward per token for a given rewards token.
+     */
     function rewardPerToken(address _rewardsToken) external view returns (uint256) {
         return _rewardPerToken(_rewardsToken);
     }
@@ -832,10 +890,18 @@ contract AuraLocker is ReentrancyGuard, Ownable, IAuraLocker {
         return _balance.mul(_rewardPerToken(_rewardsToken).sub(data.rewardPerTokenPaid)).div(1e18).add(data.rewards);
     }
 
+    /**
+     * @notice This function returns the minimum of the block timestamp and the finish time.
+     * @dev This function is used to determine the last time a reward is applicable.
+     */
     function _lastTimeRewardApplicable(uint256 _finishTime) internal view returns (uint256) {
         return AuraMath.min(block.timestamp, _finishTime);
     }
 
+    /**
+     * @notice Calculates the reward per token for a given rewards token.
+     * @dev This function takes in an address of a rewards token and returns the reward per token for that token. It takes into account the locked supply, reward rate, reward per token stored, period finish, and last update time.
+     */
     function _rewardPerToken(address _rewardsToken) internal view returns (uint256) {
         if (lockedSupply == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;

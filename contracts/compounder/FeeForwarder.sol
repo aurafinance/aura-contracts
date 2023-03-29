@@ -6,10 +6,17 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 interface IVault {
+    /**
+     * @notice This function returns the address of the strategy.
+     * @dev This function is used to get the address of the strategy. It is a view function, meaning it does not modify the state of the contract.
+     */
     function strategy() external view returns (address);
 }
 
 interface IStrategy {
+    /**
+     * @notice This function returns the address of the vault.
+     * @dev The vault is a smart contract that holds funds and allows for transfers. It is used to securely store funds and facilitate transactions.*/
     function vault() external view returns (address);
 }
 

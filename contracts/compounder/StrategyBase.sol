@@ -85,6 +85,13 @@ contract AuraBalStrategyBase {
         );
     }
 
+    /**
+     * @notice Swaps BPT to AURA balance
+     * @dev Swaps BPT to AURA balance
+     * @param _amount Amount of BPT to swap
+     * @param _minAmountOut Minimum amount of AURA to receive
+     * @return Amount of AURA received
+     */
     function _swapBptToAuraBal(uint256 _amount, uint256 _minAmountOut) internal returns (uint256) {
         IBalancerVault.SingleSwap memory _auraSwapParams = IBalancerVault.SingleSwap({
             poolId: AURABAL_BAL_ETH_BPT_POOL_ID,
