@@ -139,9 +139,9 @@ contract VeBalGrant {
      * grant must be inactive in order for this to be called
      */
     function withdrawBalances() external onlyAuth whileInactive {
+        totalEthContributed = 0;
         WETH.safeTransfer(project, WETH.balanceOf(address(this)));
         BAL.safeTransfer(balancer, BAL.balanceOf(address(this)));
-        totalEthContributed = 0;
     }
 
     /**
