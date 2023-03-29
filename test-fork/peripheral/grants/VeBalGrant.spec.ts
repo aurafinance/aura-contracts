@@ -4,7 +4,7 @@ import { expect } from "chai";
 import { BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
-import { Account, IERC20, IERC20__factory, VeBalGrant, VeBalGrant__factory } from "../../../types";
+import { Account, IERC20, IERC20__factory, VeBalGrant } from "../../../types";
 import { impersonateAccount, increaseTime } from "../../../test-utils";
 import { ZERO_ADDRESS, ONE_WEEK } from "../../../test-utils/constants";
 import { deployVeBalGrant } from "../../../scripts/deployVeBalGrant";
@@ -90,7 +90,14 @@ describe("VeBalGrant", () => {
 
     it("Deploy VeBalEscrow", async () => {
         //Deploy
-        const result = await deployVeBalGrant(hre, deployer.signer, projectAddress, balancerAddress, DEBUG);
+        const result = await deployVeBalGrant(
+            hre,
+            deployer.signer,
+            config.addresses,
+            projectAddress,
+            balancerAddress,
+            DEBUG,
+        );
         veBalGrant = result.veBalGrant;
     });
 

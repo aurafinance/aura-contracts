@@ -44,6 +44,10 @@ contract MockFeeDistributor is IFeeDistributor {
         /* do nothing */
     }
 
+    function checkpointToken(IERC20 token) external {
+        /* do nothing */
+    }
+
     function getUserTimeCursor(address user) external view returns (uint256) {
         /* do nothing */
     }

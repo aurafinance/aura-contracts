@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { IBalancerVault, IPriceOracle, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
+import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
 import { IFeeDistributor } from "../../interfaces/balancer/IFeeDistributor.sol";
 import { IBalGaugeController } from "../../interfaces/balancer/IBalGaugeController.sol";
 import { IVotingEscrow } from "../../interfaces/balancer/IVotingEscrow.sol";
@@ -13,7 +13,6 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
  * @title   VeBalGrant
  * @author  AuraFinance
  * @notice  An escrow contract for the BAL grant provided to projects
- * @dev     Allows projects
  */
 contract VeBalGrant {
     using SafeERC20 for IERC20;

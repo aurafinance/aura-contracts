@@ -49,6 +49,10 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
         _mint(msg.sender, amount);
     }
 
+    function locked__end(address account) external view returns (uint256) {
+        return lockTimes[account];
+    }
+
     function increase_amount(uint256 amount) external {
         require(lockAmounts[msg.sender] > 0, "Must have a lock");
         require(lockTimes[msg.sender] > block.timestamp, "Current lock expired");
