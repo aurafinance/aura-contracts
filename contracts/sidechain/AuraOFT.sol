@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
-import { CrossChainMessages } from "./CrossChainMessages.sol";
+import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 
 /**
  * @title AuraOFT
@@ -28,6 +28,13 @@ contract AuraOFT is ProxyOFT {
     function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {}
 
     /**
+     * @dev Lock tokens in the Locker contract
+     * @param _sender Address that is locking
+     * @param _amount Amount to lock
+     */
+    function _lockFor(address _sender, uint256 _amount) internal {}
+
+    /**
      * @dev Receive CRV from the L2 via some thirdpart bridge
      *      to settle the feeDebt for the remote chain
      */
@@ -46,9 +53,24 @@ contract AuraOFT is ProxyOFT {
         uint64 _nonce,
         bytes memory _payload
     ) internal virtual override {
-        if (CrossChainMessages.isCustomMessage(_payload)) {
-            // TODO:
+        if (CCM.isCustomMessage(_payload)) {
+            // The payload is a specific cross chain message we decode
+            // the type to determine what the message is an continue
+            CCM.MessageType messageType = CCM.getMessageType(_payload);
+            if (messageType == CCM.MessageType.FEES) {
+                // Receiving a fees update message from the L2. We decode
+                // The payload to get the amount of fees being sent
+                uint256 feeAmount = CCM.decodeFees(_payload);
+                _notifyFees(_srcChainId, feeAmount);
+            } else if (messageType == CCM.MessageType.LOCK) {
+                // Receiving a lock request from the L2. We decode
+                // The payload to get the sender and the amount to lock
+                (address sender, uint256 amount) = CCM.decodeLock(_payload);
+                _lockFor(sender, amount);
+            }
         } else {
+            // The message is not a specific cross chain message so we just
+            // fallback to the normal LZ OFT flow
             super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
         }
     }
