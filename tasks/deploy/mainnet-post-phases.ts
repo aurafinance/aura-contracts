@@ -28,6 +28,7 @@ import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
+import { deployAuraBalStaker } from "../../scripts/deployPeripheral";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -268,4 +269,15 @@ task("deploy:mainnet:auraClaimZapV3")
             tskArgs.wait || waitForBlocks,
         );
         console.log("update claimZapV3 address to:", claimZapV3.address);
+    });
+
+task("deploy:mainnet:auraBalStaker")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const vault = (await config.getAuraBalVault(deployer)).vault;
+        const cvxCrv = (await config.getPhase2(deployer)).cvxCrv;
+
+        const staker = await deployAuraBalStaker(hre, deployer, vault, cvxCrv, true, tskArgs.wait);
+        console.log("AuraBalStaker:", staker.address);
     });

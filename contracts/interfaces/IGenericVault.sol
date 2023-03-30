@@ -8,7 +8,7 @@ interface IGenericVault {
 
     function depositAll(address _to) external returns (uint256 _shares);
 
-    function deposit(address _to, uint256 _amount) external returns (uint256 _shares);
+    function deposit(uint256 _amount, address _receiver) external returns (uint256 _shares);
 
     function harvest() external;
 
