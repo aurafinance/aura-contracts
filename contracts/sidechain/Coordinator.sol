@@ -13,7 +13,11 @@ contract Coordinator is OFT {
        Constructor 
     ------------------------------------------------------------------- */
 
-    constructor() {}
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _lzEndpoint
+    ) OFT(_name, _symbol, _lzEndpoint) {}
 
     /* -------------------------------------------------------------------
        Core Functions
