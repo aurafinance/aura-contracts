@@ -16,6 +16,10 @@ contract AuraBalStaker {
     address public immutable vault;
     address public immutable auraBal;
 
+    /**
+     * @param _vault AuraBal Autocompounding vault
+     * @param _auraBal auraBal token
+     */
     constructor(address _vault, address _auraBal) {
         vault = _vault;
         auraBal = _auraBal;
@@ -23,11 +27,13 @@ contract AuraBalStaker {
         IERC20(_auraBal).safeApprove(_vault, type(uint256).max);
     }
 
-    /// @dev Stake on behalf of the `to` address
-    /// @param to The address to stake for
-    /// @param amount The amount of auraBAL to stake
+    /**
+     * @dev Stake on behalf of the `to` address
+     * @param to The address to stake for
+     * @param amount The amount of auraBAL to stake
+     */
     function stakeFor(address to, uint256 amount) external {
-        IERC20(auraBal).transferFrom(msg.sender, address(this), amount);
+        IERC20(auraBal).safeTransferFrom(msg.sender, address(this), amount);
         IGenericVault(vault).deposit(amount, to);
     }
 }
