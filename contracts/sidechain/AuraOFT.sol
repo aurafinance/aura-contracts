@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { OFT } from "../layerzero/token/oft/OFT.sol";
+import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 import { CrossChainMessages } from "./CrossChainMessages.sol";
 
 /**
@@ -13,7 +13,7 @@ contract AuraOFT is ProxyOFT {
        Constructor 
     ------------------------------------------------------------------- */
 
-    constructor() {}
+    constructor(address _lzEndpoint, address _token) ProxyOFT(_lzEndpoint, _token) {}
 
     /* -------------------------------------------------------------------
        Core Functions
