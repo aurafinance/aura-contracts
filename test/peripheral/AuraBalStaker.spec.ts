@@ -80,18 +80,16 @@ describe("AuraBalStaker", () => {
         await setup();
     });
 
-    describe("constructor", async () => {
-        it("should properly store valid arguments", async () => {
-            expect(await auraBalStaker.vault(), "vault").to.eq(vault.address);
-            expect(await auraBalStaker.auraBal(), "auraBal").to.eq(phase2.cvxCrv.address);
-        });
-        it("has correct approvals", async () => {
-            expect(await phase2.cvxCrv.allowance(auraBalStaker.address, vault.address), "allowance").to.be.eq(
-                ethers.constants.MaxUint256,
-            );
-        });
+    it("should properly store valid arguments", async () => {
+        expect(await auraBalStaker.vault(), "vault").to.eq(vault.address);
+        expect(await auraBalStaker.auraBal(), "auraBal").to.eq(phase2.cvxCrv.address);
     });
-    describe("stakeFor user a given amount", async () => {
+    it("has correct approvals", async () => {
+        expect(await phase2.cvxCrv.allowance(auraBalStaker.address, vault.address), "allowance").to.be.eq(
+            ethers.constants.MaxUint256,
+        );
+    });
+    it("stakeFor user a given amount", async () => {
         const vaultReceiverBalanceBefore = await vault.balanceOf(aliceAddress);
         const crvCvxSenderBalanceBefore = await phase2.cvxCrv.balanceOf(deployerAddress);
         const amount = simpleToExactAmount(10);
