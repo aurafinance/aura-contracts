@@ -10,6 +10,13 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
  */
 contract AuraOFT is ProxyOFT {
     /* -------------------------------------------------------------------
+       Storage 
+    ------------------------------------------------------------------- */
+
+    /// @dev src chain ID mapped to feeDebt
+    mapping(uint16 => uint256) public feeDebt;
+
+    /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
 
