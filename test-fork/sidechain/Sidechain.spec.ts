@@ -55,7 +55,11 @@ describe("Sidechain", () => {
         l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
 
         // deploy canonical chain
-        auraOFT = await new AuraOFT__factory(deployer.signer).deploy(l1LzEndpoint.address, phase2.cvx.address);
+        auraOFT = await new AuraOFT__factory(deployer.signer).deploy(
+            l1LzEndpoint.address,
+            phase2.cvx.address,
+            phase2.cvxLocker.address,
+        );
 
         // // deploy sidechain
         sidechain = await deploySidechainSystem(
@@ -204,7 +208,7 @@ describe("Sidechain", () => {
     });
 
     describe("Bridge AURA normally", () => {
-        const bridgeAmount = simpleToExactAmount(100);
+        const bridgeAmount = simpleToExactAmount(101);
         it("bridge AURA from L1 -> L2", async () => {
             const balBefore = await phase2.cvx.balanceOf(auraWhale.address);
             const l2BalBefore = await coordinator.balanceOf(deployer.address);
@@ -262,7 +266,31 @@ describe("Sidechain", () => {
     });
 
     describe("Lock AURA", () => {
-        it("lock AURA from L2 -> L1");
+        const lockAmount = simpleToExactAmount(10);
+        before(async () => {
+            // Transfer some AURA to L2
+            await phase2.cvx.connect(auraWhale.signer).approve(auraOFT.address, lockAmount);
+            await auraOFT
+                .connect(auraWhale.signer)
+                .sendFrom(
+                    auraWhale.address,
+                    L2_CHAIN_ID,
+                    deployer.address,
+                    lockAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
+        });
+        it("lock AURA from L2 -> L1", async () => {
+            const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
+            await coordinator.lock(lockAmount, [], { value: NATIVE_FEE });
+            const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
+        });
     });
 
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
