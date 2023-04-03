@@ -23,7 +23,6 @@ contract FeeScheduler {
     address public immutable vault;
     address public immutable strategy;
 
-    bool public active;
     uint256 public startTime;
     uint256 public startBalance;
     uint256 public forwardedBalance;
@@ -38,7 +37,6 @@ contract FeeScheduler {
         address _to,
         address _bal
     ) {
-        active = false;
         dao = _dao;
         to = _to;
         bal = _bal;
@@ -52,12 +50,11 @@ contract FeeScheduler {
      */
     function init() external {
         require(msg.sender == dao, "!dao");
-        require(!active, "active");
+        require(startTime == 0, "already started");
 
         uint256 balance = IERC20(bal).balanceOf(address(this));
         require(balance > 0, "balance<0");
 
-        active = true;
         startTime = block.timestamp;
         startBalance = balance;
     }
@@ -68,14 +65,14 @@ contract FeeScheduler {
      *      are at the final epoch we just send the remaining balance
      */
     function forward() external {
-        require(active, "!active");
+        require(startTime > 0, "!active");
         uint256 epoch = block.timestamp.sub(startTime).div(duration).add(1);
         uint256 amount = 0;
 
         if (epoch >= nEpochs) {
             amount = IERC20(bal).balanceOf(address(this));
         } else {
-            uint256 totalAmount = startBalance.mul(epoch).div(5);
+            uint256 totalAmount = startBalance.mul(epoch).div(nEpochs);
             amount = totalAmount - forwardedBalance;
         }
 

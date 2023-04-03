@@ -1,20 +1,13 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import hre, { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
 import { ONE_DAY } from "../../test-utils/constants";
 import { config } from "../../tasks/deploy/mainnet-config";
 import { impersonateAccount } from "../../test-utils/fork";
-import {
-    ERC20__factory,
-    ERC20,
-    Account,
-    FeeForwarder,
-    FeeScheduler,
-    AuraBalStrategy,
-    FeeScheduler__factory,
-} from "../../types";
 import { increaseTime, getTimestamp } from "../../test-utils";
+import { deployFeeScheduler } from "../../scripts/deployPeripheral";
+import { ERC20__factory, ERC20, Account, FeeForwarder, FeeScheduler, AuraBalStrategy } from "../../types";
 
 describe("FeeScheduler", () => {
     let deployer: Account;
@@ -34,24 +27,22 @@ describe("FeeScheduler", () => {
         feeForwarder = (await config.getFeeForwarder(deployer.signer)).feeForwarder;
         bal = ERC20__factory.connect(config.addresses.token, deployer.signer);
 
-        scheduler = await new FeeScheduler__factory(deployer.signer).deploy(
-            config.multisigs.daoMultisig,
-            strategy.address,
-            config.addresses.token,
-        );
+        const results = await deployFeeScheduler(hre, deployer.signer);
+
+        scheduler = results.feeScheduler;
     });
 
-    describe("FeeScheduler config", async () => {
-        it("has the right config");
-        expect(await scheduler.active()).eq(false);
-        expect(await scheduler.duration()).eq(ONE_DAY.mul(2));
-        expect(await scheduler.nEpochs()).eq(5);
-        expect(await scheduler.dao()).eq(config.multisigs.daoMultisig);
-        expect(await scheduler.to()).eq(strategy.address);
-        expect(await scheduler.bal()).eq(config.addresses.token);
-        expect(await scheduler.startTime()).eq(0);
-        expect(await scheduler.startBalance()).eq(0);
-        expect(await scheduler.forwardedBalance()).eq(0);
+    describe("FeeScheduler config", () => {
+        it("has the right config", async () => {
+            expect(await scheduler.duration()).eq(ONE_DAY.mul(2));
+            expect(await scheduler.nEpochs()).eq(5);
+            expect(await scheduler.dao()).eq(config.multisigs.daoMultisig);
+            expect(await scheduler.to()).eq(strategy.address);
+            expect(await scheduler.bal()).eq(config.addresses.token);
+            expect(await scheduler.startTime()).eq(0);
+            expect(await scheduler.startBalance()).eq(0);
+            expect(await scheduler.forwardedBalance()).eq(0);
+        });
     });
 
     describe("Initialize", () => {
@@ -75,9 +66,11 @@ describe("FeeScheduler", () => {
             const blocktime = await getTimestamp();
 
             await scheduler.connect(dao.signer).init();
-            expect(await scheduler.active()).eq(true);
             expect(await scheduler.startTime()).gte(blocktime);
             expect(await scheduler.startBalance()).eq(forwardedBalance);
+        });
+        it("can not call init again", async () => {
+            await expect(scheduler.connect(dao.signer).init()).to.be.revertedWith("already started");
         });
     });
 

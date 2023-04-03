@@ -28,7 +28,7 @@ import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
-import { deployAuraBalStaker } from "../../scripts/deployPeripheral";
+import { deployAuraBalStaker, deployFeeScheduler } from "../../scripts/deployPeripheral";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -280,4 +280,12 @@ task("deploy:mainnet:auraBalStaker")
 
         const staker = await deployAuraBalStaker(hre, deployer, vault, cvxCrv, true, tskArgs.wait);
         console.log("AuraBalStaker:", staker.address);
+    });
+
+task("deploy:mainnet:feeScheduler")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const result = await deployFeeScheduler(hre, deployer, debug, tskArgs.wait);
+        console.log("FeeScheduler:", result.feeScheduler.address);
     });
