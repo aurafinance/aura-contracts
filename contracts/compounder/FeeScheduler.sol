@@ -72,7 +72,7 @@ contract FeeScheduler {
         uint256 epoch = block.timestamp.sub(startTime).div(duration).add(1);
         uint256 amount = 0;
 
-        if (epoch == nEpochs) {
+        if (epoch >= nEpochs) {
             amount = IERC20(bal).balanceOf(address(this));
         } else {
             uint256 totalAmount = startBalance.mul(epoch).div(5);

@@ -101,6 +101,8 @@ describe("FeeScheduler", () => {
             expect(await scheduler.forwardedBalance()).eq(expectedTotal);
             expect(balBefore.sub(balAfter)).eq(expected);
             expect(balAfter0.sub(balBefore0)).eq(expected);
+
+            await expect(scheduler.forward()).to.be.revertedWith("!amount");
         };
         it("epoch 1", async () => {
             await expectForward(1);
@@ -119,6 +121,7 @@ describe("FeeScheduler", () => {
         });
         it("FeeScheduler is empty", async () => {
             expect(await bal.balanceOf(scheduler.address)).eq(0);
+            await increaseTime(ONE_DAY.mul(2));
             await expect(scheduler.forward()).to.be.revertedWith("!amount");
         });
     });
