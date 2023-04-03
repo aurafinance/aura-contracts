@@ -12,12 +12,8 @@ import {
     Coordinator__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
-    PoolManagerProxy,
-    PoolManagerProxy__factory,
-    PoolManagerSecondaryProxy,
-    PoolManagerSecondaryProxy__factory,
-    PoolManagerV3,
-    PoolManagerV3__factory,
+    PoolManagerLite,
+    PoolManagerLite__factory,
     ProxyFactory,
     ProxyFactory__factory,
     RewardFactory,
@@ -67,9 +63,7 @@ export interface SidechainDeployed {
     booster: BoosterLite;
     boosterOwner: BoosterOwner;
     factories: Factories;
-    poolManager: PoolManagerV3;
-    poolManagerProxy: PoolManagerProxy;
-    poolManagerSecondaryProxy: PoolManagerSecondaryProxy;
+    poolManager: PoolManagerLite;
     coordinator: Coordinator;
 }
 
@@ -82,11 +76,6 @@ export async function deploySidechainSystem(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
-    const deployerAddress = await deployer.getAddress();
-
-    // TODO: there is no gauge controller on the sidechains
-    const gaugeController = "0x0000000000000000000000000000000000000000";
-
     const voterProxy = await deployContract<VoterProxyLite>(
         hre,
         new VoterProxyLite__factory(deployer),
@@ -169,31 +158,11 @@ export async function deploySidechainSystem(
         waitForBlocks,
     );
 
-    const poolManagerProxy = await deployContract<PoolManagerProxy>(
+    const poolManager = await deployContract<PoolManagerLite>(
         hre,
-        new PoolManagerProxy__factory(deployer),
-        "PoolManagerProxy",
-        [booster.address, deployerAddress],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const poolManagerSecondaryProxy = await deployContract<PoolManagerSecondaryProxy>(
-        hre,
-        new PoolManagerSecondaryProxy__factory(deployer),
-        "PoolManagerProxy",
-        [gaugeController, poolManagerProxy.address, booster.address, deployerAddress],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const poolManager = await deployContract<PoolManagerV3>(
-        hre,
-        new PoolManagerV3__factory(deployer),
-        "PoolManagerV3",
-        [poolManagerSecondaryProxy.address, gaugeController, addresses.daoMultisig],
+        new PoolManagerLite__factory(deployer),
+        "PoolManagerLite",
+        [booster.address, addresses.daoMultisig],
         {},
         debug,
         waitForBlocks,
@@ -203,14 +172,7 @@ export async function deploySidechainSystem(
         hre,
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
-        [
-            addresses.daoMultisig,
-            poolManagerSecondaryProxy.address,
-            booster.address,
-            stashFactory.address,
-            ZERO_ADDRESS,
-            true,
-        ],
+        [addresses.daoMultisig, poolManager.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
         {},
         debug,
         waitForBlocks,
@@ -233,19 +195,7 @@ export async function deploySidechainSystem(
     tx = await booster.setRewardContracts(coordinator.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await booster.setPoolManager(poolManagerProxy.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerProxy.setOperator(poolManagerSecondaryProxy.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerProxy.setOwner(ZERO_ADDRESS);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerSecondaryProxy.setOperator(poolManager.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await poolManagerSecondaryProxy.setOwner(addresses.daoMultisig);
+    tx = await booster.setPoolManager(poolManager.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
@@ -271,8 +221,6 @@ export async function deploySidechainSystem(
             proxyFactory,
         },
         poolManager,
-        poolManagerProxy,
-        poolManagerSecondaryProxy,
         coordinator,
     };
 }
