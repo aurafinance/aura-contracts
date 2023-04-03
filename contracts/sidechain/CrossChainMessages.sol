@@ -42,8 +42,7 @@ library CrossChainMessages {
     ------------------------------------------------------------------- */
 
     function encodeLock(address sender, uint256 amount) internal pure returns (bytes memory) {
-        // TODO:
-        return bytes("");
+        return abi.encode(MAGIC_BYTES, MessageType.LOCK, sender, amount);
     }
 
     function encodeFees(uint256 amount) internal pure returns (bytes memory) {
@@ -72,6 +71,7 @@ library CrossChainMessages {
     }
 
     function decodeLock(bytes memory _payload) internal pure returns (address, uint256) {
-        // TODO:
+        (, , address sender, uint256 amount) = abi.decode(_payload, (bytes4, uint8, address, uint256));
+        return (sender, amount);
     }
 }
