@@ -1,10 +1,11 @@
 import { expect } from "chai";
+import { BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { config as sidechainConfig } from "../../tasks/deploy/sidechain-config";
-import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
+import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -15,12 +16,15 @@ import {
     LZEndpointMock__factory,
 } from "../../types";
 
+const NATIVE_FEE = simpleToExactAmount("0.1");
+
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
 
     let deployer: Account;
     let dao: Account;
+    let auraWhale: Account;
 
     // phases
     let phase2: Phase2Deployed;
@@ -41,6 +45,7 @@ describe("Sidechain", () => {
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
+        auraWhale = await impersonateAccount(mainnetConfig.addresses.balancerVault, true);
 
         phase2 = await mainnetConfig.getPhase2(deployer.signer);
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
@@ -182,12 +187,78 @@ describe("Sidechain", () => {
             await phase6.booster.connect(dao.signer).setBridgeDelegate(auraOFT.address);
             expect(await phase6.booster.bridgeDelegate()).eq(auraOFT.address);
         });
+        it("add trusted remotes to layerzero endpoints", async () => {
+            await auraOFT.setTrustedRemote(
+                L2_CHAIN_ID,
+                hre.ethers.utils.solidityPack(["address", "address"], [coordinator.address, auraOFT.address]),
+            );
+            await coordinator.setTrustedRemote(
+                L1_CHAIN_ID,
+                hre.ethers.utils.solidityPack(["address", "address"], [auraOFT.address, coordinator.address]),
+            );
+
+            await l2LzEndpoint.setDestLzEndpoint(auraOFT.address, l1LzEndpoint.address);
+            await l1LzEndpoint.setDestLzEndpoint(coordinator.address, l2LzEndpoint.address);
+        });
         it("add pools to the booster");
     });
 
     describe("Bridge AURA normally", () => {
-        it("bridge AURA from L1 -> L2");
-        it("bridge AURA from L2 -> L1");
+        const bridgeAmount = simpleToExactAmount(100);
+        it("bridge AURA from L1 -> L2", async () => {
+            const balBefore = await phase2.cvx.balanceOf(auraWhale.address);
+            const l2BalBefore = await coordinator.balanceOf(deployer.address);
+            expect(balBefore).gt(bridgeAmount);
+
+            await phase2.cvx.connect(auraWhale.signer).approve(auraOFT.address, bridgeAmount);
+            expect(await phase2.cvx.allowance(auraWhale.address, auraOFT.address)).gte(bridgeAmount);
+
+            await auraOFT
+                .connect(auraWhale.signer)
+                .sendFrom(
+                    auraWhale.address,
+                    L2_CHAIN_ID,
+                    deployer.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
+
+            const balAfter = await phase2.cvx.balanceOf(auraWhale.address);
+            const l2BalAfter = await coordinator.balanceOf(deployer.address);
+            expect(balBefore.sub(balAfter)).eq(bridgeAmount);
+            expect(l2BalAfter.sub(l2BalBefore)).eq(bridgeAmount);
+        });
+        it("bridge AURA from L2 -> L1", async () => {
+            const balBefore = await coordinator.balanceOf(deployer.address);
+            const l2BalBefore = await phase2.cvx.balanceOf(auraWhale.address);
+            expect(balBefore).gte(bridgeAmount);
+
+            await coordinator.approve(coordinator.address, bridgeAmount);
+            expect(await coordinator.allowance(deployer.address, coordinator.address)).gte(bridgeAmount);
+
+            await coordinator.sendFrom(
+                deployer.address,
+                L1_CHAIN_ID,
+                auraWhale.address,
+                bridgeAmount,
+                ZERO_ADDRESS,
+                ZERO_ADDRESS,
+                [],
+                {
+                    value: NATIVE_FEE,
+                },
+            );
+
+            const balAfter = await coordinator.balanceOf(deployer.address);
+            const l2BalAfter = await phase2.cvx.balanceOf(auraWhale.address);
+            expect(balBefore.sub(balAfter)).eq(bridgeAmount);
+            expect(l2BalAfter.sub(l2BalBefore)).eq(bridgeAmount);
+        });
     });
 
     describe("Lock AURA", () => {
