@@ -46,7 +46,7 @@ export async function deployCanonicalPhase(
         hre,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [config.lzEndpoint, phase2.cvx.address],
+        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
         {},
         debug,
         waitForBlocks,

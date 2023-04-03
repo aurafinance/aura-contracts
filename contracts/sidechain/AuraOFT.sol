@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
+import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 
 /**
  * @title AuraOFT
@@ -13,6 +15,9 @@ contract AuraOFT is ProxyOFT {
        Storage 
     ------------------------------------------------------------------- */
 
+    /// @dev Aura Locker contract address
+    address public locker;
+
     /// @dev src chain ID mapped to feeDebt
     mapping(uint16 => uint256) public feeDebt;
 
@@ -20,7 +25,15 @@ contract AuraOFT is ProxyOFT {
        Constructor 
     ------------------------------------------------------------------- */
 
-    constructor(address _lzEndpoint, address _token) ProxyOFT(_lzEndpoint, _token) {}
+    constructor(
+        address _lzEndpoint,
+        address _token,
+        address _locker
+    ) ProxyOFT(_lzEndpoint, _token) {
+        locker = _locker;
+
+        IERC20(_token).approve(_locker, type(uint256).max);
+    }
 
     /* -------------------------------------------------------------------
        Core Functions
@@ -39,7 +52,9 @@ contract AuraOFT is ProxyOFT {
      * @param _sender Address that is locking
      * @param _amount Amount to lock
      */
-    function _lockFor(address _sender, uint256 _amount) internal {}
+    function _lockFor(address _sender, uint256 _amount) internal {
+        IAuraLocker(locker).lock(_sender, _amount);
+    }
 
     /**
      * @dev Receive CRV from the L2 via some thirdpart bridge
