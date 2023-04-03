@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
@@ -65,7 +64,7 @@ describe("Sidechain", () => {
         sidechain = await deploySidechainSystem(
             hre,
             sidechainConfig.naming,
-            { ...sidechainConfig.addresses, lzEndpoint: l2LzEndpoint.address },
+            { ...sidechainConfig.addresses, lzEndpoint: l2LzEndpoint.address, daoMultisig: dao.address },
             { ...sidechainConfig.extConfig, canonicalChainId: L1_CHAIN_ID },
             deployer.signer,
         );
@@ -81,7 +80,7 @@ describe("Sidechain", () => {
             expect(await sidechain.voterProxy.crv()).eq(addresses.token);
             expect(await sidechain.voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.withdrawer()).eq(ZERO_ADDRESS);
-            expect(await sidechain.voterProxy.owner()).eq(sidechainConfig.addresses.daoMultisig);
+            expect(await sidechain.voterProxy.owner()).eq(dao.address);
             expect(await sidechain.voterProxy.operator()).eq(sidechain.booster.address);
         });
         it("Coordinator has correct config", async () => {
@@ -107,8 +106,8 @@ describe("Sidechain", () => {
             expect(await sidechain.booster.FEE_DENOMINATOR()).eq(10000);
 
             expect(await sidechain.booster.owner()).eq(sidechain.boosterOwner.address);
-            expect(await sidechain.booster.feeManager()).eq(sidechainConfig.addresses.daoMultisig);
-            expect(await sidechain.booster.poolManager()).eq(sidechain.poolManagerProxy.address);
+            expect(await sidechain.booster.feeManager()).eq(dao.address);
+            expect(await sidechain.booster.poolManager()).eq(sidechain.poolManager.address);
             expect(await sidechain.booster.staker()).eq(sidechain.voterProxy.address);
             expect(await sidechain.booster.minter()).eq(coordinator.address);
             expect(await sidechain.booster.rewardFactory()).eq(sidechain.factories.rewardFactory.address);
@@ -120,11 +119,11 @@ describe("Sidechain", () => {
             expect(await sidechain.booster.poolLength()).eq(0);
         });
         it("Booster Owner has correct config", async () => {
-            expect(await sidechain.boosterOwner.poolManager()).eq(sidechain.poolManagerSecondaryProxy.address);
+            expect(await sidechain.boosterOwner.poolManager()).eq(sidechain.poolManager.address);
             expect(await sidechain.boosterOwner.booster()).eq(sidechain.booster.address);
             expect(await sidechain.boosterOwner.stashFactory()).eq(sidechain.factories.stashFactory.address);
             expect(await sidechain.boosterOwner.rescueStash()).eq(ZERO_ADDRESS);
-            expect(await sidechain.boosterOwner.owner()).eq(sidechainConfig.addresses.daoMultisig);
+            expect(await sidechain.boosterOwner.owner()).eq(dao.address);
             expect(await sidechain.boosterOwner.pendingowner()).eq(ZERO_ADDRESS);
             expect(await sidechain.boosterOwner.isSealed()).eq(true);
             expect(await sidechain.boosterOwner.isForceTimerStarted()).eq(false);
@@ -157,30 +156,10 @@ describe("Sidechain", () => {
             expect(await tokenFactory.namePostfix()).eq(sidechainConfig.naming.tokenFactoryNamePostfix);
             expect(await tokenFactory.symbolPrefix()).eq("aura");
         });
-        it("poolManagerProxy has correct config", async () => {
-            const { booster, poolManagerProxy, poolManagerSecondaryProxy } = sidechain;
-            expect(await poolManagerProxy.pools()).eq(booster.address);
-            expect(await poolManagerProxy.owner()).eq(ZERO_ADDRESS);
-            expect(await poolManagerProxy.operator()).eq(poolManagerSecondaryProxy.address);
-        });
-        it("poolManagerSecondaryProxy has correct config", async () => {
-            const { booster, poolManagerProxy, poolManagerSecondaryProxy, poolManager } = sidechain;
-            const { addresses } = sidechainConfig;
-            // TODO: gaugeController
-            expect(await poolManagerSecondaryProxy.gaugeController()).eq("0x0000000000000000000000000000000000000000");
-            expect(await poolManagerSecondaryProxy.pools()).eq(poolManagerProxy.address);
-            expect(await poolManagerSecondaryProxy.booster()).eq(booster.address);
-            expect(await poolManagerSecondaryProxy.owner()).eq(addresses.daoMultisig);
-            expect(await poolManagerSecondaryProxy.operator()).eq(poolManager.address);
-            expect(await poolManagerSecondaryProxy.isShutdown()).eq(false);
-        });
         it("poolManager has correct config", async () => {
-            const { poolManagerSecondaryProxy, poolManager } = sidechain;
-            const { addresses } = sidechainConfig;
-            expect(await poolManager.pools()).eq(poolManagerSecondaryProxy.address);
-            // TODO: gaugeController
-            expect(await poolManager.gaugeController()).eq("0x0000000000000000000000000000000000000000");
-            expect(await poolManager.operator()).eq(addresses.daoMultisig);
+            const { booster, poolManager } = sidechain;
+            expect(await poolManager.booster()).eq(booster.address);
+            expect(await poolManager.operator()).eq(dao.address);
             expect(await poolManager.protectAddPool()).eq(true);
         });
     });
@@ -204,7 +183,19 @@ describe("Sidechain", () => {
             await l2LzEndpoint.setDestLzEndpoint(auraOFT.address, l1LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(coordinator.address, l2LzEndpoint.address);
         });
-        it("add pools to the booster");
+        it("add pools to the booster", async () => {
+            // As this test suite is running the bridge from L1 -> L1 forked on
+            // mainnet. We can just add the first 10 active existing Aura pools
+            let i = 0;
+            while ((await sidechain.booster.poolLength()).lt(10)) {
+                const poolInfo = await phase6.booster.poolInfo(i);
+                if (!poolInfo.shutdown) {
+                    await sidechain.poolManager.connect(dao.signer)["addPool(address)"](poolInfo.gauge);
+                }
+                i++;
+            }
+            expect(await sidechain.booster.poolLength()).eq(10);
+        });
     });
 
     describe("Bridge AURA normally", () => {
