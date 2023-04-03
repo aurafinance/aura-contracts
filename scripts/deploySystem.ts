@@ -167,6 +167,7 @@ interface ExtSystemConfig {
     uniswapRouter?: string;
     sushiswapRouter?: string;
     auraBalGauge?: string;
+    lzEndpoint?: string;
 }
 
 interface NamingConfig {
