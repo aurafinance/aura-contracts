@@ -161,6 +161,7 @@ const addresses: ExtSystemConfig = {
             "0x79c58f70905F734641735BC61e45c19dD9Ad60bC",
         ],
     },
+    lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
 };
 
 const multisigs = {

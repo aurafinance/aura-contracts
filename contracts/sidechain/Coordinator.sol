@@ -17,7 +17,7 @@ contract Coordinator is OFT {
     uint16 public immutable canonicalChainId;
 
     /// @dev Booster contract
-    address public immutable booster;
+    address public booster;
 
     /// @dev Rate to send CVX on mint
     uint256 public mintRate;
@@ -30,10 +30,18 @@ contract Coordinator is OFT {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        uint16 _canonicalChainId,
-        address _booster
+        uint16 _canonicalChainId
     ) OFT(_name, _symbol, _lzEndpoint) {
         canonicalChainId = _canonicalChainId;
+    }
+
+    /* -------------------------------------------------------------------
+       Setter Functions
+    ------------------------------------------------------------------- */
+
+    function setBooster(address _booster) external {
+        // TODO: only owner
+        require(booster == address(0), "booster already set");
         booster = _booster;
     }
 
@@ -66,7 +74,7 @@ contract Coordinator is OFT {
             payload, ////////////// Payload
             payable(msg.sender), // Refund address
             address(0), /////////// ZRO payment address
-            _adapterParams, //////// Adapter params
+            _adapterParams, /////// Adapter params
             msg.value ///////////// Native fee
         );
     }
@@ -86,7 +94,7 @@ contract Coordinator is OFT {
             payload, ////////////// Payload
             payable(msg.sender), // Refund address
             address(0), /////////// ZRO payment address
-            _adapterParams, //////// Adapter params
+            _adapterParams, /////// Adapter params
             msg.value ///////////// Native fee
         );
     }
