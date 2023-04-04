@@ -33,6 +33,10 @@ contract MockBalancerPoolToken is ERC20("MockBPT", "MockBPT") {
         _mint(to, amount);
     }
 
+    function burn(address account, uint256 amount) external {
+        _burn(account, amount);
+    }
+
     function setPrice(uint256 _price) external {
         price = _price;
     }
