@@ -1,7 +1,15 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { AuraBalStaker, AuraBalStaker__factory, AuraBalVault, CvxCrvToken } from "../types";
+import {
+    AuraBalStaker,
+    AuraBalStaker__factory,
+    AuraBalVault,
+    CvxCrvToken,
+    FeeScheduler,
+    FeeScheduler__factory,
+} from "../types";
 import { deployContract } from "../tasks/utils";
+import { config } from "../tasks/deploy/mainnet-config";
 
 export async function deployAuraBalStaker(
     hre: HardhatRuntimeEnvironment,
@@ -20,4 +28,25 @@ export async function deployAuraBalStaker(
         debug,
         waitForBlocks,
     );
+}
+
+export async function deployFeeScheduler(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const results = await config.getAuraBalVault(signer);
+
+    const feeScheduler = await deployContract<FeeScheduler>(
+        hre,
+        new FeeScheduler__factory(signer),
+        "FeeScheduler",
+        [config.multisigs.daoMultisig, results.strategy.address, config.addresses.token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { feeScheduler };
 }
