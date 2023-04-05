@@ -1,18 +1,24 @@
 import { expect } from "chai";
+import { BigNumber, BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
+import { deployContract } from "../../tasks/utils";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { config as sidechainConfig } from "../../tasks/deploy/sidechain-config";
-import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
     AuraOFT__factory,
     Coordinator,
+    ERC20,
     ExtraRewardStashV3__factory,
     LZEndpointMock,
     LZEndpointMock__factory,
+    MockCurveMinter,
+    MockCurveMinter__factory,
+    MockERC20__factory,
 } from "../../types";
 
 const NATIVE_FEE = simpleToExactAmount("0.1");
@@ -20,6 +26,7 @@ const NATIVE_FEE = simpleToExactAmount("0.1");
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
+    const mintrMintAmount = simpleToExactAmount(10);
 
     let deployer: Account;
     let dao: Account;
@@ -28,6 +35,7 @@ describe("Sidechain", () => {
     // phases
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
+    let mockMintr: MockCurveMinter;
 
     // LayerZero endpoints
     let l1LzEndpoint: LZEndpointMock;
@@ -35,10 +43,51 @@ describe("Sidechain", () => {
 
     // Canonical chain Contracts
     let auraOFT: AuraOFT;
+    let crv: ERC20;
 
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
     let coordinator: Coordinator;
+
+    /* ---------------------------------------------------------------------
+     * Helper Functions
+     * --------------------------------------------------------------------- */
+
+    async function getEth(recipient: string) {
+        const ethWhale = await impersonate(mainnetConfig.addresses.weth);
+        await ethWhale.sendTransaction({
+            to: recipient,
+            value: simpleToExactAmount(1),
+        });
+    }
+
+    async function getBal(to: string, amount: BigNumberish) {
+        await getEth(mainnetConfig.addresses.balancerVault);
+        const tokenWhaleSigner = await impersonateAccount(mainnetConfig.addresses.balancerVault);
+        await crv.connect(tokenWhaleSigner.signer).transfer(to, amount);
+    }
+
+    async function withMockMinter(fn: () => Promise<void>) {
+        // Update the mintr slot of voter proxy to be our mock mintr
+        const original = await hre.network.provider.send("eth_getStorageAt", [sidechain.voterProxy.address, "0x0"]);
+        const newSlot = "0x" + mockMintr.address.slice(2).padStart(64, "0");
+        await getBal(mockMintr.address, mintrMintAmount);
+        expect(await crv.balanceOf(mockMintr.address)).eq(mintrMintAmount);
+
+        await hre.network.provider.send("hardhat_setStorageAt", [sidechain.voterProxy.address, "0x0", newSlot]);
+        await fn();
+        await hre.network.provider.send("hardhat_setStorageAt", [sidechain.voterProxy.address, "0x0", original]);
+    }
+
+    async function toFeeAmount(n: BigNumber) {
+        const lockIncentive = await sidechain.booster.lockIncentive();
+        const stakerIncentive = await sidechain.booster.stakerIncentive();
+        const platformFee = await sidechain.booster.platformFee();
+        const feeDenom = await sidechain.booster.FEE_DENOMINATOR();
+
+        const totalIncentive = lockIncentive.add(stakerIncentive).add(platformFee);
+        return n.mul(totalIncentive).div(feeDenom);
+    }
 
     before(async () => {
         const accounts = await ethers.getSigners();
@@ -70,6 +119,17 @@ describe("Sidechain", () => {
         );
 
         coordinator = sidechain.coordinator;
+
+        crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
+
+        mockMintr = await deployContract<MockCurveMinter>(
+            hre,
+            new MockCurveMinter__factory(deployer.signer),
+            "MockCurveMinter",
+            [mainnetConfig.addresses.token, mintrMintAmount],
+            {},
+            false,
+        );
     });
 
     describe("Check configs", () => {
@@ -285,7 +345,22 @@ describe("Sidechain", () => {
     });
 
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
-        it("earmark rewards sends fees to coordinator");
+        it("earmark rewards sends fees to coordinator", async () => {
+            const coordinatorBalBefore = await crv.balanceOf(coordinator.address);
+            const feeDebtBefore = await auraOFT.feeDebt(L2_CHAIN_ID);
+            await withMockMinter(async () => {
+                await sidechain.booster.earmarkRewards(0, [], {
+                    value: NATIVE_FEE,
+                });
+            });
+            const coordinatorBalAfter = await crv.balanceOf(coordinator.address);
+            const feeDebtAfter = await auraOFT.feeDebt(L2_CHAIN_ID);
+            const amountOfFees = await toFeeAmount(mintrMintAmount);
+
+            expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
+            expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
+            // TODO: check new AURA (OFT) balance of coordinator on L2
+        });
     });
 
     describe("Settle fee debt from L2 -> L1", () => {

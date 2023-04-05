@@ -22,11 +22,11 @@ library CrossChainMessages {
     }
 
     function getMessageType(bytes memory _payload) internal pure returns (MessageType) {
-        bytes1 messageType;
+        bytes32 messageType;
         assembly {
-            messageType := mload(add(add(_payload, 4), 32))
+            messageType := mload(add(add(_payload, 32), 32))
         }
-        return MessageType(uint8(messageType));
+        return MessageType(uint8(uint256(messageType)));
     }
 
     function isCustomMessage(bytes memory _payload) internal pure returns (bool) {
@@ -46,8 +46,7 @@ library CrossChainMessages {
     }
 
     function encodeFees(uint256 amount) internal pure returns (bytes memory) {
-        // TODO:
-        return bytes("");
+        return abi.encode(MAGIC_BYTES, MessageType.FEES, amount);
     }
 
     /* -------------------------------------------------------------------
@@ -67,7 +66,8 @@ library CrossChainMessages {
     }
 
     function decodeFees(bytes memory _payload) internal pure returns (uint256) {
-        // TODO:
+        (, , uint256 amount) = abi.decode(_payload, (bytes4, uint8, uint256));
+        return amount;
     }
 
     function decodeLock(bytes memory _payload) internal pure returns (address, uint256) {

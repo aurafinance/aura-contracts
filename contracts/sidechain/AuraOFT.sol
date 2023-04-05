@@ -45,7 +45,9 @@ contract AuraOFT is ProxyOFT {
      *       via the Booster.distributeL2Fees function. Then update
      *       the AURA rate for (TODO: this chain or globally? TBD)
      */
-    function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {}
+    function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {
+        feeDebt[_srcChainId] += _amount;
+    }
 
     /**
      * @dev Lock tokens in the Locker contract
