@@ -1,4 +1,4 @@
-import hre, { network } from "hardhat";
+import { network } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
 import { BigNumberish, ethers } from "ethers";
