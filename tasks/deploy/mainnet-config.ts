@@ -386,7 +386,7 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 });
 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
-    AuraClaimZapV3__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", deployer);
+    AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
 export const config = {
     addresses,
