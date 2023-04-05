@@ -66,13 +66,18 @@ contract Coordinator is OFT {
      *      and receive CVX tokens in return
      * @param _rewards Amount of CRV that was received as rewards
      */
-    function queueNewRewards(uint256 _rewards, bytes memory _adapterParams) external payable {
+    function queueNewRewards(
+        address originalSender,
+        uint256 _rewards,
+        bytes memory _adapterParams
+    ) external payable {
+        require(msg.sender == booster, "!booster");
         bytes memory payload = CCM.encodeFees(_rewards);
 
         _lzSend(
             canonicalChainId, ///// Parent chain ID
             payload, ////////////// Payload
-            payable(msg.sender), // Refund address
+            payable(originalSender), // Refund address
             address(0), /////////// ZRO payment address
             _adapterParams, /////// Adapter params
             msg.value ///////////// Native fee
