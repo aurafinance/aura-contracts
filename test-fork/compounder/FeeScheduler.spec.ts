@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import { BigNumber } from "ethers";
 
 import { ONE_DAY } from "../../test-utils/constants";
@@ -18,7 +18,21 @@ describe("FeeScheduler", () => {
     let bal: ERC20;
     let forwardedBalance: BigNumber;
 
+    const FORK_BLOCK_NUMBER = 16975757;
+
     before(async () => {
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [
+                {
+                    forking: {
+                        jsonRpcUrl: process.env.NODE_URL,
+                        blockNumber: FORK_BLOCK_NUMBER,
+                    },
+                },
+            ],
+        });
+
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress(), true);
         dao = await impersonateAccount(config.multisigs.daoMultisig, true);
