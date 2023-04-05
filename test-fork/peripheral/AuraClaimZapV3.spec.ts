@@ -13,7 +13,7 @@ import { BaseRewardPool__factory } from "../../types/generated";
 import { config } from "../../tasks/deploy/mainnet-config";
 
 // Constants
-const FORK_BLOCK = 16883778;
+const FORK_BLOCK = 16982384;
 const DEPLOYER = "0x30019eb135532bddf2da17659101cc000c73c8e4";
 
 describe("AuraClaimZapV3", () => {
