@@ -28,7 +28,7 @@ import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
-import { deployAuraBalStaker, deployFeeScheduler } from "../../scripts/deployPeripheral";
+import { deployAuraBalStaker, deployFeeScheduler, deployVeBalGrant } from "../../scripts/deployPeripheral";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -288,4 +288,16 @@ task("deploy:mainnet:feeScheduler")
         const deployer = await getSigner(hre);
         const result = await deployFeeScheduler(hre, deployer, debug, tskArgs.wait);
         console.log("FeeScheduler:", result.feeScheduler.address);
+    });
+
+task("deploy:mainnet:veBalGrant")
+    .addParam("balancer", "Address of balancer")
+    .addParam("project", "Address of project")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const balancer = tskArgs.balancer;
+        const project = tskArgs.project;
+        const result = await deployVeBalGrant(hre, deployer, config.addresses, project, balancer, debug, tskArgs.wait);
+        console.log("VeBalGrant:", result.veBalGrant.address);
     });

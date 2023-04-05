@@ -4,7 +4,7 @@ import { Signer } from "ethers";
 import { VeBalGrant, Account } from "../../../types";
 import { ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../../test-utils/constants";
 import { DeployMocksResult, deployMocks } from "../../../scripts/deployMocks";
-import { deployVeBalGrant } from "../../../scripts/deployVeBalGrant";
+import { deployVeBalGrant } from "../../../scripts/deployPeripheral";
 import { parseEther } from "ethers/lib/utils";
 import { getTimestamp, increaseTime } from "../../../test-utils";
 
