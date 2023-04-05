@@ -1,19 +1,17 @@
-import hre, { network } from "hardhat";
+import { network } from "hardhat";
 import { Signer } from "ethers";
 import { expect } from "chai";
 import { BigNumberish, ethers } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 
-import { Account, IERC20, IERC20__factory, VeBalGrant } from "../../../types";
-import { impersonateAccount, increaseTime } from "../../../test-utils";
+import { Account, IERC20, IERC20__factory, VeBalGrant, VeBalGrant__factory } from "../../../types";
+import { impersonate, impersonateAccount, increaseTime } from "../../../test-utils";
 import { ZERO_ADDRESS, ONE_WEEK } from "../../../test-utils/constants";
-import { deployVeBalGrant } from "../../../scripts/deployVeBalGrant";
 import { config } from "../../../tasks/deploy/mainnet-config";
 
 // Constants
-const DEBUG = false;
-const FORK_BLOCK = 16880000;
-const DEPLOYER = "0xA28ea848801da877E1844F954FF388e857d405e5";
+const FORK_BLOCK = 16983460;
+const DEPLOYER = "0x30019eb135532bddf2da17659101cc000c73c8e4";
 
 describe("VeBalGrant", () => {
     let veBalGrant: VeBalGrant;
@@ -72,12 +70,9 @@ describe("VeBalGrant", () => {
             ],
         });
 
-        const accounts = await hre.ethers.getSigners();
-
-        balancer = accounts[1];
+        balancer = await impersonate("0x10a19e7ee7d7f8a52822f6817de8ea18204f2e4f");
         balancerAddress = await balancer.getAddress();
-
-        project = accounts[2];
+        project = await impersonate("0x9a8fee232dcf73060af348a1b62cdb0a19852d13");
         projectAddress = await project.getAddress();
         deployer = await impersonateAccount(DEPLOYER, true);
         dao = await impersonateAccount(config.multisigs.daoMultisig);
@@ -90,15 +85,7 @@ describe("VeBalGrant", () => {
 
     it("Deploy VeBalEscrow", async () => {
         //Deploy
-        const result = await deployVeBalGrant(
-            hre,
-            deployer.signer,
-            config.addresses,
-            projectAddress,
-            balancerAddress,
-            DEBUG,
-        );
-        veBalGrant = result.veBalGrant;
+        veBalGrant = VeBalGrant__factory.connect("0x89f67f3054bFD662971854190Dbc18dcaBb416f6", deployer.signer);
     });
 
     it("initial configuration is correct", async () => {
