@@ -3,20 +3,30 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
  * @title AuraOFT
  * @dev Sends AURA to all the Sidechains and tracks the amount of fee debt
  */
 contract AuraOFT is ProxyOFT {
+    using AuraMath for uint256;
+
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
 
+    /// @dev Booster contract address
+    address public booster;
+
     /// @dev Aura Locker contract address
     address public locker;
+
+    /// @dev BAL token contract
+    address public crv;
 
     /// @dev src chain ID mapped to feeDebt
     mapping(uint16 => uint256) public feeDebt;
@@ -28,10 +38,15 @@ contract AuraOFT is ProxyOFT {
     constructor(
         address _lzEndpoint,
         address _token,
-        address _locker
+        address _booster,
+        address _locker,
+        address _crv
     ) ProxyOFT(_lzEndpoint, _token) {
+        booster = _booster;
         locker = _locker;
+        crv = _crv;
 
+        IERC20(_crv).approve(_booster, type(uint256).max);
         IERC20(_token).approve(_locker, type(uint256).max);
     }
 
@@ -47,6 +62,40 @@ contract AuraOFT is ProxyOFT {
      */
     function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {
         feeDebt[_srcChainId] += _amount;
+    }
+
+    function distributeAura(uint16 _srcChainId, bytes memory _adapterParams) external payable {
+        _distributeAura(_srcChainId, feeDebt[_srcChainId], _adapterParams);
+    }
+
+    function _distributeAura(
+        uint16 _srcChainId,
+        uint256 _feeAmount,
+        bytes memory _adapterParams
+    ) internal {
+        uint256 cvxBefore = IERC20(token()).balanceOf(address(this));
+        IBooster(booster).distributeL2Fees(_feeAmount);
+        uint256 cvxAmount = IERC20(token()).balanceOf(address(this)).sub(cvxBefore);
+
+        uint256 fullAmount = _feeToFullAmount(_feeAmount);
+        bytes memory payload = CCM.encodeFeesCallback(cvxAmount, fullAmount);
+
+        _lzSend(
+            _srcChainId, ////////// Source chain (L2 chain to send AURA to)
+            payload, ////////////// Payload
+            payable(msg.sender), // Refund address
+            address(0), /////////// ZRO payment address
+            _adapterParams, /////// Adapter params
+            msg.value ///////////// Native fee
+        );
+    }
+
+    function _feeToFullAmount(uint256 _feeAmount) internal view returns (uint256) {
+        uint256 totalIncentives = IBooster(booster).lockIncentive() +
+            IBooster(booster).stakerIncentive() +
+            IBooster(booster).earmarkIncentive() +
+            IBooster(booster).platformFee();
+        return ((_feeAmount * IBooster(booster).FEE_DENOMINATOR()) / totalIncentives);
     }
 
     /**
