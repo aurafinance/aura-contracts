@@ -2,13 +2,14 @@
 pragma solidity 0.8.11;
 
 import { OFT } from "../layerzero/token/oft/OFT.sol";
+import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 
 /**
  * @title Coordinator
  * @dev Coordinates LZ messages and actions from the L1 on the L2
  */
-contract Coordinator is OFT {
+contract Coordinator is OFT, CrossChainConfig {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -39,10 +40,17 @@ contract Coordinator is OFT {
        Setter Functions
     ------------------------------------------------------------------- */
 
-    function setBooster(address _booster) external {
-        // TODO: only owner
+    function setBooster(address _booster) external onlyOwner {
         require(booster == address(0), "booster already set");
         booster = _booster;
+    }
+
+    function setConfig(
+        uint16 _srcChainId,
+        bytes4 _selector,
+        Config memory _config
+    ) external override onlyOwner {
+        _setConfig(_srcChainId, _selector, _config);
     }
 
     /* -------------------------------------------------------------------
@@ -64,43 +72,43 @@ contract Coordinator is OFT {
     /**
      * @dev Called by the booster.earmarkRewards to register feeDebt with the L1
      *      and receive CVX tokens in return
+     * @param _originalSender Sender that initiated the Booster call
      * @param _rewards Amount of CRV that was received as rewards
      */
-    function queueNewRewards(
-        address originalSender,
-        uint256 _rewards,
-        bytes memory _adapterParams
-    ) external payable {
+    function queueNewRewards(address _originalSender, uint256 _rewards) external payable {
         require(msg.sender == booster, "!booster");
         bytes memory payload = CCM.encodeFees(_rewards);
 
+        CrossChainConfig.Config memory config = configs[canonicalChainId][Coordinator.queueNewRewards.selector];
+
         _lzSend(
-            canonicalChainId, ///////// Parent chain ID
-            payload, ////////////////// Payload
-            payable(originalSender), // Refund address
-            address(0), /////////////// ZRO payment address
-            _adapterParams, /////////// Adapter params
-            msg.value ///////////////// Native fee
+            canonicalChainId, ////////// Parent chain ID
+            payload, /////////////////// Payload
+            payable(_originalSender), /// Refund address
+            config.zroPaymentAddress, // ZRO payment address
+            config.adapterParams, ////// Adapter params
+            msg.value ////////////////// Native fee
         );
     }
 
     /**
      * @dev Lock CVX on the L1 chain
      * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
-     * @param _adapterParams LZ adapterParams
      */
-    function lock(uint256 _cvxAmount, bytes memory _adapterParams) external payable {
+    function lock(uint256 _cvxAmount) external payable {
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
         bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);
 
+        CrossChainConfig.Config memory config = configs[canonicalChainId][Coordinator.lock.selector];
+
         _lzSend(
-            canonicalChainId, ///// Parent chain ID
-            payload, ////////////// Payload
-            payable(msg.sender), // Refund address
-            address(0), /////////// ZRO payment address
-            _adapterParams, /////// Adapter params
-            msg.value ///////////// Native fee
+            canonicalChainId, ////////// Parent chain ID
+            payload, /////////////////// Payload
+            payable(msg.sender), /////// Refund address
+            config.zroPaymentAddress, // ZRO payment address
+            config.adapterParams, ////// Adapter params
+            msg.value ////////////////// Native fee
         );
     }
 
