@@ -21,7 +21,7 @@ import {
     MockERC20__factory,
 } from "../../types";
 
-const NATIVE_FEE = simpleToExactAmount("0.1");
+const NATIVE_FEE = simpleToExactAmount("0.2");
 
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
@@ -106,7 +106,9 @@ describe("Sidechain", () => {
         auraOFT = await new AuraOFT__factory(deployer.signer).deploy(
             l1LzEndpoint.address,
             phase2.cvx.address,
+            phase6.booster.address,
             phase2.cvxLocker.address,
+            mainnetConfig.addresses.token,
         );
 
         // // deploy sidechain
@@ -256,6 +258,10 @@ describe("Sidechain", () => {
             }
             expect(await sidechain.booster.poolLength()).eq(10);
         });
+        it("fund the AuraOFT with a BAL float", async () => {
+            const floatAmount = simpleToExactAmount(10_000);
+            await getBal(auraOFT.address, floatAmount);
+        });
     });
 
     describe("Bridge AURA normally", () => {
@@ -359,7 +365,13 @@ describe("Sidechain", () => {
 
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
-            // TODO: check new AURA (OFT) balance of coordinator on L2
+
+            const coordinatorAuraBalBefore = await coordinator.balanceOf(coordinator.address);
+            expect(await coordinator.mintRate()).eq(0);
+            await auraOFT.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE });
+            const coordinatorAuraBalAfter = await coordinator.balanceOf(coordinator.address);
+            expect(await coordinator.mintRate()).not.eq(0);
+            expect(coordinatorAuraBalAfter).gt(coordinatorAuraBalBefore);
         });
     });
 
