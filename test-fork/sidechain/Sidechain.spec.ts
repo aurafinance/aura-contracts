@@ -344,7 +344,7 @@ describe("Sidechain", () => {
         });
         it("lock AURA from L2 -> L1", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await coordinator.lock(lockAmount, [], { value: NATIVE_FEE });
+            await coordinator.lock(lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
         });
@@ -355,7 +355,7 @@ describe("Sidechain", () => {
             const coordinatorBalBefore = await crv.balanceOf(coordinator.address);
             const feeDebtBefore = await auraOFT.feeDebt(L2_CHAIN_ID);
             await withMockMinter(async () => {
-                await sidechain.booster.earmarkRewards(0, [], {
+                await sidechain.booster.earmarkRewards(0, {
                     value: NATIVE_FEE,
                 });
             });
@@ -368,7 +368,7 @@ describe("Sidechain", () => {
 
             const coordinatorAuraBalBefore = await coordinator.balanceOf(coordinator.address);
             expect(await coordinator.mintRate()).eq(0);
-            await auraOFT.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE });
+            await auraOFT.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE });
             const coordinatorAuraBalAfter = await coordinator.balanceOf(coordinator.address);
             expect(await coordinator.mintRate()).not.eq(0);
             expect(coordinatorAuraBalAfter).gt(coordinatorAuraBalBefore);
