@@ -2,17 +2,18 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
-import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
+import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
+import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
-import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
  * @title AuraOFT
  * @dev Sends AURA to all the Sidechains and tracks the amount of fee debt
  */
-contract AuraOFT is ProxyOFT {
+contract AuraOFT is ProxyOFT, CrossChainConfig {
     using AuraMath for uint256;
 
     /* -------------------------------------------------------------------
@@ -51,6 +52,18 @@ contract AuraOFT is ProxyOFT {
     }
 
     /* -------------------------------------------------------------------
+       Setter Functions
+    ------------------------------------------------------------------- */
+
+    function setConfig(
+        uint16 _srcChainId,
+        bytes4 _selector,
+        Config memory _config
+    ) external override onlyOwner {
+        _setConfig(_srcChainId, _selector, _config);
+    }
+
+    /* -------------------------------------------------------------------
        Core Functions
     ------------------------------------------------------------------- */
 
@@ -64,8 +77,12 @@ contract AuraOFT is ProxyOFT {
         feeDebt[_srcChainId] += _amount;
     }
 
-    function distributeAura(uint16 _srcChainId, bytes memory _adapterParams) external payable {
-        _distributeAura(_srcChainId, feeDebt[_srcChainId], _adapterParams);
+    function distributeAura(uint16 _srcChainId) external payable {
+        _distributeAura(
+            _srcChainId,
+            feeDebt[_srcChainId],
+            configs[_srcChainId][AuraOFT.distributeAura.selector].adapterParams
+        );
     }
 
     function _distributeAura(
