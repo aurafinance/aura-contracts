@@ -28,9 +28,11 @@ contract AuraOFT is ProxyOFT {
     constructor(
         address _lzEndpoint,
         address _token,
-        address _locker
+        address _locker,
+        address _owner
     ) ProxyOFT(_lzEndpoint, _token) {
         locker = _locker;
+        _transferOwnership(_owner);
 
         IERC20(_token).approve(_locker, type(uint256).max);
     }

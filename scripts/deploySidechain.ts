@@ -27,7 +27,7 @@ import {
     VoterProxyLite__factory,
 } from "../types";
 import { ZERO_ADDRESS } from "../test-utils";
-import { deployContract2, waitForTx } from "../tasks/utils";
+import { deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-config";
 import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
 
@@ -40,14 +40,13 @@ export async function deployCanonicalPhase(
     waitForBlocks: number = 0,
 ) {
     const create2Factory = Create2Factory__factory.connect("TODO-CONFIRM-IF-ALSO-HERE", deployer);
-    const auraOFT = await deployContract2<AuraOFT, AuraOFT__factory>(
-        hre,
+    const auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
+        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address, await deployer.getAddress()],
         {},
-        { amount: 0, isOwnable: true },
+        {},
         debug,
         waitForBlocks,
     );
@@ -82,118 +81,113 @@ export async function deploySidechainSystem(
 ): Promise<SidechainDeployed> {
     const deployerAddress = await deployer.getAddress();
     const create2Factory = Create2Factory__factory.connect(addresses.create2Factory, deployer);
-    const voterProxy = await deployContract2<VoterProxyLite, VoterProxyLite__factory>(
-        hre,
+    const voterProxy = await deployContractWithCreate2<VoterProxyLite, VoterProxyLite__factory>(
         create2Factory,
         new VoterProxyLite__factory(deployer),
         "VoterProxyLite",
         [addresses.minter, addresses.token, deployerAddress],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
     // Ownable
-    const coordinator = await deployContract2<Coordinator, Coordinator__factory>(
-        hre,
+    const coordinator = await deployContractWithCreate2<Coordinator, Coordinator__factory>(
         create2Factory,
         new Coordinator__factory(deployer),
         "Coordinator",
-        [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+        [
+            naming.coordinatorName,
+            naming.coordinatorSymbol,
+            addresses.lzEndpoint,
+            extConfig.canonicalChainId,
+            deployerAddress,
+        ],
         {},
-        { amount: 0, isOwnable: true },
-
+        {},
         debug,
         waitForBlocks,
     );
 
     const cvxTokenAddress = coordinator.address;
 
-    const booster = await deployContract2<BoosterLite, BoosterLite__factory>(
-        hre,
+    const booster = await deployContractWithCreate2<BoosterLite, BoosterLite__factory>(
         create2Factory,
         new BoosterLite__factory(deployer),
         "BoosterLite",
         [voterProxy.address, cvxTokenAddress, addresses.token, deployerAddress],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const rewardFactory = await deployContract2<RewardFactory, RewardFactory__factory>(
-        hre,
+    const rewardFactory = await deployContractWithCreate2<RewardFactory, RewardFactory__factory>(
         create2Factory,
         new RewardFactory__factory(deployer),
         "RewardFactory",
         [booster.address, addresses.token],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const tokenFactory = await deployContract2<TokenFactory, TokenFactory__factory>(
-        hre,
+    const tokenFactory = await deployContractWithCreate2<TokenFactory, TokenFactory__factory>(
         create2Factory,
         new TokenFactory__factory(deployer),
         "TokenFactory",
         [booster.address, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const proxyFactory = await deployContract2<ProxyFactory, ProxyFactory__factory>(
-        hre,
+    const proxyFactory = await deployContractWithCreate2<ProxyFactory, ProxyFactory__factory>(
         create2Factory,
         new ProxyFactory__factory(deployer),
         "ProxyFactory",
         [],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const stashFactory = await deployContract2<StashFactoryV2, StashFactoryV2__factory>(
-        hre,
+    const stashFactory = await deployContractWithCreate2<StashFactoryV2, StashFactoryV2__factory>(
         create2Factory,
         new StashFactoryV2__factory(deployer),
         "StashFactory",
         [booster.address, rewardFactory.address, proxyFactory.address],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const stashV3 = await deployContract2<ExtraRewardStashV3, ExtraRewardStashV3__factory>(
-        hre,
+    const stashV3 = await deployContractWithCreate2<ExtraRewardStashV3, ExtraRewardStashV3__factory>(
         create2Factory,
         new ExtraRewardStashV3__factory(deployer),
         "ExtraRewardStashV3",
         [addresses.token],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const poolManager = await deployContract2<PoolManagerLite, PoolManagerLite__factory>(
-        hre,
+    const poolManager = await deployContractWithCreate2<PoolManagerLite, PoolManagerLite__factory>(
         create2Factory,
         new PoolManagerLite__factory(deployer),
         "PoolManagerLite",
         [booster.address, addresses.daoMultisig],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );
-    const boosterOwner = await deployContract2<BoosterOwner, BoosterOwner__factory>(
-        hre,
+    const boosterOwner = await deployContractWithCreate2<BoosterOwner, BoosterOwner__factory>(
         create2Factory,
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
         [addresses.daoMultisig, poolManager.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
         {},
-        { amount: 0, isOwnable: false },
+        {},
         debug,
         waitForBlocks,
     );

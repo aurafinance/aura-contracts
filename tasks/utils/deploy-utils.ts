@@ -8,7 +8,7 @@ import { keccak256 as solidityKeccak256 } from "@ethersproject/solidity";
 import { BytesLike } from "@ethersproject/bytes";
 interface Create2Options {
     amount?: number;
-    isOwnable?: boolean;
+    salt?: string;
 }
 export const deployContract = async <T extends Contract>(
     hre: HardhatRuntimeEnvironment,
@@ -47,34 +47,28 @@ export const deployContract = async <T extends Contract>(
 
     return contract;
 };
-export const deployContract2 = async <T extends Contract, F extends ContractFactory>(
-    hre: HardhatRuntimeEnvironment,
+export const deployContractWithCreate2 = async <T extends Contract, F extends ContractFactory>(
     create2Factory: Create2Factory,
     contractFactory: F,
     contractName,
     constructorArgs: Array<unknown> = [],
     overrides: Overrides = {},
-    create2Options: Create2Options = { amount: 0, isOwnable: false },
+    create2Options: Create2Options = { amount: 0, salt: undefined },
     debug = true,
     waitForBlocks = undefined,
 ): Promise<T> => {
-    const salt = contractName;
+    const salt = create2Options.salt ?? contractName;
     const create2DeployerAddress = create2Factory.address;
     const unsignedTx = contractFactory.getDeployTransaction(...constructorArgs, overrides);
 
     const create2Salt = solidityKeccak256(["string"], [salt]);
     const contractAddress = getCreate2Address(create2DeployerAddress, create2Salt, unsignedTx.data);
-    let deployTransaction: ContractTransaction;
-    if (create2Options.isOwnable) {
-        deployTransaction = await create2Factory.deployOwnable(
-            create2Options.amount,
-            create2Salt,
-            unsignedTx.data,
-            overrides,
-        );
-    } else {
-        deployTransaction = await create2Factory.deploy(create2Options.amount, create2Salt, unsignedTx.data, overrides);
-    }
+    const deployTransaction = await create2Factory.deploy(
+        create2Options.amount ?? 0,
+        create2Salt,
+        unsignedTx.data,
+        overrides,
+    );
 
     const receipt = await deployTransaction.wait(waitForBlocks);
     const deployedEvent = receipt.events.find(e => {
@@ -105,11 +99,6 @@ export const deployContract2 = async <T extends Contract, F extends ContractFact
         );
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
-
-    // await verifyEtherscan(hre, {
-    //     address: contract.address,
-    //     constructorArguments: constructorArgs,
-    // });
 
     return contract;
 };

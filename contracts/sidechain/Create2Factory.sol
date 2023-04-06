@@ -3,17 +3,12 @@ pragma solidity 0.8.11;
 
 import { Create2 } from "@openzeppelin/contracts-0.8/utils/Create2.sol";
 
-interface IOwnable {
-    function transferOwnership(address newOwner) external;
-}
-
 /**
-
-* @title Create2Factory
-* @author  AuraFinance
-* @notice  Deploy contracts using CREATE2 opcode.
-* @dev A factory contract that uses the CREATE2 opcode to deploy contracts with a deterministic address.
-*/
+ * @title Create2Factory
+ * @author  AuraFinance
+ * @notice  Deploy contracts using CREATE2 opcode.
+ * @dev A factory contract that uses the CREATE2 opcode to deploy contracts with a deterministic address.
+ */
 contract Create2Factory {
     /**
      * @dev Event emitted when a contract is successfully deployed.
@@ -55,23 +50,6 @@ contract Create2Factory {
         bytes calldata bytecode
     ) external returns (address) {
         return _deploy(amount, salt, bytecode);
-    }
-
-    /**
-     * @notice Deploys a contract using the CREATE2 opcode and transfers the ownership of the contract to the caller of the function.
-     * @dev  The target contract must implement IOwnable.transferOwnership();
-     * @param amount The amount of Ether to be sent with the transaction deploying the contract.
-     * @param salt A unique value used as part of the computation to determine the address where the contract will be deployed.
-     * @param bytecode The bytecode that will be used to create the contract.
-     * @return The address where the contract has been deployed.
-     */
-    function deployOwnable(
-        uint256 amount,
-        bytes32 salt,
-        bytes calldata bytecode
-    ) external returns (address) {
-        address deployedAddress = _deploy(amount, salt, bytecode);
-        IOwnable(deployedAddress).transferOwnership(msg.sender);
     }
 
     function computeAddress(bytes32 salt, bytes32 codeHash) external view returns (address) {

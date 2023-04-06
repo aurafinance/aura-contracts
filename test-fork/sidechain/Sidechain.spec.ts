@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
-import { deployContract } from "../../tasks/utils";
+import { deployContract, deployContractWithCreate2 } from "../../tasks/utils";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
@@ -106,37 +106,19 @@ describe("Sidechain", () => {
         l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
 
         // deploy Create2Factory
-        // abi.encodePacked(type(Wallet).creationCode, abi.encode(arg1, arg2, arg3));
         create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
 
-        // deploy canonical chain
-        auraOFT = await new AuraOFT__factory(deployer.signer).deploy(
-            l1LzEndpoint.address,
-            phase2.cvx.address,
-            phase2.cvxLocker.address,
-        );
-        console.log(l1LzEndpoint.address, phase2.cvx.address, phase2.cvxLocker.address);
-
-        // auraOFT is ownable , to confirm if create2 should be used
-        auraOFT = await deployContract<AuraOFT>(
-            hre,
+        auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
+            create2Factory,
             new AuraOFT__factory(deployer.signer),
             "AuraOFT",
-            [l1LzEndpoint.address, phase2.cvx.address, phase2.cvxLocker.address],
+            [l1LzEndpoint.address, phase2.cvx.address, phase2.cvxLocker.address, deployer.address],
             {},
+            {},
+            false,
         );
 
-        //  auraOFT = await deployContract2<AuraOFT,AuraOFT__factory>(
-        //     hre,
-        //     create2Factory,
-        //     new AuraOFT__factory(deployer.signer),
-        //     // new AuraOFT()
-        //     "AuraOFT",
-        //     [l1LzEndpoint.address,phase2.cvx.address, phase2.cvxLocker.address],
-        //     {},
-        // );
-
-        // // deploy sidechain
+        // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
             sidechainConfig.naming,
