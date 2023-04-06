@@ -75,12 +75,12 @@ contract Coordinator is OFT {
         bytes memory payload = CCM.encodeFees(_rewards);
 
         _lzSend(
-            canonicalChainId, ///// Parent chain ID
-            payload, ////////////// Payload
+            canonicalChainId, ///////// Parent chain ID
+            payload, ////////////////// Payload
             payable(originalSender), // Refund address
-            address(0), /////////// ZRO payment address
-            _adapterParams, /////// Adapter params
-            msg.value ///////////// Native fee
+            address(0), /////////////// ZRO payment address
+            _adapterParams, /////////// Adapter params
+            msg.value ///////////////// Native fee
         );
     }
 
@@ -120,7 +120,7 @@ contract Coordinator is OFT {
         if (CCM.isCustomMessage(_payload)) {
             CCM.MessageType messageType = CCM.getMessageType(_payload);
             if (messageType == CCM.MessageType.FEES_CALLBACK) {
-                (address toAddress, uint256 cvxAmount, uint256 crvAmount) = CCM.decodeFeesCallback(_payload);
+                (uint256 cvxAmount, uint256 crvAmount) = CCM.decodeFeesCallback(_payload);
 
                 // The mint rate is the amount of CVX we mint for 1 CRV received
                 // It is sent over each time the fee debt is updated on the L1 to try and keep
@@ -128,7 +128,7 @@ contract Coordinator is OFT {
                 mintRate = (cvxAmount * 1e18) / crvAmount;
 
                 // Continue with LZ flow with crvAmount removed from payload
-                _payload = abi.encode(PT_SEND, abi.encodePacked(address(0)), abi.encodePacked(toAddress), cvxAmount);
+                _payload = abi.encode(PT_SEND, abi.encodePacked(address(this)), cvxAmount);
                 super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
             }
         } else {
