@@ -2,6 +2,7 @@ on: ["push"]
 name: Test Coverage
 jobs:
     build:
+        if: github.event.pull_request.draft == false
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
