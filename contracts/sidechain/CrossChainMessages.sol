@@ -49,20 +49,17 @@ library CrossChainMessages {
         return abi.encode(MAGIC_BYTES, MessageType.FEES, amount);
     }
 
+    function encodeFeesCallback(uint256 cvxAmount, uint256 crvAmount) internal pure returns (bytes memory) {
+        return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount, crvAmount);
+    }
+
     /* -------------------------------------------------------------------
        Decode 
     ------------------------------------------------------------------- */
 
-    function decodeFeesCallback(bytes memory _payload)
-        internal
-        pure
-        returns (
-            address,
-            uint256,
-            uint256
-        )
-    {
-        // TODO:
+    function decodeFeesCallback(bytes memory _payload) internal pure returns (uint256, uint256) {
+        (, , uint256 cvxAmount, uint256 crvAmount) = abi.decode(_payload, (bytes4, uint8, uint256, uint256));
+        return (cvxAmount, crvAmount);
     }
 
     function decodeFees(bytes memory _payload) internal pure returns (uint256) {

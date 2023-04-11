@@ -23,7 +23,7 @@ import {
     MockERC20__factory,
 } from "../../types";
 
-const NATIVE_FEE = simpleToExactAmount("0.1");
+const NATIVE_FEE = simpleToExactAmount("0.2");
 
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
@@ -112,7 +112,14 @@ describe("Sidechain", () => {
             create2Factory,
             new AuraOFT__factory(deployer.signer),
             "AuraOFT",
-            [l1LzEndpoint.address, phase2.cvx.address, phase2.cvxLocker.address, deployer.address],
+            [
+                l1LzEndpoint.address,
+                phase2.cvx.address,
+                phase6.booster.address,
+                phase2.cvxLocker.address,
+                mainnetConfig.addresses.token,
+                deployer.address,
+            ],
             {},
             {},
             false,
@@ -270,6 +277,10 @@ describe("Sidechain", () => {
             }
             expect(await sidechain.booster.poolLength()).eq(10);
         });
+        it("fund the AuraOFT with a BAL float", async () => {
+            const floatAmount = simpleToExactAmount(10_000);
+            await getBal(auraOFT.address, floatAmount);
+        });
     });
 
     describe("Bridge AURA normally", () => {
@@ -352,7 +363,7 @@ describe("Sidechain", () => {
         });
         it("lock AURA from L2 -> L1", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await coordinator.lock(lockAmount, [], { value: NATIVE_FEE });
+            await coordinator.lock(lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
         });
@@ -363,7 +374,7 @@ describe("Sidechain", () => {
             const coordinatorBalBefore = await crv.balanceOf(coordinator.address);
             const feeDebtBefore = await auraOFT.feeDebt(L2_CHAIN_ID);
             await withMockMinter(async () => {
-                await sidechain.booster.earmarkRewards(0, [], {
+                await sidechain.booster.earmarkRewards(0, {
                     value: NATIVE_FEE,
                 });
             });
@@ -373,7 +384,13 @@ describe("Sidechain", () => {
 
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
-            // TODO: check new AURA (OFT) balance of coordinator on L2
+
+            const coordinatorAuraBalBefore = await coordinator.balanceOf(coordinator.address);
+            expect(await coordinator.mintRate()).eq(0);
+            await auraOFT.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE });
+            const coordinatorAuraBalAfter = await coordinator.balanceOf(coordinator.address);
+            expect(await coordinator.mintRate()).not.eq(0);
+            expect(coordinatorAuraBalAfter).gt(coordinatorAuraBalBefore);
         });
     });
 
