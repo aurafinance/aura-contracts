@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.11;
 pragma abicoder v2;
 
 import "../interfaces/ILayerZeroReceiver.sol";
@@ -11,7 +11,8 @@ import "../libraries/LzLib.sol";
 like a real LayerZero endpoint but can be mocked, which handle message transmission, verification, and receipt.
 - blocking: LayerZero provides ordered delivery of messages from a given sender to a destination chain.
 - non-reentrancy: endpoint has a non-reentrancy guard for both the send() and receive(), respectively.
-- adapter parameters: allows UAs to add arbitrary transaction params in the send() function, like airdrop on destination chain.
+- adapter parameters: allows UAs to add arbitrary transaction params in the send() function, like airdrop on 
+  destination chain. 
 unlike a real LayerZero endpoint, it is
 - no messaging library versioning
 - send() will short circuit to lzReceive()
@@ -185,7 +186,8 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         // assert and increment the nonce. no message shuffling
         require(_nonce == ++inboundNonce[_srcChainId][_path], "LayerZeroMock: wrong nonce");
 
-        // queue the following msgs inside of a stack to simulate a successful send on src, but not fully delivered on dst
+        // queue the following msgs inside of a stack to simulate a successful send on src,
+        // but not fully delivered on dst
         if (sp.payloadHash != bytes32(0)) {
             QueuedPayload[] storage msgs = msgsToDeliver[_srcChainId][_path];
             QueuedPayload memory newMsg = QueuedPayload(_dstAddress, _nonce, _payload);

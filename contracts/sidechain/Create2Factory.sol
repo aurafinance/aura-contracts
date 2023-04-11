@@ -48,9 +48,8 @@ contract Create2Factory is Ownable {
         bytes32 salt,
         bytes calldata bytecode
     ) external onlyDeployer returns (address) {
-        address deployedAddress;
+        address deployedAddress = Create2.deploy(amount, salt, bytecode);
 
-        deployedAddress = Create2.deploy(amount, salt, bytecode);
         emit Deployed(salt, deployedAddress);
 
         return deployedAddress;
