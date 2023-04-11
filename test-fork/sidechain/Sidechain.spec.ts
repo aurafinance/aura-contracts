@@ -107,6 +107,7 @@ describe("Sidechain", () => {
 
         // deploy Create2Factory
         create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
+        await create2Factory.updateDeployer(deployer.address, true);
 
         auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
             create2Factory,
