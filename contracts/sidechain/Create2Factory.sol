@@ -29,9 +29,11 @@ contract Create2Factory is Ownable {
         _;
     }
 
-    /// @notice Adds or remove an address from the deployers' whitelist
-    /// @param _deployer address of the authorized deployer
-    /// @param _authorized Whether to add or remove deployer
+    /**
+     * @notice Adds or remove an address from the deployers' whitelist
+     * @param _deployer address of the authorized deployer
+     * @param _authorized Whether to add or remove deployer
+     */
     function updateDeployer(address _deployer, bool _authorized) external onlyOwner {
         deployer[_deployer] = _authorized;
     }
