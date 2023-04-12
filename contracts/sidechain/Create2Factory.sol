@@ -43,18 +43,33 @@ contract Create2Factory is Ownable {
      * @param amount The amount of Ether to be sent with the transaction deploying the contract.
      * @param salt A unique value used as part of the computation to determine the contract's address.
      * @param bytecode The bytecode that will be used to create the contract.
+     * @param callbacks Callbacks to execute after contract is created.
      * @return The address where the contract has been deployed.
      */
     function deploy(
         uint256 amount,
         bytes32 salt,
-        bytes calldata bytecode
+        bytes calldata bytecode,
+        bytes[] calldata callbacks
     ) external onlyDeployer returns (address) {
         address deployedAddress = Create2.deploy(amount, salt, bytecode);
+        uint256 len = callbacks.length;
+        if (len > 0) {
+            for (uint256 i = 0; i < len; i++) {
+                _execute(deployedAddress, callbacks[i]);
+            }
+        }
 
         emit Deployed(salt, deployedAddress);
 
         return deployedAddress;
+    }
+
+    function _execute(address _to, bytes calldata _data) private returns (bool, bytes memory) {
+        (bool success, bytes memory result) = _to.call(_data);
+        require(success, "!success");
+
+        return (success, result);
     }
 
     function computeAddress(bytes32 salt, bytes32 codeHash) external view returns (address) {

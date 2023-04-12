@@ -10,6 +10,7 @@ import { BytesLike } from "@ethersproject/bytes";
 interface Create2Options {
     amount?: number;
     salt?: string;
+    callbacks?: Array<BytesLike>;
 }
 interface DeployCreate2Options {
     overrides?: Overrides;
@@ -62,7 +63,7 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
     constructorArgs: Array<unknown> = [],
     options: DeployCreate2Options = {
         overrides: {},
-        create2Options: { amount: 0, salt: undefined },
+        create2Options: { amount: 0, salt: undefined, callbacks: [] },
         debug: true,
         waitForBlocks: undefined,
     },
@@ -73,14 +74,14 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
     const unsignedTx = contractFactory.getDeployTransaction(...constructorArgs, overrides ?? {});
 
     const create2Salt = solidityKeccak256(["string"], [salt]);
-    const contractAddress = getCreate2Address(create2DeployerAddress, create2Salt, unsignedTx.data);
+    const contractAddress = _computeCreate2Address(create2DeployerAddress, create2Salt, unsignedTx.data);
     const deployTransaction = await create2Factory.deploy(
         create2Options?.amount ?? 0,
         create2Salt,
         unsignedTx.data,
+        create2Options?.callbacks ?? [],
         overrides ?? {},
     );
-
     const receipt = await deployTransaction.wait(waitForBlocks);
     const deployedEvent = receipt.events.find(e => {
         return e.topics[0] === ethers.utils.keccak256(ethers.utils.toUtf8Bytes("Deployed(bytes32,address)"));
@@ -175,7 +176,20 @@ export async function waitForTx(
     return receipt;
 }
 
-export function getCreate2Address(create2DeployerAddress: string, salt: string, bytecode: BytesLike): string {
+export const computeCreate2Address = async <F extends ContractFactory>(
+    create2FactoryAddress: string,
+    contractFactory: F,
+    salt: string,
+    constructorArgs: Array<unknown> = [],
+): Promise<string> => {
+    const unsignedTx = contractFactory.getDeployTransaction(...constructorArgs);
+
+    const create2Salt = solidityKeccak256(["string"], [salt]);
+
+    return _computeCreate2Address(create2FactoryAddress, create2Salt, unsignedTx.data);
+};
+
+function _computeCreate2Address(create2DeployerAddress: string, salt: string, bytecode: BytesLike): string {
     return getAddress(
         "0x" +
             solidityKeccak256(

@@ -28,7 +28,12 @@ import {
 } from "../types";
 import { ZERO_ADDRESS } from "../test-utils";
 import { deployContractWithCreate2, waitForTx } from "../tasks/utils";
-import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-config";
+import {
+    ExtSidechainConfig,
+    SidechainAddresses,
+    SidechainNaming,
+    config as sidechainConfig,
+} from "../tasks/deploy/sidechain-config";
 import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
 
 export async function deployCanonicalPhase(
@@ -39,7 +44,7 @@ export async function deployCanonicalPhase(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ) {
-    const create2Factory = Create2Factory__factory.connect("TODO-CONFIRM-IF-ALSO-HERE", deployer);
+    const create2Factory = Create2Factory__factory.connect(sidechainConfig.addresses.create2Factory, deployer);
     const auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
         hre,
         create2Factory,
@@ -78,46 +83,65 @@ export async function deploySidechainSystem(
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
     const deployerAddress = await deployer.getAddress();
+    const create2Options = { amount: 0, salt: undefined, callbacks: [] };
     const deployOptions = {
         overrides: {},
-        create2Options: { amount: 0, salt: undefined },
+        create2Options,
         debug,
         waitForBlocks,
     };
+
     const create2Factory = Create2Factory__factory.connect(addresses.create2Factory, deployer);
+
+    const voterProxySetOwner = VoterProxyLite__factory.createInterface().encodeFunctionData("setOwner", [
+        deployerAddress,
+    ]);
+
     const voterProxy = await deployContractWithCreate2<VoterProxyLite, VoterProxyLite__factory>(
         hre,
         create2Factory,
         new VoterProxyLite__factory(deployer),
         "VoterProxyLite",
-        [addresses.minter, addresses.token, deployerAddress],
-        deployOptions,
+        [addresses.minter, addresses.token],
+        { ...deployOptions, create2Options: { ...create2Options, callbacks: [voterProxySetOwner] } },
     );
-    // Ownable
+
+    const coordinatorTransferOwnership = Coordinator__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
+
     const coordinator = await deployContractWithCreate2<Coordinator, Coordinator__factory>(
         hre,
         create2Factory,
         new Coordinator__factory(deployer),
         "Coordinator",
-        [
-            naming.coordinatorName,
-            naming.coordinatorSymbol,
-            addresses.lzEndpoint,
-            extConfig.canonicalChainId,
-            deployerAddress,
-        ],
-        deployOptions,
+        [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+        { ...deployOptions, create2Options: { ...create2Options, callbacks: [coordinatorTransferOwnership] } },
     );
 
     const cvxTokenAddress = coordinator.address;
+    const boosterSetOwner = BoosterLite__factory.createInterface().encodeFunctionData("setOwner", [deployerAddress]);
+    const boosterSetFeeManager = BoosterLite__factory.createInterface().encodeFunctionData("setFeeManager", [
+        deployerAddress,
+    ]);
+    const boosterSetPoolManager = BoosterLite__factory.createInterface().encodeFunctionData("setPoolManager", [
+        deployerAddress,
+    ]);
 
     const booster = await deployContractWithCreate2<BoosterLite, BoosterLite__factory>(
         hre,
         create2Factory,
         new BoosterLite__factory(deployer),
         "BoosterLite",
-        [voterProxy.address, cvxTokenAddress, addresses.token, deployerAddress],
-        deployOptions,
+        [voterProxy.address, cvxTokenAddress, addresses.token],
+        {
+            ...deployOptions,
+            create2Options: {
+                ...create2Options,
+                callbacks: [boosterSetPoolManager, boosterSetFeeManager, boosterSetOwner],
+            },
+        },
     );
     const rewardFactory = await deployContractWithCreate2<RewardFactory, RewardFactory__factory>(
         hre,
