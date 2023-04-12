@@ -66,8 +66,6 @@ const config: HardhatUserConfig = {
         arbitrum: {
             chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",
-            gasPrice: 100000000,
-            initialBaseFeePerGas: 100000000,
         },
         arbitrumGoerli: {
             chainId: chainIds.arbitrumGoerli,

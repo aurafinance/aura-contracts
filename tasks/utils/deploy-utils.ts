@@ -1,25 +1,28 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Contract, ContractFactory, ContractReceipt, ContractTransaction, Overrides, ethers } from "ethers";
 import { formatUnits } from "@ethersproject/units";
+
+import { Create2Factory } from "../../types";
 import { ExtSystemConfig } from "../../scripts/deploySystem";
-import { Create2Factory } from "types";
 import { getAddress } from "@ethersproject/address";
 import { keccak256 as solidityKeccak256 } from "@ethersproject/solidity";
 import { BytesLike } from "@ethersproject/bytes";
-// import { verifyEtherscan } from "./etherscan";
+
 interface Create2Options {
     amount?: number;
     salt?: string;
     callbacks?: Array<BytesLike>;
 }
+
 interface DeployCreate2Options {
     overrides?: Overrides;
     create2Options?: Create2Options;
     debug?: boolean;
     waitForBlocks?: number | undefined;
 }
+
 export const deployContract = async <T extends Contract>(
-    hre: HardhatRuntimeEnvironment,
+    _: HardhatRuntimeEnvironment,
     contractFactory: ContractFactory,
     contractName = "Contract",
     constructorArgs: Array<unknown> = [],
@@ -48,15 +51,11 @@ export const deployContract = async <T extends Contract>(
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
 
-    // await verifyEtherscan(hre, {
-    //     address: contract.address,
-    //     constructorArguments: constructorArgs,
-    // });
-
     return contract;
 };
+
 export const deployContractWithCreate2 = async <T extends Contract, F extends ContractFactory>(
-    hre: HardhatRuntimeEnvironment,
+    _: HardhatRuntimeEnvironment,
     create2Factory: Create2Factory,
     contractFactory: F,
     contractName: string,
@@ -83,7 +82,7 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
         overrides ?? {},
     );
     const receipt = await deployTransaction.wait(waitForBlocks);
-    const deployedEvent = receipt.events.find(e => {
+    const deployedEvent = receipt.events.find((e: any) => {
         return e.topics[0] === ethers.utils.keccak256(ethers.utils.toUtf8Bytes("Deployed(bytes32,address)"));
     });
     const deployedAddress = deployedEvent.args["deployed"];
@@ -112,13 +111,9 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
 
-    // await verifyEtherscan(hre, {
-    //     address: contract.address,
-    //     constructorArguments: constructorArgs,
-    // });
-
     return contract;
 };
+
 export const logTxDetails = async (tx: ContractTransaction, method: string): Promise<ContractReceipt> => {
     console.log(
         `Sent ${method} transaction with hash ${tx.hash} from ${tx.from} with gas price ${
