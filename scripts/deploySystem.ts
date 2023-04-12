@@ -88,8 +88,6 @@ import {
     PoolMigrator__factory,
     PoolManagerV4,
     BoosterOwnerSecondary,
-    Create2Factory,
-    Create2Factory__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
