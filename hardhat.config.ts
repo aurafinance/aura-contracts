@@ -64,14 +64,11 @@ const config: HardhatUserConfig = {
             gasPrice: 3000000000,
         },
         arbitrum: {
-            chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",
         },
         arbitrumGoerli: {
-            chainId: chainIds.arbitrumGoerli,
             url: process.env.NODE_URL || "",
-            gasPrice: 100000000,
-            initialBaseFeePerGas: 100000000,
+            gasPrice: 3000000000,
         },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },

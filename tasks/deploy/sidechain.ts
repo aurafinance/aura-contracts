@@ -16,17 +16,20 @@ import {
 import { getSigner } from "../utils";
 import { config } from "./sidechain-config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { deployCreate2Factory } from "scripts/deploySidechain";
+import { deployCreate2Factory } from "../../scripts/deploySidechain";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 
-task("deploy:sidechain:create2Factory").setAction(async function (_: TaskArguments, hre) {
-    const deployer = await getSigner(hre);
-    const debug = true;
-    const waitForBlocks = 3;
+const debug = true;
 
-    const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
-    logContracts(phase as unknown as { [key: string]: { address: string } });
-});
+task("deploy:sidechain:create2Factory")
+    .addParam("wait", "wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const waitForBlocks = tskArgs.wait;
+
+        const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
+        logContracts(phase as unknown as { [key: string]: { address: string } });
+    });
 
 task("sidechain:addresses").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);

@@ -241,7 +241,7 @@ yarn task timeTravel --duration 69420 --network forking
 
 | Contract       | Address                                                                                                                     |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| create2Factory | [0xFf87D90216C236B39D74d5404AE86b8b1DA3b448](https://goerli.arbiscan.io/address/0xFf87D90216C236B39D74d5404AE86b8b1DA3b448) |
+| create2Factory | [0x2E1ADE7233e886D8041Fd7c3b87523F3DDC2169D](https://goerli.arbiscan.io/address/0x2E1ADE7233e886D8041Fd7c3b87523F3DDC2169D) |
 
 ### Ethereum Mainnet (1) @deprecated
 

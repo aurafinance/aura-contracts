@@ -36,7 +36,8 @@ import {
     VoterProxyLite__factory,
 } from "../types";
 import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
-import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { simpleToExactAmount } from "../test-utils/math";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-config";
 
