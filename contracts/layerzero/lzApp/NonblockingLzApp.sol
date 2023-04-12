@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.11;
 
 import "./LzApp.sol";
 import "../util/ExcessivelySafeCall.sol";
@@ -8,7 +8,8 @@ import "../util/ExcessivelySafeCall.sol";
 /*
  * the default LayerZero messaging behaviour is blocking, i.e. any failed message will block the channel
  * this abstract class try-catch all fail messages and store locally for future retry. hence, non-blocking
- * NOTE: if the srcAddress is not configured properly, it will still block the message pathway from (srcChainId, srcAddress)
+ * NOTE: if the srcAddress is not configured properly,
+ * it will still block the message pathway from (srcChainId, srcAddress)
  */
 abstract contract NonblockingLzApp is LzApp {
     using ExcessivelySafeCall for address;
