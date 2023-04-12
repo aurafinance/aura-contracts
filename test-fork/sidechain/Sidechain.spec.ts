@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
-import { deployContract } from "../../tasks/utils";
+import { deployContract, deployContractWithCreate2 } from "../../tasks/utils";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
@@ -12,6 +12,8 @@ import {
     AuraOFT,
     AuraOFT__factory,
     Coordinator,
+    Create2Factory,
+    Create2Factory__factory,
     ERC20,
     ExtraRewardStashV3__factory,
     LZEndpointMock,
@@ -42,6 +44,7 @@ describe("Sidechain", () => {
     let l2LzEndpoint: LZEndpointMock;
 
     // Canonical chain Contracts
+    let create2Factory: Create2Factory;
     let auraOFT: AuraOFT;
     let crv: ERC20;
 
@@ -102,20 +105,37 @@ describe("Sidechain", () => {
         l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
         l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
 
-        // deploy canonical chain
-        auraOFT = await new AuraOFT__factory(deployer.signer).deploy(
-            l1LzEndpoint.address,
-            phase2.cvx.address,
-            phase6.booster.address,
-            phase2.cvxLocker.address,
-            mainnetConfig.addresses.token,
+        // deploy Create2Factory
+        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
+        await create2Factory.updateDeployer(deployer.address, true);
+
+        auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
+            create2Factory,
+            new AuraOFT__factory(deployer.signer),
+            "AuraOFT",
+            [
+                l1LzEndpoint.address,
+                phase2.cvx.address,
+                phase6.booster.address,
+                phase2.cvxLocker.address,
+                mainnetConfig.addresses.token,
+                deployer.address,
+            ],
+            {},
+            {},
+            false,
         );
 
-        // // deploy sidechain
+        // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
             sidechainConfig.naming,
-            { ...sidechainConfig.addresses, lzEndpoint: l2LzEndpoint.address, daoMultisig: dao.address },
+            {
+                ...sidechainConfig.addresses,
+                lzEndpoint: l2LzEndpoint.address,
+                daoMultisig: dao.address,
+                create2Factory: create2Factory.address,
+            },
             { ...sidechainConfig.extConfig, canonicalChainId: L1_CHAIN_ID },
             deployer.signer,
         );
