@@ -31,9 +31,11 @@ contract Coordinator is OFT, CrossChainConfig {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        uint16 _canonicalChainId
+        uint16 _canonicalChainId,
+        address _owner
     ) OFT(_name, _symbol, _lzEndpoint) {
         canonicalChainId = _canonicalChainId;
+        _transferOwnership(_owner);
     }
 
     /* -------------------------------------------------------------------

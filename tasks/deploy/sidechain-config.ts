@@ -3,6 +3,7 @@ export interface SidechainAddresses {
     token: string;
     daoMultisig: string;
     minter: string;
+    create2Factory: string;
 }
 
 const addresses: SidechainAddresses = {
@@ -13,6 +14,8 @@ const addresses: SidechainAddresses = {
     // TODO: these are mainnet values
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
+    // TODO - DEPLOY
+    create2Factory: "0xba100000625a3754423978a60c9317c58a424e3D",
 };
 
 export interface SidechainNaming {

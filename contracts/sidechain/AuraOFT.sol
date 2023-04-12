@@ -41,11 +41,13 @@ contract AuraOFT is ProxyOFT, CrossChainConfig {
         address _token,
         address _booster,
         address _locker,
-        address _crv
+        address _crv,
+        address _owner
     ) ProxyOFT(_lzEndpoint, _token) {
         booster = _booster;
         locker = _locker;
         crv = _crv;
+        _transferOwnership(_owner);
 
         IERC20(_crv).approve(_booster, type(uint256).max);
         IERC20(_token).approve(_locker, type(uint256).max);
