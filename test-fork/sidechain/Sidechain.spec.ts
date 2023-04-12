@@ -395,6 +395,26 @@ describe("Sidechain", () => {
     });
 
     describe("Settle fee debt from L2 -> L1", () => {
-        it("settle fees updated feeDebt on L1");
+        let bridgeDelegate: Account;
+        before(async () => {
+            const accounts = await ethers.getSigners();
+            bridgeDelegate = await impersonateAccount(await accounts[3].getAddress());
+            await getBal(bridgeDelegate.address, simpleToExactAmount(10_000));
+        });
+        it("set bridge delegate for L2", async () => {
+            expect(await auraOFT.bridgeDelegates(L2_CHAIN_ID)).eq(ZERO_ADDRESS);
+            await auraOFT.setBridgeDelegate(L2_CHAIN_ID, bridgeDelegate.address);
+            expect(await auraOFT.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegate.address);
+        });
+        it("settle fees updated feeDebt on L1", async () => {
+            const debt = await auraOFT.feeDebt(L2_CHAIN_ID);
+            expect(debt).gt(0);
+
+            await crv.connect(bridgeDelegate.signer).approve(auraOFT.address, debt);
+            await auraOFT.connect(bridgeDelegate.signer).settleFeeDebt(L2_CHAIN_ID, debt);
+
+            const newDebt = await auraOFT.feeDebt(L2_CHAIN_ID);
+            expect(newDebt).eq(0);
+        });
     });
 });

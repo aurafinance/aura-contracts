@@ -13,6 +13,14 @@ import {
     Create2Factory__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
+    MockBalancerPoolToken,
+    MockBalancerPoolToken__factory,
+    MockCurveGauge,
+    MockCurveGauge__factory,
+    MockCurveMinter,
+    MockCurveMinter__factory,
+    MockERC20,
+    MockERC20__factory,
     PoolManagerLite,
     PoolManagerLite__factory,
     ProxyFactory,
@@ -26,8 +34,8 @@ import {
     VoterProxyLite,
     VoterProxyLite__factory,
 } from "../types";
-import { ZERO_ADDRESS } from "../test-utils";
-import { deployContractWithCreate2, waitForTx } from "../tasks/utils";
+import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import {
     ExtSidechainConfig,
     SidechainAddresses,
@@ -245,4 +253,66 @@ export async function deploySidechainSystem(
         poolManager,
         coordinator,
     };
+}
+
+export interface SidechainMocksDeployed {
+    token: MockERC20;
+    bpt: MockBalancerPoolToken;
+    minter: MockCurveMinter;
+    gauge: MockCurveGauge;
+}
+
+export async function deploySidechainMocks(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    debug: boolean,
+    waitForBlocks: number,
+): Promise<SidechainMocksDeployed> {
+    const deployerAddress = await deployer.getAddress();
+
+    const token = await deployContract<MockERC20>(
+        hre,
+        new MockERC20__factory(deployer),
+        "MockERC20",
+        ["mockToken", "mockToken", 18, deployerAddress, 10000000],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const bpt = await deployContract<MockBalancerPoolToken>(
+        hre,
+        new MockBalancerPoolToken__factory(deployer),
+        "MockBalancerPoolToken",
+        [18, deployerAddress, 100],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const minter = await deployContract<MockCurveMinter>(
+        hre,
+        new MockCurveMinter__factory(deployer),
+        "MockCurveMinter",
+        [token.address, simpleToExactAmount(10)],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const gauge = await deployContract<MockCurveGauge>(
+        hre,
+        new MockCurveGauge__factory(deployer),
+        "MockCurveGauge",
+        ["MockGauge", "MOCK", bpt.address, []],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const amount = await token.balanceOf(deployerAddress);
+    const tx = await token.transfer(minter.address, amount.div(2));
+    await waitForTx(tx);
+
+    return { token, bpt, minter, gauge };
 }
