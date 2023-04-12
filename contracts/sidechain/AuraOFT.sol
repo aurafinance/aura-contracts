@@ -32,6 +32,9 @@ contract AuraOFT is ProxyOFT, CrossChainConfig {
     /// @dev src chain ID mapped to feeDebt
     mapping(uint16 => uint256) public feeDebt;
 
+    /// @dev src chain ID to bridgeDelegate
+    mapping(uint16 => address) public bridgeDelegates;
+
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
@@ -63,6 +66,10 @@ contract AuraOFT is ProxyOFT, CrossChainConfig {
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
+    }
+
+    function setBridgeDelegate(uint16 _srcChainId, address bridgeDelegate) external onlyOwner {
+        bridgeDelegates[_srcChainId] = bridgeDelegate;
     }
 
     /* -------------------------------------------------------------------
@@ -130,7 +137,14 @@ contract AuraOFT is ProxyOFT, CrossChainConfig {
      * @dev Receive CRV from the L2 via some thirdpart bridge
      *      to settle the feeDebt for the remote chain
      */
-    function settleFeeDebt(uint256 _srcChainId, uint256 _amount) external {}
+    function settleFeeDebt(uint16 _srcChainId, uint256 _amount) external {
+        address bridgeDelegate = bridgeDelegates[_srcChainId];
+        require(bridgeDelegate == msg.sender, "!bridgeDelegate");
+
+        feeDebt[_srcChainId] -= _amount;
+
+        IERC20(crv).transferFrom(bridgeDelegate, address(this), _amount);
+    }
 
     /* -------------------------------------------------------------------
       Layer Zero functions L1 -> L2
