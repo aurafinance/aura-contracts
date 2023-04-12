@@ -14,8 +14,7 @@ const addresses: SidechainAddresses = {
     // TODO: these are mainnet values
     minter: "0x239e55F427D44C3cc793f49bFB507ebe76638a2b",
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
-    // TODO - DEPLOY
-    create2Factory: "0xba100000625a3754423978a60c9317c58a424e3D",
+    create2Factory: "0xFf87D90216C236B39D74d5404AE86b8b1DA3b448",
 };
 
 export interface SidechainNaming {

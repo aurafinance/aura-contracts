@@ -21,6 +21,8 @@ const chainIds = {
     mainnet: 1,
     rinkeby: 4,
     ropsten: 3,
+    arbitrum: 42161,
+    arbitrumGoerli: 421613,
 };
 
 const compilerSettings = {
@@ -61,9 +63,19 @@ const config: HardhatUserConfig = {
             url: process.env.NODE_URL || "",
             gasPrice: 3000000000,
         },
-        forking: {
+        arbitrum: {
+            chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",
+            gasPrice: 100000000,
+            initialBaseFeePerGas: 100000000,
         },
+        arbitrumGoerli: {
+            chainId: chainIds.arbitrumGoerli,
+            url: process.env.NODE_URL || "",
+            gasPrice: 100000000,
+            initialBaseFeePerGas: 100000000,
+        },
+        forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
     paths: {

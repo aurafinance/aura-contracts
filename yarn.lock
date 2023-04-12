@@ -20,7 +20,7 @@ __metadata:
     "@ethersproject/hash": ^5.5.0
     "@ethersproject/providers": ^5.5.0
     "@nomiclabs/hardhat-ethers": ^2.0.2
-    "@nomiclabs/hardhat-etherscan": ^3.0.3
+    "@nomiclabs/hardhat-etherscan": ^3.1.7
     "@nomiclabs/hardhat-waffle": ^2.0.1
     "@openzeppelin/contracts-0.8": "npm:@openzeppelin/contracts@4.4.2"
     "@snapshot-labs/snapshot.js": ^0.3.53
@@ -1335,20 +1335,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomiclabs/hardhat-etherscan@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "@nomiclabs/hardhat-etherscan@npm:3.0.3"
+"@nomiclabs/hardhat-etherscan@npm:^3.1.7":
+  version: 3.1.7
+  resolution: "@nomiclabs/hardhat-etherscan@npm:3.1.7"
   dependencies:
     "@ethersproject/abi": ^5.1.2
     "@ethersproject/address": ^5.0.2
-    cbor: ^5.0.2
+    cbor: ^8.1.0
+    chalk: ^2.4.2
     debug: ^4.1.1
     fs-extra: ^7.0.1
+    lodash: ^4.17.11
     semver: ^6.3.0
-    undici: ^4.14.1
+    table: ^6.8.0
+    undici: ^5.14.0
   peerDependencies:
     hardhat: ^2.0.4
-  checksum: 6ce0856ad989c4cff5c90f7673d80fb7778ac1941db2bdf0998afca31c2439ed2e840fbad123a6f5958768243179af33a56f7b45919a598c8361b9a7cfdbaea6
+  checksum: 32d74e567e78a940a79cbe49c5dee0eb5cda0a4c0c34a9badfaf13d45e6054d9e717c28b8d2b0b20f29721a484af15a52d391fb60768222c4b13de92ef0f72b3
   languageName: node
   linkType: hard
 
@@ -3805,6 +3808,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"busboy@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "busboy@npm:1.6.0"
+  dependencies:
+    streamsearch: ^1.1.0
+  checksum: 32801e2c0164e12106bf236291a00795c3c4e4b709ae02132883fe8478ba2ae23743b11c5735a0aae8afe65ac4b6ca4568b91f0d9fed1fdbc32ede824a73746e
+  languageName: node
+  linkType: hard
+
 "bytes@npm:3.1.2":
   version: 3.1.2
   resolution: "bytes@npm:3.1.2"
@@ -4006,13 +4018,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cbor@npm:^5.0.2":
-  version: 5.2.0
-  resolution: "cbor@npm:5.2.0"
+"cbor@npm:^8.1.0":
+  version: 8.1.0
+  resolution: "cbor@npm:8.1.0"
   dependencies:
-    bignumber.js: ^9.0.1
-    nofilter: ^1.0.4
-  checksum: b3c39dae64370f361526dbec88f51d0f1b47027224cdd21dbd64c228f0fe7eaa945932d349ec5324068a6c6dcdbb1e3b46242852524fd53c526d14cb60514bdc
+    nofilter: ^3.1.0
+  checksum: a90338435dc7b45cc01461af979e3bb6ddd4f2a08584c437586039cd5f2235014c06e49d664295debbfb3514d87b2f06728092ab6aa6175e2e85e9cd7dc0c1fd
   languageName: node
   linkType: hard
 
@@ -10916,10 +10927,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nofilter@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "nofilter@npm:1.0.4"
-  checksum: 54d864f745de5c3312994e880cf2d4f55e34830d6adc8275dce3731507ca380d21040336e4a277a4901551c07f04c452fbeffd57fad1dc8f68a2943eaf894a04
+"nofilter@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "nofilter@npm:3.1.0"
+  checksum: 58aa85a5b4b35cbb6e42de8a8591c5e338061edc9f3e7286f2c335e9e9b9b8fa7c335ae45daa8a1f3433164dc0b9a3d187fa96f9516e04a17a1f9ce722becc4f
   languageName: node
   linkType: hard
 
@@ -13624,6 +13635,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"streamsearch@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "streamsearch@npm:1.1.0"
+  checksum: 1cce16cea8405d7a233d32ca5e00a00169cc0e19fbc02aa839959985f267335d435c07f96e5e0edd0eadc6d39c98d5435fb5bbbdefc62c41834eadc5622ad942
+  languageName: node
+  linkType: hard
+
 "strict-uri-encode@npm:^1.0.0":
   version: 1.1.0
   resolution: "strict-uri-encode@npm:1.1.0"
@@ -14713,6 +14731,15 @@ __metadata:
   version: 4.15.1
   resolution: "undici@npm:4.15.1"
   checksum: 13b264d4966de105e211e1ca9433e2d8be5fcfe85e4cafea6b97c4685df3364bc8bc9e9b27796ce400e8a1e45e92a65b1453fcb499557e4f5c013af18f194852
+  languageName: node
+  linkType: hard
+
+"undici@npm:^5.14.0":
+  version: 5.21.2
+  resolution: "undici@npm:5.21.2"
+  dependencies:
+    busboy: ^1.6.0
+  checksum: baceaa9e610966631e86ad2869b657556dd465438eed55e8079cec2a306ecbeecfde2d6e37e43baf96a4c59588ebef50476131e96e018dcc0a7f5db7e6a06c85
   languageName: node
   linkType: hard
 

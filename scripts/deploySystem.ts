@@ -88,6 +88,8 @@ import {
     PoolMigrator__factory,
     PoolManagerV4,
     BoosterOwnerSecondary,
+    Create2Factory,
+    Create2Factory__factory,
 } from "../types/generated";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { Chain, deployContract, waitForTx } from "../tasks/utils";
@@ -1626,7 +1628,24 @@ async function deployPhase7(
 
     return { masterChefRewardHook, siphonToken };
 }
+async function deployCreate2Factory(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ create2Factory: Create2Factory }> {
+    const create2Factory = await deployContract<Create2Factory>(
+        hre,
+        new Create2Factory__factory(signer),
+        "Create2Factory",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
 
+    return { create2Factory };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1651,4 +1670,5 @@ export {
     Phase7Deployed,
     Phase8Deployed,
     PoolsSnapshot,
+    deployCreate2Factory,
 };
