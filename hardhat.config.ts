@@ -14,7 +14,7 @@ import { HardhatUserConfig } from "hardhat/config";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
-const chainIds = {
+export const chainIds = {
     goerli: 5,
     hardhat: 31337,
     kovan: 42,

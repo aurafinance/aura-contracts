@@ -1,16 +1,14 @@
 import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
-import { deployContract, deployContractWithCreate2 } from "../../tasks/utils";
-import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
+import { deployContract } from "../../tasks/utils";
+import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { config as sidechainConfig } from "../../tasks/deploy/sidechain-config";
 import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
-    AuraOFT__factory,
     Coordinator,
     Create2Factory,
     Create2Factory__factory,
@@ -22,6 +20,7 @@ import {
     MockCurveMinter__factory,
     MockERC20__factory,
 } from "../../types";
+import { SidechainConfig } from "tasks/deploy/sidechain-types";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -51,6 +50,7 @@ describe("Sidechain", () => {
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
     let coordinator: Coordinator;
+    let sidechainConfig: SidechainConfig;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -101,48 +101,8 @@ describe("Sidechain", () => {
         phase2 = await mainnetConfig.getPhase2(deployer.signer);
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
 
-        // deploy layerzero mocks
-        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
-        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
-
-        // deploy Create2Factory
-        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
-        await create2Factory.updateDeployer(deployer.address, true);
-
-        auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
-            hre,
-            create2Factory,
-            new AuraOFT__factory(deployer.signer),
-            "AuraOFT",
-            [
-                l1LzEndpoint.address,
-                phase2.cvx.address,
-                phase6.booster.address,
-                phase2.cvxLocker.address,
-                mainnetConfig.addresses.token,
-                deployer.address,
-            ],
-            { debug: false },
-        );
-
-        // deploy sidechain
-        sidechain = await deploySidechainSystem(
-            hre,
-            sidechainConfig.naming,
-            {
-                ...sidechainConfig.addresses,
-                lzEndpoint: l2LzEndpoint.address,
-                daoMultisig: dao.address,
-                create2Factory: create2Factory.address,
-            },
-            { ...sidechainConfig.extConfig, canonicalChainId: L1_CHAIN_ID },
-            deployer.signer,
-        );
-
-        coordinator = sidechain.coordinator;
-
+        // Deploy mocks
         crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
-
         mockMintr = await deployContract<MockCurveMinter>(
             hre,
             new MockCurveMinter__factory(deployer.signer),
@@ -151,6 +111,48 @@ describe("Sidechain", () => {
             {},
             false,
         );
+
+        // deploy layerzero mocks
+        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
+        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
+
+        // deploy Create2Factory
+        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
+        await create2Factory.updateDeployer(deployer.address, true);
+
+        // setup sidechain config
+        sidechainConfig = {
+            addresses: {
+                lzEndpoint: l2LzEndpoint.address,
+                daoMultisig: dao.address,
+                create2Factory: create2Factory.address,
+                token: mainnetConfig.addresses.token,
+                minter: mainnetConfig.addresses.minter,
+            },
+            naming: { coordinatorName: "Aura", coordinatorSymbol: "AURA", tokenFactoryNamePostfix: " Aura Deposit" },
+            extConfig: { canonicalChainId: L1_CHAIN_ID },
+        };
+
+        // deploy canonicalPhase
+        const canonicalPhase = await deployCanonicalPhase(
+            hre,
+            { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address },
+            phase2,
+            phase6,
+            deployer.signer,
+        );
+        auraOFT = canonicalPhase.auraOFT;
+
+        // deploy sidechain
+        sidechain = await deploySidechainSystem(
+            hre,
+            sidechainConfig.naming,
+            sidechainConfig.addresses,
+            sidechainConfig.extConfig,
+            deployer.signer,
+        );
+
+        coordinator = sidechain.coordinator;
     });
 
     describe("Check configs", () => {
