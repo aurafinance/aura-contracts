@@ -110,6 +110,7 @@ describe("Sidechain", () => {
         await create2Factory.updateDeployer(deployer.address, true);
 
         auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
+            hre,
             create2Factory,
             new AuraOFT__factory(deployer.signer),
             "AuraOFT",
@@ -121,9 +122,7 @@ describe("Sidechain", () => {
                 mainnetConfig.addresses.token,
                 deployer.address,
             ],
-            {},
-            {},
-            false,
+            { debug: false },
         );
 
         // deploy sidechain
