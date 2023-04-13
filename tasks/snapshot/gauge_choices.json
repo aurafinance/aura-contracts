@@ -102,5 +102,13 @@
     { "address": "0x56A65cC666bfe538c5a031942369F6F63eb42240", "label": "g-33/33/33 bb-ag-WBTC/bb-ag-WETH/bb-ag-USD" },
     { "address": "0x3FB2975E00B3dbB97E8315a5ACbFF6B38026FDf3", "label": "g-50/50 bb-ag-WETH/bb-ag-GNO" },
     { "address": "0xd27671f057e9e72751106fBfbBBB33827D986546", "label": "g-50/50 bb-ag-USD/bb-ag-GNO" },
-    { "address": "0x25D6F29429bccCc129d1A3e2a5642C8B929BCC07", "label": "g-ComposableStable bb-ag-WXDAI/bb-ag-USDT/bb-ag-USDC" }
+    { "address": "0x25D6F29429bccCc129d1A3e2a5642C8B929BCC07", "label": "g-ComposableStable bb-ag-WXDAI/bb-ag-USDT/bb-ag-USDC" },
+    { "address": "0x0052688295413b32626D226a205b95cDB337DE86", "label": "ComposableStable bb-a-DAI/bb-a-USDT/bb-a-USDC" },
+    { "address": "0x5f838591A5A8048F0E4C4c7fCca8fD9A25BF0590", "label": "ComposableStable bb-a-WETH/wstETH" },
+    { "address": "0xCd8bB8cEBc794842967849255C234e7b7619A518", "label": "50/50 USH/WETH" },
+    { "address": "0xD9cde95eFeD2d426F2741E2c44De9573116B8F07", "label": "50/50 USDC-DAI-USDT/WETH" },
+    { "address": "0x454eb2f12242397688DbfdA241487e67ed80507a", "label": "50/50 STG/bb-a-USD" },
+    { "address": "0xad2632513bFd805A63aD3e38D24EE10835877d41", "label": "a-ComposableStable bb-a-WETH/rETH" },
+    { "address": "0xBD734b38F2dc864fe00DF51fc4F17d310eD7dA4D", "label": "p-ComposableStable stMATIC/bb-a-WMATIC" },
+    { "address": "0x87F678f4F84e5665e1A85A22392fF5A84adC22cD", "label": "p-ComposableStable bb-a-WMATIC/MaticX" }
 ]
