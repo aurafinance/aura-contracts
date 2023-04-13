@@ -28,6 +28,12 @@ export const getChainAddress = (contractName: ContractNames, chain: Chain): stri
                 return "0xbE126Fd179822c5Cb72b0e6E584a6F7afeb9eaBE";
             default:
         }
+    } else if (chain === Chain.goerli) {
+        switch (contractName) {
+            case "Deployer":
+                return "0xbE126Fd179822c5Cb72b0e6E584a6F7afeb9eaBE";
+            default:
+        }
     }
     return undefined;
 };
@@ -44,6 +50,9 @@ export const getChain = (hre: HardhatRuntime = {}): Chain => {
     }
     if (hre?.network?.name === "kovan") {
         return Chain.kovan;
+    }
+    if (hre?.network?.name === "goerli") {
+        return Chain.goerli;
     }
     return Chain.local;
 };

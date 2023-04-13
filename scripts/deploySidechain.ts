@@ -10,6 +10,7 @@ import {
     BoosterOwner__factory,
     Coordinator,
     Coordinator__factory,
+    Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
@@ -34,10 +35,11 @@ import {
     VoterProxyLite,
     VoterProxyLite__factory,
 } from "../types";
-import { simpleToExactAmount, ZERO_ADDRESS } from "../test-utils";
+import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
+import { simpleToExactAmount } from "../test-utils/math";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-config";
-import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
 
 export async function deployCanonicalPhase(
     hre: HardhatRuntimeEnvironment,
@@ -47,13 +49,11 @@ export async function deployCanonicalPhase(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ) {
-    const create2Factory = Create2Factory__factory.connect("TODO-CONFIRM-IF-ALSO-HERE", deployer);
-    const auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
-        create2Factory,
+    const auraOFT = await deployContract<AuraOFT>(
+        hre,
         new AuraOFT__factory(deployer),
         "AuraOFT",
         [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address, await deployer.getAddress()],
-        {},
         {},
         debug,
         waitForBlocks,
@@ -88,116 +88,121 @@ export async function deploySidechainSystem(
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
     const deployerAddress = await deployer.getAddress();
+    const create2Options = { amount: 0, salt: undefined, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
     const create2Factory = Create2Factory__factory.connect(addresses.create2Factory, deployer);
+
     const voterProxy = await deployContractWithCreate2<VoterProxyLite, VoterProxyLite__factory>(
+        hre,
         create2Factory,
         new VoterProxyLite__factory(deployer),
         "VoterProxyLite",
-        [addresses.minter, addresses.token, deployerAddress],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        [addresses.minter, addresses.token],
+        {
+            ...deployOptions,
+            create2Options: {
+                ...create2Options,
+                callbacks: [
+                    VoterProxyLite__factory.createInterface().encodeFunctionData("setOwner", [deployerAddress]),
+                ],
+            },
+        },
     );
-    // Ownable
+
+    const coordinatorTransferOwnership = Coordinator__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
+
     const coordinator = await deployContractWithCreate2<Coordinator, Coordinator__factory>(
+        hre,
         create2Factory,
         new Coordinator__factory(deployer),
         "Coordinator",
-        [
-            naming.coordinatorName,
-            naming.coordinatorSymbol,
-            addresses.lzEndpoint,
-            extConfig.canonicalChainId,
-            deployerAddress,
-        ],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+        { ...deployOptions, create2Options: { ...create2Options, callbacks: [coordinatorTransferOwnership] } },
     );
 
     const cvxTokenAddress = coordinator.address;
 
     const booster = await deployContractWithCreate2<BoosterLite, BoosterLite__factory>(
+        hre,
         create2Factory,
         new BoosterLite__factory(deployer),
         "BoosterLite",
-        [voterProxy.address, cvxTokenAddress, addresses.token, deployerAddress],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        [voterProxy.address, cvxTokenAddress, addresses.token],
+        {
+            ...deployOptions,
+            create2Options: {
+                ...create2Options,
+                callbacks: [
+                    BoosterLite__factory.createInterface().encodeFunctionData("setPoolManager", [deployerAddress]),
+                    BoosterLite__factory.createInterface().encodeFunctionData("setOwner", [deployerAddress]),
+                ],
+            },
+        },
     );
     const rewardFactory = await deployContractWithCreate2<RewardFactory, RewardFactory__factory>(
+        hre,
         create2Factory,
         new RewardFactory__factory(deployer),
         "RewardFactory",
         [booster.address, addresses.token],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const tokenFactory = await deployContractWithCreate2<TokenFactory, TokenFactory__factory>(
+        hre,
         create2Factory,
         new TokenFactory__factory(deployer),
         "TokenFactory",
         [booster.address, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const proxyFactory = await deployContractWithCreate2<ProxyFactory, ProxyFactory__factory>(
+        hre,
         create2Factory,
         new ProxyFactory__factory(deployer),
         "ProxyFactory",
         [],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const stashFactory = await deployContractWithCreate2<StashFactoryV2, StashFactoryV2__factory>(
+        hre,
         create2Factory,
         new StashFactoryV2__factory(deployer),
         "StashFactory",
         [booster.address, rewardFactory.address, proxyFactory.address],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const stashV3 = await deployContractWithCreate2<ExtraRewardStashV3, ExtraRewardStashV3__factory>(
+        hre,
         create2Factory,
         new ExtraRewardStashV3__factory(deployer),
         "ExtraRewardStashV3",
         [addresses.token],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const poolManager = await deployContractWithCreate2<PoolManagerLite, PoolManagerLite__factory>(
+        hre,
         create2Factory,
         new PoolManagerLite__factory(deployer),
         "PoolManagerLite",
         [booster.address, addresses.daoMultisig],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
     const boosterOwner = await deployContractWithCreate2<BoosterOwner, BoosterOwner__factory>(
+        hre,
         create2Factory,
         new BoosterOwner__factory(deployer),
         "BoosterOwner",
         [addresses.daoMultisig, poolManager.address, booster.address, stashFactory.address, ZERO_ADDRESS, true],
-        {},
-        {},
-        debug,
-        waitForBlocks,
+        deployOptions,
     );
 
     let tx: ContractTransaction;
@@ -221,6 +226,9 @@ export async function deploySidechainSystem(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFactories(rewardFactory.address, stashFactory.address, tokenFactory.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await booster.setFeeManager(deployerAddress);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFees(550, 1100, 50, 0);
@@ -307,4 +315,23 @@ export async function deploySidechainMocks(
     await waitForTx(tx);
 
     return { token, bpt, minter, gauge };
+}
+
+export async function deployCreate2Factory(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ create2Factory: Create2Factory }> {
+    const create2Factory = await deployContract<Create2Factory>(
+        hre,
+        new Create2Factory__factory(signer),
+        "Create2Factory",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { create2Factory };
 }
