@@ -35,16 +35,17 @@ import {
     VoterProxyLite,
     VoterProxyLite__factory,
 } from "../types";
-import { ExtSystemConfig, Phase2Deployed } from "./deploySystem";
+import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { simpleToExactAmount } from "../test-utils/math";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
-import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-config";
+import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-types";
 
 export async function deployCanonicalPhase(
     hre: HardhatRuntimeEnvironment,
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
+    phase6: Phase6Deployed,
     deployer: Signer,
     debug: boolean = false,
     waitForBlocks: number = 0,
@@ -53,7 +54,7 @@ export async function deployCanonicalPhase(
         hre,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address, await deployer.getAddress()],
+        [config.lzEndpoint, phase2.cvx.address, phase6.booster.address, phase2.cvxLocker.address, config.token],
         {},
         debug,
         waitForBlocks,
