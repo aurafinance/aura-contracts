@@ -243,6 +243,15 @@ yarn task timeTravel --duration 69420 --network forking
 | bbusdHandler              | [0xb30a0c7ac99D61650A528AbB31A46470C55f4834](https://goerli.etherscan.io/address/0xb30a0c7ac99D61650A528AbB31A46470C55f4834) |
 | auraRewards               | [0x6fE74EA452b21698bbC27617b2B23FB797393094](https://goerli.etherscan.io/address/0x6fE74EA452b21698bbC27617b2B23FB797393094) |
 | virtualRewardFactory      | [0x3f897302B09e763650D825Cd3c738EfDf8510Ad8](https://goerli.etherscan.io/address/0x3f897302B09e763650D825Cd3c738EfDf8510Ad8) |
+| create2Factory            | [0xFf87D90216C236B39D74d5404AE86b8b1DA3b448](https://goerli.etherscan.io/address/0xFf87D90216C236B39D74d5404AE86b8b1DA3b448) |
+
+### Arbitrum (42161)
+
+### Arbitrum Goerli (42163)
+
+| Contract       | Address                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| create2Factory | [0x2E1ADE7233e886D8041Fd7c3b87523F3DDC2169D](https://goerli.arbiscan.io/address/0x2E1ADE7233e886D8041Fd7c3b87523F3DDC2169D) |
 
 ### Ethereum Mainnet (1) @deprecated
 

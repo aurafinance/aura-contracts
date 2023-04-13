@@ -11,8 +11,9 @@ interface VerifyEtherscan {
 }
 
 export const verifyEtherscan = async (hre: HardhatRuntimeEnvironment, contract: VerifyEtherscan): Promise<void> => {
+    const supportedNetworks = ["mainnet", "goerli", "arbitrum", "arbitrumGoerli"];
     if (
-        hre.network.name == "mainnet" &&
+        supportedNetworks.includes(hre.network.name) &&
         !["tasks-fork.config.ts", "hardhat-fork.config.ts"].includes(hre.hardhatArguments.config)
     ) {
         console.log(`About to verify ${contract.address} on Etherscan`);
