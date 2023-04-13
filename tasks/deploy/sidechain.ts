@@ -22,6 +22,7 @@ import {
     deploySidechainMocks,
     deploySidechainSystem,
 } from "../../scripts/deploySidechain";
+import { waitForTx } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
@@ -36,6 +37,10 @@ task("deploy:sidechain:create2Factory")
         const waitForBlocks = tskArgs.wait;
 
         const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
+
+        const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
+        await waitForTx(tx);
+
         logContracts(phase as unknown as { [key: string]: { address: string } });
     });
 
@@ -54,6 +59,8 @@ task("deploy:sidechain:L1")
 
         const configs = {
             [chainIds.goerli]: goerliConfig,
+            31337: goerliConfig,
+            1337: goerliConfig,
         };
 
         const config = configs[hre.network.config.chainId];
@@ -66,7 +73,7 @@ task("deploy:sidechain:L1")
         const phase6 = await config.getPhase6(deployer);
 
         const result = await deployCanonicalPhase(hre, config.addresses, phase2, phase6, deployer, debug, tskArgs.wait);
-        logContracts(result);
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L2")
@@ -76,6 +83,8 @@ task("deploy:sidechain:L2")
 
         const configs = {
             [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
+            31337: arbitrumGoerliConfig,
+            1337: arbitrumGoerliConfig,
         };
 
         const config = configs[hre.network.config.chainId];
@@ -95,6 +104,7 @@ task("deploy:sidechain:L2")
         );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
+        logContracts(result.factories as unknown as { [key: string]: { address: string } });
     });
 
 task("sidechain:addresses")

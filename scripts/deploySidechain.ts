@@ -41,6 +41,10 @@ import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-types";
 
+export interface CanonicalPhaseDeployed {
+    auraOFT: AuraOFT;
+}
+
 export async function deployCanonicalPhase(
     hre: HardhatRuntimeEnvironment,
     config: ExtSystemConfig,
@@ -49,7 +53,7 @@ export async function deployCanonicalPhase(
     deployer: Signer,
     debug: boolean = false,
     waitForBlocks: number = 0,
-) {
+): Promise<CanonicalPhaseDeployed> {
     const auraOFT = await deployContract<AuraOFT>(
         hre,
         new AuraOFT__factory(deployer),

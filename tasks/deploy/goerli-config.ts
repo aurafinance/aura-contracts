@@ -46,10 +46,12 @@ import {
     PoolManagerV4__factory,
     BoosterOwnerSecondary__factory,
     ExtraRewardStashV3__factory,
+    AuraOFT__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { getMockDistro } from "../../scripts/deployMocks";
+import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
 
 const addresses: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
@@ -83,6 +85,7 @@ const addresses: ExtSystemConfig = {
         ],
         assetsIn: ["0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd", "0x0595D1Df64279ddB51F1bdC405Fe2D0b4Cc86681"],
     },
+    lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23",
 };
 
 const naming = {
@@ -208,6 +211,10 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
     auraRewards: VirtualBalanceRewardPool__factory.connect("0x6fE74EA452b21698bbC27617b2B23FB797393094", deployer),
 });
 
+const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
+    auraOFT: AuraOFT__factory.connect("0x9B36D6cADC5284Bb46EE815Ba4959a8E22869717", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -220,4 +227,5 @@ export const config = {
     getPhase6,
     getPhase8,
     getAuraBalVault,
+    getSidechain,
 };
