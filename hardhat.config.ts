@@ -23,6 +23,7 @@ export const chainIds = {
     ropsten: 3,
     arbitrum: 42161,
     arbitrumGoerli: 421613,
+    polygon: 137,
 };
 
 const compilerSettings = {
@@ -62,6 +63,7 @@ const config: HardhatUserConfig = {
         goerli: {
             url: process.env.NODE_URL || "",
             gasPrice: 3000000000,
+            chainId: chainIds.goerli,
         },
         arbitrum: {
             url: process.env.NODE_URL || "",

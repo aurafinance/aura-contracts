@@ -1,3 +1,6 @@
+import { Signer } from "ethers";
+import { SidechainDeployed } from "scripts/deploySidechain";
+
 export interface SidechainAddresses {
     lzEndpoint: string;
     token: string;
@@ -20,4 +23,5 @@ export interface SidechainConfig {
     addresses: SidechainAddresses;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
+    getSidechain?: (s: Signer) => SidechainDeployed;
 }
