@@ -47,6 +47,23 @@ Compute L2 contract addresses
 yarn task sidechain:addresses --chainId <CHAIN_ID>
 ```
 
+Set trust remotes. Takes remote chain id as an argument. For example if you want to set the trusted remotes
+from mainnet to arbitrum you would pass in the arbitrum chain ID as remote chain id.
+
+```
+yarn task sidechain:set-trusted-remote --wait <WAIT_N_BLOCKS> --remotechainid <REMOTE_CHAIN_ID>
+```
+
+Lookup OFT information for a local->remote chain. For this task remote chain id has to be any of the side chains.
+It is also required that the environment variable REMOTE_NODE_URL is set.
+
+For example if I want to lookup the information of mainnet->arbitrum I would set NODE_URL to a mainnet RPC and
+REMOTE_NODE_URL to an arbitrum RPC and then pass in the arbitrum chain ID as remotechainid
+
+```
+yarn task sidechain:aura-oft-info --remotechainid <REMOTE_CHAIN_ID>
+```
+
 ## Deployments
 
 #### Ethereum Mainnet (1)
@@ -54,7 +71,7 @@ yarn task sidechain:addresses --chainId <CHAIN_ID>
 | Contract           | Address                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | L1Coordinator      | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/)                                           |
-| AuraOFT (ProxyOFT) | [0x9B36D6cADC5284Bb46EE815Ba4959a8E22869717](https://goerli.arbiscan.io/address/0x9B36D6cADC5284Bb46EE815Ba4959a8E22869717) |
+| AuraOFT (ProxyOFT) | [0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3](https://goerli.arbiscan.io/address/0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3) |
 
 #### Arbitrum (42161)
 
