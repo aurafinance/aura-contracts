@@ -9,7 +9,7 @@ import {
     StashFactoryV2__factory,
     TokenFactory__factory,
     VoterProxyLite__factory,
-} from "types";
+} from "../../types";
 import { ExtSidechainConfig, SidechainAddresses, SidechainConfig, SidechainNaming } from "./sidechain-types";
 
 const addresses: SidechainAddresses = {
@@ -30,13 +30,7 @@ const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
 };
 
-export const config: SidechainConfig = {
-    addresses,
-    naming,
-    extConfig,
-};
-
-export const getDeployment = (signer: Signer) => ({
+export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect("0xfdAe5b9b7C98618CD03216D64F9917e16B014BF8", signer),
     booster: BoosterLite__factory.connect("0x8e9b10c65a8eCAC1F3f880675a88B75E31D2E8C0", signer),
     boosterOwner: BoosterOwner__factory.connect("0x0A01A721a4B881ae1B63aE7Ce3076Af6D36eea73", signer),
@@ -49,3 +43,10 @@ export const getDeployment = (signer: Signer) => ({
         proxyFactory: ProxyFactory__factory.connect("0xa2f70247addeea9c205477fb73889da8f0d69317", signer),
     },
 });
+
+export const config: SidechainConfig = {
+    addresses,
+    naming,
+    extConfig,
+    getSidechain,
+};
