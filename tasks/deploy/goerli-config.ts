@@ -212,7 +212,7 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 });
 
 const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
-    auraOFT: AuraOFT__factory.connect("0x9B36D6cADC5284Bb46EE815Ba4959a8E22869717", deployer),
+    auraOFT: AuraOFT__factory.connect("0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3", deployer),
 });
 
 export const config = {
