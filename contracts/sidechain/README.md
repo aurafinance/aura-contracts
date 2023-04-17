@@ -7,21 +7,45 @@ Aura sidechain contracts
 ```
 contracts/sidechain
 ├── AuraProxyOFT.sol        L1 Aura proxy OFT
-├── AuraOFT.sol L2          Aura OFT
+├── AuraOFT.sol             L2 Aura OFT
 ├── L1Coordinator.sol       L1 Coordinator handles sending messages to canonical chain
 ├── L2Coordinator.sol       L2 Coordinator handles sending messages to canonical chain
-├── Create2Factory.sol      Ronseal
+├── Create2Factory.sol      A create2 factory to deploy the sidechain contracts to constant addresses
 ├── CrossChainConfig.sol    Abstract contract to handle setting LZ configs
 └── CrossChainMessages.sol  Shared LZ messaging library
 ```
 
-## Tasks
+## Deployment Tasks
 
-Deploy the L1 sidechain system (AuraProxyOFT, L1Coordinator)
+1. Deploy the L1 sidechain system (AuraProxyOFT, L1Coordinator)
 
 ```
 yarn task deploy:sidechain:L1 --wait <WAIT_N_BLOCKS>
 ```
+
+2. Deploy the sidechain L2 system. (BoosterLite, VoterProxyLite, ... etc)
+
+```
+yarn task deploy:sidechain:L2 --wait <WAIT_N_BLOCKS>
+```
+
+3. Set the config and trusted remotes for the canonical chain
+
+```
+
+yarn task deploy:sidechain:config:L1 --wait <WAIT_N_BLOCKS> --sidechainid <CHAIN_ID> --network <CANONICAL_NETWORK_NAME>
+
+```
+
+4. Set the config and trusted remotes for the sidechain
+
+```
+yarn task deploy:sidechain:config:L2 --wait <WAIT_N_BLOCKS> --canonicalchainid <CHAIN_ID> --network <SIDECHAIN_NETWORK_NAME>
+```
+
+## Other Tasks
+
+#### Mock contracts
 
 Deploy mock contracts onto an L2 where Balancer is not deployed.
 
@@ -29,11 +53,7 @@ Deploy mock contracts onto an L2 where Balancer is not deployed.
 yarn task deploy:sidechain:mocks --wait <WAIT_N_BLOCKS>
 ```
 
-Deploy the sidechain L2 system. (BoosterLite, VoterProxyLite, ... etc)
-
-```
-yarn task deploy:sidechain:L2 --wait <WAIT_N_BLOCKS>
-```
+#### Create2
 
 Deploy a single instance of the create2Factory
 
@@ -47,12 +67,7 @@ Compute L2 contract addresses
 yarn task sidechain:addresses --chainId <CHAIN_ID>
 ```
 
-Set trust remotes. Takes remote chain id as an argument. For example if you want to set the trusted remotes
-from mainnet to arbitrum you would pass in the arbitrum chain ID as remote chain id.
-
-```
-yarn task sidechain:set-trusted-remote --wait <WAIT_N_BLOCKS> --remotechainid <REMOTE_CHAIN_ID>
-```
+#### Local->Remote info
 
 Lookup OFT information for a local->remote chain. For this task remote chain id has to be any of the side chains.
 It is also required that the environment variable REMOTE_NODE_URL is set.
