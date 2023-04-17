@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { OFT } from "../layerzero/token/oft/OFT.sol";
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
- * @title Coordinator
+ * @title L2Coordinator
  * @dev Coordinates LZ messages and actions from the L1 on the L2
  */
-contract Coordinator is OFT, CrossChainConfig {
+contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
+    using AuraMath for uint256;
+
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -20,6 +24,9 @@ contract Coordinator is OFT, CrossChainConfig {
     /// @dev Booster contract
     address public booster;
 
+    /// @dev AuraOFT contract
+    address public auraOFT;
+
     /// @dev Rate to send CVX on mint
     uint256 public mintRate;
 
@@ -28,11 +35,11 @@ contract Coordinator is OFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     constructor(
-        string memory _name,
-        string memory _symbol,
         address _lzEndpoint,
+        address _auraOFT,
         uint16 _canonicalChainId
-    ) OFT(_name, _symbol, _lzEndpoint) {
+    ) NonblockingLzApp(_lzEndpoint) {
+        auraOFT = _auraOFT;
         canonicalChainId = _canonicalChainId;
     }
 
@@ -66,7 +73,7 @@ contract Coordinator is OFT, CrossChainConfig {
     function mint(address _to, uint256 _amount) external {
         require(msg.sender == booster, "!booster");
         uint256 amount = (_amount * mintRate) / 1e18;
-        _transfer(address(this), _to, amount);
+        IERC20(auraOFT).transfer(_to, amount);
     }
 
     /**
@@ -79,33 +86,12 @@ contract Coordinator is OFT, CrossChainConfig {
         require(msg.sender == booster, "!booster");
         bytes memory payload = CCM.encodeFees(_rewards);
 
-        CrossChainConfig.Config memory config = configs[canonicalChainId][Coordinator.queueNewRewards.selector];
+        CrossChainConfig.Config memory config = configs[canonicalChainId][L2Coordinator.queueNewRewards.selector];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
-            payable(_originalSender), /// Refund address
-            config.zroPaymentAddress, // ZRO payment address
-            config.adapterParams, ////// Adapter params
-            msg.value ////////////////// Native fee
-        );
-    }
-
-    /**
-     * @dev Lock CVX on the L1 chain
-     * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
-     */
-    function lock(uint256 _cvxAmount) external payable {
-        _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
-
-        bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);
-
-        CrossChainConfig.Config memory config = configs[canonicalChainId][Coordinator.lock.selector];
-
-        _lzSend(
-            canonicalChainId, ////////// Parent chain ID
-            payload, /////////////////// Payload
-            payable(msg.sender), /////// Refund address
+            payable(_originalSender), // Refund address
             config.zroPaymentAddress, // ZRO payment address
             config.adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
@@ -117,12 +103,12 @@ contract Coordinator is OFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Override the default OFT lzReceive function logic
+     * @dev Override the default lzReceive function logic
      */
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
+        bytes memory,
+        uint64,
         bytes memory _payload
     ) internal virtual override {
         if (CCM.isCustomMessage(_payload)) {
@@ -134,13 +120,7 @@ contract Coordinator is OFT, CrossChainConfig {
                 // It is sent over each time the fee debt is updated on the L1 to try and keep
                 // the L2 rate as close as possible to the L1 rate
                 mintRate = (cvxAmount * 1e18) / crvAmount;
-
-                // Continue with LZ flow with crvAmount removed from payload
-                _payload = abi.encode(PT_SEND, abi.encodePacked(address(this)), cvxAmount);
-                super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
             }
-        } else {
-            super._nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
         }
     }
 }

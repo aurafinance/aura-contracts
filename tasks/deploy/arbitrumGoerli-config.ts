@@ -2,7 +2,8 @@ import { Signer } from "ethers";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
-    Coordinator__factory,
+    AuraOFT__factory,
+    L2Coordinator__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
     RewardFactory__factory,
@@ -35,7 +36,8 @@ export const getSidechain = (signer: Signer) => ({
     booster: BoosterLite__factory.connect("0x8e9b10c65a8eCAC1F3f880675a88B75E31D2E8C0", signer),
     boosterOwner: BoosterOwner__factory.connect("0x0A01A721a4B881ae1B63aE7Ce3076Af6D36eea73", signer),
     poolManager: PoolManagerLite__factory.connect("0x0792e9aab201a002b1c18a7a35d026c6c251cdf1", signer),
-    coordinator: Coordinator__factory.connect("0x269a60d7d12e392f6e096c923823c371dea7ce9c", signer),
+    l2Coordinator: L2Coordinator__factory.connect("0x269a60d7d12e392f6e096c923823c371dea7ce9c", signer),
+    auraOFT: AuraOFT__factory.connect("0x0000000000000000000000000000000000000000", signer),
     factories: {
         rewardFactory: RewardFactory__factory.connect("0xd0bd843b245bea845411ef118c0a25494692d7c6", signer),
         stashFactory: StashFactoryV2__factory.connect("0xbde6bdf2c16b4407d6b3b983856d7b4253098e4d", signer),

@@ -61,15 +61,15 @@ task("sidechain:set-trusted-remote")
         const local = await localConfig.getSidechain(deployer);
         const remote = await remoteConfig.getSidechain(deployer);
 
-        if ("auraOFT" in local && "coordinator" in remote) {
+        if ("auraProxyOFT" in local && "l2Coordinator" in remote) {
             // The local chain is the canonical chain
             // Example: we are on mainnet setting the aribtrum coordinator as a trusted remote
-            const tx = await local.auraOFT.setTrustedRemoteAddress(remoteLzChainId, remote.coordinator.address);
+            const tx = await local.auraProxyOFT.setTrustedRemoteAddress(remoteLzChainId, remote.l2Coordinator.address);
             await waitForTx(tx, debug, tskArgs.wait);
-        } else if ("coordinator" in local && "auraOFT" in remote) {
+        } else if ("l2Coordinator" in local && "auraProxyOFT" in remote) {
             // The local chain is one of the sidechains
             // Example: we are on arbitrum setting the mainnet auraOFT as a trusted remote
-            const tx = await local.coordinator.setTrustedRemoteAddress(remoteLzChainId, remote.auraOFT.address);
+            const tx = await local.l2Coordinator.setTrustedRemoteAddress(remoteLzChainId, remote.auraProxyOFT.address);
             await waitForTx(tx, debug, tskArgs.wait);
         }
     });
@@ -142,12 +142,12 @@ task("sidechain:aura-oft-info")
         log(
             "Local",
             [
-                "AuraOFT address: " + local.auraOFT.address,
-                "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraOFT.address)),
-                `Trusted remote address (${remoteLzChainId}): ${await local.auraOFT.trustedRemoteLookup(
+                "AuraOFT address: " + local.auraProxyOFT.address,
+                "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
+                `Trusted remote address (${remoteLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
                     remoteLzChainId,
                 )}`,
-                `Endpoint: ${await local.auraOFT.lzEndpoint()}`,
+                `Endpoint: ${await local.auraProxyOFT.lzEndpoint()}`,
             ],
             [
                 "Lock balance: " + formatEther((await phase2.cvxLocker.balances(deployerAddress)).locked),
@@ -169,14 +169,15 @@ task("sidechain:aura-oft-info")
         log(
             "Remote",
             [
-                `Coordinator address: ${remote.coordinator.address}`,
-                `Total supply: ${await remote.coordinator.totalSupply()}`,
-                `Trusted remote address (${localLzChainId}): ${await remote.coordinator.trustedRemoteLookup(
+                `Coordinator address: ${remote.l2Coordinator.address}`,
+                `Total supply: ${await remote.auraOFT.totalSupply()}`,
+                `Trusted remote address (${localLzChainId}): ${await remote.l2Coordinator.trustedRemoteLookup(
                     localLzChainId,
                 )}`,
-                `Endpoint: ${await remote.coordinator.lzEndpoint()}`,
+                `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
+                `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
             ],
-            [`Balance of deployer: ${await remote.coordinator.balanceOf(deployerAddress)}`],
+            [`Balance of deployer: ${await remote.auraOFT.balanceOf(deployerAddress)}`],
         );
     });
 
@@ -206,17 +207,17 @@ task("sidechain:test:send-aura-to-sidechain")
         const local = await localConfig.getSidechain(deployer);
         const remote = await remoteConfig.getSidechain(deployer);
 
-        if ("auraOFT" in local && "coordinator" in remote) {
+        if ("auraProxyOFT" in local && "l2Coordinator" in remote) {
             // L1 -> L2
             const phase2: Phase2Deployed = await (localConfig as any).getPhase2(deployer);
             const auraBalance = await phase2.cvx.balanceOf(deployerAddress);
             const scaledAmount = parseEther(tskArgs.amount);
             assert(auraBalance >= scaledAmount, "Not enough AURA");
 
-            let tx = await phase2.cvx.approve(local.auraOFT.address, scaledAmount);
+            let tx = await phase2.cvx.approve(local.auraProxyOFT.address, scaledAmount);
             await waitForTx(tx, debug, tskArgs.wait);
 
-            tx = await local.auraOFT.sendFrom(
+            tx = await local.auraProxyOFT.sendFrom(
                 deployerAddress,
                 lzChainIds[tskArgs.remotechainid],
                 deployerAddress,
@@ -249,14 +250,14 @@ task("sidechhain:test:lock-aura")
         assert(config, `Local config for chain ID ${hre.network.config.chainId} not found`);
 
         const deployment = await config.getSidechain(deployer);
-        assert("coordinator" in deployment, "Coordinator not found");
+        assert("l2Coordinator" in deployment, "Coordinator not found");
 
-        const auraBalance = await deployment.coordinator.balanceOf(deployerAddress);
+        const auraBalance = await deployment.auraOFT.balanceOf(deployerAddress);
         console.log("AURA amount:", formatEther(auraBalance));
         const scaledAmount = parseEther(tskArgs.amount);
         assert(auraBalance >= scaledAmount, "Not enough ARUA");
 
-        const tx = await deployment.coordinator.lock(scaledAmount, {
+        const tx = await deployment.auraOFT.lock(scaledAmount, {
             value: simpleToExactAmount(0.05),
             gasLimit: 600_000,
         });
@@ -282,7 +283,7 @@ task("sidechain:config:canonical")
         const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 200_000]);
 
         const distributeAuraSelector = "";
-        const tx = await deployment.auraOFT["setConfig(uint16,bytes4,(bytes,address))"](
+        const tx = await deployment.auraProxyOFT["setConfig(uint16,bytes4,(bytes,address))"](
             tskArgs.remotechainid,
             distributeAuraSelector,
             [adapterParams, ZERO_ADDRESS] as any,
@@ -309,7 +310,7 @@ task("sidechain:config:sidechain")
         const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
 
         const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
-        const tx = await deployment.coordinator["setConfig(uint16,bytes4,(bytes,address))"](
+        const tx = await deployment.l2Coordinator["setConfig(uint16,bytes4,(bytes,address))"](
             tskArgs.remotechainid,
             lockSelector,
             [adapterParams, ZERO_ADDRESS] as any,
