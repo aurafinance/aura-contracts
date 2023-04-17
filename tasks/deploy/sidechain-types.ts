@@ -20,6 +20,7 @@ export interface ExtSidechainConfig {
 }
 
 export interface SidechainConfig {
+    chainId: number;
     addresses: SidechainAddresses;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;

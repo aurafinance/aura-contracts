@@ -1,4 +1,5 @@
 import { Signer } from "ethers";
+import { chainIds } from "../../hardhat.config";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
@@ -47,6 +48,7 @@ export const getSidechain = (signer: Signer) => ({
 });
 
 export const config: SidechainConfig = {
+    chainId: chainIds.arbitrumGoerli,
     addresses,
     naming,
     extConfig,

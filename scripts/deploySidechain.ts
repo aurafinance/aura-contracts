@@ -1,4 +1,4 @@
-import { ContractTransaction, Signer } from "ethers";
+import { ContractTransaction, ethers, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import {
@@ -401,4 +401,53 @@ export async function deployCreate2Factory(
     );
 
     return { create2Factory };
+}
+
+export async function setTrustedRemoteCanonical(
+    canonical: CanonicalPhaseDeployed,
+    sidechain: SidechainDeployed,
+    sidechainLzChainId: number,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    let tx: ContractTransaction;
+
+    tx = await canonical.l1Coordinator.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
+        ),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.auraProxyOFT.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(["address", "address"], [sidechain.auraOFT.address, canonical.auraProxyOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+}
+
+export async function setTrustedRemoteSidechain(
+    canonical: CanonicalPhaseDeployed,
+    sidechain: SidechainDeployed,
+    canonicalLzChainId: number,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    let tx: ContractTransaction;
+    tx = await sidechain.l2Coordinator.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [canonical.l1Coordinator.address, sidechain.l2Coordinator.address],
+        ),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await sidechain.auraOFT.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, sidechain.auraOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
 }
