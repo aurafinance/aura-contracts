@@ -5,74 +5,14 @@ import { formatEther, parseEther } from "ethers/lib/utils";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { chainIds } from "../../hardhat.config";
 import { getSigner, waitForTx } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
-import { config as goerliConfig } from "../deploy/goerli-config";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { config as arbitrumGoerliConfig } from "../deploy/arbitrumGoerli-config";
 import { CanonicalPhaseDeployed, SidechainDeployed } from "../../scripts/deploySidechain";
+import { canonicalChains, remoteChainMap, lzChainIds, configs } from "../deploy/sidechain-constants";
 
 const debug = true;
-
-const remoteChainMap = {
-    [chainIds.goerli]: chainIds.arbitrumGoerli,
-    [chainIds.arbitrum]: chainIds.mainnet,
-    [chainIds.arbitrumGoerli]: chainIds.goerli,
-    [chainIds.polygon]: chainIds.mainnet,
-};
-
-const lzChainIds = {
-    [chainIds.mainnet]: 101,
-    [chainIds.arbitrum]: 110,
-    [chainIds.goerli]: 10121,
-    [chainIds.arbitrumGoerli]: 10143,
-};
-
-const configs = {
-    [chainIds.goerli]: goerliConfig,
-    [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
-};
-
-const canonicalChains = [chainIds.goerli, chainIds.mainnet];
-
-task("sidechain:set-trusted-remote")
-    .addParam("wait", "Wait for blocks")
-    .addParam("remotechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
-    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const deployer = await getSigner(hre);
-
-        const localConfig = configs[hre.network.config.chainId];
-        assert(localConfig, `Local config for chain ID ${hre.network.config.chainId} not found`);
-
-        const remoteChainId = tskArgs.remotechainid;
-        assert(
-            Number(remoteChainId) === Number(remoteChainMap[hre.network.config.chainId]),
-            `Incorrect remote chain ID ${remoteChainId} !== ${remoteChainMap[hre.network.config.chainId]}`,
-        );
-
-        const remoteConfig = configs[remoteChainId];
-        assert(remoteConfig, `Remote config for chain ID ${remoteChainId} not found`);
-
-        const remoteLzChainId = lzChainIds[remoteChainId];
-        assert(remoteLzChainId, "LZ chain ID not found");
-
-        const local = await localConfig.getSidechain(deployer);
-        const remote = await remoteConfig.getSidechain(deployer);
-
-        if ("auraProxyOFT" in local && "l2Coordinator" in remote) {
-            // The local chain is the canonical chain
-            // Example: we are on mainnet setting the aribtrum coordinator as a trusted remote
-            const tx = await local.auraProxyOFT.setTrustedRemoteAddress(remoteLzChainId, remote.l2Coordinator.address);
-            await waitForTx(tx, debug, tskArgs.wait);
-        } else if ("l2Coordinator" in local && "auraProxyOFT" in remote) {
-            // The local chain is one of the sidechains
-            // Example: we are on arbitrum setting the mainnet auraOFT as a trusted remote
-            const tx = await local.l2Coordinator.setTrustedRemoteAddress(remoteLzChainId, remote.auraProxyOFT.address);
-            await waitForTx(tx, debug, tskArgs.wait);
-        }
-    });
 
 task("sidechain:aura-oft-info")
     .addParam("remotechainid", "Remote standard chain ID (can not be eth mainnet)")
@@ -136,7 +76,7 @@ task("sidechain:aura-oft-info")
          * Local 
         --------------------------------------------------------------- */
 
-        const local: CanonicalPhaseDeployed = (await localConfig.getSidechain(deployer)) as any;
+        const local: CanonicalPhaseDeployed = localConfig.getSidechain(deployer) as any;
         const phase2 = await localConfig.getPhase2(deployer);
 
         log(
@@ -164,7 +104,7 @@ task("sidechain:aura-oft-info")
         await jsonProvider.ready;
         console.log("Provider ready!");
         const remoteDeployer = deployer.connect(jsonProvider);
-        const remote: SidechainDeployed = (await remoteConfig.getSidechain(remoteDeployer)) as any;
+        const remote: SidechainDeployed = remoteConfig.getSidechain(remoteDeployer) as any;
 
         log(
             "Remote",
@@ -204,8 +144,8 @@ task("sidechain:test:send-aura-to-sidechain")
         const remoteLzChainId = lzChainIds[remoteChainId];
         assert(remoteLzChainId, "LZ chain ID not found");
 
-        const local = await localConfig.getSidechain(deployer);
-        const remote = await remoteConfig.getSidechain(deployer);
+        const local = localConfig.getSidechain(deployer);
+        const remote = remoteConfig.getSidechain(deployer);
 
         if ("auraProxyOFT" in local && "l2Coordinator" in remote) {
             // L1 -> L2
@@ -249,7 +189,7 @@ task("sidechhain:test:lock-aura")
         const config = configs[hre.network.config.chainId];
         assert(config, `Local config for chain ID ${hre.network.config.chainId} not found`);
 
-        const deployment = await config.getSidechain(deployer);
+        const deployment = config.getSidechain(deployer);
         assert("l2Coordinator" in deployment, "Coordinator not found");
 
         const auraBalance = await deployment.auraOFT.balanceOf(deployerAddress);
@@ -261,59 +201,5 @@ task("sidechhain:test:lock-aura")
             value: simpleToExactAmount(0.05),
             gasLimit: 600_000,
         });
-        await waitForTx(tx, debug, tskArgs.wait);
-    });
-
-task("sidechain:config:canonical")
-    .addParam("remotechainid", "Remote chain to set config for")
-    .addParam("wait", "Wait for blocks")
-    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
-        const deployer = await getSigner(hre);
-
-        const remoteChainId = tskArgs.remotechainid;
-        assert(
-            Number(remoteChainId) === Number(remoteChainMap[hre.network.config.chainId]),
-            `Incorrect remote chain ID ${remoteChainId} !== ${remoteChainMap[hre.network.config.chainId]}`,
-        );
-
-        assert(canonicalChains.includes(hre.network.config.chainId), "Not using a canonical chain");
-        const config = configs[hre.network.config.chainId];
-        const deployment: CanonicalPhaseDeployed = (await config.getSidechain(deployer)) as any;
-
-        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 200_000]);
-
-        const distributeAuraSelector = "";
-        const tx = await deployment.auraProxyOFT["setConfig(uint16,bytes4,(bytes,address))"](
-            tskArgs.remotechainid,
-            distributeAuraSelector,
-            [adapterParams, ZERO_ADDRESS] as any,
-        );
-        await waitForTx(tx, debug, tskArgs.wait);
-    });
-
-task("sidechain:config:sidechain")
-    .addParam("remotechainid", "Remote chain (has to be a canonical chain)")
-    .addParam("wait", "Wait for blocks")
-    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
-        const deployer = await getSigner(hre);
-
-        const remoteChainId = tskArgs.remotechainid;
-        assert(
-            Number(remoteChainId) === Number(remoteChainMap[hre.network.config.chainId]),
-            `Incorrect remote chain ID ${remoteChainId} !== ${remoteChainMap[hre.network.config.chainId]}`,
-        );
-
-        assert(!canonicalChains.includes(hre.network.config.chainId), "Using a canonical chain");
-        const config = configs[hre.network.config.chainId];
-        const deployment: SidechainDeployed = (await config.getSidechain(deployer)) as any;
-
-        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-
-        const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
-        const tx = await deployment.l2Coordinator["setConfig(uint16,bytes4,(bytes,address))"](
-            tskArgs.remotechainid,
-            lockSelector,
-            [adapterParams, ZERO_ADDRESS] as any,
-        );
         await waitForTx(tx, debug, tskArgs.wait);
     });
