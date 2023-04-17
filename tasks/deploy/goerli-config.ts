@@ -46,7 +46,8 @@ import {
     PoolManagerV4__factory,
     BoosterOwnerSecondary__factory,
     ExtraRewardStashV3__factory,
-    AuraOFT__factory,
+    L1Coordinator__factory,
+    AuraProxyOFT__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -212,7 +213,8 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 });
 
 const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
-    auraOFT: AuraOFT__factory.connect("0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3", deployer),
+    auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
 });
 
 export const config = {
