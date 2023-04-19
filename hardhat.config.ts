@@ -24,6 +24,7 @@ export const chainIds = {
     arbitrum: 42161,
     arbitrumGoerli: 421613,
     polygon: 137,
+    gnosis: 100,
 };
 
 const compilerSettings = {
@@ -72,6 +73,11 @@ const config: HardhatUserConfig = {
             url: process.env.NODE_URL || "",
             gasPrice: 3000000000,
             chainId: chainIds.arbitrumGoerli,
+        },
+        gnosis: {
+            url: process.env.NODE_URL || "",
+            gasPrice: 3000000000,
+            chainId: chainIds.gnosis,
         },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },

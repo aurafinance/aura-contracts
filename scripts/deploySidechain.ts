@@ -38,6 +38,10 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
+    GnosisBridgeDelegate,
+    GnosisBridgeDelegate__factory,
+    L1BridgeDelegate,
+    L1BridgeDelegate__factory,
 } from "../types";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { simpleToExactAmount } from "../test-utils/math";
@@ -367,4 +371,43 @@ export async function deployCreate2Factory(
     );
 
     return { create2Factory };
+}
+
+export async function deployGnosisBridgeDelegate(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<GnosisBridgeDelegate> {
+    let gnosisBalToken = "0x7eF541E2a22058048904fE5744f9c7E4C57AF717";
+    const bridgeDelegate = await deployContract<GnosisBridgeDelegate>(
+        hre,
+        new GnosisBridgeDelegate__factory(deployer),
+        "GnosisBridgeDelegate",
+        [gnosisBalToken],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return bridgeDelegate;
+}
+
+export async function deployL1BridgeDelegate(
+    hre: HardhatRuntimeEnvironment,
+    config: ExtSystemConfig,
+    phase6: Phase6Deployed,
+    deployer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<L1BridgeDelegate> {
+    const bridgeDelegate = await deployContract<L1BridgeDelegate>(
+        hre,
+        new L1BridgeDelegate__factory(deployer),
+        "L1BridgeDelegate",
+        [config.token, phase6.booster.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return bridgeDelegate;
 }

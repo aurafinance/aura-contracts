@@ -2,7 +2,13 @@ import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import hre, { ethers } from "hardhat";
 import { deployContract } from "../../tasks/utils";
-import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
+import {
+    deployCanonicalPhase,
+    deploySidechainSystem,
+    SidechainDeployed,
+    deployGnosisBridgeDelegate,
+    deployL1BridgeDelegate,
+} from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
@@ -21,8 +27,11 @@ import {
     MockCurveMinter,
     MockCurveMinter__factory,
     MockERC20__factory,
+    GnosisBridgeDelegate,
+    L1BridgeDelegate,
 } from "../../types";
 import { SidechainConfig } from "tasks/deploy/sidechain-types";
+import config from "hardhat.config";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -55,6 +64,7 @@ describe("Sidechain", () => {
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
+    let l1BridgeDelegate: L1BridgeDelegate;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -160,6 +170,9 @@ describe("Sidechain", () => {
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
+
+        // deploy l1 bridge delegate
+        l1BridgeDelegate = await deployL1BridgeDelegate(hre, mainnetConfig.addresses, phase6, deployer.signer);
     });
 
     describe("Check configs", () => {
@@ -260,6 +273,19 @@ describe("Sidechain", () => {
             expect(await poolManager.protectAddPool()).eq(true);
         });
     });
+
+    // describe("BAL Bridging", () => {
+    //     it("set bridge delegate for L2", async () => {
+    //         expect(await phase6.booster.bridgeDelegate()).eq(ZERO_ADDRESS);
+    //         await phase6.booster.connect(dao.signer).setBridgeDelegate(l1BridgeDelegate.address);
+    //         expect(await phase6.booster.bridgeDelegate()).eq(l1BridgeDelegate.address);
+    //     });
+    //     it("set bridge delegate for L2", async () => {
+    //         const amount = simpleToExactAmount(1_000);
+    //         getBal(l1BridgeDelegate.address, amount);
+    //         await l1BridgeDelegate.forwardFees(amount);
+    //     });
+    // });
 
     describe("Setup: Protocol DAO transactions", () => {
         it("set auraOFT as booster bridge delegate", async () => {
