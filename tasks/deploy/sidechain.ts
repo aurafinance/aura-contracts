@@ -109,14 +109,12 @@ task("deploy:sidechain:L2")
     });
 
 task("sidechain:addresses")
-    .addParam("chainId", "The chain ID")
+    .addOptionalParam("chainId", "The chain ID, default arbitrumGoerli")
     .setAction(async function (_: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-
         const configs = {
             [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
         };
-
         const config = configs[hre.network.config.chainId];
 
         if (!config) {
@@ -129,7 +127,7 @@ task("sidechain:addresses")
             addresses.create2Factory,
             new VoterProxyLite__factory(deployer),
             "VoterProxyLite",
-            [addresses.minter, addresses.token],
+            [],
         );
 
         const auraOFTAddress = await computeCreate2Address<AuraOFT__factory>(
@@ -146,15 +144,14 @@ task("sidechain:addresses")
             [addresses.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
         );
 
-        const cvxTokenAddress = coordinatorAddress;
-
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(
             addresses.create2Factory,
             new BoosterLite__factory(deployer),
             "BoosterLite",
-            [voterProxyAddress, cvxTokenAddress, addresses.token],
+            [voterProxyAddress],
         );
 
+        // Not a constant address
         const rewardFactoryAddress = await computeCreate2Address<RewardFactory__factory>(
             addresses.create2Factory,
             new RewardFactory__factory(deployer),
@@ -176,6 +173,7 @@ task("sidechain:addresses")
             [],
         );
 
+        // Not a constant address
         const stashFactoryAddress = await computeCreate2Address<StashFactoryV2__factory>(
             addresses.create2Factory,
             new StashFactoryV2__factory(deployer),
@@ -183,6 +181,7 @@ task("sidechain:addresses")
             [boosterAddress, rewardFactoryAddress, proxyFactoryAddress],
         );
 
+        // Not a constant address
         const stashV3Address = await computeCreate2Address<ExtraRewardStashV3__factory>(
             addresses.create2Factory,
             new ExtraRewardStashV3__factory(deployer),
@@ -194,9 +193,10 @@ task("sidechain:addresses")
             addresses.create2Factory,
             new PoolManagerLite__factory(deployer),
             "PoolManagerLite",
-            [boosterAddress, addresses.daoMultisig],
+            [boosterAddress],
         );
 
+        // Not a constant address
         const boosterOwnerAddress = await computeCreate2Address<BoosterOwner__factory>(
             addresses.create2Factory,
             new BoosterOwner__factory(deployer),
