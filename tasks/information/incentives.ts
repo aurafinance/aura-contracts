@@ -107,7 +107,9 @@ const auraApprovalTx = (amount: BN) => ({
 });
 
 const depositTx = (incentive: Incentive) => {
-    console.log(`${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${incentive.amount}`);
+    console.log(
+        `${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${utils.formatEther(incentive.amount)}`,
+    );
     return {
         to: incentive.to,
         value: "0",
@@ -133,7 +135,7 @@ task("info:chef:claim").setAction(async function (taskArgs: TaskArguments, hre: 
 });
 
 task("info:hh:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura eth birb, default is 30000", 30_000, types.int)
+    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 30000", 30_000, types.int)
     .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 100", 100, types.int)
     .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 25", 25, types.int)
     .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 0", 0, types.int)
@@ -188,7 +190,7 @@ task("info:hh:incentives")
         const totalDeposits = depositTsx
             .map(d => BN.from(d.contractInputsValues.amount))
             .reduce((a, b) => a.add(b), BN.from(0));
-        console.log("   totalDeposits:", totalDeposits.toString());
+        console.log("   totalDeposits:", utils.formatEther(totalDeposits));
         /* -------------------------------------------------------
          * 2.- Generate incentives tx
          * ----------------------------------------------------- */
