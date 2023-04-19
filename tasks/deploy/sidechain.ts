@@ -3,7 +3,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
 import {
     VoterProxyLite__factory,
-    Coordinator__factory,
+    L2Coordinator__factory,
     BoosterLite__factory,
     RewardFactory__factory,
     TokenFactory__factory,
@@ -12,6 +12,7 @@ import {
     ExtraRewardStashV3__factory,
     PoolManagerLite__factory,
     BoosterOwner__factory,
+    AuraOFT__factory,
 } from "../../types";
 import { getSigner } from "../utils";
 import { chainIds } from "../../hardhat.config";
@@ -129,11 +130,18 @@ task("sidechain:addresses")
             [],
         );
 
-        const coordinatorAddress = await computeCreate2Address<Coordinator__factory>(
+        const auraOFTAddress = await computeCreate2Address<AuraOFT__factory>(
             addresses.create2Factory,
-            new Coordinator__factory(deployer),
-            "Coordinator",
+            new AuraOFT__factory(deployer),
+            "AuraOFT",
             [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+        );
+
+        const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
+            addresses.create2Factory,
+            new L2Coordinator__factory(deployer),
+            "L2Coordinator",
+            [addresses.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
         );
 
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(

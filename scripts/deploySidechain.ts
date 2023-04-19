@@ -4,12 +4,16 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
     AuraOFT,
     AuraOFT__factory,
+    AuraProxyOFT,
+    AuraProxyOFT__factory,
     BoosterLite,
     BoosterLite__factory,
     BoosterOwner,
     BoosterOwner__factory,
-    Coordinator,
-    Coordinator__factory,
+    L2Coordinator,
+    L2Coordinator__factory,
+    L1Coordinator,
+    L1Coordinator__factory,
     Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3,
@@ -42,7 +46,8 @@ import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/u
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-types";
 
 export interface CanonicalPhaseDeployed {
-    auraOFT: AuraOFT;
+    auraProxyOFT: AuraProxyOFT;
+    l1Coordinator: L1Coordinator;
 }
 
 export async function deployCanonicalPhase(
@@ -54,17 +59,27 @@ export async function deployCanonicalPhase(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<CanonicalPhaseDeployed> {
-    const auraOFT = await deployContract<AuraOFT>(
+    const auraProxyOFT = await deployContract<AuraProxyOFT>(
         hre,
-        new AuraOFT__factory(deployer),
-        "AuraOFT",
-        [config.lzEndpoint, phase2.cvx.address, phase6.booster.address, phase2.cvxLocker.address, config.token],
+        new AuraProxyOFT__factory(deployer),
+        "AuraProxyOFT",
+        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
         {},
         debug,
         waitForBlocks,
     );
 
-    return { auraOFT };
+    const l1Coordinator = await deployContract<L1Coordinator>(
+        hre,
+        new L1Coordinator__factory(deployer),
+        "L1Coordinator",
+        [config.lzEndpoint, phase6.booster.address, config.token, phase2.cvx.address, auraProxyOFT.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { auraProxyOFT, l1Coordinator };
 }
 
 interface Factories {
@@ -80,7 +95,8 @@ export interface SidechainDeployed {
     boosterOwner: BoosterOwner;
     factories: Factories;
     poolManager: PoolManagerLite;
-    coordinator: Coordinator;
+    l2Coordinator: L2Coordinator;
+    auraOFT: AuraOFT;
 }
 
 /**
@@ -94,6 +110,7 @@ export interface SidechainDeployed {
  *      - BoosterOwner
  *
  *  - Deploys with the different address the following contracts.
+ *      - AuraOFT
  *      - Coordinator
  *      - RewardFactory
  *      - StashFactoryV2
@@ -149,16 +166,32 @@ export async function deploySidechainSystem(
         deployOptionsWithCallbacks([voterProxyInitialize]),
     );
 
-    const coordinator = await deployContract<Coordinator>(
+    const auraOFTTransferOwnership = L2Coordinator__factory.createInterface().encodeFunctionData("transferOwnership", [
+        deployerAddress,
+    ]);
+    const auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
         hre,
-        new Coordinator__factory(deployer),
-        "Coordinator",
+        create2Factory,
+        new AuraOFT__factory(deployer),
+        "AuraOFT",
         [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
-        {},
-        debug,
-        waitForBlocks,
+        deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
-    const cvxTokenAddress = coordinator.address;
+
+    const coordinatorTransferOwnership = L2Coordinator__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
+
+    const l2Coordinator = await deployContractWithCreate2<L2Coordinator, L2Coordinator__factory>(
+        hre,
+        create2Factory,
+        new L2Coordinator__factory(deployer),
+        "Coordinator",
+        [addresses.lzEndpoint, auraOFT.address, extConfig.canonicalChainId],
+        deployOptionsWithCallbacks([coordinatorTransferOwnership]),
+    );
+    const cvxTokenAddress = l2Coordinator.address;
 
     const boosterLiteInitialize = BoosterLite__factory.createInterface().encodeFunctionData("initialize", [
         cvxTokenAddress,
@@ -240,7 +273,7 @@ export async function deploySidechainSystem(
 
     let tx: ContractTransaction;
 
-    tx = await coordinator.setBooster(booster.address);
+    tx = await l2Coordinator.setBooster(booster.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await voterProxy.setOperator(booster.address);
@@ -252,7 +285,7 @@ export async function deploySidechainSystem(
     tx = await voterProxy.setOwner(addresses.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await booster.setRewardContracts(coordinator.address);
+    tx = await booster.setRewardContracts(l2Coordinator.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setPoolManager(poolManager.address);
@@ -284,7 +317,8 @@ export async function deploySidechainSystem(
             proxyFactory,
         },
         poolManager,
-        coordinator,
+        auraOFT,
+        l2Coordinator,
     };
 }
 
