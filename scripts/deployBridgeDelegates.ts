@@ -1,5 +1,6 @@
-import { ContractTransaction, ethers, Signer } from "ethers";
+import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+
 import {
     BridgeDelegateReceiver,
     BridgeDelegateReceiver__factory,
@@ -8,8 +9,8 @@ import {
     SimpleBridgeDelegateSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
-import { CanonicalPhaseDeployed } from "./deploySidechain";
 import { ExtSystemConfig } from "./deploySystem";
+import { CanonicalPhaseDeployed } from "./deploySidechain";
 
 interface SimplyBridgeDelegateDeployed {
     bridgeDelegateSender: BridgeDelegateSender;

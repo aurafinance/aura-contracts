@@ -1,5 +1,4 @@
 import assert from "assert";
-import { ethers } from "ethers";
 import { task } from "hardhat/config";
 import { formatEther, parseEther } from "ethers/lib/utils";
 import { JsonRpcProvider } from "@ethersproject/providers";
