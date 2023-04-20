@@ -135,7 +135,7 @@ export async function deploySidechainSystem(
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
     const deployerAddress = await deployer.getAddress();
-    const create2Options = { amount: 0, salt: undefined, callbacks: [] };
+    const create2Options = { amount: 0, salt: "1", callbacks: [] };
     const deployOptions = {
         overrides: {},
         create2Options,
