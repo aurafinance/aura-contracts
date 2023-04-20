@@ -38,17 +38,17 @@ const extConfig: ExtSidechainConfig = {
 };
 
 export const getSidechain = (signer: Signer) => ({
-    voterProxy: VoterProxyLite__factory.connect("0xe77e947ddc841f033d7c92945fbd265Ac51e59B2", signer),
-    booster: BoosterLite__factory.connect("0x397210e0C98A988F07a2B998D8CA2F2Cf7f216bE", signer),
-    boosterOwner: BoosterOwner__factory.connect("0xa8264e5fF91194475e2e3CBFf90a3bD0637eB61F", signer),
-    poolManager: PoolManagerLite__factory.connect("0x02Ccab31e2a3B44F48E37228A10370d11C12CAA9", signer),
-    l2Coordinator: L2Coordinator__factory.connect("0xC5d857223D42765EF9cB8a942464165D31247094", signer),
-    auraOFT: AuraOFT__factory.connect("0x46e510565B76611BAe7a7d40a106Cd4180a094F7", signer),
+    voterProxy: VoterProxyLite__factory.connect("0x6334c9b535C5c2e294554b54e62e778A040f8b43", signer),
+    booster: BoosterLite__factory.connect("0x2386716accFdEb113913A0468f7deb5303679A60", signer),
+    boosterOwner: BoosterOwner__factory.connect("0x5E7BF6380E6E24eDe10BE628C96b2d4943464149", signer),
+    poolManager: PoolManagerLite__factory.connect("0xDC446885f43a3bB969141a746d536A0edf34b8De", signer),
+    l2Coordinator: L2Coordinator__factory.connect("0x714636c864F3b02e001798b2d16370E74E4379e4", signer),
+    auraOFT: AuraOFT__factory.connect("0x7E7460187F97532828aBc06af691a494F82Cf7f2", signer),
     factories: {
-        rewardFactory: RewardFactory__factory.connect("0x6c8437D31e0D5975Be4F8cE7c3BAB151c99355ca", signer),
-        stashFactory: StashFactoryV2__factory.connect("0x63C3e29f98EB4a15676b7559086e180c682cE8EA", signer),
-        tokenFactory: TokenFactory__factory.connect("0x5C9A896Ff3e9c7faE915b46f34eCf811cEa6E217", signer),
-        proxyFactory: ProxyFactory__factory.connect("0x7dBf2969711d3E1344869D2F23FAf5755dde4366", signer),
+        rewardFactory: RewardFactory__factory.connect("0xeB01eD361B226252087646E2872e5306e82b314A", signer),
+        stashFactory: StashFactoryV2__factory.connect("0xEBA33C82D890dBE19465a381F24428DDD1A62b59", signer),
+        tokenFactory: TokenFactory__factory.connect("0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609", signer),
+        proxyFactory: ProxyFactory__factory.connect("0x787633684fdd5F5B01255942AB5207eC5700375e", signer),
     },
 });
 
