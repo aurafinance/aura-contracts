@@ -21,14 +21,20 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     /// @dev canonical chain ID
     uint16 public immutable canonicalChainId;
 
+    /// @dev AuraOFT contract
+    address public immutable auraOFT;
+
     /// @dev Booster contract
     address public booster;
 
-    /// @dev AuraOFT contract
-    address public auraOFT;
+    /// @dev The BAL token contract
+    address public balToken;
 
     /// @dev Rate to send CVX on mint
     uint256 public mintRate;
+
+    /// @dev The bridge delegate contract
+    address public bridgeDelegate;
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -47,9 +53,14 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
        Setter Functions
     ------------------------------------------------------------------- */
 
-    function setBooster(address _booster) external onlyOwner {
-        require(booster == address(0), "booster already set");
+    function initialize(address _booster, address _balToken) external onlyOwner {
+        require(booster == address(0), "already initialized");
         booster = _booster;
+        balToken = _balToken;
+    }
+
+    function setBridgeDelegate(address _bridgeDelegate) external onlyOwner {
+        bridgeDelegate = _bridgeDelegate;
     }
 
     function setConfig(
@@ -84,8 +95,14 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function queueNewRewards(address _originalSender, uint256 _rewards) external payable {
         require(msg.sender == booster, "!booster");
-        bytes memory payload = CCM.encodeFees(_rewards);
+        require(bridgeDelegate != address(0), "!bridgeDelegate");
 
+        // Transfer reward token balance to bridge delegate
+        uint256 balance = IERC20(balToken).balanceOf(address(this));
+        IERC20(balToken).transfer(bridgeDelegate, balance);
+
+        // Notify L1 chain of collected fees
+        bytes memory payload = CCM.encodeFees(_rewards);
         CrossChainConfig.Config memory config = configs[canonicalChainId][L2Coordinator.queueNewRewards.selector];
 
         _lzSend(
