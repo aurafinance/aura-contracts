@@ -273,7 +273,7 @@ export async function deploySidechainSystem(
 
     let tx: ContractTransaction;
 
-    tx = await l2Coordinator.setBooster(booster.address);
+    tx = await l2Coordinator.initialize(booster.address, addresses.token);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await voterProxy.setOperator(booster.address);
