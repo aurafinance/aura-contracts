@@ -1,6 +1,17 @@
 import { chainIds } from "../../hardhat.config";
 import { config as goerliConfig } from "./goerli-config";
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
+import { config as goerliSidechainConfig } from "./goerliSidechain-config";
+
+export const sideChains = [
+    chainIds.arbitrum,
+    chainIds.arbitrumGoerli,
+    chainIds.polygon,
+    // Goerli is just use as a sidechain for testing
+    chainIds.goerli,
+];
+
+export const canonicalChains = [chainIds.goerli, chainIds.mainnet];
 
 export const remoteChainMap = {
     [chainIds.goerli]: chainIds.arbitrumGoerli,
@@ -16,9 +27,11 @@ export const lzChainIds = {
     [chainIds.arbitrumGoerli]: 10143,
 };
 
-export const configs = {
+export const canonicalConfigs = {
     [chainIds.goerli]: goerliConfig,
-    [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
 };
 
-export const canonicalChains = [chainIds.goerli, chainIds.mainnet];
+export const sidechainConfigs = {
+    [chainIds.goerli]: goerliSidechainConfig,
+    [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
+};
