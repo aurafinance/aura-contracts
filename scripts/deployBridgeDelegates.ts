@@ -7,6 +7,8 @@ import {
     BridgeDelegateSender,
     SimpleBridgeDelegateSender,
     SimpleBridgeDelegateSender__factory,
+    GnosisBridgeSender,
+    GnosisBridgeSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { ExtSystemConfig } from "./deploySystem";
@@ -50,4 +52,23 @@ export async function deploySimpleBridgeDelegates(
     );
 
     return { bridgeDelegateSender, bridgeDelegateReceiver };
+}
+
+export async function deployGnosisBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<GnosisBridgeSender> {
+    const bridgeDelegate = await deployContract<GnosisBridgeSender>(
+        hre,
+        new GnosisBridgeSender__factory(deployer),
+        "GnosisBridgeSender",
+        [token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return bridgeDelegate;
 }

@@ -235,6 +235,12 @@ yarn task timeTravel --duration 69420 --network forking
 | virtualRewardFactory      | [0x3f897302B09e763650D825Cd3c738EfDf8510Ad8](https://goerli.etherscan.io/address/0x3f897302B09e763650D825Cd3c738EfDf8510Ad8) |
 | create2Factory            | [0xFf87D90216C236B39D74d5404AE86b8b1DA3b448](https://goerli.etherscan.io/address/0xFf87D90216C236B39D74d5404AE86b8b1DA3b448) |
 
+### Gnosis (100)
+
+| Contract           | Address                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GnosisBridgeSender | [0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d](https://gnosisscan.io/address/0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d) |
+
 ### Arbitrum (42161)
 
 ### Arbitrum Goerli (42163)
