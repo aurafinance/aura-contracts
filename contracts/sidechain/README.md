@@ -83,47 +83,47 @@ yarn task sidechain:aura-oft-info --remotechainid <REMOTE_CHAIN_ID>
 
 #### Ethereum Mainnet (1)
 
-| Contract           | Address                                                                                                                     |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| L1Coordinator      | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/)                                           |
-| AuraOFT (ProxyOFT) | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3) |
+| Contract           | Address                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| L1Coordinator      | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/)                                           |
+| AuraOFT (ProxyOFT) | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3) |
 
 #### Arbitrum (42161)
 
-| Contract        | Address                                                                           |
-| --------------- | --------------------------------------------------------------------------------- |
-| create2Factory  | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| L2Coordinator   | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| AuraOFT         | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| BoosterLite     | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| VoterProxyLite  | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| TokenFactory    | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| ProxyFactory    | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| StashFactory    | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| PoolManagerLite | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
-| BoosterOwner    | [0x0000000000000000000000000000000000000000](https://goerli.arbiscan.io/address/) |
+| Contract        | Address                                                                    |
+| --------------- | -------------------------------------------------------------------------- |
+| create2Factory  | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| L2Coordinator   | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraOFT         | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| BoosterLite     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| VoterProxyLite  | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| TokenFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| ProxyFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| StashFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| PoolManagerLite | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| BoosterOwner    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
 
 ### Testnets
 
 #### Goerli (5)
 
-| Contract           | Address                                                                                                                     |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| L1Coordinator      | [0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b](https://goerli.arbiscan.io/address/0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b) |
-| AuraOFT (ProxyOFT) | [0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF](https://goerli.arbiscan.io/address/0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF) |
+| Contract           | Address                                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| L1Coordinator      | [0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b](https://goerli.etherscan.io/address/0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b) |
+| AuraOFT (ProxyOFT) | [0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF](https://goerli.etherscan.io/address/0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF) |
 
 #### Goerli (Sidechain) (5)
 
-| Contract        | Address                                                                                                                     |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| create2Factory  | [0xaec901fBc8f83612011641d8aABa5B8432Dc228c](https://goerli.arbiscan.io/address/0xaec901fBc8f83612011641d8aABa5B8432Dc228c) |
-| L2Coordinator   | [0x714636c864F3b02e001798b2d16370E74E4379e4](https://goerli.arbiscan.io/address/0x714636c864F3b02e001798b2d16370E74E4379e4) |
-| AuraOFT         | [0x7E7460187F97532828aBc06af691a494F82Cf7f2](https://goerli.arbiscan.io/address/0x7E7460187F97532828aBc06af691a494F82Cf7f2) |
-| BoosterLite     | [0x2386716accFdEb113913A0468f7deb5303679A60](https://goerli.arbiscan.io/address/0x2386716accFdEb113913A0468f7deb5303679A60) |
-| VoterProxyLite  | [0x6334c9b535C5c2e294554b54e62e778A040f8b43](https://goerli.arbiscan.io/address/0x6334c9b535C5c2e294554b54e62e778A040f8b43) |
-| TokenFactory    | [0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609](https://goerli.arbiscan.io/address/0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609) |
-| ProxyFactory    | [0x787633684fdd5F5B01255942AB5207eC5700375e](https://goerli.arbiscan.io/address/0x787633684fdd5F5B01255942AB5207eC5700375e) |
-| StashFactory    | [0xEBA33C82D890dBE19465a381F24428DDD1A62b59](https://goerli.arbiscan.io/address/0xEBA33C82D890dBE19465a381F24428DDD1A62b59) |
-| RewardFactory   | [0xeB01eD361B226252087646E2872e5306e82b314A](https://goerli.arbiscan.io/address/0xeB01eD361B226252087646E2872e5306e82b314A) |
-| PoolManagerLite | [0xDC446885f43a3bB969141a746d536A0edf34b8De](https://goerli.arbiscan.io/address/0xDC446885f43a3bB969141a746d536A0edf34b8De) |
-| BoosterOwner    | [0x5E7BF6380E6E24eDe10BE628C96b2d4943464149](https://goerli.arbiscan.io/address/0x5E7BF6380E6E24eDe10BE628C96b2d4943464149) |
+| Contract        | Address                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| create2Factory  | [0xaec901fBc8f83612011641d8aABa5B8432Dc228c](https://goerli.etherscan.io/address/0xaec901fBc8f83612011641d8aABa5B8432Dc228c) |
+| L2Coordinator   | [0x714636c864F3b02e001798b2d16370E74E4379e4](https://goerli.etherscan.io/address/0x714636c864F3b02e001798b2d16370E74E4379e4) |
+| AuraOFT         | [0x7E7460187F97532828aBc06af691a494F82Cf7f2](https://goerli.etherscan.io/address/0x7E7460187F97532828aBc06af691a494F82Cf7f2) |
+| BoosterLite     | [0x2386716accFdEb113913A0468f7deb5303679A60](https://goerli.etherscan.io/address/0x2386716accFdEb113913A0468f7deb5303679A60) |
+| VoterProxyLite  | [0x6334c9b535C5c2e294554b54e62e778A040f8b43](https://goerli.etherscan.io/address/0x6334c9b535C5c2e294554b54e62e778A040f8b43) |
+| TokenFactory    | [0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609](https://goerli.etherscan.io/address/0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609) |
+| ProxyFactory    | [0x787633684fdd5F5B01255942AB5207eC5700375e](https://goerli.etherscan.io/address/0x787633684fdd5F5B01255942AB5207eC5700375e) |
+| StashFactory    | [0xEBA33C82D890dBE19465a381F24428DDD1A62b59](https://goerli.etherscan.io/address/0xEBA33C82D890dBE19465a381F24428DDD1A62b59) |
+| RewardFactory   | [0xeB01eD361B226252087646E2872e5306e82b314A](https://goerli.etherscan.io/address/0xeB01eD361B226252087646E2872e5306e82b314A) |
+| PoolManagerLite | [0xDC446885f43a3bB969141a746d536A0edf34b8De](https://goerli.etherscan.io/address/0xDC446885f43a3bB969141a746d536A0edf34b8De) |
+| BoosterOwner    | [0x5E7BF6380E6E24eDe10BE628C96b2d4943464149](https://goerli.etherscan.io/address/0x5E7BF6380E6E24eDe10BE628C96b2d4943464149) |
