@@ -1,5 +1,7 @@
 import { BigNumberish, Signer } from "ethers";
-import { Account, MockERC20__factory } from "../types";
+import { ExtSystemConfig } from "scripts/deploySystem";
+import { Account, IERC20__factory, MockERC20__factory } from "../types";
+import { simpleToExactAmount } from "./math";
 
 // impersonates a specific account
 export const impersonate = async (addr: string, fund = true): Promise<Signer> => {
@@ -36,3 +38,20 @@ export async function impersonateAndTransfer(tokenAddress: string, from: string,
     const token = MockERC20__factory.connect(tokenAddress, tokenWhaleSigner.signer);
     await token.transfer(to, amount);
 }
+
+async function getEth(config: ExtSystemConfig, recipient: string) {
+    const ethWhale = await impersonate(config.weth);
+    await ethWhale.sendTransaction({
+        to: recipient,
+        value: simpleToExactAmount(1),
+    });
+}
+
+export async function getBal(config: ExtSystemConfig, to: string, amount: BigNumberish) {
+    await getEth(config, config.balancerVault);
+    const tokenWhaleSigner = await impersonateAccount(config.balancerVault);
+    const crv = IERC20__factory.connect(config.token, tokenWhaleSigner.signer);
+    await crv.transfer(to, amount);
+}
+
+export const getCrv = getBal;
