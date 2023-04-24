@@ -13,6 +13,7 @@ import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
 import { SidechainConfig } from "../../tasks/deploy/sidechain-types";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
+import { Phase6Deployed } from "scripts/deploySystem";
 
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
@@ -20,14 +21,12 @@ describe("Sidechain", () => {
     let deployer: Account;
     let dao: Account;
 
-    // Canonical chain Contracts
     let create2Factory: Create2Factory;
-
-    // Sidechain Contracts
     let sidechain: SidechainDeployed;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
+    let phase6: Phase6Deployed;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -67,6 +66,8 @@ describe("Sidechain", () => {
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
+
+        phase6 = await mainnetConfig.getPhase6(deployer.signer);
     });
 
     describe("Check configs", () => {
@@ -127,6 +128,7 @@ describe("Sidechain", () => {
             expect(await sidechain.boosterOwner.isForceTimerStarted()).eq(false);
             expect(await sidechain.boosterOwner.forceTimestamp()).eq(0);
         });
+        it("BoosterOwnerSecondary has correct config");
         it("factories have correct config", async () => {
             const {
                 booster,
@@ -160,5 +162,62 @@ describe("Sidechain", () => {
             expect(await poolManager.operator()).eq(dao.address);
             expect(await poolManager.protectAddPool()).eq(true);
         });
+    });
+
+    /* ---------------------------------------------------------------------
+     * Protected functions
+     * --------------------------------------------------------------------- */
+
+    describe("Protected functions", () => {
+        it("BoosterOwnerSecondary protected functions");
+        it("PoolManager protected functions");
+    });
+
+    /* ---------------------------------------------------------------------
+     * General Functional tests
+     * --------------------------------------------------------------------- */
+
+    describe("Booster setup", () => {
+        it("can unprotected poolManager add pool");
+        it("add pools to the booster", async () => {
+            // As this test suite is running the bridge from L1 -> L1 forked on
+            // mainnet. We can just add the first 10 active existing Aura pools
+            let i = 0;
+            while ((await sidechain.booster.poolLength()).lt(10)) {
+                const poolInfo = await phase6.booster.poolInfo(i);
+                if (!poolInfo.shutdown) {
+                    await sidechain.poolManager.connect(dao.signer)["addPool(address)"](poolInfo.gauge);
+                }
+                i++;
+            }
+            expect(await sidechain.booster.poolLength()).eq(10);
+        });
+        it("Pool stash has the correct config");
+        it("Pool rewards contract has the correct config");
+    });
+
+    describe("Deposit and withdraw BPT", () => {
+        it("allow deposit into pool via Booster");
+        it("allows auraBPT deposits directly into the reward pool");
+        it("allows BPT deposits directly into the reward pool");
+        it("allows withdrawals directly from the pool 4626");
+        it("allows withdrawals directly from the pool normal");
+        it("allows earmarking of rewards");
+        it("pays out a premium to the caller");
+        it("allows users to earn $BAl and $AURA");
+        it("allows extra rewards to be added to pool");
+    });
+
+    describe("Booster admin", () => {
+        it("does not allow a duplicate pool to be added");
+        it("allows a pool to be shut down");
+        it("does not allow the system to be shut down");
+        it("does not allow boosterOwner to revert control");
+        it("allows boosterOwner owner to be changed");
+        it("allows boosterOwner to call all fns on booster");
+    });
+
+    describe("Shutdown", () => {
+        it("allows system to be shutdown");
     });
 });
