@@ -68,6 +68,8 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
     },
 ): Promise<T> => {
     const { overrides, create2Options, debug, waitForBlocks } = options;
+    if (debug) console.log("deployContractWithCreate2", contractName);
+
     const salt = create2Options?.salt ?? contractName;
     const create2DeployerAddress = create2Factory.address;
     const unsignedTx = contractFactory.getDeployTransaction(...constructorArgs, overrides ?? {});
