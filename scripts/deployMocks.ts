@@ -21,6 +21,8 @@ import {
     MockBalancerPoolToken__factory,
     MockBalancerVault,
     MockBalancerVault__factory,
+    LZEndpointMock__factory,
+    LZEndpointMock,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
@@ -39,10 +41,10 @@ interface DeployMocksResult {
     balancerVault: MockBalancerVault;
     bal: MockERC20;
     weth: MockERC20;
+    l1LzEndpoint: LZEndpointMock;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
-
 /** @dev Recreates the Convex distribution list */
 function getMockDistro(): DistroList {
     return {
@@ -116,6 +118,7 @@ async function getMockMultisigs(
 async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
+    const L1_CHAIN_ID = 111;
 
     // -----------------------------
     // 1. Deployments
@@ -260,6 +263,17 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         debug,
     );
 
+    // -----------------------------
+    // 2 Sidechain
+    // -----------------------------
+    const l1LzEndpoint = await deployContract<LZEndpointMock>(
+        hre,
+        new LZEndpointMock__factory(deployer),
+        "l1LzEndpoint",
+        [L1_CHAIN_ID],
+        {},
+        debug,
+    );
     return {
         lptoken,
         crv,
@@ -273,6 +287,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         balancerVault,
         bal,
         weth,
+        l1LzEndpoint,
         addresses: {
             token: crv.address,
             tokenBpt: crvBpt.address,
@@ -305,6 +320,8 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
                 poolIds: [ZERO_KEY],
                 assetsIn: [feeToken.address],
             },
+            canonicalChainId: L1_CHAIN_ID,
+            l1LzEndpoint: l1LzEndpoint.address,
         },
         namingConfig: {
             cvxName: "Convex Finance",

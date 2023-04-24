@@ -17,17 +17,14 @@ import {
 import { getSigner } from "../utils";
 import { chainIds } from "../../hardhat.config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import {
-    deployCanonicalPhase,
-    deployCreate2Factory,
-    deploySidechainMocks,
-    deploySidechainSystem,
-} from "../../scripts/deploySidechain";
+import { deployCanonicalPhase, deployCreate2Factory, deploySidechainSystem } from "../../scripts/deploySidechain";
 import { waitForTx } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 import { config as goerliConfig } from "./goerli-config";
+import { config as mainnetConfig } from "./mainnet-config";
+import { deploySidechainMocks } from "scripts/deploySidechainMocks";
 
 const debug = true;
 
@@ -73,33 +70,42 @@ task("deploy:sidechain:L1")
         const phase2 = await config.getPhase2(deployer);
         const phase6 = await config.getPhase6(deployer);
 
-        const result = await deployCanonicalPhase(hre, config.addresses, phase2, phase6, deployer, debug, tskArgs.wait);
+        const result = await deployCanonicalPhase(hre, deployer, config.addresses, phase2, phase6, debug, tskArgs.wait);
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L2")
+    .addParam("l1Network", "L1 network id, mainnet = 1, goerli = 5")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
 
-        const configs = {
+        const l1Configs = {
+            [chainIds.mainnet]: mainnetConfig,
+            [chainIds.goerli]: goerliConfig,
+        };
+        const l2Configs = {
             [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
             31337: arbitrumGoerliConfig,
             1337: arbitrumGoerliConfig,
         };
-
-        const config = configs[hre.network.config.chainId];
-
-        if (!config) {
+        const l1Config = l1Configs[tskArgs.l1Network];
+        const l2Config = l2Configs[hre.network.config.chainId];
+        if (!l1Config) {
+            throw new Error(`Config for chain ID ${tskArgs.l1Network} not found`);
+        }
+        if (!l2Config) {
             throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
         }
-
+        const canonicalPhase = await mainnetConfig.getSidechain(deployer);
         const result = await deploySidechainSystem(
             hre,
-            config.naming,
-            config.addresses,
-            config.extConfig,
             deployer,
+            l1Config.addresses,
+            canonicalPhase,
+            l2Config.naming,
+            l2Config.multisigs,
+            l2Config.extConfig,
             debug,
             tskArgs.wait,
         );
@@ -121,31 +127,31 @@ task("sidechain:addresses")
             throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
         }
 
-        const { addresses, extConfig, naming } = arbitrumGoerliConfig;
+        const { extConfig, naming, multisigs } = arbitrumGoerliConfig;
 
         const voterProxyAddress = await computeCreate2Address<VoterProxyLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new VoterProxyLite__factory(deployer),
             "VoterProxyLite",
             [],
         );
 
         const auraOFTAddress = await computeCreate2Address<AuraOFT__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new AuraOFT__factory(deployer),
             "AuraOFT",
-            [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+            [naming.coordinatorName, naming.coordinatorSymbol, extConfig.l2LzEndpoint, extConfig.canonicalChainId],
         );
 
         const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new L2Coordinator__factory(deployer),
             "L2Coordinator",
-            [addresses.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
+            [extConfig.l2LzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
         );
 
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new BoosterLite__factory(deployer),
             "BoosterLite",
             [voterProxyAddress],
@@ -153,21 +159,21 @@ task("sidechain:addresses")
 
         // Not a constant address
         const rewardFactoryAddress = await computeCreate2Address<RewardFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new RewardFactory__factory(deployer),
             "RewardFactory",
-            [boosterAddress, addresses.token],
+            [boosterAddress, extConfig.token],
         );
 
         const tokenFactoryAddress = await computeCreate2Address<TokenFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new TokenFactory__factory(deployer),
             "TokenFactory",
             [boosterAddress, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
         );
 
         const proxyFactoryAddress = await computeCreate2Address<ProxyFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new ProxyFactory__factory(deployer),
             "ProxyFactory",
             [],
@@ -175,7 +181,7 @@ task("sidechain:addresses")
 
         // Not a constant address
         const stashFactoryAddress = await computeCreate2Address<StashFactoryV2__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new StashFactoryV2__factory(deployer),
             "StashFactory",
             [boosterAddress, rewardFactoryAddress, proxyFactoryAddress],
@@ -183,14 +189,14 @@ task("sidechain:addresses")
 
         // Not a constant address
         const stashV3Address = await computeCreate2Address<ExtraRewardStashV3__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new ExtraRewardStashV3__factory(deployer),
             "ExtraRewardStashV3",
-            [addresses.token],
+            [extConfig.token],
         );
 
         const poolManagerAddress = await computeCreate2Address<PoolManagerLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new PoolManagerLite__factory(deployer),
             "PoolManagerLite",
             [boosterAddress],
@@ -198,10 +204,10 @@ task("sidechain:addresses")
 
         // Not a constant address
         const boosterOwnerAddress = await computeCreate2Address<BoosterOwner__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new BoosterOwner__factory(deployer),
             "BoosterOwner",
-            [addresses.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
+            [multisigs.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
         );
 
         const deployed = {

@@ -10,7 +10,8 @@ import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
- * @title L1Coordinator
+ * @title   L1Coordinator
+ * @author  AuraFinance
  * @dev Tracks the amount of fee debt accrued by each sidechain and
  *      sends AURA back to each sidechain for rewards
  */
@@ -74,6 +75,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         _setConfig(_srcChainId, _selector, _config);
     }
 
+    /**
+     * @dev Set bridge delegate for given srcChainId
+     * @param _srcChainId        ID of the source chain
+     * @param bridgeDelegate     Address of the bridge delegate
+     */
     function setBridgeDelegate(uint16 _srcChainId, address bridgeDelegate) external onlyOwner {
         bridgeDelegates[_srcChainId] = bridgeDelegate;
     }

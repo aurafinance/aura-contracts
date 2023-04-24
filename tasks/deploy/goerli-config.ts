@@ -86,7 +86,8 @@ const addresses: ExtSystemConfig = {
         ],
         assetsIn: ["0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd", "0x0595D1Df64279ddB51F1bdC405Fe2D0b4Cc86681"],
     },
-    lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23",
+    canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
+    l1LzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23",
 };
 
 const naming = {

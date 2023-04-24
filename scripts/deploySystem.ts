@@ -167,7 +167,8 @@ interface ExtSystemConfig {
     uniswapRouter?: string;
     sushiswapRouter?: string;
     auraBalGauge?: string;
-    lzEndpoint?: string;
+    l1LzEndpoint?: string;
+    canonicalChainId?: number;
 }
 
 interface NamingConfig {

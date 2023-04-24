@@ -6,8 +6,9 @@ import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 
 /**
- * @title AuraOFT
- * @dev Sidechain AURA
+ * @title   AuraOFT
+ * @author  AuraFinance
+ * @dev     Sidechain AURA
  */
 contract AuraOFT is OFT, CrossChainConfig {
     /* -------------------------------------------------------------------

@@ -5,10 +5,10 @@ import { Create2 } from "@openzeppelin/contracts-0.8/utils/Create2.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
 /**
- * @title Create2Factory
+ * @title   Create2Factory
  * @author  AuraFinance
  * @notice  Deploy contracts using CREATE2 opcode.
- * @dev A factory contract that uses the CREATE2 opcode to deploy contracts with a deterministic address.
+ * @dev     A factory contract that uses the CREATE2 opcode to deploy contracts with a deterministic address.
  */
 contract Create2Factory is Ownable {
     /**

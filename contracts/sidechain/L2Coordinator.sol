@@ -8,8 +8,9 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
- * @title L2Coordinator
- * @dev Coordinates LZ messages and actions from the L1 on the L2
+ * @title   L2Coordinator
+ * @author  AuraFinance
+ * @dev     Coordinates LZ messages and actions from the L1 on the L2
  */
 contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     using AuraMath for uint256;

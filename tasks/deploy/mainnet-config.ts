@@ -58,10 +58,13 @@ import {
     VirtualBalanceRewardPool__factory,
     AuraClaimZapV3,
     AuraClaimZapV3__factory,
+    AuraProxyOFT__factory,
+    L1Coordinator__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
+import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
 
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
@@ -153,7 +156,8 @@ const addresses: ExtSystemConfig = {
         ],
         assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
     },
-    lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
+    canonicalChainId: 101,
+    l1LzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
 };
 
 const multisigs = {
@@ -389,6 +393,11 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", deployer);
 
+const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
+    auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+});
+
 export const config = {
     addresses,
     naming,
@@ -405,4 +414,5 @@ export const config = {
     getFeeForwarder,
     getAuraBalVault,
     getAuraClaimZapV3,
+    getSidechain,
 };

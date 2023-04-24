@@ -1,14 +1,6 @@
 import { Signer } from "ethers";
 import { SidechainDeployed } from "scripts/deploySidechain";
 
-export interface SidechainAddresses {
-    lzEndpoint: string;
-    token: string;
-    daoMultisig: string;
-    minter: string;
-    create2Factory: string;
-}
-
 export interface SidechainNaming {
     coordinatorName: string;
     coordinatorSymbol: string;
@@ -16,11 +8,24 @@ export interface SidechainNaming {
 }
 
 export interface ExtSidechainConfig {
+    token: string;
+    tokenBpt: string;
+    minter: string;
     canonicalChainId: number;
+    remoteLzChainId: number;
+    l2LzEndpoint: string;
+    create2Factory: string;
+    // phase 2
+    gaugeController?: string;
+    gauges?: string[];
+}
+
+export interface SidechainMultisigConfig {
+    daoMultisig: string;
 }
 
 export interface SidechainConfig {
-    addresses: SidechainAddresses;
+    multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     getSidechain?: (s: Signer) => SidechainDeployed;

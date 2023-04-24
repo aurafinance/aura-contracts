@@ -7,9 +7,10 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 
 /**
- * @title AuraProxyOFT
- * @dev Send and receive AURA to and from all the Sidechains and receives
- * 		lock requests from the sidechains
+ * @title   AuraProxyOFT
+ * @author  AuraFinance
+ * @dev     Send and receive AURA to and from all the Sidechains and receives
+ * 		    lock requests from the sidechains
  */
 contract AuraProxyOFT is ProxyOFT {
     /* -------------------------------------------------------------------

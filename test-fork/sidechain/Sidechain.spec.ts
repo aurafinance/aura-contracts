@@ -5,7 +5,7 @@ import { deployContract } from "../../tasks/utils";
 import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import { impersonateAccount, impersonateAndTransfer, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -22,7 +22,7 @@ import {
     MockCurveMinter__factory,
     MockERC20__factory,
 } from "../../types";
-import { SidechainConfig } from "tasks/deploy/sidechain-types";
+import { SidechainConfig } from "types/sidechain-types";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -60,19 +60,8 @@ describe("Sidechain", () => {
      * Helper Functions
      * --------------------------------------------------------------------- */
 
-    async function getEth(recipient: string) {
-        const ethWhale = await impersonate(mainnetConfig.addresses.weth);
-        await ethWhale.sendTransaction({
-            to: recipient,
-            value: simpleToExactAmount(1),
-        });
-    }
-
-    async function getBal(to: string, amount: BigNumberish) {
-        await getEth(mainnetConfig.addresses.balancerVault);
-        const tokenWhaleSigner = await impersonateAccount(mainnetConfig.addresses.balancerVault);
-        await crv.connect(tokenWhaleSigner.signer).transfer(to, amount);
-    }
+    const getBal = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(mainnetConfig.addresses.token, mainnetConfig.addresses.balancerVault, to, amount);
 
     async function withMockMinter(fn: () => Promise<void>) {
         // Update the mintr slot of voter proxy to be our mock mintr
@@ -126,25 +115,22 @@ describe("Sidechain", () => {
 
         // setup sidechain config
         sidechainConfig = {
-            addresses: {
-                lzEndpoint: l2LzEndpoint.address,
-                daoMultisig: dao.address,
+            multisigs: { daoMultisig: dao.address },
+            naming: { coordinatorName: "Aura", coordinatorSymbol: "AURA", tokenFactoryNamePostfix: " Aura Deposit" },
+            extConfig: {
+                canonicalChainId: L1_CHAIN_ID,
+                remoteLzChainId: L2_CHAIN_ID,
+                l2LzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
+                tokenBpt: ZERO_ADDRESS,
             },
-            naming: { coordinatorName: "Aura", coordinatorSymbol: "AURA", tokenFactoryNamePostfix: " Aura Deposit" },
-            extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 
         // deploy canonicalPhase
-        const canonicalPhase = await deployCanonicalPhase(
-            hre,
-            { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address },
-            phase2,
-            phase6,
-            deployer.signer,
-        );
+        const l1Configuration = { ...mainnetConfig.addresses, l1LzEndpoint: l1LzEndpoint.address };
+        const canonicalPhase = await deployCanonicalPhase(hre, deployer.signer, l1Configuration, phase2, phase6);
 
         l1Coordinator = canonicalPhase.l1Coordinator;
         auraProxyOFT = canonicalPhase.auraProxyOFT;
@@ -152,10 +138,12 @@ describe("Sidechain", () => {
         // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
-            sidechainConfig.naming,
-            sidechainConfig.addresses,
-            sidechainConfig.extConfig,
             deployer.signer,
+            l1Configuration,
+            canonicalPhase,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
         );
 
         l2Coordinator = sidechain.l2Coordinator;
@@ -164,10 +152,10 @@ describe("Sidechain", () => {
 
     describe("Check configs", () => {
         it("VotingProxy has correct config", async () => {
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
-            expect(await sidechain.voterProxy.mintr()).eq(addresses.minter);
-            expect(await sidechain.voterProxy.crv()).eq(addresses.token);
+            expect(await sidechain.voterProxy.mintr()).eq(extConfig.minter);
+            expect(await sidechain.voterProxy.crv()).eq(extConfig.token);
             expect(await sidechain.voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.withdrawer()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.owner()).eq(dao.address);
@@ -193,7 +181,7 @@ describe("Sidechain", () => {
             expect(await auraProxyOFT.token()).eq(phase2.cvx.address);
         });
         it("BoosterLite has correct config", async () => {
-            expect(await sidechain.booster.crv()).eq(sidechainConfig.addresses.token);
+            expect(await sidechain.booster.crv()).eq(sidechainConfig.extConfig.token);
 
             expect(await sidechain.booster.lockIncentive()).eq(550);
             expect(await sidechain.booster.stakerIncentive()).eq(1100);
@@ -232,10 +220,10 @@ describe("Sidechain", () => {
                 factories: { rewardFactory, stashFactory, tokenFactory, proxyFactory },
             } = sidechain;
 
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
             expect(await rewardFactory.operator()).eq(booster.address);
-            expect(await rewardFactory.crv()).eq(addresses.token);
+            expect(await rewardFactory.crv()).eq(extConfig.token);
 
             expect(await stashFactory.operator()).eq(booster.address);
             expect(await stashFactory.rewardFactory()).eq(rewardFactory.address);
@@ -247,7 +235,7 @@ describe("Sidechain", () => {
                 await stashFactory.v3Implementation(),
                 deployer.signer,
             );
-            expect(await rewardsStashV3.crv()).eq(addresses.token);
+            expect(await rewardsStashV3.crv()).eq(extConfig.token);
 
             expect(await tokenFactory.operator()).eq(booster.address);
             expect(await tokenFactory.namePostfix()).eq(sidechainConfig.naming.tokenFactoryNamePostfix);
@@ -278,19 +266,19 @@ describe("Sidechain", () => {
                 hre.ethers.utils.solidityPack(["address", "address"], [auraOFT.address, auraProxyOFT.address]),
             );
 
+            // Mock l2LzEndpoint for testing purposes
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
 
             // L2 Stuff
-            await l2Coordinator.setTrustedRemote(
-                L1_CHAIN_ID,
+            // Set of setTrustedRemote is done on the deployment script
+            expect(await l2Coordinator.getTrustedRemoteAddress(L1_CHAIN_ID), "l2Coordinator trusted remote").to.be.eq(
                 hre.ethers.utils.solidityPack(["address", "address"], [l1Coordinator.address, l2Coordinator.address]),
             );
-            await auraOFT.setTrustedRemote(
-                L1_CHAIN_ID,
+            expect(await auraOFT.getTrustedRemoteAddress(L1_CHAIN_ID), "l2Coordinator trusted remote").to.be.eq(
                 hre.ethers.utils.solidityPack(["address", "address"], [auraProxyOFT.address, auraOFT.address]),
             );
-
+            // Mock l2LzEndpoint for testing purposes
             await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);
             await l2LzEndpoint.setDestLzEndpoint(auraProxyOFT.address, l1LzEndpoint.address);
         });
