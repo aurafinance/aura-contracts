@@ -60,7 +60,6 @@ export async function deployCanonicalPhase(
 ): Promise<CanonicalPhaseDeployed> {
     // -----------------------------
     // Post:
-    //         Deployer : l1Coordinator.transferOwnership(multisigs.daoMultisig);
     //     Protocol DAO : l1Booster.setBridgeDelegate(l1Coordinator.address);
     // -----------------------------
 

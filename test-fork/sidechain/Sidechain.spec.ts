@@ -113,7 +113,7 @@ describe("Sidechain", () => {
         it("AuraOFT has correct config", async () => {
             expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
-            expect(await auraOFT.lzEndpoint()).eq(ZERO_ADDRESS);
+            expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });
         it("L2Coordinator has correct config", async () => {

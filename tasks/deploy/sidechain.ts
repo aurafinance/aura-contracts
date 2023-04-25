@@ -225,7 +225,7 @@ task("sidechain:addresses")
             extConfig.create2Factory,
             new AuraOFT__factory(deployer),
             "AuraOFT",
-            [naming.auraOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
+            [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
         );
 
         const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
