@@ -1,18 +1,10 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import {
-    BridgeDelegateReceiver,
-    BridgeDelegateReceiver__factory,
-    IERC20__factory,
-    L1Coordinator,
-    MockAuraMath__factory,
-} from "../../types/generated";
-import { deployContract } from "../../tasks/utils";
+import { BridgeDelegateReceiver, IERC20__factory, L1Coordinator } from "../../types/generated";
 import { OwnableBehaviourContext, shouldBehaveLikeOwnable, ERRORS } from "../../test/shared/Ownable.behaviour";
-import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS, impersonateAccount } from "../../test-utils";
+import { ZERO, impersonateAccount } from "../../test-utils";
 import { Account } from "../../types";
-import { solidityKeccak256 } from "ethers/lib/utils";
 import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
 
 describe("BridgeDelegateReceiver", () => {

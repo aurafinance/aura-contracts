@@ -17,12 +17,7 @@ import {
     VoterProxyLite__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
-import {
-    ExtSidechainConfig,
-    SidechainConfig,
-    SidechainNaming,
-    SidechainMultisigConfig,
-} from "../../types/sidechain-types";
+import { ExtSidechainConfig, SidechainConfig, SidechainMultisigConfig } from "../../types/sidechain-types";
 import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
