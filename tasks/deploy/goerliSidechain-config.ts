@@ -18,7 +18,13 @@ import {
     AuraBalOFT__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
-import { ExtSidechainConfig, SidechainAddresses, SidechainConfig, SidechainNaming } from "./sidechain-types";
+import {
+    ExtSidechainConfig,
+    SidechainAddresses,
+    SidechainConfig,
+    SidechainNaming,
+    SidechainBridging,
+} from "./sidechain-types";
 
 const addresses: SidechainAddresses = {
     lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
@@ -38,6 +44,12 @@ const naming: SidechainNaming = {
 
 const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
+};
+
+export const bridging: SidechainBridging = {
+    l1Receiver: "0x0000000000000000000000000000000000000000",
+    l2Sender: "0x0000000000000000000000000000000000000000",
+    nativeBridge: "0x0000000000000000000000000000000000000000",
 };
 
 export const getSidechain = (signer: Signer) => ({
@@ -61,5 +73,6 @@ export const config: SidechainConfig = {
     addresses,
     naming,
     extConfig,
+    bridging,
     getSidechain,
 };

@@ -7,7 +7,7 @@ import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
  * @title BridgeDelegateSender
  * @dev Sends tokens to L1 via a bridge
  */
-contract BridgeDelegateSender is Ownable {
+abstract contract BridgeDelegateSender is Ownable {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -33,5 +33,5 @@ contract BridgeDelegateSender is Ownable {
         l2Coordinator = _l2Coordinator;
     }
 
-    function send(uint256 _amount) external virtual onlyOwner {}
+    function send(uint256 _amount) external virtual;
 }
