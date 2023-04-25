@@ -33,6 +33,7 @@ import {
 } from "../../types";
 import { SidechainConfig } from "../../tasks/deploy/sidechain-types";
 import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
+import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -48,6 +49,7 @@ describe("Sidechain", () => {
     // phases
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
+    let vaultDeployment: AuraBalVaultDeployed;
     let mockMintr: MockCurveMinter;
 
     // LayerZero endpoints
@@ -103,6 +105,7 @@ describe("Sidechain", () => {
 
         phase2 = await mainnetConfig.getPhase2(deployer.signer);
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
+        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
 
         // Deploy mocks
         crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
@@ -133,7 +136,13 @@ describe("Sidechain", () => {
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
             },
-            naming: { coordinatorName: "Aura", coordinatorSymbol: "AURA", tokenFactoryNamePostfix: " Aura Deposit" },
+            naming: {
+                auraOftName: "Aura",
+                auraOftSymbol: "AURA",
+                tokenFactoryNamePostfix: " Aura Deposit",
+                auraBalOftName: "Aura BAL",
+                auraBalOftSymbol: "auraBAL",
+            },
             extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 
@@ -143,6 +152,7 @@ describe("Sidechain", () => {
             { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address },
             phase2,
             phase6,
+            vaultDeployment,
             deployer.signer,
         );
 
@@ -174,8 +184,8 @@ describe("Sidechain", () => {
             expect(await sidechain.voterProxy.operator()).eq(sidechain.booster.address);
         });
         it("AuraOFT has correct config", async () => {
-            expect(await auraOFT.name()).eq(sidechainConfig.naming.coordinatorName);
-            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.coordinatorSymbol);
+            expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
+            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(l2LzEndpoint.address);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });
@@ -273,6 +283,16 @@ describe("Sidechain", () => {
             expect(await poolManager.booster()).eq(booster.address);
             expect(await poolManager.operator()).eq(dao.address);
             expect(await poolManager.protectAddPool()).eq(true);
+        });
+        it("auraBalProxyOFT has correct config", async () => {
+            expect(await sidechain.auraBalOFT.lzEndpoint()).eq(l2LzEndpoint.address);
+            expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
+            expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
+        });
+        it("auraBalOFT has correct config", async () => {
+            expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
+            expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
+            expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
         });
     });
 
