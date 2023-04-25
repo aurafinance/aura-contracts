@@ -17,7 +17,8 @@ task("deploy:gnosis:sender").setAction(async function (tskArgs: TaskArguments, h
     const deployer = await getSigner(hre);
     const waitForBlocks = tskArgs.wait;
     const balOnGno: string = "0x7eF541E2a22058048904fE5744f9c7E4C57AF717";
-    let delegate = await deployGnosisBridgeSender(hre, deployer, balOnGno);
+    const bridge: string = "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d";
+    let delegate = await deployGnosisBridgeSender(hre, deployer, bridge, balOnGno);
     console.log(delegate.address);
 });
 

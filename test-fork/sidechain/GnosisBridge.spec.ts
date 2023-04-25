@@ -8,6 +8,7 @@ import { Account, ERC20, MockERC20__factory, GnosisBridgeSender } from "../../ty
 
 describe("GnosisBridge", () => {
     const balOnGno: string = "0x7eF541E2a22058048904fE5744f9c7E4C57AF717";
+    const bridge: string = "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d";
     const balOnGnoWhale: string = "0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f";
     const ambAddress: string = "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59";
     const ambHelper: string = "0x7d94ece17e81355326e3359115D4B02411825EdD";
@@ -66,7 +67,7 @@ describe("GnosisBridge", () => {
         // Deploy mocks
         crv = MockERC20__factory.connect(balOnGno, deployer.signer);
 
-        gnosisBridgeSender = await deployGnosisBridgeSender(hre, deployer.signer, balOnGno);
+        gnosisBridgeSender = await deployGnosisBridgeSender(hre, deployer.signer, bridge, balOnGno);
     });
 
     describe("Check configs", () => {
@@ -76,7 +77,8 @@ describe("GnosisBridge", () => {
             await gnosisBridgeSender.setL2Coordinator(dao.address);
             expect(await gnosisBridgeSender.l1Receiver()).eq(deployer.address);
             expect(await gnosisBridgeSender.l2Coordinator()).eq(dao.address);
-            expect(await gnosisBridgeSender.crv()).eq(crv.address);
+            expect(await gnosisBridgeSender.bridge()).eq(bridge);
+            expect(await gnosisBridgeSender.crv()).eq(balOnGno);
         });
     });
 
@@ -85,7 +87,7 @@ describe("GnosisBridge", () => {
             const amount = simpleToExactAmount(100);
             await getBal(gnosisBridgeSender.address, amount);
             let balanceBefore = await crv.balanceOf(gnosisBridgeSender.address);
-            let txn = await gnosisBridgeSender.send(ZERO_ADDRESS, balanceBefore.toString());
+            let txn = await gnosisBridgeSender.send(balanceBefore.toString());
 
             //Everything from here should be a defender task
             let receipt = await txn.wait();
