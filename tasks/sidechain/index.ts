@@ -144,8 +144,8 @@ task("sidechain:test:send-aura-to-sidechain")
         const remoteConfig = sidechainConfigs[remoteChainId];
         assert(remoteConfig, `Remote config for chain ID ${remoteChainId} not found`);
 
-        const remoteLzChainId = lzChainIds[remoteChainId];
-        assert(remoteLzChainId, "LZ chain ID not found");
+        const sidechainLzChainId = lzChainIds[remoteChainId];
+        assert(sidechainLzChainId, "LZ chain ID not found");
 
         const local = localConfig.getSidechain(deployer);
         const remote = remoteConfig.getSidechain(deployer);

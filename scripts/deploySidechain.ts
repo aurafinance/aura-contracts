@@ -30,14 +30,11 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
-    IGaugeController__factory,
-    MockGaugeController,
 } from "../types";
-import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "../types/sidechain-types";
-import { simpleToExactAmount } from "../test-utils";
 
 export interface CanonicalPhaseDeployed {
     auraProxyOFT: AuraProxyOFT;
@@ -47,6 +44,7 @@ export interface CanonicalPhaseDeployed {
 export async function deployCanonicalPhase(
     hre: HardhatRuntimeEnvironment,
     deployer: Signer,
+    multisigs: MultisigConfig,
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
     phase6: Phase6Deployed,
@@ -63,7 +61,7 @@ export async function deployCanonicalPhase(
         hre,
         new AuraProxyOFT__factory(deployer),
         "AuraProxyOFT",
-        [config.l1LzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
+        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
         {},
         debug,
         waitForBlocks,
@@ -73,15 +71,14 @@ export async function deployCanonicalPhase(
         hre,
         new L1Coordinator__factory(deployer),
         "L1Coordinator",
-        [config.l1LzEndpoint, phase6.booster.address, config.token, phase2.cvx.address, auraProxyOFT.address],
+        [config.lzEndpoint, phase6.booster.address, config.token, phase2.cvx.address, auraProxyOFT.address],
         {},
         debug,
         waitForBlocks,
     );
 
-    // const tx = await l1Coordinator.transferOwnership(multisigs.daoMultisig);
-    // await waitForTx(tx, debug, waitForBlocks);
-    // TODO - confirm with phry why it is not present the transfer of ownership
+    const tx = await l1Coordinator.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
     return { auraProxyOFT, l1Coordinator };
 }
 
@@ -100,9 +97,6 @@ export interface SidechainDeployed {
     poolManager: PoolManagerLite;
     l2Coordinator: L2Coordinator;
     auraOFT: AuraOFT;
-}
-export interface SidechainPhase2Deployed extends SidechainDeployed {
-    gaugeController: MockGaugeController;
 }
 
 /**
@@ -127,7 +121,6 @@ export interface SidechainPhase2Deployed extends SidechainDeployed {
  * @param {SidechainNaming} naming - Naming configuration.
  * @param {SidechainMultisigConfig} multisigs - List of Sidechain multisigs addresses
  * @param {ExtSidechainConfig} extConfig - The external Sidechain configuration
- * @param {l1Configuration} l1Configuration - L1 Configurations
  * @param {boolean} debug - Weather console log or not the details of the tx
  * @param {number} waitForBlocks - Number of blocks to wait after the deployment of each contract.
  */
@@ -137,7 +130,6 @@ export async function deploySidechainSystem(
     naming: SidechainNaming,
     multisigs: SidechainMultisigConfig,
     extConfig: ExtSidechainConfig,
-    l1Configuration: { addresses: ExtSystemConfig; canonical: CanonicalPhaseDeployed } = undefined,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
@@ -202,7 +194,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [naming.coordinatorName, naming.coordinatorSymbol, extConfig.l2LzEndpoint, extConfig.canonicalChainId],
+        [naming.coordinatorName, naming.coordinatorSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
         deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
 
@@ -216,7 +208,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new L2Coordinator__factory(deployer),
         "L2Coordinator",
-        [extConfig.l2LzEndpoint, auraOFT.address, extConfig.canonicalChainId],
+        [extConfig.lzEndpoint, auraOFT.address, extConfig.canonicalChainId],
         deployOptionsWithCallbacks([l2CoordinatorTransferOwnership]),
     );
     const cvxTokenAddress = l2Coordinator.address;
@@ -315,16 +307,10 @@ export async function deploySidechainSystem(
     };
 
     let tx: ContractTransaction;
-    // Configure L1 ,L2 Communications
-    if (l1Configuration) {
-        const { addresses: l1ExtConfig, canonical } = l1Configuration;
-        await setTrustedRemoteSidechain(canonical, contracts, l1ExtConfig.canonicalChainId, debug, waitForBlocks);
-    }
 
     tx = await l2Coordinator.initialize(booster.address, extConfig.token);
     await waitForTx(tx, debug, waitForBlocks);
 
-    // TODO @phijfry confirm this
     tx = await l2Coordinator.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -362,45 +348,6 @@ export async function deploySidechainSystem(
     await waitForTx(tx, debug, waitForBlocks);
 
     return contracts;
-}
-
-export async function deploySidechainPhase2(
-    __: HardhatRuntimeEnvironment,
-    deployer: Signer,
-    deployment: SidechainDeployed,
-    extConfig: ExtSidechainConfig,
-    debug: boolean = false,
-    waitForBlocks: number = 0,
-): Promise<SidechainPhase2Deployed> {
-    // -----------------------------
-    // Pre-2: L1
-    //          Protocol DAO : l1Coordinator.setTrustedRemote(L2_CHAIN_ID, [l2Coordinator.address, l1Coordinator.address])
-    //          Protocol DAO : auraProxyOFT.setTrustedRemote(L2_CHAIN_ID, [auraOFT.address, auraProxyOFT.address])
-    // Pre-2: L2
-    //          Protocol DAO : l1Coordinator.setTrustedRemote(L2_CHAIN_ID, [l2Coordinator.address, l1Coordinator.address])
-    //          Protocol DAO : auraProxyOFT.setTrustedRemote(L2_CHAIN_ID, [auraOFT.address, auraProxyOFT.address])
-    // -----------------------------
-    // 2. Sidechain Add pools at PoolManager:
-    // -----------------------------
-    // -----------------------------
-    // POST-2: TreasuryDAO: LBP.updateWeightsGradually
-    //         TreasuryDAO: LBP.setSwapEnabled
-
-    const { poolManager } = deployment;
-    const { gauges } = extConfig;
-
-    const gaugeLength = gauges.length;
-    const gaugeController = IGaugeController__factory.connect(extConfig.gaugeController, deployer);
-    for (let i = 0; i < gaugeLength; i++) {
-        if (gaugeLength > 10) {
-            const weight = await gaugeController.get_gauge_weight(gauges[i]);
-            if (weight.lt(simpleToExactAmount(15000))) continue;
-        }
-        const tx = await poolManager["addPool(address)"](gauges[i]);
-        await waitForTx(tx, debug, waitForBlocks);
-    }
-
-    return { ...deployment, gaugeController };
 }
 
 export async function deployCreate2Factory(

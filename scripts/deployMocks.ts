@@ -41,7 +41,7 @@ interface DeployMocksResult {
     balancerVault: MockBalancerVault;
     bal: MockERC20;
     weth: MockERC20;
-    l1LzEndpoint: LZEndpointMock;
+    lzEndpoint: LZEndpointMock;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
@@ -266,10 +266,10 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
     // -----------------------------
     // 2 Sidechain
     // -----------------------------
-    const l1LzEndpoint = await deployContract<LZEndpointMock>(
+    const lzEndpoint = await deployContract<LZEndpointMock>(
         hre,
         new LZEndpointMock__factory(deployer),
-        "l1LzEndpoint",
+        "lzEndpoint",
         [L1_CHAIN_ID],
         {},
         debug,
@@ -287,7 +287,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         balancerVault,
         bal,
         weth,
-        l1LzEndpoint,
+        lzEndpoint,
         addresses: {
             token: crv.address,
             tokenBpt: crvBpt.address,
@@ -320,8 +320,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
                 poolIds: [ZERO_KEY],
                 assetsIn: [feeToken.address],
             },
-            canonicalChainId: L1_CHAIN_ID,
-            l1LzEndpoint: l1LzEndpoint.address,
+            lzEndpoint: lzEndpoint.address,
         },
         namingConfig: {
             cvxName: "Convex Finance",

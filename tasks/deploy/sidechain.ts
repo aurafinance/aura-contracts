@@ -64,7 +64,10 @@ task("deploy:sidechain:mocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
         const result = await deploySidechainMocks(hre, deployer, debug, tskArgs.wait);
-        logContracts(result as unknown as { [key: string]: { address: string } });
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { addresses, namingConfig, ...contracts } = result;
+        logContracts(contracts as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L1")
@@ -79,7 +82,16 @@ task("deploy:sidechain:L1")
         const phase2 = await config.getPhase2(deployer);
         const phase6 = await config.getPhase6(deployer);
 
-        const result = await deployCanonicalPhase(hre, deployer, config.addresses, phase2, phase6, debug, tskArgs.wait);
+        const result = await deployCanonicalPhase(
+            hre,
+            deployer,
+            config.multisigs,
+            config.addresses,
+            phase2,
+            phase6,
+            debug,
+            tskArgs.wait,
+        );
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
@@ -87,21 +99,16 @@ task("deploy:sidechain:L2")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-        const l1Config = canonicalConfigs[hre.network.config.chainId];
+        const config = sidechainConfigs[hre.network.config.chainId];
 
-        assert(l1Config, `Config for chain ID ${hre.network.config.chainId} not found`);
-
-        const l2Config = sidechainConfigs[hre.network.config.chainId];
-
-        assert(l2Config, `Config for chain ID ${hre.network.config.chainId} not found`);
+        assert(config, `Config for chain ID ${hre.network.config.chainId} not found`);
 
         const result = await deploySidechainSystem(
             hre,
             deployer,
-            l2Config.naming,
-            l2Config.multisigs,
-            l2Config.extConfig,
-            undefined,
+            config.naming,
+            config.multisigs,
+            config.extConfig,
             debug,
             tskArgs.wait,
         );
@@ -216,14 +223,14 @@ task("sidechain:addresses")
             extConfig.create2Factory,
             new AuraOFT__factory(deployer),
             "AuraOFT",
-            [naming.coordinatorName, naming.coordinatorSymbol, extConfig.l2LzEndpoint, extConfig.canonicalChainId],
+            [naming.coordinatorName, naming.coordinatorSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
         );
 
         const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
             extConfig.create2Factory,
             new L2Coordinator__factory(deployer),
             "L2Coordinator",
-            [extConfig.l2LzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
+            [extConfig.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
         );
 
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(

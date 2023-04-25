@@ -178,6 +178,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /**
      * @dev Override the default OFT lzReceive function logic
+     * Called by the L2Coordinator.queueNewRewards to register feeDebt
      */
     function _nonblockingLzReceive(
         uint16 _srcChainId,

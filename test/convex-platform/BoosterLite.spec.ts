@@ -56,11 +56,11 @@ describe("BoosterLite", () => {
         ({ booster } = sidechain);
         pool = await booster.poolInfo(0);
         // transfer LP tokens to accounts
-        const balance = await l2mocks.lptoken.balanceOf(deployer.address);
+        const balance = await l2mocks.bpt.balanceOf(deployer.address);
         for (const account of accounts) {
             const accountAddress = await account.getAddress();
             const share = balance.div(accounts.length);
-            const tx = await l2mocks.lptoken.transfer(accountAddress, share);
+            const tx = await l2mocks.bpt.transfer(accountAddress, share);
             await tx.wait();
         }
 
@@ -125,27 +125,27 @@ describe("BoosterLite", () => {
             const amountOfFees = await toFeeAmount(mintrMintAmount);
             // bals before
             const balsBefore = await Promise.all([
-                await l2mocks.crv.balanceOf((await booster.poolInfo(0)).crvRewards), // [0] reward pool
-                await l2mocks.crv.balanceOf(aliceAddress), // [1] _callIncentive
-                await l2mocks.crv.balanceOf(await booster.treasury()), // [2] platform
-                await l2mocks.crv.balanceOf(bridgeDelegate), // [3] _totalIncentive
-                await l2mocks.crv.balanceOf(await booster.rewards()), // [4] rewards == l2Coordinator
+                await l2mocks.token.balanceOf((await booster.poolInfo(0)).crvRewards), // [0] reward pool
+                await l2mocks.token.balanceOf(aliceAddress), // [1] _callIncentive
+                await l2mocks.token.balanceOf(await booster.treasury()), // [2] platform
+                await l2mocks.token.balanceOf(bridgeDelegate), // [3] _totalIncentive
+                await l2mocks.token.balanceOf(await booster.rewards()), // [4] rewards == l2Coordinator
             ]);
 
             // collect the rewards
             await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
 
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.remoteLzChainId);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
             await booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.remoteLzChainId);
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
 
             // bals after
             const balsAfter = await Promise.all([
-                await l2mocks.crv.balanceOf((await booster.poolInfo(0)).crvRewards), // reward pool
-                await l2mocks.crv.balanceOf(aliceAddress), // _callIncentive
-                await l2mocks.crv.balanceOf(await booster.treasury()), // platform
-                await l2mocks.crv.balanceOf(bridgeDelegate), // rewards == l2Coordinator
-                await l2mocks.crv.balanceOf(await booster.rewards()), // rewards == l2Coordinator
+                await l2mocks.token.balanceOf((await booster.poolInfo(0)).crvRewards), // reward pool
+                await l2mocks.token.balanceOf(aliceAddress), // _callIncentive
+                await l2mocks.token.balanceOf(await booster.treasury()), // platform
+                await l2mocks.token.balanceOf(bridgeDelegate), // rewards == l2Coordinator
+                await l2mocks.token.balanceOf(await booster.rewards()), // rewards == l2Coordinator
             ]);
 
             expect(balsAfter[0], "reward pool no changes").eq(
@@ -167,7 +167,7 @@ describe("BoosterLite", () => {
             const stake = false;
             const pid = 0;
             const amount = ethers.utils.parseEther("10");
-            let tx = await l2mocks.lptoken.connect(alice).approve(booster.address, amount);
+            let tx = await l2mocks.bpt.connect(alice).approve(booster.address, amount);
 
             tx = await booster.connect(alice).deposit(pid, amount, stake);
             expect(tx).to.emit(booster, "Deposited").withArgs(aliceAddress, pid, amount);
@@ -196,33 +196,33 @@ describe("BoosterLite", () => {
 
         it("Booster.earmarkRewards sends fees to coordinator", async () => {
             await increaseTime(60 * 60 * 24);
-            const deployerBalanceBefore = await l2mocks.crv.balanceOf(deployer.address);
-            const rewardPoolBalanceBefore = await l2mocks.crv.balanceOf(pool.crvRewards);
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.remoteLzChainId);
+            const deployerBalanceBefore = await l2mocks.token.balanceOf(deployer.address);
+            const rewardPoolBalanceBefore = await l2mocks.token.balanceOf(pool.crvRewards);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
             const bridgeDelegate = await sidechain.l2Coordinator.bridgeDelegate();
-            const bridgeDelegateBalanceBefore = await l2mocks.crv.balanceOf(bridgeDelegate);
+            const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
 
             // When earmarkRewards
             const tx = await booster.earmarkRewards(0, { value: NATIVE_FEE });
             await tx.wait();
 
             // Then sends
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.remoteLzChainId);
-            const rate = await l2mocks.crvMinter.rate();
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
+            const rate = await l2mocks.minter.rate();
             const callIncentive = rate
                 .mul(await sidechain.booster.earmarkIncentive())
                 .div(await booster.FEE_DENOMINATOR());
 
             const totalIncentive = await toFeeAmount(rate);
             const rewards = await booster.rewards();
-            const deployerBalanceAfter = await l2mocks.crv.balanceOf(deployer.address);
+            const deployerBalanceAfter = await l2mocks.token.balanceOf(deployer.address);
             const deployerBalanceDelta = deployerBalanceAfter.sub(deployerBalanceBefore);
 
-            const rewardPoolBalanceAfter = await l2mocks.crv.balanceOf(pool.crvRewards);
-            const bridgeDelegateBalanceAfter = await l2mocks.crv.balanceOf(bridgeDelegate);
+            const rewardPoolBalanceAfter = await l2mocks.token.balanceOf(pool.crvRewards);
+            const bridgeDelegateBalanceAfter = await l2mocks.token.balanceOf(bridgeDelegate);
             const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);
 
-            const rewardsBalance = await l2mocks.crv.balanceOf(rewards);
+            const rewardsBalance = await l2mocks.token.balanceOf(rewards);
             const totalCrvBalance = rewardPoolBalanceAfter
                 .sub(rewardPoolBalanceBefore)
                 .add(deployerBalanceDelta)
@@ -245,7 +245,7 @@ describe("BoosterLite", () => {
             const tx = await crvRewards["getReward(address,bool)"](aliceAddress, claimExtras);
             await tx.wait();
 
-            const crvBalance = await l2mocks.crv.balanceOf(aliceAddress);
+            const crvBalance = await l2mocks.token.balanceOf(aliceAddress);
 
             const balance = await crvRewards.balanceOf(aliceAddress);
             const rewardPerToken = await crvRewards.rewardPerToken();
@@ -255,7 +255,7 @@ describe("BoosterLite", () => {
         });
 
         it("@method BaseRewardPool.processIdleRewards()", async () => {
-            await l2mocks.crvMinter.setRate(1000);
+            await l2mocks.minter.setRate(1000);
 
             await booster.earmarkRewards(0, { value: NATIVE_FEE });
             const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);

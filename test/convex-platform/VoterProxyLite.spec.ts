@@ -34,11 +34,11 @@ describe("VoterProxyLite", () => {
         const operatorAccount = await impersonateAccount(operator);
 
         // Test send tokens to voter proxy and call deposit
-        await l2mocks.lptoken.transfer(voterProxyLite.address, amount);
-        const voterProxyBalanceBefore = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-        const gaugeBalanceBefore = await l2mocks.lptoken.balanceOf(gauge);
+        await l2mocks.bpt.transfer(voterProxyLite.address, amount);
+        const voterProxyBalanceBefore = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+        const gaugeBalanceBefore = await l2mocks.bpt.balanceOf(gauge);
         // Test
-        await voterProxyLite.connect(operatorAccount.signer).deposit(l2mocks.lptoken.address, gauge);
+        await voterProxyLite.connect(operatorAccount.signer).deposit(l2mocks.bpt.address, gauge);
         return { voterProxyBalanceBefore, gaugeBalanceBefore };
     }
     before("init contract", async () => {
@@ -182,7 +182,7 @@ describe("VoterProxyLite", () => {
     describe("deposit", async () => {
         let gauge: string;
         before(async () => {
-            gauge = l2mocks.addresses.gauges[0];
+            gauge = l2mocks.addresses.gauge;
         });
         it("fails if caller is not operator", async () => {
             const operator = await voterProxyLite.operator();
@@ -197,8 +197,8 @@ describe("VoterProxyLite", () => {
             const amount = simpleToExactAmount(10);
             const { voterProxyBalanceBefore, gaugeBalanceBefore } = await boosterDepositIntoVoterProxy(gauge, amount);
 
-            const voterProxyBalanceAfter = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceAfter = await l2mocks.lptoken.balanceOf(gauge);
+            const voterProxyBalanceAfter = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceAfter = await l2mocks.bpt.balanceOf(gauge);
 
             expect(voterProxyBalanceAfter, "voter proxy balance").to.be.eq(voterProxyBalanceBefore.sub(amount));
             expect(voterProxyBalanceAfter, "full voter proxy balance must be deposited").to.be.eq(ZERO);
@@ -208,27 +208,27 @@ describe("VoterProxyLite", () => {
     describe("withdraw LP tokens from a gauge", async () => {
         let gauge: string;
         before(async () => {
-            gauge = l2mocks.addresses.gauges[0];
+            gauge = l2mocks.addresses.gauge;
         });
         it("withdraw LP tokens from a voter proxy when there is some balance on the voter", async () => {
             const operator = await voterProxyLite.operator();
             const operatorAccount = await impersonateAccount(operator);
             const amount = simpleToExactAmount(10);
-            await l2mocks.lptoken.transfer(voterProxyLite.address, amount.mul(2));
+            await l2mocks.bpt.transfer(voterProxyLite.address, amount.mul(2));
             // Given that
-            const boosterBalanceBefore = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
-            const voterProxyBalanceBefore = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceBefore = await l2mocks.lptoken.balanceOf(gauge);
+            const boosterBalanceBefore = await l2mocks.bpt.balanceOf(sidechain.booster.address);
+            const voterProxyBalanceBefore = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceBefore = await l2mocks.bpt.balanceOf(gauge);
             expect(voterProxyBalanceBefore, "voter proxy balance > amount").to.be.gt(amount);
             // When withdraw
             await voterProxyLite
                 .connect(operatorAccount.signer)
-                ["withdraw(address,address,uint256)"](l2mocks.lptoken.address, gauge, amount);
+                ["withdraw(address,address,uint256)"](l2mocks.bpt.address, gauge, amount);
 
             // Then transfer tokens from voter proxy only to the booster
-            const boosterBalanceAfter = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
-            const voterProxyBalanceAfter = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceAfter = await l2mocks.lptoken.balanceOf(gauge);
+            const boosterBalanceAfter = await l2mocks.bpt.balanceOf(sidechain.booster.address);
+            const voterProxyBalanceAfter = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceAfter = await l2mocks.bpt.balanceOf(gauge);
             expect(boosterBalanceAfter, "booster balance").to.be.eq(boosterBalanceBefore.add(amount));
             expect(voterProxyBalanceAfter, "voter proxy balance").to.be.eq(voterProxyBalanceBefore.sub(amount));
             expect(gaugeBalanceAfter, "gauge balance").to.be.eq(gaugeBalanceBefore);
@@ -238,9 +238,9 @@ describe("VoterProxyLite", () => {
             const operatorAccount = await impersonateAccount(operator);
             const amount = simpleToExactAmount(20);
             // Given that
-            const boosterBalanceBefore = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
-            const voterProxyBalanceBefore = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceBefore = await l2mocks.lptoken.balanceOf(gauge);
+            const boosterBalanceBefore = await l2mocks.bpt.balanceOf(sidechain.booster.address);
+            const voterProxyBalanceBefore = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceBefore = await l2mocks.bpt.balanceOf(gauge);
             expect(voterProxyBalanceBefore, "voter proxy balance > ZERO").to.be.gt(ZERO);
             expect(voterProxyBalanceBefore, "voter proxy balance < amount").to.be.lt(amount);
             const expectGaugeWithdraw = amount.sub(boosterBalanceBefore);
@@ -248,12 +248,12 @@ describe("VoterProxyLite", () => {
             // When withdraw
             await voterProxyLite
                 .connect(operatorAccount.signer)
-                ["withdraw(address,address,uint256)"](l2mocks.lptoken.address, gauge, amount);
+                ["withdraw(address,address,uint256)"](l2mocks.bpt.address, gauge, amount);
 
             // Then withdraws from gauge and voter proxy to the booster
-            const boosterBalanceAfter = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
-            const voterProxyBalanceAfter = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceAfter = await l2mocks.lptoken.balanceOf(gauge);
+            const boosterBalanceAfter = await l2mocks.bpt.balanceOf(sidechain.booster.address);
+            const voterProxyBalanceAfter = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceAfter = await l2mocks.bpt.balanceOf(gauge);
             expect(boosterBalanceAfter, "booster balance").to.be.eq(boosterBalanceBefore.add(amount));
             expect(voterProxyBalanceAfter, "voter proxy balance").to.be.eq(ZERO);
             expect(gaugeBalanceAfter, "gauge balance").to.be.eq(gaugeBalanceBefore.sub(expectGaugeWithdraw));
@@ -264,17 +264,17 @@ describe("VoterProxyLite", () => {
             const amount = simpleToExactAmount(20);
             // Given that
             await boosterDepositIntoVoterProxy(gauge, amount);
-            const gaugeBalanceBefore = await l2mocks.lptoken.balanceOf(gauge);
-            const boosterBalanceBefore = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
+            const gaugeBalanceBefore = await l2mocks.bpt.balanceOf(gauge);
+            const boosterBalanceBefore = await l2mocks.bpt.balanceOf(sidechain.booster.address);
             expect(gaugeBalanceBefore, "gauge balance").to.be.gt(ZERO);
 
             // When withdraw all
-            await voterProxyLite.connect(operatorAccount.signer).withdrawAll(l2mocks.lptoken.address, gauge);
+            await voterProxyLite.connect(operatorAccount.signer).withdrawAll(l2mocks.bpt.address, gauge);
 
             // Then withdraws from gauge and voter proxy to the booster
-            const boosterBalanceAfter = await l2mocks.lptoken.balanceOf(sidechain.booster.address);
-            const voterProxyBalanceAfter = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
-            const gaugeBalanceAfter = await l2mocks.lptoken.balanceOf(gauge);
+            const boosterBalanceAfter = await l2mocks.bpt.balanceOf(sidechain.booster.address);
+            const voterProxyBalanceAfter = await l2mocks.bpt.balanceOf(voterProxyLite.address);
+            const gaugeBalanceAfter = await l2mocks.bpt.balanceOf(gauge);
             expect(boosterBalanceAfter, "booster balance").to.be.eq(boosterBalanceBefore.add(gaugeBalanceBefore));
             expect(voterProxyBalanceAfter, "voter proxy balance").to.be.eq(ZERO);
             expect(gaugeBalanceAfter, "gauge balance").to.be.eq(gaugeBalanceBefore.sub(gaugeBalanceBefore));
@@ -307,11 +307,11 @@ describe("VoterProxyLite", () => {
         });
 
         it("should mint and send crv to operator", async () => {
-            const boosterBalanceBefore = await l2mocks.crv.balanceOf(sidechain.booster.address);
+            const boosterBalanceBefore = await l2mocks.token.balanceOf(sidechain.booster.address);
             // Test
-            const tx = await voterProxyLite.connect(operatorAccount.signer).claimCrv(l2mocks.addresses.gauges[0]);
+            const tx = await voterProxyLite.connect(operatorAccount.signer).claimCrv(l2mocks.addresses.gauge);
 
-            const boosterBalanceAfter = await l2mocks.crv.balanceOf(sidechain.booster.address);
+            const boosterBalanceAfter = await l2mocks.token.balanceOf(sidechain.booster.address);
             expect(boosterBalanceAfter, "booster crv balance").to.be.gt(boosterBalanceBefore);
         });
         it("fails if operator is not the caller", async () => {
@@ -331,8 +331,8 @@ describe("VoterProxyLite", () => {
         });
 
         it("should not fail even if there are no extra rewards on the gauge", async () => {
-            await expect(voterProxyLite.connect(operatorAccount.signer).claimRewards(l2mocks.addresses.gauges[0])).to
-                .not.be.reverted;
+            await expect(voterProxyLite.connect(operatorAccount.signer).claimRewards(l2mocks.addresses.gauge)).to.not.be
+                .reverted;
         });
         it("fails if operator is not the caller", async () => {
             expect(operator, "only operator").to.not.be.eq(deployer.address);
@@ -350,15 +350,15 @@ describe("VoterProxyLite", () => {
             operatorAccount = await impersonateAccount(operator);
         });
         it("migrate tokens via `execute`", async () => {
-            const balance = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
+            const balance = await l2mocks.bpt.balanceOf(voterProxyLite.address);
             const receiverAcc = await accounts[7].getAddress();
-            const data = l2mocks.lptoken.interface.encodeFunctionData("transfer", [receiverAcc, balance]);
-            await voterProxyLite.connect(operatorAccount.signer).execute(l2mocks.lptoken.address, "0", data);
+            const data = l2mocks.bpt.interface.encodeFunctionData("transfer", [receiverAcc, balance]);
+            await voterProxyLite.connect(operatorAccount.signer).execute(l2mocks.bpt.address, "0", data);
 
-            const newBalance = await l2mocks.lptoken.balanceOf(voterProxyLite.address);
+            const newBalance = await l2mocks.bpt.balanceOf(voterProxyLite.address);
             expect(newBalance).eq(ZERO);
 
-            const receiverAccBalance = await l2mocks.lptoken.balanceOf(receiverAcc);
+            const receiverAccBalance = await l2mocks.bpt.balanceOf(receiverAcc);
             expect(receiverAccBalance).eq(balance);
         });
         it("fails if operator is not the caller", async () => {

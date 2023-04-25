@@ -7,29 +7,20 @@ import {
     MockCurveMinter__factory,
     MockCurveMinter,
     MockBalancerPoolToken,
-    LZEndpointMock__factory,
-    Create2Factory__factory,
-    Create2Factory,
     MockBalancerPoolToken__factory,
     MockCurveGauge__factory,
-    LZEndpointMock,
-    MockVoting,
-    MockVoting__factory,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "types/sidechain-types";
 import { sidechainNaming } from "../tasks/deploy/sidechain-constants";
+import { ZERO_ADDRESS } from "../test-utils";
 
 interface DeployL2MocksResult {
-    crv: MockERC20;
-    crvMinter: MockCurveMinter;
-    voting: MockVoting;
-    gauges: MockCurveGauge[];
-    crvBpt: MockBalancerPoolToken;
-    lptoken: MockERC20;
-    create2Factory: Create2Factory;
-    l2LzEndpoint: LZEndpointMock;
+    token: MockERC20;
+    minter: MockCurveMinter;
+    gauge: MockCurveGauge;
+    bpt: MockBalancerPoolToken;
     addresses: ExtSidechainConfig;
     namingConfig: SidechainNaming;
 }
@@ -48,44 +39,33 @@ async function deploySidechainMocks(
 ): Promise<DeployL2MocksResult> {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
+
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
-    const create2Factory = await new Create2Factory__factory(deployer).deploy();
-    let tx = await create2Factory.updateDeployer(deployerAddress, true);
-    await tx.wait();
-
-    const crv = await deployContract<MockERC20>(
+    const token = await deployContract<MockERC20>(
         hre,
         new MockERC20__factory(deployer),
-        "l2MockCRV",
-        ["l2mockCrv", "l2mockCrv", 18, deployerAddress, 10000000],
+        "MockERC20",
+        ["mockToken", "mockToken", 18, deployerAddress, 10000000],
         {},
         debug,
         waitForBlocks,
     );
-    const crvMinter = await deployContract<MockCurveMinter>(
+    const minter = await deployContract<MockCurveMinter>(
         hre,
         new MockCurveMinter__factory(deployer),
-        "l2MockCurveMinter",
-        [crv.address, simpleToExactAmount(1, 18)],
+        "MockCurveMinter",
+        [token.address, simpleToExactAmount(1, 18)],
         {},
         debug,
         waitForBlocks,
     );
-    const amount = await crv.balanceOf(deployerAddress);
-    tx = await crv.transfer(crvMinter.address, amount);
+    const amount = await token.balanceOf(deployerAddress);
+    const tx = await token.transfer(minter.address, amount);
     await tx.wait();
-    const lptoken = await deployContract<MockERC20>(
-        hre,
-        new MockERC20__factory(deployer),
-        "MockLPToken",
-        ["mockLPToken", "mockLPToken", 18, deployerAddress, 10000000],
-        {},
-        debug,
-    );
 
-    const crvBpt = await deployContract<MockBalancerPoolToken>(
+    const bpt = await deployContract<MockBalancerPoolToken>(
         hre,
         new MockBalancerPoolToken__factory(deployer),
         "MockBalancerPoolToken",
@@ -94,62 +74,29 @@ async function deploySidechainMocks(
         debug,
         waitForBlocks,
     );
-    const voting = await deployContract<MockVoting>(
+
+    const gauge = await deployContract<MockCurveGauge>(
         hre,
-        new MockVoting__factory(deployer),
-        "MockVoting",
-        [],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const gauges: MockCurveGauge[] = [];
-    for (let i = 0; i < 3; i++) {
-        const gauge = await deployContract<MockCurveGauge>(
-            hre,
-            new MockCurveGauge__factory(deployer),
-            "MockCurveGauge",
-            [`TestGauge_${i + 1}`, `tstGauge_${i + 1}`, lptoken.address, []],
-            {},
-            debug,
-        );
-
-        const tx = await voting.vote_for_gauge_weights(gauge.address, 1);
-        await tx.wait();
-        gauges.push(gauge);
-    }
-    // tx = await crvBpt.setPrice(parseEther("2.40"));
-    // await tx.wait();
-
-    const l2LzEndpoint = await deployContract<LZEndpointMock>(
-        hre,
-        new LZEndpointMock__factory(deployer),
-        "l2LzEndpoint",
-        [L2_CHAIN_ID],
+        new MockCurveGauge__factory(deployer),
+        "MockCurveGauge",
+        ["MockGauge", "MOCK", bpt.address, []],
         {},
         debug,
     );
-
     return {
-        crv,
-        crvMinter,
-        voting,
-        gauges,
-        crvBpt,
-        lptoken,
-        create2Factory,
-        l2LzEndpoint,
+        token,
+        bpt,
+        minter,
+        gauge,
         addresses: {
             canonicalChainId: L1_CHAIN_ID,
-            remoteLzChainId: L2_CHAIN_ID,
-            create2Factory: create2Factory.address,
-            token: crv.address,
-            tokenBpt: crvBpt.address,
-            minter: crvMinter.address,
-            gauges: gauges.map(g => g.address),
-            gaugeController: voting.address,
-            l2LzEndpoint: l2LzEndpoint.address,
+            sidechainLzChainId: L2_CHAIN_ID,
+            create2Factory: ZERO_ADDRESS,
+            token: token.address,
+            tokenBpt: bpt.address,
+            minter: minter.address,
+            gauge: gauge.address,
+            lzEndpoint: ZERO_ADDRESS,
         },
         namingConfig: { ...sidechainNaming },
     };

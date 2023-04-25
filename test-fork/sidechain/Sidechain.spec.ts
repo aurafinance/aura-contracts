@@ -61,8 +61,8 @@ describe("Sidechain", () => {
             naming: { ...sidechainNaming },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
-                remoteLzChainId: L2_CHAIN_ID,
-                l2LzEndpoint: l2LzEndpoint.address,
+                sidechainLzChainId: L2_CHAIN_ID,
+                lzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
@@ -71,8 +71,8 @@ describe("Sidechain", () => {
         };
 
         // deploy canonicalPhase
-        const l1Addresses = { ...mainnetConfig.addresses, l1LzEndpoint: l1LzEndpoint.address };
-        await deployCanonicalPhase(hre, deployer.signer, l1Addresses, phase2, phase6);
+        const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
+        await deployCanonicalPhase(hre, deployer.signer, mainnetConfig.multisigs, l1Addresses, phase2, phase6);
 
         // deploy sidechain
         sidechain = await deploySidechainSystem(
@@ -103,7 +103,7 @@ describe("Sidechain", () => {
         it("AuraOFT has correct config", async () => {
             expect(await auraOFT.name()).eq(sidechainConfig.naming.coordinatorName);
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.coordinatorSymbol);
-            expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.l2LzEndpoint);
+            expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });
         it("L2Coordinator has correct config", async () => {
@@ -111,7 +111,7 @@ describe("Sidechain", () => {
             expect(await l2Coordinator.booster()).eq(sidechain.booster.address);
             expect(await l2Coordinator.auraOFT()).eq(auraOFT.address);
             expect(await l2Coordinator.mintRate()).eq(0);
-            expect(await l2Coordinator.lzEndpoint()).eq(sidechainConfig.extConfig.l2LzEndpoint);
+            expect(await l2Coordinator.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
         });
         it("BoosterLite has correct config", async () => {
             expect(await sidechain.booster.crv()).eq(sidechainConfig.extConfig.token);

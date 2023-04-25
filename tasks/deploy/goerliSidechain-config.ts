@@ -26,8 +26,8 @@ const multisigs: SidechainMultisigConfig = {
 
 const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
-    remoteLzChainId: 10143, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
-    l2LzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
+    sidechainLzChainId: 10143, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
+    lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
     minter: goerliConfig.addresses.minter, // Mock minter
     token: goerliConfig.addresses.token, // Mock token
     create2Factory: "0xaec901fBc8f83612011641d8aABa5B8432Dc228c",

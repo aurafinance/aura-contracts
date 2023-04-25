@@ -156,8 +156,7 @@ const addresses: ExtSystemConfig = {
         ],
         assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
     },
-    canonicalChainId: 101,
-    l1LzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
+    lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
 };
 
 const multisigs = {

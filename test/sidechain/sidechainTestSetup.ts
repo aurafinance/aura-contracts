@@ -13,12 +13,12 @@ import { impersonateAccount } from "../../test-utils/fork";
 import {
     deployCanonicalPhase,
     deploySidechainSystem,
-    deploySidechainPhase2,
     setTrustedRemoteCanonical,
     CanonicalPhaseDeployed,
     SidechainDeployed,
+    setTrustedRemoteSidechain,
 } from "../../scripts/deploySidechain";
-import { Account, SidechainMultisigConfig } from "types";
+import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 import {
     DeployL2MocksResult,
     deploySidechainMocks,
@@ -94,43 +94,63 @@ export const sidechainTestSetup = async (
     );
 
     // deploy canonicalPhase
-    const canonical = await deployCanonicalPhase(hre, deployer.signer, l1Mocks.addresses, phase2, phase6);
+    const canonical = await deployCanonicalPhase(hre, deployer.signer, l1Multisigs, l1Mocks.addresses, phase2, phase6);
     // deploy sidechain
+    const create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
+    await create2Factory.updateDeployer(deployer.address, true);
 
-    const sidechain = await deploySidechainSystem(
-        hre,
-        deployer.signer,
-        l2mocks.namingConfig,
-        l2Multisigs,
-        l2mocks.addresses,
-        { addresses: l1Mocks.addresses, canonical },
+    const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(
+        l2mocks.addresses.sidechainLzChainId,
     );
+    l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
+
+    const sidechain = await deploySidechainSystem(hre, deployer.signer, l2mocks.namingConfig, l2Multisigs, {
+        ...l2mocks.addresses,
+        create2Factory: create2Factory.address,
+    });
 
     await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
     // Mock L1 Endpoints  configuration
-    await l1Mocks.l1LzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2mocks.l2LzEndpoint.address);
-    await l1Mocks.l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2mocks.l2LzEndpoint.address);
+    await l1Mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
+    await l1Mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
 
     // Mock L12Endpoints  configuration
-    await l2mocks.l2LzEndpoint.setDestLzEndpoint(canonical.l1Coordinator.address, l1Mocks.l1LzEndpoint.address);
-    await l2mocks.l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1Mocks.l1LzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(canonical.l1Coordinator.address, l1Mocks.lzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1Mocks.lzEndpoint.address);
 
-    await deploySidechainPhase2(hre, deployer.signer, sidechain, l2mocks.addresses);
+    // Add Mock Gauge
+    await sidechain.poolManager["addPool(address)"](l2mocks.gauge.address);
 
     // Emulate DAO Settings - L1 Stuff
     await phase6.booster.connect(dao.signer).setBridgeDelegate(canonical.l1Coordinator.address);
-    await setTrustedRemoteCanonical(canonical, sidechain, l2mocks.addresses.remoteLzChainId);
+    canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+    await setTrustedRemoteCanonical(canonical, sidechain, l2mocks.addresses.sidechainLzChainId);
 
     // Emulate DAO Settings - L2 Stuff
+    sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
+    sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+    await setTrustedRemoteSidechain(canonical, sidechain, l2mocks.addresses.canonicalChainId);
+
     const sbd = await deploySimpleBridgeDelegates(
         hre,
         l1Mocks.addresses,
         canonical,
-        l2mocks.addresses.remoteLzChainId,
+        l2mocks.addresses.sidechainLzChainId,
         deployer.signer,
     );
+    await canonical.l1Coordinator
+        .connect(dao.signer)
+        .setBridgeDelegate(l2mocks.addresses.sidechainLzChainId, sbd.bridgeDelegateReceiver.address);
+    await canonical.l1Coordinator
+        .connect(dao.signer)
+        .setL2Coordinator(l2mocks.addresses.sidechainLzChainId, sidechain.l2Coordinator.address);
+
     await sidechain.l2Coordinator.connect(dao.signer).setBridgeDelegate(sbd.bridgeDelegateSender.address);
 
+    // Revert connected contracts with deployer signer
+    canonical.l1Coordinator = canonical.l1Coordinator.connect(deployer.signer);
+    sidechain.l2Coordinator = sidechain.l2Coordinator.connect(deployer.signer);
+    sidechain.auraOFT = sidechain.auraOFT.connect(deployer.signer);
     return {
         deployer,
         l1: { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, canonical },

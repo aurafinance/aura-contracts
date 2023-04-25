@@ -131,8 +131,8 @@ describe("Sidechain", () => {
             naming: { ...sidechainNaming },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
-                remoteLzChainId: L2_CHAIN_ID,
-                l2LzEndpoint: l2LzEndpoint.address,
+                sidechainLzChainId: L2_CHAIN_ID,
+                lzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
@@ -141,8 +141,15 @@ describe("Sidechain", () => {
         };
 
         // deploy canonicalPhase
-        const l1Addresses: ExtSystemConfig = { ...mainnetConfig.addresses, l1LzEndpoint: l1LzEndpoint.address };
-        canonical = await deployCanonicalPhase(hre, deployer.signer, l1Addresses, phase2, phase6);
+        const l1Addresses: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
+        canonical = await deployCanonicalPhase(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            l1Addresses,
+            phase2,
+            phase6,
+        );
 
         l1Coordinator = canonical.l1Coordinator;
         auraProxyOFT = canonical.auraProxyOFT;
@@ -282,12 +289,12 @@ describe("Sidechain", () => {
         });
         it("add trusted remotes to layerzero endpoints", async () => {
             // L1 Stuff
+            canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
             await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
 
             // L2 Stuff
-            // TODO @phijfry confirm this
             sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
             sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
             await setTrustedRemoteSidechain(canonical, sidechain, L1_CHAIN_ID);
@@ -316,7 +323,7 @@ describe("Sidechain", () => {
         });
         it("Set l2Coordinator on l1Coordinator", async () => {
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).not.to.eq(l2Coordinator.address);
-            await l1Coordinator.setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
+            await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).to.eq(l2Coordinator.address);
         });
     });
@@ -464,7 +471,7 @@ describe("Sidechain", () => {
         });
         it("set bridge delegate for L2", async () => {
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(ZERO_ADDRESS);
-            await l1Coordinator.setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
+            await l1Coordinator.connect(dao.signer).setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegateReceiver.address);
         });
         it("settle fees updated feeDebt on L1", async () => {

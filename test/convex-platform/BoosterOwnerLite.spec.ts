@@ -41,11 +41,11 @@ describe("BoosterLite", () => {
 
         ({ booster, boosterOwner } = sidechain);
         // transfer LP tokens to accounts
-        const balance = await l2mocks.lptoken.balanceOf(deployer.address);
+        const balance = await l2mocks.bpt.balanceOf(deployer.address);
         for (const account of accounts) {
             const accountAddress = await account.getAddress();
             const share = balance.div(accounts.length);
-            const tx = await l2mocks.lptoken.transfer(accountAddress, share);
+            const tx = await l2mocks.bpt.transfer(accountAddress, share);
             await tx.wait();
         }
     };
