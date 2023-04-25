@@ -87,10 +87,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev  Receive an LZ message from the L2 to trigger an
-     *       AURA mint using the fee float held by this contract
-     *       via the Booster.distributeL2Fees function. Then update
-     *       the AURA rate for (TODO: this chain or globally? TBD)
+     * @dev Called by a src chain when fees have be collected and are on their
+     *      way back to the canonical chain via the bridge delegate
      */
     function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {
         feeDebt[_srcChainId] += _amount;
@@ -105,6 +103,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         );
     }
 
+    /**
+     * @dev Distribute AURA to the src chain using the BAL float in this
+     *      contract mint AURA by calling distributeL2Fees on the Booster
+     *      and then send those AURA tokens to the src chain
+     */
     function _distributeAura(
         uint16 _srcChainId,
         uint256 _feeAmount,
