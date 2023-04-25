@@ -51,7 +51,13 @@ describe("Sidechain", () => {
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
             },
-            naming: { coordinatorName: "Aura", coordinatorSymbol: "AURA", tokenFactoryNamePostfix: " Aura Deposit" },
+            naming: {
+                auraOftName: "Aura",
+                auraOftSymbol: "AURA",
+                tokenFactoryNamePostfix: " Aura Deposit",
+                auraBalOftName: "Aura BAL",
+                auraBalOftSymbol: "auraBAL",
+            },
             extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 
@@ -82,8 +88,8 @@ describe("Sidechain", () => {
             expect(await sidechain.voterProxy.operator()).eq(sidechain.booster.address);
         });
         it("AuraOFT has correct config", async () => {
-            expect(await auraOFT.name()).eq(sidechainConfig.naming.coordinatorName);
-            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.coordinatorSymbol);
+            expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
+            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(ZERO_ADDRESS);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });

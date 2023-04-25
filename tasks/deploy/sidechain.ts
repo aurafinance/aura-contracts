@@ -78,8 +78,18 @@ task("deploy:sidechain:L1")
 
         const phase2 = await config.getPhase2(deployer);
         const phase6 = await config.getPhase6(deployer);
+        const vaultDeployment = await config.getAuraBalVault(deployer);
 
-        const result = await deployCanonicalPhase(hre, config.addresses, phase2, phase6, deployer, debug, tskArgs.wait);
+        const result = await deployCanonicalPhase(
+            hre,
+            config.addresses,
+            phase2,
+            phase6,
+            vaultDeployment,
+            deployer,
+            debug,
+            tskArgs.wait,
+        );
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
@@ -214,7 +224,7 @@ task("sidechain:addresses")
             addresses.create2Factory,
             new AuraOFT__factory(deployer),
             "AuraOFT",
-            [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+            [naming.auraOftName, naming.auraOftSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
         );
 
         const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
@@ -243,7 +253,7 @@ task("sidechain:addresses")
             addresses.create2Factory,
             new TokenFactory__factory(deployer),
             "TokenFactory",
-            [boosterAddress, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
+            [boosterAddress, naming.tokenFactoryNamePostfix, naming.auraOftName.toLowerCase()],
         );
 
         const proxyFactoryAddress = await computeCreate2Address<ProxyFactory__factory>(

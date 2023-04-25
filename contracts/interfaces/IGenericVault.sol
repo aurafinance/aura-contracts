@@ -2,7 +2,11 @@
 pragma solidity 0.8.11;
 
 interface IGenericVault {
-    function withdraw(address _to, uint256 _shares) external returns (uint256 withdrawn);
+    function withdraw(
+        uint256 _assets,
+        address _receiver,
+        address _owner
+    ) external returns (uint256 _withdrawn);
 
     function withdrawAll(address _to) external returns (uint256 withdrawn);
 
