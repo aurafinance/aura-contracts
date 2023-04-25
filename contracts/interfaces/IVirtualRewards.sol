@@ -13,4 +13,6 @@ interface IVirtualRewards {
     function queueNewRewards(uint256) external;
 
     function rewardToken() external view returns (address);
+
+    function getReward() external;
 }
