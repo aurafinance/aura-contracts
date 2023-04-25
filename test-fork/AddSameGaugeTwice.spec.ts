@@ -21,9 +21,9 @@ const gaugeAddress = "0xcd4722b7c24c29e0413bdcd9e51404b4539d14ae";
 
 const rewardPoolWhaleAddress = "0x39D787fdf7384597C7208644dBb6FDa1CcA4eBdf";
 
-describe("Add same LP Token twice", () => {
+describe("Add same Gauge twice", () => {
     let protocolDao: Signer;
-    let gauge: string;
+    let oldGauge: string;
     let phase6: Phase6Deployed;
     let phase8: Phase8Deployed;
     let newPid: number;
@@ -65,6 +65,8 @@ describe("Add same LP Token twice", () => {
         before(() => setup());
         it("shut down old pool", async () => {
             const poolManager = PoolManagerV3__factory.connect(phase8.poolManagerV4.address, protocolDao);
+            const oldPool = await phase6.booster.poolInfo(oldPid);
+            oldGauge = oldPool.gauge;
             await poolManager.shutdownPool(oldPid);
         });
         it("add old lp token pool", async () => {
@@ -75,7 +77,7 @@ describe("Add same LP Token twice", () => {
             newPid = poolSize.toNumber() - 1;
             const resp = await phase6.booster.poolInfo(newPid);
 
-            expect(resp.gauge, "new gauge != gauge ").not.eq(gauge);
+            expect(resp.gauge, "new gauge != gauge ").eq(oldGauge);
 
             depositToken = IERC20__factory.connect(resp.token, lpWhale.signer);
             crvRewards = BaseRewardPool4626__factory.connect(resp.crvRewards, lpWhale.signer);
