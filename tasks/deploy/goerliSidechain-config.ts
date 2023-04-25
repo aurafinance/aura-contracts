@@ -15,6 +15,7 @@ import {
     StashFactoryV2__factory,
     TokenFactory__factory,
     VoterProxyLite__factory,
+    AuraBalOFT__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import { ExtSidechainConfig, SidechainAddresses, SidechainConfig, SidechainNaming } from "./sidechain-types";
@@ -28,8 +29,10 @@ const addresses: SidechainAddresses = {
 };
 
 const naming: SidechainNaming = {
-    coordinatorName: "Aura",
-    coordinatorSymbol: "AURA",
+    auraOftName: "Aura",
+    auraOftSymbol: "AURA",
+    auraBalOftName: "Aura BAL",
+    auraBalOftSymbol: "auraBAL",
     tokenFactoryNamePostfix: " Aura Deposit",
 };
 
@@ -44,6 +47,7 @@ export const getSidechain = (signer: Signer) => ({
     poolManager: PoolManagerLite__factory.connect("0xDC446885f43a3bB969141a746d536A0edf34b8De", signer),
     l2Coordinator: L2Coordinator__factory.connect("0x714636c864F3b02e001798b2d16370E74E4379e4", signer),
     auraOFT: AuraOFT__factory.connect("0x7E7460187F97532828aBc06af691a494F82Cf7f2", signer),
+    auraBalOFT: AuraBalOFT__factory.connect("0x0000000000000000000000000000000000000000", signer),
     factories: {
         rewardFactory: RewardFactory__factory.connect("0xeB01eD361B226252087646E2872e5306e82b314A", signer),
         stashFactory: StashFactoryV2__factory.connect("0xEBA33C82D890dBE19465a381F24428DDD1A62b59", signer),

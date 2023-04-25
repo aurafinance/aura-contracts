@@ -38,15 +38,21 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
+    AuraBalProxyOFT,
+    AuraBalProxyOFT__factory,
+    AuraBalOFT,
+    AuraBalOFT__factory,
 } from "../types";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { simpleToExactAmount } from "../test-utils/math";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainAddresses, SidechainNaming } from "../tasks/deploy/sidechain-types";
+import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 
 export interface CanonicalPhaseDeployed {
     auraProxyOFT: AuraProxyOFT;
+    auraBalProxyOFT: AuraBalProxyOFT;
     l1Coordinator: L1Coordinator;
 }
 
@@ -55,6 +61,7 @@ export async function deployCanonicalPhase(
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
     phase6: Phase6Deployed,
+    auraBalVault: AuraBalVaultDeployed,
     deployer: Signer,
     debug: boolean = false,
     waitForBlocks: number = 0,
@@ -79,7 +86,17 @@ export async function deployCanonicalPhase(
         waitForBlocks,
     );
 
-    return { auraProxyOFT, l1Coordinator };
+    const auraBalProxyOFT = await deployContract<AuraBalProxyOFT>(
+        hre,
+        new AuraBalProxyOFT__factory(deployer),
+        "AuraBalProxyOFT",
+        [config.lzEndpoint, phase2.cvxCrv.address, auraBalVault.vault.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { auraProxyOFT, auraBalProxyOFT, l1Coordinator };
 }
 
 interface Factories {
@@ -97,6 +114,7 @@ export interface SidechainDeployed {
     poolManager: PoolManagerLite;
     l2Coordinator: L2Coordinator;
     auraOFT: AuraOFT;
+    auraBalOFT: AuraBalOFT;
 }
 
 /**
@@ -174,7 +192,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [naming.coordinatorName, naming.coordinatorSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+        [naming.auraOftName, naming.auraOftSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
         deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
 
@@ -220,7 +238,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new TokenFactory__factory(deployer),
         "TokenFactory",
-        [booster.address, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
+        [booster.address, naming.tokenFactoryNamePostfix, naming.auraOftName.toLowerCase()],
         deployOptions,
     );
     const proxyFactory = await deployContractWithCreate2<ProxyFactory, ProxyFactory__factory>(
@@ -271,6 +289,15 @@ export async function deploySidechainSystem(
         deployOptions,
     );
 
+    const auraBalOFT = await deployContractWithCreate2<AuraBalOFT, AuraBalOFT__factory>(
+        hre,
+        create2Factory,
+        new AuraBalOFT__factory(deployer),
+        "AuraBalOFT",
+        [naming.auraBalOftName, naming.auraBalOftSymbol, addresses.lzEndpoint],
+        {},
+    );
+
     let tx: ContractTransaction;
 
     tx = await l2Coordinator.initialize(booster.address, addresses.token);
@@ -318,6 +345,7 @@ export async function deploySidechainSystem(
         },
         poolManager,
         auraOFT,
+        auraBalOFT,
         l2Coordinator,
     };
 }
