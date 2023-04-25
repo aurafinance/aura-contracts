@@ -25,6 +25,6 @@ task("deploy:gnosis:setL1ReceiverAndForwardBal").setAction(async function (tskAr
     let tx = await delegateSC.setL1Receiver(dao);
     await tx.wait();
 
-    tx = await delegateSC.send(dao, await crv.balanceOf(delegateSC.address));
+    tx = await delegateSC.send(await crv.balanceOf(delegateSC.address));
     await tx.wait();
 });
