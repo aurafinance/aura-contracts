@@ -2,8 +2,10 @@ import { Signer } from "ethers";
 import { SidechainDeployed } from "scripts/deploySidechain";
 
 export interface SidechainNaming {
-    coordinatorName: string;
-    coordinatorSymbol: string;
+    auraOftName: string;
+    auraOftSymbol: string;
+    auraBalOftName: string;
+    auraBalOftSymbol: string;
     tokenFactoryNamePostfix: string;
 }
 

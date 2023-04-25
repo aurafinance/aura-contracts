@@ -1,12 +1,7 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
 import { Signer } from "ethers";
-import {
-    BridgeDelegateSender,
-    IERC20__factory,
-    L1Coordinator,
-    SimpleBridgeDelegateSender,
-} from "../../types/generated";
+import { SimpleBridgeDelegateSender } from "../../types/generated";
 import { OwnableBehaviourContext, shouldBehaveLikeOwnable, ERRORS } from "../shared/Ownable.behaviour";
 import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS, impersonateAccount } from "../../test-utils";
 import { Account } from "../../types";
@@ -17,11 +12,9 @@ describe("BridgeDelegateSender", () => {
     let accounts: Signer[];
     let deployer: Account;
     let alice: Account;
-    let dao: Account;
 
     // Testing contract
     let bridgeDelegateSender: SimpleBridgeDelegateSender;
-    let l1Coordinator: L1Coordinator;
     let testSetup: SideChainTestSetup;
 
     /* -- Declare shared functions -- */
@@ -33,8 +26,6 @@ describe("BridgeDelegateSender", () => {
         // Deploy test contract.
         testSetup = await sidechainTestSetup(hre, accounts);
         bridgeDelegateSender = testSetup.bridgeDelegates.bridgeDelegateSender as SimpleBridgeDelegateSender;
-        l1Coordinator = testSetup.l1.canonical.l1Coordinator;
-        dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
     };
     before("init contract", async () => {
         await setup();
@@ -71,7 +62,7 @@ describe("BridgeDelegateSender", () => {
                 "!onlyOwner",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
-        it("allows to settle debt", async () => {
+        it("allows to send tokens to another account", async () => {
             await bridgeDelegateSender.connect(deployer.signer).send(DEAD_ADDRESS, ZERO);
             // check balances before and after
             // check debt amount before and after

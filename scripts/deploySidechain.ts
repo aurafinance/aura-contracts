@@ -30,14 +30,20 @@ import {
     TokenFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
+    AuraBalProxyOFT,
+    AuraBalProxyOFT__factory,
+    AuraBalOFT,
+    AuraBalOFT__factory,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "../types/sidechain-types";
+import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 
 export interface CanonicalPhaseDeployed {
     auraProxyOFT: AuraProxyOFT;
+    auraBalProxyOFT: AuraBalProxyOFT;
     l1Coordinator: L1Coordinator;
 }
 
@@ -48,6 +54,7 @@ export async function deployCanonicalPhase(
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
     phase6: Phase6Deployed,
+    auraBalVault: AuraBalVaultDeployed,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<CanonicalPhaseDeployed> {
@@ -79,7 +86,18 @@ export async function deployCanonicalPhase(
 
     const tx = await l1Coordinator.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
-    return { auraProxyOFT, l1Coordinator };
+
+    const auraBalProxyOFT = await deployContract<AuraBalProxyOFT>(
+        hre,
+        new AuraBalProxyOFT__factory(deployer),
+        "AuraBalProxyOFT",
+        [config.lzEndpoint, phase2.cvxCrv.address, auraBalVault.vault.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { auraProxyOFT, auraBalProxyOFT, l1Coordinator };
 }
 
 interface Factories {
@@ -97,6 +115,7 @@ export interface SidechainDeployed {
     poolManager: PoolManagerLite;
     l2Coordinator: L2Coordinator;
     auraOFT: AuraOFT;
+    auraBalOFT: AuraBalOFT;
 }
 
 /**
@@ -194,7 +213,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [naming.coordinatorName, naming.coordinatorSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
+        [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
         deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
 
@@ -240,7 +259,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new TokenFactory__factory(deployer),
         "TokenFactory",
-        [booster.address, naming.tokenFactoryNamePostfix, naming.coordinatorSymbol.toLowerCase()],
+        [booster.address, naming.tokenFactoryNamePostfix, naming.auraOftName.toLowerCase()],
         deployOptions,
     );
     const proxyFactory = await deployContractWithCreate2<ProxyFactory, ProxyFactory__factory>(
@@ -291,20 +310,14 @@ export async function deploySidechainSystem(
         deployOptions,
     );
 
-    const contracts = {
-        voterProxy,
-        booster,
-        boosterOwner,
-        factories: {
-            rewardFactory,
-            stashFactory,
-            tokenFactory,
-            proxyFactory,
-        },
-        poolManager,
-        auraOFT,
-        l2Coordinator,
-    };
+    const auraBalOFT = await deployContractWithCreate2<AuraBalOFT, AuraBalOFT__factory>(
+        hre,
+        create2Factory,
+        new AuraBalOFT__factory(deployer),
+        "AuraBalOFT",
+        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint],
+        {},
+    );
 
     let tx: ContractTransaction;
 
@@ -347,7 +360,21 @@ export async function deploySidechainSystem(
     tx = await booster.setOwner(boosterOwner.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    return contracts;
+    return {
+        voterProxy,
+        booster,
+        boosterOwner,
+        factories: {
+            rewardFactory,
+            stashFactory,
+            tokenFactory,
+            proxyFactory,
+        },
+        poolManager,
+        auraOFT,
+        auraBalOFT,
+        l2Coordinator,
+    };
 }
 
 export async function deployCreate2Factory(

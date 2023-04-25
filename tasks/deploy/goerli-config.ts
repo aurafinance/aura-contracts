@@ -48,6 +48,7 @@ import {
     ExtraRewardStashV3__factory,
     L1Coordinator__factory,
     AuraProxyOFT__factory,
+    AuraBalProxyOFT__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -215,6 +216,7 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 
 const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b", deployer),
 });
 

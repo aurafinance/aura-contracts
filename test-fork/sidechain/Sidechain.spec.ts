@@ -2,7 +2,7 @@ import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
@@ -26,6 +26,7 @@ describe("Sidechain", () => {
     // phases
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
+    let vaultDeployment: AuraBalVaultDeployed;
     // LayerZero endpoints
     let l1LzEndpoint: LZEndpointMock;
     let l2LzEndpoint: LZEndpointMock;
@@ -45,6 +46,7 @@ describe("Sidechain", () => {
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
         phase2 = await mainnetConfig.getPhase2(deployer.signer);
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
+        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
 
         // deploy layerzero mocks
         l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
@@ -72,7 +74,15 @@ describe("Sidechain", () => {
 
         // deploy canonicalPhase
         const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        await deployCanonicalPhase(hre, deployer.signer, mainnetConfig.multisigs, l1Addresses, phase2, phase6);
+        await deployCanonicalPhase(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            l1Addresses,
+            phase2,
+            phase6,
+            vaultDeployment,
+        );
 
         // deploy sidechain
         sidechain = await deploySidechainSystem(
@@ -101,9 +111,9 @@ describe("Sidechain", () => {
             expect(await sidechain.voterProxy.operator()).eq(sidechain.booster.address);
         });
         it("AuraOFT has correct config", async () => {
-            expect(await auraOFT.name()).eq(sidechainConfig.naming.coordinatorName);
-            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.coordinatorSymbol);
-            expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
+            expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
+            expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
+            expect(await auraOFT.lzEndpoint()).eq(ZERO_ADDRESS);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });
         it("L2Coordinator has correct config", async () => {

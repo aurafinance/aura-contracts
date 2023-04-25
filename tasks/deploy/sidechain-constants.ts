@@ -38,7 +38,9 @@ export const sidechainConfigs = {
 };
 
 export const sidechainNaming: SidechainNaming = {
-    coordinatorName: "Aura",
-    coordinatorSymbol: "AURA",
+    auraOftName: "Aura",
+    auraOftSymbol: "AURA",
+    auraBalOftName: "Aura BAL",
+    auraBalOftSymbol: "auraBAL",
     tokenFactoryNamePostfix: " Aura Deposit",
 };

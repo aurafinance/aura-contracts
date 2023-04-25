@@ -1,3 +1,5 @@
+import { Signer } from "ethers";
+import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
 import {
     MultisigConfig,
     Phase2Deployed,
@@ -25,8 +27,7 @@ import {
     getMockMultisigs as getL2MockMultisigs,
 } from "../../scripts/deploySidechainMocks";
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
-import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
-import { Signer } from "ethers";
+import { deployVault } from "../../scripts/deployVault";
 
 export interface L1TestSetup {
     mocks: DeployMocksResult;
@@ -92,9 +93,27 @@ export const sidechainTestSetup = async (
         l1Mocks.namingConfig,
         l1Mocks.addresses,
     );
+    const vaultDeployment = await deployVault(
+        {
+            addresses: l1Mocks.addresses,
+            multisigs: l1Multisigs,
+            getPhase2: async (__: Signer) => phase2,
+            getPhase6: async (__: Signer) => phase6,
+        },
+        hre,
+        deployer.signer,
+    );
 
     // deploy canonicalPhase
-    const canonical = await deployCanonicalPhase(hre, deployer.signer, l1Multisigs, l1Mocks.addresses, phase2, phase6);
+    const canonical = await deployCanonicalPhase(
+        hre,
+        deployer.signer,
+        l1Multisigs,
+        l1Mocks.addresses,
+        phase2,
+        phase6,
+        vaultDeployment,
+    );
     // deploy sidechain
     const create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
     await create2Factory.updateDeployer(deployer.address, true);

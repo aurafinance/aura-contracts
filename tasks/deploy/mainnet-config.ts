@@ -60,6 +60,7 @@ import {
     AuraClaimZapV3__factory,
     AuraProxyOFT__factory,
     L1Coordinator__factory,
+    AuraBalProxyOFT__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -394,6 +395,7 @@ const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
 
 const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
 });
 
