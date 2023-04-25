@@ -19,6 +19,7 @@ import {
 import { deployContract } from "../tasks/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "types/sidechain-types";
+import { sidechainNaming } from "../tasks/deploy/sidechain-constants";
 
 interface DeployL2MocksResult {
     crv: MockERC20;
@@ -150,11 +151,7 @@ async function deploySidechainMocks(
             gaugeController: voting.address,
             l2LzEndpoint: l2LzEndpoint.address,
         },
-        namingConfig: {
-            coordinatorName: "Aura",
-            coordinatorSymbol: "AURA",
-            tokenFactoryNamePostfix: " Aura Deposit",
-        },
+        namingConfig: { ...sidechainNaming },
     };
 }
 

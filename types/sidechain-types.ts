@@ -12,7 +12,7 @@ export interface ExtSidechainConfig {
     tokenBpt: string;
     minter: string;
     canonicalChainId: number;
-    remoteLzChainId: number;
+    remoteLzChainId: number; // TODO - RENAME TO sidechainLzChainId ?
     l2LzEndpoint: string;
     create2Factory: string;
     // phase 2
@@ -25,6 +25,7 @@ export interface SidechainMultisigConfig {
 }
 
 export interface SidechainConfig {
+    chainId: number,
     multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;

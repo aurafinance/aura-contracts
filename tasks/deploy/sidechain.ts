@@ -1,4 +1,6 @@
-import { task } from "hardhat/config";
+import { assert } from "chai";
+import { ethers } from "ethers";
+import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
 import {
@@ -11,20 +13,35 @@ import {
     StashFactoryV2__factory,
     ExtraRewardStashV3__factory,
     PoolManagerLite__factory,
-    BoosterOwner__factory,
     AuraOFT__factory,
+    BoosterOwnerLite__factory,
 } from "../../types";
 import { getSigner } from "../utils";
 import { chainIds } from "../../hardhat.config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { deployCanonicalPhase, deployCreate2Factory, deploySidechainSystem } from "../../scripts/deploySidechain";
+import {
+    CanonicalPhaseDeployed,
+    deployCanonicalPhase,
+    deployCreate2Factory,
+    deploySidechainSystem,
+    setTrustedRemoteCanonical,
+    setTrustedRemoteSidechain,
+    SidechainDeployed,
+} from "../../scripts/deploySidechain";
 import { waitForTx } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
-
-import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
-import { config as goerliConfig } from "./goerli-config";
-import { config as mainnetConfig } from "./mainnet-config";
+import {
+    canonicalChains,
+    canonicalConfigs,
+    sidechainConfigs,
+    lzChainIds,
+    remoteChainMap,
+    sideChains,
+} from "./sidechain-constants";
 import { deploySidechainMocks } from "scripts/deploySidechainMocks";
+
+// Configs
+import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 
 const debug = true;
 
@@ -55,17 +72,9 @@ task("deploy:sidechain:L1")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
 
-        const configs = {
-            [chainIds.goerli]: goerliConfig,
-            31337: goerliConfig,
-            1337: goerliConfig,
-        };
+        const config = canonicalConfigs[hre.network.config.chainId];
 
-        const config = configs[hre.network.config.chainId];
-
-        if (!config) {
-            throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
-        }
+        assert(config, `Config for chain ID ${hre.network.config.chainId} not found`);
 
         const phase2 = await config.getPhase2(deployer);
         const phase6 = await config.getPhase6(deployer);
@@ -75,43 +84,110 @@ task("deploy:sidechain:L1")
     });
 
 task("deploy:sidechain:L2")
-    .addParam("l1Network", "L1 network id, mainnet = 1, goerli = 5")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
+        const l1Config = canonicalConfigs[hre.network.config.chainId];
 
-        const l1Configs = {
-            [chainIds.mainnet]: mainnetConfig,
-            [chainIds.goerli]: goerliConfig,
-        };
-        const l2Configs = {
-            [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
-            31337: arbitrumGoerliConfig,
-            1337: arbitrumGoerliConfig,
-        };
-        const l1Config = l1Configs[tskArgs.l1Network];
-        const l2Config = l2Configs[hre.network.config.chainId];
-        if (!l1Config) {
-            throw new Error(`Config for chain ID ${tskArgs.l1Network} not found`);
-        }
-        if (!l2Config) {
-            throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
-        }
-        const canonicalPhase = await mainnetConfig.getSidechain(deployer);
+        assert(l1Config, `Config for chain ID ${hre.network.config.chainId} not found`);
+
+        const l2Config = sidechainConfigs[hre.network.config.chainId];
+
+        assert(l2Config, `Config for chain ID ${hre.network.config.chainId} not found`);
+
         const result = await deploySidechainSystem(
             hre,
             deployer,
-            l1Config.addresses,
-            canonicalPhase,
             l2Config.naming,
             l2Config.multisigs,
             l2Config.extConfig,
+            undefined,
             debug,
             tskArgs.wait,
         );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
         logContracts(result.factories as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:sidechain:config:L1")
+    .addParam("wait", "Wait for blocks")
+    .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
+    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const sidechainId = Number(tskArgs.sidechainid);
+
+        assert(canonicalChains.includes(hre.network.config.chainId), "Must be canonical chain");
+        assert(sideChains.includes(sidechainId), "Must be sidechain chain");
+
+        const canonicalConfig = canonicalConfigs[hre.network.config.chainId];
+        assert(canonicalConfig, `Local config for chain ID ${hre.network.config.chainId} not found`);
+
+        if (!tskArgs.force) {
+            assert(Number(sidechainId) === remoteChainMap[hre.network.config.chainId], "Incorrect remote chain ID");
+        }
+
+        const sidechainConfig = sidechainConfigs[sidechainId];
+        assert(sidechainConfig, `Remote config for chain ID ${sidechainId} not found`);
+        const sidechainLzChainId = lzChainIds[sidechainId];
+        assert(sidechainLzChainId, "LZ chain ID not found");
+
+        const canonical: CanonicalPhaseDeployed = canonicalConfig.getSidechain(deployer) as any;
+        const remote: SidechainDeployed = sidechainConfig.getSidechain(deployer) as any;
+
+        await setTrustedRemoteCanonical(canonical, remote, sidechainLzChainId, debug, tskArgs.wait);
+
+        // Set LZ config
+        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 200_000]);
+        const distributeAuraSelector = ethers.utils.id("distributeAura(uint16)").substring(0, 10);
+        const tx = await canonical.l1Coordinator["setConfig(uint16,bytes4,(bytes,address))"](
+            sidechainId,
+            distributeAuraSelector,
+            [adapterParams, ZERO_ADDRESS] as any,
+        );
+        await waitForTx(tx, debug, tskArgs.wait);
+    });
+
+task("deploy:sidechain:config:L2")
+    .addParam("wait", "Wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = tskArgs.canonicalchainid;
+
+        const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
+        assert(sidechainConfig, `Sidechain config for chain ID ${hre.network.config.chainId} not found`);
+
+        if (!tskArgs.force) {
+            assert(sideChains.includes(hre.network.config.chainId), "Must be sidechain");
+            assert(canonicalChains.includes(tskArgs.canonicalchainid), "Must be canonical chain");
+            assert(
+                Number(canonicalChainId) === remoteChainMap[hre.network.config.chainId],
+                "Incorrect canonical chain ID",
+            );
+        }
+
+        const canonicalConfig = canonicalConfigs[canonicalChainId];
+        assert(canonicalConfig, `Canonical config for chain ID ${canonicalChainId} not found`);
+        const canonicalLzChainId = lzChainIds[canonicalChainId];
+        assert(canonicalLzChainId, "LZ chain ID not found");
+
+        const sidechain: SidechainDeployed = sidechainConfig.getSidechain(deployer) as any;
+        const canonical: CanonicalPhaseDeployed = canonicalConfig.getSidechain(deployer) as any;
+
+        await setTrustedRemoteSidechain(canonical, sidechain, canonicalLzChainId, debug, tskArgs.wait);
+
+        // Set LZ config
+        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
+        const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
+        const tx = await sidechain.auraOFT["setConfig(uint16,bytes4,(bytes,address))"](
+            tskArgs.canonicalchainid,
+            lockSelector,
+            [adapterParams, ZERO_ADDRESS] as any,
+        );
+        await waitForTx(tx, debug, tskArgs.wait);
     });
 
 task("sidechain:addresses")
@@ -203,10 +279,10 @@ task("sidechain:addresses")
         );
 
         // Not a constant address
-        const boosterOwnerAddress = await computeCreate2Address<BoosterOwner__factory>(
+        const boosterOwnerAddress = await computeCreate2Address<BoosterOwnerLite__factory>(
             extConfig.create2Factory,
-            new BoosterOwner__factory(deployer),
-            "BoosterOwner",
+            new BoosterOwnerLite__factory(deployer),
+            "BoosterOwnerLite",
             [multisigs.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
         );
 

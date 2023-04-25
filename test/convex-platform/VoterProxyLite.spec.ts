@@ -1,19 +1,14 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, deployPhase6 } from "../../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { VoterProxyLite, VoterProxyLite__factory, BoosterLite__factory } from "../../types/generated";
 import { BigNumberish, Signer } from "ethers";
 import { ZERO_ADDRESS, ZERO } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { SidechainDeployed, deployCanonicalPhase, deploySidechainSystem } from "../../scripts/deploySidechain";
+import { SidechainDeployed } from "../../scripts/deploySidechain";
 import { Account } from "types";
-import {
-    DeployL2MocksResult,
-    deploySidechainMocks,
-    getMockMultisigs as getL2MockMultisigs,
-} from "../../scripts/deploySidechainMocks";
+import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { simpleToExactAmount } from "../../test-utils";
+import { sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 
 describe("VoterProxyLite", () => {
     let accounts: Signer[];
@@ -26,44 +21,11 @@ describe("VoterProxyLite", () => {
     let sidechain: SidechainDeployed;
     const setup = async () => {
         accounts = await ethers.getSigners();
-
-        deployer = await impersonateAccount(await accounts[0].getAddress());
-
-        const mocks = await deployMocks(hre, deployer.signer);
-        l2mocks = await deploySidechainMocks(hre, deployer.signer);
-        const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
-        const l2Multisigs = await getL2MockMultisigs(accounts[3]);
-        dao = await impersonateAccount(l2Multisigs.daoMultisig);
-
-        const distro = getMockDistro();
-        const phase1 = await deployPhase1(hre, deployer.signer, mocks.addresses);
-        const phase2 = await deployPhase2(
-            hre,
-            deployer.signer,
-            phase1,
-            distro,
-            multisigs,
-            mocks.namingConfig,
-            mocks.addresses,
-        );
-        const phase3 = await deployPhase3(hre, deployer.signer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.connect(dao.signer).setProtectPool(false);
-        await deployPhase4(hre, deployer.signer, phase3, mocks.addresses);
-        const phase6 = await deployPhase6(hre, deployer.signer, phase2, multisigs, mocks.namingConfig, mocks.addresses);
-
-        // deploy canonicalPhase
-        const canonical = await deployCanonicalPhase(hre, deployer.signer, mocks.addresses, phase2, phase6);
-        // deploy sidechain
-
-        sidechain = await deploySidechainSystem(
-            hre,
-            deployer.signer,
-            mocks.addresses,
-            canonical,
-            l2mocks.namingConfig,
-            l2Multisigs,
-            l2mocks.addresses,
-        );
+        const testSetup = await sidechainTestSetup(hre, accounts);
+        deployer = testSetup.deployer;
+        dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
+        l2mocks = testSetup.l2.mocks;
+        sidechain = testSetup.l2.sidechain;
 
         voterProxyLite = sidechain.voterProxy;
     };

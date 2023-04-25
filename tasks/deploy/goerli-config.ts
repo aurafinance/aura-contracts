@@ -53,6 +53,7 @@ import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { getMockDistro } from "../../scripts/deployMocks";
 import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
+import { chainIds } from "../../hardhat.config";
 
 const addresses: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
@@ -213,12 +214,13 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
     auraRewards: VirtualBalanceRewardPool__factory.connect("0x6fE74EA452b21698bbC27617b2B23FB797393094", deployer),
 });
 
-const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
-    auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
+    auraProxyOFT: AuraProxyOFT__factory.connect("0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b", deployer),
 });
 
 export const config = {
+    chainId: chainIds.goerli,
     addresses,
     naming,
     multisigs,

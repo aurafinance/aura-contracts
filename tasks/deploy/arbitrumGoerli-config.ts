@@ -1,4 +1,5 @@
 import { Signer } from "ethers";
+import { chainIds } from "../../hardhat.config";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
@@ -11,26 +12,16 @@ import {
     TokenFactory__factory,
     VoterProxyLite__factory,
 } from "../../types";
-import {
-    ExtSidechainConfig,
-    SidechainConfig,
-    SidechainNaming,
-    SidechainMultisigConfig,
-} from "../../types/sidechain-types";
+import { ExtSidechainConfig, SidechainConfig, SidechainMultisigConfig } from "../../types/sidechain-types";
+import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
 };
 
-const naming: SidechainNaming = {
-    coordinatorName: "Aura",
-    coordinatorSymbol: "AURA",
-    tokenFactoryNamePostfix: " Aura Deposit",
-};
-
 const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
-    remoteLzChainId: 102, // TODO
+    remoteLzChainId: 10143, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
     l2LzEndpoint: "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
     minter: "0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E", // Mock minter
     token: "0xb78C0D130Dc07BA909eD5F6828Abd5EA183B12BC", // Mock token
@@ -54,8 +45,9 @@ export const getSidechain = (signer: Signer) => ({
 });
 
 export const config: SidechainConfig = {
+    chainId: chainIds.arbitrumGoerli,
     multisigs,
-    naming,
+    naming: sidechainNaming,
     extConfig,
     getSidechain,
 };

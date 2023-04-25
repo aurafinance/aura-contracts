@@ -1,7 +1,5 @@
 import hre, { ethers } from "hardhat";
 import { expect } from "chai";
-import { deployPhase1, deployPhase2, deployPhase3, deployPhase4, deployPhase6 } from "../../scripts/deploySystem";
-import { deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     BoosterLite,
     BoosterOwnerLite,
@@ -13,19 +11,10 @@ import {
 import { Signer } from "ethers";
 import { ZERO, ZERO_ADDRESS, ONE_DAY, DEAD_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import {
-    SidechainDeployed,
-    deployCanonicalPhase,
-    deploySidechainSystem,
-    deploySidechainPhase2,
-    CanonicalPhaseDeployed,
-} from "../../scripts/deploySidechain";
+import { SidechainDeployed, CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { Account, SidechainMultisigConfig } from "types";
-import {
-    DeployL2MocksResult,
-    deploySidechainMocks,
-    getMockMultisigs as getL2MockMultisigs,
-} from "../../scripts/deploySidechainMocks";
+import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
+import { sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 
 describe("BoosterLite", () => {
     let accounts: Signer[];
@@ -42,57 +31,15 @@ describe("BoosterLite", () => {
 
     const setup = async () => {
         accounts = await ethers.getSigners();
-        deployer = await impersonateAccount(await accounts[0].getAddress());
+        const testSetup = await sidechainTestSetup(hre, accounts);
+        deployer = testSetup.deployer;
+        dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
+        canonical = testSetup.l1.canonical;
+        l2mocks = testSetup.l2.mocks;
+        l2Multisigs = testSetup.l2.multisigs;
+        sidechain = testSetup.l2.sidechain;
 
-        const mocks = await deployMocks(hre, deployer.signer);
-        l2mocks = await deploySidechainMocks(hre, deployer.signer);
-        const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
-        l2Multisigs = await getL2MockMultisigs(accounts[3]);
-        dao = await impersonateAccount(l2Multisigs.daoMultisig);
-
-        const distro = getMockDistro();
-        const phase1 = await deployPhase1(hre, deployer.signer, mocks.addresses);
-        const phase2 = await deployPhase2(
-            hre,
-            deployer.signer,
-            phase1,
-            distro,
-            multisigs,
-            mocks.namingConfig,
-            mocks.addresses,
-        );
-        const phase3 = await deployPhase3(hre, deployer.signer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.connect(dao.signer).setProtectPool(false);
-        await deployPhase4(hre, deployer.signer, phase3, mocks.addresses);
-        const phase6 = await deployPhase6(hre, deployer.signer, phase2, multisigs, mocks.namingConfig, mocks.addresses);
-
-        // deploy canonicalPhase
-        canonical = await deployCanonicalPhase(hre, deployer.signer, mocks.addresses, phase2, phase6);
-        // deploy sidechain
-
-        sidechain = await deploySidechainSystem(
-            hre,
-            deployer.signer,
-            mocks.addresses,
-            canonical,
-            l2mocks.namingConfig,
-            l2Multisigs,
-            l2mocks.addresses,
-        );
         ({ booster, boosterOwner } = sidechain);
-
-        await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
-        // Mock L1 Endpoints  configuration
-        // const  l2LzEndpoint =  new LZEndpointMock__factory(deployer.signer).attach(l2mocks.addresses.lzEndpoint);
-        await mocks.l1LzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2mocks.l2LzEndpoint.address);
-        await mocks.l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2mocks.l2LzEndpoint.address);
-
-        // Mock L12Endpoints  configuration
-        await l2mocks.l2LzEndpoint.setDestLzEndpoint(canonical.l1Coordinator.address, mocks.l1LzEndpoint.address);
-        await l2mocks.l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, mocks.l1LzEndpoint.address);
-
-        await deploySidechainPhase2(hre, deployer.signer, sidechain, l2mocks.addresses);
-
         // transfer LP tokens to accounts
         const balance = await l2mocks.lptoken.balanceOf(deployer.address);
         for (const account of accounts) {
@@ -101,22 +48,6 @@ describe("BoosterLite", () => {
             const tx = await l2mocks.lptoken.transfer(accountAddress, share);
             await tx.wait();
         }
-
-        // Emulate DAO Settings
-        await canonical.l1Coordinator.setTrustedRemote(
-            l2mocks.addresses.remoteLzChainId,
-            hre.ethers.utils.solidityPack(
-                ["address", "address"],
-                [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
-            ),
-        );
-        await canonical.auraProxyOFT.setTrustedRemote(
-            l2mocks.addresses.remoteLzChainId,
-            hre.ethers.utils.solidityPack(
-                ["address", "address"],
-                [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-            ),
-        );
     };
     describe("constructor", async () => {
         before(async () => {
@@ -320,9 +251,9 @@ describe("BoosterLite", () => {
             const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer.signer);
             const tokenCount = await stash.tokenCount();
             // When sets an extra reward
-            hre.tracer.enabled = true;
+
             await boosterOwner.setStashExtraReward(poolInfo.stash, token.address);
-            hre.tracer.enabled = false;
+
             // Then
             const tokenInfo = await stash.tokenInfo(token.address);
             expect(await stash.tokenCount(), "stash token count").to.be.eq(tokenCount.add(1));
