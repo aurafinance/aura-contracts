@@ -100,7 +100,6 @@
     { "address": "0xbbCd2045ac43F79E8494600e72cA8AF455E309Dd", "label": "p-ComposableStable bb-am-DAI/bb-am-USDC/bb-am-USDT" },
     { "address": "0x1E0C21296bF29EE2d56e0abBDfbBEdF2530A7c9A", "label": "p-80/20 TETU/USDC" },
     { "address": "0xE77239359CE4D445Fed27C17Da23B8024d35e456", "label": "p-50/50 bb-am-usd/2BRL (BRZ)" },
-    { "address": "0xF0d887c1f5996C91402EB69Ab525f028DD5d7578", "label": "p-ComposableStable BRZ/jBRL" },
     { "address": "0x21a3De9292569F599e4cf83c741862705bf4f108", "label": "p-MetaStable USDC/wUSDR" },
     { "address": "0x90437a1D2F6C0935Dd6056f07f05C068f2A507F9", "label": "p-80/20 SPHERE/WMATIC" },
     { "address": "0xEF3B68D9B6f44EeF2F6ea3d47D6e97707BF14189", "label": "p-Stable WETH/frxETH" },

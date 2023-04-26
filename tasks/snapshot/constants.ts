@@ -53,4 +53,5 @@ export const removedGauges = [
     "0x56A65cC666bfe538c5a031942369F6F63eb42240", // g-bbag USD/WETH/WBTC
     "0xd27671f057e9e72751106fBfbBBB33827D986546", // g-bbag USD/GNO
     "0x3FB2975E00B3dbB97E8315a5ACbFF6B38026FDf3", // g-bbag WETH/GNO
+    "0xF0d887c1f5996C91402EB69Ab525f028DD5d7578", // BZJ
 ].map(x => x.toLowerCase());
