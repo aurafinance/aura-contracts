@@ -24,6 +24,7 @@ export const chainIds = {
     arbitrum: 42161,
     arbitrumGoerli: 421613,
     polygon: 137,
+    gnosis: 100,
 };
 
 const compilerSettings = {
@@ -54,6 +55,9 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
         },
         mainnet: {
+            url: process.env.NODE_URL || "",
+        },
+        gnosis: {
             url: process.env.NODE_URL || "",
         },
         kovan: {
