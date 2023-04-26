@@ -48,4 +48,9 @@ export const removedGauges = [
     "0x34f33CDaED8ba0E1CEECE80e5f4a73bcf234cfac",
     "0x2C967D6611C60274db45E0BB34c64fb5F504eDE7",
     "0xf7C3B4e1EdcB00f0230BFe03D937e26A5e654fD4",
+    // Removed but not killed
+    "0x25D6F29429bccCc129d1A3e2a5642C8B929BCC07", // g-bbagUSD
+    "0x56A65cC666bfe538c5a031942369F6F63eb42240", // g-bbag USD/WETH/WBTC
+    "0xd27671f057e9e72751106fBfbBBB33827D986546", // g-bbag USD/GNO
+    "0x3FB2975E00B3dbB97E8315a5ACbFF6B38026FDf3", // g-bbag WETH/GNO
 ].map(x => x.toLowerCase());

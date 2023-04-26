@@ -33,30 +33,31 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
 
     const sortedGauges = sortGaugeList(validNetworkGauges);
 
-    const cleanedGauges = await Promise.all(
-        sortedGauges.map(async g => {
-            try {
-                const gauge = MockCurveGauge__factory.connect(g.address, signer);
-                if (await gauge.is_killed()) {
-                    return false;
-                }
+    const cleanedGauges = [];
 
-                if (removedGauges.includes(g.address.toLowerCase())) {
-                    return false;
-                }
+    for (let i = 0; i < sortedGauges.length; i++) {
+        const g = sortedGauges[i];
 
-                //////////////////////////////////////////
-                // The gauge is valid so we return it //
-                //////////////////////////////////////////
-                return g;
-            } catch (e) {
-                console.log("Snapshot generate task error:", e, g);
-                return false;
+        try {
+            const gauge = MockCurveGauge__factory.connect(g.address, signer);
+            if (await gauge.is_killed()) {
+                continue;
             }
-        }),
-    );
 
-    const formattedGauges = cleanedGauges.filter(Boolean).map(gaugeFormatRow);
+            if (removedGauges.includes(g.address.toLowerCase())) {
+                continue;
+            }
+
+            /////////////////////////////////////
+            // The gauge is valid so we add it //
+            /////////////////////////////////////
+            cleanedGauges.push(g);
+        } catch (e) {
+            console.log("Snapshot generate task error:", e, g);
+        }
+    }
+
+    const formattedGauges = cleanedGauges.map(gaugeFormatRow);
     saveGaugeChoices(uniqBy(formattedGauges, "address"));
 });
 
