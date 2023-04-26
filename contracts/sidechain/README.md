@@ -103,6 +103,12 @@ yarn task sidechain:aura-oft-info --remotechainid <REMOTE_CHAIN_ID>
 | PoolManagerLite | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
 | BoosterOwner    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
 
+### Gnosis (100)
+
+| Contract           | Address                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| GnosisBridgeSender | [0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d](https://gnosisscan.io/address/0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d) |
+
 ### Testnets
 
 #### Goerli (5)
