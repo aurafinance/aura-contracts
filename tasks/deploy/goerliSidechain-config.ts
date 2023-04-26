@@ -16,9 +16,18 @@ import {
     TokenFactory__factory,
     VoterProxyLite__factory,
     AuraBalOFT__factory,
+    VirtualRewardFactory__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
-import { ExtSidechainConfig, SidechainAddresses, SidechainConfig, SidechainNaming } from "./sidechain-types";
+import {
+    ExtSidechainConfig,
+    SidechainAddresses,
+    SidechainConfig,
+    SidechainNaming,
+    SidechainBridging,
+} from "./sidechain-types";
 
 const addresses: SidechainAddresses = {
     lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
@@ -40,6 +49,12 @@ const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
 };
 
+export const bridging: SidechainBridging = {
+    l1Receiver: "0x0000000000000000000000000000000000000000",
+    l2Sender: "0x0000000000000000000000000000000000000000",
+    nativeBridge: "0x0000000000000000000000000000000000000000",
+};
+
 export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect("0x6334c9b535C5c2e294554b54e62e778A040f8b43", signer),
     booster: BoosterLite__factory.connect("0x2386716accFdEb113913A0468f7deb5303679A60", signer),
@@ -54,6 +69,9 @@ export const getSidechain = (signer: Signer) => ({
         tokenFactory: TokenFactory__factory.connect("0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609", signer),
         proxyFactory: ProxyFactory__factory.connect("0x787633684fdd5F5B01255942AB5207eC5700375e", signer),
     },
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
 export const config: SidechainConfig = {
@@ -61,5 +79,6 @@ export const config: SidechainConfig = {
     addresses,
     naming,
     extConfig,
+    bridging,
     getSidechain,
 };
