@@ -143,6 +143,11 @@ describe("Sidechain", () => {
                 auraBalOftName: "Aura BAL",
                 auraBalOftSymbol: "auraBAL",
             },
+            bridging: {
+                l1Receiver: "0x0000000000000000000000000000000000000000",
+                l2Sender: "0x0000000000000000000000000000000000000000",
+                nativeBridge: "0x0000000000000000000000000000000000000000",
+            },
             extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 

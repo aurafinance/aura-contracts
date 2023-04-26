@@ -12,14 +12,12 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 contract SimpleBridgeDelegateSender is BridgeDelegateSender {
     address public immutable token;
 
-    event Send(address to, uint256 amount);
-
     constructor(address _token) {
         token = _token;
     }
 
-    function send(address _to, uint256 _amount) external override onlyOwner {
-        IERC20(token).transfer(_to, _amount);
-        emit Send(_to, _amount);
+    function send(uint256 _amount) external override onlyOwner {
+        IERC20(token).transfer(l1Receiver, _amount);
+        emit Send(l1Receiver, _amount);
     }
 }
