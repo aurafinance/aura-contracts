@@ -42,6 +42,12 @@ import {
     AuraBalProxyOFT__factory,
     AuraBalOFT,
     AuraBalOFT__factory,
+    VirtualRewardFactory,
+    VirtualRewardFactory__factory,
+    AuraBalVault,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    SimpleStrategy,
 } from "../types";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { simpleToExactAmount } from "../test-utils/math";
@@ -115,6 +121,9 @@ export interface SidechainDeployed {
     l2Coordinator: L2Coordinator;
     auraOFT: AuraOFT;
     auraBalOFT: AuraBalOFT;
+    virtualRewardFactory: VirtualRewardFactory;
+    auraBalVault: AuraBalVault;
+    auraBalStrategy: SimpleStrategy;
 }
 
 /**
@@ -298,6 +307,33 @@ export async function deploySidechainSystem(
         {},
     );
 
+    const virtualRewardFactory = await deployContractWithCreate2<VirtualRewardFactory, VirtualRewardFactory__factory>(
+        hre,
+        create2Factory,
+        new VirtualRewardFactory__factory(deployer),
+        "VirtualRewardFactory",
+        [],
+        {},
+    );
+
+    const auraBalVault = await deployContractWithCreate2<AuraBalVault, AuraBalVault__factory>(
+        hre,
+        create2Factory,
+        new AuraBalVault__factory(deployer),
+        "AuraBalVault",
+        [auraBalOFT.address, virtualRewardFactory.address],
+        {},
+    );
+
+    const auraBalStrategy = await deployContractWithCreate2<SimpleStrategy, SimpleStrategy__factory>(
+        hre,
+        create2Factory,
+        new SimpleStrategy__factory(deployer),
+        "SimpleStrategy",
+        [auraBalOFT.address, auraBalVault.address],
+        {},
+    );
+
     let tx: ContractTransaction;
 
     tx = await l2Coordinator.initialize(booster.address, addresses.token);
@@ -347,6 +383,9 @@ export async function deploySidechainSystem(
         auraOFT,
         auraBalOFT,
         l2Coordinator,
+        virtualRewardFactory,
+        auraBalVault,
+        auraBalStrategy,
     };
 }
 
