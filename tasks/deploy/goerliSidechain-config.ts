@@ -16,6 +16,9 @@ import {
     TokenFactory__factory,
     VoterProxyLite__factory,
     AuraBalOFT__factory,
+    VirtualRewardFactory__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import {
@@ -66,6 +69,9 @@ export const getSidechain = (signer: Signer) => ({
         tokenFactory: TokenFactory__factory.connect("0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609", signer),
         proxyFactory: ProxyFactory__factory.connect("0x787633684fdd5F5B01255942AB5207eC5700375e", signer),
     },
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
 export const config: SidechainConfig = {

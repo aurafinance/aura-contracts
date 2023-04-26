@@ -11,6 +11,10 @@ import {
     StashFactoryV2__factory,
     TokenFactory__factory,
     VoterProxyLite__factory,
+    VirtualRewardFactory__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    AuraBalOFT__factory,
 } from "../../types";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
@@ -30,8 +34,10 @@ const addresses: SidechainAddresses = {
 };
 
 const naming: SidechainNaming = {
-    coordinatorName: "Aura",
-    coordinatorSymbol: "AURA",
+    auraOftName: "Aura",
+    auraOftSymbol: "AURA",
+    auraBalOftName: "Aura BAL",
+    auraBalOftSymbol: "auraBAL",
     tokenFactoryNamePostfix: " Aura Deposit",
 };
 
@@ -46,12 +52,16 @@ export const getSidechain = (signer: Signer) => ({
     poolManager: PoolManagerLite__factory.connect(ZERO_ADDRESS, signer),
     l2Coordinator: L2Coordinator__factory.connect(ZERO_ADDRESS, signer),
     auraOFT: AuraOFT__factory.connect(ZERO_ADDRESS, signer),
+    auraBalOFT: AuraBalOFT__factory.connect(ZERO_ADDRESS, signer),
     factories: {
         rewardFactory: RewardFactory__factory.connect(ZERO_ADDRESS, signer),
         stashFactory: StashFactoryV2__factory.connect(ZERO_ADDRESS, signer),
         tokenFactory: TokenFactory__factory.connect(ZERO_ADDRESS, signer),
         proxyFactory: ProxyFactory__factory.connect(ZERO_ADDRESS, signer),
     },
+    virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
+    auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
+    auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const bridging: SidechainBridging = {
