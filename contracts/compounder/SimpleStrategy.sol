@@ -41,4 +41,6 @@ contract SimpleStrategy is IStrategy {
         require(msg.sender == VAULT, "!vault");
         IERC20(AURABAL_TOKEN).safeTransfer(VAULT, _amount);
     }
+
+    // TODO: add AURA reward handling
 }
