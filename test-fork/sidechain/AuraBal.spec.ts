@@ -164,8 +164,8 @@ describe("AuraBalOFT", () => {
             expect(await sidechain.auraBalVault.strategy()).eq(sidechain.auraBalStrategy.address);
         });
         it("auraBal strategy has correct config", async () => {
-            expect(await sidechain.auraBalStrategy.AURABAL_TOKEN()).eq(sidechain.auraBalOFT.address);
-            expect(await sidechain.auraBalStrategy.VAULT()).eq(sidechain.auraBalVault.address);
+            expect(await sidechain.auraBalStrategy.auraBalToken()).eq(sidechain.auraBalOFT.address);
+            expect(await sidechain.auraBalStrategy.vault()).eq(sidechain.auraBalVault.address);
         });
     });
 
