@@ -346,6 +346,9 @@ export async function deploySidechainSystem(
     tx = await auraBalVault.setStrategy(auraBalStrategy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await auraBalVault.addExtraReward(auraOFT.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await l2Coordinator.initialize(booster.address, addresses.token);
     await waitForTx(tx, debug, waitForBlocks);
 
