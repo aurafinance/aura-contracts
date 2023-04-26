@@ -80,6 +80,10 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
         _setConfig(_srcChainId, _selector, _config);
     }
 
+    function setRewardReceiver(uint16 _srcChainId, address _receiver) external onlyOwner {
+        rewardReceiver[_srcChainId] = _receiver;
+    }
+
     /* -------------------------------------------------------------------
        View functions 
     ------------------------------------------------------------------- */
@@ -107,6 +111,7 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
     ) internal override returns (uint256) {
         uint256 amount = super._debitFrom(_from, _srcChainId, _toAddress, _amount);
         _stakeAll();
+        internalTotalSupply += amount;
         return amount;
     }
 
@@ -122,7 +127,9 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
         uint256 _amount
     ) internal override returns (uint256) {
         _withdraw(_amount);
-        return super._creditTo(_srcChainId, _toAddress, _amount);
+        uint256 amount = super._creditTo(_srcChainId, _toAddress, _amount);
+        internalTotalSupply -= amount;
+        return amount;
     }
 
     /* -------------------------------------------------------------------
@@ -187,6 +194,8 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
     ) external payable {
         uint256 reward = claimable[_token][_srcChainId];
         address receiver = rewardReceiver[_srcChainId];
+        require(receiver != address(0), "!receiver");
+        require(reward > 0, "!reward");
 
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
@@ -195,11 +204,22 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
             require(_oft == address(this), "!oft");
             // The token is this inner token so we need to call the internal
             // bridge mint/burn functions rather than sendFrom
-            super._creditTo(_srcChainId, receiver, reward);
+            _lzSend(
+                _srcChainId,
+                abi.encode(PT_SEND, abi.encodePacked(receiver), reward),
+                payable(msg.sender),
+                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].zroPaymentAddress,
+                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams,
+                msg.value
+            );
+
+            internalTotalSupply += reward;
+
+            emit SendToChain(_srcChainId, address(this), abi.encode(receiver), reward);
         } else {
-            require(_token == IProxyOFT(_oft).innerToken(), "!oft");
             // The token is one that this contract holds a balance of eg $AURA
             // bridge it to the L2 via it's proxy OFT contracts
+            IERC20(_token).approve(_oft, reward);
             IProxyOFT(_oft).sendFrom{ value: msg.value }(
                 address(this),
                 _srcChainId,
@@ -260,8 +280,9 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
      */
     function _processHarvestableTokens() internal returns (HarvestToken[] memory harvestTokens) {
         // Set up an array to contain all the tokens that need to be harvested
+        // this will be all the extra rewards tokens and auraBAL
         uint256 extraRewardsLength = IGenericVault(vault).extraRewardsLength();
-        harvestTokens = new HarvestToken[](extraRewardsLength);
+        harvestTokens = new HarvestToken[](extraRewardsLength + 1);
 
         // Add auraBAL as the first reward token to be harvested
         //

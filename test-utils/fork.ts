@@ -1,5 +1,5 @@
 import { BigNumberish, Signer } from "ethers";
-import { ExtSystemConfig } from "scripts/deploySystem";
+import { ExtSystemConfig, Phase2Deployed } from "scripts/deploySystem";
 import { Account, IERC20__factory, MockERC20__factory } from "../types";
 import { simpleToExactAmount } from "./math";
 
@@ -54,4 +54,17 @@ export async function getBal(config: ExtSystemConfig, to: string, amount: BigNum
     await crv.transfer(to, amount);
 }
 
+export async function getAuraBal(phase2: Phase2Deployed, config: ExtSystemConfig, to: string, amount: BigNumberish) {
+    const acc = await impersonateAccount(config.balancerVault, true);
+    const auraBal = IERC20__factory.connect(phase2.cvxCrv.address, acc.signer);
+    await auraBal.transfer(to, amount);
+}
+
+export async function getAura(phase2: Phase2Deployed, config: ExtSystemConfig, to: string, amount: BigNumberish) {
+    const acc = await impersonateAccount(config.balancerVault, true);
+    const auraBal = IERC20__factory.connect(phase2.cvx.address, acc.signer);
+    await auraBal.transfer(to, amount);
+}
+
 export const getCrv = getBal;
+export const getCvx = getAura;
