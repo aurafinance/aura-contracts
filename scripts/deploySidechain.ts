@@ -298,13 +298,16 @@ export async function deploySidechainSystem(
         deployOptions,
     );
 
+    const auraBalOFTTransferOwnership = AuraBalOFT__factory.createInterface().encodeFunctionData("transferOwnership", [
+        deployerAddress,
+    ]);
     const auraBalOFT = await deployContractWithCreate2<AuraBalOFT, AuraBalOFT__factory>(
         hre,
         create2Factory,
         new AuraBalOFT__factory(deployer),
         "AuraBalOFT",
         [naming.auraBalOftName, naming.auraBalOftSymbol, addresses.lzEndpoint],
-        {},
+        deployOptionsWithCallbacks([auraBalOFTTransferOwnership]),
     );
 
     const virtualRewardFactory = await deployContractWithCreate2<VirtualRewardFactory, VirtualRewardFactory__factory>(
@@ -316,13 +319,17 @@ export async function deploySidechainSystem(
         {},
     );
 
+    const auraBalVaultTransferOwnership = AuraBalVault__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
     const auraBalVault = await deployContractWithCreate2<AuraBalVault, AuraBalVault__factory>(
         hre,
         create2Factory,
         new AuraBalVault__factory(deployer),
         "AuraBalVault",
         [auraBalOFT.address, virtualRewardFactory.address],
-        {},
+        deployOptionsWithCallbacks([auraBalVaultTransferOwnership]),
     );
 
     const auraBalStrategy = await deployContractWithCreate2<SimpleStrategy, SimpleStrategy__factory>(
@@ -335,6 +342,9 @@ export async function deploySidechainSystem(
     );
 
     let tx: ContractTransaction;
+
+    tx = await auraBalVault.setStrategy(auraBalStrategy.address);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.initialize(booster.address, addresses.token);
     await waitForTx(tx, debug, waitForBlocks);
@@ -493,6 +503,15 @@ export async function setTrustedRemoteCanonical(
         ethers.utils.solidityPack(["address", "address"], [sidechain.auraOFT.address, canonical.auraProxyOFT.address]),
     );
     await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.auraBalProxyOFT.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
+        ),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
 }
 
 export async function setTrustedRemoteSidechain(
@@ -515,6 +534,15 @@ export async function setTrustedRemoteSidechain(
     tx = await sidechain.auraOFT.setTrustedRemote(
         canonicalLzChainId,
         ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, sidechain.auraOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await sidechain.auraBalOFT.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
+        ),
     );
     await waitForTx(tx, debug, waitForBlocks);
 }
