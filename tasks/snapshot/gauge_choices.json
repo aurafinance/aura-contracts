@@ -115,7 +115,7 @@
     { "address": "0x43E4bE3A89985c4f1fCB4c2D3bd7e6E0C5df42D3", "label": "p-80/20 TNGBL/USDC" },
     { "address": "0x8D7d227746eE06D2532903D6EF1F69D80647C0E7", "label": "p-ComposableStable bb-a-USDC/bb-a-DAI/bb-a-USDT" },
     { "address": "0x304a75f78C96767a814c36Aaa74d622ECf875d36", "label": "p-ComposableStable wstETH/bb-a-WETH" },
-    { "address": "0x455f20c54b5712a84454468c7831f7c431aeEB1C", "label": "p-ComposableStable BRZ/jBRL (0x45)" },
+    { "address": "0x455f20c54b5712a84454468c7831f7c431aeEB1C", "label": "p-ComposableStable BRZ/jBRL" },
     { "address": "0x02DFcC6ca6611cCBDCe51049a332afDB91465584", "label": "p-50/50 stMATIC-bb-a-WMATIC-BPT/bb-am-USD" },
     { "address": "0x416d15C36c6DaAd2b9410B79aE557e6F07DcB642", "label": "p-ComposableStable bb-a-WETH/frxETH" },
     { "address": "0xCDb532170f8B524D047287bFEfAcd0cC02441b4A", "label": "p-50/50 wstETH-bb-a-WETH-BPT/bb-am-USD" },
