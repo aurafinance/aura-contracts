@@ -20,6 +20,8 @@ type Pool = {
 };
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
 
 // ADD TESTS TO VERIFY WRONG STORAGE DUE TO BAD srcs
 //  @method Booster.earmarkRewards: Error: VM Exception while processing transaction: reverted with reason string 'LayerZeroMock: not enough native for fees'
@@ -46,7 +48,7 @@ describe("BoosterLite", () => {
     const mintrMintAmount = simpleToExactAmount(1); // Rate of the MockCurveMinter.
     const setup = async () => {
         accounts = await ethers.getSigners();
-        const testSetup = await sidechainTestSetup(hre, accounts);
+        const testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
         deployer = testSetup.deployer;
         dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
         l2mocks = testSetup.l2.mocks;
@@ -135,9 +137,9 @@ describe("BoosterLite", () => {
             // collect the rewards
             await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
 
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
             await booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
 
             // bals after
             const balsAfter = await Promise.all([
@@ -198,7 +200,7 @@ describe("BoosterLite", () => {
             await increaseTime(60 * 60 * 24);
             const deployerBalanceBefore = await l2mocks.token.balanceOf(deployer.address);
             const rewardPoolBalanceBefore = await l2mocks.token.balanceOf(pool.crvRewards);
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
             const bridgeDelegate = await sidechain.l2Coordinator.bridgeDelegate();
             const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
 
@@ -207,7 +209,7 @@ describe("BoosterLite", () => {
             await tx.wait();
 
             // Then sends
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(l2mocks.addresses.sidechainLzChainId);
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
             const rate = await l2mocks.minter.rate();
             const callIncentive = rate
                 .mul(await sidechain.booster.earmarkIncentive())

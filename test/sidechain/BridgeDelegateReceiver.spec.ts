@@ -8,7 +8,8 @@ import { Account } from "../../types";
 import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
 import { SidechainDeployed } from "scripts/deploySidechain";
 const NATIVE_FEE = simpleToExactAmount("0.2");
-
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
 describe("BridgeDelegateReceiver", () => {
     /* -- Declare shared variables -- */
     let accounts: Signer[];
@@ -29,7 +30,7 @@ describe("BridgeDelegateReceiver", () => {
         alice = await impersonateAccount(await accounts[1].getAddress());
 
         // Deploy test contract.
-        testSetup = await sidechainTestSetup(hre, accounts);
+        testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
         sidechain = testSetup.l2.sidechain;
         bridgeDelegateReceiver = testSetup.bridgeDelegates.bridgeDelegateReceiver;
         l1Coordinator = testSetup.l1.canonical.l1Coordinator;
@@ -61,9 +62,7 @@ describe("BridgeDelegateReceiver", () => {
         it("should properly store valid arguments", async () => {
             expect(await bridgeDelegateReceiver.owner(), "owner").to.eq(deployer.address);
             expect(await bridgeDelegateReceiver.l1Coordinator(), "l1Coordinator").to.eq(l1Coordinator.address);
-            expect(await bridgeDelegateReceiver.srcChainId(), "srcChainId").to.eq(
-                testSetup.l2.mocks.addresses.sidechainLzChainId,
-            );
+            expect(await bridgeDelegateReceiver.srcChainId(), "srcChainId").to.eq(L2_CHAIN_ID);
         });
         it("should be initialized", async () => {
             const debTokenAddress = await l1Coordinator.balToken();
@@ -122,11 +121,7 @@ describe("BridgeDelegateReceiver", () => {
             ).to.be.reverted;
         });
         it("fails when L1Coordinator does not haven a bridgeDelegate", async () => {
-            expect(
-                await l1Coordinator
-                    .connect(dao.signer)
-                    .setBridgeDelegate(testSetup.l2.mocks.addresses.sidechainLzChainId, DEAD_ADDRESS),
-            );
+            expect(await l1Coordinator.connect(dao.signer).setBridgeDelegate(L2_CHAIN_ID, DEAD_ADDRESS));
 
             await expect(bridgeDelegateReceiver.settleFeeDebt(ZERO), "!bridgeDelegate").to.be.revertedWith(
                 "!bridgeDelegate",

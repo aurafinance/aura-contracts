@@ -57,16 +57,21 @@ export interface SideChainTestSetup {
  *
  * @param {HardhatRuntimeEnvironment} hre - The Hardhat runtime environment
  * @param {Signer[]} accounts - Array of accounts to use.
+ * @param {number} canonicalChainId - The ID of the canonical chain, or L1
+ * @param {number} sidechainLzChainId - The ID of the canonical chain, or L2
  * @returns {SideChainTestSetup}
  */
-
 export const sidechainTestSetup = async (
     hre: HardhatRuntimeEnvironment,
     accounts: Signer[],
+    canonicalChainId = 111,
+    sidechainLzChainId = 222,
+    debug = false,
+    waitForBlocks = 0,
 ): Promise<SideChainTestSetup> => {
     const deployer = await impersonateAccount(await accounts[0].getAddress());
     const l1Mocks = await deployMocks(hre, deployer.signer);
-    const l2mocks = await deploySidechainMocks(hre, deployer.signer);
+    const l2mocks = await deploySidechainMocks(hre, deployer.signer, canonicalChainId, debug, waitForBlocks);
     const l1Multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
     const l2Multisigs = await getL2MockMultisigs(accounts[3]);
     const dao = await impersonateAccount(l2Multisigs.daoMultisig);
@@ -118,9 +123,7 @@ export const sidechainTestSetup = async (
     const create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
     await create2Factory.updateDeployer(deployer.address, true);
 
-    const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(
-        l2mocks.addresses.sidechainLzChainId,
-    );
+    const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(sidechainLzChainId);
     l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
 
     const sidechain = await deploySidechainSystem(hre, deployer.signer, l2mocks.namingConfig, l2Multisigs, {
@@ -147,7 +150,7 @@ export const sidechainTestSetup = async (
     canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
     canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
     canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
-    await setTrustedRemoteCanonical(canonical, sidechain, l2mocks.addresses.sidechainLzChainId);
+    await setTrustedRemoteCanonical(canonical, sidechain, sidechainLzChainId);
 
     // Emulate DAO Settings - L2 Stuff
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
@@ -159,15 +162,15 @@ export const sidechainTestSetup = async (
         hre,
         l1Mocks.addresses,
         canonical,
-        l2mocks.addresses.sidechainLzChainId,
+        sidechainLzChainId,
         deployer.signer,
     );
     await canonical.l1Coordinator
         .connect(dao.signer)
-        .setBridgeDelegate(l2mocks.addresses.sidechainLzChainId, sbd.bridgeDelegateReceiver.address);
+        .setBridgeDelegate(sidechainLzChainId, sbd.bridgeDelegateReceiver.address);
     await canonical.l1Coordinator
         .connect(dao.signer)
-        .setL2Coordinator(l2mocks.addresses.sidechainLzChainId, sidechain.l2Coordinator.address);
+        .setL2Coordinator(sidechainLzChainId, sidechain.l2Coordinator.address);
 
     await sidechain.l2Coordinator.connect(dao.signer).setBridgeDelegate(sbd.bridgeDelegateSender.address);
 

@@ -34,10 +34,9 @@ async function getMockMultisigs(daoSigner: Signer): Promise<SidechainMultisigCon
 async function deploySidechainMocks(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    canonicalChainId = 111, // L1_CHAIN_ID
     debug = false,
     waitForBlocks = 0,
-    canonicalChainId = 111, // L1_CHAIN_ID
-    sidechainLzChainId = 222, // L2_CHAIN_ID
 ): Promise<DeployL2MocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
@@ -89,7 +88,6 @@ async function deploySidechainMocks(
         gauge,
         addresses: {
             canonicalChainId,
-            sidechainLzChainId,
             create2Factory: ZERO_ADDRESS,
             token: token.address,
             minter: minter.address,

@@ -77,7 +77,6 @@ describe("AuraBalOFT", () => {
             multisigs: { daoMultisig: dao.address },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
-                sidechainLzChainId: L2_CHAIN_ID,
                 lzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,

@@ -13,7 +13,6 @@ export interface ExtSidechainConfig {
     token: string;
     minter: string;
     canonicalChainId: number;
-    sidechainLzChainId: number;
     lzEndpoint: string;
     create2Factory: string;
     gauge?: string;

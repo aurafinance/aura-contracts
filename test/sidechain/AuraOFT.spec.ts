@@ -17,6 +17,8 @@ import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../../test/shared/ERC20.behaviour";
 import { expect } from "chai";
 const NATIVE_FEE = simpleToExactAmount("0.2");
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
 
 async function bridgeTokenFromL1ToL2(
     sender: Account,
@@ -54,11 +56,11 @@ describe("AuraOFT", () => {
         alice = await impersonateAccount(await accounts[1].getAddress());
 
         // Deploy test contract.
-        testSetup = await sidechainTestSetup(hre, accounts);
+        testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
         auraOFT = testSetup.l2.sidechain.auraOFT;
         canonical = testSetup.l1.canonical;
         canonicalChainId = testSetup.l2.mocks.addresses.canonicalChainId;
-        sidechainLzChainId = testSetup.l2.mocks.addresses.sidechainLzChainId;
+        sidechainLzChainId = L2_CHAIN_ID;
 
         dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
         // Send some balances in order to test

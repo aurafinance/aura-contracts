@@ -61,7 +61,7 @@ task("deploy:sidechain:mocks")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-        const result = await deploySidechainMocks(hre, deployer, debug, tskArgs.wait);
+        const result = await deploySidechainMocks(hre, deployer, 111, debug, tskArgs.wait);
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { addresses, namingConfig, ...contracts } = result;
