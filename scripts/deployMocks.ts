@@ -115,10 +115,14 @@ async function getMockMultisigs(
     };
 }
 
-async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false): Promise<DeployMocksResult> {
+async function deployMocks(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    chainId = 111,
+): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
-    const L1_CHAIN_ID = 111;
 
     // -----------------------------
     // 1. Deployments
@@ -270,7 +274,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         hre,
         new LZEndpointMock__factory(deployer),
         "lzEndpoint",
-        [L1_CHAIN_ID],
+        [chainId],
         {},
         debug,
     );

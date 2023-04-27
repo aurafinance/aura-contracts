@@ -39,8 +39,8 @@ task("sidechain:aura-oft-info")
         const sidechainConfig = sidechainConfigs[remoteChainId];
         assert(sidechainConfig, `Remote config for chain ID ${remoteChainId} not found`);
 
-        const sidechainLzChainId = lzChainIds[remoteChainId];
-        assert(sidechainLzChainId, "Remote LZ chain ID not found");
+        const remoteLzChainId = lzChainIds[remoteChainId];
+        assert(remoteLzChainId, "Remote LZ chain ID not found");
 
         const log = (title: string, general?: string[], signer?: string[]) => {
             console.log("===================");
@@ -83,8 +83,8 @@ task("sidechain:aura-oft-info")
             [
                 "AuraOFT address: " + local.auraProxyOFT.address,
                 "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
-                `Trusted remote address (${sidechainLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
-                    sidechainLzChainId,
+                `Trusted remote address (${remoteLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
+                    remoteLzChainId,
                 )}`,
                 `Endpoint: ${await local.auraProxyOFT.lzEndpoint()}`,
             ],

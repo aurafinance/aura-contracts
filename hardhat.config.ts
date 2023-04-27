@@ -4,27 +4,14 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "@nomiclabs/hardhat-etherscan";
-import "./tasks/coverage";
 import "solidity-docgen";
-
 import { resolve } from "path";
-
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
+import "./tasks/coverage";
+import { chainIds } from "./tasks/utils";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
-
-export const chainIds = {
-    goerli: 5,
-    hardhat: 31337,
-    kovan: 42,
-    mainnet: 1,
-    rinkeby: 4,
-    ropsten: 3,
-    arbitrum: 42161,
-    arbitrumGoerli: 421613,
-    polygon: 137,
-};
 
 const compilerSettings = {
     metadata: {
