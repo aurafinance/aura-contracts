@@ -12,7 +12,14 @@ import {
 } from "../../scripts/deploySidechain";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { getBal, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import {
+    getBal,
+    impersonateAccount,
+    increaseTime,
+    ONE_WEEK,
+    simpleToExactAmount,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -457,6 +464,7 @@ describe("Sidechain", () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             await auraOFT.connect(deployer.signer).lock(lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
         });
     });
