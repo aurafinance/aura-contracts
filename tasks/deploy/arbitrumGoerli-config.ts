@@ -12,8 +12,14 @@ import {
     TokenFactory__factory,
     VoterProxyLite__factory,
     AuraBalOFT__factory,
+    VirtualRewardFactory__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    ExtSidechainConfig,
+    SidechainConfig,
+    SidechainBridging,
+    SidechainMultisigConfig,
 } from "../../types";
-import { ExtSidechainConfig, SidechainConfig, SidechainMultisigConfig } from "../../types/sidechain-types";
 import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
@@ -24,10 +30,15 @@ const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
     sidechainLzChainId: 10143, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
     lzEndpoint: "0x6aB5Ae6822647046626e83ee6dB8187151E1d5ab", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
-    minter: "0x0000000000000000000000000000000000000000",
-    token: "0x0000000000000000000000000000000000000000",
+    minter: "0x0000000000000000000000000000000000000000", // Mock minter
+    token: "0x0000000000000000000000000000000000000000", // Mock token
     create2Factory: "0x0000000000000000000000000000000000000000",
-    tokenBpt: "0x0000000000000000000000000000000000000000",
+};
+
+export const bridging: SidechainBridging = {
+    l1Receiver: "0x0000000000000000000000000000000000000000",
+    l2Sender: "0x0000000000000000000000000000000000000000",
+    nativeBridge: "0x0000000000000000000000000000000000000000",
 };
 
 export const getSidechain = (signer: Signer) => ({
@@ -44,6 +55,9 @@ export const getSidechain = (signer: Signer) => ({
         tokenFactory: TokenFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
         proxyFactory: ProxyFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
     },
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
 export const config: SidechainConfig = {
@@ -51,5 +65,6 @@ export const config: SidechainConfig = {
     multisigs,
     naming: sidechainNaming,
     extConfig,
+    bridging,
     getSidechain,
 };

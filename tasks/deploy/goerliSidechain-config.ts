@@ -16,9 +16,15 @@ import {
     TokenFactory__factory,
     VoterProxyLite__factory,
     AuraBalOFT__factory,
+    VirtualRewardFactory__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    ExtSidechainConfig,
+    SidechainBridging,
+    SidechainConfig,
+    SidechainMultisigConfig,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
-import { ExtSidechainConfig, SidechainConfig, SidechainMultisigConfig } from "../../types/sidechain-types";
 import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
@@ -32,7 +38,12 @@ const extConfig: ExtSidechainConfig = {
     minter: goerliConfig.addresses.minter, // Mock minter
     token: goerliConfig.addresses.token, // Mock token
     create2Factory: "0xaec901fBc8f83612011641d8aABa5B8432Dc228c",
-    tokenBpt: "0x0000000000000000000000000000000000000000",
+};
+
+export const bridging: SidechainBridging = {
+    l1Receiver: "0x0000000000000000000000000000000000000000",
+    l2Sender: "0x0000000000000000000000000000000000000000",
+    nativeBridge: "0x0000000000000000000000000000000000000000",
 };
 
 export const getSidechain = (signer: Signer) => ({
@@ -49,6 +60,9 @@ export const getSidechain = (signer: Signer) => ({
         tokenFactory: TokenFactory__factory.connect("0x44F57984cbDbf63174C0bC3B8Db1Bfa4a1e20609", signer),
         proxyFactory: ProxyFactory__factory.connect("0x787633684fdd5F5B01255942AB5207eC5700375e", signer),
     },
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
 export const config: SidechainConfig = {
@@ -56,5 +70,6 @@ export const config: SidechainConfig = {
     multisigs,
     naming: sidechainNaming,
     extConfig,
+    bridging,
     getSidechain,
 };

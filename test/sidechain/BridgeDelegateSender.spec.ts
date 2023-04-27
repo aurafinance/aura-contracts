@@ -60,10 +60,9 @@ describe("BridgeDelegateSender", () => {
     });
     describe("send tokens", async () => {
         it("fails if caller is not the owner", async () => {
-            await expect(
-                bridgeDelegateSender.connect(alice.signer).send(ZERO_ADDRESS, ZERO),
-                "!onlyOwner",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            await expect(bridgeDelegateSender.connect(alice.signer).send(ZERO), "!onlyOwner").to.be.revertedWith(
+                ERRORS.ONLY_OWNER,
+            );
         });
         it("earmark rewards sends fees to l2Coordinator's bridgeDelegate", async () => {
             // BoosterLite.earmarkRewards => L2Coordinator.queueNewRewards
@@ -90,13 +89,15 @@ describe("BridgeDelegateSender", () => {
         });
 
         it("allows to send tokens to another account", async () => {
+            const l1Receiver = alice.address;
+            await bridgeDelegateSender.setL1Receiver(l1Receiver);
             const balanceBefore = await testSetup.l1.mocks.crv.balanceOf(bridgeDelegateSender.address);
 
-            const tx = await bridgeDelegateSender.connect(deployer.signer).send(alice.address, balanceBefore);
-            await expect(tx).to.emit(bridgeDelegateSender, "Send").withArgs(alice.address, balanceBefore);
+            const tx = await bridgeDelegateSender.connect(deployer.signer).send(balanceBefore);
+            await expect(tx).to.emit(bridgeDelegateSender, "Send").withArgs(l1Receiver, balanceBefore);
 
             const balanceAfter = await testSetup.l1.mocks.crv.balanceOf(bridgeDelegateSender.address);
-            const targetBalance = await testSetup.l1.mocks.crv.balanceOf(alice.address);
+            const targetBalance = await testSetup.l1.mocks.crv.balanceOf(l1Receiver);
 
             expect(balanceAfter, "bridgeDelegateBalance").to.be.eq(ZERO);
             expect(targetBalance, "tokens sent to target").to.be.eq(balanceBefore);

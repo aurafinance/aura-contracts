@@ -9,7 +9,7 @@ import { resolve } from "path";
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks/coverage";
-import { chainIds } from "./tasks/utils";
+import { chainIds } from "./tasks/utils/networkAddressFactory";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -41,6 +41,9 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
         },
         mainnet: {
+            url: process.env.NODE_URL || "",
+        },
+        gnosis: {
             url: process.env.NODE_URL || "",
         },
         kovan: {

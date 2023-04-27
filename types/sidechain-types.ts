@@ -11,13 +11,11 @@ export interface SidechainNaming {
 
 export interface ExtSidechainConfig {
     token: string;
-    tokenBpt: string;
     minter: string;
     canonicalChainId: number;
     sidechainLzChainId: number;
     lzEndpoint: string;
     create2Factory: string;
-    // phase 2
     gauge?: string;
 }
 
@@ -25,10 +23,17 @@ export interface SidechainMultisigConfig {
     daoMultisig: string;
 }
 
+export interface SidechainBridging {
+    l1Receiver: string;
+    l2Sender: string;
+    nativeBridge: string;
+}
+
 export interface SidechainConfig {
     chainId: number,
     multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
+    bridging: SidechainBridging;
     getSidechain?: (s: Signer) => SidechainDeployed;
 }

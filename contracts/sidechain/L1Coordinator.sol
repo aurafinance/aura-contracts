@@ -130,20 +130,18 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        // TODO: do something better here
-        uint256 nativeFee = msg.value / 2;
         bytes memory payload = CCM.encodeFeesCallback(cvxAmount, fullAmount);
 
         _lzSend(
             _srcChainId, ////////// Source chain (L2 chain)
             payload, ////////////// Payload
-            payable(msg.sender), // Refund address
+            payable(address(this)), // Refund address
             address(0), /////////// ZRO payment address
             _adapterParams, /////// Adapter params
-            nativeFee ///////////// Native fee
+            msg.value ///////////// Native fee
         );
 
-        IOFT(auraOFT).sendFrom{ value: nativeFee }(
+        IOFT(auraOFT).sendFrom{ value: address(this).balance }(
             address(this),
             _srcChainId,
             abi.encodePacked(to),
@@ -201,4 +199,6 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             }
         }
     }
+
+    receive() external payable {}
 }

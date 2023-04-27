@@ -15,12 +15,6 @@ contract SimpleBridgeDelegateSender is BridgeDelegateSender {
     using SafeERC20 for IERC20;
 
     address public immutable token;
-    /**
-     * @dev Emitted when tokens are sent to a recipient.
-     * @param to The address of the recipient.
-     * @param amount The amount of tokens sent.
-     */
-    event Send(address to, uint256 amount);
 
     /**
      * @dev Constructs the SimpleBridgeDelegateSender contract.
@@ -31,14 +25,14 @@ contract SimpleBridgeDelegateSender is BridgeDelegateSender {
     }
 
     /**
-     * @dev Sends tokens to a recipient.
-     * @param _to The address of the recipient.
+     * @dev Sends tokens to a l1Receiver.
      * @param _amount The amount of tokens to send.
      * Requirements:
      * - The caller must be the owner of the contract.
      */
-    function send(address _to, uint256 _amount) external override onlyOwner {
-        IERC20(token).safeTransfer(_to, _amount);
-        emit Send(_to, _amount);
+    function send(uint256 _amount) external override onlyOwner {
+        require(l1Receiver != address(0), "!0");
+        IERC20(token).safeTransfer(l1Receiver, _amount);
+        emit Send(l1Receiver, _amount);
     }
 }

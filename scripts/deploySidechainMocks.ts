@@ -36,10 +36,9 @@ async function deploySidechainMocks(
     signer: Signer,
     debug = false,
     waitForBlocks = 0,
+    canonicalChainId = 111, // L1_CHAIN_ID
+    sidechainLzChainId = 222, // L2_CHAIN_ID
 ): Promise<DeployL2MocksResult> {
-    const L1_CHAIN_ID = 111;
-    const L2_CHAIN_ID = 222;
-
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
@@ -89,11 +88,10 @@ async function deploySidechainMocks(
         minter,
         gauge,
         addresses: {
-            canonicalChainId: L1_CHAIN_ID,
-            sidechainLzChainId: L2_CHAIN_ID,
+            canonicalChainId,
+            sidechainLzChainId,
             create2Factory: ZERO_ADDRESS,
             token: token.address,
-            tokenBpt: bpt.address,
             minter: minter.address,
             gauge: gauge.address,
             lzEndpoint: ZERO_ADDRESS,

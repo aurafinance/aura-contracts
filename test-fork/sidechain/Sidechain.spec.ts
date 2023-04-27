@@ -68,7 +68,11 @@ describe("Sidechain", () => {
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
-                tokenBpt: ZERO_ADDRESS,
+            },
+            bridging: {
+                l1Receiver: "0x0000000000000000000000000000000000000000",
+                l2Sender: "0x0000000000000000000000000000000000000000",
+                nativeBridge: "0x0000000000000000000000000000000000000000",
             },
         };
 
