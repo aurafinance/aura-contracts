@@ -54,7 +54,7 @@ import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { getMockDistro } from "../../scripts/deployMocks";
 import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 
 const addresses: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",

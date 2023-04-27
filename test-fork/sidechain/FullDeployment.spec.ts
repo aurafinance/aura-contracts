@@ -169,6 +169,14 @@ describe("Sidechain", () => {
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
+        // Connect contracts to its owner signer.
+        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
+        canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
+
+        sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
+        sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+        sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
     });
 
     describe("Check configs", () => {
@@ -303,14 +311,11 @@ describe("Sidechain", () => {
         });
         it("add trusted remotes to layerzero endpoints", async () => {
             // L1 Stuff
-            canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
             await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
 
             // L2 Stuff
-            sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
-            sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
             await setTrustedRemoteSidechain(canonical, sidechain, L1_CHAIN_ID);
             await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);
             await l2LzEndpoint.setDestLzEndpoint(auraProxyOFT.address, l1LzEndpoint.address);

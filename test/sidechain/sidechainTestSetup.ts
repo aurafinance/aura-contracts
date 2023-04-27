@@ -132,10 +132,12 @@ export const sidechainTestSetup = async (
     // Mock L1 Endpoints  configuration
     await l1Mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
     await l1Mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
+    await l1Mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraBalOFT.address, l2LzEndpoint.address);
 
     // Mock L12Endpoints  configuration
     await l2LzEndpoint.setDestLzEndpoint(canonical.l1Coordinator.address, l1Mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1Mocks.lzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(canonical.auraBalProxyOFT.address, l1Mocks.lzEndpoint.address);
 
     // Add Mock Gauge
     await sidechain.poolManager["addPool(address)"](l2mocks.gauge.address);
@@ -143,11 +145,14 @@ export const sidechainTestSetup = async (
     // Emulate DAO Settings - L1 Stuff
     await phase6.booster.connect(dao.signer).setBridgeDelegate(canonical.l1Coordinator.address);
     canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+    canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
+    canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
     await setTrustedRemoteCanonical(canonical, sidechain, l2mocks.addresses.sidechainLzChainId);
 
     // Emulate DAO Settings - L2 Stuff
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
     sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+    sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
     await setTrustedRemoteSidechain(canonical, sidechain, l2mocks.addresses.canonicalChainId);
 
     const sbd = await deploySimpleBridgeDelegates(
@@ -170,6 +175,7 @@ export const sidechainTestSetup = async (
     canonical.l1Coordinator = canonical.l1Coordinator.connect(deployer.signer);
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(deployer.signer);
     sidechain.auraOFT = sidechain.auraOFT.connect(deployer.signer);
+    sidechain.auraBalOFT = sidechain.auraBalOFT.connect(deployer.signer);
     return {
         deployer,
         l1: { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, canonical },

@@ -3,7 +3,7 @@
  * that is used for testing the layerzero relayer on goerli
  */
 import { Signer } from "ethers";
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,

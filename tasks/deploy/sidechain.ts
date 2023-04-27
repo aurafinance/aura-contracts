@@ -17,7 +17,6 @@ import {
     BoosterOwnerLite__factory,
 } from "../../types";
 import { getSigner } from "../utils";
-import { chainIds } from "../../hardhat.config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     CanonicalPhaseDeployed,
@@ -28,7 +27,7 @@ import {
     setTrustedRemoteSidechain,
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
-import { waitForTx } from "../../tasks/utils";
+import { waitForTx, chainIds } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 import {
     canonicalChains,
@@ -38,8 +37,7 @@ import {
     remoteChainMap,
     sideChains,
 } from "./sidechain-constants";
-import { deploySidechainMocks } from "scripts/deploySidechainMocks";
-
+import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 

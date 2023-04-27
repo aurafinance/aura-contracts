@@ -1,4 +1,4 @@
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import { config as goerliConfig } from "./goerli-config";
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";

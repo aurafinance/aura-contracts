@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
