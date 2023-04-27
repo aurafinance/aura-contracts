@@ -51,6 +51,7 @@ contract AuraOFT is OFT, CrossChainConfig {
      * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
      */
     function lock(uint256 _cvxAmount) external payable {
+        require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
         bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);

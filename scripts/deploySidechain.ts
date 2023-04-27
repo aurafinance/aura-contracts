@@ -42,6 +42,12 @@ import {
     AuraBalProxyOFT__factory,
     AuraBalOFT,
     AuraBalOFT__factory,
+    VirtualRewardFactory,
+    VirtualRewardFactory__factory,
+    AuraBalVault,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    SimpleStrategy,
 } from "../types";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 import { simpleToExactAmount } from "../test-utils/math";
@@ -115,6 +121,9 @@ export interface SidechainDeployed {
     l2Coordinator: L2Coordinator;
     auraOFT: AuraOFT;
     auraBalOFT: AuraBalOFT;
+    virtualRewardFactory: VirtualRewardFactory;
+    auraBalVault: AuraBalVault;
+    auraBalStrategy: SimpleStrategy;
 }
 
 /**
@@ -289,16 +298,56 @@ export async function deploySidechainSystem(
         deployOptions,
     );
 
+    const auraBalOFTTransferOwnership = AuraBalOFT__factory.createInterface().encodeFunctionData("transferOwnership", [
+        deployerAddress,
+    ]);
     const auraBalOFT = await deployContractWithCreate2<AuraBalOFT, AuraBalOFT__factory>(
         hre,
         create2Factory,
         new AuraBalOFT__factory(deployer),
         "AuraBalOFT",
         [naming.auraBalOftName, naming.auraBalOftSymbol, addresses.lzEndpoint],
+        deployOptionsWithCallbacks([auraBalOFTTransferOwnership]),
+    );
+
+    const virtualRewardFactory = await deployContractWithCreate2<VirtualRewardFactory, VirtualRewardFactory__factory>(
+        hre,
+        create2Factory,
+        new VirtualRewardFactory__factory(deployer),
+        "VirtualRewardFactory",
+        [],
+        {},
+    );
+
+    const auraBalVaultTransferOwnership = AuraBalVault__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
+    const auraBalVault = await deployContractWithCreate2<AuraBalVault, AuraBalVault__factory>(
+        hre,
+        create2Factory,
+        new AuraBalVault__factory(deployer),
+        "AuraBalVault",
+        [auraBalOFT.address, virtualRewardFactory.address],
+        deployOptionsWithCallbacks([auraBalVaultTransferOwnership]),
+    );
+
+    const auraBalStrategy = await deployContractWithCreate2<SimpleStrategy, SimpleStrategy__factory>(
+        hre,
+        create2Factory,
+        new SimpleStrategy__factory(deployer),
+        "SimpleStrategy",
+        [auraBalOFT.address, auraBalVault.address],
         {},
     );
 
     let tx: ContractTransaction;
+
+    tx = await auraBalVault.setStrategy(auraBalStrategy.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalVault.addExtraReward(auraOFT.address);
+    await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.initialize(booster.address, addresses.token);
     await waitForTx(tx, debug, waitForBlocks);
@@ -347,6 +396,9 @@ export async function deploySidechainSystem(
         auraOFT,
         auraBalOFT,
         l2Coordinator,
+        virtualRewardFactory,
+        auraBalVault,
+        auraBalStrategy,
     };
 }
 
@@ -454,6 +506,15 @@ export async function setTrustedRemoteCanonical(
         ethers.utils.solidityPack(["address", "address"], [sidechain.auraOFT.address, canonical.auraProxyOFT.address]),
     );
     await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.auraBalProxyOFT.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
+        ),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
 }
 
 export async function setTrustedRemoteSidechain(
@@ -476,6 +537,15 @@ export async function setTrustedRemoteSidechain(
     tx = await sidechain.auraOFT.setTrustedRemote(
         canonicalLzChainId,
         ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, sidechain.auraOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await sidechain.auraBalOFT.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
+        ),
     );
     await waitForTx(tx, debug, waitForBlocks);
 }
