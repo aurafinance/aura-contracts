@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import hre, { ethers } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import {
     CanonicalPhaseDeployed,
     deployCanonicalPhase,
@@ -55,6 +55,18 @@ describe("AuraBalOFT", () => {
      * --------------------------------------------------------------------- */
 
     before(async () => {
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [
+                {
+                    forking: {
+                        jsonRpcUrl: process.env.NODE_URL,
+                        blockNumber: 17140000,
+                    },
+                },
+            ],
+        });
+
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);

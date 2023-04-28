@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import hre, { ethers } from "hardhat";
+import hre, { ethers, network } from "hardhat";
 import { deployContract } from "../../tasks/utils";
 import {
     CanonicalPhaseDeployed,
@@ -106,6 +106,18 @@ describe("Sidechain", () => {
     }
 
     before(async () => {
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [
+                {
+                    forking: {
+                        jsonRpcUrl: process.env.NODE_URL,
+                        blockNumber: 17140000,
+                    },
+                },
+            ],
+        });
+
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
