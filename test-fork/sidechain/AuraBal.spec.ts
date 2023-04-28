@@ -398,4 +398,18 @@ describe("AuraBalOFT", () => {
             expect(vaultBalanceBefore.sub(vaultBalanceAfter)).lte(bridgeAmount.add(1));
         });
     });
+
+    describe("Pausing and queue", () => {
+        it("Transfer L1 -> L2 updates outflow");
+        it("Transfer L2 -> L1 updates inflow");
+        it("Can pause transfers");
+        it("Can unpause transfers");
+        it("Can set inflow limit");
+        it("Can set queue delay");
+        it("Sending more than inflow limit gets queued");
+        it("Queued transfer can NOT be processed when paused");
+        it("Queued transfer can NOT be processed with bad root");
+        it("Queued transfer can NOT be processed before delay expires");
+        it("Queued transfer can be processed");
+    });
 });

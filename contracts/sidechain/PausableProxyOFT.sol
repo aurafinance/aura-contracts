@@ -128,10 +128,11 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
 
         uint256 epoch = _getCurrentEpoch();
         uint256 currInflow = inflow[epoch];
-        inflow[epoch] = currInflow.add(amount);
+        uint256 newInflow = currInflow.add(amount);
+        inflow[epoch] = newInflow;
         address to = toAddressBytes.toAddress(0);
 
-        if (_getNetInflow(currInflow, outflow[epoch]) > inflowLimit || paused()) {
+        if (_getNetInflow(newInflow, outflow[epoch]) > inflowLimit || paused()) {
             // If the net inflow is greater than the limit for this epoch OR the bridge
             // is currently paused we send each transfer to a queue for delayed processing.
             // In the case of a doomsday event this limits the exposure to the bridge.
