@@ -1,7 +1,8 @@
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import { config as goerliConfig } from "./goerli-config";
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
+import { SidechainNaming } from "../../types/sidechain-types";
 
 export const sideChains = [
     chainIds.arbitrum,
@@ -34,4 +35,12 @@ export const canonicalConfigs = {
 export const sidechainConfigs = {
     [chainIds.goerli]: goerliSidechainConfig,
     [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
+};
+
+export const sidechainNaming: SidechainNaming = {
+    auraOftName: "Aura",
+    auraOftSymbol: "AURA",
+    auraBalOftName: "Aura BAL",
+    auraBalOftSymbol: "auraBAL",
+    tokenFactoryNamePostfix: " Aura Deposit",
 };

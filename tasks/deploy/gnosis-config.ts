@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
@@ -15,34 +15,29 @@ import {
     AuraBalVault__factory,
     SimpleStrategy__factory,
     AuraBalOFT__factory,
+    SidechainMultisigConfig,
+    ExtSidechainConfig,
+    SidechainConfig,
+    SidechainBridging,
 } from "../../types";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import {
-    ExtSidechainConfig,
-    SidechainAddresses,
-    SidechainConfig,
-    SidechainNaming,
-    SidechainBridging,
-} from "./sidechain-types";
+import { sidechainNaming } from "./sidechain-constants";
 
-const addresses: SidechainAddresses = {
-    lzEndpoint: "0x9740FF91F1985D8d2B71494aE1A2f723bb3Ed9E4", // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids#gnosis
+const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
-    minter: ZERO_ADDRESS, // Mock minter
-    token: "0x7eF541E2a22058048904fE5744f9c7E4C57AF717", // Mock token
-    create2Factory: ZERO_ADDRESS,
-};
-
-const naming: SidechainNaming = {
-    auraOftName: "Aura",
-    auraOftSymbol: "AURA",
-    auraBalOftName: "Aura BAL",
-    auraBalOftSymbol: "auraBAL",
-    tokenFactoryNamePostfix: " Aura Deposit",
 };
 
 const extConfig: ExtSidechainConfig = {
     canonicalChainId: 145, // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids#gnosis
+    lzEndpoint: "0x9740FF91F1985D8d2B71494aE1A2f723bb3Ed9E4", // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids#gnosis
+    minter: ZERO_ADDRESS, // Mock minter
+    token: "0x7eF541E2a22058048904fE5744f9c7E4C57AF717", // Mock token
+    create2Factory: ZERO_ADDRESS,
+};
+export const bridging: SidechainBridging = {
+    l1Receiver: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    l2Sender: ZERO_ADDRESS,
+    nativeBridge: "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
 };
 
 export const getSidechain = (signer: Signer) => ({
@@ -64,16 +59,10 @@ export const getSidechain = (signer: Signer) => ({
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
 });
 
-export const bridging: SidechainBridging = {
-    l1Receiver: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-    l2Sender: ZERO_ADDRESS,
-    nativeBridge: "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
-};
-
 export const config: SidechainConfig = {
     chainId: chainIds.arbitrumGoerli,
-    addresses,
-    naming,
+    multisigs,
+    naming: sidechainNaming,
     extConfig,
     bridging,
     getSidechain,

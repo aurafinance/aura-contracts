@@ -14,7 +14,7 @@ import { deployContract } from "../tasks/utils";
 import { ExtSystemConfig } from "./deploySystem";
 import { CanonicalPhaseDeployed } from "./deploySidechain";
 
-interface SimplyBridgeDelegateDeployed {
+export interface SimplyBridgeDelegateDeployed {
     bridgeDelegateSender: BridgeDelegateSender;
     bridgeDelegateReceiver: BridgeDelegateReceiver;
 }

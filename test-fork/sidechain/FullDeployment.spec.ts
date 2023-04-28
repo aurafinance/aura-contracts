@@ -10,9 +10,16 @@ import {
     setTrustedRemoteSidechain,
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
-import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { getBal, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import {
+    getBal,
+    impersonateAccount,
+    increaseTime,
+    ONE_WEEK,
+    simpleToExactAmount,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -31,8 +38,9 @@ import {
     SimpleBridgeDelegateSender,
     BridgeDelegateReceiver,
 } from "../../types";
-import { SidechainConfig } from "../../tasks/deploy/sidechain-types";
+import { SidechainConfig } from "../../types/sidechain-types";
 import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
+import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
 import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
@@ -129,36 +137,32 @@ describe("Sidechain", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            addresses: {
+            multisigs: { daoMultisig: dao.address },
+            naming: { ...sidechainNaming },
+            extConfig: {
+                canonicalChainId: L1_CHAIN_ID,
                 lzEndpoint: l2LzEndpoint.address,
-                daoMultisig: dao.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
-            },
-            naming: {
-                auraOftName: "Aura",
-                auraOftSymbol: "AURA",
-                tokenFactoryNamePostfix: " Aura Deposit",
-                auraBalOftName: "Aura BAL",
-                auraBalOftSymbol: "auraBAL",
             },
             bridging: {
                 l1Receiver: "0x0000000000000000000000000000000000000000",
                 l2Sender: "0x0000000000000000000000000000000000000000",
                 nativeBridge: "0x0000000000000000000000000000000000000000",
             },
-            extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 
         // deploy canonicalPhase
+        const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
         canonical = await deployCanonicalPhase(
             hre,
-            { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address },
+            deployer.signer,
+            mainnetConfig.multisigs,
+            extSystemConfig,
             phase2,
             phase6,
             vaultDeployment,
-            deployer.signer,
         );
 
         l1Coordinator = canonical.l1Coordinator;
@@ -167,22 +171,30 @@ describe("Sidechain", () => {
         // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
-            sidechainConfig.naming,
-            sidechainConfig.addresses,
-            sidechainConfig.extConfig,
             deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
         );
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
+        // Connect contracts to its owner signer.
+        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
+        canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
+
+        sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
+        sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+        sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
     });
 
     describe("Check configs", () => {
         it("VotingProxy has correct config", async () => {
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
-            expect(await sidechain.voterProxy.mintr()).eq(addresses.minter);
-            expect(await sidechain.voterProxy.crv()).eq(addresses.token);
+            expect(await sidechain.voterProxy.mintr()).eq(extConfig.minter);
+            expect(await sidechain.voterProxy.crv()).eq(extConfig.token);
             expect(await sidechain.voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.withdrawer()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.owner()).eq(dao.address);
@@ -223,7 +235,7 @@ describe("Sidechain", () => {
             );
         });
         it("BoosterLite has correct config", async () => {
-            expect(await sidechain.booster.crv()).eq(sidechainConfig.addresses.token);
+            expect(await sidechain.booster.crv()).eq(sidechainConfig.extConfig.token);
 
             expect(await sidechain.booster.lockIncentive()).eq(550);
             expect(await sidechain.booster.stakerIncentive()).eq(1100);
@@ -262,10 +274,10 @@ describe("Sidechain", () => {
                 factories: { rewardFactory, stashFactory, tokenFactory, proxyFactory },
             } = sidechain;
 
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
             expect(await rewardFactory.operator()).eq(booster.address);
-            expect(await rewardFactory.crv()).eq(addresses.token);
+            expect(await rewardFactory.crv()).eq(extConfig.token);
 
             expect(await stashFactory.operator()).eq(booster.address);
             expect(await stashFactory.rewardFactory()).eq(rewardFactory.address);
@@ -277,7 +289,7 @@ describe("Sidechain", () => {
                 await stashFactory.v3Implementation(),
                 deployer.signer,
             );
-            expect(await rewardsStashV3.crv()).eq(addresses.token);
+            expect(await rewardsStashV3.crv()).eq(extConfig.token);
 
             expect(await tokenFactory.operator()).eq(booster.address);
             expect(await tokenFactory.namePostfix()).eq(sidechainConfig.naming.tokenFactoryNamePostfix);
@@ -340,7 +352,7 @@ describe("Sidechain", () => {
         });
         it("Set l2Coordinator on l1Coordinator", async () => {
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).not.to.eq(l2Coordinator.address);
-            await l1Coordinator.setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
+            await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).to.eq(l2Coordinator.address);
         });
     });
@@ -357,16 +369,16 @@ describe("Sidechain", () => {
             bridgeDelegateSender = result.bridgeDelegateSender as SimpleBridgeDelegateSender;
             bridgeDelegateReceiver = result.bridgeDelegateReceiver;
         });
-        it("Bridge delgate sender has correct config", async () => {
-            expect(await bridgeDelegateSender.token()).eq(sidechainConfig.addresses.token);
+        it("Bridge delegate sender has correct config", async () => {
+            expect(await bridgeDelegateSender.token()).eq(sidechainConfig.extConfig.token);
         });
-        it("Bridge delgate receiver has correct config", async () => {
+        it("Bridge delegate receiver has correct config", async () => {
             expect(await bridgeDelegateReceiver.l1Coordinator()).eq(l1Coordinator.address);
             expect(await bridgeDelegateReceiver.srcChainId()).eq(L2_CHAIN_ID);
         });
         it("Set bridge delegate sender on L2", async () => {
             expect(await l2Coordinator.bridgeDelegate()).not.eq(bridgeDelegateSender.address);
-            await l2Coordinator.setBridgeDelegate(bridgeDelegateSender.address);
+            await l2Coordinator.connect(dao.signer).setBridgeDelegate(bridgeDelegateSender.address);
             expect(await l2Coordinator.bridgeDelegate()).eq(bridgeDelegateSender.address);
         });
     });
@@ -406,18 +418,20 @@ describe("Sidechain", () => {
             const l2BalBefore = await phase2.cvx.balanceOf(auraWhale.address);
             expect(balBefore).gte(bridgeAmount);
 
-            await auraOFT.sendFrom(
-                deployer.address,
-                L1_CHAIN_ID,
-                auraWhale.address,
-                bridgeAmount,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS,
-                [],
-                {
-                    value: NATIVE_FEE,
-                },
-            );
+            await auraOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L1_CHAIN_ID,
+                    auraWhale.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
 
             const balAfter = await auraOFT.balanceOf(deployer.address);
             const l2BalAfter = await phase2.cvx.balanceOf(auraWhale.address);
@@ -448,8 +462,9 @@ describe("Sidechain", () => {
         });
         it("lock AURA from L2 -> L1", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await auraOFT.lock(lockAmount, { value: NATIVE_FEE });
+            await auraOFT.connect(deployer.signer).lock(lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
         });
     });
@@ -486,7 +501,7 @@ describe("Sidechain", () => {
         });
         it("set bridge delegate for L2", async () => {
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(ZERO_ADDRESS);
-            await l1Coordinator.setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
+            await l1Coordinator.connect(dao.signer).setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegateReceiver.address);
         });
         it("settle fees updated feeDebt on L1", async () => {
