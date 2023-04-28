@@ -45,8 +45,16 @@ contract AuraProxyOFT is ProxyOFT {
      * @param _sender Address that is locking
      * @param _amount Amount to lock
      */
-    function _lockFor(address _sender, uint256 _amount) internal {
-        IAuraLocker(locker).lock(_sender, _amount);
+    function _lockFor(
+        uint16 _srcChainId,
+        address _sender,
+        uint256 _amount
+    ) internal {
+        if (IAuraLocker(locker).isShutdown()) {
+            _creditTo(_srcChainId, _sender, _amount);
+        } else {
+            IAuraLocker(locker).lock(_sender, _amount);
+        }
     }
 
     /* -------------------------------------------------------------------
@@ -70,7 +78,7 @@ contract AuraProxyOFT is ProxyOFT {
                 // Receiving a lock request from the L2. We decode
                 // The payload to get the sender and the amount to lock
                 (address sender, uint256 amount) = CCM.decodeLock(_payload);
-                _lockFor(sender, amount);
+                _lockFor(_srcChainId, sender, amount);
             }
         } else {
             // The message is not a specific cross chain message so we just
