@@ -43,6 +43,9 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
     /// @dev srcChainId mapped to reward receiver
     mapping(uint16 => address) public rewardReceiver;
 
+    /// @dev Authorized harvesters
+    mapping(address => bool) public authorizedHarvesters;
+
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
@@ -82,6 +85,13 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
 
     function setRewardReceiver(uint16 _srcChainId, address _receiver) external onlyOwner {
         rewardReceiver[_srcChainId] = _receiver;
+    }
+
+    /// @notice Adds or remove an address from the harvesters' whitelist
+    /// @param _harvester address of the authorized harvester
+    /// @param _authorized Whether to add or remove harvester
+    function updateAuthorizedHarvesters(address _harvester, bool _authorized) external onlyOwner {
+        authorizedHarvesters[_harvester] = _authorized;
     }
 
     /* -------------------------------------------------------------------
@@ -155,7 +165,9 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
         uint16[] memory _srcChainIds,
         uint256[] memory _totalUnderlying,
         uint256 _totalUnderlyingSum
-    ) external onlyOwner {
+    ) external {
+        require(authorizedHarvesters[msg.sender], "!harvester");
+
         uint256 srcChainIdsLen = _srcChainIds.length;
         require(srcChainIdsLen == _totalUnderlying.length, "!parity");
 
