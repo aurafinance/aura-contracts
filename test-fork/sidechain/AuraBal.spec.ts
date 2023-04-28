@@ -238,6 +238,15 @@ describe("AuraBalOFT", () => {
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).gte(bridgeAmount.sub(1));
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).lte(bridgeAmount);
         });
+        it("cannot call harvest when not authorized", async () => {
+            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
+            await expect(canonical.auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100)).to.be.revertedWith("!harvester");
+        });
+        it("set authorized harvester", async () => {
+            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
+            await canonical.auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, true);
+            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(true);
+        });
         it("can harvest auraBAL from vault", async () => {
             const harvestAmount = simpleToExactAmount(100);
             await getAuraBal(phase2, mainnetConfig.addresses, vaultDeployment.strategy.address, harvestAmount);
