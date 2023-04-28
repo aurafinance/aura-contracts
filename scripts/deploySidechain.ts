@@ -493,15 +493,6 @@ export async function setTrustedRemoteCanonical(
         ),
     );
     await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await canonical.auraBalProxyOFT.setTrustedRemote(
-        sidechainLzChainId,
-        ethers.utils.solidityPack(
-            ["address", "address"],
-            [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
-        ),
-    );
-    await waitForTx(tx, debug, waitForBlocks);
 }
 
 export async function setTrustedRemoteSidechain(
