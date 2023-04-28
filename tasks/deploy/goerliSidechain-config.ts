@@ -3,7 +3,7 @@
  * that is used for testing the layerzero relayer on goerli
  */
 import { Signer } from "ethers";
-import { chainIds } from "../../hardhat.config";
+import { chainIds } from "../../tasks/utils";
 import {
     BoosterLite__factory,
     BoosterOwner__factory,
@@ -19,34 +19,24 @@ import {
     VirtualRewardFactory__factory,
     AuraBalVault__factory,
     SimpleStrategy__factory,
+    ExtSidechainConfig,
+    SidechainBridging,
+    SidechainConfig,
+    SidechainMultisigConfig,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
-import {
-    ExtSidechainConfig,
-    SidechainAddresses,
-    SidechainConfig,
-    SidechainNaming,
-    SidechainBridging,
-} from "./sidechain-types";
+import { sidechainNaming } from "./sidechain-constants";
 
-const addresses: SidechainAddresses = {
-    lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
+const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
-    minter: goerliConfig.addresses.minter, // Mock minter
-    token: goerliConfig.addresses.token, // Mock token
-    create2Factory: "0xaec901fBc8f83612011641d8aABa5B8432Dc228c",
-};
-
-const naming: SidechainNaming = {
-    auraOftName: "Aura",
-    auraOftSymbol: "AURA",
-    auraBalOftName: "Aura BAL",
-    auraBalOftSymbol: "auraBAL",
-    tokenFactoryNamePostfix: " Aura Deposit",
 };
 
 const extConfig: ExtSidechainConfig = {
     canonicalChainId: 10121, // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#goerli-ethereum-testnet
+    lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23", // https://layerzero.gitbook.io/docs/technical-reference/testnet/testnet-addresses#arbitrum-goerli-testnet
+    minter: goerliConfig.addresses.minter, // Mock minter
+    token: goerliConfig.addresses.token, // Mock token
+    create2Factory: "0xaec901fBc8f83612011641d8aABa5B8432Dc228c",
 };
 
 export const bridging: SidechainBridging = {
@@ -76,8 +66,8 @@ export const getSidechain = (signer: Signer) => ({
 
 export const config: SidechainConfig = {
     chainId: chainIds.arbitrumGoerli,
-    addresses,
-    naming,
+    multisigs,
+    naming: sidechainNaming,
     extConfig,
     bridging,
     getSidechain,

@@ -21,6 +21,8 @@ import {
     MockBalancerPoolToken__factory,
     MockBalancerVault,
     MockBalancerVault__factory,
+    LZEndpointMock__factory,
+    LZEndpointMock,
 } from "../types/generated";
 import { deployContract } from "../tasks/utils";
 import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
@@ -39,10 +41,10 @@ interface DeployMocksResult {
     balancerVault: MockBalancerVault;
     bal: MockERC20;
     weth: MockERC20;
+    lzEndpoint: LZEndpointMock;
     addresses: ExtSystemConfig;
     namingConfig: NamingConfig;
 }
-
 /** @dev Recreates the Convex distribution list */
 function getMockDistro(): DistroList {
     return {
@@ -113,7 +115,12 @@ async function getMockMultisigs(
     };
 }
 
-async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug = false): Promise<DeployMocksResult> {
+async function deployMocks(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    chainId = 111,
+): Promise<DeployMocksResult> {
     const deployer = signer;
     const deployerAddress = await deployer.getAddress();
 
@@ -261,6 +268,17 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         debug,
     );
 
+    // -----------------------------
+    // 2 Sidechain
+    // -----------------------------
+    const lzEndpoint = await deployContract<LZEndpointMock>(
+        hre,
+        new LZEndpointMock__factory(deployer),
+        "lzEndpoint",
+        [chainId],
+        {},
+        debug,
+    );
     return {
         lptoken,
         crv,
@@ -274,6 +292,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
         balancerVault,
         bal,
         weth,
+        lzEndpoint,
         addresses: {
             token: crv.address,
             tokenBpt: crvBpt.address,
@@ -306,6 +325,7 @@ async function deployMocks(hre: HardhatRuntimeEnvironment, signer: Signer, debug
                 poolIds: [ZERO_KEY],
                 assetsIn: [feeToken.address],
             },
+            lzEndpoint: lzEndpoint.address,
         },
         namingConfig: {
             cvxName: "Convex Finance",
