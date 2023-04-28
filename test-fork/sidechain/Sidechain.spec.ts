@@ -71,7 +71,7 @@ describe("Sidechain", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            multisigs: { daoMultisig: dao.address },
+            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
             naming: { ...sidechainNaming },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
@@ -79,7 +79,6 @@ describe("Sidechain", () => {
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
-                pauseGaurdian: ZERO_ADDRESS,
             },
             bridging: {
                 l1Receiver: "0x0000000000000000000000000000000000000000",

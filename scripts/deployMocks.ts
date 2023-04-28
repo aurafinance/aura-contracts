@@ -112,6 +112,7 @@ async function getMockMultisigs(
         vestingMultisig: await vestingSigner.getAddress(),
         treasuryMultisig: await treasurySigner.getAddress(),
         daoMultisig: await daoSigner.getAddress(),
+        pauseGaurdian: await daoSigner.getAddress(),
     };
 }
 

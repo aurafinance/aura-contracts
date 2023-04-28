@@ -9,12 +9,10 @@ import { PauseGaurdian } from "./PauseGuardian.sol";
  */
 contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     constructor(
-        string memory _name,
-        string memory _symbol,
         address _lzEndpoint,
         address _token,
         address _gaurdian
-    ) ProxyOFT(_name, _symbol, _lzEndpoint, _token) PauseGaurdian(_gaurdian) {}
+    ) ProxyOFT(_lzEndpoint, _token) PauseGaurdian(_gaurdian) {}
 
     /**
      * @dev Override sendFrom to add pause modifier

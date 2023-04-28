@@ -86,14 +86,13 @@ describe("AuraBalOFT", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            multisigs: { daoMultisig: dao.address },
+            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
                 lzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
-                pauseGaurdian: dao.address,
             },
             naming: {
                 auraOftName: "Aura",

@@ -184,6 +184,7 @@ interface MultisigConfig {
     vestingMultisig: string;
     treasuryMultisig: string;
     daoMultisig: string;
+    pauseGaurdian: string;
 }
 
 interface BPTData {

@@ -30,8 +30,9 @@ contract AuraProxyOFT is PausableProxyOFT {
     constructor(
         address _lzEndpoint,
         address _token,
-        address _locker
-    ) ProxyOFT(_lzEndpoint, _token) {
+        address _locker,
+        address _gaurdian
+    ) PausableProxyOFT(_lzEndpoint, _token, _gaurdian) {
         locker = _locker;
 
         IERC20(_token).safeApprove(_locker, type(uint256).max);
