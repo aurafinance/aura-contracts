@@ -1,6 +1,9 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-
+import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
+import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -8,25 +11,30 @@ import {
     Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3__factory,
+    LZEndpointMock,
+    LZEndpointMock__factory,
 } from "../../types";
-import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
-import { SidechainConfig } from "../../tasks/deploy/sidechain-types";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
-import { Phase6Deployed } from "scripts/deploySystem";
+import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
+import { SidechainConfig } from "../../types/sidechain-types";
 
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
+    const L2_CHAIN_ID = 222;
 
     let deployer: Account;
     let dao: Account;
-
+    // phases
+    let phase2: Phase2Deployed;
+    let phase6: Phase6Deployed;
+    let vaultDeployment: AuraBalVaultDeployed;
+    // LayerZero endpoints
+    let l1LzEndpoint: LZEndpointMock;
+    let l2LzEndpoint: LZEndpointMock;
     let create2Factory: Create2Factory;
     let sidechain: SidechainDeployed;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
-    let phase6: Phase6Deployed;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -36,6 +44,13 @@ describe("Sidechain", () => {
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
+        phase2 = await mainnetConfig.getPhase2(deployer.signer);
+        phase6 = await mainnetConfig.getPhase6(deployer.signer);
+        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
+
+        // deploy layerzero mocks
+        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
+        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
 
         // deploy Create2Factory
         create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
@@ -44,35 +59,41 @@ describe("Sidechain", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            addresses: {
-                lzEndpoint: ZERO_ADDRESS,
-                daoMultisig: dao.address,
+            multisigs: { daoMultisig: dao.address },
+            naming: { ...sidechainNaming },
+            extConfig: {
+                canonicalChainId: L1_CHAIN_ID,
+                lzEndpoint: l2LzEndpoint.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
-            },
-            naming: {
-                auraOftName: "Aura",
-                auraOftSymbol: "AURA",
-                tokenFactoryNamePostfix: " Aura Deposit",
-                auraBalOftName: "Aura BAL",
-                auraBalOftSymbol: "auraBAL",
             },
             bridging: {
                 l1Receiver: "0x0000000000000000000000000000000000000000",
                 l2Sender: "0x0000000000000000000000000000000000000000",
                 nativeBridge: "0x0000000000000000000000000000000000000000",
             },
-            extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
+
+        // deploy canonicalPhase
+        const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
+        await deployCanonicalPhase(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            l1Addresses,
+            phase2,
+            phase6,
+            vaultDeployment,
+        );
 
         // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
-            sidechainConfig.naming,
-            sidechainConfig.addresses,
-            sidechainConfig.extConfig,
             deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
         );
 
         l2Coordinator = sidechain.l2Coordinator;
@@ -83,10 +104,10 @@ describe("Sidechain", () => {
 
     describe("Check configs", () => {
         it("VotingProxy has correct config", async () => {
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
-            expect(await sidechain.voterProxy.mintr()).eq(addresses.minter);
-            expect(await sidechain.voterProxy.crv()).eq(addresses.token);
+            expect(await sidechain.voterProxy.mintr()).eq(extConfig.minter);
+            expect(await sidechain.voterProxy.crv()).eq(extConfig.token);
             expect(await sidechain.voterProxy.rewardDeposit()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.withdrawer()).eq(ZERO_ADDRESS);
             expect(await sidechain.voterProxy.owner()).eq(dao.address);
@@ -95,7 +116,7 @@ describe("Sidechain", () => {
         it("AuraOFT has correct config", async () => {
             expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
-            expect(await auraOFT.lzEndpoint()).eq(ZERO_ADDRESS);
+            expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
         });
         it("L2Coordinator has correct config", async () => {
@@ -103,10 +124,10 @@ describe("Sidechain", () => {
             expect(await l2Coordinator.booster()).eq(sidechain.booster.address);
             expect(await l2Coordinator.auraOFT()).eq(auraOFT.address);
             expect(await l2Coordinator.mintRate()).eq(0);
-            expect(await l2Coordinator.lzEndpoint()).eq(ZERO_ADDRESS);
+            expect(await l2Coordinator.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
         });
         it("BoosterLite has correct config", async () => {
-            expect(await sidechain.booster.crv()).eq(sidechainConfig.addresses.token);
+            expect(await sidechain.booster.crv()).eq(sidechainConfig.extConfig.token);
 
             expect(await sidechain.booster.lockIncentive()).eq(550);
             expect(await sidechain.booster.stakerIncentive()).eq(1100);
@@ -146,10 +167,10 @@ describe("Sidechain", () => {
                 factories: { rewardFactory, stashFactory, tokenFactory, proxyFactory },
             } = sidechain;
 
-            const { addresses } = sidechainConfig;
+            const { extConfig } = sidechainConfig;
 
             expect(await rewardFactory.operator()).eq(booster.address);
-            expect(await rewardFactory.crv()).eq(addresses.token);
+            expect(await rewardFactory.crv()).eq(extConfig.token);
 
             expect(await stashFactory.operator()).eq(booster.address);
             expect(await stashFactory.rewardFactory()).eq(rewardFactory.address);
@@ -161,7 +182,7 @@ describe("Sidechain", () => {
                 await stashFactory.v3Implementation(),
                 deployer.signer,
             );
-            expect(await rewardsStashV3.crv()).eq(addresses.token);
+            expect(await rewardsStashV3.crv()).eq(extConfig.token);
 
             expect(await tokenFactory.operator()).eq(booster.address);
             expect(await tokenFactory.namePostfix()).eq(sidechainConfig.naming.tokenFactoryNamePostfix);
