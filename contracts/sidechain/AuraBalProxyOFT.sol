@@ -46,6 +46,9 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
     /// @dev srcChainId mapped to reward receiver
     mapping(uint16 => address) public rewardReceiver;
 
+    /// @dev Authorized harvesters
+    mapping(address => bool) public authorizedHarvesters;
+
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
