@@ -2,16 +2,19 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 
 /**
- * @title AuraProxyOFT
- * @dev Send and receive AURA to and from all the Sidechains and receives
- * 		lock requests from the sidechains
+ * @title   AuraProxyOFT
+ * @author  AuraFinance
+ * @dev     Send and receive AURA to and from all the Sidechains and receives
+ * 		    lock requests from the sidechains
  */
 contract AuraProxyOFT is ProxyOFT {
+    using SafeERC20 for IERC20;
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -30,7 +33,7 @@ contract AuraProxyOFT is ProxyOFT {
     ) ProxyOFT(_lzEndpoint, _token) {
         locker = _locker;
 
-        IERC20(_token).approve(_locker, type(uint256).max);
+        IERC20(_token).safeApprove(_locker, type(uint256).max);
     }
 
     /* -------------------------------------------------------------------

@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -10,12 +11,14 @@ import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
- * @title L1Coordinator
+ * @title   L1Coordinator
+ * @author  AuraFinance
  * @dev Tracks the amount of fee debt accrued by each sidechain and
  *      sends AURA back to each sidechain for rewards
  */
 contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     using AuraMath for uint256;
+    using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------
        Storage 
@@ -58,8 +61,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         auraToken = _auraToken;
         auraOFT = _auraOFT;
 
-        IERC20(_balToken).approve(_booster, type(uint256).max);
-        IERC20(_auraToken).approve(_auraOFT, type(uint256).max);
+        IERC20(_balToken).safeApprove(_booster, type(uint256).max);
+        IERC20(_auraToken).safeApprove(_auraOFT, type(uint256).max);
     }
 
     /* -------------------------------------------------------------------
@@ -74,6 +77,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         _setConfig(_srcChainId, _selector, _config);
     }
 
+    /**
+     * @dev Set bridge delegate for given srcChainId
+     * @param _srcChainId        ID of the source chain
+     * @param bridgeDelegate     Address of the bridge delegate
+     */
     function setBridgeDelegate(uint16 _srcChainId, address bridgeDelegate) external onlyOwner {
         bridgeDelegates[_srcChainId] = bridgeDelegate;
     }
@@ -162,7 +170,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
         feeDebt[_srcChainId] -= _amount;
 
-        IERC20(balToken).transferFrom(bridgeDelegate, address(this), _amount);
+        IERC20(balToken).safeTransferFrom(bridgeDelegate, address(this), _amount);
     }
 
     /* -------------------------------------------------------------------
@@ -171,6 +179,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /**
      * @dev Override the default OFT lzReceive function logic
+     * Called by the L2Coordinator.queueNewRewards to register feeDebt
      */
     function _nonblockingLzReceive(
         uint16 _srcChainId,
