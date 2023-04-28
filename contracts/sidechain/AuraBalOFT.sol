@@ -5,6 +5,7 @@ import { OFT } from "../layerzero/token/oft/OFT.sol";
 
 /**
  * @title AuraBalOFT
+ * @author AuraFinance
  * @dev Sidechain auraBAL
  */
 contract AuraBalOFT is OFT {

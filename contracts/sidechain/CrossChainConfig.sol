@@ -2,8 +2,9 @@
 pragma solidity 0.8.11;
 
 /**
- * @title Cross Chain Config
- * @dev Setter/Getter logic for cross chain layer zero config
+ * @title   Cross Chain Config
+ * @author  AuraFinance
+ * @dev     Setter/Getter logic for cross chain layer zero config
  */
 abstract contract CrossChainConfig {
     struct Config {
