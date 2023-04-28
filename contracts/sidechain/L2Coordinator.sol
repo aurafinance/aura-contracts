@@ -2,17 +2,20 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
- * @title L2Coordinator
- * @dev Coordinates LZ messages and actions from the L1 on the L2
+ * @title   L2Coordinator
+ * @author  AuraFinance
+ * @dev     Coordinates LZ messages and actions from the L1 on the L2
  */
 contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     using AuraMath for uint256;
+    using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------
        Storage 
@@ -84,7 +87,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     function mint(address _to, uint256 _amount) external {
         require(msg.sender == booster, "!booster");
         uint256 amount = (_amount * mintRate) / 1e18;
-        IERC20(auraOFT).transfer(_to, amount);
+        IERC20(auraOFT).safeTransfer(_to, amount);
     }
 
     /**
@@ -99,7 +102,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
         // Transfer reward token balance to bridge delegate
         uint256 balance = IERC20(balToken).balanceOf(address(this));
-        IERC20(balToken).transfer(bridgeDelegate, balance);
+        IERC20(balToken).safeTransfer(bridgeDelegate, balance);
 
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(_rewards);

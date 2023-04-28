@@ -4,8 +4,9 @@ pragma solidity 0.8.11;
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
 /**
- * @title BridgeDelegateSender
- * @dev Sends tokens to L1 via a bridge
+ * @title   BridgeDelegateSender
+ * @author  AuraFinance
+ * @dev     Sends tokens to L1 via a bridge
  */
 abstract contract BridgeDelegateSender is Ownable {
     /* -------------------------------------------------------------------
@@ -17,6 +18,11 @@ abstract contract BridgeDelegateSender is Ownable {
 
     address public l2Coordinator;
 
+    /**
+     * @dev Emitted when tokens are sent to a recipient.
+     * @param to The address of the recipient.
+     * @param amount The amount of tokens sent.
+     */
     event Send(address to, uint256 amount);
 
     /* -------------------------------------------------------------------

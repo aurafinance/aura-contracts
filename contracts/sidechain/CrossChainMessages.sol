@@ -2,8 +2,9 @@
 pragma solidity 0.8.11;
 
 /**
- * @title Cross Chain Messages
- * @dev Share types for cross chain messages
+ * @title   Cross Chain Messages
+ * @author  AuraFinance
+ * @dev     Share types for cross chain messages
  */
 library CrossChainMessages {
     /// @dev Magic Bytes to pad the custom message with
