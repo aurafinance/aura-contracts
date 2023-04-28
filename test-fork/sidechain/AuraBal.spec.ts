@@ -299,7 +299,7 @@ describe("AuraBalOFT", () => {
             );
 
             // call harvest
-            await canonical.auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100);
+            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
 
             const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
             const claimableAuraAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvx.address);
