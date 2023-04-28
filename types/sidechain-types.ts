@@ -1,14 +1,6 @@
 import { Signer } from "ethers";
 import { SidechainDeployed } from "scripts/deploySidechain";
 
-export interface SidechainAddresses {
-    lzEndpoint: string;
-    token: string;
-    daoMultisig: string;
-    minter: string;
-    create2Factory: string;
-}
-
 export interface SidechainNaming {
     auraOftName: string;
     auraOftSymbol: string;
@@ -18,7 +10,16 @@ export interface SidechainNaming {
 }
 
 export interface ExtSidechainConfig {
+    token: string;
+    minter: string;
     canonicalChainId: number;
+    lzEndpoint: string;
+    create2Factory: string;
+    gauge?: string;
+}
+
+export interface SidechainMultisigConfig {
+    daoMultisig: string;
 }
 
 export interface SidechainBridging {
@@ -28,8 +29,8 @@ export interface SidechainBridging {
 }
 
 export interface SidechainConfig {
-    chainId: number;
-    addresses: SidechainAddresses;
+    chainId: number,
+    multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;

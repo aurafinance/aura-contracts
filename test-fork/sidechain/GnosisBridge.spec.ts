@@ -4,7 +4,7 @@ import { BigNumberish } from "ethers";
 import { deployGnosisBridgeSender } from "../../scripts/deployBridgeDelegates";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
-import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import { impersonateAccount, simpleToExactAmount } from "../../test-utils";
 import { Account, ERC20, MockERC20__factory, GnosisBridgeSender } from "../../types";
 
 describe("GnosisBridge", () => {
@@ -56,13 +56,13 @@ describe("GnosisBridge", () => {
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
 
         // Deploy mocks
-        crv = MockERC20__factory.connect(gnosisConfig.addresses.token, deployer.signer);
+        crv = MockERC20__factory.connect(gnosisConfig.extConfig.token, deployer.signer);
 
         gnosisBridgeSender = await deployGnosisBridgeSender(
             hre,
             deployer.signer,
             gnosisConfig.bridging.nativeBridge,
-            gnosisConfig.addresses.token,
+            gnosisConfig.extConfig.token,
         );
     });
 
@@ -74,7 +74,7 @@ describe("GnosisBridge", () => {
             expect(await gnosisBridgeSender.l1Receiver()).eq(deployer.address);
             expect(await gnosisBridgeSender.l2Coordinator()).eq(gnosisConfig.bridging.l1Receiver);
             expect(await gnosisBridgeSender.bridge()).eq(gnosisConfig.bridging.nativeBridge);
-            expect(await gnosisBridgeSender.crv()).eq(gnosisConfig.addresses.token);
+            expect(await gnosisBridgeSender.crv()).eq(gnosisConfig.extConfig.token);
         });
     });
 

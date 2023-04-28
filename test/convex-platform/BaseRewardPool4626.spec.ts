@@ -268,7 +268,6 @@ describe("BaseRewardPool4626", () => {
             expect(await crvRewards.maxWithdraw(aliceAddress)).eq(rwdBalanceAfter);
             expect(await crvRewards.maxRedeem(aliceAddress)).eq(rwdBalanceAfter);
         });
-
         it("allows direct withdraws for alternate receiver", async () => {
             const amount = ethers.utils.parseEther("10");
             const alternateReceiverAddress = await alternateReceiver.getAddress();
