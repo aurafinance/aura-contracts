@@ -13,23 +13,21 @@ import {
     StashFactoryV2__factory,
     ExtraRewardStashV3__factory,
     PoolManagerLite__factory,
-    BoosterOwner__factory,
     AuraOFT__factory,
+    BoosterOwnerLite__factory,
 } from "../../types";
 import { getSigner } from "../utils";
-import { chainIds } from "../../hardhat.config";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     CanonicalPhaseDeployed,
     deployCanonicalPhase,
     deployCreate2Factory,
-    deploySidechainMocks,
     deploySidechainSystem,
     setTrustedRemoteCanonical,
     setTrustedRemoteSidechain,
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
-import { waitForTx } from "../../tasks/utils";
+import { waitForTx, chainIds } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 import {
     canonicalChains,
@@ -39,7 +37,7 @@ import {
     remoteChainMap,
     sideChains,
 } from "./sidechain-constants";
-
+import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 
@@ -63,8 +61,11 @@ task("deploy:sidechain:mocks")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-        const result = await deploySidechainMocks(hre, deployer, debug, tskArgs.wait);
-        logContracts(result as unknown as { [key: string]: { address: string } });
+        const result = await deploySidechainMocks(hre, deployer, 111, debug, tskArgs.wait);
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { addresses, namingConfig, ...contracts } = result;
+        logContracts(contracts as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L1")
@@ -82,11 +83,12 @@ task("deploy:sidechain:L1")
 
         const result = await deployCanonicalPhase(
             hre,
+            deployer,
+            config.multisigs,
             config.addresses,
             phase2,
             phase6,
             vaultDeployment,
-            deployer,
             debug,
             tskArgs.wait,
         );
@@ -97,17 +99,16 @@ task("deploy:sidechain:L2")
     .addParam("wait", "wait for blocks")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-
         const config = sidechainConfigs[hre.network.config.chainId];
 
         assert(config, `Config for chain ID ${hre.network.config.chainId} not found`);
 
         const result = await deploySidechainSystem(
             hre,
-            config.naming,
-            config.addresses,
-            config.extConfig,
             deployer,
+            config.naming,
+            config.multisigs,
+            config.extConfig,
             debug,
             tskArgs.wait,
         );
@@ -200,42 +201,40 @@ task("sidechain:addresses")
     .addOptionalParam("chainId", "The chain ID, default arbitrumGoerli")
     .setAction(async function (_: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-
         const configs = {
             [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
         };
-
         const config = configs[hre.network.config.chainId];
 
         if (!config) {
             throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
         }
 
-        const { addresses, extConfig, naming } = arbitrumGoerliConfig;
+        const { extConfig, naming, multisigs } = arbitrumGoerliConfig;
 
         const voterProxyAddress = await computeCreate2Address<VoterProxyLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new VoterProxyLite__factory(deployer),
             "VoterProxyLite",
             [],
         );
 
         const auraOFTAddress = await computeCreate2Address<AuraOFT__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new AuraOFT__factory(deployer),
             "AuraOFT",
-            [naming.auraOftName, naming.auraOftSymbol, addresses.lzEndpoint, extConfig.canonicalChainId],
+            [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
         );
 
         const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new L2Coordinator__factory(deployer),
             "L2Coordinator",
-            [addresses.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
+            [extConfig.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
         );
 
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new BoosterLite__factory(deployer),
             "BoosterLite",
             [voterProxyAddress],
@@ -243,21 +242,21 @@ task("sidechain:addresses")
 
         // Not a constant address
         const rewardFactoryAddress = await computeCreate2Address<RewardFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new RewardFactory__factory(deployer),
             "RewardFactory",
-            [boosterAddress, addresses.token],
+            [boosterAddress, extConfig.token],
         );
 
         const tokenFactoryAddress = await computeCreate2Address<TokenFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new TokenFactory__factory(deployer),
             "TokenFactory",
             [boosterAddress, naming.tokenFactoryNamePostfix, naming.auraOftName.toLowerCase()],
         );
 
         const proxyFactoryAddress = await computeCreate2Address<ProxyFactory__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new ProxyFactory__factory(deployer),
             "ProxyFactory",
             [],
@@ -265,7 +264,7 @@ task("sidechain:addresses")
 
         // Not a constant address
         const stashFactoryAddress = await computeCreate2Address<StashFactoryV2__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new StashFactoryV2__factory(deployer),
             "StashFactory",
             [boosterAddress, rewardFactoryAddress, proxyFactoryAddress],
@@ -273,25 +272,25 @@ task("sidechain:addresses")
 
         // Not a constant address
         const stashV3Address = await computeCreate2Address<ExtraRewardStashV3__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new ExtraRewardStashV3__factory(deployer),
             "ExtraRewardStashV3",
-            [addresses.token],
+            [extConfig.token],
         );
 
         const poolManagerAddress = await computeCreate2Address<PoolManagerLite__factory>(
-            addresses.create2Factory,
+            extConfig.create2Factory,
             new PoolManagerLite__factory(deployer),
             "PoolManagerLite",
             [boosterAddress],
         );
 
         // Not a constant address
-        const boosterOwnerAddress = await computeCreate2Address<BoosterOwner__factory>(
-            addresses.create2Factory,
-            new BoosterOwner__factory(deployer),
-            "BoosterOwner",
-            [addresses.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
+        const boosterOwnerAddress = await computeCreate2Address<BoosterOwnerLite__factory>(
+            extConfig.create2Factory,
+            new BoosterOwnerLite__factory(deployer),
+            "BoosterOwnerLite",
+            [multisigs.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
         );
 
         const deployed = {

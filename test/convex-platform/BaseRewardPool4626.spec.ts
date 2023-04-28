@@ -97,13 +97,6 @@ describe("BaseRewardPool4626", () => {
             expect(await crvRewards.name()).eq(`${await auraBPT.name()} Vault`);
             expect(await crvRewards.symbol()).eq(`${await auraBPT.symbol()}-vault`);
         });
-        it("does not support transfer or transferFrom", async () => {
-            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
-            await expect(crvRewards.transfer(deployerAddress, 1)).to.be.revertedWith("ERC4626: Not supported");
-            await expect(crvRewards.transferFrom(deployerAddress, deployerAddress, 1)).to.be.revertedWith(
-                "ERC4626: Not supported",
-            );
-        });
         it("does support approval and allowances", async () => {
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const tx = await crvRewards.approve(deployerAddress, 1);
@@ -268,7 +261,39 @@ describe("BaseRewardPool4626", () => {
             expect(await crvRewards.maxWithdraw(aliceAddress)).eq(rwdBalanceAfter);
             expect(await crvRewards.maxRedeem(aliceAddress)).eq(rwdBalanceAfter);
         });
+        it("allows transferFrom between accounts", async () => {
+            // TODO - add checks for VirtualRewardPool
+            const alternateReceiverAddress = await alternateReceiver.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alternateReceiver);
+            const aliceBalanceBefore = await crvRewards.balanceOf(aliceAddress);
+            const alternateReceiverBalanceBefore = await crvRewards.balanceOf(alternateReceiverAddress);
+            const amount = alternateReceiverBalanceBefore.div(4);
 
+            // Alternate approves deployer to transfer tokens
+            await crvRewards.approve(deployerAddress, amount);
+            await crvRewards.connect(deployer).transferFrom(alternateReceiverAddress, aliceAddress, amount);
+            const aliceBalanceAfter = await crvRewards.balanceOf(aliceAddress);
+            const alternateReceiverBalanceAfter = await crvRewards.balanceOf(alternateReceiverAddress);
+
+            expect(aliceBalanceAfter.sub(aliceBalanceBefore)).eq(amount);
+            expect(alternateReceiverBalanceBefore.sub(alternateReceiverBalanceAfter)).eq(amount);
+        });
+        it("allows transfer between accounts", async () => {
+            const alternateReceiverAddress = await alternateReceiver.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+            const aliceBalanceBefore = await crvRewards.balanceOf(aliceAddress);
+            const alternateReceiverBalanceBefore = await crvRewards.balanceOf(alternateReceiverAddress);
+            const amount = aliceBalanceBefore;
+
+            // Alice transfer to alternate receiver
+            await crvRewards.transfer(alternateReceiverAddress, amount);
+
+            const aliceBalanceAfter = await crvRewards.balanceOf(aliceAddress);
+            const alternateReceiverBalanceAfter = await crvRewards.balanceOf(alternateReceiverAddress);
+
+            expect(aliceBalanceBefore.sub(aliceBalanceAfter)).eq(amount);
+            expect(alternateReceiverBalanceAfter.sub(alternateReceiverBalanceBefore)).eq(amount);
+        });
         it("allows direct withdraws for alternate receiver", async () => {
             const amount = ethers.utils.parseEther("10");
             const alternateReceiverAddress = await alternateReceiver.getAddress();

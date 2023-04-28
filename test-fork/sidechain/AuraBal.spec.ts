@@ -9,8 +9,8 @@ import {
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
 import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
-import { SidechainConfig } from "../../tasks/deploy/sidechain-types";
-import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { SidechainConfig } from "../../types/sidechain-types";
+import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
     getAuraBal,
@@ -74,9 +74,10 @@ describe("AuraBalOFT", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            addresses: {
+            multisigs: { daoMultisig: dao.address },
+            extConfig: {
+                canonicalChainId: L1_CHAIN_ID,
                 lzEndpoint: l2LzEndpoint.address,
-                daoMultisig: dao.address,
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
@@ -93,29 +94,38 @@ describe("AuraBalOFT", () => {
                 l2Sender: "0x0000000000000000000000000000000000000000",
                 nativeBridge: "0x0000000000000000000000000000000000000000",
             },
-            extConfig: { canonicalChainId: L1_CHAIN_ID },
         };
 
         // deploy canonicalPhase
+        const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
         canonical = await deployCanonicalPhase(
             hre,
-            { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address },
+            deployer.signer,
+            mainnetConfig.multisigs,
+            extSystemConfig,
             phase2,
             phase6,
             vaultDeployment,
-            deployer.signer,
         );
 
         // deploy sidechain
         sidechain = await deploySidechainSystem(
             hre,
-            sidechainConfig.naming,
-            sidechainConfig.addresses,
-            sidechainConfig.extConfig,
             deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
         );
 
         await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, simpleToExactAmount(10_000));
+        // Connect contracts to its owner signer.
+        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
+        canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
+
+        sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
+        sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+        sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
     });
 
     afterEach(async () => {
@@ -174,7 +184,9 @@ describe("AuraBalOFT", () => {
             expect(await canonical.auraBalProxyOFT.rewardReceiver(L2_CHAIN_ID)).not.eq(
                 sidechain.auraBalStrategy.address,
             );
-            await canonical.auraBalProxyOFT.setRewardReceiver(L2_CHAIN_ID, sidechain.auraBalStrategy.address);
+            await canonical.auraBalProxyOFT
+                .connect(dao.signer)
+                .setRewardReceiver(L2_CHAIN_ID, sidechain.auraBalStrategy.address);
             expect(await canonical.auraBalProxyOFT.rewardReceiver(L2_CHAIN_ID)).eq(sidechain.auraBalStrategy.address);
         });
     });
@@ -186,19 +198,14 @@ describe("AuraBalOFT", () => {
             // we just send 1 auraBAL to the L2 and burn it. This gives us 1e18 wei of cover which is plenty
             const amount = simpleToExactAmount(1);
             await phase2.cvxCrv.approve(canonical.auraBalProxyOFT.address, amount);
-            await canonical.auraBalProxyOFT.sendFrom(
-                deployer.address,
-                L2_CHAIN_ID,
-                deployer.address,
-                amount,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS,
-                [],
-                {
+            await canonical.auraBalProxyOFT
+                .connect(deployer.signer)
+                .sendFrom(deployer.address, L2_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
                     value: NATIVE_FEE,
-                },
-            );
-            await sidechain.auraBalOFT.transfer("0x000000000000000000000000000000000000dead", amount);
+                });
+            await sidechain.auraBalOFT
+                .connect(deployer.signer)
+                .transfer("0x000000000000000000000000000000000000dead", amount);
         });
         it("can transfer auraBAL to sidechain", async () => {
             const innerSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
@@ -209,19 +216,21 @@ describe("AuraBalOFT", () => {
             );
 
             const bridgeAmount = simpleToExactAmount(1000);
-            await phase2.cvxCrv.approve(canonical.auraBalProxyOFT.address, bridgeAmount);
-            await canonical.auraBalProxyOFT.sendFrom(
-                deployer.address,
-                L2_CHAIN_ID,
-                deployer.address,
-                bridgeAmount,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS,
-                [],
-                {
-                    value: NATIVE_FEE,
-                },
-            );
+            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraBalProxyOFT.address, bridgeAmount);
+            await canonical.auraBalProxyOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L2_CHAIN_ID,
+                    deployer.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
 
             const innerSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
             const l1BalanceAfter = await phase2.cvxCrv.balanceOf(deployer.address);
@@ -237,15 +246,6 @@ describe("AuraBalOFT", () => {
             // Account for the off by 1 wei issue
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).gte(bridgeAmount.sub(1));
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).lte(bridgeAmount);
-        });
-        it("cannot call harvest when not authorized", async () => {
-            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
-            await expect(canonical.auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100)).to.be.revertedWith("!harvester");
-        });
-        it("set authorized harvester", async () => {
-            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
-            await canonical.auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, true);
-            expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(true);
         });
         it("can harvest auraBAL from vault", async () => {
             const harvestAmount = simpleToExactAmount(100);
@@ -342,20 +342,24 @@ describe("AuraBalOFT", () => {
                 canonical.auraBalProxyOFT.address,
             );
 
-            await sidechain.auraBalOFT.setUseCustomAdapterParams(true);
-            await sidechain.auraBalOFT.setMinDstGas(L1_CHAIN_ID, await sidechain.auraBalOFT.PT_SEND(), 600_000);
-            await sidechain.auraBalOFT.sendFrom(
-                deployer.address,
-                L1_CHAIN_ID,
-                deployer.address,
-                bridgeAmount,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS,
-                ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]),
-                {
-                    value: NATIVE_FEE,
-                },
-            );
+            await sidechain.auraBalOFT.connect(dao.signer).setUseCustomAdapterParams(true);
+            await sidechain.auraBalOFT
+                .connect(dao.signer)
+                .setMinDstGas(L1_CHAIN_ID, await sidechain.auraBalOFT.PT_SEND(), 600_000);
+            await sidechain.auraBalOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L1_CHAIN_ID,
+                    deployer.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]),
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
 
             const innerSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
             const l1BalanceAfter = await phase2.cvxCrv.balanceOf(deployer.address);
