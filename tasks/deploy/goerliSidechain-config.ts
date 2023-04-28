@@ -66,7 +66,7 @@ export const getSidechain = (signer: Signer) => ({
 });
 
 export const config: SidechainConfig = {
-    chainId: chainIds.arbitrumGoerli,
+    chainId: chainIds.goerli,
     multisigs,
     naming: sidechainNaming,
     extConfig,

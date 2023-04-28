@@ -39,7 +39,7 @@ import {
 } from "./sidechain-constants";
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
-import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
+import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 
 const debug = true;
 
@@ -202,7 +202,7 @@ task("sidechain:addresses")
     .setAction(async function (_: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const configs = {
-            [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
+            [chainIds.goerli]: goerliSidechainConfig,
         };
         const config = configs[hre.network.config.chainId];
 
@@ -210,7 +210,7 @@ task("sidechain:addresses")
             throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
         }
 
-        const { extConfig, naming, multisigs } = arbitrumGoerliConfig;
+        const { extConfig, naming, multisigs } = config;
 
         const voterProxyAddress = await computeCreate2Address<VoterProxyLite__factory>(
             extConfig.create2Factory,

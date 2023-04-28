@@ -1,4 +1,4 @@
-import { BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
+import { BigNumber, BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import {
     RewardPoolDepositWrapper,
     ExtraRewardsDistributor,
@@ -168,6 +168,10 @@ interface ExtSystemConfig {
     sushiswapRouter?: string;
     auraBalGauge?: string;
     lzEndpoint?: string;
+    sidechain?: {
+        auraBalInflowLimit: BigNumber;
+        auraInflowLimit: BigNumber;
+    };
 }
 
 interface NamingConfig {

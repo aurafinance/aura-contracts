@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
+import { formatEther } from "ethers/lib/utils";
 import {
     CanonicalPhaseDeployed,
     deployCanonicalPhase,
@@ -22,7 +23,6 @@ import {
     ONE_WEEK,
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
-import { formatEther } from "ethers/lib/utils";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 

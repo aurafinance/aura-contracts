@@ -62,8 +62,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         address _lzEndpoint,
         address _token,
         address _vault,
-        address _gaurdian
-    ) PausableProxyOFT(_lzEndpoint, _token, _gaurdian) {
+        address _gaurdian,
+        uint256 _inflowLimit
+    ) PausableProxyOFT(_lzEndpoint, _token, _gaurdian, _inflowLimit) {
         vault = _vault;
 
         IERC20(_token).safeApprove(_vault, type(uint256).max);
