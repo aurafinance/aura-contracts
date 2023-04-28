@@ -157,6 +157,7 @@ describe("Sidechain", () => {
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
+                pauseGaurdian: dao.address,
             },
             bridging: {
                 l1Receiver: "0x0000000000000000000000000000000000000000",

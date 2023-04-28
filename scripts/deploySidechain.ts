@@ -232,7 +232,13 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
+        [
+            naming.auraOftName,
+            naming.auraOftSymbol,
+            extConfig.lzEndpoint,
+            extConfig.pauseGaurdian,
+            extConfig.canonicalChainId,
+        ],
         deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
 
@@ -337,7 +343,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraBalOFT__factory(deployer),
         "AuraBalOFT",
-        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint],
+        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint, extConfig.pauseGaurdian],
         deployOptionsWithCallbacks([auraBalOFTTransferOwnership]),
     );
 

@@ -7,6 +7,7 @@ import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
+import { PausableProxyOFT } from "./PausableProxyOFT.sol";
 import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
 
 /**
@@ -16,7 +17,7 @@ import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
  *        all auraBAL sat in this bridge will be staked in the auraBAL
  *        compounder and rewards distributed to the L2 staking contracts
  */
-contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
+contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     using SafeERC20 for IERC20;
     /* -------------------------------------------------------------------
        Types 

@@ -93,6 +93,7 @@ describe("AuraBalOFT", () => {
                 create2Factory: create2Factory.address,
                 token: mainnetConfig.addresses.token,
                 minter: mainnetConfig.addresses.minter,
+                pauseGaurdian: dao.address,
             },
             naming: {
                 auraOftName: "Aura",

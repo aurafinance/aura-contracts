@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
-import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
+import { PausableProxyOFT } from "./PausableProxyOFT.sol";
 
 /**
  * @title   AuraProxyOFT
@@ -13,8 +13,9 @@ import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
  * @dev     Send and receive AURA to and from all the Sidechains and receives
  * 		    lock requests from the sidechains
  */
-contract AuraProxyOFT is ProxyOFT {
+contract AuraProxyOFT is PausableProxyOFT {
     using SafeERC20 for IERC20;
+
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
