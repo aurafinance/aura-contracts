@@ -11,23 +11,23 @@ contract PauseGaurdian is Pausable {
        Storage 
     ------------------------------------------------------------------- */
 
-    address public immutable gaurdian;
+    address public immutable guardian;
 
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
 
-    constructor(address _gaurdian) {
-        require(_gaurdian != address(0), "gaurdian=0");
-        gaurdian = _gaurdian;
+    constructor(address _guardian) {
+        require(_guardian != address(0), "guardian=0");
+        guardian = _guardian;
     }
 
     /* -------------------------------------------------------------------
        Modifiers 
     ------------------------------------------------------------------- */
 
-    modifier onlyGaurdian() {
-        require(msg.sender == gaurdian, "!gaurdian");
+    modifier onlyGuardian() {
+        require(msg.sender == guardian, "!guardian");
         _;
     }
 
@@ -35,11 +35,11 @@ contract PauseGaurdian is Pausable {
        Core 
     ------------------------------------------------------------------- */
 
-    function pause() external onlyGaurdian {
+    function pause() external onlyGuardian {
         _pause();
     }
 
-    function unpause() external onlyGaurdian {
+    function unpause() external onlyGuardian {
         _unpause();
     }
 }

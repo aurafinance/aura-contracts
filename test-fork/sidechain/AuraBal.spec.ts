@@ -21,8 +21,11 @@ import {
     ZERO_ADDRESS,
     increaseTime,
     ONE_WEEK,
+    getTimestamp,
+    increaseTimeTo,
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
+import { BigNumber, BigNumberish } from "ethers";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -144,7 +147,7 @@ describe("AuraBalOFT", () => {
         const totalSupply = await canonical.auraBalProxyOFT.internalTotalSupply();
         const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
         // sub 1 to account for the 1 wei rounding issue
-        expect(underlying).gte(totalSupply.sub(1));
+        expect(underlying).gte(totalSupply.sub(simpleToExactAmount(1)));
     });
 
     describe("Protocol DAO setup", () => {
@@ -400,16 +403,226 @@ describe("AuraBalOFT", () => {
     });
 
     describe("Pausing and queue", () => {
-        it("Transfer L1 -> L2 updates outflow");
-        it("Transfer L2 -> L1 updates inflow");
-        it("Can pause transfers");
-        it("Can unpause transfers");
-        it("Can set inflow limit");
-        it("Can set queue delay");
-        it("Sending more than inflow limit gets queued");
-        it("Queued transfer can NOT be processed when paused");
-        it("Queued transfer can NOT be processed with bad root");
-        it("Queued transfer can NOT be processed before delay expires");
-        it("Queued transfer can be processed");
+        let queued: [BigNumber, BigNumber, string, BigNumber, BigNumber];
+
+        it("Transfer L1 -> L2 updates outflow", async () => {
+            const epoch = await canonical.auraBalProxyOFT.getCurrentEpoch();
+            const outflowBefore = await canonical.auraBalProxyOFT.outflow(epoch);
+            const inflowBefore = await canonical.auraBalProxyOFT.inflow(epoch);
+
+            const amount = simpleToExactAmount(1);
+            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraBalProxyOFT.address, amount);
+            await canonical.auraBalProxyOFT
+                .connect(deployer.signer)
+                .sendFrom(deployer.address, L2_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                    value: NATIVE_FEE,
+                });
+
+            const outflowAfter = await canonical.auraBalProxyOFT.outflow(epoch);
+            const inflowAfter = await canonical.auraBalProxyOFT.inflow(epoch);
+            expect(outflowAfter.sub(outflowBefore)).eq(amount);
+            expect(inflowBefore).eq(inflowAfter);
+        });
+        it("Transfer L2 -> L1 updates inflow", async () => {
+            const epoch = await canonical.auraBalProxyOFT.getCurrentEpoch();
+            const outflowBefore = await canonical.auraBalProxyOFT.outflow(epoch);
+            const inflowBefore = await canonical.auraBalProxyOFT.inflow(epoch);
+
+            const amount = simpleToExactAmount(1);
+            await sidechain.auraBalOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L1_CHAIN_ID,
+                    deployer.address,
+                    amount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]),
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
+
+            const outflowAfter = await canonical.auraBalProxyOFT.outflow(epoch);
+            const inflowAfter = await canonical.auraBalProxyOFT.inflow(epoch);
+            expect(inflowAfter.sub(inflowBefore)).eq(amount);
+            expect(outflowBefore).eq(outflowAfter);
+        });
+        it("Can pause auraBalProxyOFT transfers", async () => {
+            expect(await canonical.auraBalProxyOFT.paused()).eq(false);
+            await canonical.auraBalProxyOFT.connect(dao.signer).pause();
+            expect(await canonical.auraBalProxyOFT.paused()).eq(true);
+
+            const amount = simpleToExactAmount(1);
+            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraBalProxyOFT.address, amount);
+            await expect(
+                canonical.auraBalProxyOFT
+                    .connect(deployer.signer)
+                    .sendFrom(deployer.address, L2_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                        value: NATIVE_FEE,
+                    }),
+            ).to.be.revertedWith("Pausable: paused");
+        });
+        it("Can pause auraProxyOFT transfers", async () => {
+            expect(await canonical.auraProxyOFT.paused()).eq(false);
+            await canonical.auraProxyOFT.connect(dao.signer).pause();
+            expect(await canonical.auraProxyOFT.paused()).eq(true);
+
+            const amount = simpleToExactAmount(1);
+            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraProxyOFT.address, amount);
+            await expect(
+                canonical.auraProxyOFT
+                    .connect(deployer.signer)
+                    .sendFrom(deployer.address, L2_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                        value: NATIVE_FEE,
+                    }),
+            ).to.be.revertedWith("Pausable: paused");
+        });
+        it("Can pause auraOFT transfers", async () => {
+            expect(await sidechain.auraOFT.paused()).eq(false);
+            await sidechain.auraOFT.connect(dao.signer).pause();
+            expect(await sidechain.auraOFT.paused()).eq(true);
+
+            const amount = simpleToExactAmount(1);
+            await phase2.cvxCrv.connect(deployer.signer).approve(sidechain.auraOFT.address, amount);
+            await expect(
+                sidechain.auraOFT
+                    .connect(deployer.signer)
+                    .sendFrom(deployer.address, L1_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                        value: NATIVE_FEE,
+                    }),
+            ).to.be.revertedWith("Pausable: paused");
+        });
+        it("Can pause auraBalOFT transfers", async () => {
+            expect(await sidechain.auraBalOFT.paused()).eq(false);
+            await sidechain.auraBalOFT.connect(dao.signer).pause();
+            expect(await sidechain.auraBalOFT.paused()).eq(true);
+
+            const amount = simpleToExactAmount(1);
+            await phase2.cvxCrv.connect(deployer.signer).approve(sidechain.auraBalOFT.address, amount);
+            await expect(
+                sidechain.auraBalOFT
+                    .connect(deployer.signer)
+                    .sendFrom(deployer.address, L1_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                        value: NATIVE_FEE,
+                    }),
+            ).to.be.revertedWith("Pausable: paused");
+        });
+        it("Can unpause transfers", async () => {
+            await canonical.auraProxyOFT.connect(dao.signer).unpause();
+            expect(await canonical.auraProxyOFT.paused()).eq(false);
+
+            await canonical.auraBalProxyOFT.connect(dao.signer).unpause();
+            expect(await canonical.auraBalProxyOFT.paused()).eq(false);
+
+            await sidechain.auraOFT.connect(dao.signer).unpause();
+            expect(await sidechain.auraOFT.paused()).eq(false);
+
+            await sidechain.auraBalOFT.connect(dao.signer).unpause();
+            expect(await sidechain.auraBalOFT.paused()).eq(false);
+        });
+        it("Can set inflow limit", async () => {
+            const limit = simpleToExactAmount(1000);
+
+            await canonical.auraProxyOFT.connect(dao.signer).setInflowLimit(limit);
+            expect(await canonical.auraProxyOFT.inflowLimit()).eq(limit);
+
+            await canonical.auraBalProxyOFT.connect(dao.signer).setInflowLimit(limit);
+            expect(await canonical.auraBalProxyOFT.inflowLimit()).eq(limit);
+        });
+        it("Can set queue delay", async () => {
+            const delay = ONE_WEEK.mul(4);
+
+            await canonical.auraProxyOFT.connect(dao.signer).setQueueDelay(delay);
+            expect(await canonical.auraProxyOFT.queueDelay()).eq(delay);
+
+            await canonical.auraBalProxyOFT.connect(dao.signer).setQueueDelay(delay);
+            expect(await canonical.auraBalProxyOFT.queueDelay()).eq(delay);
+        });
+        it("Sending more than inflow limit gets queued", async () => {
+            const overLimitAmount = (await canonical.auraBalProxyOFT.inflowLimit()).add(1);
+            await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, overLimitAmount);
+
+            const amount = overLimitAmount;
+
+            // Send auraBAL to the L2
+            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraBalProxyOFT.address, amount);
+            await canonical.auraBalProxyOFT
+                .connect(deployer.signer)
+                .sendFrom(deployer.address, L2_CHAIN_ID, deployer.address, amount, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                    value: NATIVE_FEE,
+                });
+
+            // Increase time to zero out this epochs outflow
+            await increaseTime((await canonical.auraBalProxyOFT.epochDuration()).add(1));
+            const epoch = await canonical.auraBalProxyOFT.getCurrentEpoch();
+            expect(await canonical.auraBalProxyOFT.outflow(epoch)).eq(0);
+
+            // Send auraBAL to the L1
+            const l1BalanceBefore = await phase2.cvxCrv.balanceOf(deployer.address);
+            const ts = (await getTimestamp()).add(1_000);
+            await ethers.provider.send("evm_setNextBlockTimestamp", [ts.toNumber()]);
+
+            await sidechain.auraBalOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L1_CHAIN_ID,
+                    deployer.address,
+                    amount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]),
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
+
+            queued = [epoch, BigNumber.from(L2_CHAIN_ID), deployer.address, amount, ts];
+            const root = ethers.utils.keccak256(
+                ethers.utils.defaultAbiCoder.encode(["uint256", "uint16", "address", "uint256", "uint256"], queued),
+            );
+
+            // Check that the root is now valid
+            expect(await canonical.auraBalProxyOFT.queue(root)).eq(true);
+
+            // Check that no auraBAL has been transfered and the transfer has been queued
+            const l1BalanceAfter = await phase2.cvxCrv.balanceOf(deployer.address);
+            expect(l1BalanceBefore).eq(l1BalanceAfter);
+        });
+        it("Queued transfer can NOT be processed when paused", async () => {
+            await canonical.auraBalProxyOFT.connect(dao.signer).pause();
+            expect(await canonical.auraBalProxyOFT.paused()).eq(true);
+
+            await expect(canonical.auraBalProxyOFT.processQueued(...queued)).to.be.revertedWith("Pausable: paused");
+
+            await canonical.auraBalProxyOFT.connect(dao.signer).unpause();
+            expect(await canonical.auraBalProxyOFT.paused()).eq(false);
+        });
+        it("Queued transfer can NOT be processed with bad root", async () => {
+            const queuedCopy: [BigNumber, BigNumber, string, BigNumber, BigNumber] = [...queued];
+            queuedCopy[0] = (queuedCopy[0] as BigNumber).add(1);
+            await expect(canonical.auraBalProxyOFT.processQueued(...queuedCopy)).to.be.revertedWith("!root");
+        });
+        it("Queued transfer can NOT be processed before delay expires", async () => {
+            await expect(canonical.auraBalProxyOFT.processQueued(...queued)).to.be.revertedWith("!timestamp");
+        });
+        it("Queued transfer can be processed", async () => {
+            const ts = queued[4];
+            const amount = queued[3];
+            const delay = ts.add(await canonical.auraBalProxyOFT.queueDelay()).add(1);
+            await increaseTimeTo(delay);
+
+            const balanceBefore = await phase2.cvxCrv.balanceOf(deployer.address);
+            await canonical.auraBalProxyOFT.processQueued(...queued);
+            const balanceAfter = await phase2.cvxCrv.balanceOf(deployer.address);
+            expect(balanceAfter.sub(balanceBefore)).eq(amount);
+
+            const root = ethers.utils.keccak256(
+                ethers.utils.defaultAbiCoder.encode(["uint256", "uint16", "address", "uint256", "uint256"], queued),
+            );
+            expect(await canonical.auraBalProxyOFT.queue(root)).eq(false);
+        });
     });
 });

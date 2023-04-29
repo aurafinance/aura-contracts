@@ -6,6 +6,8 @@ import { PauseGaurdian } from "./PauseGuardian.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 import { BytesLib } from "../layerzero/util/BytesLib.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title PausableProxyOFT
  */
@@ -55,15 +57,15 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     /**
      * @param _lzEndpoint   Layer Zero endpoint contract
      * @param _token        Proxy token (eg AURA or auraBAL)
-     * @param _gaurdian     The pause gaurdian address
+     * @param _guardian     The pause guardian address
      * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
         address _lzEndpoint,
         address _token,
-        address _gaurdian,
+        address _guardian,
         uint256 _inflowLimit
-    ) ProxyOFT(_lzEndpoint, _token) PauseGaurdian(_gaurdian) {
+    ) ProxyOFT(_lzEndpoint, _token) PauseGaurdian(_guardian) {
         inflowLimit = _inflowLimit;
         queueDelay = 7 days;
     }
@@ -87,6 +89,17 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      */
     function setInflowLimit(uint256 _limit) external onlyOwner {
         inflowLimit = _limit;
+    }
+
+    /* -------------------------------------------------------------------
+       View 
+    ------------------------------------------------------------------- */
+
+    /**
+     * @dev Get current epoch
+     */
+    function getCurrentEpoch() external view returns (uint256) {
+        return _getCurrentEpoch();
     }
 
     /* -------------------------------------------------------------------
@@ -163,8 +176,9 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     ) external whenNotPaused {
         bytes32 queueRoot = keccak256(abi.encode(_epoch, _srcChainId, _to, _amount, _timestamp));
         require(queue[queueRoot], "!root");
-        require(_timestamp.add(queueDelay) < block.timestamp, "!timestamp");
+        require(block.timestamp > _timestamp.add(queueDelay), "!timestamp");
         // Process the queued send
+        queue[queueRoot] = false;
         uint256 amount = _creditTo(_srcChainId, _to, _amount);
         emit ReceiveFromChain(_srcChainId, _to, _amount);
     }

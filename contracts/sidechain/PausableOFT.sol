@@ -5,7 +5,7 @@ import { OFT } from "../layerzero/token/oft/OFT.sol";
 import { PauseGaurdian } from "./PauseGuardian.sol";
 
 /**
- * @title AuraOFT
+ * @title PausableOFT
  * @dev Sidechain AURA
  */
 contract PausableOFT is OFT, PauseGaurdian {
