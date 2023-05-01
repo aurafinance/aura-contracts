@@ -271,7 +271,6 @@ describe("Sidechain", () => {
         it("add trusted remotes to layerzero endpoints", async () => {
             const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             // L1 Stuff
-            //await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
             await canonical.l1Coordinator
                 .connect(owner.signer)
                 .setTrustedRemote(
@@ -306,7 +305,6 @@ describe("Sidechain", () => {
             await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
 
             // L2 Stuff
-            //await setTrustedRemoteSidechain(canonical, sidechain, L1_CHAIN_ID);
 
             await sidechain.l2Coordinator
                 .connect(owner.signer)
@@ -468,7 +466,7 @@ describe("Sidechain", () => {
         });
         it("allows earmarking of rewards", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
-            const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
+            const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, dao.signer);
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const balanceBefore = await crv.balanceOf(crvRewards.address);
             await increaseTime(ONE_DAY);
@@ -484,22 +482,50 @@ describe("Sidechain", () => {
             const balanceAfter = await crv.balanceOf(aliceAddress);
             expect(balanceAfter).gt(balanceBefore);
         });
+        it("Can send a payload to set the mint rate", async () => {
+            const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
+            console.log(endpoint.address);
+            const payload = ethers.utils.solidityPack(
+                ["bytes4", "uint8", "uint256", "uint256"],
+                ["0x7a7f9946", "1", (1e18).toString(), (1e18).toString()],
+            );
+            await sidechain.l2Coordinator
+                .connect(endpoint.signer)
+                .lzReceive(L1_CHAIN_ID, canonical.l1Coordinator.address, 0, payload);
+            console.log(sidechain.l2Coordinator.mintRate());
+        });
         it("allows users to earn $BAl and $AURA", async () => {
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const poolInfo = await sidechain.booster.poolInfo(0);
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, alice);
-            //const cvxBalanceBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
+            const cvxBalanceBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
             const crvBalanceBefore = await crv.balanceOf(aliceAddress);
+
+            //forward time and harvest
+            for (let i = 0; i < 7; i++) {
+                await increaseTime(ONE_DAY);
+                await increaseTime(ONE_DAY);
+                await sidechain.booster.connect(dao.signer).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
+            }
+
             const earned = await rewards.earned(aliceAddress);
             await rewards["getReward(address,bool)"](aliceAddress, true);
-            //const cvxBalanceAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
+            const cvxBalanceAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
             const crvBalanceAfter = await crv.balanceOf(aliceAddress);
 
+            //console.log(await sidechain.booster.minter())
+            //console.log(await sidechain.auraOFT.address)
+            //console.log(await sidechain.auraOFT.mint())
+
             const crvBalance = crvBalanceAfter.sub(crvBalanceBefore);
-            //const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore); ToDo
+            const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore);
+
+            //console.log(crvBalance, cvxBalance)
+
+            console.log(await sidechain.l2Coordinator.mintRate());
 
             expect(crvBalance).gte(earned);
-            //expect(cvxBalance).gt(0);
+            expect(cvxBalance).gt(0);
         });
         it("allows extra rewards to be added to pool", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
@@ -524,8 +550,10 @@ describe("Sidechain", () => {
             expect(poolInfo.shutdown).to.eq(true);
         });
         it("does not allow the system to be shut down", async () => {
-            //const daoMultisig = await impersonateAccount(await sidechain.boosterOwner.connect(alice).owner());
-            //await expect(sidechain.boosterOwner.connect(daoMultisig.signer).shutdownSystem()).to.be.revertedWith("!poolMgrShutdown");
+            const daoMultisig = await impersonateAccount(await sidechain.boosterOwner.connect(alice).owner());
+            await expect(sidechain.boosterOwner.connect(daoMultisig.signer).shutdownSystem()).to.be.revertedWith(
+                "!poolMgrShutdown",
+            );
         });
         it("allows boosterOwner owner to be changed", async () => {
             const accounts = await ethers.getSigners();
