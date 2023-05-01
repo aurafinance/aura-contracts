@@ -1,5 +1,6 @@
 import {
     ExtSystemConfig,
+    MultisigConfig,
     Phase1Deployed,
     Phase2Deployed,
     Phase3Deployed,
@@ -66,6 +67,7 @@ import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
+import { parseEther } from "ethers/lib/utils";
 
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
@@ -158,12 +160,17 @@ const addresses: ExtSystemConfig = {
         assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
     },
     lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
+    sidechain: {
+        auraBalInflowLimit: parseEther("1000000"),
+        auraInflowLimit: parseEther("1000000"),
+    },
 };
 
-const multisigs = {
+const multisigs: MultisigConfig = {
     vestingMultisig: "0xab9ff9Fbc44Bb889751c4E70AD2F6977267A1E09",
     treasuryMultisig: "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9",
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    pauseGaurdian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
 };
 
 const contributorDistro = [

@@ -25,6 +25,7 @@ import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
+    pauseGaurdian: ZERO_ADDRESS,
 };
 
 const extConfig: ExtSidechainConfig = {

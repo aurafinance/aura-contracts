@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { OFT } from "../layerzero/token/oft/OFT.sol";
+import { PausableOFT } from "./PausableOFT.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 
@@ -10,7 +10,7 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
  * @author  AuraFinance
  * @dev     Sidechain AURA
  */
-contract AuraOFT is OFT, CrossChainConfig {
+contract AuraOFT is PausableOFT, CrossChainConfig {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -26,8 +26,9 @@ contract AuraOFT is OFT, CrossChainConfig {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
+        address _gaurdian,
         uint16 _canonicalChainId
-    ) OFT(_name, _symbol, _lzEndpoint) {
+    ) PausableOFT(_name, _symbol, _lzEndpoint, _gaurdian) {
         canonicalChainId = _canonicalChainId;
     }
 

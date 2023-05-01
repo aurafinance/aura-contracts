@@ -29,6 +29,7 @@ import { sidechainNaming } from "./sidechain-constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
+    pauseGaurdian: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
 };
 
 const extConfig: ExtSidechainConfig = {
@@ -65,7 +66,7 @@ export const getSidechain = (signer: Signer) => ({
 });
 
 export const config: SidechainConfig = {
-    chainId: chainIds.arbitrumGoerli,
+    chainId: chainIds.goerli,
     multisigs,
     naming: sidechainNaming,
     extConfig,
