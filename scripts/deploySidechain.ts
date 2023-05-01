@@ -463,7 +463,7 @@ export async function deploySidechainSystem(
     tx = await booster.setFeeManager(deployerAddress);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await booster.setFees(550, 1100, 50, 0);
+    tx = await booster.setFees(1850, 400, 50, 200);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await booster.setFeeManager(multisigs.daoMultisig);
