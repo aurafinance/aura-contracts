@@ -12,6 +12,7 @@ import {
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
+    assertBNClosePercent,
     fullScale,
     getBal,
     impersonateAccount,
@@ -577,62 +578,72 @@ describe("Sidechain", () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(true);
         });
         it("earmark rewards sends fees to coordinator", async () => {
-            const coordinatorBalBefore = await crv.balanceOf(bridgeDelegateSender.address);
-            const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
-
             const poolInfo = await sidechain.booster.poolInfo(0);
             const crvRewards = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, deployer.signer);
+
+            const coordinatorBalBefore = await crv.balanceOf(bridgeDelegateSender.address);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const balanceOfRewardContractBefore = await crv.balanceOf(crvRewards.address);
+
+            // Earmark rewards sends BAL to the reward contract and
+            // the L1Coordinator is notified about new fee debt
             await withMockMinter(async () => {
                 await sidechain.booster.earmarkRewards(0, {
                     value: NATIVE_FEE,
                 });
             });
-            const balanceOfRewardContractAfter = await crv.balanceOf(crvRewards.address);
+
             const coordinatorBalAfter = await crv.balanceOf(bridgeDelegateSender.address);
             const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
-            const amountOfFees = await toFeeAmount(mintrMintAmount);
+            const balanceOfRewardContractAfter = await crv.balanceOf(crvRewards.address);
 
-            // Verify the minter mint amount is correct and the correct amount of
-            // fee debt has been registered
+            // Verify that the bridge delegate received the fee amount ready to bridge back to L1
+            // and verify that the feeDebt on the L1Coordinator has been updated
+            const amountOfFees = await toFeeAmount(mintrMintAmount);
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
 
-            // Distribute AURA and check feeDebt mappings are updated correctly
-            const coordinatorAuraBalBefore = await auraOFT.balanceOf(l2Coordinator.address);
             expect(await l2Coordinator.mintRate()).eq(0);
-            const distributedFeeDebtBefore = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
 
+            // Distribute AURA and check feeDebt mappings are updated correctly and that
+            // the auraOFT balance of the L2Coordinator has been updated
+            const coordinatorAuraOftBalBefore = await auraOFT.balanceOf(l2Coordinator.address);
+            const distributedFeeDebtBefore = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const auraBalanceBefore = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceBefore = await crv.balanceOf(l1Coordinator.address);
+
             const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
-            const crvBalanceAfter = await crv.balanceOf(l1Coordinator.address);
-            const auraBalanceAfter = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
-            expect(crvBalanceBefore.sub(crvBalanceAfter)).eq(amountOfFees);
-
-            // Verify that the minted amount is the amount of AURA sent to OFT
             const mintEvent = reciept.events.find(
                 x =>
                     compareAddresses(x.address, phase2.cvx.address) &&
                     x.topics[1] === "0x0000000000000000000000000000000000000000000000000000000000000000",
             );
             const mintAmount = BigNumber.from(mintEvent.data);
-            expect(auraBalanceAfter.sub(auraBalanceBefore)).eq(mintAmount);
 
+            const coordinatorAuraOftBalAfter = await auraOFT.balanceOf(l2Coordinator.address);
             const distributedFeeDebtAfter = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
-            const coordinatorAuraBalAfter = await auraOFT.balanceOf(l2Coordinator.address);
+            const auraOftBalanceAfter = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
+            const crvBalanceAfter = await crv.balanceOf(l1Coordinator.address);
 
-            const expectedRate = mintAmount.mul(fullScale).div(mintrMintAmount);
+            // Verify balances are correct after AURA has been distributed
+            expect(coordinatorAuraOftBalAfter.sub(coordinatorAuraOftBalBefore)).eq(mintAmount);
+            expect(distributedFeeDebtAfter.sub(distributedFeeDebtBefore)).eq(feeDebtAfter);
+            expect(auraOftBalanceAfter.sub(auraBalanceBefore)).eq(mintAmount);
+            expect(crvBalanceBefore.sub(crvBalanceAfter)).eq(amountOfFees);
 
+            // Calculate what the expected mint rate is going to be on the L2
+            const expectedRate = mintAmount.mul(fullScale).div(mintrMintAmount.sub(amountOfFees));
             const mintRate = await l2Coordinator.mintRate();
             expect(mintRate).eq(expectedRate);
-            expect(coordinatorAuraBalAfter).gt(coordinatorAuraBalBefore);
-            expect(distributedFeeDebtAfter.sub(distributedFeeDebtBefore)).eq(feeDebtAfter);
 
-            // Amount of BAL in the reward contract
+            // Check that the amount of AURA available in the L2Coordinator covers the amount
+            // that is going to be farmed based on the mintRate and total BAL that has been queued
             const rewards = balanceOfRewardContractAfter.sub(balanceOfRewardContractBefore);
-            expect(rewards.mul(mintRate).div(fullScale)).lte(mintAmount);
+            // Check that the amount of AURA that has been sent to the L2Coordinator is gte
+            // the amount of AURA that is going to be minted and that it's within 1% accuracy
+            expect(mintAmount).gte(rewards.mul(mintRate).div(fullScale));
+            assertBNClosePercent(mintAmount, rewards.mul(mintRate).div(fullScale), "1");
         });
     });
 

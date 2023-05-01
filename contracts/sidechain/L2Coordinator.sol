@@ -7,6 +7,7 @@ import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
 
 /**
  * @title   L2Coordinator
@@ -134,13 +135,30 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
         if (CCM.isCustomMessage(_payload)) {
             CCM.MessageType messageType = CCM.getMessageType(_payload);
             if (messageType == CCM.MessageType.FEES_CALLBACK) {
-                (uint256 cvxAmount, uint256 crvAmount) = CCM.decodeFeesCallback(_payload);
+                (uint256 cvxAmount, uint256 crvFeeAmount) = CCM.decodeFeesCallback(_payload);
 
                 // The mint rate is the amount of CVX we mint for 1 CRV received
                 // It is sent over each time the fee debt is updated on the L1 to try and keep
                 // the L2 rate as close as possible to the L1 rate
-                mintRate = (cvxAmount * 1e18) / crvAmount;
+                mintRate = cvxAmount.mul(1e18).div(_feeToRewardAmount(crvFeeAmount));
             }
         }
+    }
+
+    /**
+     * @dev Given an amount of fees tha was paid get the amount of rewards
+     *      that would have been sent to the reward contract
+     *
+     *      total BAL farmed = fees * denominator / incetive %
+     *      total rewards = total BAL farmed - fees
+     *
+     * @param _feeAmount The amount of fees
+     */
+    function _feeToRewardAmount(uint256 _feeAmount) internal view returns (uint256) {
+        uint256 totalIncentives = IBooster(booster).lockIncentive() +
+            IBooster(booster).stakerIncentive() +
+            IBooster(booster).platformFee();
+        uint256 total = _feeAmount.mul(IBooster(booster).FEE_DENOMINATOR()).div(totalIncentives);
+        return total.sub(_feeAmount);
     }
 }
