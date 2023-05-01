@@ -1,5 +1,7 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
+import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     MultisigConfig,
     Phase2Deployed,
@@ -24,14 +26,24 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 import {
     DeployL2MocksResult,
     deploySidechainMocks,
     getMockMultisigs as getL2MockMultisigs,
 } from "../../scripts/deploySidechainMocks";
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
-import { deployVault } from "../../scripts/deployVault";
+import {
+    deployPhase1,
+    deployPhase2,
+    deployPhase3,
+    deployPhase4,
+    deployPhase6,
+    MultisigConfig,
+    Phase2Deployed,
+    Phase6Deployed,
+} from "../../scripts/deploySystem";
+import { deployVault, VaultDeployment } from "../../scripts/deployVault";
+import { impersonateAccount } from "../../test-utils/fork";
+import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 
 export interface L1TestSetup {
     mocks: DeployMocksResult;
@@ -39,6 +51,7 @@ export interface L1TestSetup {
     phase2: Phase2Deployed;
     phase6: Phase6Deployed;
     canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
+    vaultDeployment: VaultDeployment;
 }
 export interface L2TestSetup {
     mocks: DeployL2MocksResult;
@@ -81,7 +94,7 @@ export const sidechainTestSetup = async (
     const dao = await impersonateAccount(l2Multisigs.daoMultisig);
 
     const distro = getMockDistro();
-    const phase1 = await deployPhase1(hre, deployer.signer, l1Mocks.addresses);
+    const phase1 = await deployPhase1(hre, deployer.signer, l1Mocks.addresses, true, debug, waitForBlocks);
     const phase2 = await deployPhase2(
         hre,
         deployer.signer,
@@ -90,6 +103,8 @@ export const sidechainTestSetup = async (
         l1Multisigs,
         l1Mocks.namingConfig,
         l1Mocks.addresses,
+        debug,
+        waitForBlocks,
     );
     const phase3 = await deployPhase3(hre, deployer.signer, phase2, l1Multisigs, l1Mocks.addresses);
     await phase3.poolManager.connect(dao.signer).setProtectPool(false);
@@ -101,6 +116,8 @@ export const sidechainTestSetup = async (
         l1Multisigs,
         l1Mocks.namingConfig,
         l1Mocks.addresses,
+        debug,
+        waitForBlocks,
     );
     const vaultDeployment = await deployVault(
         {
@@ -111,6 +128,8 @@ export const sidechainTestSetup = async (
         },
         hre,
         deployer.signer,
+        debug,
+        waitForBlocks,
     );
 
     // deploy canonicalPhase
@@ -129,6 +148,8 @@ export const sidechainTestSetup = async (
         l1Mocks.addresses,
         phase2,
         vaultDeployment,
+        debug,
+        waitForBlocks,
     );
     const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
@@ -216,7 +237,7 @@ export const sidechainTestSetup = async (
     sidechain.auraBalOFT = sidechain.auraBalOFT.connect(deployer.signer);
     return {
         deployer,
-        l1: { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, canonical },
+        l1: { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, vaultDeployment, canonical },
         l2: { mocks: l2mocks, multisigs: l2Multisigs, sidechain },
         bridgeDelegates: { ...sbd },
     };
