@@ -260,25 +260,22 @@ describe("Sidechain", () => {
             expect(await poolManager.protectAddPool()).eq(true);
         });
         it("Delegates are set up", async () => {
-            let owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             await sidechain.l2Coordinator
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setBridgeDelegate(bridgeDelegate.bridgeDelegateSender.address);
 
-            owner = await impersonateAccount(await bridgeDelegate.bridgeDelegateSender.owner());
             await bridgeDelegate.bridgeDelegateSender
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setL2Coordinator(sidechain.l2Coordinator.address);
 
             expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(bridgeDelegate.bridgeDelegateSender.address);
             expect(await bridgeDelegate.bridgeDelegateSender.l2Coordinator()).to.eq(sidechain.l2Coordinator.address);
         });
         it("add trusted remotes to layerzero endpoints", async () => {
-            let owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             // L1 Stuff
             //await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
             await canonical.l1Coordinator
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setTrustedRemote(
                     L2_CHAIN_ID,
                     ethers.utils.solidityPack(
@@ -673,14 +670,16 @@ describe("Sidechain", () => {
 
             await expect(sidechain.boosterOwner.connect(notAuthorised.signer).shutdownSystem()).to.be.revertedWith(
                 "!owner",
-            ); /*
+            );
             await expect(
-                sidechain.boosterOwner.connect(notAuthorised.signer).setStashRewardHook(notAuthorised.address, ""),
+                sidechain.boosterOwner
+                    .connect(notAuthorised.signer)
+                    .setStashRewardHook(notAuthorised.address, notAuthorised.address),
             ).to.be.revertedWith("!owner");
             await expect(sidechain.boosterOwner.connect(notAuthorised.signer).setBoosterOwner()).to.be.revertedWith(
                 "!owner",
             );
-            
+
             await expect(sidechain.boosterOwner.connect(notAuthorised.signer).sealOwnership()).to.be.revertedWith(
                 "!owner",
             );
@@ -709,7 +708,7 @@ describe("Sidechain", () => {
                 sidechain.boosterOwner
                     .connect(notAuthorised.signer)
                     .setStashFactoryImplementation(notAuthorised.address, notAuthorised.address, notAuthorised.address),
-            ).to.be.revertedWith("!owner");*/
+            ).to.be.revertedWith("!owner");
         });
     });
 });
