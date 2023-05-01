@@ -75,16 +75,29 @@ export async function deployCanonicalPhase(
         hre,
         new AuraProxyOFT__factory(deployer),
         "AuraProxyOFT",
-        [config.lzEndpoint, phase2.cvx.address, phase2.cvxLocker.address],
+        [
+            config.lzEndpoint,
+            phase2.cvx.address,
+            phase2.cvxLocker.address,
+            multisigs.pauseGaurdian,
+            config.sidechain.auraInflowLimit,
+        ],
         {},
         debug,
         waitForBlocks,
     );
+
     const auraBalProxyOFT = await deployContract<AuraBalProxyOFT>(
         hre,
         new AuraBalProxyOFT__factory(deployer),
         "AuraBalProxyOFT",
-        [config.lzEndpoint, phase2.cvxCrv.address, auraBalVault.vault.address],
+        [
+            config.lzEndpoint,
+            phase2.cvxCrv.address,
+            auraBalVault.vault.address,
+            multisigs.pauseGaurdian,
+            config.sidechain.auraBalInflowLimit,
+        ],
         {},
         debug,
         waitForBlocks,
@@ -164,6 +177,8 @@ export async function deploySidechainSystem(
     naming: SidechainNaming,
     multisigs: SidechainMultisigConfig,
     extConfig: ExtSidechainConfig,
+    canonical: CanonicalPhaseDeployed,
+    canonicalLzChainId: number,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SidechainDeployed> {
@@ -187,8 +202,6 @@ export async function deploySidechainSystem(
     //         Protocol DAO : 1Coordinator.setTrustedRemote(L2_CHAIN_ID, [l2Coordinator.address, l1Coordinator.address]);
     //         Protocol DAO : auraProxyOFT.setTrustedRemote(L2_CHAIN_ID, [auraOFT.address, auraProxyOFT.address]);
     //         Protocol DAO : auraProxyOFT.setTrustedRemote(L2_CHAIN_ID, [auraBalOFT.address, auraBalProxyOFT.address]);
-    // Post-1: L2 add trusted remotes to layerzero endpoints
-    //         @see setTrustedRemoteSidechain()
     //         Protocol DAO : l2Coordinator.setTrustedRemote(L1_CHAIN_ID, [l1Coordinator.address, l2Coordinator.address]);
     //         Protocol DAO : auraOFT.setTrustedRemote(L1_CHAIN_ID, [auraProxyOFT.address, auraOFT.address]);
     //         Protocol DAO : auraBalOFT.setTrustedRemote(L1_CHAIN_ID, [auraBalProxyOFT.address, auraBalOFT.address]);
@@ -232,7 +245,13 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
+        [
+            naming.auraOftName,
+            naming.auraOftSymbol,
+            extConfig.lzEndpoint,
+            multisigs.pauseGaurdian,
+            extConfig.canonicalChainId,
+        ],
         deployOptionsWithCallbacks([auraOFTTransferOwnership]),
     );
 
@@ -240,7 +259,6 @@ export async function deploySidechainSystem(
         "transferOwnership",
         [deployerAddress],
     );
-
     const l2Coordinator = await deployContractWithCreate2<L2Coordinator, L2Coordinator__factory>(
         hre,
         create2Factory,
@@ -337,7 +355,7 @@ export async function deploySidechainSystem(
         create2Factory,
         new AuraBalOFT__factory(deployer),
         "AuraBalOFT",
-        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint],
+        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint, multisigs.pauseGaurdian],
         deployOptionsWithCallbacks([auraBalOFTTransferOwnership]),
     );
 
@@ -383,10 +401,42 @@ export async function deploySidechainSystem(
     tx = await l2Coordinator.initialize(booster.address, extConfig.token);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await l2Coordinator.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(["address", "address"], [canonical.l1Coordinator.address, l2Coordinator.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await l2Coordinator.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await auraOFT.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, auraOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
+    const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
+    tx = await auraOFT["setConfig(uint16,bytes4,(bytes,address))"](canonicalLzChainId, lockSelector, [
+        adapterParams,
+        ZERO_ADDRESS,
+    ] as any);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await auraOFT.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalOFT.setTrustedRemote(
+        canonicalLzChainId,
+        ethers.utils.solidityPack(["address", "address"], [canonical.auraBalProxyOFT.address, auraBalOFT.address]),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalOFT.setUseCustomAdapterParams(true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalOFT.setMinDstGas(canonicalLzChainId, await auraBalOFT.PT_SEND(), 500_000);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await auraBalOFT.transferOwnership(multisigs.daoMultisig);
@@ -490,39 +540,6 @@ export async function setTrustedRemoteCanonical(
         ethers.utils.solidityPack(
             ["address", "address"],
             [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
-        ),
-    );
-    await waitForTx(tx, debug, waitForBlocks);
-}
-
-export async function setTrustedRemoteSidechain(
-    canonical: CanonicalPhaseDeployed,
-    sidechain: SidechainDeployed,
-    canonicalLzChainId: number,
-    debug = false,
-    waitForBlocks = 0,
-) {
-    let tx: ContractTransaction;
-    tx = await sidechain.l2Coordinator.setTrustedRemote(
-        canonicalLzChainId,
-        ethers.utils.solidityPack(
-            ["address", "address"],
-            [canonical.l1Coordinator.address, sidechain.l2Coordinator.address],
-        ),
-    );
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await sidechain.auraOFT.setTrustedRemote(
-        canonicalLzChainId,
-        ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, sidechain.auraOFT.address]),
-    );
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await sidechain.auraBalOFT.setTrustedRemote(
-        canonicalLzChainId,
-        ethers.utils.solidityPack(
-            ["address", "address"],
-            [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
         ),
     );
     await waitForTx(tx, debug, waitForBlocks);

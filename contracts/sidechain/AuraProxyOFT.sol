@@ -5,7 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IAuraLocker } from "../interfaces/IAuraLocker.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
-import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
+import { PausableProxyOFT } from "./PausableProxyOFT.sol";
 
 /**
  * @title   AuraProxyOFT
@@ -13,8 +13,9 @@ import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
  * @dev     Send and receive AURA to and from all the Sidechains and receives
  * 		    lock requests from the sidechains
  */
-contract AuraProxyOFT is ProxyOFT {
+contract AuraProxyOFT is PausableProxyOFT {
     using SafeERC20 for IERC20;
+
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -29,8 +30,10 @@ contract AuraProxyOFT is ProxyOFT {
     constructor(
         address _lzEndpoint,
         address _token,
-        address _locker
-    ) ProxyOFT(_lzEndpoint, _token) {
+        address _locker,
+        address _guardian,
+        uint256 _inflowLimit
+    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _inflowLimit) {
         locker = _locker;
 
         IERC20(_token).safeApprove(_locker, type(uint256).max);
@@ -45,8 +48,16 @@ contract AuraProxyOFT is ProxyOFT {
      * @param _sender Address that is locking
      * @param _amount Amount to lock
      */
-    function _lockFor(address _sender, uint256 _amount) internal {
-        IAuraLocker(locker).lock(_sender, _amount);
+    function _lockFor(
+        uint16 _srcChainId,
+        address _sender,
+        uint256 _amount
+    ) internal {
+        if (IAuraLocker(locker).isShutdown()) {
+            _creditTo(_srcChainId, _sender, _amount);
+        } else {
+            IAuraLocker(locker).lock(_sender, _amount);
+        }
     }
 
     /* -------------------------------------------------------------------
@@ -70,7 +81,7 @@ contract AuraProxyOFT is ProxyOFT {
                 // Receiving a lock request from the L2. We decode
                 // The payload to get the sender and the amount to lock
                 (address sender, uint256 amount) = CCM.decodeLock(_payload);
-                _lockFor(sender, amount);
+                _lockFor(_srcChainId, sender, amount);
             }
         } else {
             // The message is not a specific cross chain message so we just
