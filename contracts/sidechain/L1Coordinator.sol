@@ -36,14 +36,32 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     /// @dev AURA OFT token contract
     address public auraOFT;
 
-    /// @dev src chain ID mapped to feeDebt
-    mapping(uint16 => uint256) public feeDebt;
+    /// @dev src chain ID mapped to total feeDebt
+    mapping(uint16 => uint256) public feeDebtOf;
+
+    /// @dev src chain ID mapped to total settled feeDebt
+    mapping(uint16 => uint256) public settledFeeDebtOf;
+
+    /// @dev src chain ID mapped to total distributed feeDebt
+    mapping(uint16 => uint256) public distributedFeeDebtOf;
 
     /// @dev src chain ID to bridgeDelegate
     mapping(uint16 => address) public bridgeDelegates;
 
     /// @dev src chain ID to L2Coordinator address
     mapping(uint16 => address) public l2Coordinators;
+
+    /// @dev sender to isDistributor
+    mapping(address => bool) public distributors;
+
+    /* -------------------------------------------------------------------
+       Modifiers  
+    ------------------------------------------------------------------- */
+
+    modifier onlyDistributor() {
+        require(distributors[msg.sender], "!distributor");
+        _;
+    }
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -90,6 +108,10 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         l2Coordinators[_srcChainId] = l2Coordinator;
     }
 
+    function setDistributor(address _distributor, bool _active) external onlyOwner {
+        distributors[_distributor] = _active;
+    }
+
     /* -------------------------------------------------------------------
        Core Functions
     ------------------------------------------------------------------- */
@@ -99,13 +121,17 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      *      way back to the canonical chain via the bridge delegate
      */
     function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {
-        feeDebt[_srcChainId] += _amount;
+        feeDebtOf[_srcChainId] += _amount;
     }
 
-    function distributeAura(uint16 _srcChainId) external payable {
+    function distributeAura(uint16 _srcChainId) external payable onlyDistributor {
+        uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
+        uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
+        distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
+
         _distributeAura(
             _srcChainId,
-            feeDebt[_srcChainId],
+            feeDebt,
             configs[_srcChainId][L1Coordinator.distributeAura.selector].zroPaymentAddress,
             configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams
         );
@@ -132,13 +158,14 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
         bytes memory payload = CCM.encodeFeesCallback(cvxAmount, fullAmount);
 
+        // TODO: asapter params
         _lzSend(
-            _srcChainId, ////////// Source chain (L2 chain)
-            payload, ////////////// Payload
+            _srcChainId, ///////////// Source chain (L2 chain)
+            payload, ///////////////// Payload
             payable(address(this)), // Refund address
-            address(0), /////////// ZRO payment address
-            _adapterParams, /////// Adapter params
-            msg.value ///////////// Native fee
+            address(0), ////////////// ZRO payment address
+            _adapterParams, ////////// Adapter params
+            msg.value //////////////// Native fee
         );
 
         IOFT(auraOFT).sendFrom{ value: address(this).balance }(
@@ -168,7 +195,10 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address bridgeDelegate = bridgeDelegates[_srcChainId];
         require(bridgeDelegate == msg.sender, "!bridgeDelegate");
 
-        feeDebt[_srcChainId] -= _amount;
+        uint256 settledFeeDebt = settledFeeDebtOf[_srcChainId];
+        uint256 feeOwed = feeDebtOf[_srcChainId].sub(settledFeeDebt);
+        require(_amount <= feeOwed, "!amount");
+        settledFeeDebtOf[_srcChainId] = settledFeeDebt.add(_amount);
 
         IERC20(balToken).safeTransferFrom(bridgeDelegate, address(this), _amount);
     }
