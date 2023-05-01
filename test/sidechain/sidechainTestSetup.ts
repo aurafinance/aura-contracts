@@ -18,7 +18,6 @@ import {
     setTrustedRemoteCanonical,
     CanonicalPhaseDeployed,
     SidechainDeployed,
-    setTrustedRemoteSidechain,
 } from "../../scripts/deploySidechain";
 import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 import {
@@ -126,10 +125,18 @@ export const sidechainTestSetup = async (
     const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(sidechainLzChainId);
     l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
 
-    const sidechain = await deploySidechainSystem(hre, deployer.signer, l2mocks.namingConfig, l2Multisigs, {
-        ...l2mocks.addresses,
-        create2Factory: create2Factory.address,
-    });
+    const sidechain = await deploySidechainSystem(
+        hre,
+        deployer.signer,
+        l2mocks.namingConfig,
+        l2Multisigs,
+        {
+            ...l2mocks.addresses,
+            create2Factory: create2Factory.address,
+        },
+        canonical,
+        canonicalChainId,
+    );
 
     await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
     // Mock L1 Endpoints  configuration
@@ -156,7 +163,6 @@ export const sidechainTestSetup = async (
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
     sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
     sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
-    await setTrustedRemoteSidechain(canonical, sidechain, l2mocks.addresses.canonicalChainId);
 
     const sbd = await deploySimpleBridgeDelegates(
         hre,

@@ -1,6 +1,5 @@
 import { chainIds } from "../../tasks/utils";
 import { config as goerliConfig } from "./goerli-config";
-import { config as arbitrumGoerliConfig } from "./arbitrumGoerli-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { SidechainNaming } from "../../types/sidechain-types";
 
@@ -34,7 +33,6 @@ export const canonicalConfigs = {
 
 export const sidechainConfigs = {
     [chainIds.goerli]: goerliSidechainConfig,
-    [chainIds.arbitrumGoerli]: arbitrumGoerliConfig,
 };
 
 export const sidechainNaming: SidechainNaming = {

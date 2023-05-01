@@ -3,10 +3,10 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
+import { PausableProxyOFT } from "./PausableProxyOFT.sol";
 import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
 
 /**
@@ -16,7 +16,7 @@ import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
  *        all auraBAL sat in this bridge will be staked in the auraBAL
  *        compounder and rewards distributed to the L2 staking contracts
  */
-contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
+contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     using SafeERC20 for IERC20;
     /* -------------------------------------------------------------------
        Types 
@@ -61,8 +61,10 @@ contract AuraBalProxyOFT is ProxyOFT, CrossChainConfig {
     constructor(
         address _lzEndpoint,
         address _token,
-        address _vault
-    ) ProxyOFT(_lzEndpoint, _token) {
+        address _vault,
+        address _guardian,
+        uint256 _inflowLimit
+    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _inflowLimit) {
         vault = _vault;
 
         IERC20(_token).safeApprove(_vault, type(uint256).max);

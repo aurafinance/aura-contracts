@@ -7,7 +7,6 @@ import {
     deployCanonicalPhase,
     deploySidechainSystem,
     setTrustedRemoteCanonical,
-    setTrustedRemoteSidechain,
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
@@ -149,7 +148,7 @@ describe("Sidechain", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            multisigs: { daoMultisig: dao.address },
+            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
             naming: { ...sidechainNaming },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
@@ -187,6 +186,8 @@ describe("Sidechain", () => {
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
+            canonical,
+            L1_CHAIN_ID,
         );
 
         l2Coordinator = sidechain.l2Coordinator;
@@ -217,6 +218,22 @@ describe("Sidechain", () => {
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(l2LzEndpoint.address);
             expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
+
+            expect(
+                await auraOFT.isTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.auraProxyOFT.address, auraOFT.address],
+                    ),
+                ),
+            ).eq(true);
+
+            const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
+            const config = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
+            expect(config.adapterParams).eq(adapterParams);
+            expect(config.zroPaymentAddress).eq(ZERO_ADDRESS);
         });
         it("L2Coordinator has correct config", async () => {
             expect(await l2Coordinator.canonicalChainId()).eq(L1_CHAIN_ID);
@@ -224,6 +241,16 @@ describe("Sidechain", () => {
             expect(await l2Coordinator.auraOFT()).eq(auraOFT.address);
             expect(await l2Coordinator.mintRate()).eq(0);
             expect(await l2Coordinator.lzEndpoint()).eq(l2LzEndpoint.address);
+
+            expect(
+                await l2Coordinator.isTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.l1Coordinator.address, l2Coordinator.address],
+                    ),
+                ),
+            ).eq(true);
         });
         it("L1Coordinator has correct config", async () => {
             expect(await l1Coordinator.booster()).eq(phase6.booster.address);
@@ -313,12 +340,22 @@ describe("Sidechain", () => {
             expect(await poolManager.operator()).eq(dao.address);
             expect(await poolManager.protectAddPool()).eq(true);
         });
-        it("auraBalProxyOFT has correct config", async () => {
+        it("auraBalOFT has correct config", async () => {
             expect(await sidechain.auraBalOFT.lzEndpoint()).eq(l2LzEndpoint.address);
             expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
             expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
+
+            expect(
+                await sidechain.auraBalOFT.isTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
+                    ),
+                ),
+            ).eq(true);
         });
-        it("auraBalOFT has correct config", async () => {
+        it("auraBalProxyOFT has correct config", async () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
@@ -334,15 +371,43 @@ describe("Sidechain", () => {
         it("add trusted remotes to layerzero endpoints", async () => {
             // L1 Stuff
             await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
+
+            expect(
+                await canonical.auraBalProxyOFT.isTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
+                    ),
+                ),
+            ).eq(true);
+
+            expect(
+                await canonical.auraProxyOFT.isTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
+                    ),
+                ),
+            ).eq(true);
+
+            expect(
+                await canonical.l1Coordinator.isTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
+                    ),
+                ),
+            ).eq(true);
+
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
 
             // L2 Stuff
-            await setTrustedRemoteSidechain(canonical, sidechain, L1_CHAIN_ID);
             await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);
             await l2LzEndpoint.setDestLzEndpoint(auraProxyOFT.address, l1LzEndpoint.address);
-
-            // TODO: expect trusted remotes
         });
         it("add pools to the booster", async () => {
             // As this test suite is running the bridge from L1 -> L1 forked on
@@ -453,17 +518,18 @@ describe("Sidechain", () => {
     });
 
     describe("Lock AURA", () => {
-        const lockAmount = simpleToExactAmount(10);
+        const lockAmount = simpleToExactAmount(5);
         before(async () => {
             // Transfer some AURA to L2
-            await phase2.cvx.connect(auraWhale.signer).approve(auraProxyOFT.address, lockAmount);
+            const bridgeAmount = lockAmount.mul(2);
+            await phase2.cvx.connect(auraWhale.signer).approve(auraProxyOFT.address, bridgeAmount);
             await auraProxyOFT
                 .connect(auraWhale.signer)
                 .sendFrom(
                     auraWhale.address,
                     L2_CHAIN_ID,
                     deployer.address,
-                    lockAmount,
+                    bridgeAmount,
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
                     [],
@@ -478,6 +544,16 @@ describe("Sidechain", () => {
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
+        });
+        it("locking from L2 -> l1 when shutdown", async () => {
+            await phase2.cvxLocker.connect(dao.signer).shutdown();
+            const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
+            const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
+            await auraOFT.lock(lockAmount, { value: NATIVE_FEE });
+            const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
+            expect(balancesAfter.locked).eq(balancesBefore.locked);
+            expect(balanceAfter.sub(balanceBefore)).eq(lockAmount);
         });
     });
 

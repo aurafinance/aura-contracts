@@ -71,7 +71,7 @@ describe("Sidechain", () => {
         // setup sidechain config
         sidechainConfig = {
             chainId: 123,
-            multisigs: { daoMultisig: dao.address },
+            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
             naming: { ...sidechainNaming },
             extConfig: {
                 canonicalChainId: L1_CHAIN_ID,
@@ -89,7 +89,7 @@ describe("Sidechain", () => {
 
         // deploy canonicalPhase
         const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        await deployCanonicalPhase(
+        const canonical = await deployCanonicalPhase(
             hre,
             deployer.signer,
             mainnetConfig.multisigs,
@@ -106,6 +106,8 @@ describe("Sidechain", () => {
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
+            canonical,
+            L1_CHAIN_ID,
         );
 
         l2Coordinator = sidechain.l2Coordinator;

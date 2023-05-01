@@ -2,6 +2,8 @@
 pragma solidity 0.8.11;
 
 interface IAuraLocker {
+    function isShutdown() external view returns (bool);
+
     function lock(address _account, uint256 _amount) external;
 
     function checkpointEpoch() external;
