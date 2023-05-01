@@ -467,12 +467,13 @@ describe("Sidechain", () => {
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
         });
         it("allows earmarking of rewards", async () => {
-            //TODO
+            const poolInfo = await sidechain.booster.poolInfo(0);
+            const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer);
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
-            const balanceBefore = await crv.balanceOf(bridgeDelegate.bridgeDelegateSender.address);
+            const balanceBefore = await crv.balanceOf(crvRewards.address);
             await increaseTime(ONE_DAY);
             await sidechain.booster.connect(alice).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
-            const balanceAfter = await crv.balanceOf(bridgeDelegate.bridgeDelegateSender.address);
+            const balanceAfter = await crv.balanceOf(crvRewards.address);
             expect(balanceAfter).gt(balanceBefore);
         });
         it("pays out a premium to the caller", async () => {
