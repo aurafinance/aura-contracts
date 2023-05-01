@@ -31,7 +31,7 @@ const config: HardhatUserConfig = {
     defaultNetwork: "hardhat",
     gasReporter: {
         currency: "USD",
-        enabled: true,
+        enabled: process.env.DISABLE_GAS_REPORT ? false : true,
         excludeContracts: [],
         src: "./contracts",
     },
