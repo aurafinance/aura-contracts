@@ -6,20 +6,14 @@ import {
     deploySidechainSystem,
     SidechainDeployed,
     CanonicalPhaseDeployed,
-    setTrustedRemoteCanonical,
-    setTrustedRemoteSidechain,
 } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
-    impersonate,
     impersonateAccount,
     ZERO_ADDRESS,
-    BN,
     ONE_WEEK,
     ONE_HOUR,
-    assertBNClosePercent,
-    assertBNClose,
     simpleToExactAmount,
     ONE_DAY,
     ZERO_KEY,
@@ -40,7 +34,7 @@ import {
 } from "../../types";
 import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
 import { SidechainConfig } from "../../types/sidechain-types";
-import { getTimestamp, latestBlock, increaseTime, advanceBlock } from "./../../test-utils/time";
+import { increaseTime } from "./../../test-utils/time";
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 describe("Sidechain", () => {
     const L1_CHAIN_ID = 111;
@@ -70,11 +64,11 @@ describe("Sidechain", () => {
      * Helper Functions
      * --------------------------------------------------------------------- */
 
-    const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
+    /*const getCrv = async (recipient: string, amount = simpleToExactAmount(250)) => {
         const tokenWhaleSigner = await impersonateAccount(mainnetConfig.addresses.balancerVault);
         const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, tokenWhaleSigner.signer);
         await crv.transfer(recipient, amount);
-    };
+    };*/
 
     const getBpt = async (recipient: string, amount = simpleToExactAmount(250)) => {
         const token = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9";
@@ -260,22 +254,26 @@ describe("Sidechain", () => {
             expect(await poolManager.protectAddPool()).eq(true);
         });
         it("Delegates are set up", async () => {
+            let owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             await sidechain.l2Coordinator
-                .connect(dao.signer)
+                .connect(owner.signer)
                 .setBridgeDelegate(bridgeDelegate.bridgeDelegateSender.address);
 
+            owner = await impersonateAccount(await bridgeDelegate.bridgeDelegateSender.owner());
+
             await bridgeDelegate.bridgeDelegateSender
-                .connect(dao.signer)
+                .connect(owner.signer)
                 .setL2Coordinator(sidechain.l2Coordinator.address);
 
             expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(bridgeDelegate.bridgeDelegateSender.address);
             expect(await bridgeDelegate.bridgeDelegateSender.l2Coordinator()).to.eq(sidechain.l2Coordinator.address);
         });
         it("add trusted remotes to layerzero endpoints", async () => {
+            const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             // L1 Stuff
             //await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
             await canonical.l1Coordinator
-                .connect(dao.signer)
+                .connect(owner.signer)
                 .setTrustedRemote(
                     L2_CHAIN_ID,
                     ethers.utils.solidityPack(
@@ -469,6 +467,7 @@ describe("Sidechain", () => {
             expect(balanceAfter.sub(balanceBefore)).eq(amount);
         });
         it("allows earmarking of rewards", async () => {
+            //TODO
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const balanceBefore = await crv.balanceOf(bridgeDelegate.bridgeDelegateSender.address);
             await increaseTime(ONE_DAY);
@@ -488,15 +487,15 @@ describe("Sidechain", () => {
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const poolInfo = await sidechain.booster.poolInfo(0);
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, alice);
-            const cvxBalanceBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
+            //const cvxBalanceBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
             const crvBalanceBefore = await crv.balanceOf(aliceAddress);
             const earned = await rewards.earned(aliceAddress);
             await rewards["getReward(address,bool)"](aliceAddress, true);
-            const cvxBalanceAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
+            //const cvxBalanceAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
             const crvBalanceAfter = await crv.balanceOf(aliceAddress);
 
             const crvBalance = crvBalanceAfter.sub(crvBalanceBefore);
-            const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore);
+            //const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore); ToDo
 
             expect(crvBalance).gte(earned);
             //expect(cvxBalance).gt(0);
@@ -569,7 +568,7 @@ describe("Sidechain", () => {
             const daoMultisig = await impersonateAccount(await sidechain.boosterOwner.owner());
             const poolLength = Number(await sidechain.booster.poolLength());
 
-            for (var i = 0; i < poolLength; i++) {
+            for (let i = 0; i < poolLength; i++) {
                 try {
                     await sidechain.poolManager.connect(daoMultisig.signer).shutdownPool(i);
                 } catch (e) {
@@ -594,7 +593,7 @@ describe("Sidechain", () => {
 
     describe("Protected functions", () => {
         it("PoolManager protected functions", async () => {
-            let owner = await impersonateAccount(await sidechain.poolManager.operator());
+            const owner = await impersonateAccount(await sidechain.poolManager.operator());
             await sidechain.poolManager.connect(owner.signer).setProtectPool(true);
 
             const accounts = await ethers.getSigners();

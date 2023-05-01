@@ -25,7 +25,7 @@ import {
     increaseTimeTo,
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
