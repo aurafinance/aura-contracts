@@ -152,12 +152,10 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         IBooster(booster).distributeL2Fees(_feeAmount);
         uint256 auraAmount = IERC20(auraToken).balanceOf(address(this)).sub(auraBefore);
 
-        uint256 balAmount = _feeToFullAmount(_feeAmount);
-        require(balAmount >= 1e9, "fee amount too low");
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        bytes memory payload = CCM.encodeFeesCallback(auraAmount, balAmount);
+        bytes memory payload = CCM.encodeFeesCallback(auraAmount, _feeAmount);
 
         // TODO: seperate adapter params
         _lzSend(
@@ -178,13 +176,6 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             _zroPaymentAddress,
             _adapterParams
         );
-    }
-
-    function _feeToFullAmount(uint256 _feeAmount) internal view returns (uint256) {
-        uint256 totalIncentives = IBooster(booster).lockIncentive() +
-            IBooster(booster).stakerIncentive() +
-            IBooster(booster).platformFee();
-        return ((_feeAmount * IBooster(booster).FEE_DENOMINATOR()) / totalIncentives);
     }
 
     /**

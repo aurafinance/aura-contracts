@@ -50,8 +50,8 @@ library CrossChainMessages {
         return abi.encode(MAGIC_BYTES, MessageType.FEES, amount);
     }
 
-    function encodeFeesCallback(uint256 cvxAmount, uint256 crvAmount) internal pure returns (bytes memory) {
-        return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount, crvAmount);
+    function encodeFeesCallback(uint256 cvxAmount, uint256 crvFeeAmount) internal pure returns (bytes memory) {
+        return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount, crvFeeAmount);
     }
 
     /* -------------------------------------------------------------------
