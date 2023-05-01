@@ -117,7 +117,7 @@ contract AuraBalStrategy is Ownable, AuraBalStrategyBase {
     /// @dev Can be called by the vault only
     /// @param _minAmountOut -  min amount of LP tokens to receive w/o revert
     /// @return harvested - the amount harvested
-    function harvest(uint256 _minAmountOut) public onlyVault returns (uint256 harvested) {
+    function harvest(uint256 _minAmountOut) public onlyVault returns (uint256) {
         // claim rewards
         auraBalStaking.getReward();
 
