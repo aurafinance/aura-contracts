@@ -6,7 +6,6 @@ import {
     deployCanonicalPhase,
     deploySidechainSystem,
     setTrustedRemoteCanonical,
-    setTrustedRemoteSidechain,
     SidechainDeployed,
 } from "../../scripts/deploySidechain";
 import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
@@ -25,7 +24,7 @@ import {
     increaseTimeTo,
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber } from "ethers";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
@@ -130,6 +129,8 @@ describe("AuraBalOFT", () => {
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
+            canonical,
+            L1_CHAIN_ID,
         );
 
         await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, simpleToExactAmount(10_000));
@@ -163,9 +164,6 @@ describe("AuraBalOFT", () => {
             await l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(sidechain.auraBalOFT.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
-        });
-        it("set sidechain trusted remotes", async () => {
-            await setTrustedRemoteSidechain(canonical, sidechain, L1_CHAIN_ID);
         });
         it("set canonical trusted remotes", async () => {
             await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
@@ -366,10 +364,6 @@ describe("AuraBalOFT", () => {
                 canonical.auraBalProxyOFT.address,
             );
 
-            await sidechain.auraBalOFT.connect(dao.signer).setUseCustomAdapterParams(true);
-            await sidechain.auraBalOFT
-                .connect(dao.signer)
-                .setMinDstGas(L1_CHAIN_ID, await sidechain.auraBalOFT.PT_SEND(), 600_000);
             await sidechain.auraBalOFT
                 .connect(deployer.signer)
                 .sendFrom(
