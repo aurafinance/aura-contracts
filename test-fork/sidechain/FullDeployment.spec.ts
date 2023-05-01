@@ -558,27 +558,49 @@ describe("Sidechain", () => {
     });
 
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
+        it("Can not distribute AURA as no distributor", async () => {
+            expect(await l1Coordinator.distributors(deployer.address)).eq(false);
+            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE })).to.be.revertedWith(
+                "!distributor",
+            );
+        });
+        it("Can set deployer as distributor", async () => {
+            await expect(l1Coordinator.setDistributor(deployer.address, true)).to.be.revertedWith(
+                "Ownable: caller is not the owner",
+            );
+
+            expect(await l1Coordinator.distributors(deployer.address)).eq(false);
+            await l1Coordinator.connect(dao.signer).setDistributor(deployer.address, true);
+            expect(await l1Coordinator.distributors(deployer.address)).eq(true);
+        });
         it("earmark rewards sends fees to coordinator", async () => {
             const coordinatorBalBefore = await crv.balanceOf(bridgeDelegateSender.address);
-            const feeDebtBefore = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+
             await withMockMinter(async () => {
                 await sidechain.booster.earmarkRewards(0, {
                     value: NATIVE_FEE,
                 });
             });
             const coordinatorBalAfter = await crv.balanceOf(bridgeDelegateSender.address);
-            const feeDebtAfter = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const amountOfFees = await toFeeAmount(mintrMintAmount);
 
+            // Verify the minter mint amount is correct and the correct amount of
+            // fee debt has been registered
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
 
+            // Distribute AURA and check feeDebt mappings are updated correctly
             const coordinatorAuraBalBefore = await auraOFT.balanceOf(l2Coordinator.address);
             expect(await l2Coordinator.mintRate()).eq(0);
+            const distributedFeeDebtBefore = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
+            const distributedFeeDebtAfter = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const coordinatorAuraBalAfter = await auraOFT.balanceOf(l2Coordinator.address);
             expect(await l2Coordinator.mintRate()).not.eq(0);
             expect(coordinatorAuraBalAfter).gt(coordinatorAuraBalBefore);
+            expect(distributedFeeDebtAfter.sub(distributedFeeDebtBefore)).eq(feeDebtAfter);
         });
     });
 
@@ -594,13 +616,17 @@ describe("Sidechain", () => {
         });
         it("settle fees updated feeDebt on L1", async () => {
             // TODO: check bridgeDelegate balances
-            const debt = await l1Coordinator.feeDebt(L2_CHAIN_ID);
-            expect(debt).gt(0);
+            const oldDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            expect(oldDebt).gt(0);
 
-            await bridgeDelegateReceiver.settleFeeDebt(debt);
+            const oldSettledDebt = await l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID);
 
-            const newDebt = await l1Coordinator.feeDebt(L2_CHAIN_ID);
-            expect(newDebt).eq(0);
+            await bridgeDelegateReceiver.settleFeeDebt(oldDebt);
+
+            const newDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            const newSettledDebt = await l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID);
+            expect(newDebt).eq(oldDebt);
+            expect(newSettledDebt.sub(oldSettledDebt)).eq(oldDebt);
         });
     });
 });
