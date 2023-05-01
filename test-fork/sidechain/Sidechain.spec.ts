@@ -143,10 +143,10 @@ describe("Sidechain", () => {
         it("BoosterLite has correct config", async () => {
             expect(await sidechain.booster.crv()).eq(sidechainConfig.extConfig.token);
 
-            expect(await sidechain.booster.lockIncentive()).eq(550);
-            expect(await sidechain.booster.stakerIncentive()).eq(1100);
+            expect(await sidechain.booster.lockIncentive()).eq(1850);
+            expect(await sidechain.booster.stakerIncentive()).eq(400);
             expect(await sidechain.booster.earmarkIncentive()).eq(50);
-            expect(await sidechain.booster.platformFee()).eq(0);
+            expect(await sidechain.booster.platformFee()).eq(200);
             expect(await sidechain.booster.MaxFees()).eq(4000);
             expect(await sidechain.booster.FEE_DENOMINATOR()).eq(10000);
 
