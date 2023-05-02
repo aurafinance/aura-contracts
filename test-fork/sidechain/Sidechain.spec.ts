@@ -487,12 +487,12 @@ describe("Sidechain", () => {
             console.log(endpoint.address);
             const payload = ethers.utils.solidityPack(
                 ["bytes4", "uint8", "uint256", "uint256"],
-                ["0x7a7f9946", "1", (1e18).toString(), (1e18).toString()],
+                ["0x7a7f9946", "2", (10e18).toString(), (1e18).toString()],
             );
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
-                .lzReceive(L1_CHAIN_ID, canonical.l1Coordinator.address, 0, payload);
-            console.log(sidechain.l2Coordinator.mintRate());
+                .lzReceive(L1_CHAIN_ID, await sidechain.l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+            console.log(await sidechain.l2Coordinator.mintRate());
         });
         it("allows users to earn $BAl and $AURA", async () => {
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
