@@ -485,9 +485,9 @@ describe("Sidechain", () => {
         it("Can send a payload to set the mint rate", async () => {
             const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
             console.log(endpoint.address);
-            const payload = ethers.utils.solidityPack(
+            const payload = ethers.utils.defaultAbiCoder.encode(
                 ["bytes4", "uint8", "uint256", "uint256"],
-                ["0x7a7f9946", "2", (10e18).toString(), (1e18).toString()],
+                ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
             );
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
