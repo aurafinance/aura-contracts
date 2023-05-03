@@ -124,7 +124,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         feeDebtOf[_srcChainId] += _amount;
     }
 
-    function distributeAura(uint16 _srcChainId) external payable onlyDistributor {
+    function distributeAura(uint16 _srcChainId, bytes memory _sendFromAdapterParams) external payable onlyDistributor {
         uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
@@ -133,7 +133,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             _srcChainId,
             feeDebt,
             configs[_srcChainId][L1Coordinator.distributeAura.selector].zroPaymentAddress,
-            configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams
+            configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams,
+            _sendFromAdapterParams
         );
     }
 
@@ -146,7 +147,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         uint16 _srcChainId,
         uint256 _feeAmount,
         address _zroPaymentAddress,
-        bytes memory _adapterParams
+        bytes memory _adapterParams,
+        bytes memory _sendFromAdapterParams
     ) internal {
         uint256 auraBefore = IERC20(auraToken).balanceOf(address(this));
         IBooster(booster).distributeL2Fees(_feeAmount);
@@ -157,7 +159,6 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
         bytes memory payload = CCM.encodeFeesCallback(auraAmount, _feeAmount);
 
-        // TODO: seperate adapter params
         _lzSend(
             _srcChainId, ///////////// Source chain (L2 chain)
             payload, ///////////////// Payload
@@ -174,7 +175,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             auraAmount,
             payable(msg.sender),
             _zroPaymentAddress,
-            _adapterParams
+            _sendFromAdapterParams
         );
     }
 
