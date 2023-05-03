@@ -564,7 +564,7 @@ describe("Sidechain", () => {
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
-            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE })).to.be.revertedWith(
+            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE })).to.be.revertedWith(
                 "!distributor",
             );
         });
@@ -612,7 +612,7 @@ describe("Sidechain", () => {
             const auraBalanceBefore = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceBefore = await crv.balanceOf(l1Coordinator.address);
 
-            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
+            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>
