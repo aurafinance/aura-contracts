@@ -387,6 +387,41 @@ describe("Sidechain", () => {
         });
     });
 
+    describe("Setup L2 Coordinator to be able to mint rewards", () => {
+        it("Can send a payload to set the mint rate", async () => {
+            const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
+            console.log(endpoint.address);
+            const payload = ethers.utils.defaultAbiCoder.encode(
+                ["bytes4", "uint8", "uint256", "uint256"],
+                ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
+            );
+            await sidechain.l2Coordinator
+                .connect(endpoint.signer)
+                .lzReceive(L1_CHAIN_ID, await sidechain.l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+            console.log(await sidechain.l2Coordinator.mintRate());
+        });
+        it("Mint and send aura to l2 coordinator", async () => {
+            // Transfer some AURA to L2
+            const bridgeAmount = ethers.utils.parseEther("10000");
+            const auraWhale = await impersonateAccount(mainnetConfig.addresses.balancerVault, true);
+            await phase2.cvx.connect(auraWhale.signer).approve(canonical.auraProxyOFT.address, bridgeAmount);
+            await canonical.auraProxyOFT
+                .connect(auraWhale.signer)
+                .sendFrom(
+                    auraWhale.address,
+                    L2_CHAIN_ID,
+                    sidechain.l2Coordinator.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: simpleToExactAmount("0.2"),
+                    },
+                );
+        });
+    });
+
     describe("Deposit and withdraw BPT", () => {
         it("allow deposit into pool via Booster", async () => {
             const poolId = 0;
@@ -482,18 +517,6 @@ describe("Sidechain", () => {
             const balanceAfter = await crv.balanceOf(aliceAddress);
             expect(balanceAfter).gt(balanceBefore);
         });
-        it("Can send a payload to set the mint rate", async () => {
-            const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
-            console.log(endpoint.address);
-            const payload = ethers.utils.defaultAbiCoder.encode(
-                ["bytes4", "uint8", "uint256", "uint256"],
-                ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
-            );
-            await sidechain.l2Coordinator
-                .connect(endpoint.signer)
-                .lzReceive(L1_CHAIN_ID, await sidechain.l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
-            console.log(await sidechain.l2Coordinator.mintRate());
-        });
         it("allows users to earn $BAl and $AURA", async () => {
             const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const poolInfo = await sidechain.booster.poolInfo(0);
@@ -550,8 +573,7 @@ describe("Sidechain", () => {
             expect(poolInfo.shutdown).to.eq(true);
         });
         it("does not allow the system to be shut down", async () => {
-            const daoMultisig = await impersonateAccount(await sidechain.boosterOwner.connect(alice).owner());
-            await expect(sidechain.boosterOwner.connect(daoMultisig.signer).shutdownSystem()).to.be.revertedWith(
+            await expect(sidechain.boosterOwner.connect(dao.signer).shutdownSystem()).to.be.revertedWith(
                 "!poolMgrShutdown",
             );
         });
