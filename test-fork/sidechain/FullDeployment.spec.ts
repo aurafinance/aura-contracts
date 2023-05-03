@@ -615,7 +615,7 @@ describe("Sidechain", () => {
             const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
-                x =>
+                (x: any) =>
                     compareAddresses(x.address, phase2.cvx.address) &&
                     x.topics[1] === "0x0000000000000000000000000000000000000000000000000000000000000000",
             );
@@ -658,18 +658,25 @@ describe("Sidechain", () => {
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegateReceiver.address);
         });
         it("settle fees updated feeDebt on L1", async () => {
-            // TODO: check bridgeDelegate balances
-            const oldDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
-            expect(oldDebt).gt(0);
-
+            const debtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const oldSettledDebt = await l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID);
+            const bridgeDelegateBalanceBefore = await crv.balanceOf(bridgeDelegateReceiver.address);
+            const l1CoordinatorBalanceBefore = await crv.balanceOf(l1Coordinator.address);
 
-            await bridgeDelegateReceiver.settleFeeDebt(oldDebt);
+            expect(debtBefore).gt(0);
 
-            const newDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            const payoffAmount = debtBefore;
+            await bridgeDelegateReceiver.settleFeeDebt(payoffAmount);
+
+            const debtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const newSettledDebt = await l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID);
-            expect(newDebt).eq(oldDebt);
-            expect(newSettledDebt.sub(oldSettledDebt)).eq(oldDebt);
+            const bridgeDelegateBalanceAfter = await crv.balanceOf(bridgeDelegateReceiver.address);
+            const l1CoordinatorBalanceAfter = await crv.balanceOf(l1Coordinator.address);
+
+            expect(debtAfter).eq(payoffAmount);
+            expect(newSettledDebt.sub(oldSettledDebt)).eq(payoffAmount);
+            expect(bridgeDelegateBalanceBefore.sub(bridgeDelegateBalanceAfter)).eq(payoffAmount);
+            expect(l1CoordinatorBalanceAfter.sub(l1CoordinatorBalanceBefore)).eq(payoffAmount);
         });
     });
 });
