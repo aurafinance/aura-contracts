@@ -13,11 +13,16 @@ import {
 import { DeployMocksResult, deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import { impersonateAccount } from "../../test-utils/fork";
 import {
-    deployCanonicalPhase,
-    deploySidechainSystem,
-    setTrustedRemoteCanonical,
-    CanonicalPhaseDeployed,
-    SidechainDeployed,
+    deployCanonicalPhase1,
+    deployCanonicalPhase2,
+    deploySidechainPhase1,
+    deploySidechainPhase2,
+    setTrustedRemoteCanonicalPhase1,
+    setTrustedRemoteCanonicalPhase2,
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 import {
@@ -33,12 +38,12 @@ export interface L1TestSetup {
     multisigs: MultisigConfig;
     phase2: Phase2Deployed;
     phase6: Phase6Deployed;
-    canonical: CanonicalPhaseDeployed;
+    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
 }
 export interface L2TestSetup {
     mocks: DeployL2MocksResult;
     multisigs: SidechainMultisigConfig;
-    sidechain: SidechainDeployed;
+    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
 }
 export interface SideChainTestSetup {
     deployer: Account;
@@ -109,15 +114,24 @@ export const sidechainTestSetup = async (
     );
 
     // deploy canonicalPhase
-    const canonical = await deployCanonicalPhase(
+    const canonicalPhase1 = await deployCanonicalPhase1(
         hre,
         deployer.signer,
         l1Multisigs,
         l1Mocks.addresses,
         phase2,
         phase6,
+    );
+    const canonicalPhase2 = await deployCanonicalPhase2(
+        hre,
+        deployer.signer,
+        l1Multisigs,
+        l1Mocks.addresses,
+        phase2,
         vaultDeployment,
     );
+    const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
+
     // deploy sidechain
     const create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
     await create2Factory.updateDeployer(deployer.address, true);
@@ -125,7 +139,7 @@ export const sidechainTestSetup = async (
     const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(sidechainLzChainId);
     l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
 
-    const sidechain = await deploySidechainSystem(
+    const sidechainPhase1 = await deploySidechainPhase1(
         hre,
         deployer.signer,
         l2mocks.namingConfig,
@@ -137,6 +151,20 @@ export const sidechainTestSetup = async (
         canonical,
         canonicalChainId,
     );
+    const sidechainPhase2 = await deploySidechainPhase2(
+        hre,
+        deployer.signer,
+        l2mocks.namingConfig,
+        l2Multisigs,
+        {
+            ...l2mocks.addresses,
+            create2Factory: create2Factory.address,
+        },
+        canonicalPhase2,
+        sidechainPhase1,
+        canonicalChainId,
+    );
+    const sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
 
     await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
     // Mock L1 Endpoints  configuration
@@ -157,7 +185,8 @@ export const sidechainTestSetup = async (
     canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
     canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
     canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
-    await setTrustedRemoteCanonical(canonical, sidechain, sidechainLzChainId);
+    await setTrustedRemoteCanonicalPhase1(canonical, sidechain, sidechainLzChainId);
+    await setTrustedRemoteCanonicalPhase2(canonical, sidechain, sidechainLzChainId);
 
     // Emulate DAO Settings - L2 Stuff
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
