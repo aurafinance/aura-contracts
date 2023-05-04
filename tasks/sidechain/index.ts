@@ -8,7 +8,12 @@ import { getSigner, waitForTx } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { CanonicalPhaseDeployed, SidechainDeployed } from "../../scripts/deploySidechain";
+import {
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
+} from "../../scripts/deploySidechain";
 import {
     canonicalChains,
     remoteChainMap,
@@ -75,7 +80,7 @@ task("sidechain:aura-oft-info")
          * Local 
         --------------------------------------------------------------- */
 
-        const local: CanonicalPhaseDeployed = canonicalConfig.getSidechain(deployer) as any;
+        const local: CanonicalPhase1Deployed & CanonicalPhase2Deployed = canonicalConfig.getSidechain(deployer) as any;
         const phase2 = await canonicalConfig.getPhase2(deployer);
 
         log(
@@ -104,7 +109,9 @@ task("sidechain:aura-oft-info")
         console.log("Provider ready!");
 
         const remoteDeployer = deployer.connect(jsonProvider);
-        const remote: SidechainDeployed = sidechainConfig.getSidechain(remoteDeployer) as any;
+        const remote: SidechainPhase1Deployed & SidechainPhase2Deployed = sidechainConfig.getSidechain(
+            remoteDeployer,
+        ) as any;
 
         log(
             "Remote",

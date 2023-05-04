@@ -66,7 +66,7 @@ import {
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
-import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
+import { CanonicalPhase1Deployed, CanonicalPhase2Deployed } from "scripts/deploySidechain";
 import { parseEther } from "ethers/lib/utils";
 
 const addresses: ExtSystemConfig = {
@@ -400,7 +400,7 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", deployer);
 
-const getSidechain = async (deployer: Signer): Promise<CanonicalPhaseDeployed> => ({
+const getSidechain = async (deployer: Signer): Promise<CanonicalPhase1Deployed & CanonicalPhase2Deployed> => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),

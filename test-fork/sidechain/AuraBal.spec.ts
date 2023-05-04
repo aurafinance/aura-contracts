@@ -2,11 +2,16 @@ import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
 import { formatEther } from "ethers/lib/utils";
 import {
-    CanonicalPhaseDeployed,
-    deployCanonicalPhase,
-    deploySidechainSystem,
-    setTrustedRemoteCanonical,
-    SidechainDeployed,
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    deployCanonicalPhase1,
+    deployCanonicalPhase2,
+    deploySidechainPhase1,
+    deploySidechainPhase2,
+    setTrustedRemoteCanonicalPhase1,
+    setTrustedRemoteCanonicalPhase2,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
 import { SidechainConfig } from "../../types/sidechain-types";
@@ -46,11 +51,11 @@ describe("AuraBalOFT", () => {
     let l2LzEndpoint: LZEndpointMock;
 
     // Canonical chain Contracts
-    let canonical: CanonicalPhaseDeployed;
+    let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
     let create2Factory: Create2Factory;
 
     // Sidechain Contracts
-    let sidechain: SidechainDeployed;
+    let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let sidechainConfig: SidechainConfig;
 
     /* ---------------------------------------------------------------------
@@ -113,18 +118,26 @@ describe("AuraBalOFT", () => {
 
         // deploy canonicalPhase
         const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        canonical = await deployCanonicalPhase(
+        const canonicalPhase1 = await deployCanonicalPhase1(
             hre,
             deployer.signer,
             mainnetConfig.multisigs,
             extSystemConfig,
             phase2,
             phase6,
+        );
+        const canonicalPhase2 = await deployCanonicalPhase2(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            extSystemConfig,
+            phase2,
             vaultDeployment,
         );
+        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
         // deploy sidechain
-        sidechain = await deploySidechainSystem(
+        const sidechainPhase1 = await deploySidechainPhase1(
             hre,
             deployer.signer,
             sidechainConfig.naming,
@@ -133,6 +146,17 @@ describe("AuraBalOFT", () => {
             canonical,
             L1_CHAIN_ID,
         );
+        const sidechainPhase2 = await deploySidechainPhase2(
+            hre,
+            deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
+            canonicalPhase2,
+            sidechainPhase1,
+            L1_CHAIN_ID,
+        );
+        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
 
         await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, simpleToExactAmount(10_000));
         // Connect contracts to its owner signer.
@@ -167,7 +191,8 @@ describe("AuraBalOFT", () => {
             await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
         });
         it("set canonical trusted remotes", async () => {
-            await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
+            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
+            await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
         });
     });
 

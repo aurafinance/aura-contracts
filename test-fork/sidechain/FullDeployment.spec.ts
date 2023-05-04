@@ -3,11 +3,16 @@ import { BigNumber } from "ethers";
 import hre, { ethers, network } from "hardhat";
 import { deployContract } from "../../tasks/utils";
 import {
-    CanonicalPhaseDeployed,
-    deployCanonicalPhase,
-    deploySidechainSystem,
-    setTrustedRemoteCanonical,
-    SidechainDeployed,
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    deployCanonicalPhase1,
+    deployCanonicalPhase2,
+    deploySidechainPhase1,
+    deploySidechainPhase2,
+    setTrustedRemoteCanonicalPhase1,
+    setTrustedRemoteCanonicalPhase2,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
@@ -68,7 +73,7 @@ describe("Sidechain", () => {
     let l2LzEndpoint: LZEndpointMock;
 
     // Canonical chain Contracts
-    let canonical: CanonicalPhaseDeployed;
+    let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
     let create2Factory: Create2Factory;
     let l1Coordinator: L1Coordinator;
     let auraProxyOFT: AuraProxyOFT;
@@ -76,7 +81,7 @@ describe("Sidechain", () => {
     let bridgeDelegateReceiver: BridgeDelegateReceiver;
 
     // Sidechain Contracts
-    let sidechain: SidechainDeployed;
+    let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
@@ -170,21 +175,29 @@ describe("Sidechain", () => {
 
         // deploy canonicalPhase
         const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        canonical = await deployCanonicalPhase(
+        const canonicalPhase1 = await deployCanonicalPhase1(
             hre,
             deployer.signer,
             mainnetConfig.multisigs,
             extSystemConfig,
             phase2,
             phase6,
+        );
+        const canonicalPhase2 = await deployCanonicalPhase2(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            extSystemConfig,
+            phase2,
             vaultDeployment,
         );
+        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
         l1Coordinator = canonical.l1Coordinator;
         auraProxyOFT = canonical.auraProxyOFT;
 
         // deploy sidechain
-        sidechain = await deploySidechainSystem(
+        const sidechainPhase1 = await deploySidechainPhase1(
             hre,
             deployer.signer,
             sidechainConfig.naming,
@@ -193,6 +206,17 @@ describe("Sidechain", () => {
             canonical,
             L1_CHAIN_ID,
         );
+        const sidechainPhase2 = await deploySidechainPhase2(
+            hre,
+            deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
+            canonicalPhase2,
+            sidechainPhase1,
+            L1_CHAIN_ID,
+        );
+        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
@@ -374,7 +398,8 @@ describe("Sidechain", () => {
         });
         it("add trusted remotes to layerzero endpoints", async () => {
             // L1 Stuff
-            await setTrustedRemoteCanonical(canonical, sidechain, L2_CHAIN_ID);
+            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
+            await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
 
             expect(
                 await canonical.auraBalProxyOFT.isTrustedRemote(

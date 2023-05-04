@@ -1,6 +1,13 @@
 import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
-import { deployCanonicalPhase, deploySidechainSystem, SidechainDeployed } from "../../scripts/deploySidechain";
+import {
+    deployCanonicalPhase1,
+    deployCanonicalPhase2,
+    deploySidechainPhase1,
+    deploySidechainPhase2,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
+} from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
@@ -31,7 +38,7 @@ describe("Sidechain", () => {
     let l1LzEndpoint: LZEndpointMock;
     let l2LzEndpoint: LZEndpointMock;
     let create2Factory: Create2Factory;
-    let sidechain: SidechainDeployed;
+    let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
@@ -89,26 +96,44 @@ describe("Sidechain", () => {
 
         // deploy canonicalPhase
         const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonical = await deployCanonicalPhase(
+        const canonicalPhase2 = await deployCanonicalPhase2(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            l1Addresses,
+            phase2,
+            vaultDeployment,
+        );
+        const canonicalPhase1 = await deployCanonicalPhase1(
             hre,
             deployer.signer,
             mainnetConfig.multisigs,
             l1Addresses,
             phase2,
             phase6,
-            vaultDeployment,
         );
 
         // deploy sidechain
-        sidechain = await deploySidechainSystem(
+        const sidechainPhase1 = await deploySidechainPhase1(
             hre,
             deployer.signer,
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
-            canonical,
+            canonicalPhase1,
             L1_CHAIN_ID,
         );
+        const sidechainPhase2 = await deploySidechainPhase2(
+            hre,
+            deployer.signer,
+            sidechainConfig.naming,
+            sidechainConfig.multisigs,
+            sidechainConfig.extConfig,
+            canonicalPhase2,
+            sidechainPhase1,
+            L1_CHAIN_ID,
+        );
+        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
 
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
