@@ -8,6 +8,7 @@ import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { PausableProxyOFT } from "./PausableProxyOFT.sol";
 import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
+import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
  * @title AuraBalProxyOFT
@@ -18,6 +19,8 @@ import { IProxyOFT } from "../layerzero/token/oft/extension/IProxyOFT.sol";
  */
 contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     using SafeERC20 for IERC20;
+    using AuraMath for uint256;
+
     /* -------------------------------------------------------------------
        Types 
     ------------------------------------------------------------------- */
@@ -183,19 +186,25 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         //
         // Keep track of the sum of the totalUnderlying to verify the user input
         // _totalUnderlyingSum is correct
-        uint256 accUnderlying = 0;
         uint256 harvestTokenslen = harvestTokens.length;
-        for (uint256 i = 0; i < srcChainIdsLen; i++) {
-            for (uint256 j = 0; j < harvestTokenslen; j++) {
-                HarvestToken memory harvestToken = harvestTokens[j];
-                uint256 amount = (harvestToken.rewards * _totalUnderlying[i]) / _totalUnderlyingSum;
-                claimable[harvestToken.token][_srcChainIds[i]] += amount;
-                totalClaimable[harvestToken.token] += amount;
-            }
-            accUnderlying += _totalUnderlying[i];
-        }
+        for (uint256 j = 0; j < harvestTokenslen; j++) {
+            HarvestToken memory harvestToken = harvestTokens[j];
+            uint256 totalHarvested = 0;
+            uint256 accUnderlying = 0;
 
-        require(accUnderlying == _totalUnderlyingSum, "!totalUnderlyingSum");
+            for (uint256 i = 0; i < srcChainIdsLen; i++) {
+                uint256 totalUnderlying = _totalUnderlying[i];
+                uint256 amount = harvestToken.rewards.mul(totalUnderlying).div(_totalUnderlyingSum);
+
+                totalHarvested += amount;
+                accUnderlying += totalUnderlying;
+
+                claimable[harvestToken.token][_srcChainIds[i]] += amount;
+            }
+
+            totalClaimable[harvestToken.token] += totalHarvested;
+            require(accUnderlying == _totalUnderlyingSum, "!totalUnderlyingSum");
+        }
     }
 
     /**
@@ -319,7 +328,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
             address extraRewards = IGenericVault(vault).extraRewards(i);
             address token = IVirtualRewards(extraRewards).rewardToken();
             IVirtualRewards(extraRewards).getReward();
-            uint256 rewards = IERC20(token).balanceOf(address(this));
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            // Part of the balance is sat in the contract waiting to be claimable.
+            // Subtract that from the current balance to get the newly harvested rewards
+            uint256 rewards = balance.sub(totalClaimable[token]);
             harvestTokens[i + 1] = HarvestToken(token, rewards);
         }
     }
