@@ -6,41 +6,62 @@ Aura sidechain contracts
 
 ```
 contracts/sidechain
+├── AuraBalProxyOFT.sol     L1 Aura BAL proxy OFT
+├── AuraBalOFT.sol          L2 Aura BAL OFT
 ├── AuraProxyOFT.sol        L1 Aura proxy OFT
 ├── AuraOFT.sol             L2 Aura OFT
-├── L1Coordinator.sol       L1 Coordinator handles sending messages to canonical chain
-├── L2Coordinator.sol       L2 Coordinator handles sending messages to canonical chain
 ├── Create2Factory.sol      A create2 factory to deploy the sidechain contracts to constant addresses
 ├── CrossChainConfig.sol    Abstract contract to handle setting LZ configs
-└── CrossChainMessages.sol  Shared LZ messaging library
+├── CrossChainMessages.sol  Shared LZ messaging library
+├── L1Coordinator.sol       L1 Coordinator handles sending messages to canonical chain
+├── L2Coordinator.sol       L2 Coordinator handles sending messages to canonical chain
+├── PausableOFT.sol         L2 Coordinator handles sending messages to canonical chain
+├── PausableProxyOFT.sol    L2 Coordinator handles sending messages to canonical chain
+└── PauseGuardian.sol       Shared LZ messaging library
 ```
 
 ## Deployment Tasks
 
-1. Deploy the L1 sidechain system (AuraProxyOFT, L1Coordinator)
+### Phase 1
+
+Deployment of sidechain pools (Booster, VoterProxy etc) and the Aura OFT.
+
+1. Deploy the first phase of L1 sidechain system (AuraProxyOFT, L1Coordinator)
 
 ```
-yarn task deploy:sidechain:L1 --wait <WAIT_N_BLOCKS>
+yarn task deploy:sidechain:L1:phase1 --wait <WAIT_N_BLOCKS>
 ```
 
-2. Deploy the sidechain L2 system. (BoosterLite, VoterProxyLite, ... etc)
+2. Deploy the first phase of sidechain L2 system. (BoosterLite, VoterProxyLite, ... etc)
 
 ```
-yarn task deploy:sidechain:L2 --wait <WAIT_N_BLOCKS>
+yarn task deploy:sidechain:L2:phase1 --wait <WAIT_N_BLOCKS>
 ```
 
 3. Set the config and trusted remotes for the canonical chain
 
 ```
-
-yarn task deploy:sidechain:config:L1 --wait <WAIT_N_BLOCKS> --sidechainid <CHAIN_ID> --network <CANONICAL_NETWORK_NAME>
-
+yarn task deploy:sidechain:config:L1:phase1 --wait <WAIT_N_BLOCKS> --sidechainid <CHAIN_ID> --network <CANONICAL_NETWORK_NAME>
 ```
 
-4. Set the config and trusted remotes for the sidechain
+### Phase 2
+
+1. Deploy the second phase of L1 sidechain system (AuraBalProxyOFT)
 
 ```
-yarn task deploy:sidechain:config:L2 --wait <WAIT_N_BLOCKS> --canonicalchainid <CHAIN_ID> --network <SIDECHAIN_NETWORK_NAME>
+yarn task deploy:sidechain:L1:phase2 --wait <WAIT_N_BLOCKS>
+```
+
+2. Deploy the second phase of sidechain L2 system. (AuraBalOFT)
+
+```
+yarn task deploy:sidechain:L2:phase2 --wait <WAIT_N_BLOCKS>
+```
+
+3. Set the config and trusted remotes for the canonical chain
+
+```
+yarn task deploy:sidechain:config:L1:phase2 --wait <WAIT_N_BLOCKS> --sidechainid <CHAIN_ID> --network <CANONICAL_NETWORK_NAME>
 ```
 
 ## Other Tasks
@@ -67,41 +88,61 @@ Compute L2 contract addresses
 yarn task sidechain:addresses --chainId <CHAIN_ID>
 ```
 
-#### Local->Remote info
+#### LayerZero tasks
 
-Lookup OFT information for a local->remote chain. For this task remote chain id has to be any of the side chains.
-It is also required that the environment variable REMOTE_NODE_URL is set.
+Lookup OFT information for a local->remote chain. It is also required that the environment variable REMOTE_NODE_URL is set.
 
 For example if I want to lookup the information of mainnet->arbitrum I would set NODE_URL to a mainnet RPC and
-REMOTE_NODE_URL to an arbitrum RPC and then pass in the arbitrum chain ID as remotechainid
+REMOTE_NODE_URL to an arbitrum RPC and then pass in the arbitrum chain ID as sidechainid
 
 ```
-yarn task sidechain:aura-oft-info --remotechainid <REMOTE_CHAIN_ID>
+yarn task sidechain:aura-oft-info --sidechainid <SIDECHAIN_ID>
+```
+
+Send AURA to a sidechain by providing a sidechain ID. Can also set force to true to ignore the chain ID sanity check when sending AURA between deployments running on the same chain. This is useful when testing
+
+```
+yarn task sidechain:test:send-aura-to-sidechain \
+  --wait <WAIT_N_BLOCKS> \
+  --amount <AMOUNT_OF_AURA> \
+  --sidechainid <SIDECHAIN_ID> \
+  --force <IGNORE_SIDECHAIN_CHECK>
+```
+
+Lock AURA from a sidechain
+
+```
+yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_LOCK>
 ```
 
 ## Deployments
 
 #### Ethereum Mainnet (1)
 
-| Contract           | Address                                                                                                               |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| L1Coordinator      | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/)                                           |
-| AuraOFT (ProxyOFT) | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/0x2da25f5B2ba3aa776Bdda0bfAA33900F8195c8F3) |
+| Contract                   | Address                                                                     |
+| -------------------------- | --------------------------------------------------------------------------- |
+| L1Coordinator              | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
+| AuraProxyOFT (ProxyOFT)    | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
+| AuraBalProxyOFT (ProxyOFT) | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
 
 #### Arbitrum (42161)
 
-| Contract        | Address                                                                    |
-| --------------- | -------------------------------------------------------------------------- |
-| create2Factory  | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| L2Coordinator   | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraOFT         | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| BoosterLite     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| VoterProxyLite  | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| TokenFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| ProxyFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| StashFactory    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| PoolManagerLite | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| BoosterOwner    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| Contract           | Address                                                                    |
+| ------------------ | -------------------------------------------------------------------------- |
+| create2Factory     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| L2Coordinator      | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraOFT            | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraBalOFT         | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraBalVault       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraBalStrategy    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| AuraVirtualRewards | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| BoosterLite        | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| VoterProxyLite     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| TokenFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| ProxyFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| StashFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| PoolManagerLite    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| BoosterOwner       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
 
 ### Gnosis (100)
 
