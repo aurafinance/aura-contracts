@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { SidechainDeployed } from "scripts/deploySidechain";
+import { SidechainPhase1Deployed, SidechainPhase2Deployed } from "scripts/deploySidechain";
 
 export interface SidechainNaming {
     auraOftName: string;
@@ -35,5 +35,5 @@ export interface SidechainConfig {
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;
-    getSidechain?: (s: Signer) => SidechainDeployed;
+    getSidechain?: (s: Signer) => SidechainPhase1Deployed & SidechainPhase2Deployed;
 }

@@ -12,7 +12,7 @@ import {
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { ExtSystemConfig } from "./deploySystem";
-import { CanonicalPhaseDeployed } from "./deploySidechain";
+import { CanonicalPhase1Deployed } from "./deploySidechain";
 
 export interface SimplyBridgeDelegateDeployed {
     bridgeDelegateSender: BridgeDelegateSender;
@@ -25,7 +25,7 @@ export interface SimplyBridgeDelegateDeployed {
 export async function deploySimpleBridgeDelegates(
     hre: HardhatRuntimeEnvironment,
     config: ExtSystemConfig,
-    canonical: CanonicalPhaseDeployed,
+    canonical: CanonicalPhase1Deployed,
     srcChainId: number,
     deployer: Signer,
     debug: boolean = false,
