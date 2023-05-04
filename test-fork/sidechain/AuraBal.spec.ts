@@ -22,6 +22,7 @@ import {
     ONE_WEEK,
     getTimestamp,
     increaseTimeTo,
+    assertBNClose,
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
 import { BigNumber } from "ethers";
@@ -284,12 +285,14 @@ describe("AuraBalOFT", () => {
             const underlyingBalanceAfter = await vaultDeployment.vault.balanceOfUnderlying(
                 canonical.auraBalProxyOFT.address,
             );
+            const auraBalClaimed = underlyingBalanceAfter.sub(underlyingBalanceBefore);
             expect(underlyingBalanceAfter).gt(underlyingBalanceBefore);
+            expect(auraBalClaimed).gt(0);
 
             // Harvest from auraBAL proxy OFT
+            const auraBalanceBefore = await phase2.cvx.balanceOf(canonical.auraBalProxyOFT.address);
             const claimableAuraBalBefore = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
             const claimableAuraBefore = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvx.address);
-
             const srcChainAuraBalClaimableBefore = await canonical.auraBalProxyOFT.claimable(
                 phase2.cvxCrv.address,
                 L2_CHAIN_ID,
@@ -302,11 +305,9 @@ describe("AuraBalOFT", () => {
             // call harvest
             await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
 
+            const auraBalanceAfter = await phase2.cvx.balanceOf(canonical.auraBalProxyOFT.address);
             const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
             const claimableAuraAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvx.address);
-            expect(claimableAuraBalAfter).gt(claimableAuraBalBefore);
-            expect(claimableAuraAfter).gt(claimableAuraBefore);
-
             const srcChainAuraBalClaimableAfter = await canonical.auraBalProxyOFT.claimable(
                 phase2.cvxCrv.address,
                 L2_CHAIN_ID,
@@ -315,6 +316,12 @@ describe("AuraBalOFT", () => {
                 phase2.cvx.address,
                 L2_CHAIN_ID,
             );
+            const auraClaimed = auraBalanceAfter.sub(auraBalanceBefore);
+            expect(auraClaimed).gt(0);
+
+            expect(auraBalanceAfter).gt(auraBalanceBefore);
+            assertBNClose(claimableAuraBalAfter.sub(claimableAuraBalBefore), auraBalClaimed, 1);
+            expect(claimableAuraAfter.sub(claimableAuraBefore)).eq(auraClaimed);
             expect(srcChainAuraClaimableAfter).gt(srcChainAuraClaimableBefore);
             expect(srcChainAuraBalClaimableAfter).gt(srcChainAuraBalClaimableBefore);
         });
