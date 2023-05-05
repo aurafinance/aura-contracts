@@ -70,6 +70,14 @@ describe("Canonical", () => {
      * Helper Functions
      * --------------------------------------------------------------------- */
 
+    const getBpt = async (recipient: string, amount = simpleToExactAmount(250)) => {
+        const token = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9";
+        const whale = "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10";
+        const tokenWhaleSigner = await impersonateAccount(whale);
+        const tokenContract = MockERC20__factory.connect(token, tokenWhaleSigner.signer);
+        await tokenContract.transfer(recipient, amount);
+    };
+
     before(async () => {
         await network.provider.request({
             method: "hardhat_reset",
@@ -322,7 +330,7 @@ describe("Canonical", () => {
             await canonical.l1Coordinator
                 .connect(endpoint.signer)
                 .lzReceive(L2_CHAIN_ID, await canonical.l1Coordinator.trustedRemoteLookup(L2_CHAIN_ID), 0, payload);
-            expect(Number(await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID))).to.eq(Number(amount));
+            expect(Number(await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID))).to.eq(Number(amount));
         });
         it("Can Settle Fee Debt", async () => {
             const amount = simpleToExactAmount("100");
@@ -331,7 +339,7 @@ describe("Canonical", () => {
 
             const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
 
-            expect(Number(await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID))).to.eq(Number(0));
+            expect(Number(await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID))).to.eq(Number(0));
             expect(await crv.balanceOf(bridgeDelegate.bridgeDelegateReceiver.address)).to.eq(0);
             expect(await crv.balanceOf(canonical.l1Coordinator.address)).to.eq(amount);
         });
@@ -344,7 +352,7 @@ describe("Canonical", () => {
             const crvBalBefore = await crv.balanceOf(dao.address);
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            await canonical.l1Coordinator.distributeAura(L2_CHAIN_ID, { value: simpleToExactAmount("0.5") });
+            await canonical.l1Coordinator.distributeAura(L2_CHAIN_ID, "0x00", { value: simpleToExactAmount("0.5") });
 
             const endAura = await cvx.balanceOf(canonical.l1Coordinator.address);
             const endBal = await crv.balanceOf(canonical.l1Coordinator.address);
