@@ -651,4 +651,53 @@ describe("AuraBalOFT", () => {
             expect(await canonical.auraBalProxyOFT.queue(root)).eq(false);
         });
     });
+
+    describe("Rescue", () => {
+        it("Rescue is only callable by sudo", async () => {
+            await expect(
+                canonical.auraBalProxyOFT.connect(deployer.signer).rescue(phase2.cvxCrv.address, deployer.address, 100),
+            ).to.be.revertedWith("!sudo");
+        });
+        it("Can rescue tokens", async () => {
+            const to = deployer.address;
+            const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
+            const amount = simpleToExactAmount(1);
+            expect(amount).lte(underlying);
+
+            const balBefore = await phase2.cvxCrv.balanceOf(to);
+            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
+            const balAfter = await phase2.cvxCrv.balanceOf(to);
+
+            expect(balAfter.sub(balBefore)).eq(amount);
+        });
+        it("Can rescue entire balance", async () => {
+            const to = deployer.address;
+
+            // Harvest some rewards so internalTotalSupply is not latest
+            const underlyingBefore = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
+            await getAuraBal(phase2, mainnetConfig.addresses, vaultDeployment.strategy.address, simpleToExactAmount(1));
+            await vaultDeployment.vault["harvest()"]();
+            const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
+            expect(underlying).gt(underlyingBefore);
+
+            const amount = underlying;
+
+            await expect(canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount)).to.be
+                .reverted;
+
+            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
+            await canonical.auraBalProxyOFT.processClaimable(
+                phase2.cvxCrv.address,
+                canonical.auraBalProxyOFT.address,
+                L2_CHAIN_ID,
+                { value: NATIVE_FEE },
+            );
+
+            const balBefore = await phase2.cvxCrv.balanceOf(to);
+            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
+            const balAfter = await phase2.cvxCrv.balanceOf(to);
+
+            expect(balAfter.sub(balBefore)).eq(amount);
+        });
+    });
 });
