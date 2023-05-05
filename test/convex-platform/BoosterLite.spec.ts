@@ -275,5 +275,20 @@ describe("BoosterLite", () => {
         before(async () => {
             await setup();
         });
+        it("initialize fails if initialize is caller is not the owner", async () => {
+            await expect(
+                booster.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
+                "onlyOwner",
+            ).to.be.revertedWith("!auth");
+        });
+        it("initialize fails if initialize is caller is not the owner", async () => {
+            const boosterOwner = await booster.owner();
+            const ownerAccount = await impersonateAccount(boosterOwner);
+            expect(await booster.crv(), "crv").to.not.be.eq(ZERO_ADDRESS);
+            await expect(
+                booster.connect(ownerAccount.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
+                "only once",
+            ).to.be.revertedWith("Only once");
+        });
     });
 });
