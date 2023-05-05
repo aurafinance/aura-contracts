@@ -17,6 +17,10 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /// @dev canonical chain ID
     uint16 public immutable canonicalChainId;
+    /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+    event Locked(address indexed caller, uint256 amount);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -68,5 +72,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
             config.adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
         );
+
+        emit Locked(msg.sender, _cvxAmount);
     }
 }

@@ -10,6 +10,7 @@ import { BytesLib } from "../layerzero/util/BytesLib.sol";
 
 /**
  * @title PausableProxyOFT
+ * @author  AuraFinance
  */
 contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     using AuraMath for uint256;
@@ -147,8 +148,8 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      */
     function _sendAck(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
+        bytes memory, /* _srcAddress */
+        uint64, /*  _nonce */
         bytes memory _payload
     ) internal override {
         (, bytes memory toAddressBytes, uint256 amount) = abi.decode(_payload, (uint16, bytes, uint256));
@@ -230,7 +231,7 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      * @param _inflow   Inflow amount
      * @param _outflow  Outflow amount
      */
-    function _getNetInflow(uint256 _inflow, uint256 _outflow) internal view returns (uint256) {
+    function _getNetInflow(uint256 _inflow, uint256 _outflow) internal pure returns (uint256) {
         if (_inflow > _outflow) {
             return _inflow.sub(_outflow);
         }
