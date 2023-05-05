@@ -55,6 +55,17 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     mapping(address => bool) public distributors;
 
     /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+
+    event BridgeDelegateUpdated(uint16 srcChainId, address bridgeDelegate);
+    event L2CoordinatorUpated(uint16 srcChainId, address l2Coordinator);
+    event DisributorUpdated(address distributor, bool active);
+    event FeeDebtNotified(uint16 srcChainId, uint256 amount);
+    event AuraDistributed(uint16 srcChainId, uint256 amount);
+    event FeeDebtSettled(uint16 srcChainId, uint256 amount);
+
+    /* -------------------------------------------------------------------
        Modifiers  
     ------------------------------------------------------------------- */
 
@@ -102,14 +113,17 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function setBridgeDelegate(uint16 _srcChainId, address bridgeDelegate) external onlyOwner {
         bridgeDelegates[_srcChainId] = bridgeDelegate;
+        emit BridgeDelegateUpdated(_srcChainId, bridgeDelegate);
     }
 
     function setL2Coordinator(uint16 _srcChainId, address l2Coordinator) external onlyOwner {
         l2Coordinators[_srcChainId] = l2Coordinator;
+        emit L2CoordinatorUpated(_srcChainId, l2Coordinator);
     }
 
     function setDistributor(address _distributor, bool _active) external onlyOwner {
         distributors[_distributor] = _active;
+        emit DisributorUpdated(_distributor, _active);
     }
 
     /* -------------------------------------------------------------------
@@ -122,6 +136,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function _notifyFees(uint16 _srcChainId, uint256 _amount) internal {
         feeDebtOf[_srcChainId] += _amount;
+        emit FeeDebtNotified(_srcChainId, _amount);
     }
 
     function distributeAura(uint16 _srcChainId, bytes memory _sendFromAdapterParams) external payable onlyDistributor {
@@ -136,6 +151,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams,
             _sendFromAdapterParams
         );
+        emit AuraDistributed(_srcChainId, feeDebt);
     }
 
     /**
@@ -193,6 +209,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         settledFeeDebtOf[_srcChainId] = settledFeeDebt.add(_amount);
 
         IERC20(balToken).safeTransferFrom(bridgeDelegate, address(this), _amount);
+        emit FeeDebtSettled(_srcChainId, _amount);
     }
 
     /* -------------------------------------------------------------------
