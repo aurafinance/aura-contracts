@@ -338,23 +338,19 @@ describe("Canonical", () => {
             const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
             const cvx = MockERC20__factory.connect(phase2.cvx.address, dao.signer);
 
-            const feeAmount = await crv.balanceOf(canonical.l1Coordinator.address);
             const totalSupplyStart = await cvx.totalSupply();
-            const crvBalBefore = await crv.balanceOf(dao.address);
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
             await canonical.l1Coordinator.distributeAura(L2_CHAIN_ID, "0x", { value: simpleToExactAmount("0.5") });
 
             const endAura = await cvx.balanceOf(canonical.l1Coordinator.address);
             const endBal = await crv.balanceOf(canonical.l1Coordinator.address);
-            const crvBalAfter = await crv.balanceOf(dao.address);
             const endTotalSupply = await cvx.totalSupply();
             const endOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            //expect(endTotalSupply).to.be.gt(totalSupplyStart)
+            expect(endTotalSupply).to.be.gt(totalSupplyStart);
             expect(endAura).eq(0);
             expect(endBal).eq(0);
-            //expect(crvBalBefore.sub(crvBalAfter)).eq(feeAmount);
             expect(endOFTBalance).to.be.gt(startOFTBalance);
         });
         it("dissable distributor", async () => {
