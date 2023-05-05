@@ -13,16 +13,7 @@ import {
 } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import {
-    impersonateAccount,
-    ZERO_ADDRESS,
-    ONE_WEEK,
-    ONE_HOUR,
-    simpleToExactAmount,
-    ONE_DAY,
-    ZERO_KEY,
-    getBal,
-} from "../../test-utils";
+import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -48,6 +39,7 @@ describe("Sidechain", () => {
     let alice: Signer;
     let aliceAddress: string;
     let deployer: Account;
+    let notAuthorised: Account;
     let dao: Account;
     // phases
     let phase2: Phase2Deployed;
@@ -94,6 +86,8 @@ describe("Sidechain", () => {
         aliceAddress = await alice.getAddress();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
+        notAuthorised = await impersonateAccount(await accounts[3].getAddress());
+
         phase2 = await mainnetConfig.getPhase2(deployer.signer);
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
         vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
@@ -409,7 +403,8 @@ describe("Sidechain", () => {
     describe("Setup L2 Coordinator to be able to mint rewards", () => {
         it("Can send a payload to set the mint rate", async () => {
             const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
-            console.log(endpoint.address);
+            const mintRateBefore = await sidechain.l2Coordinator.mintRate();
+
             const payload = ethers.utils.defaultAbiCoder.encode(
                 ["bytes4", "uint8", "uint256", "uint256"],
                 ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
@@ -417,12 +412,17 @@ describe("Sidechain", () => {
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
                 .lzReceive(L1_CHAIN_ID, await sidechain.l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
-            console.log(await sidechain.l2Coordinator.mintRate());
+
+            const mintRateAfter = await sidechain.l2Coordinator.mintRate();
+            expect(mintRateBefore).not.eq(mintRateAfter);
         });
         it("Mint and send aura to l2 coordinator", async () => {
             // Transfer some AURA to L2
             const bridgeAmount = ethers.utils.parseEther("10000");
             const auraWhale = await impersonateAccount(mainnetConfig.addresses.balancerVault, true);
+
+            const auraBalanceBefore = await phase2.cvx.balanceOf(auraWhale.address);
+
             await phase2.cvx.connect(auraWhale.signer).approve(canonical.auraProxyOFT.address, bridgeAmount);
             await canonical.auraProxyOFT
                 .connect(auraWhale.signer)
@@ -438,6 +438,9 @@ describe("Sidechain", () => {
                         value: simpleToExactAmount("0.2"),
                     },
                 );
+
+            const auraBalanceAfter = await phase2.cvx.balanceOf(auraWhale.address);
+            expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(bridgeAmount);
         });
     });
 
@@ -448,19 +451,21 @@ describe("Sidechain", () => {
             const amount = ethers.utils.parseEther("1");
             await getBpt(aliceAddress, amount);
 
-            const lptoken = MockERC20__factory.connect(poolInfo.lptoken, alice);
-            await lptoken.approve(sidechain.booster.address, amount);
-            const lptokenBalance = await lptoken.balanceOf(aliceAddress);
-
             const depositToken = ERC20__factory.connect(poolInfo.token, alice);
-            const depositTokenBalanceBefore = await depositToken.balanceOf(aliceAddress);
+            const lptoken = MockERC20__factory.connect(poolInfo.lptoken, alice);
 
-            expect(lptokenBalance).gt(0);
+            await lptoken.approve(sidechain.booster.address, amount);
+
+            const depositTokenBalanceBefore = await depositToken.balanceOf(aliceAddress);
+            const lptokenBalanceBefore = await lptoken.balanceOf(aliceAddress);
+            expect(lptokenBalanceBefore).gt(0);
 
             await sidechain.booster.connect(alice).depositAll(0, false);
 
+            const lptokenBalanceAfter = await lptoken.balanceOf(aliceAddress);
             const depositTokenBalanceAfter = await depositToken.balanceOf(aliceAddress);
-            expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalance);
+            expect(lptokenBalanceAfter).eq(0);
+            expect(depositTokenBalanceAfter.sub(depositTokenBalanceBefore)).eq(lptokenBalanceBefore);
         });
         it("allows auraBPT deposits directly into the reward pool", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
@@ -558,8 +563,6 @@ describe("Sidechain", () => {
             const crvBalance = crvBalanceAfter.sub(crvBalanceBefore);
             const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore);
 
-            console.log(await sidechain.l2Coordinator.mintRate());
-
             expect(crvBalance).gte(earned);
             expect(cvxBalance).gt(0);
         });
@@ -630,15 +633,15 @@ describe("Sidechain", () => {
     describe("Shutdown", () => {
         it("allows system to be shutdown", async () => {
             const daoMultisig = await impersonateAccount(await sidechain.boosterOwner.owner());
-            const poolLength = Number(await sidechain.booster.poolLength());
+            const poolLength = await sidechain.booster.poolLength();
 
-            for (let i = 0; i < poolLength; i++) {
-                try {
-                    await sidechain.poolManager.connect(daoMultisig.signer).shutdownPool(i);
-                } catch (e) {
-                    // console.log(e)
+            for (let i = 0; i < poolLength.toNumber(); i++) {
+                const poolInfoBefore = await sidechain.booster.poolInfo(i);
+                if (poolInfoBefore.shutdown) {
+                    continue;
                 }
 
+                await sidechain.poolManager.connect(daoMultisig.signer).shutdownPool(i);
                 const poolInfo = await sidechain.booster.poolInfo(i);
                 expect(poolInfo.shutdown).to.eq(true);
             }
@@ -659,9 +662,7 @@ describe("Sidechain", () => {
         it("PoolManager protected functions", async () => {
             const owner = await impersonateAccount(await sidechain.poolManager.operator());
             await sidechain.poolManager.connect(owner.signer).setProtectPool(true);
-
-            const accounts = await ethers.getSigners();
-            const notAuthorised = await impersonateAccount(await accounts[3].getAddress());
+            expect(await sidechain.poolManager.protectAddPool()).eq(true);
 
             await expect(sidechain.poolManager.connect(notAuthorised.signer).shutdownPool(0)).to.revertedWith("!auth");
             await expect(sidechain.poolManager.connect(notAuthorised.signer).setProtectPool(true)).to.revertedWith(
@@ -672,9 +673,6 @@ describe("Sidechain", () => {
             ).to.revertedWith("!auth");
         });
         it("booster protected functions", async () => {
-            const accounts = await ethers.getSigners();
-            const notAuthorised = await impersonateAccount(await accounts[3].getAddress());
-
             await expect(sidechain.booster.connect(notAuthorised.signer).shutdownPool(0)).to.be.revertedWith("!auth");
             await expect(sidechain.booster.connect(notAuthorised.signer).shutdownSystem()).to.be.revertedWith("!auth");
             await expect(
@@ -702,9 +700,6 @@ describe("Sidechain", () => {
             ).to.be.revertedWith("!auth");
         });
         it("voterProxy protected functions", async () => {
-            const accounts = await ethers.getSigners();
-            const notAuthorised = await impersonateAccount(await accounts[3].getAddress());
-
             await expect(
                 sidechain.voterProxy.connect(notAuthorised.signer).setOwner(notAuthorised.address),
             ).to.be.revertedWith("!auth");
@@ -728,9 +723,6 @@ describe("Sidechain", () => {
         });
 
         it("boosterOwner protected functions", async () => {
-            const accounts = await ethers.getSigners();
-            const notAuthorised = await impersonateAccount(await accounts[3].getAddress());
-
             await expect(sidechain.boosterOwner.connect(notAuthorised.signer).shutdownSystem()).to.be.revertedWith(
                 "!owner",
             );
