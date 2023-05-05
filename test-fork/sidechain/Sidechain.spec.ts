@@ -536,14 +536,8 @@ describe("Sidechain", () => {
             const cvxBalanceAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
             const crvBalanceAfter = await crv.balanceOf(aliceAddress);
 
-            //console.log(await sidechain.booster.minter())
-            //console.log(await sidechain.auraOFT.address)
-            //console.log(await sidechain.auraOFT.mint())
-
             const crvBalance = crvBalanceAfter.sub(crvBalanceBefore);
             const cvxBalance = cvxBalanceAfter.sub(cvxBalanceBefore);
-
-            //console.log(crvBalance, cvxBalance)
 
             console.log(await sidechain.l2Coordinator.mintRate());
 
