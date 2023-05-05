@@ -1,12 +1,11 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { SidechainDeployed } from "scripts/deploySidechain";
 import { DEAD_ADDRESS, impersonateAccount, increaseTime, simpleToExactAmount, ZERO } from "../../test-utils";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../../test/shared/Ownable.behaviour";
 import { Account } from "../../types";
 import { BridgeDelegateReceiver, IERC20__factory, L1Coordinator } from "../../types/generated";
-import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+import { SideChainTestSetup, SidechainDeployed, sidechainTestSetup } from "./sidechainTestSetup";
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
@@ -88,19 +87,19 @@ describe("BridgeDelegateReceiver", () => {
             const amount = simpleToExactAmount(10);
 
             const srcChainId = await bridgeDelegateReceiver.srcChainId();
-            const feeDebtBefore = await l1Coordinator.feeDebt(srcChainId);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(srcChainId);
             await testSetup.l2.mocks.bpt.approve(sidechain.booster.address, amount);
             await sidechain.booster.deposit(pid, amount, stake);
             await increaseTime(60 * 60 * 24);
             // Send fees
             await sidechain.booster.earmarkRewards(pid, { value: NATIVE_FEE });
 
-            const feeDebtAfter = await l1Coordinator.feeDebt(srcChainId);
+            const feeDebtAfter = await l1Coordinator.feeDebtOf(srcChainId);
             expect(feeDebtAfter, "feeDebt").to.be.gt(feeDebtBefore);
         });
         it("allows to settle debt from a side chain", async () => {
             const srcChainId = await bridgeDelegateReceiver.srcChainId();
-            const feeDebtBefore = await l1Coordinator.feeDebt(srcChainId);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(srcChainId);
             expect(feeDebtBefore, "fee debt").to.be.gt(ZERO);
 
             // When settle  fee debt
@@ -108,13 +107,14 @@ describe("BridgeDelegateReceiver", () => {
             const tx = await bridgeDelegateReceiver.connect(deployer.signer).settleFeeDebt(feeDebtBefore);
             await expect(tx).to.emit(bridgeDelegateReceiver, "SettleFeeDebt").withArgs(feeDebtBefore);
 
-            const feeDebtAfter = await l1Coordinator.connect(dao.signer).feeDebt(srcChainId);
-            expect(feeDebtAfter, "feeDebt").to.be.eq(ZERO);
+            const feeDebtAfter = await l1Coordinator.connect(dao.signer).feeDebtOf(srcChainId);
+            const settledFeeDebtOf = await l1Coordinator.connect(dao.signer).settledFeeDebtOf(srcChainId);
+            expect(feeDebtAfter, "feeDebt").to.be.eq(settledFeeDebtOf);
         });
         it("fails if settle more than the actual debt", async () => {
             const amount = 1;
             const srcChainId = await bridgeDelegateReceiver.srcChainId();
-            const feeDebtBefore = await l1Coordinator.feeDebt(srcChainId);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(srcChainId);
             await expect(
                 bridgeDelegateReceiver.connect(dao.signer).settleFeeDebt(feeDebtBefore.add(amount)),
                 "Arithmetic operation underflowed",

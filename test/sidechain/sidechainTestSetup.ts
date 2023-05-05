@@ -3,18 +3,6 @@ import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
-    MultisigConfig,
-    Phase2Deployed,
-    Phase6Deployed,
-    deployPhase1,
-    deployPhase2,
-    deployPhase3,
-    deployPhase4,
-    deployPhase6,
-} from "../../scripts/deploySystem";
-import { DeployMocksResult, deployMocks, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
-import { impersonateAccount } from "../../test-utils/fork";
-import {
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deploySidechainPhase1,
@@ -45,18 +33,20 @@ import { deployVault, VaultDeployment } from "../../scripts/deployVault";
 import { impersonateAccount } from "../../test-utils/fork";
 import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
 
+export type SidechainDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed;
+export type CanonicalPhaseDeployed = CanonicalPhase1Deployed & CanonicalPhase2Deployed;
 export interface L1TestSetup {
     mocks: DeployMocksResult;
     multisigs: MultisigConfig;
     phase2: Phase2Deployed;
     phase6: Phase6Deployed;
-    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
+    canonical: CanonicalPhaseDeployed;
     vaultDeployment: VaultDeployment;
 }
 export interface L2TestSetup {
     mocks: DeployL2MocksResult;
     multisigs: SidechainMultisigConfig;
-    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
+    sidechain: SidechainDeployed;
 }
 export interface SideChainTestSetup {
     deployer: Account;

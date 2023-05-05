@@ -1,23 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { parseEther } from "@ethersproject/units";
 import { expect } from "chai";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { CanonicalPhaseDeployed, SidechainDeployed } from "scripts/deploySidechain";
-import {
-    getAura,
-    getAuraBal,
-    impersonateAccount,
-    increaseTime,
-    ONE_WEEK,
-    simpleToExactAmount,
-    ZERO,
-    ZERO_ADDRESS,
-} from "../../test-utils";
+import { impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import { AuraBalOFT, AuraBalProxyOFT, AuraBalVault, ERC20, MockERC20__factory, ProxyOFT } from "../../types/generated";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../shared/ERC20.behaviour";
 import { OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+import {
+    CanonicalPhaseDeployed,
+    SidechainDeployed,
+    sidechainTestSetup,
+    SideChainTestSetup,
+} from "../../test/sidechain/sidechainTestSetup";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
@@ -200,7 +197,7 @@ describe("AuraBalOFT", () => {
             // oFTCore
             expect(await auraBalOFT.NO_EXTRA_GAS(), "NO_EXTRA_GAS").to.eq(0);
             expect(await auraBalOFT.PT_SEND(), "PT_SEND").to.eq(0);
-            expect(await auraBalOFT.useCustomAdapterParams(), "useCustomAdapterParams").to.eq(false);
+            expect(await auraBalOFT.useCustomAdapterParams(), "useCustomAdapterParams").to.eq(true);
             // lzApp
             expect(await auraBalOFT.DEFAULT_PAYLOAD_SIZE_LIMIT(), "DEFAULT_PAYLOAD_SIZE_LIMIT").to.eq(10000);
             expect(await auraBalOFT.lzEndpoint(), "lzEndpoint").to.eq(testSetup.l2.mocks.addresses.lzEndpoint);

@@ -1,12 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { SidechainDeployed } from "scripts/deploySidechain";
 import { impersonateAccount, simpleToExactAmount } from "../../test-utils";
 import { Account } from "../../types";
 import { L2Coordinator } from "../../types/generated";
 import { OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+import { SideChainTestSetup, sidechainTestSetup, SidechainDeployed } from "./sidechainTestSetup";
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;

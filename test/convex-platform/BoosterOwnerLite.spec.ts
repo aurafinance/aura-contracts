@@ -2,11 +2,10 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account, SidechainMultisigConfig } from "types";
-import { CanonicalPhaseDeployed, SidechainDeployed } from "../../scripts/deploySidechain";
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { DEAD_ADDRESS, ONE_DAY, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
+import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import {
     BoosterLite,
     BoosterOwnerLite,

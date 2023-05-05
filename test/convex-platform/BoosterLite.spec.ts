@@ -2,12 +2,11 @@ import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { CanonicalPhaseDeployed, SidechainDeployed } from "../../scripts/deploySidechain";
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { increaseTime, increaseTimeTo, simpleToExactAmount } from "../../test-utils";
 import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
+import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import { BaseRewardPool__factory, BoosterLite, ERC20__factory } from "../../types/generated";
 
 type Pool = {
@@ -84,13 +83,13 @@ describe("BoosterLite", () => {
         });
         it("has the correct initial config", async () => {
             const lockFee = await booster.lockIncentive();
-            expect(lockFee).eq(550);
+            expect(lockFee).eq(1850);
             const stakerFee = await booster.stakerIncentive();
-            expect(stakerFee).eq(1100);
+            expect(stakerFee).eq(400);
             const callerFee = await booster.earmarkIncentive();
             expect(callerFee).eq(50);
             const platformFee = await booster.platformFee();
-            expect(platformFee).eq(0);
+            expect(platformFee).eq(200);
 
             const feeManager = await booster.feeManager();
             expect(feeManager).eq(await dao.signer.getAddress());
@@ -137,9 +136,9 @@ describe("BoosterLite", () => {
             // collect the rewards
             await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
 
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             await booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
 
             // bals after
             const balsAfter = await Promise.all([
@@ -200,7 +199,7 @@ describe("BoosterLite", () => {
             await increaseTime(60 * 60 * 24);
             const deployerBalanceBefore = await l2mocks.token.balanceOf(deployer.address);
             const rewardPoolBalanceBefore = await l2mocks.token.balanceOf(pool.crvRewards);
-            const feeDebtBefore = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtBefore = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const bridgeDelegate = await sidechain.l2Coordinator.bridgeDelegate();
             const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
 
@@ -209,7 +208,7 @@ describe("BoosterLite", () => {
             await tx.wait();
 
             // Then sends
-            const feeDebtAfter = await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const rate = await l2mocks.minter.rate();
             const callIncentive = rate
                 .mul(await sidechain.booster.earmarkIncentive())

@@ -327,6 +327,10 @@ async function deployMocks(
                 assetsIn: [feeToken.address],
             },
             lzEndpoint: lzEndpoint.address,
+            sidechain: {
+                auraBalInflowLimit: parseEther("1000000"),
+                auraInflowLimit: parseEther("1000000"),
+            },
         },
         namingConfig: {
             cvxName: "Convex Finance",

@@ -2,12 +2,16 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { CanonicalPhaseDeployed, SidechainDeployed } from "scripts/deploySidechain";
 import { BN, DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import { BaseRewardPool, BaseRewardPool__factory, ERC20, L1Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+import {
+    SideChainTestSetup,
+    sidechainTestSetup,
+    CanonicalPhaseDeployed,
+    SidechainDeployed,
+} from "./sidechainTestSetup";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
@@ -53,6 +57,8 @@ describe("L1Coordinator", () => {
             "0x5",
             newSlot,
         ]);
+
+        await l1Coordinator.connect(dao.signer).setDistributor(deployer.address, true);
         // update Aura operator
         await testSetup.l1.phase2.cvx.updateOperator();
         await crv.transfer(l1Coordinator.address, simpleToExactAmount(10));
@@ -101,7 +107,7 @@ describe("L1Coordinator", () => {
             expect(await l1Coordinator.balToken(), "balToken").to.eq(crv.address);
             expect(await l1Coordinator.auraToken(), "auraToken").to.eq(cvx.address);
             expect(await l1Coordinator.auraOFT(), "auraOFT").to.eq(canonical.auraProxyOFT.address);
-            expect(await l1Coordinator.feeDebt(L2_CHAIN_ID), "feeDebt").to.eq(ZERO);
+            expect(await l1Coordinator.feeDebtOf(L2_CHAIN_ID), "feeDebt").to.eq(ZERO);
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID), "bridgeDelegates").to.eq(
                 testSetup.bridgeDelegates.bridgeDelegateReceiver.address,
             );
@@ -111,7 +117,7 @@ describe("L1Coordinator", () => {
         });
         it("check initial state of new chains", async () => {
             const SUPER_L2_CHAIN_ID = 999;
-            expect(await l1Coordinator.feeDebt(SUPER_L2_CHAIN_ID), "feeDebt").to.eq(ZERO);
+            expect(await l1Coordinator.feeDebtOf(SUPER_L2_CHAIN_ID), "feeDebt").to.eq(ZERO);
             expect(await l1Coordinator.bridgeDelegates(SUPER_L2_CHAIN_ID), "bridgeDelegates").to.eq(ZERO_ADDRESS);
             expect(await l1Coordinator.l2Coordinators(SUPER_L2_CHAIN_ID), "l2Coordinators").to.eq(ZERO_ADDRESS);
         });
@@ -199,12 +205,12 @@ describe("L1Coordinator", () => {
             // L2 LZEndpointMock.send() =>  L1 ZEndpointMock.receivePayload()
             // L1 L1Coordinator.lzReceive() => L1Coordinator._notifyFees() => feeDebt[_srcChainId] += _amount
             const amountOfFees = await toFeeAmount(mintrMintAmount);
-            const feeDebtBefore = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const coordinatorBalBefore = await testSetup.l2.mocks.token.balanceOf(
                 testSetup.bridgeDelegates.bridgeDelegateSender.address,
             );
             await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
-            const feeDebtAfter = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             feeDebt = feeDebtAfter.sub(feeDebtBefore);
             const coordinatorBalAfter = await testSetup.l2.mocks.token.balanceOf(
                 testSetup.bridgeDelegates.bridgeDelegateSender.address,
@@ -225,8 +231,13 @@ describe("L1Coordinator", () => {
             const coordinatorAuraBalBefore = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
             expect(await sidechain.l2Coordinator.mintRate()).eq(0);
             // When distribute Aura
-            await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(true);
-            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
+            await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(false);
+            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+
+            // Verify that calling it twice it does not distribute twice
+            await expect(
+                l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) }),
+            ).to.be.revertedWith("SafeMath: division by zero");
 
             // Expect aura to be received on L2 Coordinator
             const coordinatorAuraBalAfter = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
@@ -260,7 +271,7 @@ describe("L1Coordinator", () => {
             await crv.transfer(testSetup.bridgeDelegates.bridgeDelegateReceiver.address, feeDebt);
 
             const bridgeDelegate = await l1Coordinator.bridgeDelegates(L2_CHAIN_ID);
-            const feeDebtBefore = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const bridgeDelegateBalance = await crv.balanceOf(bridgeDelegate);
             const l1CoordinatorBalance = await crv.balanceOf(l1Coordinator.address);
 
@@ -273,46 +284,52 @@ describe("L1Coordinator", () => {
             const tx = await testSetup.bridgeDelegates.bridgeDelegateReceiver
                 .connect(deployer.signer)
                 .settleFeeDebt(feeDebt);
-            // const tx = await l1Coordinator.settleFeeDebt(L2_CHAIN_ID, feeDebt);
+
+            // Verify that calling it twice it does not distribute twice
+            await expect(
+                testSetup.bridgeDelegates.bridgeDelegateReceiver.connect(deployer.signer).settleFeeDebt(feeDebt),
+            ).to.be.revertedWith("!amount");
+
             // No Events on l1Coordinator
             await expect(tx)
                 .to.emit(testSetup.bridgeDelegates.bridgeDelegateReceiver, "SettleFeeDebt")
                 .withArgs(feeDebt);
 
-            const feeDebtAfter = await l1Coordinator.feeDebt(L2_CHAIN_ID);
+            const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            const settledFeeDebtOf = await l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID);
 
             const bridgeDelegateAfter = await crv.balanceOf(bridgeDelegate);
             const l1CoordinatorAfter = await crv.balanceOf(l1Coordinator.address);
 
-            expect(feeDebtAfter, "settleFeeDebt").to.be.eq(feeDebtBefore.sub(feeDebt));
+            expect(feeDebtAfter, "settleFeeDebt").to.be.eq(settledFeeDebtOf);
             expect(bridgeDelegateAfter, "bridgeDelegate balance").to.be.eq(bridgeDelegateBalance.sub(feeDebt));
             expect(l1CoordinatorAfter, "l1Coordinator balance").to.be.eq(l1CoordinatorBalance.add(feeDebt));
         });
     });
     describe("Edge cases", () => {
         describe("distributeAura", async () => {
-            xit("fails fee is distributed but not settle yet", async () => {
-                // CURRENTLY IT IS NOT FAILING
-                await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2), gasLimit: 1000000 });
-                // const coordinatorAuraBalAfter01 = await sidechain.auraOFT.balanceOf(
-                //     sidechain.l2Coordinator.address,
-                // );
-                await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2), gasLimit: 1000000 });
-                // const coordinatorAuraBalAfter02 = await sidechain.auraOFT.balanceOf(
-                //     sidechain.l2Coordinator.address,
-                // );
-            });
             it("fails if the chain does not exist", async () => {
                 await expect(
-                    l1Coordinator.distributeAura(999, { value: NATIVE_FEE.mul(2) }),
+                    l1Coordinator.distributeAura(999, [], { value: NATIVE_FEE.mul(2) }),
                     "wrong chain",
-                ).to.be.revertedWith("to can not be zero");
+                ).to.be.revertedWith("SafeMath: division by zero");
             });
             xit("fails if no native fees are provided", async () => {
-                await expect(
-                    l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) }),
+                await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, []), "!feeAmount").to.be.revertedWith(
                     "!feeAmount",
-                ).to.be.revertedWith("!feeAmount");
+                );
+            });
+            it("fails if caller is not distributor", async () => {
+                await expect(
+                    l1Coordinator.connect(alice.signer).distributeAura(999, [], { value: NATIVE_FEE.mul(2) }),
+                    "onlyDistributor",
+                ).to.be.revertedWith("!distributor");
+            });
+            it("fails if caller is not distributor", async () => {
+                await expect(
+                    l1Coordinator.connect(alice.signer).setDistributor(DEAD_ADDRESS, true),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
         });
 
@@ -320,7 +337,7 @@ describe("L1Coordinator", () => {
             it("fails if settle more than the actual debt", async () => {
                 const amount = 1;
                 const srcChainId = await testSetup.bridgeDelegates.bridgeDelegateReceiver.srcChainId();
-                const feeDebtBefore = await l1Coordinator.feeDebt(srcChainId);
+                const feeDebtBefore = await l1Coordinator.feeDebtOf(srcChainId);
                 await expect(
                     testSetup.bridgeDelegates.bridgeDelegateReceiver
                         .connect(dao.signer)
@@ -352,7 +369,7 @@ describe("L1Coordinator", () => {
             await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(false);
             await l1Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selectorHash, config);
             await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
-            await l1Coordinator.distributeAura(L2_CHAIN_ID, { value: NATIVE_FEE.mul(2) });
+            await l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
         });
     });
 });

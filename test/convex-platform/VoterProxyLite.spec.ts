@@ -2,12 +2,11 @@ import { expect } from "chai";
 import { BigNumberish, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { SidechainDeployed } from "../../scripts/deploySidechain";
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { simpleToExactAmount } from "../../test-utils";
 import { ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
+import { SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import { BoosterLite__factory, VoterProxyLite, VoterProxyLite__factory } from "../../types/generated";
 
 describe("VoterProxyLite", () => {

@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { CanonicalPhaseDeployed } from "scripts/deploySidechain";
 import {
     DEAD_ADDRESS,
     impersonateAccount,
@@ -15,7 +14,7 @@ import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../../test/shared
 import { Account } from "../../types";
 import { AuraOFT, ERC20, ProxyOFT } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+import { SideChainTestSetup, sidechainTestSetup, CanonicalPhaseDeployed } from "./sidechainTestSetup";
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
@@ -122,11 +121,9 @@ describe("AuraOFT", () => {
             expect(await auraOFT.PT_SEND(), "PT_SEND").to.eq(0);
             expect(await auraOFT.useCustomAdapterParams(), "useCustomAdapterParams").to.eq(false);
             // nonblockingLzApp
-            // expect(await auraOFT.failedMessages(), "failedMessages").to.eq("TODO");
             // lzApp
             expect(await auraOFT.DEFAULT_PAYLOAD_SIZE_LIMIT(), "DEFAULT_PAYLOAD_SIZE_LIMIT").to.eq(10000);
             expect(await auraOFT.lzEndpoint(), "lzEndpoint").to.eq(testSetup.l2.mocks.addresses.lzEndpoint);
-            // expect(await auraOFT.minDstGasLookup(), "minDstGasLookup").to.eq("TODO");
             expect(await auraOFT.precrime(), "precrime").to.eq(ZERO_ADDRESS);
         });
         it("should be initialized", async () => {
