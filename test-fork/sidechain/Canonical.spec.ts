@@ -255,6 +255,7 @@ describe("Canonical", () => {
             expect(await canonical.auraProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraProxyOFT.token()).eq(phase2.cvx.address);
             expect(await canonical.auraProxyOFT.locker()).eq(phase2.cvxLocker.address);
+            expect(Number(await canonical.auraProxyOFT.epochDuration())).eq(Number(60 * 60 * 24 * 7));
             // Allowances
             expect(await phase2.cvx.allowance(canonical.auraProxyOFT.address, phase2.cvxLocker.address)).eq(
                 ethers.constants.MaxUint256,
@@ -292,24 +293,26 @@ describe("Canonical", () => {
         it("Can Notify Fees", async () => {
             const endpoint = await impersonateAccount(await canonical.l1Coordinator.lzEndpoint());
             console.log(endpoint.address);
+            const amount = simpleToExactAmount("100");
             const payload = ethers.utils.defaultAbiCoder.encode(
                 ["bytes4", "uint8", "uint256"],
-                ["0x7a7f9946", "1", (100e18).toString()],
+                ["0x7a7f9946", "1", amount],
             );
             await canonical.l1Coordinator
                 .connect(endpoint.signer)
                 .lzReceive(L2_CHAIN_ID, await canonical.l1Coordinator.trustedRemoteLookup(L2_CHAIN_ID), 0, payload);
-            expect(Number(await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID))).to.eq(Number(100e18));
+            expect(Number(await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID))).to.eq(Number(amount));
         });
         it("Can Settle Fee Debt", async () => {
-            await getBal(mainnetConfig.addresses, bridgeDelegate.bridgeDelegateReceiver.address, (100e18).toString());
-            await bridgeDelegate.bridgeDelegateReceiver.settleFeeDebt((100e18).toString());
+            const amount = simpleToExactAmount("100");
+            await getBal(mainnetConfig.addresses, bridgeDelegate.bridgeDelegateReceiver.address, amount);
+            await bridgeDelegate.bridgeDelegateReceiver.settleFeeDebt(amount);
 
             const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
 
             expect(Number(await canonical.l1Coordinator.feeDebt(L2_CHAIN_ID))).to.eq(Number(0));
             expect(await crv.balanceOf(bridgeDelegate.bridgeDelegateReceiver.address)).to.eq(0);
-            expect(await crv.balanceOf(canonical.l1Coordinator.address)).to.eq(100e18);
+            expect(await crv.balanceOf(canonical.l1Coordinator.address)).to.eq(amount);
         });
         it("booster can recieve l2 fees and distribute aura to l1coordinator", async () => {
             const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
@@ -320,7 +323,7 @@ describe("Canonical", () => {
             const crvBalBefore = await crv.balanceOf(dao.address);
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            await canonical.l1Coordinator.distributeAura(L2_CHAIN_ID, { value: simpleToExactAmount("0.2") });
+            await canonical.l1Coordinator.distributeAura(L2_CHAIN_ID, { value: simpleToExactAmount("0.5") });
 
             const endAura = await cvx.balanceOf(canonical.l1Coordinator.address);
             const endBal = await crv.balanceOf(canonical.l1Coordinator.address);
@@ -333,6 +336,21 @@ describe("Canonical", () => {
             expect(endBal).eq(0);
             expect(crvBalBefore.sub(crvBalAfter)).eq(feeAmount);
             expect(endOFTBalance).to.be.gt(startOFTBalance);
+        });
+    });
+    describe("AuraProxyOFT", () => {
+        it("Can Pause OFT", async () => {
+            expect(await canonical.auraProxyOFT.paused()).eq(false);
+            await canonical.auraProxyOFT.pause();
+            expect(await canonical.auraProxyOFT.paused()).eq(true);
+        });
+        it("Can unpause OFT", async () => {
+            expect(await canonical.auraProxyOFT.paused()).eq(true);
+            await canonical.auraProxyOFT.unpause();
+            expect(await canonical.auraProxyOFT.paused()).eq(false);
+        });
+        it("Can unpause OFT", async () => {
+            //canonical.auraProxyOFT.
         });
     });
 });
