@@ -239,7 +239,6 @@ describe("Sidechain", () => {
             expect(await sidechain.boosterOwner.isForceTimerStarted()).eq(false);
             expect(await sidechain.boosterOwner.forceTimestamp()).eq(0);
         });
-        it("BoosterOwnerSecondary has correct config");
         it("factories have correct config", async () => {
             const {
                 booster,
@@ -314,6 +313,96 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
             const rewardContract = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, deployer.signer);
             await expect(rewardContract.extraRewards(0)).to.be.reverted;
+        });
+        it("Delegates are set up", async () => {
+            let owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
+            await sidechain.l2Coordinator
+                .connect(owner.signer)
+                .setBridgeDelegate(bridgeDelegate.bridgeDelegateSender.address);
+
+            owner = await impersonateAccount(await bridgeDelegate.bridgeDelegateSender.owner());
+
+            await bridgeDelegate.bridgeDelegateSender
+                .connect(owner.signer)
+                .setL2Coordinator(sidechain.l2Coordinator.address);
+
+            expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(bridgeDelegate.bridgeDelegateSender.address);
+            expect(await bridgeDelegate.bridgeDelegateSender.l2Coordinator()).to.eq(sidechain.l2Coordinator.address);
+        });
+        it("add trusted remotes to layerzero endpoints", async () => {
+            const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
+            // L1 Stuff
+            await canonical.l1Coordinator
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
+                    ),
+                );
+
+            await canonical.auraProxyOFT
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
+                    ),
+                );
+
+            await canonical.auraProxyOFT
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
+                    ),
+                );
+
+            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
+            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
+
+            // L2 Stuff
+
+            await sidechain.l2Coordinator
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.l1Coordinator.address, sidechain.l2Coordinator.address],
+                    ),
+                );
+
+            await sidechain.auraOFT
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.auraProxyOFT.address, sidechain.auraOFT.address],
+                    ),
+                );
+
+            await sidechain.auraBalOFT
+                .connect(owner.signer)
+                .setTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
+                    ),
+                );
+
+            await l2LzEndpoint
+                .connect(owner.signer)
+                .setDestLzEndpoint(canonical.l1Coordinator.address, l1LzEndpoint.address);
+            await l2LzEndpoint
+                .connect(owner.signer)
+                .setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
         });
     });
 
