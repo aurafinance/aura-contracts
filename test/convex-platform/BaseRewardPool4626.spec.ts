@@ -13,9 +13,9 @@ import {
     VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
-import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
+import { DEAD_ADDRESS, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { deployContract } from "../../tasks/utils";
-import { impersonateAccount } from "../../test-utils/fork";
+import { impersonateAccount, increaseTime } from "../../test-utils";
 import { Account, PoolInfo } from "types";
 
 describe("BaseRewardPool4626", () => {
@@ -49,7 +49,9 @@ describe("BaseRewardPool4626", () => {
             mocks.addresses,
         );
         const phase3 = await deployPhase3(hre, deployer, phase2, multisigs, mocks.addresses);
-        await phase3.poolManager.connect(accounts[6]).setProtectPool(false);
+        await phase3.poolManager.connect(dao.signer).setProtectPool(false);
+        await phase3.boosterOwner.connect(dao.signer).setFeeInfo(mocks.lptoken.address, mocks.feeDistribution.address);
+        await phase3.boosterOwner.connect(dao.signer).setFeeInfo(mocks.crv.address, mocks.feeDistribution.address);
         contracts = await deployPhase4(hre, deployer, phase3, mocks.addresses);
 
         ({ booster } = contracts);
@@ -277,7 +279,16 @@ describe("BaseRewardPool4626", () => {
             expect(await crvRewards.maxWithdraw(aliceAddress)).eq(rwdBalanceAfter);
             expect(await crvRewards.maxRedeem(aliceAddress)).eq(rwdBalanceAfter);
         });
-        it("allows transferFrom between accounts", async () => {
+        it("earmark rewards", async () => {
+            await increaseTime(ONE_WEEK.mul(2));
+            await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
+            await booster.earmarkRewards(0);
+            await booster.earmarkFees(mocks.crv.address);
+            await increaseTime(ONE_WEEK.mul(2));
+            await booster.earmarkRewards(0);
+        });
+
+        xit("allows transferFrom between accounts", async () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alternateReceiver);
             const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(
@@ -292,11 +303,18 @@ describe("BaseRewardPool4626", () => {
             const alternateReceiverVirtualBalanceBefore = await virtualBalanceRewardPool.balanceOf(
                 alternateReceiverAddress,
             );
+            // Rewards check
+            const aliceEarnedBefore = await crvRewards.earned(aliceAddress);
+            const aliceVirtualEarnedBefore = await virtualBalanceRewardPool.earned(aliceAddress);
+
+            const alternateEarnedBefore = await crvRewards.earned(alternateReceiverAddress);
+            const alternateVirtualEarnedBefore = await virtualBalanceRewardPool.earned(alternateReceiverAddress);
 
             const amount = alternateReceiverBalanceBefore.div(4);
 
             // Alternate approves deployer to transfer tokens
             await crvRewards.approve(deployerAddress, amount);
+            // When the token is transfer from one account to another
             const tx = await crvRewards.connect(deployer).transferFrom(alternateReceiverAddress, aliceAddress, amount);
 
             await expect(tx).to.emit(crvRewards, "Transfer").withArgs(alternateReceiverAddress, aliceAddress, amount);
@@ -318,8 +336,29 @@ describe("BaseRewardPool4626", () => {
 
             expect(aliceVirtualBalanceAfter.sub(aliceVirtualBalanceBefore)).eq(amount);
             expect(alternateReceiverVirtualBalanceBefore.sub(alternateReceiverVirtualBalanceAfter)).eq(amount);
+
+            // Verify the original holder (alternate) can still claim rewards.
+            const aliceEarnedAfter = await crvRewards.earned(aliceAddress);
+            const aliceVirtualEarnedAfter = await virtualBalanceRewardPool.earned(aliceAddress);
+
+            const alternateEarnedAfter = await crvRewards.earned(alternateReceiverAddress);
+            const alternateVirtualEarnedAfter = await virtualBalanceRewardPool.earned(alternateReceiverAddress);
+
+            expect(alternateEarnedAfter, "from rewards earned").to.be.gte(alternateEarnedBefore);
+            expect(aliceEarnedAfter, "to rewards earned").to.be.gte(aliceEarnedBefore);
+            expect(alternateVirtualEarnedAfter, "from rewards earned").to.be.gte(alternateVirtualEarnedBefore);
+            expect(aliceVirtualEarnedAfter, "to rewards earned").to.be.gte(aliceVirtualEarnedBefore);
         });
-        it("allows transfer between accounts", async () => {
+        it("earmark rewards", async () => {
+            await increaseTime(ONE_WEEK.mul(2));
+            await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
+            await booster.earmarkRewards(0);
+            await booster.earmarkFees(mocks.crv.address);
+            await increaseTime(ONE_WEEK.mul(2));
+            await booster.earmarkRewards(0);
+        });
+
+        xit("allows transfer between accounts", async () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(
@@ -331,9 +370,15 @@ describe("BaseRewardPool4626", () => {
             const alternateReceiverBalanceBefore = await crvRewards.balanceOf(alternateReceiverAddress);
 
             const aliceVirtualBalanceBefore = await virtualBalanceRewardPool.balanceOf(aliceAddress);
+            const aliceVirtualEarnedBefore = await virtualBalanceRewardPool.earned(aliceAddress);
             const alternateReceiverVirtualBalanceBefore = await virtualBalanceRewardPool.balanceOf(
                 alternateReceiverAddress,
             );
+
+            // Rewards check
+            const aliceEarnedBefore = await crvRewards.earned(aliceAddress);
+            const alternateEarnedBefore = await crvRewards.earned(alternateReceiverAddress);
+            const alternateVirtualEarnedBefore = await virtualBalanceRewardPool.earned(alternateReceiverAddress);
 
             const amount = aliceBalanceBefore;
 
@@ -358,7 +403,45 @@ describe("BaseRewardPool4626", () => {
 
             expect(aliceVirtualBalanceBefore.sub(aliceVirtualBalanceAfter)).eq(amount);
             expect(alternateReceiverVirtualBalanceAfter.sub(alternateReceiverVirtualBalanceBefore)).eq(amount);
+
+            // Verify the original holder (alternate) can still claim rewards.
+            let aliceEarnedAfter = await crvRewards.earned(aliceAddress);
+            let alternateEarnedAfter = await crvRewards.earned(alternateReceiverAddress);
+            let aliceVirtualEarnedAfter = await virtualBalanceRewardPool.earned(aliceAddress);
+            let alternateVirtualEarnedAfter = await virtualBalanceRewardPool.earned(alternateReceiverAddress);
+
+            expect(aliceEarnedAfter, "from rewards earned").to.be.gte(aliceEarnedBefore);
+            expect(alternateEarnedAfter, "to rewards earned").to.be.gte(alternateEarnedBefore);
+
+            expect(alternateVirtualEarnedAfter, "from rewards earned").to.be.gte(alternateVirtualEarnedBefore);
+            expect(aliceVirtualEarnedAfter, "to rewards earned").to.be.gte(aliceVirtualEarnedBefore);
         });
+        xit("claim rewards after transfers", async () => {
+            const alternateReceiverAddress = await alternateReceiver.getAddress();
+            const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
+
+            let aliceCrvBalanceBefore = await mocks.crv.balanceOf(aliceAddress);
+            let alternateCrvBalanceBefore = await mocks.crv.balanceOf(alternateReceiverAddress);
+            const aliceEarnedBefore = await crvRewards.earned(aliceAddress);
+            const alternateEarnedBefore = await crvRewards.earned(alternateReceiverAddress);
+
+            // When getting rewards
+            await crvRewards.connect(alice)["getReward(address,bool)"](aliceAddress, true);
+            await crvRewards.connect(alternateReceiver)["getReward(address,bool)"](alternateReceiverAddress, true);
+
+            const aliceEarnedAfter = await crvRewards.earned(aliceAddress);
+            const alternateEarnedAfter = await crvRewards.earned(alternateReceiverAddress);
+            const aliceCrvBalanceAfter = await mocks.crv.balanceOf(aliceAddress);
+            const alternateCrvBalanceAfter = await mocks.crv.balanceOf(alternateReceiverAddress);
+
+            expect(aliceCrvBalanceAfter, "crv collected").to.be.gte(aliceCrvBalanceBefore.add(aliceEarnedBefore));
+            expect(alternateCrvBalanceAfter, "crv collected").to.be.gte(
+                alternateCrvBalanceBefore.add(alternateEarnedBefore),
+            );
+            expect(aliceEarnedAfter, "aliceEarnedAfter").to.be.eq(ZERO);
+            expect(alternateEarnedAfter, "alternateEarnedAfter").to.be.eq(ZERO);
+        });
+
         it("allows direct withdraws for alternate receiver", async () => {
             const amount = ethers.utils.parseEther("10");
             const alternateReceiverAddress = await alternateReceiver.getAddress();

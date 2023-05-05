@@ -13,16 +13,9 @@ const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 
-// ADD TESTS TO VERIFY WRONG STORAGE DUE TO BAD srcs
-//  @method Booster.earmarkRewards: Error: VM Exception while processing transaction: reverted with reason string 'LayerZeroMock: not enough native for fees'
-// @method BaseRewardPool.processIdleRewards():
-// Error: VM Exception while processing transaction: reverted with reason string 'LayerZeroMock: not enough native for fees'
-// @method BaseRewardPool.stake:
-// Error: VM Exception while processing transaction: reverted with reason string 'RewardPool : Cannot stake 0'
 describe("BoosterLite", () => {
     let accounts: Signer[];
     let booster: BoosterLite;
-    // let mocks: DeployMocksResult;
     let pool: PoolInfo;
 
     let alice: Signer;
