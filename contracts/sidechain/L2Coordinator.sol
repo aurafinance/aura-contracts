@@ -39,6 +39,10 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /// @dev The bridge delegate contract
     address public bridgeDelegate;
+    /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+    event BridgeDelegateUpdated(address bridgeDelegate);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -65,6 +69,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
     function setBridgeDelegate(address _bridgeDelegate) external onlyOwner {
         bridgeDelegate = _bridgeDelegate;
+        emit BridgeDelegateUpdated(bridgeDelegate);
     }
 
     function setConfig(

@@ -21,7 +21,7 @@ contract AuraProxyOFT is PausableProxyOFT {
     ------------------------------------------------------------------- */
 
     /// @dev Aura Locker contract address
-    address public locker;
+    address public immutable locker;
 
     /* -------------------------------------------------------------------
        Constructor 

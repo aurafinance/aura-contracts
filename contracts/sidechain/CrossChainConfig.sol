@@ -13,6 +13,10 @@ abstract contract CrossChainConfig {
     }
 
     mapping(uint16 => mapping(bytes4 => Config)) public configs;
+    /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+    event SetConfig(uint16 indexed srcChainId, bytes4 selector, bytes adapterParams, address zroPaymentAddress);
 
     function setConfig(
         uint16 _srcChainId,
@@ -26,5 +30,6 @@ abstract contract CrossChainConfig {
         Config memory _config
     ) internal {
         configs[_srcChainId][_selector] = _config;
+        emit SetConfig(_srcChainId, _selector, _config.adapterParams, _config.zroPaymentAddress);
     }
 }
