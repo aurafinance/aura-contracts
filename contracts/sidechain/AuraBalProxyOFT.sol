@@ -66,8 +66,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         address _token,
         address _vault,
         address _guardian,
+        address _sudo,
         uint256 _inflowLimit
-    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _inflowLimit) {
+    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _sudo, _inflowLimit) {
         vault = _vault;
 
         IERC20(_token).safeApprove(_vault, type(uint256).max);
@@ -271,6 +272,30 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function vaultExecute(uint256 _value, bytes calldata _data) external onlyOwner returns (bool, bytes memory) {
         return vault.call{ value: _value }(_data);
+    }
+
+    /* -------------------------------------------------------------------
+      Overrides 
+    ------------------------------------------------------------------- */
+
+    function rescue(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external override {
+        require(msg.sender == sudo, "!sudo");
+
+        // Adjust the internalTotalSupply. This means we have to harvest and process
+        // any rewards if we want to rescue the entire underlyingBalance of the bridge
+        // otherwise this will underflow
+        internalTotalSupply -= _amount;
+
+        if (_token == address(innerToken)) {
+            _withdraw(_amount);
+        }
+
+        IERC20(_token).safeTransfer(_to, _amount);
+        emit Rescue(_token, _to, _amount);
     }
 
     /* -------------------------------------------------------------------

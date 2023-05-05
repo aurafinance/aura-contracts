@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
 import { PauseGaurdian } from "./PauseGuardian.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 import { BytesLib } from "../layerzero/util/BytesLib.sol";
-
-import "hardhat/console.sol";
 
 /**
  * @title PausableProxyOFT
  */
 contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     using AuraMath for uint256;
+    using SafeERC20 for IERC20;
     using BytesLib for bytes;
 
     /* -------------------------------------------------------------------
@@ -20,7 +21,10 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
     ------------------------------------------------------------------- */
 
     /// @dev Duration of each inflow epoch
-    uint256 public epochDuration = 7 days;
+    uint256 public constant epochDuration = 7 days;
+
+    /// @dev Addres of super user
+    address public immutable sudo;
 
     /// @dev Transfer inflow limit per epoch
     uint256 public inflowLimit;
@@ -50,6 +54,13 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      */
     event QueuedFromChain(uint256 epoch, uint16 srcChainId, address to, uint256 amount, uint256 timestamp);
 
+    /**
+     * @param token Token address
+     * @param to Send to address
+     * @param amount Amount to send
+     */
+    event Rescue(address token, address to, uint256 amount);
+
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
@@ -58,14 +69,17 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      * @param _lzEndpoint   Layer Zero endpoint contract
      * @param _token        Proxy token (eg AURA or auraBAL)
      * @param _guardian     The pause guardian address
+     * @param _sudo         Super user
      * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
         address _lzEndpoint,
         address _token,
         address _guardian,
+        address _sudo,
         uint256 _inflowLimit
     ) ProxyOFT(_lzEndpoint, _token) PauseGaurdian(_guardian) {
+        sudo = _sudo;
         inflowLimit = _inflowLimit;
         queueDelay = 7 days;
     }
@@ -181,6 +195,23 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
         queue[queueRoot] = false;
         uint256 amount = _creditTo(_srcChainId, _to, _amount);
         emit ReceiveFromChain(_srcChainId, _to, _amount);
+    }
+
+    /**
+     * @dev In a doomsday bridge scenario there may be a case where funds need to be
+     *      rescued.
+     * @param _token Token address
+     * @param _to Send to address
+     * @param _amount Amount to send
+     */
+    function rescue(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external virtual {
+        require(msg.sender == sudo, "!sudo");
+        IERC20(_token).safeTransfer(_to, _amount);
+        emit Rescue(_token, _to, _amount);
     }
 
     /* -------------------------------------------------------------------
