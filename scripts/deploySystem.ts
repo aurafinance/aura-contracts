@@ -188,6 +188,7 @@ interface MultisigConfig {
     vestingMultisig: string;
     treasuryMultisig: string;
     daoMultisig: string;
+    sudoMultisig: string;
     pauseGaurdian: string;
 }
 
