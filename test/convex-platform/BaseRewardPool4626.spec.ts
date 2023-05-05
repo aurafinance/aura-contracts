@@ -16,22 +16,13 @@ import { Signer } from "ethers";
 import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
 import { deployContract } from "../../tasks/utils";
 import { impersonateAccount } from "../../test-utils/fork";
-import { Account } from "types";
-
-type Pool = {
-    lptoken: string;
-    token: string;
-    gauge: string;
-    crvRewards: string;
-    stash: string;
-    shutdown: boolean;
-};
+import { Account, PoolInfo } from "types";
 
 describe("BaseRewardPool4626", () => {
     let accounts: Signer[];
     let booster: Booster;
     let mocks: DeployMocksResult;
-    let pool: Pool;
+    let pool: PoolInfo;
     let contracts: SystemDeployed;
 
     let dao: Account;

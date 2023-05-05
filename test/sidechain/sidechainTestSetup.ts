@@ -198,6 +198,7 @@ export const sidechainTestSetup = async (
     canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
     await setTrustedRemoteCanonicalPhase1(canonical, sidechain, sidechainLzChainId);
     await setTrustedRemoteCanonicalPhase2(canonical, sidechain, sidechainLzChainId);
+    await canonical.auraBalProxyOFT.setRewardReceiver(sidechainLzChainId, sidechain.auraBalStrategy.address);
 
     // Emulate DAO Settings - L2 Stuff
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);

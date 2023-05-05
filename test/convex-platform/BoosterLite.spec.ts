@@ -1,22 +1,13 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { Account } from "types";
+import { Account, PoolInfo } from "types";
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { increaseTime, increaseTimeTo, simpleToExactAmount } from "../../test-utils";
 import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
 import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import { BaseRewardPool__factory, BoosterLite, ERC20__factory } from "../../types/generated";
-
-type Pool = {
-    lptoken: string;
-    token: string;
-    gauge: string;
-    crvRewards: string;
-    stash: string;
-    shutdown: boolean;
-};
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
@@ -32,7 +23,7 @@ describe("BoosterLite", () => {
     let accounts: Signer[];
     let booster: BoosterLite;
     // let mocks: DeployMocksResult;
-    let pool: Pool;
+    let pool: PoolInfo;
 
     let alice: Signer;
     let aliceAddress: string;
@@ -171,7 +162,7 @@ describe("BoosterLite", () => {
             let tx = await l2mocks.bpt.connect(alice).approve(booster.address, amount);
 
             tx = await booster.connect(alice).deposit(pid, amount, stake);
-            expect(tx).to.emit(booster, "Deposited").withArgs(aliceAddress, pid, amount);
+            await expect(tx).to.emit(booster, "Deposited").withArgs(aliceAddress, pid, amount);
 
             const depositToken = ERC20__factory.connect(pool.token, deployer.signer);
             const balance = await depositToken.balanceOf(aliceAddress);
@@ -188,7 +179,7 @@ describe("BoosterLite", () => {
             await tx.wait();
 
             tx = await crvRewards.stake(balance);
-            expect(tx).to.emit(crvRewards, "Staked").withArgs(aliceAddress, balance);
+            await expect(tx).to.emit(crvRewards, "Staked").withArgs(aliceAddress, balance);
 
             const stakedBalance = await crvRewards.balanceOf(aliceAddress);
 

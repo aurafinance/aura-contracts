@@ -1,24 +1,45 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { table } from "table";
 import { parseEther } from "@ethersproject/units";
 import { expect } from "chai";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
+import {
+    anyValue,
+    DEAD_ADDRESS,
+    impersonateAccount,
+    increaseTime,
+    ONE_WEEK,
+    simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import { Account } from "../../types";
-import { AuraBalOFT, AuraBalProxyOFT, AuraBalVault, ERC20, MockERC20__factory, ProxyOFT } from "../../types/generated";
+import {
+    AuraBalOFT,
+    AuraBalProxyOFT,
+    AuraBalVault,
+    AuraBalVault__factory,
+    ERC20,
+    MockERC20__factory,
+    ProxyOFT,
+    VirtualBalanceRewardPool__factory,
+} from "../../types/generated";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../shared/ERC20.behaviour";
-import { OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
+import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
     CanonicalPhaseDeployed,
     SidechainDeployed,
     sidechainTestSetup,
     SideChainTestSetup,
-} from "../../test/sidechain/sidechainTestSetup";
+} from "./sidechainTestSetup";
+import { formatEther } from "ethers/lib/utils";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 const debug = false;
+const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+
 async function bridgeTokenFromL1ToL2(
     sender: Account,
     token: ERC20,
@@ -54,7 +75,6 @@ describe("AuraBalOFT", () => {
     // L2
     let auraBalOFT: AuraBalOFT;
     let sidechain: SidechainDeployed;
-    const sidechainLzChainId = L2_CHAIN_ID;
     /* -- Declare shared functions -- */
     const setup = async () => {
         accounts = await ethers.getSigners();
@@ -110,40 +130,137 @@ describe("AuraBalOFT", () => {
         expect(await phase2.cvx.balanceOf(strategy.address), " cvx balance").to.be.eq(0);
         return tx;
     }
-    async function snapshot(sender: Account, reason = "snapshot") {
+    async function snapshotData(sender: Account, reason = "snapshot") {
         const auraBalBalance = await cvxCrv.balanceOf(sender.address);
+        const auraBalance = await cvx.balanceOf(sender.address);
+
         const auraBalOFTBalance = await auraBalOFT.balanceOf(sender.address);
         const auraBalOFTTotalSupply = await auraBalOFT.totalSupply();
         const auraBalOFTCirculatingSupply = await auraBalOFT.circulatingSupply();
+        const auraBalOFTBalanceOfStrategy = await auraBalOFT.balanceOf(sidechain.auraBalStrategy.address);
         const proxyVaultBalance = await auraBalVault.balanceOf(auraBalProxyOFT.address);
         const auraBalVaultTotalSupply = await auraBalVault.totalSupply();
-        let proxyVaultBalanceOfUnderlying = auraBalVaultTotalSupply;
+
+        const sidechainAuraBalVaultBalanceOf = await sidechain.auraBalVault.balanceOf(sender.address);
+        const sidechainAuraBalVaultTotalAssets = await sidechain.auraBalVault.totalAssets();
+        const sidechainAuraBalVaultTotalUnderlying = await sidechain.auraBalVault.totalUnderlying();
+        const sidechainAuraBalVaultTotalSupply = await sidechain.auraBalVault.totalSupply();
+
+        const abpClaimableAuraBal = await auraBalProxyOFT.claimable(cvxCrv.address, L2_CHAIN_ID);
+        const abpClaimableAura = await auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
+        const abpTotalClaimableAuraBal = await auraBalProxyOFT.totalClaimable(cvxCrv.address);
+        const abpTotalClaimableAura = await auraBalProxyOFT.totalClaimable(cvx.address);
+        const abpInternalTotalSupply = await auraBalProxyOFT.internalTotalSupply();
+        const abpCirculatingSupply = await auraBalProxyOFT.circulatingSupply();
+        const abpAuraBalBalance = await cvxCrv.balanceOf(auraBalProxyOFT.address);
+        const abpAuraBalance = await cvx.balanceOf(auraBalProxyOFT.address);
+
+        let auraBalVaultBalanceOfUnderlyingProxy = auraBalVaultTotalSupply;
         if (!auraBalVaultTotalSupply.eq(0)) {
             // If total supply is zero it reverts
-            proxyVaultBalanceOfUnderlying = await auraBalVault.balanceOfUnderlying(auraBalProxyOFT.address);
+            auraBalVaultBalanceOfUnderlyingProxy = await auraBalVault.balanceOfUnderlying(auraBalProxyOFT.address);
         }
-        // const proxyTotalClaimableAuraBal = await auraBalProxyOFT.totalClaimable(cvxCrv.address);
-        // const proxyTotalClaimableAura = await auraBalProxyOFT.totalClaimable(cvx.address);
+
+        let sidechainAuraBalVaultBalanceOfUnderlyingProxy = sidechainAuraBalVaultTotalSupply;
+        if (!sidechainAuraBalVaultTotalSupply.eq(0)) {
+            // If total supply is zero it reverts
+            sidechainAuraBalVaultBalanceOfUnderlyingProxy = await sidechain.auraBalVault.balanceOfUnderlying(
+                auraBalProxyOFT.address,
+            );
+        }
 
         if (debug) {
-            console.log(` ----------------------------  ${reason} ----------------------------`);
-            console.log(`snapshot auraBalBalance                ${auraBalBalance.toString()}`);
-            console.log(`snapshot auraBalOFTBalance             ${auraBalOFTBalance.toString()}`);
-            console.log(`snapshot auraBalOFTTotalSupply         ${auraBalOFTTotalSupply.toString()}`);
-            console.log(`snapshot auraBalOFTCirculatingSupply   ${auraBalOFTCirculatingSupply.toString()}`);
-            console.log(`snapshot proxyVaultBalance             ${proxyVaultBalance.toString()}`);
-            console.log(`snapshot proxyVaultBalanceOfUnderlying ${proxyVaultBalanceOfUnderlying.toString()}`);
-            console.log(`snapshot auraBalVaultTotalSupply       ${auraBalVaultTotalSupply.toString()}`);
+            console.log(` snapshot ----------------------------  ${reason} ----------------------------`);
+            console.log(`L1 auraBalBalance[sender]        ${formatEther(auraBalBalance)}`);
+            console.log(`L1 auraBalance[sender]           ${formatEther(auraBalance)}`);
+
+            console.log(`L1 proxyVaultBalance             ${formatEther(proxyVaultBalance)}`);
+            console.log(`L1 auraBalVaultBalanceOfUndProxy ${formatEther(auraBalVaultBalanceOfUnderlyingProxy)}`);
+            console.log(`L1 auraBalVaultTotalSupply       ${formatEther(auraBalVaultTotalSupply)}`);
+
+            console.log(`L1 abpClaimableAuraBal           ${formatEther(abpClaimableAuraBal)}`);
+            console.log(`L1 abpClaimableAura              ${formatEther(abpClaimableAura)}`);
+            console.log(`L1 abpTotalClaimableAuraBal      ${formatEther(abpTotalClaimableAuraBal)}`);
+            console.log(`L1 abpTotalClaimableAura         ${formatEther(abpTotalClaimableAura)}`);
+            console.log(`L1 abpInternalTotalSupply        ${formatEther(abpInternalTotalSupply)}`);
+            console.log(`L1 abpCirculatingSupply          ${formatEther(abpCirculatingSupply)}`);
+            console.log(`L1 abpAuraBalBalance             ${formatEther(abpAuraBalBalance)}`);
+            console.log(`L1 abpAuraBalance                ${formatEther(abpAuraBalance)}`);
+
+            console.log(`L2 auraBalOFTBalance             ${formatEther(auraBalOFTBalance)}`);
+            console.log(`L2 auraBalOFTTotalSupply         ${formatEther(auraBalOFTTotalSupply)}`);
+            console.log(`L2 auraBalOFTCirculatingSupply   ${formatEther(auraBalOFTCirculatingSupply)}`);
+            console.log(`L2 auraBalOFTBalanceOfStrategy   ${formatEther(auraBalOFTBalanceOfStrategy)}`);
+            console.log(`L2 auraBalVaultBalanceOf         ${formatEther(sidechainAuraBalVaultBalanceOf)}`);
+            console.log(`L2 auraBalVaultTotalAssets       ${formatEther(sidechainAuraBalVaultTotalAssets)}`);
+            console.log(`L2 auraBalVaultTotalUnderlying   ${formatEther(sidechainAuraBalVaultTotalUnderlying)}`);
+            console.log(`L2 auraBalVaultTotalSupply       ${formatEther(sidechainAuraBalVaultTotalSupply)}`);
+            console.log(
+                `L2 auraBalVaultBalanceOfUnderlyingProxy ${formatEther(sidechainAuraBalVaultBalanceOfUnderlyingProxy)}`,
+            );
         }
         return {
             auraBalBalance,
+            auraBalance,
+            proxyVaultBalance,
+            auraBalVaultBalanceOfUnderlyingProxy,
+            auraBalVaultTotalSupply,
+            abpClaimableAuraBal,
+            abpClaimableAura,
+            abpTotalClaimableAuraBal,
+            abpTotalClaimableAura,
+            abpInternalTotalSupply,
+            abpCirculatingSupply,
+            abpAuraBalBalance,
+            abpAuraBalance,
             auraBalOFTBalance,
             auraBalOFTTotalSupply,
             auraBalOFTCirculatingSupply,
-            proxyVaultBalance,
-            proxyVaultBalanceOfUnderlying,
-            auraBalVaultTotalSupply,
+            auraBalOFTBalanceOfStrategy,
+            sidechainAuraBalVaultBalanceOf,
+            sidechainAuraBalVaultTotalAssets,
+            sidechainAuraBalVaultTotalUnderlying,
+            sidechainAuraBalVaultTotalSupply,
+            sidechainAuraBalVaultBalanceOfUnderlyingProxy,
         };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function compareData(test: string, before: any, after: any) {
+        const getDetails = (property: string) => [
+            formatEther(before[property]),
+            formatEther(after[property]),
+            before[property].toString() === after[property].toString(),
+        ];
+
+        const testData = [
+            ["L1 auraBalBalance[sender]        ", ...getDetails("auraBalBalance")],
+            ["L1 auraBalance[sender]           ", ...getDetails("auraBalance")],
+            ["L1 proxyVaultBalance             ", ...getDetails("proxyVaultBalance")],
+            ["L1 auraBalVaultBalanceOfUndProxy ", ...getDetails("auraBalVaultBalanceOfUnderlyingProxy")],
+            ["L1 auraBalVaultTotalSupply       ", ...getDetails("auraBalVaultTotalSupply")],
+            ["L1 auraBalProxyOFT ClaimableAuraBal      ", ...getDetails("abpClaimableAuraBal")],
+            ["L1 auraBalProxyOFT ClaimableAura         ", ...getDetails("abpClaimableAura")],
+            ["L1 auraBalProxyOFT TotalClaimableAuraBal ", ...getDetails("abpTotalClaimableAuraBal")],
+            ["L1 auraBalProxyOFT TotalClaimableAura    ", ...getDetails("abpTotalClaimableAura")],
+            ["L1 auraBalProxyOFT InternalTotalSupply   ", ...getDetails("abpInternalTotalSupply")],
+            ["L1 auraBalProxyOFT CirculatingSupply     ", ...getDetails("abpCirculatingSupply")],
+            ["L1 auraBalProxyOFT AuraBalBalance        ", ...getDetails("abpAuraBalBalance")],
+            ["L1 auraBalProxyOFT AuraBalance           ", ...getDetails("abpAuraBalance")],
+            ["L2 auraBalOFTBalance             ", ...getDetails("auraBalOFTBalance")],
+            ["L2 auraBalOFTTotalSupply         ", ...getDetails("auraBalOFTTotalSupply")],
+            ["L2 auraBalOFTCirculatingSupply   ", ...getDetails("auraBalOFTCirculatingSupply")],
+            ["L2 auraBalOFTBalanceOfStrategy   ", ...getDetails("auraBalOFTBalanceOfStrategy")],
+            ["L2 auraBalVaultBalanceOf         ", ...getDetails("sidechainAuraBalVaultBalanceOf")],
+            ["L2 auraBalVaultTotalAssets       ", ...getDetails("sidechainAuraBalVaultTotalAssets")],
+            ["L2 auraBalVaultTotalUnderlying   ", ...getDetails("sidechainAuraBalVaultTotalUnderlying")],
+            ["L2 auraBalVaultTotalSupply       ", ...getDetails("sidechainAuraBalVaultTotalSupply")],
+            ["L2 auraBalVaultBalanceOfUndProxy ", ...getDetails("sidechainAuraBalVaultBalanceOfUnderlyingProxy")],
+        ];
+
+        if (debug) {
+            console.log(`----------------------------  ${test} ----------------------------`);
+            console.log(table([["Data", "Before", "After", "Equal"], ...testData.filter(t => !t[3])]));
+        }
     }
     before("init contract", async () => {
         await setup();
@@ -215,12 +332,12 @@ describe("AuraBalOFT", () => {
             expect(await auraBalOFT.payloadSizeLimitLookup(L1_CHAIN_ID), "payloadSizeLimitLookup").to.eq(0);
         });
     });
-    describe("Transfer to sidechain", () => {
+    describe("normal flow", () => {
         const bridgeAmount = simpleToExactAmount(10);
         it("can transfer auraBAL to sidechain", async () => {
             // AuraBalProxyOFT.sendFrom => AuraBalVault.deposit => AuraBalStrategy.stake => LZEndpointMock.send
             // LZEndpointMock.receivePayload => OFT.lzReceive
-            const dataBefore = await snapshot(deployer, "before bridge");
+            const dataBefore = await snapshotData(deployer, "before bridge");
             // ON L1 it stakes the token on AuraBalVault
             // On L2 it mints oft
             const tx = await bridgeTokenFromL1ToL2(
@@ -230,7 +347,7 @@ describe("AuraBalOFT", () => {
                 L2_CHAIN_ID,
                 bridgeAmount,
             );
-            const dataAfter = await snapshot(deployer, "after bridge");
+            const dataAfter = await snapshotData(deployer, "after bridge");
 
             expect(dataAfter.auraBalBalance, "token balance").to.be.eq(dataBefore.auraBalBalance.sub(bridgeAmount));
             expect(dataAfter.auraBalOFTBalance, "oft balance").to.be.eq(dataBefore.auraBalOFTBalance.add(bridgeAmount));
@@ -246,26 +363,28 @@ describe("AuraBalOFT", () => {
 
             await expect(tx)
                 .to.emit(cvxCrv, "Transfer")
-                .withArgs(deployer.address, canonical.auraBalProxyOFT.address, bridgeAmount);
+                .withArgs(deployer.address, auraBalProxyOFT.address, bridgeAmount);
             await expect(tx)
                 .to.emit(cvxCrv, "Transfer")
-                .withArgs(
-                    canonical.auraBalProxyOFT.address,
-                    testSetup.l1.vaultDeployment.strategy.address,
-                    bridgeAmount,
-                );
+                .withArgs(auraBalProxyOFT.address, testSetup.l1.vaultDeployment.strategy.address, bridgeAmount);
             await expect(tx)
                 .to.emit(auraBalVault, "Deposit")
-                .withArgs(
-                    canonical.auraBalProxyOFT.address,
-                    canonical.auraBalProxyOFT.address,
-                    bridgeAmount,
-                    bridgeAmount,
-                );
+                .withArgs(auraBalProxyOFT.address, auraBalProxyOFT.address, bridgeAmount, bridgeAmount);
+
+            compareData("bridge(AURABAL)", dataBefore, dataAfter);
+        });
+        it("can lock auraBAL on sidechain vault", async () => {
+            const dataBefore = await snapshotData(deployer, "beefore sidechain.auraBalVault.deposit");
+            await sidechain.auraBalOFT.approve(sidechain.auraBalVault.address, ethers.constants.MaxUint256);
+            await sidechain.auraBalVault.deposit(dataBefore.auraBalOFTBalance.div(2), deployer.address);
+            expect(await sidechain.auraBalVault.balanceOf(deployer.address), "sidechain vault balance").to.be.gt(ZERO);
+            const dataAfter = await snapshotData(deployer, "after sidechain.auraBalVault.deposit ");
+
+            compareData("sidechain.auraBalVault.deposit(AURABAL)", dataBefore, dataAfter);
         });
         it("harvest rewards from auraBalVault as usual", async () => {
             const harvestAmount = simpleToExactAmount(1);
-            const dataBefore = await snapshot(deployer, "before harvest");
+            const dataBefore = await snapshotData(deployer, "before harvest");
 
             // Harvest from auraBAL vault
             await auraBalVault.connect(deployer.signer).updateAuthorizedHarvesters(deployer.address, true);
@@ -275,112 +394,358 @@ describe("AuraBalOFT", () => {
 
             await increaseTime(ONE_WEEK.mul(2));
 
-            const dataAfter = await snapshot(deployer, "after harvest");
+            const dataAfter = await snapshotData(deployer, "after harvest");
+            compareData("harvest", dataBefore, dataAfter);
 
             expect(dataAfter.proxyVaultBalance, "proxy vault balance").eq(dataBefore.proxyVaultBalance);
-            expect(dataAfter.proxyVaultBalanceOfUnderlying, "proxy vault balance of underlying").gt(
-                dataBefore.proxyVaultBalanceOfUnderlying,
+            expect(dataAfter.auraBalVaultBalanceOfUnderlyingProxy, "proxy vault balance of underlying").gt(
+                dataBefore.auraBalVaultBalanceOfUnderlyingProxy,
             );
         });
-
         it("can harvest from auraBAL proxy OFT", async () => {
             // Harvest from auraBAL proxy OFT
-            const claimableAuraBalBefore = await canonical.auraBalProxyOFT.totalClaimable(cvxCrv.address);
-            const claimableAuraBefore = await canonical.auraBalProxyOFT.totalClaimable(cvx.address);
+            const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT harvest");
 
-            const srcChainAuraBalClaimableBefore = await canonical.auraBalProxyOFT.claimable(
-                cvxCrv.address,
-                L2_CHAIN_ID,
-            );
-            const srcChainAuraClaimableBefore = await canonical.auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
+            // Calculate harvest arguments
+            const extraRewardsLength = await sidechain.auraBalVault.extraRewardsLength();
+            expect(extraRewardsLength, "extra rewards no").to.be.eq(1);
+            const extraRewardsAddress = await auraBalVault.extraRewards(0);
+            const extraRewardsPool = VirtualBalanceRewardPool__factory.connect(extraRewardsAddress, deployer.signer);
+
+            const srcChainIds = [L2_CHAIN_ID];
+            const totalUnderlyings = [dataBefore.sidechainAuraBalVaultTotalUnderlying];
+            const totalUnderlyingSum = totalUnderlyings[0];
+
+            // Expect ZERO claimable as there it will be the first auraBalProxyOFT harvest
+            expect(dataBefore.abpTotalClaimableAuraBal, "totalClaimable cvxCrv").to.be.eq(ZERO);
+            expect(dataBefore.abpTotalClaimableAuraBal, "totalClaimable cvx").to.be.eq(ZERO);
+            expect(dataBefore.abpClaimableAuraBal, "claimable cvxCrv").to.be.eq(ZERO);
+            expect(dataBefore.abpClaimableAura, "claimable cvx").to.be.eq(ZERO);
 
             // call harvest
             // auraBalProxyOFT => VirtualBalanceRewardPool.getReward()
-            await canonical.auraBalProxyOFT.connect(dao.signer).updateAuthorizedHarvesters(deployer.address, true);
-            const tx = await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
-            // TODO - wrong params
+            await auraBalProxyOFT.connect(dao.signer).updateAuthorizedHarvesters(deployer.address, true);
+            const tx = await auraBalProxyOFT
+                .connect(deployer.signer)
+                .harvest(srcChainIds, totalUnderlyings, totalUnderlyingSum);
 
-            // AuraBalProxyOFT to 0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd
-            // 0x0B05c4edaBf3624C92dC6eF7D1b453Ce8D607A0A ??
-            // EVENT AuraToken.Transfer(from=0x0B05c4edaBf3624C92dC6eF7D1b453Ce8D607A0A, to=0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd, value=999999999999907200)
-            // EVENT VirtualBalanceRewardPool.RewardPaid(user=0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd, reward=999999999999907200)
+            // No events
 
-            const dataProxyHarvestAfter = await snapshot(deployer, "after auraBalProxyOFT harvest");
+            // make sure extra rewards were collected
+            await expect(tx).to.emit(extraRewardsPool, "RewardPaid").withArgs(auraBalProxyOFT.address, anyValue);
+            await expect(tx)
+                .to.emit(cvx, "Transfer")
+                .withArgs(extraRewardsPool.address, auraBalProxyOFT.address, anyValue);
 
-            const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(cvxCrv.address);
-            const claimableAuraAfter = await canonical.auraBalProxyOFT.totalClaimable(cvx.address);
-            expect(claimableAuraBalAfter).gt(claimableAuraBalBefore);
-            expect(claimableAuraAfter).gt(claimableAuraBefore);
+            const dataProxyHarvestAfter = await snapshotData(deployer, "after auraBalProxyOFT harvest");
 
-            const srcChainAuraBalClaimableAfter = await canonical.auraBalProxyOFT.claimable(
-                cvxCrv.address,
-                L2_CHAIN_ID,
+            const totalClaimableAuraBalAfter = await auraBalProxyOFT.totalClaimable(cvxCrv.address);
+            const totalClaimableAuraAfter = await auraBalProxyOFT.totalClaimable(cvx.address);
+            const abpAuraBalBalanceAfter = await cvxCrv.balanceOf(auraBalProxyOFT.address);
+            const abpAuraBalanceAfter = await cvx.balanceOf(auraBalProxyOFT.address);
+
+            const deltaAbpAuraBalance = abpAuraBalanceAfter.sub(dataBefore.abpAuraBalance);
+
+            expect(totalClaimableAuraBalAfter, "totalClaimable cvxCrv").gt(dataBefore.abpTotalClaimableAuraBal);
+            expect(totalClaimableAuraAfter, "totalClaimable cvxCrv").gt(dataBefore.abpTotalClaimableAuraBal);
+
+            const srcChainAuraBalClaimableAfter = await auraBalProxyOFT.claimable(cvxCrv.address, L2_CHAIN_ID);
+            const srcChainAuraClaimableAfter = await auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
+            expect(srcChainAuraBalClaimableAfter).gte(dataBefore.abpClaimableAuraBal);
+            expect(srcChainAuraClaimableAfter.sub(dataBefore.abpClaimableAura), "auraBalProxy src claimable cvx").eq(
+                deltaAbpAuraBalance,
             );
-            const srcChainAuraClaimableAfter = await canonical.auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
-            expect(srcChainAuraClaimableAfter).gte(srcChainAuraClaimableBefore);
-            expect(srcChainAuraBalClaimableAfter).gte(srcChainAuraBalClaimableBefore);
+            expect(
+                totalClaimableAuraAfter.sub(dataBefore.abpTotalClaimableAuraBal),
+                "auraBalProxy src claimable cvx",
+            ).eq(deltaAbpAuraBalance);
+            expect(abpAuraBalBalanceAfter, "no changes on cvxCrv balance").eq(dataBefore.abpAuraBalBalance);
+            compareData("dataProxyHarvest", dataBefore, dataProxyHarvestAfter);
         });
-        it("harvest rewards from auraBalVault wrong srcChainIds", async () => {
-            const WRONG_CHAIN_ID = 8765;
-            const tx = await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([WRONG_CHAIN_ID], [100], 100);
+        it("can claim auraBal tokens to sidechain", async () => {
+            const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT processClaimable");
+
+            // L1
+            const rewardReceiver = await auraBalProxyOFT.rewardReceiver(L2_CHAIN_ID);
+            const internalTotalSupplyBefore = await auraBalProxyOFT.internalTotalSupply();
+
+            // L2
+            const auraBalOFTBalanceOfStrategyBefore = await auraBalOFT.balanceOf(sidechain.auraBalStrategy.address);
+            const auraBalOFTTotalSupplyBefore = await auraBalOFT.totalSupply();
+            const auraBalOFTCirculatingSupplyBefore = await auraBalOFT.circulatingSupply();
+
+            // When processing auraBal , invoke _lzSend to bridge tokens to L2
+            const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, auraBalProxyOFT.address, L2_CHAIN_ID, {
+                value: NATIVE_FEE,
+            });
+            const dataProxyAfter = await snapshotData(deployer, "after auraBalProxyOFT processClaimable");
+
+            // L1 Verify it was sent  and accounted
+            const toAddress = ethers.utils.defaultAbiCoder.encode(["address"], [rewardReceiver]);
+            await expect(tx)
+                .to.emit(auraBalProxyOFT, "SendToChain")
+                .withArgs(L2_CHAIN_ID, auraBalProxyOFT.address, toAddress, dataBefore.abpClaimableAuraBal);
+
+            const totalClaimableAuraBalAfter = await auraBalProxyOFT.totalClaimable(cvxCrv.address);
+            const totalClaimableAuraAfter = await auraBalProxyOFT.totalClaimable(cvx.address);
+
+            const srcChainAuraBalClaimableAfter = await auraBalProxyOFT.claimable(cvxCrv.address, L2_CHAIN_ID);
+            const srcChainAuraClaimableAfter = await auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
+
+            expect(totalClaimableAuraBalAfter, "auraBalProxy total claimable cvxCrv").eq(ZERO);
+            expect(srcChainAuraBalClaimableAfter, "auraBalProxy src claimable cvxCrv").eq(ZERO);
+            expect(internalTotalSupplyAfter, "auraBalProxy internal total supply").eq(
+                internalTotalSupplyBefore.add(dataBefore.abpTotalClaimableAuraBal),
+            );
+            expect(totalClaimableAuraAfter, "auraBalProxy total claimable cvx, no change").eq(
+                dataBefore.abpTotalClaimableAura,
+            );
+            expect(srcChainAuraClaimableAfter, "auraBalProxy src claimable cvx, no change").eq(
+                dataBefore.abpClaimableAura,
+            );
+
+            // L2 Verify it was received on sidechain
+            await expect(tx)
+                .to.emit(auraBalOFT, "Transfer")
+                .withArgs(ZERO, rewardReceiver, dataBefore.abpTotalClaimableAuraBal);
+            await expect(tx)
+                .to.emit(auraBalOFT, "ReceiveFromChain")
+                .withArgs(L1_CHAIN_ID, sidechain.auraBalStrategy.address, dataBefore.abpTotalClaimableAuraBal);
+
+            const auraBalOFTBalanceOfStrategyAfter = await auraBalOFT.balanceOf(sidechain.auraBalStrategy.address);
+            const auraBalOFTTotalSupplyAfter = await auraBalOFT.totalSupply();
+            const auraBalOFTCirculatingSupplyAfter = await auraBalOFT.circulatingSupply();
+
+            expect(auraBalOFTBalanceOfStrategyAfter, "auraBalOFTBalanceOfStrategy").to.be.eq(
+                auraBalOFTBalanceOfStrategyBefore.add(dataBefore.abpTotalClaimableAuraBal),
+            );
+            expect(auraBalOFTTotalSupplyAfter, "auraBalOFTTotalSupply").to.be.eq(
+                auraBalOFTTotalSupplyBefore.add(dataBefore.abpTotalClaimableAuraBal),
+            );
+            expect(auraBalOFTCirculatingSupplyAfter, "auraBalOFTCirculatingSupply").to.be.eq(
+                auraBalOFTCirculatingSupplyBefore.add(dataBefore.abpTotalClaimableAuraBal),
+            );
+
+            compareData("processClaimable(AURABAL)", dataBefore, dataProxyAfter);
         });
-        it("harvest rewards from auraBalVault partially wrong srcChainIds", async () => {
-            const WRONG_CHAIN_ID = 8765;
-            const tx = await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([WRONG_CHAIN_ID], [100], 100);
+        it("can claim aura tokens to sidechain", async () => {
+            const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT processClaimable");
+
+            // L1
+            const auraBalanceOfAuraProxyOFTBefore = await cvx.balanceOf(canonical.auraProxyOFT.address);
+            const rewardReceiver = await auraBalProxyOFT.rewardReceiver(L2_CHAIN_ID);
+            const internalTotalSupplyBefore = await auraBalProxyOFT.internalTotalSupply();
+
+            // L2
+            const auraOFTBalanceOfStrategyBefore = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
+            const auraOFTTotalSupplyBefore = await sidechain.auraOFT.totalSupply();
+            const auraOFTCirculatingSupplyBefore = await sidechain.auraOFT.circulatingSupply();
+
+            // When processing auraBal , invoke _lzSend to bridge tokens to L2
+            //  AuraBalProxyOFT.processClaimable => AuraOFT.sendFrom => AuraOFT._send => AuraOFT._debitFrom => AuraOFT.lzReceive
+            const tx = await auraBalProxyOFT.processClaimable(
+                cvx.address,
+                canonical.auraProxyOFT.address,
+                L2_CHAIN_ID,
+                { value: NATIVE_FEE, gasLimit: 1000000 },
+            );
+
+            const dataAfter = await snapshotData(deployer, "after auraProxyOFT processClaimable");
+            const auraBalanceOfAuraProxyOFTAfter = await cvx.balanceOf(canonical.auraProxyOFT.address);
+            expect(auraBalanceOfAuraProxyOFTAfter, "aura sent to auraProxyOFT").eq(
+                auraBalanceOfAuraProxyOFTBefore.add(dataBefore.abpClaimableAura),
+            );
+
+            // L1 Verify it was sent  and accounted
+            await expect(tx)
+                .to.emit(cvx, "Transfer")
+                .withArgs(
+                    canonical.auraBalProxyOFT.address,
+                    canonical.auraProxyOFT.address,
+                    dataBefore.abpClaimableAura,
+                );
+
+            const totalClaimableAuraAfter = await auraBalProxyOFT.totalClaimable(cvx.address);
+            const srcChainAuraClaimableAfter = await auraBalProxyOFT.claimable(cvx.address, L2_CHAIN_ID);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
+
+            expect(internalTotalSupplyAfter, "auraBalProxy internal total supply").eq(internalTotalSupplyBefore);
+            expect(totalClaimableAuraAfter, "auraBalProxy total claimable cvx").eq(ZERO);
+            expect(srcChainAuraClaimableAfter, "auraBalProxy src claimable cvx").eq(ZERO);
+
+            // // L2 Verify it was received on sidechain
+            await expect(tx)
+                .to.emit(sidechain.auraOFT, "Transfer")
+                .withArgs(ZERO, rewardReceiver, dataBefore.abpTotalClaimableAura);
+            await expect(tx)
+                .to.emit(sidechain.auraOFT, "ReceiveFromChain")
+                .withArgs(L1_CHAIN_ID, sidechain.auraBalStrategy.address, dataBefore.abpTotalClaimableAura);
+
+            const auraOFTBalanceOfStrategyAfter = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
+            const auraOFTTotalSupplyAfter = await sidechain.auraOFT.totalSupply();
+            const auraOFTCirculatingSupplyAfter = await sidechain.auraOFT.circulatingSupply();
+
+            expect(auraOFTBalanceOfStrategyAfter, "auraOFTBalanceOfStrategy").to.be.eq(
+                auraOFTBalanceOfStrategyBefore.add(dataBefore.abpTotalClaimableAura),
+            );
+            expect(auraOFTTotalSupplyAfter, "auraOFTTotalSupply").to.be.eq(
+                auraOFTTotalSupplyBefore.add(dataBefore.abpTotalClaimableAura),
+            );
+            expect(auraOFTCirculatingSupplyAfter, "auraOFTCirculatingSupply").to.be.eq(
+                auraOFTCirculatingSupplyBefore.add(dataBefore.abpTotalClaimableAura),
+            );
+
+            compareData("processClaimable(AURA)", dataBefore, dataAfter);
         });
-        it("harvest rewards from auraBalVault wrong parameters length ", async () => {
-            //         require(srcChainIdsLen == _totalUnderlying.length, "!parity");
+        it("can withdraw auraBAL from sidechain", async () => {
+            await auraBalVault.connect(deployer.signer).transferOwnership(canonical.auraBalProxyOFT.address);
+            await auraBalOFT.connect(dao.signer).setUseCustomAdapterParams(false);
+
+            const auraBalVaultBalance = await sidechain.auraBalVault.balanceOf(deployer.address);
+            await sidechain.auraBalVault.withdraw(auraBalVaultBalance, deployer.address, deployer.address);
+            const auraBalOFTBalanceBefore = await auraBalOFT.balanceOf(deployer.address);
+            const bridgeAmount = auraBalOFTBalanceBefore.div(10);
+            const dataBefore = await snapshotData(deployer, "before auraBalOFT sendFrom");
+
+            const tx = await sidechain.auraBalOFT
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    L1_CHAIN_ID,
+                    deployer.address,
+                    bridgeAmount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: NATIVE_FEE,
+                    },
+                );
+
+            const dataAfter = await snapshotData(deployer, "before auraBalOFT sendFrom");
+            compareData("auraBalOFT sendFrom(L2=>L1)", dataBefore, dataAfter);
+            // L2 Verify it was sent on sidechain
+            await expect(tx)
+                .to.emit(sidechain.auraBalOFT, "Transfer")
+                .withArgs(deployer.address, ZERO_ADDRESS, bridgeAmount);
+
+            expect(dataAfter.auraBalOFTBalance, "auraBalOFTBalance").to.be.eq(
+                dataBefore.auraBalOFTBalance.sub(bridgeAmount),
+            );
+            expect(dataAfter.auraBalOFTTotalSupply, "auraOFTTotalSupply").to.be.eq(
+                dataBefore.auraBalOFTTotalSupply.sub(bridgeAmount),
+            );
+            expect(dataAfter.auraBalOFTCirculatingSupply, "auraBalOFTCirculatingSupply").to.be.eq(
+                dataBefore.auraBalOFTCirculatingSupply.sub(bridgeAmount),
+            );
         });
-        it("harvest rewards from auraBalVault correct chain wrong totalUnderlying", async () => {
-            //         require(srcChainIdsLen == _totalUnderlying.length, "!parity");
+
+        it("can act as owner of the auraBalVault", async () => {
+            const setWithdrawalPenalty = AuraBalVault__factory.createInterface().encodeFunctionData(
+                "setWithdrawalPenalty",
+                [ZERO],
+            );
+            const withdrawalPenalty = await auraBalVault.withdrawalPenalty();
+            expect(withdrawalPenalty, "withdrawalPenalty").to.not.be.eq(ZERO);
+            await auraBalProxyOFT.connect(dao.signer).vaultExecute(ZERO, setWithdrawalPenalty);
+            // Verify the changed
+            expect(await auraBalVault.withdrawalPenalty()).to.be.eq(ZERO);
         });
     });
+    describe("Edge cases", () => {
+        // setMinDstGas
+        describe("harvest", () => {
+            xit("harvest for one sidechain but try to process to another sidechain", async () => {
+                //TODO
+            });
+            xit("process claimable multiple times", async () => {
+                //TODO
+            });
+            xit("harvest multiple times correct sidechain without processClaimable", async () => {
+                const WRONG_CHAIN_ID = 8765;
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, WRONG_CHAIN_ID], [50, 50], 100),
+                ).to.be.revertedWith("!srcChainId");
+            });
+            xit("harvest rewards from auraBalVault wrong srcChainIds", async () => {
+                const WRONG_CHAIN_ID = 8765;
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([WRONG_CHAIN_ID], [100], 100),
+                ).to.be.revertedWith("!srcChainId");
+            });
+            xit("harvest rewards from auraBalVault partially wrong srcChainIds", async () => {
+                const WRONG_CHAIN_ID = 8765;
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, WRONG_CHAIN_ID], [50, 50], 100),
+                ).to.be.revertedWith("!srcChainId");
+            });
+            it("harvest rewards from auraBalVault wrong parameters length ", async () => {
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, L2_CHAIN_ID], [100], 100),
+                ).to.be.revertedWith("!parity");
+            });
+            it("harvest rewards from auraBalVault correct chain wrong totalUnderlying", async () => {
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 300),
+                ).to.be.revertedWith("!totalUnderlyingSum");
+            });
+            it("harvest rewards from auraBalVault correct chain wrong totalUnderlying = ZERO", async () => {
+                await expect(auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 0)).to.be.reverted;
+            });
+            it("harvest fails when caller is not authorized", async () => {
+                await auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, false);
+                expect(await auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
+                await expect(auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100)).to.be.revertedWith("!harvester");
+            });
+            it("harvest fails when parameters are wrong", async () => {
+                await auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, true);
+                await expect(
+                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, L1_CHAIN_ID], [100], 100),
+                ).to.be.revertedWith("!parity");
+            });
+        });
 
-    // describe("send tokens", async () => {
-    //     it("fails if caller is not the owner", async () => {
-    //         await expect(
-    //             auraBalOFT.connect(alice.signer).send(ZERO_ADDRESS, ZERO),
-    //             "!onlyOwner",
-    //         ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-    //     });
-    //     it("earmark rewards sends fees to l2Coordinator's bridgeDelegate", async () => {
-    //         // BoosterLite.earmarkRewards => L2Coordinator.queueNewRewards
-    //         // a) => IERC20(balToken).safeTransfer(bridgeDelegate, balance);
-    //         // b) => L1Coordinator._notifyFees
-    //         const pid = 0;
-    //         const stake = true;
-    //         const amount = simpleToExactAmount(10);
-
-    //         const bridgeDelegateBalanceBefore = await testSetup.l2.mocks.token.balanceOf(auraBalOFT.address);
-    //         await testSetup.l2.mocks.bpt.approve(sidechain.booster.address, amount);
-    //         await sidechain.booster.deposit(pid, amount, stake);
-    //         await increaseTime(60 * 60 * 24);
-
-    //         // Send fees
-    //         await sidechain.booster.earmarkRewards(pid, { value: NATIVE_FEE });
-
-    //         const bridgeDelegateBalanceAfter = await testSetup.l2.mocks.token.balanceOf(auraBalOFT.address);
-    //         const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);
-
-    //         expect(bridgeDelegateBalanceAfter, "bridgeDelegateBalance").to.be.gt(bridgeDelegateBalanceBefore);
-    //         // simulate bridging tokens  L2=>L1
-    //         await testSetup.l1.mocks.crv.transfer(auraBalOFT.address, bridgeDelegateBalanceDelta);
-    //     });
-
-    //     it("allows to send tokens to another account", async () => {
-    //         const balanceBefore = await testSetup.l1.mocks.crv.balanceOf(auraBalOFT.address);
-
-    //         const tx = await auraBalOFT.connect(deployer.signer).send(alice.address, balanceBefore);
-    //         await expect(tx).to.emit(auraBalOFT, "Send").withArgs(alice.address, balanceBefore);
-
-    //         const balanceAfter = await testSetup.l1.mocks.crv.balanceOf(auraBalOFT.address);
-    //         const targetBalance = await testSetup.l1.mocks.crv.balanceOf(alice.address);
-
-    //         expect(balanceAfter, "bridgeDelegateBalance").to.be.eq(ZERO);
-    //         expect(targetBalance, "tokens sent to target").to.be.eq(balanceBefore);
-    //     });
-    // });
+        it("setConfig fails if caller is not the owner", async () => {
+            await expect(
+                canonical.auraBalProxyOFT.connect(alice.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, "0xdd467064", {
+                    adapterParams: "0x",
+                    zroPaymentAddress: DEAD_ADDRESS,
+                }),
+                "onlyOwner",
+            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("setRewardReceiver fails if caller is not the owner", async () => {
+            await expect(
+                auraBalProxyOFT.connect(alice.signer).setRewardReceiver(L2_CHAIN_ID, ZERO_ADDRESS),
+                "onlyOwner",
+            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("updateAuthorizedHarvesters fails if caller is not the owner", async () => {
+            await expect(
+                auraBalProxyOFT.connect(alice.signer).updateAuthorizedHarvesters(ZERO_ADDRESS, true),
+                "onlyOwner",
+            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("processClaimable fails if with wrong token", async () => {
+            await expect(auraBalProxyOFT.processClaimable(ZERO_ADDRESS, DEAD_ADDRESS, L2_CHAIN_ID), "wrong token").to.be
+                .reverted;
+        });
+        xit("processClaimable fails if reward receiver is not set", async () => {
+            const SUPER_CHAIN_ID = 99999;
+            expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);
+            await expect(
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, ZERO_ADDRESS, L2_CHAIN_ID),
+                "receiver != address(0)",
+            ).to.be.revertedWith("!receiver");
+        });
+        xit("processClaimable fails if there are no rewards", async () => {
+            const SUPER_CHAIN_ID = 99999;
+            await auraBalProxyOFT.setRewardReceiver(SUPER_CHAIN_ID, DEAD_ADDRESS);
+            await expect(
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, ZERO_ADDRESS, SUPER_CHAIN_ID),
+                "reward > 0",
+            ).to.be.revertedWith("!reward");
+        });
+    });
 });
-// function setConfig !! Both auraOFT and AuraBalProxyOFT
-// circulatingSupply
-// _creditTo

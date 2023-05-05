@@ -1,8 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
-import { BN, DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
+import {
+    anyValue,
+    BN,
+    DEAD_ADDRESS,
+    impersonateAccount,
+    simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import { Account } from "../../types";
 import { BaseRewardPool, BaseRewardPool__factory, ERC20, L1Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
@@ -17,9 +24,6 @@ const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
-function anyValue() {
-    return true;
-}
 describe("L1Coordinator", () => {
     /* -- Declare shared variables -- */
     let accounts: Signer[];
