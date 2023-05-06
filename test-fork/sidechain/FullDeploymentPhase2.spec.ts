@@ -34,7 +34,7 @@ import { BigNumber } from "ethers";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
-describe("AuraBalOFT", () => {
+describe("Full Deployment Phase 2", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
 
@@ -194,28 +194,48 @@ describe("AuraBalOFT", () => {
         it("set canonical trusted remotes", async () => {
             await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
             await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
+
+            expect(
+                await canonical.auraBalProxyOFT.isTrustedRemote(
+                    L2_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
+                    ),
+                ),
+            ).eq(true);
         });
     });
 
     describe("Check configs", () => {
-        it("auraBalProxyOFT has correct config", async () => {
+        it("auraBalOFT has correct config", async () => {
             expect(await sidechain.auraBalOFT.lzEndpoint()).eq(l2LzEndpoint.address);
             expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
             expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
+
+            expect(
+                await sidechain.auraBalOFT.isTrustedRemote(
+                    L1_CHAIN_ID,
+                    ethers.utils.solidityPack(
+                        ["address", "address"],
+                        [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
+                    ),
+                ),
+            ).eq(true);
         });
-        it("auraBalOFT has correct config", async () => {
+        it("auraBalProxyOFT has correct config", async () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
             expect(await canonical.auraBalProxyOFT.ofts(phase2.cvxCrv.address)).eq(canonical.auraBalProxyOFT.address);
             expect(await canonical.auraBalProxyOFT.ofts(phase2.cvx.address)).eq(canonical.auraProxyOFT.address);
         });
-        it("auraBal vault has correct config", async () => {
+        it("auraBalVault has correct config", async () => {
             expect(await sidechain.auraBalVault.underlying()).eq(sidechain.auraBalOFT.address);
             expect(await sidechain.auraBalVault.virtualRewardFactory()).eq(sidechain.virtualRewardFactory.address);
             expect(await sidechain.auraBalVault.strategy()).eq(sidechain.auraBalStrategy.address);
         });
-        it("auraBal strategy has correct config", async () => {
+        it("auraBalStrategy has correct config", async () => {
             expect(await sidechain.auraBalStrategy.auraBalToken()).eq(sidechain.auraBalOFT.address);
             expect(await sidechain.auraBalStrategy.vault()).eq(sidechain.auraBalVault.address);
         });
