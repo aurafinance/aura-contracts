@@ -1,32 +1,32 @@
-import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
-import { simpleToExactAmount } from "./../test-utils/math";
 import { Signer } from "ethers";
 import { parseEther } from "ethers/lib/utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { deployContract } from "../tasks/utils";
 import {
-    MockERC20__factory,
-    MockERC20,
-    MockCurveVoteEscrow,
-    MockCurveVoteEscrow__factory,
-    MockVoting,
-    MockVoting__factory,
-    MockWalletChecker,
-    MockWalletChecker__factory,
-    MockFeeDistributor,
-    MockFeeDistributor__factory,
-    MockCurveGauge,
-    MockCurveGauge__factory,
-    MockCurveMinter__factory,
-    MockCurveMinter,
+    LZEndpointMock,
+    LZEndpointMock__factory,
     MockBalancerPoolToken,
     MockBalancerPoolToken__factory,
     MockBalancerVault,
     MockBalancerVault__factory,
-    LZEndpointMock__factory,
-    LZEndpointMock,
+    MockCurveGauge,
+    MockCurveGauge__factory,
+    MockCurveMinter,
+    MockCurveMinter__factory,
+    MockCurveVoteEscrow,
+    MockCurveVoteEscrow__factory,
+    MockERC20,
+    MockERC20__factory,
+    MockFeeDistributor,
+    MockFeeDistributor__factory,
+    MockVoting,
+    MockVoting__factory,
+    MockWalletChecker,
+    MockWalletChecker__factory,
 } from "../types/generated";
-import { deployContract } from "../tasks/utils";
-import { MultisigConfig, DistroList, ExtSystemConfig, NamingConfig } from "./deploySystem";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "./../test-utils/constants";
+import { simpleToExactAmount } from "./../test-utils/math";
+import { DistroList, ExtSystemConfig, MultisigConfig, NamingConfig } from "./deploySystem";
 
 interface DeployMocksResult {
     lptoken: MockERC20;
@@ -328,6 +328,10 @@ async function deployMocks(
                 assetsIn: [feeToken.address],
             },
             lzEndpoint: lzEndpoint.address,
+            sidechain: {
+                auraBalInflowLimit: parseEther("1000000"),
+                auraInflowLimit: parseEther("1000000"),
+            },
         },
         namingConfig: {
             cvxName: "Convex Finance",

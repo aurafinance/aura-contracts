@@ -1,7 +1,15 @@
 import { ContractTransaction, ethers, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-
+import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
+import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
+    AuraBalOFT,
+    AuraBalOFT__factory,
+    AuraBalProxyOFT,
+    AuraBalProxyOFT__factory,
+    AuraBalVault,
+    AuraBalVault__factory,
     AuraOFT,
     AuraOFT__factory,
     AuraProxyOFT,
@@ -10,42 +18,33 @@ import {
     BoosterLite__factory,
     BoosterOwnerLite,
     BoosterOwnerLite__factory,
-    L2Coordinator,
-    L2Coordinator__factory,
-    L1Coordinator,
-    L1Coordinator__factory,
     Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
+    L1Coordinator,
+    L1Coordinator__factory,
+    L2Coordinator,
+    L2Coordinator__factory,
     PoolManagerLite,
     PoolManagerLite__factory,
     ProxyFactory,
     ProxyFactory__factory,
     RewardFactory,
     RewardFactory__factory,
+    SimpleStrategy,
+    SimpleStrategy__factory,
     StashFactoryV2,
     StashFactoryV2__factory,
     TokenFactory,
     TokenFactory__factory,
-    VoterProxyLite,
-    VoterProxyLite__factory,
-    AuraBalProxyOFT,
-    AuraBalProxyOFT__factory,
-    AuraBalOFT,
-    AuraBalOFT__factory,
     VirtualRewardFactory,
     VirtualRewardFactory__factory,
-    AuraBalVault,
-    AuraBalVault__factory,
-    SimpleStrategy__factory,
-    SimpleStrategy,
+    VoterProxyLite,
+    VoterProxyLite__factory,
 } from "../types";
+import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
-import { ZERO_ADDRESS } from "../test-utils/constants";
-import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
-import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "../types/sidechain-types";
-import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 
 export interface CanonicalPhase1Deployed {
     auraProxyOFT: AuraProxyOFT;
