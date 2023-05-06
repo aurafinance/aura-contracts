@@ -289,9 +289,14 @@ describe("AuraBalOFT", () => {
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).gte(bridgeAmount.sub(1));
             expect(vaultBalanceAfter.sub(vaultBalanceBefore)).lte(bridgeAmount);
         });
+        it("can set harvest src chain ids", async () => {
+            await expect(canonical.auraBalProxyOFT.harvestSrcChainIds(0)).to.be.reverted;
+            await canonical.auraBalProxyOFT.setHarvestSrcChainIds([L2_CHAIN_ID]);
+            expect(await canonical.auraBalProxyOFT.harvestSrcChainIds(0)).eq(L2_CHAIN_ID);
+        });
         it("cannot call harvest when not authorized", async () => {
             expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
-            await expect(canonical.auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100)).to.be.revertedWith("!harvester");
+            await expect(canonical.auraBalProxyOFT.harvest([100], 100)).to.be.revertedWith("!harvester");
         });
         it("set authorized harvester", async () => {
             expect(await canonical.auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
@@ -331,7 +336,7 @@ describe("AuraBalOFT", () => {
             );
 
             // call harvest
-            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
+            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([100], 100);
 
             const auraBalanceAfter = await phase2.cvx.balanceOf(canonical.auraBalProxyOFT.address);
             const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
@@ -678,7 +683,7 @@ describe("AuraBalOFT", () => {
             await expect(canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount)).to.be
                 .reverted;
 
-            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
+            await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([100], 100);
             await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE });
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
