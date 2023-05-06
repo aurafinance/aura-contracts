@@ -17,15 +17,7 @@ import { getTimestamp, increaseTime, increaseTimeTo } from "../../test-utils/tim
 import { simpleToExactAmount } from "../../test-utils/math";
 import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
 import { deployContract } from "../../tasks/utils";
-
-type Pool = {
-    lptoken: string;
-    token: string;
-    gauge: string;
-    crvRewards: string;
-    stash: string;
-    shutdown: boolean;
-};
+import { PoolInfo } from "../../types";
 
 const debug = false;
 
@@ -34,7 +26,7 @@ describe("Booster", () => {
     let booster: Booster;
     let boosterOwner: BoosterOwner;
     let mocks: DeployMocksResult;
-    let pool: Pool;
+    let pool: PoolInfo;
     let contracts: SystemDeployed;
     let daoSigner: Signer;
 

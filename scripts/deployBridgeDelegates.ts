@@ -1,14 +1,13 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-
 import {
     BridgeDelegateReceiver,
     BridgeDelegateReceiver__factory,
     BridgeDelegateSender,
-    SimpleBridgeDelegateSender,
-    SimpleBridgeDelegateSender__factory,
     GnosisBridgeSender,
     GnosisBridgeSender__factory,
+    SimpleBridgeDelegateSender,
+    SimpleBridgeDelegateSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { ExtSystemConfig } from "./deploySystem";

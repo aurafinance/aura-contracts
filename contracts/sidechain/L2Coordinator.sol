@@ -130,6 +130,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /**
      * @dev Override the default lzReceive function logic
+     *  Called by  L1Coordinator.distributeAura
      */
     function _nonblockingLzReceive(
         uint16 _srcChainId,

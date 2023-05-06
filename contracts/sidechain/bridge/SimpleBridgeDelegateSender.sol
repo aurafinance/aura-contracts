@@ -31,7 +31,7 @@ contract SimpleBridgeDelegateSender is BridgeDelegateSender {
      * - The caller must be the owner of the contract.
      */
     function send(uint256 _amount) external override onlyOwner {
-        require(l1Receiver != address(0), "!0");
+        require(l1Receiver != address(0), "L1ReceiverNotSet");
         IERC20(token).safeTransfer(l1Receiver, _amount);
         emit Send(l1Receiver, _amount);
     }
