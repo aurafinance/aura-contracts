@@ -10,7 +10,6 @@ import {
     deploySidechainPhase1,
     deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
-    setTrustedRemoteCanonicalPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
@@ -53,7 +52,7 @@ import { compareAddresses } from "../../tasks/snapshot/utils";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
-describe("Sidechain", () => {
+describe("Full Deployment Phase 1", () => {
     const L1_CHAIN_ID = 111;
     const L2_CHAIN_ID = 222;
     const mintrMintAmount = simpleToExactAmount(10);
@@ -224,11 +223,9 @@ describe("Sidechain", () => {
         // Connect contracts to its owner signer.
         canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
         canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
-        canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
 
         sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
         sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
-        sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
     });
 
     describe("Check configs", () => {
@@ -369,26 +366,6 @@ describe("Sidechain", () => {
             expect(await poolManager.operator()).eq(dao.address);
             expect(await poolManager.protectAddPool()).eq(true);
         });
-        it("auraBalOFT has correct config", async () => {
-            expect(await sidechain.auraBalOFT.lzEndpoint()).eq(l2LzEndpoint.address);
-            expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
-            expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
-
-            expect(
-                await sidechain.auraBalOFT.isTrustedRemote(
-                    L1_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
-                    ),
-                ),
-            ).eq(true);
-        });
-        it("auraBalProxyOFT has correct config", async () => {
-            expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
-            expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
-            expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
-        });
     });
 
     describe("Setup: Protocol DAO transactions", () => {
@@ -400,37 +377,6 @@ describe("Sidechain", () => {
         it("add trusted remotes to layerzero endpoints", async () => {
             // L1 Stuff
             await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
-            await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
-
-            expect(
-                await canonical.auraBalProxyOFT.isTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
-                    ),
-                ),
-            ).eq(true);
-
-            expect(
-                await canonical.auraProxyOFT.isTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-                    ),
-                ),
-            ).eq(true);
-
-            expect(
-                await canonical.l1Coordinator.isTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
-                    ),
-                ),
-            ).eq(true);
 
             await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
             await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
