@@ -475,7 +475,7 @@ describe("AuraBalOFT", () => {
             const auraBalOFTCirculatingSupplyBefore = await auraBalOFT.circulatingSupply();
 
             // When processing auraBal , invoke _lzSend to bridge tokens to L2
-            const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, auraBalProxyOFT.address, L2_CHAIN_ID, {
+            const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
                 value: NATIVE_FEE,
             });
             const dataProxyAfter = await snapshotData(deployer, "after auraBalProxyOFT processClaimable");
@@ -544,12 +544,10 @@ describe("AuraBalOFT", () => {
 
             // When processing auraBal , invoke _lzSend to bridge tokens to L2
             //  AuraBalProxyOFT.processClaimable => AuraOFT.sendFrom => AuraOFT._send => AuraOFT._debitFrom => AuraOFT.lzReceive
-            const tx = await auraBalProxyOFT.processClaimable(
-                cvx.address,
-                canonical.auraProxyOFT.address,
-                L2_CHAIN_ID,
-                { value: NATIVE_FEE, gasLimit: 1000000 },
-            );
+            const tx = await auraBalProxyOFT.processClaimable(cvx.address, L2_CHAIN_ID, {
+                value: NATIVE_FEE,
+                gasLimit: 1000000,
+            });
 
             const dataAfter = await snapshotData(deployer, "after auraProxyOFT processClaimable");
             const auraBalanceOfAuraProxyOFTAfter = await cvx.balanceOf(canonical.auraProxyOFT.address);
@@ -727,23 +725,19 @@ describe("AuraBalOFT", () => {
                 "onlyOwner",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
-        it("processClaimable fails if with wrong token", async () => {
-            await expect(auraBalProxyOFT.processClaimable(ZERO_ADDRESS, DEAD_ADDRESS, L2_CHAIN_ID), "wrong token").to.be
-                .reverted;
-        });
-        xit("processClaimable fails if reward receiver is not set", async () => {
+        it("processClaimable fails if reward receiver is not set", async () => {
             const SUPER_CHAIN_ID = 99999;
             expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);
             await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, ZERO_ADDRESS, L2_CHAIN_ID),
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, L2_CHAIN_ID),
                 "receiver != address(0)",
             ).to.be.revertedWith("!receiver");
         });
-        xit("processClaimable fails if there are no rewards", async () => {
+        it("processClaimable fails if there are no rewards", async () => {
             const SUPER_CHAIN_ID = 99999;
             await auraBalProxyOFT.setRewardReceiver(SUPER_CHAIN_ID, DEAD_ADDRESS);
             await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, ZERO_ADDRESS, SUPER_CHAIN_ID),
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
                 "reward > 0",
             ).to.be.revertedWith("!reward");
         });

@@ -133,6 +133,7 @@ describe("AuraBalOFT", () => {
             extSystemConfig,
             phase2,
             vaultDeployment,
+            canonicalPhase1,
         );
         canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
@@ -206,6 +207,8 @@ describe("AuraBalOFT", () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
+            expect(await canonical.auraBalProxyOFT.ofts(phase2.cvxCrv.address)).eq(canonical.auraBalProxyOFT.address);
+            expect(await canonical.auraBalProxyOFT.ofts(phase2.cvx.address)).eq(canonical.auraProxyOFT.address);
         });
         it("auraBal vault has correct config", async () => {
             expect(await sidechain.auraBalVault.underlying()).eq(sidechain.auraBalOFT.address);
@@ -360,12 +363,7 @@ describe("AuraBalOFT", () => {
             const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
             const auraBalBalanceBefore = await sidechain.auraBalOFT.balanceOf(sidechain.auraBalStrategy.address);
 
-            await canonical.auraBalProxyOFT.processClaimable(
-                phase2.cvxCrv.address,
-                canonical.auraBalProxyOFT.address,
-                L2_CHAIN_ID,
-                { value: NATIVE_FEE },
-            );
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE });
 
             const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
             const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
@@ -375,12 +373,7 @@ describe("AuraBalOFT", () => {
             expect(auraBalBalanceAfter.sub(auraBalBalanceBefore)).eq(claimableAuraBal);
 
             const auraRewardBefore = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
-            await canonical.auraBalProxyOFT.processClaimable(
-                phase2.cvx.address,
-                canonical.auraProxyOFT.address,
-                L2_CHAIN_ID,
-                { value: NATIVE_FEE },
-            );
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvx.address, L2_CHAIN_ID, { value: NATIVE_FEE });
 
             const auraRewardAfter = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
             const claimableAuraAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvx.address);
@@ -686,12 +679,7 @@ describe("AuraBalOFT", () => {
                 .reverted;
 
             await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 100);
-            await canonical.auraBalProxyOFT.processClaimable(
-                phase2.cvxCrv.address,
-                canonical.auraBalProxyOFT.address,
-                L2_CHAIN_ID,
-                { value: NATIVE_FEE },
-            );
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE });
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
             await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);

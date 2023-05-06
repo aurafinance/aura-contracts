@@ -190,6 +190,7 @@ describe("Sidechain", () => {
             extSystemConfig,
             phase2,
             vaultDeployment,
+            canonicalPhase1,
         );
         canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 

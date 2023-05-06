@@ -51,6 +51,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
 
     /// @dev Authorized harvesters
     mapping(address => bool) public authorizedHarvesters;
+
+    /// @dev Token to OFT
+    mapping(address => address) public ofts;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -59,6 +63,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     event AuthorizedHarvestersUpdated(address harvester, bool authorized);
     event Harvest(address indexed caller, uint256 totalUnderlyingSum);
     event ProcessClaimable(uint16 srcChainId, address token, address oft);
+    event SetOft(address token, address oft);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -100,17 +105,34 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         _setConfig(_srcChainId, _selector, _config);
     }
 
+    /**
+     * @dev Set reward receiver for src chain
+     * @param _srcChainId The source chain ID
+     * @param _receiver The receiver address
+     */
     function setRewardReceiver(uint16 _srcChainId, address _receiver) external onlyOwner {
         rewardReceiver[_srcChainId] = _receiver;
         emit RewardReceiverUpdated(_srcChainId, _receiver);
     }
 
-    /// @notice Adds or remove an address from the harvesters' whitelist
-    /// @param _harvester address of the authorized harvester
-    /// @param _authorized Whether to add or remove harvester
+    /**
+     * @dev Adds or remove an address from the harvesters' whitelist
+     * @param _harvester address of the authorized harvester
+     * @param _authorized Whether to add or remove harvester
+     */
     function updateAuthorizedHarvesters(address _harvester, bool _authorized) external onlyOwner {
         authorizedHarvesters[_harvester] = _authorized;
         emit AuthorizedHarvestersUpdated(_harvester, _authorized);
+    }
+
+    /**
+     * @dev Set OFT for token
+     * @param _token Token contract address
+     * @param _oft OFT contract address
+     */
+    function setOFT(address _token, address _oft) external onlyOwner {
+        ofts[_token] = _oft;
+        emit SetOft(_token, _oft);
     }
 
     /* -------------------------------------------------------------------
@@ -222,24 +244,22 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     /**
      * @dev Process claimable rewards
      * @param _token The token to process
-     * @param _oft The ProxyOFT representation of the _token
      * @param _srcChainId The source chain ID
      */
-    function processClaimable(
-        address _token,
-        address _oft,
-        uint16 _srcChainId
-    ) external payable {
+    function processClaimable(address _token, uint16 _srcChainId) external payable {
         uint256 reward = claimable[_token][_srcChainId];
         address receiver = rewardReceiver[_srcChainId];
-        require(receiver != address(0), "!receiver");
+        address oft = ofts[_token];
+
         require(reward > 0, "!reward");
+        require(receiver != address(0), "!receiver");
+        require(oft != address(0), "!oft");
 
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
 
         if (_token == address(innerToken)) {
-            require(_oft == address(this), "!oft");
+            require(oft == address(this), "!oft");
             // The token is this inner token so we need to call the internal
             // bridge mint/burn functions rather than sendFrom
             internalTotalSupply += reward;
@@ -256,8 +276,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         } else {
             // The token is one that this contract holds a balance of eg $AURA
             // bridge it to the L2 via it's proxy OFT contracts
-            IERC20(_token).safeIncreaseAllowance(_oft, reward);
-            IProxyOFT(_oft).sendFrom{ value: msg.value }(
+            IERC20(_token).safeIncreaseAllowance(oft, reward);
+            IProxyOFT(oft).sendFrom{ value: msg.value }(
                 address(this),
                 _srcChainId,
                 abi.encodePacked(receiver),
@@ -267,7 +287,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams
             );
         }
-        emit ProcessClaimable(_srcChainId, _token, _oft);
+        emit ProcessClaimable(_srcChainId, _token, oft);
     }
 
     /* -------------------------------------------------------------------
