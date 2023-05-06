@@ -288,7 +288,7 @@ describe("BaseRewardPool4626", () => {
             await booster.earmarkRewards(0);
         });
 
-        xit("allows transferFrom between accounts", async () => {
+        it("allows transferFrom between accounts", async () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alternateReceiver);
             const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(
@@ -358,7 +358,7 @@ describe("BaseRewardPool4626", () => {
             await booster.earmarkRewards(0);
         });
 
-        xit("allows transfer between accounts", async () => {
+        it("allows transfer between accounts", async () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
             const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(
@@ -416,7 +416,7 @@ describe("BaseRewardPool4626", () => {
             expect(alternateVirtualEarnedAfter, "from rewards earned").to.be.gte(alternateVirtualEarnedBefore);
             expect(aliceVirtualEarnedAfter, "to rewards earned").to.be.gte(aliceVirtualEarnedBefore);
         });
-        xit("claim rewards after transfers", async () => {
+        it("claim rewards after transfers", async () => {
             const alternateReceiverAddress = await alternateReceiver.getAddress();
             const crvRewards = BaseRewardPool4626__factory.connect(pool.crvRewards, alice);
 
