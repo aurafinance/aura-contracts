@@ -25,16 +25,16 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /// @dev Booster contract address
-    address public booster;
+    address public immutable booster;
 
     /// @dev BAL token contract
-    address public balToken;
+    address public immutable balToken;
 
     /// @dev AURA token contract
-    address public auraToken;
+    address public immutable auraToken;
 
     /// @dev AURA OFT token contract
-    address public auraOFT;
+    address public immutable auraOFT;
 
     /// @dev src chain ID mapped to total feeDebt
     mapping(uint16 => uint256) public feeDebtOf;
