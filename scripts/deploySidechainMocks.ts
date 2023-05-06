@@ -1,9 +1,9 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "types/sidechain-types";
-import { sidechainNaming } from "../tasks/deploy/sidechain-constants";
-import { deployContract } from "../tasks/utils";
-import { ZERO_ADDRESS } from "../test-utils";
+import { sidechainNaming } from "../tasks/deploy/sidechain-naming";
+import { deployContract } from "../tasks/utils/deploy-utils";
+import { ZERO_ADDRESS } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
 import {
     MockBalancerPoolToken,

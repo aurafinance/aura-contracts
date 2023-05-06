@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
-import { Signer } from "ethers";
+import { Signer, BigNumber } from "ethers";
 import {
     deployCanonicalPhase1,
     deployCanonicalPhase2,
@@ -23,22 +23,20 @@ import {
 } from "../../test-utils";
 import {
     Account,
-    AuraOFT,
-    L2Coordinator,
     Create2Factory,
     Create2Factory__factory,
     LZEndpointMock,
     LZEndpointMock__factory,
     MockERC20__factory,
 } from "../../types";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
+import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
-import { BigNumber } from "ethers";
+
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
 
 describe("Canonical", () => {
-    const L1_CHAIN_ID = 111;
-    const L2_CHAIN_ID = 222;
     let alice: Signer;
     let aliceAddress: string;
     let deployer: Account;
@@ -52,8 +50,6 @@ describe("Canonical", () => {
     let l2LzEndpoint: LZEndpointMock;
     let create2Factory: Create2Factory;
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
-    let l2Coordinator: L2Coordinator;
-    let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
 
     const ethBlockNumber: number = 17096880;
@@ -143,7 +139,6 @@ describe("Canonical", () => {
             canonicalPhase1,
             L1_CHAIN_ID,
         );
-
         const sidechainPhase2 = await deploySidechainPhase2(
             hre,
             deployer.signer,
@@ -157,8 +152,8 @@ describe("Canonical", () => {
         sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
         canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
-        l2Coordinator = sidechain.l2Coordinator;
-        auraOFT = sidechain.auraOFT;
+        await l1LzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
+        await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
 
         phase6 = await mainnetConfig.getPhase6(deployer.signer);
 
@@ -178,10 +173,9 @@ describe("Canonical", () => {
 
     describe("setup", () => {
         it("add trusted remotes to layerzero endpoints", async () => {
-            const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             // L1 Stuff
             await canonical.l1Coordinator
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setTrustedRemote(
                     L2_CHAIN_ID,
                     ethers.utils.solidityPack(
@@ -191,7 +185,7 @@ describe("Canonical", () => {
                 );
 
             await canonical.auraProxyOFT
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setTrustedRemote(
                     L2_CHAIN_ID,
                     ethers.utils.solidityPack(
@@ -201,7 +195,7 @@ describe("Canonical", () => {
                 );
 
             await canonical.auraProxyOFT
-                .connect(owner.signer)
+                .connect(dao.signer)
                 .setTrustedRemote(
                     L2_CHAIN_ID,
                     ethers.utils.solidityPack(
@@ -209,47 +203,6 @@ describe("Canonical", () => {
                         [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
                     ),
                 );
-
-            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
-            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
-
-            // L2 Stuff
-            await sidechain.l2Coordinator
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L1_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [canonical.l1Coordinator.address, sidechain.l2Coordinator.address],
-                    ),
-                );
-
-            await sidechain.auraOFT
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L1_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [canonical.auraProxyOFT.address, sidechain.auraOFT.address],
-                    ),
-                );
-
-            await sidechain.auraBalOFT
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L1_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
-                    ),
-                );
-
-            await l2LzEndpoint
-                .connect(owner.signer)
-                .setDestLzEndpoint(canonical.l1Coordinator.address, l1LzEndpoint.address);
-            await l2LzEndpoint
-                .connect(owner.signer)
-                .setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
         });
         it("set bridge delegates", async () => {
             await canonical.l1Coordinator

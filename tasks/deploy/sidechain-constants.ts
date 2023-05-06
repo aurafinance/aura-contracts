@@ -1,7 +1,6 @@
-import { chainIds } from "../../tasks/utils";
+import { chainIds } from "../../tasks/utils/networkAddressFactory";
 import { config as goerliConfig } from "./goerli-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
-import { SidechainNaming } from "../../types/sidechain-types";
 
 export const sideChains = [
     chainIds.arbitrum,
@@ -9,9 +8,16 @@ export const sideChains = [
     chainIds.polygon,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
+    // For fork mode
+    chainIds.hardhat,
 ];
 
-export const canonicalChains = [chainIds.goerli, chainIds.mainnet];
+export const canonicalChains = [
+    chainIds.goerli,
+    chainIds.mainnet,
+    // For fork mode
+    chainIds.hardhat,
+];
 
 export const remoteChainMap = {
     [chainIds.goerli]: chainIds.arbitrumGoerli,
@@ -29,16 +35,12 @@ export const lzChainIds = {
 
 export const canonicalConfigs = {
     [chainIds.goerli]: goerliConfig,
+    // For fork mode
+    [chainIds.hardhat]: goerliConfig,
 };
 
 export const sidechainConfigs = {
     [chainIds.goerli]: goerliSidechainConfig,
-};
-
-export const sidechainNaming: SidechainNaming = {
-    auraOftName: "Aura",
-    auraOftSymbol: "AURA",
-    auraBalOftName: "Aura BAL",
-    auraBalOftSymbol: "auraBAL",
-    tokenFactoryNamePostfix: " Aura Deposit",
+    // For fork mode
+    [chainIds.hardhat]: goerliSidechainConfig,
 };
