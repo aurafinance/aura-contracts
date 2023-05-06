@@ -195,7 +195,7 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
         // Process the queued send
         queue[queueRoot] = false;
         uint256 amount = _creditTo(_srcChainId, _to, _amount);
-        emit ReceiveFromChain(_srcChainId, _to, _amount);
+        emit ReceiveFromChain(_srcChainId, _to, amount);
     }
 
     /**
@@ -231,9 +231,9 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
      * @param _inflow   Inflow amount
      * @param _outflow  Outflow amount
      */
-    function _getNetInflow(uint256 _inflow, uint256 _outflow) internal pure returns (uint256) {
+    function _getNetInflow(uint256 _inflow, uint256 _outflow) internal pure returns (uint256 netInflow) {
         if (_inflow > _outflow) {
-            return _inflow.sub(_outflow);
+            netInflow = _inflow.sub(_outflow);
         }
     }
 }

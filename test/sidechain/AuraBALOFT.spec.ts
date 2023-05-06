@@ -402,6 +402,22 @@ describe("AuraBalOFT", () => {
                 dataBefore.auraBalVaultBalanceOfUnderlyingProxy,
             );
         });
+        it("can set harvest src chain ids", async () => {
+            const chainId = 1010;
+            await expect(auraBalProxyOFT.harvestSrcChainIds(0)).to.be.reverted;
+            await auraBalProxyOFT.setHarvestSrcChainIds([chainId]);
+            expect(await auraBalProxyOFT.harvestSrcChainIds(0)).eq(chainId);
+        });
+        it("can set harvest src chain ids", async () => {
+            await expect(auraBalProxyOFT.connect(alice.signer).setHarvestSrcChainIds([L2_CHAIN_ID])).to.be.revertedWith(
+                "Ownable: caller is not the owner",
+            );
+        });
+        it("can reset harvest src chain ids", async () => {
+            await expect(auraBalProxyOFT.harvestSrcChainIds(0)).not.to.be.reverted;
+            await auraBalProxyOFT.setHarvestSrcChainIds([L2_CHAIN_ID]);
+            expect(await auraBalProxyOFT.harvestSrcChainIds(0)).eq(L2_CHAIN_ID);
+        });
         it("can harvest from auraBAL proxy OFT", async () => {
             // Harvest from auraBAL proxy OFT
             const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT harvest");
@@ -412,7 +428,6 @@ describe("AuraBalOFT", () => {
             const extraRewardsAddress = await auraBalVault.extraRewards(0);
             const extraRewardsPool = VirtualBalanceRewardPool__factory.connect(extraRewardsAddress, deployer.signer);
 
-            const srcChainIds = [L2_CHAIN_ID];
             const totalUnderlyings = [dataBefore.sidechainAuraBalVaultTotalUnderlying];
             const totalUnderlyingSum = totalUnderlyings[0];
 
@@ -425,9 +440,7 @@ describe("AuraBalOFT", () => {
             // call harvest
             // auraBalProxyOFT => VirtualBalanceRewardPool.getReward()
             await auraBalProxyOFT.connect(dao.signer).updateAuthorizedHarvesters(deployer.address, true);
-            const tx = await auraBalProxyOFT
-                .connect(deployer.signer)
-                .harvest(srcChainIds, totalUnderlyings, totalUnderlyingSum);
+            const tx = await auraBalProxyOFT.connect(deployer.signer).harvest(totalUnderlyings, totalUnderlyingSum);
 
             // No events
 
@@ -660,47 +673,21 @@ describe("AuraBalOFT", () => {
             xit("process claimable multiple times", async () => {
                 //TODO
             });
-            xit("harvest multiple times correct sidechain without processClaimable", async () => {
-                const WRONG_CHAIN_ID = 8765;
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, WRONG_CHAIN_ID], [50, 50], 100),
-                ).to.be.revertedWith("!srcChainId");
-            });
-            xit("harvest rewards from auraBalVault wrong srcChainIds", async () => {
-                const WRONG_CHAIN_ID = 8765;
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([WRONG_CHAIN_ID], [100], 100),
-                ).to.be.revertedWith("!srcChainId");
-            });
-            xit("harvest rewards from auraBalVault partially wrong srcChainIds", async () => {
-                const WRONG_CHAIN_ID = 8765;
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, WRONG_CHAIN_ID], [50, 50], 100),
-                ).to.be.revertedWith("!srcChainId");
-            });
             it("harvest rewards from auraBalVault wrong parameters length ", async () => {
                 await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, L2_CHAIN_ID], [100], 100),
+                    auraBalProxyOFT.connect(deployer.signer).harvest([100, 100, 100, 100, 100, 100], 100),
                 ).to.be.revertedWith("!parity");
             });
             it("harvest rewards from auraBalVault correct chain wrong totalUnderlying", async () => {
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 300),
-                ).to.be.revertedWith("!totalUnderlyingSum");
+                await expect(auraBalProxyOFT.connect(deployer.signer).harvest([100], 300)).to.be.revertedWith("!sum");
             });
             it("harvest rewards from auraBalVault correct chain wrong totalUnderlying = ZERO", async () => {
-                await expect(auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID], [100], 0)).to.be.reverted;
+                await expect(auraBalProxyOFT.connect(deployer.signer).harvest([100], 0)).to.be.reverted;
             });
             it("harvest fails when caller is not authorized", async () => {
                 await auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, false);
                 expect(await auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
-                await expect(auraBalProxyOFT.harvest([L2_CHAIN_ID], [100], 100)).to.be.revertedWith("!harvester");
-            });
-            it("harvest fails when parameters are wrong", async () => {
-                await auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, true);
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([L2_CHAIN_ID, L1_CHAIN_ID], [100], 100),
-                ).to.be.revertedWith("!parity");
+                await expect(auraBalProxyOFT.harvest([100], 100)).to.be.revertedWith("!harvester");
             });
         });
 
@@ -726,15 +713,15 @@ describe("AuraBalOFT", () => {
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
         it("processClaimable fails if reward receiver is not set", async () => {
-            const SUPER_CHAIN_ID = 99999;
+            const SUPER_CHAIN_ID = 999;
             expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);
             await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, L2_CHAIN_ID),
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
                 "receiver != address(0)",
-            ).to.be.revertedWith("!receiver");
+            ).to.be.revertedWith("0");
         });
         it("processClaimable fails if there are no rewards", async () => {
-            const SUPER_CHAIN_ID = 99999;
+            const SUPER_CHAIN_ID = 999;
             await auraBalProxyOFT.setRewardReceiver(SUPER_CHAIN_ID, DEAD_ADDRESS);
             await expect(
                 auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
