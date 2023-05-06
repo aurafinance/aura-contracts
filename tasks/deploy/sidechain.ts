@@ -16,7 +16,7 @@ import {
     AuraOFT__factory,
     BoosterOwnerLite__factory,
 } from "../../types";
-import { getSigner } from "../utils";
+import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     deployCanonicalPhase1,
@@ -127,7 +127,7 @@ const sidechainTaskSetup = (
     if (!force) {
         assert(sideChains.includes(network.config.chainId), "Must be sidechain");
         assert(canonicalChains.includes(canonicalChainId), "Must be canonical chain");
-        assert(Number(canonicalChainId) === remoteChainMap[network.config.chainId], "Incorrect canonical chain ID");
+        assert(canonicalChainId === remoteChainMap[network.config.chainId], "Incorrect canonical chain ID");
     }
 
     return { canonical, canonicalConfig, sidechainConfig };
@@ -153,7 +153,7 @@ task("deploy:sidechain:L2:phase1")
     .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-        const canonicalChainId = tskArgs.canonicalchainid;
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
         const { canonical, sidechainConfig } = sidechainTaskSetup(
             deployer,
             hre.network,
@@ -183,7 +183,7 @@ task("deploy:sidechain:L2:phase2")
     .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
-        const canonicalChainId = tskArgs.canonicalchainid;
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
         const { canonical, sidechainConfig } = sidechainTaskSetup(
             deployer,
             hre.network,
