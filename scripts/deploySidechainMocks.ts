@@ -1,20 +1,20 @@
-import { simpleToExactAmount } from "../test-utils/math";
 import { Signer } from "ethers";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "types/sidechain-types";
+import { sidechainNaming } from "../tasks/deploy/sidechain-constants";
+import { deployContract } from "../tasks/utils";
+import { ZERO_ADDRESS } from "../test-utils";
+import { simpleToExactAmount } from "../test-utils/math";
 import {
-    MockERC20__factory,
-    MockERC20,
-    MockCurveGauge,
-    MockCurveMinter__factory,
-    MockCurveMinter,
     MockBalancerPoolToken,
     MockBalancerPoolToken__factory,
+    MockCurveGauge,
     MockCurveGauge__factory,
+    MockCurveMinter,
+    MockCurveMinter__factory,
+    MockERC20,
+    MockERC20__factory,
 } from "../types/generated";
-import { deployContract } from "../tasks/utils";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ExtSidechainConfig, SidechainNaming, SidechainMultisigConfig } from "types/sidechain-types";
-import { sidechainNaming } from "../tasks/deploy/sidechain-constants";
-import { ZERO_ADDRESS } from "../test-utils";
 
 interface DeployL2MocksResult {
     token: MockERC20;

@@ -1,6 +1,7 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-
+import { deployContract, waitForTx } from "../tasks/utils";
+import { ZERO } from "../test-utils/constants";
 import {
     AuraBalStrategy,
     AuraBalStrategy__factory,
@@ -11,19 +12,25 @@ import {
     ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
+    VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
     VirtualRewardFactory,
     VirtualRewardFactory__factory,
 } from "../types";
-import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
-import { ZERO } from "../test-utils/constants";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;
     multisigs: MultisigConfig;
     getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
+}
+export interface VaultDeployment {
+    vault: AuraBalVault;
+    strategy: AuraBalStrategy;
+    bbusdHandler: BalancerSwapsHandler;
+    auraRewards: VirtualBalanceRewardPool;
+    virtualRewardFactory: VirtualRewardFactory;
 }
 
 export async function deployFeeForwarder(
@@ -52,7 +59,7 @@ export async function deployVault(
     signer: Signer,
     debug = false,
     waitForBlocks = 0,
-) {
+): Promise<VaultDeployment> {
     const phase2 = await config.getPhase2(signer);
     const phase6 = await config.getPhase6(signer);
     const feeToken = ERC20__factory.connect(config.addresses.feeToken, signer);
