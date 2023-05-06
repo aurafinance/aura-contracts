@@ -40,6 +40,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     /// @dev Internally tracking of total auraBAL supply bridged
     uint256 public internalTotalSupply;
 
+    /// @dev Harvest src chain IDs array
+    uint16[] public harvestSrcChainIds;
+
     /// @dev token address mapped to amount
     mapping(address => uint256) public totalClaimable;
 
@@ -59,11 +62,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
        Events 
     ------------------------------------------------------------------- */
 
-    event RewardReceiverUpdated(uint16 srcChainId, address receiver);
-    event AuthorizedHarvestersUpdated(address harvester, bool authorized);
     event Harvest(address indexed caller, uint256 totalUnderlyingSum);
-    event ProcessClaimable(uint16 srcChainId, address token, address oft);
-    event SetOft(address token, address oft);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -112,7 +111,6 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function setRewardReceiver(uint16 _srcChainId, address _receiver) external onlyOwner {
         rewardReceiver[_srcChainId] = _receiver;
-        emit RewardReceiverUpdated(_srcChainId, _receiver);
     }
 
     /**
@@ -122,7 +120,6 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function updateAuthorizedHarvesters(address _harvester, bool _authorized) external onlyOwner {
         authorizedHarvesters[_harvester] = _authorized;
-        emit AuthorizedHarvestersUpdated(_harvester, _authorized);
     }
 
     /**
@@ -132,7 +129,19 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function setOFT(address _token, address _oft) external onlyOwner {
         ofts[_token] = _oft;
-        emit SetOft(_token, _oft);
+    }
+
+    /**
+     * @dev Set srcChainIds to loop through for harvest
+     * @param _srcChainIds Source chain IDs
+     */
+    function setHarvestSrcChainIds(uint16[] memory _srcChainIds) external onlyOwner {
+        delete harvestSrcChainIds;
+
+        uint256 len = _srcChainIds.length;
+        for (uint256 i = 0; i < len; i++) {
+            harvestSrcChainIds.push(_srcChainIds[i]);
+        }
     }
 
     /* -------------------------------------------------------------------
@@ -198,18 +207,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      *      Lazily meaning the claimable values are just added to a claimable mapping for
      *      processing latest via processClaimable
      *
-     * @param _srcChainIds Array of source chain layer zero IDs
      * @param _totalUnderlying Array of totalUnderlying auraBAL staked on the source chain
      * @param _totalUnderlyingSum Sum of values in _totalUnderlying array
      */
-    function harvest(
-        uint16[] memory _srcChainIds,
-        uint256[] memory _totalUnderlying,
-        uint256 _totalUnderlyingSum
-    ) external {
+    function harvest(uint256[] memory _totalUnderlying, uint256 _totalUnderlyingSum) external {
         require(authorizedHarvesters[msg.sender], "!harvester");
 
-        uint256 srcChainIdsLen = _srcChainIds.length;
+        uint256 srcChainIdsLen = harvestSrcChainIds.length;
         require(srcChainIdsLen == _totalUnderlying.length, "!parity");
 
         HarvestToken[] memory harvestTokens = _processHarvestableTokens();
@@ -232,11 +236,11 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 totalHarvested += amount;
                 accUnderlying += totalUnderlying;
 
-                claimable[harvestToken.token][_srcChainIds[i]] += amount;
+                claimable[harvestToken.token][harvestSrcChainIds[i]] += amount;
             }
 
             totalClaimable[harvestToken.token] += totalHarvested;
-            require(accUnderlying == _totalUnderlyingSum, "!totalUnderlyingSum");
+            require(accUnderlying == _totalUnderlyingSum, "!sum");
         }
         emit Harvest(msg.sender, _totalUnderlyingSum);
     }
@@ -247,12 +251,12 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      * @param _srcChainId The source chain ID
      */
     function processClaimable(address _token, uint16 _srcChainId) external payable {
-        uint256 reward = claimable[_token][_srcChainId];
         address receiver = rewardReceiver[_srcChainId];
+        uint256 reward = claimable[_token][_srcChainId];
         address oft = ofts[_token];
 
+        require(receiver != address(0), "0");
         require(reward > 0, "!reward");
-        require(receiver != address(0), "!receiver");
         require(oft != address(0), "!oft");
 
         claimable[_token][_srcChainId] = 0;
@@ -287,7 +291,6 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams
             );
         }
-        emit ProcessClaimable(_srcChainId, _token, oft);
     }
 
     /* -------------------------------------------------------------------
@@ -329,7 +332,6 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         }
 
         IERC20(_token).safeTransfer(_to, _amount);
-        emit Rescue(_token, _to, _amount);
     }
 
     /* -------------------------------------------------------------------
