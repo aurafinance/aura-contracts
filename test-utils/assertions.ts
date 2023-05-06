@@ -128,3 +128,10 @@ const isContractEvent = (address: string, eventName: string) => (event: Event) =
  */
 export const findContractEvent = (receipt: ContractReceipt, address: string, eventName: string) =>
     receipt.events.find(isContractEvent(address, eventName));
+
+/**
+ * Custom chai matcher for any value
+ */
+export function anyValue() {
+    return true;
+}
