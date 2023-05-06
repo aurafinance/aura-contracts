@@ -46,7 +46,7 @@ import {
 } from "../../types";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
+import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
 import { AuraBalVaultDeployed } from "../../tasks/deploy/goerli-config";
 import { compareAddresses } from "../../tasks/snapshot/utils";
 

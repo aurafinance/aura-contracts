@@ -28,14 +28,15 @@ import {
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
 } from "../../types";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-constants";
+import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { increaseTime } from "./../../test-utils/time";
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
+
 describe("Sidechain", () => {
-    const L1_CHAIN_ID = 111;
-    const L2_CHAIN_ID = 222;
     let alice: Signer;
     let aliceAddress: string;
     let deployer: Account;

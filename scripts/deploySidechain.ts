@@ -1,7 +1,7 @@
 import { ContractTransaction, ethers, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
-import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
+import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
     AuraBalOFT,
