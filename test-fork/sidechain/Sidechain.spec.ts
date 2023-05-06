@@ -121,14 +121,6 @@ describe("Sidechain", () => {
 
         // deploy canonicalPhase
         const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonicalPhase2 = await deployCanonicalPhase2(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            l1Addresses,
-            phase2,
-            vaultDeployment,
-        );
         const canonicalPhase1 = await deployCanonicalPhase1(
             hre,
             deployer.signer,
@@ -136,6 +128,15 @@ describe("Sidechain", () => {
             l1Addresses,
             phase2,
             phase6,
+        );
+        const canonicalPhase2 = await deployCanonicalPhase2(
+            hre,
+            deployer.signer,
+            mainnetConfig.multisigs,
+            l1Addresses,
+            phase2,
+            vaultDeployment,
+            canonicalPhase1,
         );
 
         // deploy sidechain
