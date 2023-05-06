@@ -58,11 +58,40 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
        Events 
     ------------------------------------------------------------------- */
 
+    /**
+     * @param srcChainId Source chain ID
+     * @param bridgeDelegate The bridge delegate contract
+     */
     event BridgeDelegateUpdated(uint16 srcChainId, address bridgeDelegate);
+
+    /**
+     * @param srcChainId Source chain ID
+     * @param l2Coordinator The l2Coordinator contract
+     */
     event L2CoordinatorUpated(uint16 srcChainId, address l2Coordinator);
+
+    /**
+     * @param distributor Distributor address
+     * @param active If they are an active distributor
+     */
     event DisributorUpdated(address distributor, bool active);
+
+    /**
+     * @param srcChainId Source chain ID
+     * @param amount Amount of fee that was notified
+     */
     event FeeDebtNotified(uint16 srcChainId, uint256 amount);
+
+    /**
+     * @param srcChainId Source chain ID
+     * @param amount Amount of AURA that was distributed
+     */
     event AuraDistributed(uint16 srcChainId, uint256 amount);
+
+    /**
+     * @param srcChainId Source chain ID
+     * @param amount Amount of fee debt that was settled
+     */
     event FeeDebtSettled(uint16 srcChainId, uint256 amount);
 
     /* -------------------------------------------------------------------
@@ -109,18 +138,28 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     /**
      * @dev Set bridge delegate for given srcChainId
      * @param _srcChainId        ID of the source chain
-     * @param bridgeDelegate     Address of the bridge delegate
+     * @param _bridgeDelegate     Address of the bridge delegate
      */
-    function setBridgeDelegate(uint16 _srcChainId, address bridgeDelegate) external onlyOwner {
-        bridgeDelegates[_srcChainId] = bridgeDelegate;
-        emit BridgeDelegateUpdated(_srcChainId, bridgeDelegate);
+    function setBridgeDelegate(uint16 _srcChainId, address _bridgeDelegate) external onlyOwner {
+        bridgeDelegates[_srcChainId] = _bridgeDelegate;
+        emit BridgeDelegateUpdated(_srcChainId, _bridgeDelegate);
     }
 
-    function setL2Coordinator(uint16 _srcChainId, address l2Coordinator) external onlyOwner {
-        l2Coordinators[_srcChainId] = l2Coordinator;
-        emit L2CoordinatorUpated(_srcChainId, l2Coordinator);
+    /**
+     * @dev Set L2 Coordinator for given srcChainId
+     * @param _srcChainId     ID of the source chain
+     * @param _l2Coordinator  Address of l2Coordinator
+     */
+    function setL2Coordinator(uint16 _srcChainId, address _l2Coordinator) external onlyOwner {
+        l2Coordinators[_srcChainId] = _l2Coordinator;
+        emit L2CoordinatorUpated(_srcChainId, _l2Coordinator);
     }
 
+    /**
+     * @dev Set distributor as valid or invalid so the can call harvest
+     * @param _distributor  Distributor address
+     * @param _active       Is the distributor active
+     */
     function setDistributor(address _distributor, bool _active) external onlyOwner {
         distributors[_distributor] = _active;
         emit DisributorUpdated(_distributor, _active);
@@ -139,6 +178,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         emit FeeDebtNotified(_srcChainId, _amount);
     }
 
+    /**
+     * @dev Distribute AURA to the src chain using the BAL float in this
+     *      contract mint AURA by calling distributeL2Fees on the Booster
+     *      and then send those AURA tokens to the src chain
+     */
     function distributeAura(uint16 _srcChainId, bytes memory _sendFromAdapterParams) external payable onlyDistributor {
         uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
@@ -155,9 +199,12 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     }
 
     /**
-     * @dev Distribute AURA to the src chain using the BAL float in this
-     *      contract mint AURA by calling distributeL2Fees on the Booster
-     *      and then send those AURA tokens to the src chain
+     * @dev see distributeAura
+     * @param _srcChainId The source chain ID
+     * @param _feeAmount The amount of BAL fee
+     * @param _zroPaymentAddress ZRO payment address from LZ config
+     * @param _adapterParams adapter params from LZ config
+     * @param _sendFromAdapterParams AURA OFT sendFrom adapter params
      */
     function _distributeAura(
         uint16 _srcChainId,
@@ -222,8 +269,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
-        uint64 _nonce,
+        bytes memory, /* _srcAddress */
+        uint64, /* _nonce */
         bytes memory _payload
     ) internal virtual override {
         if (CCM.isCustomMessage(_payload)) {

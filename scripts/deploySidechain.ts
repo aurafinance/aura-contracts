@@ -115,6 +115,7 @@ export async function deployCanonicalPhase2(
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
     auraBalVault: AuraBalVaultDeployed,
+    canonicalPhase1: CanonicalPhase1Deployed,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<CanonicalPhase2Deployed> {
@@ -135,7 +136,13 @@ export async function deployCanonicalPhase2(
         waitForBlocks,
     );
 
-    const tx = await auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
+    let tx = await auraBalProxyOFT.setOFT(phase2.cvxCrv.address, auraBalProxyOFT.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalProxyOFT.setOFT(phase2.cvx.address, canonicalPhase1.auraProxyOFT.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
     return { auraBalProxyOFT };
