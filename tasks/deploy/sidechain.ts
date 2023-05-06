@@ -92,6 +92,7 @@ task("deploy:sidechain:L1:phase2")
 
         const phase2 = await config.getPhase2(deployer);
         const vault = await config.getAuraBalVault(deployer);
+        const canonicalPhase1 = config.getSidechain(deployer);
 
         const result = await deployCanonicalPhase2(
             hre,
@@ -100,6 +101,7 @@ task("deploy:sidechain:L1:phase2")
             config.addresses,
             phase2,
             vault,
+            canonicalPhase1,
             debug,
             tskArgs.wait,
         );

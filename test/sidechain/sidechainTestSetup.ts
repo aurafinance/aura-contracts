@@ -138,6 +138,7 @@ export const sidechainTestSetup = async (
         l1Mocks.addresses,
         phase2,
         vaultDeployment,
+        canonicalPhase1,
         debug,
         waitForBlocks,
     );
