@@ -12,29 +12,28 @@ import {
     CanonicalPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
-import { AuraBalVaultDeployed, config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY } from "../../test-utils";
 import {
     Account,
     AuraOFT,
     L2Coordinator,
-    Create2Factory,
-    Create2Factory__factory,
     ExtraRewardStashV3__factory,
     LZEndpointMock,
-    LZEndpointMock__factory,
     ERC20__factory,
     MockERC20__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
 } from "../../types";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { increaseTime } from "./../../test-utils/time";
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
+const BLOCK_NUMBER = 17140000;
+const CONFIG = mainnetConfig;
 
 describe("Sidechain", () => {
     let alice: Signer;
@@ -45,17 +44,15 @@ describe("Sidechain", () => {
     // phases
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
-    let vaultDeployment: AuraBalVaultDeployed;
     // LayerZero endpoints
     let l1LzEndpoint: LZEndpointMock;
     let l2LzEndpoint: LZEndpointMock;
-    let create2Factory: Create2Factory;
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-    let bridgeDelegate: SimplyBridgeDelegateDeployed;
+    let bridgeDelegateDeployment: SimplyBridgeDelegateDeployed;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -76,7 +73,7 @@ describe("Sidechain", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 17140000,
+                        blockNumber: BLOCK_NUMBER,
                     },
                 },
             ],
@@ -86,95 +83,21 @@ describe("Sidechain", () => {
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
         deployer = await impersonateAccount(await accounts[0].getAddress());
-        dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
         notAuthorised = await impersonateAccount(await accounts[3].getAddress());
 
-        phase2 = await mainnetConfig.getPhase2(deployer.signer);
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
+        const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
 
-        // deploy layerzero mocks
-        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
-        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
-
-        // deploy Create2Factory
-        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
-        await create2Factory.updateDeployer(deployer.address, true);
-
-        // setup sidechain config
-        sidechainConfig = {
-            chainId: 123,
-            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
-            naming: { ...sidechainNaming },
-            extConfig: {
-                canonicalChainId: L1_CHAIN_ID,
-                lzEndpoint: l2LzEndpoint.address,
-                create2Factory: create2Factory.address,
-                token: mainnetConfig.addresses.token,
-                minter: mainnetConfig.addresses.minter,
-            },
-            bridging: {
-                l1Receiver: "0x0000000000000000000000000000000000000000",
-                l2Sender: "0x0000000000000000000000000000000000000000",
-                nativeBridge: "0x0000000000000000000000000000000000000000",
-            },
-        };
-
-        // deploy canonicalPhase
-        const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonicalPhase1 = await deployCanonicalPhase1(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            l1Addresses,
-            phase2,
-            phase6,
-        );
-        const canonicalPhase2 = await deployCanonicalPhase2(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            l1Addresses,
-            phase2,
-            vaultDeployment,
-            canonicalPhase1,
-        );
-
-        // deploy sidechain
-        const sidechainPhase1 = await deploySidechainPhase1(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase1,
-            L1_CHAIN_ID,
-        );
-        const sidechainPhase2 = await deploySidechainPhase2(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase2,
-            sidechainPhase1,
-            L1_CHAIN_ID,
-        );
-        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
-        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
-
+        phase2 = result.phase2;
+        phase6 = result.phase6;
+        l1LzEndpoint = result.l1LzEndpoint;
+        l2LzEndpoint = result.l2LzEndpoint;
+        canonical = result.canonical;
+        sidechain = result.sidechain;
+        bridgeDelegateDeployment = result.bridgeDelegateDeployment;
+        dao = result.dao;
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
-
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-
-        bridgeDelegate = await deploySimpleBridgeDelegates(
-            hre,
-            mainnetConfig.addresses,
-            canonical,
-            L2_CHAIN_ID,
-            deployer.signer,
-        );
+        sidechainConfig = result.sidechainConfig;
     });
 
     describe("Check configs", () => {
@@ -314,16 +237,20 @@ describe("Sidechain", () => {
             let owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
             await sidechain.l2Coordinator
                 .connect(owner.signer)
-                .setBridgeDelegate(bridgeDelegate.bridgeDelegateSender.address);
+                .setBridgeDelegate(bridgeDelegateDeployment.bridgeDelegateSender.address);
 
-            owner = await impersonateAccount(await bridgeDelegate.bridgeDelegateSender.owner());
+            owner = await impersonateAccount(await bridgeDelegateDeployment.bridgeDelegateSender.owner());
 
-            await bridgeDelegate.bridgeDelegateSender
+            await bridgeDelegateDeployment.bridgeDelegateSender
                 .connect(owner.signer)
                 .setL2Coordinator(sidechain.l2Coordinator.address);
 
-            expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(bridgeDelegate.bridgeDelegateSender.address);
-            expect(await bridgeDelegate.bridgeDelegateSender.l2Coordinator()).to.eq(sidechain.l2Coordinator.address);
+            expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(
+                bridgeDelegateDeployment.bridgeDelegateSender.address,
+            );
+            expect(await bridgeDelegateDeployment.bridgeDelegateSender.l2Coordinator()).to.eq(
+                sidechain.l2Coordinator.address,
+            );
         });
         it("add trusted remotes to layerzero endpoints", async () => {
             const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());

@@ -31,13 +31,15 @@ import {
 } from "../../test-utils";
 import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
 import { BigNumber } from "ethers";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
+const BLOCK_NUMBER = 17140000;
+const CONFIG = mainnetConfig;
 
 describe("Full Deployment Phase 2", () => {
-    const L1_CHAIN_ID = 111;
-    const L2_CHAIN_ID = 222;
-
     let dao: Account;
     let deployer: Account;
 
@@ -69,7 +71,7 @@ describe("Full Deployment Phase 2", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 17140000,
+                        blockNumber: BLOCK_NUMBER,
                     },
                 },
             ],
@@ -77,89 +79,19 @@ describe("Full Deployment Phase 2", () => {
 
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
-        dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
 
-        phase2 = await mainnetConfig.getPhase2(deployer.signer);
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
+        const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
 
-        // deploy layerzero mocks
-        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
-        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
+        phase2 = result.phase2;
+        phase6 = result.phase6;
+        l1LzEndpoint = result.l1LzEndpoint;
+        l2LzEndpoint = result.l2LzEndpoint;
+        canonical = result.canonical;
+        sidechain = result.sidechain;
+        sidechainConfig = result.sidechainConfig;
+        vaultDeployment = result.vaultDeployment;
+        dao = result.dao;
 
-        // deploy Create2Factory
-        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
-        await create2Factory.updateDeployer(deployer.address, true);
-
-        // setup sidechain config
-        sidechainConfig = {
-            chainId: 123,
-            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
-            extConfig: {
-                canonicalChainId: L1_CHAIN_ID,
-                lzEndpoint: l2LzEndpoint.address,
-                create2Factory: create2Factory.address,
-                token: mainnetConfig.addresses.token,
-                minter: mainnetConfig.addresses.minter,
-            },
-            naming: {
-                auraOftName: "Aura",
-                auraOftSymbol: "AURA",
-                tokenFactoryNamePostfix: " Aura Deposit",
-                auraBalOftName: "Aura BAL",
-                auraBalOftSymbol: "auraBAL",
-            },
-            bridging: {
-                l1Receiver: "0x0000000000000000000000000000000000000000",
-                l2Sender: "0x0000000000000000000000000000000000000000",
-                nativeBridge: "0x0000000000000000000000000000000000000000",
-            },
-        };
-
-        // deploy canonicalPhase
-        const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonicalPhase1 = await deployCanonicalPhase1(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            extSystemConfig,
-            phase2,
-            phase6,
-        );
-        const canonicalPhase2 = await deployCanonicalPhase2(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            extSystemConfig,
-            phase2,
-            vaultDeployment,
-            canonicalPhase1,
-        );
-        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
-
-        // deploy sidechain
-        const sidechainPhase1 = await deploySidechainPhase1(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonical,
-            L1_CHAIN_ID,
-        );
-        const sidechainPhase2 = await deploySidechainPhase2(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase2,
-            sidechainPhase1,
-            L1_CHAIN_ID,
-        );
-        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
-
-        await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, simpleToExactAmount(10_000));
         // Connect contracts to its owner signer.
         canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
         canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
@@ -168,6 +100,8 @@ describe("Full Deployment Phase 2", () => {
         sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
         sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
         sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
+
+        await getAuraBal(phase2, CONFIG.addresses, deployer.address, simpleToExactAmount(10_000));
     });
 
     afterEach(async () => {
@@ -325,8 +259,8 @@ describe("Full Deployment Phase 2", () => {
         });
         it("can harvest auraBAL from vault", async () => {
             const harvestAmount = simpleToExactAmount(100);
-            await getAuraBal(phase2, mainnetConfig.addresses, vaultDeployment.strategy.address, harvestAmount);
-            await getAura(phase2, mainnetConfig.addresses, vaultDeployment.strategy.address, harvestAmount);
+            await getAuraBal(phase2, CONFIG.addresses, vaultDeployment.strategy.address, harvestAmount);
+            await getAura(phase2, CONFIG.addresses, vaultDeployment.strategy.address, harvestAmount);
 
             // Harvest from auraBAL vault
             const underlyingBalanceBefore = await vaultDeployment.vault.balanceOfUnderlying(
@@ -586,7 +520,7 @@ describe("Full Deployment Phase 2", () => {
         });
         it("Sending more than inflow limit gets queued", async () => {
             const overLimitAmount = (await canonical.auraBalProxyOFT.inflowLimit()).add(1);
-            await getAuraBal(phase2, mainnetConfig.addresses, deployer.address, overLimitAmount);
+            await getAuraBal(phase2, CONFIG.addresses, deployer.address, overLimitAmount);
 
             const amount = overLimitAmount;
 
@@ -693,7 +627,7 @@ describe("Full Deployment Phase 2", () => {
 
             // Harvest some rewards so internalTotalSupply is not latest
             const underlyingBefore = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
-            await getAuraBal(phase2, mainnetConfig.addresses, vaultDeployment.strategy.address, simpleToExactAmount(1));
+            await getAuraBal(phase2, CONFIG.addresses, vaultDeployment.strategy.address, simpleToExactAmount(1));
             await vaultDeployment.vault["harvest()"]();
             const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
             expect(underlying).gt(underlyingBefore);
