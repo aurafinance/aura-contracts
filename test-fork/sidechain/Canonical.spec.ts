@@ -2,10 +2,6 @@ import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
 import { Signer, BigNumber } from "ethers";
 import {
-    deployCanonicalPhase1,
-    deployCanonicalPhase2,
-    deploySidechainPhase1,
-    deploySidechainPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
     CanonicalPhase1Deployed,
@@ -21,20 +17,14 @@ import {
     getBal,
     getTimestamp,
 } from "../../test-utils";
-import {
-    Account,
-    Create2Factory,
-    Create2Factory__factory,
-    LZEndpointMock,
-    LZEndpointMock__factory,
-    MockERC20__factory,
-} from "../../types";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
-import { SidechainConfig } from "../../types/sidechain-types";
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { Account, LZEndpointMock, MockERC20__factory } from "../../types";
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
+const BLOCK_NUMBER = 17096880;
+const CONFIG = mainnetConfig;
 
 describe("Canonical", () => {
     let alice: Signer;
@@ -47,14 +37,10 @@ describe("Canonical", () => {
     let vaultDeployment: AuraBalVaultDeployed;
     // LayerZero endpoints
     let l1LzEndpoint: LZEndpointMock;
-    let l2LzEndpoint: LZEndpointMock;
-    let create2Factory: Create2Factory;
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
-    let sidechainConfig: SidechainConfig;
 
-    const ethBlockNumber: number = 17096880;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-    let bridgeDelegate: SimplyBridgeDelegateDeployed;
+    let bridgeDelegateDeployment: SimplyBridgeDelegateDeployed;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -67,7 +53,7 @@ describe("Canonical", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: ethBlockNumber,
+                        blockNumber: BLOCK_NUMBER,
                     },
                 },
             ],
@@ -77,98 +63,17 @@ describe("Canonical", () => {
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
         deployer = await impersonateAccount(await accounts[0].getAddress());
-        dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
-        phase2 = await mainnetConfig.getPhase2(deployer.signer);
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
 
-        // deploy layerzero mocks
-        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
-        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
+        const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
 
-        // deploy Create2Factory
-        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
-        await create2Factory.updateDeployer(deployer.address, true);
-
-        // setup sidechain config
-        sidechainConfig = {
-            chainId: 123,
-            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
-            naming: { ...sidechainNaming },
-            extConfig: {
-                canonicalChainId: L1_CHAIN_ID,
-                lzEndpoint: l2LzEndpoint.address,
-                create2Factory: create2Factory.address,
-                token: mainnetConfig.addresses.token,
-                minter: mainnetConfig.addresses.minter,
-            },
-            bridging: {
-                l1Receiver: "0x0000000000000000000000000000000000000000",
-                l2Sender: "0x0000000000000000000000000000000000000000",
-                nativeBridge: "0x0000000000000000000000000000000000000000",
-            },
-        };
-
-        // deploy canonicalPhase
-        const l1Addresses = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonicalPhase1 = await deployCanonicalPhase1(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            l1Addresses,
-            phase2,
-            phase6,
-        );
-        const canonicalPhase2 = await deployCanonicalPhase2(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            l1Addresses,
-            phase2,
-            vaultDeployment,
-            canonicalPhase1,
-        );
-
-        // deploy sidechain
-        const sidechainPhase1 = await deploySidechainPhase1(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase1,
-            L1_CHAIN_ID,
-        );
-        const sidechainPhase2 = await deploySidechainPhase2(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase2,
-            sidechainPhase1,
-            L1_CHAIN_ID,
-        );
-        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
-        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
-
-        await l1LzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
-        await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
-
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-
-        // Connect contracts to its owner signer.
-        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
-        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
-        canonical.auraBalProxyOFT = canonical.auraBalProxyOFT.connect(dao.signer);
-
-        bridgeDelegate = await deploySimpleBridgeDelegates(
-            hre,
-            mainnetConfig.addresses,
-            canonical,
-            L2_CHAIN_ID,
-            deployer.signer,
-        );
+        phase2 = result.phase2;
+        phase6 = result.phase6;
+        l1LzEndpoint = result.l1LzEndpoint;
+        canonical = result.canonical;
+        sidechain = result.sidechain;
+        vaultDeployment = result.vaultDeployment;
+        bridgeDelegateDeployment = result.bridgeDelegateDeployment;
+        dao = result.dao;
     });
 
     describe("setup", () => {
@@ -207,9 +112,9 @@ describe("Canonical", () => {
         it("set bridge delegates", async () => {
             await canonical.l1Coordinator
                 .connect(dao.signer)
-                .setBridgeDelegate(L2_CHAIN_ID, bridgeDelegate.bridgeDelegateReceiver.address);
+                .setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateDeployment.bridgeDelegateReceiver.address);
             expect(await canonical.l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).to.eq(
-                bridgeDelegate.bridgeDelegateReceiver.address,
+                bridgeDelegateDeployment.bridgeDelegateReceiver.address,
             );
         });
     });
@@ -231,7 +136,7 @@ describe("Canonical", () => {
         });
         it("L1Coordinator has correct config", async () => {
             expect(await canonical.l1Coordinator.booster()).eq(phase6.booster.address);
-            expect(await canonical.l1Coordinator.balToken()).eq(mainnetConfig.addresses.token);
+            expect(await canonical.l1Coordinator.balToken()).eq(CONFIG.addresses.token);
             expect(await canonical.l1Coordinator.auraToken()).eq(phase2.cvx.address);
             expect(await canonical.l1Coordinator.auraOFT()).eq(canonical.auraProxyOFT.address);
             expect(await canonical.l1Coordinator.lzEndpoint()).eq(l1LzEndpoint.address);
@@ -239,7 +144,7 @@ describe("Canonical", () => {
             expect(await phase2.cvx.allowance(canonical.l1Coordinator.address, canonical.auraProxyOFT.address)).eq(
                 ethers.constants.MaxUint256,
             );
-            const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
+            const crv = MockERC20__factory.connect(CONFIG.addresses.token, deployer.signer);
             expect(await crv.allowance(canonical.l1Coordinator.address, phase6.booster.address)).eq(
                 ethers.constants.MaxUint256,
             );
@@ -277,18 +182,18 @@ describe("Canonical", () => {
         });
         it("Can Settle Fee Debt", async () => {
             const amount = simpleToExactAmount("100");
-            await getBal(mainnetConfig.addresses, bridgeDelegate.bridgeDelegateReceiver.address, amount);
-            await bridgeDelegate.bridgeDelegateReceiver.settleFeeDebt(amount);
+            await getBal(CONFIG.addresses, bridgeDelegateDeployment.bridgeDelegateReceiver.address, amount);
+            await bridgeDelegateDeployment.bridgeDelegateReceiver.settleFeeDebt(amount);
 
-            const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
+            const crv = MockERC20__factory.connect(CONFIG.addresses.token, dao.signer);
 
             expect(await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID)).to.eq(amount);
             expect(await canonical.l1Coordinator.settledFeeDebtOf(L2_CHAIN_ID)).to.eq(amount);
-            expect(await crv.balanceOf(bridgeDelegate.bridgeDelegateReceiver.address)).to.eq(0);
+            expect(await crv.balanceOf(bridgeDelegateDeployment.bridgeDelegateReceiver.address)).to.eq(0);
             expect(await crv.balanceOf(canonical.l1Coordinator.address)).to.eq(amount);
         });
         it("coordinator recieve l2 fees and distribute aura to l1coordinator", async () => {
-            const crv = MockERC20__factory.connect(mainnetConfig.addresses.token, dao.signer);
+            const crv = MockERC20__factory.connect(CONFIG.addresses.token, dao.signer);
             const cvx = MockERC20__factory.connect(phase2.cvx.address, dao.signer);
 
             const totalSupplyStart = await cvx.totalSupply();

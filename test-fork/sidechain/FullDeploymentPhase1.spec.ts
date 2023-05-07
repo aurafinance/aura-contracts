@@ -5,15 +5,11 @@ import { deployContract } from "../../tasks/utils";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    deployCanonicalPhase1,
-    deployCanonicalPhase2,
-    deploySidechainPhase1,
-    deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
     assertBNClosePercent,
@@ -31,12 +27,9 @@ import {
     AuraProxyOFT,
     L2Coordinator,
     L1Coordinator,
-    Create2Factory,
-    Create2Factory__factory,
     ERC20,
     ExtraRewardStashV3__factory,
     LZEndpointMock,
-    LZEndpointMock__factory,
     MockCurveMinter,
     MockCurveMinter__factory,
     MockERC20__factory,
@@ -46,17 +39,17 @@ import {
 } from "../../types";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
-import { sidechainNaming } from "../../tasks/deploy/sidechain-naming";
-import { AuraBalVaultDeployed } from "../../tasks/deploy/goerli-config";
 import { compareAddresses } from "../../tasks/snapshot/utils";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
+const L1_CHAIN_ID = 111;
+const L2_CHAIN_ID = 222;
+const BLOCK_NUMBER = 17140000;
+const CONFIG = mainnetConfig;
+const mintrMintAmount = simpleToExactAmount(10);
 
 describe("Full Deployment Phase 1", () => {
-    const L1_CHAIN_ID = 111;
-    const L2_CHAIN_ID = 222;
-    const mintrMintAmount = simpleToExactAmount(10);
-
     let deployer: Account;
     let dao: Account;
     let auraWhale: Account;
@@ -64,7 +57,6 @@ describe("Full Deployment Phase 1", () => {
     // phases
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
-    let vaultDeployment: AuraBalVaultDeployed;
     let mockMintr: MockCurveMinter;
 
     // LayerZero endpoints
@@ -73,18 +65,17 @@ describe("Full Deployment Phase 1", () => {
 
     // Canonical chain Contracts
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-    let create2Factory: Create2Factory;
-    let l1Coordinator: L1Coordinator;
     let auraProxyOFT: AuraProxyOFT;
     let crv: ERC20;
     let bridgeDelegateReceiver: BridgeDelegateReceiver;
+    let l1Coordinator: L1Coordinator;
 
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
-    let l2Coordinator: L2Coordinator;
-    let auraOFT: AuraOFT;
     let sidechainConfig: SidechainConfig;
     let bridgeDelegateSender: SimpleBridgeDelegateSender;
+    let l2Coordinator: L2Coordinator;
+    let auraOFT: AuraOFT;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -119,7 +110,7 @@ describe("Full Deployment Phase 1", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 17140000,
+                        blockNumber: BLOCK_NUMBER,
                     },
                 },
             ],
@@ -127,12 +118,30 @@ describe("Full Deployment Phase 1", () => {
 
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
-        dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
         auraWhale = await impersonateAccount(mainnetConfig.addresses.balancerVault, true);
 
-        phase2 = await mainnetConfig.getPhase2(deployer.signer);
-        phase6 = await mainnetConfig.getPhase6(deployer.signer);
-        vaultDeployment = await mainnetConfig.getAuraBalVault(deployer.signer);
+        const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
+
+        phase2 = result.phase2;
+        phase6 = result.phase6;
+        l1LzEndpoint = result.l1LzEndpoint;
+        l2LzEndpoint = result.l2LzEndpoint;
+        canonical = result.canonical;
+        sidechain = result.sidechain;
+        sidechainConfig = result.sidechainConfig;
+        dao = result.dao;
+
+        auraProxyOFT = canonical.auraProxyOFT;
+        l1Coordinator = canonical.l1Coordinator;
+        l2Coordinator = sidechain.l2Coordinator;
+        auraOFT = sidechain.auraOFT;
+
+        // Connect contracts to its owner signer.
+        sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
+        sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
+
+        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
+        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
 
         // Deploy mocks
         crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
@@ -144,88 +153,6 @@ describe("Full Deployment Phase 1", () => {
             {},
             false,
         );
-
-        // deploy layerzero mocks
-        l1LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L1_CHAIN_ID);
-        l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(L2_CHAIN_ID);
-
-        // deploy Create2Factory
-        create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
-        await create2Factory.updateDeployer(deployer.address, true);
-
-        // setup sidechain config
-        sidechainConfig = {
-            chainId: 123,
-            multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
-            naming: { ...sidechainNaming },
-            extConfig: {
-                canonicalChainId: L1_CHAIN_ID,
-                lzEndpoint: l2LzEndpoint.address,
-                create2Factory: create2Factory.address,
-                token: mainnetConfig.addresses.token,
-                minter: mainnetConfig.addresses.minter,
-            },
-            bridging: {
-                l1Receiver: "0x0000000000000000000000000000000000000000",
-                l2Sender: "0x0000000000000000000000000000000000000000",
-                nativeBridge: "0x0000000000000000000000000000000000000000",
-            },
-        };
-
-        // deploy canonicalPhase
-        const extSystemConfig: ExtSystemConfig = { ...mainnetConfig.addresses, lzEndpoint: l1LzEndpoint.address };
-        const canonicalPhase1 = await deployCanonicalPhase1(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            extSystemConfig,
-            phase2,
-            phase6,
-        );
-        const canonicalPhase2 = await deployCanonicalPhase2(
-            hre,
-            deployer.signer,
-            mainnetConfig.multisigs,
-            extSystemConfig,
-            phase2,
-            vaultDeployment,
-            canonicalPhase1,
-        );
-        canonical = { ...canonicalPhase1, ...canonicalPhase2 };
-
-        l1Coordinator = canonical.l1Coordinator;
-        auraProxyOFT = canonical.auraProxyOFT;
-
-        // deploy sidechain
-        const sidechainPhase1 = await deploySidechainPhase1(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonical,
-            L1_CHAIN_ID,
-        );
-        const sidechainPhase2 = await deploySidechainPhase2(
-            hre,
-            deployer.signer,
-            sidechainConfig.naming,
-            sidechainConfig.multisigs,
-            sidechainConfig.extConfig,
-            canonicalPhase2,
-            sidechainPhase1,
-            L1_CHAIN_ID,
-        );
-        sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
-
-        l2Coordinator = sidechain.l2Coordinator;
-        auraOFT = sidechain.auraOFT;
-        // Connect contracts to its owner signer.
-        canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
-        canonical.auraProxyOFT = canonical.auraProxyOFT.connect(dao.signer);
-
-        sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
-        sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
     });
 
     describe("Check configs", () => {
@@ -541,9 +468,9 @@ describe("Full Deployment Phase 1", () => {
             );
         });
         it("Can set deployer as distributor", async () => {
-            await expect(l1Coordinator.setDistributor(deployer.address, true)).to.be.revertedWith(
-                "Ownable: caller is not the owner",
-            );
+            await expect(
+                l1Coordinator.connect(deployer.address).setDistributor(deployer.address, true),
+            ).to.be.revertedWith("Ownable: caller is not the owner");
 
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
             await l1Coordinator.connect(dao.signer).setDistributor(deployer.address, true);
@@ -584,7 +511,9 @@ describe("Full Deployment Phase 1", () => {
             const auraBalanceBefore = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceBefore = await crv.balanceOf(l1Coordinator.address);
 
-            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+            const tx = await l1Coordinator
+                .connect(deployer.signer)
+                .distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>
