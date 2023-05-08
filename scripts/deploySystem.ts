@@ -189,7 +189,7 @@ interface MultisigConfig {
     treasuryMultisig: string;
     daoMultisig: string;
     sudoMultisig: string;
-    pauseGaurdian: string;
+    pauseGuardian: string;
 }
 
 interface BPTData {

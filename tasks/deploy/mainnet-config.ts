@@ -171,7 +171,7 @@ const multisigs: MultisigConfig = {
     treasuryMultisig: "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9",
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     sudoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-    pauseGaurdian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
 };
 
 const contributorDistro = [

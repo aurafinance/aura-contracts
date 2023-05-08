@@ -113,7 +113,7 @@ async function getMockMultisigs(
         treasuryMultisig: await treasurySigner.getAddress(),
         daoMultisig: await daoSigner.getAddress(),
         sudoMultisig: await daoSigner.getAddress(),
-        pauseGaurdian: await daoSigner.getAddress(),
+        pauseGuardian: await daoSigner.getAddress(),
     };
 }
 

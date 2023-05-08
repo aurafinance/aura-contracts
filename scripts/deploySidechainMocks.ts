@@ -28,7 +28,7 @@ interface DeployL2MocksResult {
 async function getMockMultisigs(daoSigner: Signer): Promise<SidechainMultisigConfig> {
     return {
         daoMultisig: await daoSigner.getAddress(),
-        pauseGaurdian: await daoSigner.getAddress(),
+        pauseGuardian: await daoSigner.getAddress(),
     };
 }
 
