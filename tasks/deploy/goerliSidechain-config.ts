@@ -29,7 +29,7 @@ import { sidechainNaming } from "./sidechain-naming";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
-    pauseGaurdian: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+    pauseGuardian: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
 };
 
 const extConfig: ExtSidechainConfig = {

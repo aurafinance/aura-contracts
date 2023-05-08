@@ -13,6 +13,6 @@ contract AuraBalOFT is PausableOFT {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        address _gaurdian
-    ) PausableOFT(_name, _symbol, _lzEndpoint, _gaurdian) {}
+        address _guardian
+    ) PausableOFT(_name, _symbol, _lzEndpoint, _guardian) {}
 }

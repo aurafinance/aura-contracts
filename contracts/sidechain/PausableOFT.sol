@@ -2,19 +2,19 @@
 pragma solidity 0.8.11;
 
 import { OFT } from "../layerzero/token/oft/OFT.sol";
-import { PauseGaurdian } from "./PauseGuardian.sol";
+import { PauseGuardian } from "./PauseGuardian.sol";
 
 /**
  * @title PausableOFT
  * @dev Sidechain AURA
  */
-contract PausableOFT is OFT, PauseGaurdian {
+contract PausableOFT is OFT, PauseGuardian {
     constructor(
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        address _gaurdian
-    ) OFT(_name, _symbol, _lzEndpoint) PauseGaurdian(_gaurdian) {}
+        address _guardian
+    ) OFT(_name, _symbol, _lzEndpoint) PauseGuardian(_guardian) {}
 
     /**
      * @dev Override sendFrom to add pause modifier

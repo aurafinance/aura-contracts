@@ -4,9 +4,9 @@ pragma solidity 0.8.11;
 import { Pausable } from "@openzeppelin/contracts-0.8/security/Pausable.sol";
 
 /**
- * @title PauseGaurdian
+ * @title PauseGuardian
  */
-contract PauseGaurdian is Pausable {
+contract PauseGuardian is Pausable {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
