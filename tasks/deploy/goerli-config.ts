@@ -113,7 +113,7 @@ const multisigs: MultisigConfig = {
     treasuryMultisig: "0xcC4790f1493aD2be35f868e8429398794246144A",
     daoMultisig: "0xcC4790f1493aD2be35f868e8429398794246144A",
     sudoMultisig: "0xcC4790f1493aD2be35f868e8429398794246144A",
-    pauseGaurdian: "0xcC4790f1493aD2be35f868e8429398794246144A",
+    pauseGuardian: "0xcC4790f1493aD2be35f868e8429398794246144A",
 };
 
 const distroList = getMockDistro();

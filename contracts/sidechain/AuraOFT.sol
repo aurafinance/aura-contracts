@@ -30,9 +30,9 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
         string memory _name,
         string memory _symbol,
         address _lzEndpoint,
-        address _gaurdian,
+        address _guardian,
         uint16 _canonicalChainId
-    ) PausableOFT(_name, _symbol, _lzEndpoint, _gaurdian) {
+    ) PausableOFT(_name, _symbol, _lzEndpoint, _guardian) {
         canonicalChainId = _canonicalChainId;
     }
 
