@@ -59,7 +59,7 @@ export const setupLocalDeployment = async (
     // setup sidechain config
     const sidechainConfig = {
         chainId: 123,
-        multisigs: { daoMultisig: dao.address, pauseGaurdian: dao.address },
+        multisigs: { daoMultisig: dao.address, pauseGuardian: dao.address },
         naming: { ...sidechainNaming },
         extConfig: {
             canonicalChainId: L1_CHAIN_ID,

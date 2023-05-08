@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { ProxyOFT } from "../layerzero/token/oft/extension/ProxyOFT.sol";
-import { PauseGaurdian } from "./PauseGuardian.sol";
+import { PauseGuardian } from "./PauseGuardian.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 import { BytesLib } from "../layerzero/util/BytesLib.sol";
 
@@ -12,7 +12,7 @@ import { BytesLib } from "../layerzero/util/BytesLib.sol";
  * @title PausableProxyOFT
  * @author  AuraFinance
  */
-contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
+contract PausableProxyOFT is ProxyOFT, PauseGuardian {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
     using BytesLib for bytes;
@@ -79,7 +79,7 @@ contract PausableProxyOFT is ProxyOFT, PauseGaurdian {
         address _guardian,
         address _sudo,
         uint256 _inflowLimit
-    ) ProxyOFT(_lzEndpoint, _token) PauseGaurdian(_guardian) {
+    ) ProxyOFT(_lzEndpoint, _token) PauseGuardian(_guardian) {
         sudo = _sudo;
         inflowLimit = _inflowLimit;
         queueDelay = 7 days;

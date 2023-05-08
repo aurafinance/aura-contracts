@@ -20,7 +20,7 @@ export interface ExtSidechainConfig {
 
 export interface SidechainMultisigConfig {
     daoMultisig: string;
-    pauseGaurdian: string;
+    pauseGuardian: string;
 }
 
 export interface SidechainBridging {
