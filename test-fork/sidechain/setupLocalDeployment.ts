@@ -67,12 +67,14 @@ export const setupLocalDeployment = async (
             create2Factory: create2Factory.address,
             token: config.addresses.token,
             minter: config.addresses.minter,
+            gauges: config.addresses.gauges,
         },
         bridging: {
             l1Receiver: "0x0000000000000000000000000000000000000000",
             l2Sender: "0x0000000000000000000000000000000000000000",
             nativeBridge: "0x0000000000000000000000000000000000000000",
         },
+        whales: config.whales,
     };
 
     // deploy canonicalPhase
@@ -125,6 +127,9 @@ export const setupLocalDeployment = async (
 
     await l1LzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
     await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
+
+    await l2LzEndpoint.setDestLzEndpoint(canonical.l1Coordinator.address, l1LzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
 
     const bridgeDelegateDeployment = await deploySimpleBridgeDelegates(
         hre,
