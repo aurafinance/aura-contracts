@@ -68,6 +68,7 @@ import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 import { CanonicalPhase1Deployed, CanonicalPhase2Deployed } from "scripts/deploySidechain";
 import { parseEther } from "ethers/lib/utils";
+import { chainIds } from "../../tasks/utils";
 
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
@@ -172,6 +173,10 @@ const addresses: ExtSystemConfig = {
         auraBalInflowLimit: parseEther("1000000"),
         auraInflowLimit: parseEther("1000000"),
     },
+};
+
+const whales = {
+    "0xCfCA23cA9CA720B6E98E3Eb9B6aa0fFC4a5C08B9": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
 };
 
 const multisigs: MultisigConfig = {
@@ -409,13 +414,15 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
-const getSidechain = async (deployer: Signer): Promise<CanonicalPhase1Deployed & CanonicalPhase2Deployed> => ({
+const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhase2Deployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
 });
 
 export const config = {
+    chainId: chainIds.mainnet,
+    whales,
     addresses,
     naming,
     multisigs,

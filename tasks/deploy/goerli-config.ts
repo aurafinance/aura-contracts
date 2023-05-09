@@ -69,7 +69,7 @@ const addresses: ExtSystemConfig = {
     gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
-    gauges: [],
+    gauges: ["0xec94b0453E14cde7fE1A66B54DCA29E9547C57ef"],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
     balancerMinOutBps: "9975", // mainnet is 9950
@@ -223,9 +223,9 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 });
 
 const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhase2Deployed => ({
-    auraProxyOFT: AuraProxyOFT__factory.connect("0x1fbfDb4e94d3bA76C832baafE13Fbb38264fBAfF", deployer),
-    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    l1Coordinator: L1Coordinator__factory.connect("0x197170cA2Bf97B36a1e9Bb131Bf7EF3c98a06d1b", deployer),
+    auraProxyOFT: AuraProxyOFT__factory.connect("0x9838f48ae18C32D3aa25a81BC862eDA67C273146", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0x51493Dfb75f35fDEAD2B5bFa6904b59aaD9A37a8", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x76A383895103bde55987cEF54dbA7a2A57B72B73", deployer),
 });
 
 export const config = {

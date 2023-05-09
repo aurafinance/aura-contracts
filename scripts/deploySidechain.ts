@@ -46,6 +46,8 @@ import {
 import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
+const SALT = "berlin";
+
 export interface CanonicalPhase1Deployed {
     auraProxyOFT: AuraProxyOFT;
     l1Coordinator: L1Coordinator;
@@ -232,7 +234,7 @@ export async function deploySidechainPhase1(
     //         Protocol DAO : auraOFT.setTrustedRemote(L1_CHAIN_ID, [auraProxyOFT.address, auraOFT.address]);
     // -----------------------------
 
-    const create2Options = { amount: 0, salt: "1", callbacks: [] };
+    const create2Options = { amount: 0, salt: SALT, callbacks: [] };
     const deployOptions = {
         overrides: {},
         create2Options,
@@ -500,7 +502,7 @@ export async function deploySidechainPhase2(
     //         Protocol DAO : auraBalOFT.setTrustedRemote(L1_CHAIN_ID, [auraBalProxyOFT.address, auraBalOFT.address]);
     // -----------------------------
 
-    const create2Options = { amount: 0, salt: "1", callbacks: [] };
+    const create2Options = { amount: 0, salt: SALT, callbacks: [] };
     const deployOptions = {
         overrides: {},
         create2Options,
