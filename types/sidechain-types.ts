@@ -16,6 +16,7 @@ export interface ExtSidechainConfig {
     lzEndpoint: string;
     create2Factory: string;
     gauge?: string;
+    gauges?: string[];
 }
 
 export interface SidechainMultisigConfig {
@@ -31,6 +32,7 @@ export interface SidechainBridging {
 
 export interface SidechainConfig {
     chainId: number;
+    whales: { [key: string]: string };
     multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;

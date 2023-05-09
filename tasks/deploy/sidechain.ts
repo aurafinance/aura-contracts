@@ -142,7 +142,7 @@ task("deploy:sidechain:create2Factory")
         const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
 
         const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
-        await waitForTx(tx);
+        await waitForTx(tx, debug);
 
         logContracts(phase as unknown as { [key: string]: { address: string } });
     });
