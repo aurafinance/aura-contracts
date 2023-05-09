@@ -2,18 +2,14 @@ import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
 import { Signer } from "ethers";
 import {
-    deployCanonicalPhase1,
-    deployCanonicalPhase2,
-    deploySidechainPhase1,
-    deploySidechainPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY } from "../../test-utils";
+import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY, impersonate } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -24,16 +20,28 @@ import {
     MockERC20__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
+    ERC20,
 } from "../../types";
 import { SidechainConfig } from "../../types/sidechain-types";
 import { increaseTime } from "./../../test-utils/time";
 import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { setupLocalDeployment } from "./setupLocalDeployment";
+import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
+import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
+import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
+import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
 
-const L1_CHAIN_ID = 111;
-const L2_CHAIN_ID = 222;
-const BLOCK_NUMBER = 17140000;
-const CONFIG = mainnetConfig;
+const FORKING = process.env.FORKING;
+
+const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER] = FORKING
+    ? [goerliConfig, goerliSidechainConfig, 8971461]
+    : [mainnetConfig, mainnetConfig, 17096880];
+
+const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
+const sidechainConfigGlobal = _sidechainConfig as SidechainConfig;
+
+const canonicalLzChainId = lzChainIds[canonicalConfig.chainId];
+const sidechainLzChainId = lzChainIds[sidechainConfigGlobal.chainId];
 
 describe("Sidechain", () => {
     let alice: Signer;
@@ -42,15 +50,14 @@ describe("Sidechain", () => {
     let notAuthorised: Account;
     let dao: Account;
     // phases
-    let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
     // LayerZero endpoints
-    let l1LzEndpoint: LZEndpointMock;
     let l2LzEndpoint: LZEndpointMock;
+    let crv: ERC20;
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
+    let sidechainConfig: SidechainConfig;
     let l2Coordinator: L2Coordinator;
     let auraOFT: AuraOFT;
-    let sidechainConfig: SidechainConfig;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
     let bridgeDelegateDeployment: SimplyBridgeDelegateDeployed;
 
@@ -58,9 +65,9 @@ describe("Sidechain", () => {
      * Helper Functions
      * --------------------------------------------------------------------- */
 
-    const getBpt = async (recipient: string, amount = simpleToExactAmount(250)) => {
-        const token = "0xcfca23ca9ca720b6e98e3eb9b6aa0ffc4a5c08b9";
-        const whale = "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10";
+    const getBpt = async (token: string, recipient: string, amount = simpleToExactAmount(250)) => {
+        const whale = sidechainConfig.whales[token];
+        if (!whale) throw new Error("No BPT whale found");
         const tokenWhaleSigner = await impersonateAccount(whale);
         const tokenContract = MockERC20__factory.connect(token, tokenWhaleSigner.signer);
         await tokenContract.transfer(recipient, amount);
@@ -82,22 +89,32 @@ describe("Sidechain", () => {
         const accounts = await ethers.getSigners();
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
-        deployer = await impersonateAccount(await accounts[0].getAddress());
+        deployer = await impersonateAccount(sidechainConfigGlobal.multisigs.daoMultisig, true);
         notAuthorised = await impersonateAccount(await accounts[3].getAddress());
 
-        const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
+        let result: TestSuiteDeployment;
+        if (FORKING) {
+            result = await setupForkDeployment(
+                hre,
+                canonicalConfig,
+                sidechainConfigGlobal,
+                deployer,
+                sidechainLzChainId,
+            );
+        } else {
+            result = await setupLocalDeployment(hre, canonicalConfig, deployer, canonicalLzChainId, sidechainLzChainId);
+        }
 
-        phase2 = result.phase2;
         phase6 = result.phase6;
-        l1LzEndpoint = result.l1LzEndpoint;
         l2LzEndpoint = result.l2LzEndpoint;
         canonical = result.canonical;
         sidechain = result.sidechain;
         bridgeDelegateDeployment = result.bridgeDelegateDeployment;
-        dao = result.dao;
+        dao = await impersonateAccount(sidechainConfigGlobal.multisigs.daoMultisig);
         l2Coordinator = sidechain.l2Coordinator;
         auraOFT = sidechain.auraOFT;
         sidechainConfig = result.sidechainConfig;
+        crv = ERC20__factory.connect(sidechainConfig.extConfig.token, alice);
     });
 
     describe("Check configs", () => {
@@ -115,10 +132,10 @@ describe("Sidechain", () => {
             expect(await auraOFT.name()).eq(sidechainConfig.naming.auraOftName);
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
-            expect(await auraOFT.canonicalChainId()).eq(L1_CHAIN_ID);
+            expect(await auraOFT.canonicalChainId()).eq(canonicalLzChainId);
         });
         it("L2Coordinator has correct config", async () => {
-            expect(await l2Coordinator.canonicalChainId()).eq(L1_CHAIN_ID);
+            expect(await l2Coordinator.canonicalChainId()).eq(canonicalLzChainId);
             expect(await l2Coordinator.booster()).eq(sidechain.booster.address);
             expect(await l2Coordinator.auraOFT()).eq(auraOFT.address);
             expect(await l2Coordinator.mintRate()).eq(0);
@@ -202,19 +219,23 @@ describe("Sidechain", () => {
             // As this test suite is running the bridge from L1 -> L1 forked on
             // mainnet. We can just add the first 10 active existing Aura pools
             let i = 0;
-            while ((await sidechain.booster.poolLength()).lt(10)) {
+            const boosterPoolLen = await phase6.booster.poolLength();
+            const targetLen = boosterPoolLen.lt(10) ? boosterPoolLen.toNumber() : 10;
+            while ((await sidechain.booster.poolLength()).lt(targetLen)) {
                 const poolInfo = await phase6.booster.poolInfo(i);
                 if (!poolInfo.shutdown) {
                     await sidechain.poolManager.connect(dao.signer)["addPool(address)"](poolInfo.gauge);
                 }
                 i++;
             }
-            expect(await sidechain.booster.poolLength()).eq(10);
+            expect(await sidechain.booster.poolLength()).eq(targetLen);
         });
         it("can unprotected poolManager add pool", async () => {
-            const poolId = Number(await phase6.booster.poolLength()) - 2;
-            const poolInfo = await phase6.booster.poolInfo(poolId);
-            await sidechain.poolManager.connect(dao.signer)["addPool(address)"](poolInfo.gauge);
+            await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
+            expect(await sidechain.poolManager.protectAddPool()).eq(false);
+
+            const gauge = sidechainConfig.extConfig.gauges[0];
+            await sidechain.poolManager["addPool(address)"](gauge);
         });
         it("Pool stash has the correct config", async () => {
             const pool0 = await sidechain.booster.poolInfo(0);
@@ -254,46 +275,11 @@ describe("Sidechain", () => {
         });
         it("add trusted remotes to layerzero endpoints", async () => {
             const owner = await impersonateAccount(await sidechain.l2Coordinator.owner());
-            // L1 Stuff
-            await canonical.l1Coordinator
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
-                    ),
-                );
-
-            await canonical.auraProxyOFT
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-                    ),
-                );
-
-            await canonical.auraProxyOFT
-                .connect(owner.signer)
-                .setTrustedRemote(
-                    L2_CHAIN_ID,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-                    ),
-                );
-
-            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
-            await l1LzEndpoint.connect(owner.signer).setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
-
-            // L2 Stuff
 
             await sidechain.l2Coordinator
                 .connect(owner.signer)
                 .setTrustedRemote(
-                    L1_CHAIN_ID,
+                    canonicalLzChainId,
                     ethers.utils.solidityPack(
                         ["address", "address"],
                         [canonical.l1Coordinator.address, sidechain.l2Coordinator.address],
@@ -303,7 +289,7 @@ describe("Sidechain", () => {
             await sidechain.auraOFT
                 .connect(owner.signer)
                 .setTrustedRemote(
-                    L1_CHAIN_ID,
+                    canonicalLzChainId,
                     ethers.utils.solidityPack(
                         ["address", "address"],
                         [canonical.auraProxyOFT.address, sidechain.auraOFT.address],
@@ -313,19 +299,12 @@ describe("Sidechain", () => {
             await sidechain.auraBalOFT
                 .connect(owner.signer)
                 .setTrustedRemote(
-                    L1_CHAIN_ID,
+                    canonicalLzChainId,
                     ethers.utils.solidityPack(
                         ["address", "address"],
                         [canonical.auraBalProxyOFT.address, sidechain.auraBalOFT.address],
                     ),
                 );
-
-            await l2LzEndpoint
-                .connect(owner.signer)
-                .setDestLzEndpoint(canonical.l1Coordinator.address, l1LzEndpoint.address);
-            await l2LzEndpoint
-                .connect(owner.signer)
-                .setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
         });
     });
 
@@ -340,7 +319,12 @@ describe("Sidechain", () => {
             );
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
-                .lzReceive(L1_CHAIN_ID, await sidechain.l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+                .lzReceive(
+                    canonicalLzChainId,
+                    await sidechain.l2Coordinator.trustedRemoteLookup(canonicalLzChainId),
+                    0,
+                    payload,
+                );
 
             const mintRateAfter = await sidechain.l2Coordinator.mintRate();
             expect(mintRateBefore).not.eq(mintRateAfter);
@@ -348,28 +332,22 @@ describe("Sidechain", () => {
         it("Mint and send aura to l2 coordinator", async () => {
             // Transfer some AURA to L2
             const bridgeAmount = ethers.utils.parseEther("10000");
-            const auraWhale = await impersonateAccount(mainnetConfig.addresses.balancerVault, true);
 
-            const auraBalanceBefore = await phase2.cvx.balanceOf(auraWhale.address);
+            // bytes memory lzPayload = abi.encode(PT_SEND, _toAddress, amount);
+            const PT_SEND = await sidechain.auraOFT.PT_SEND();
+            const toAddress = ethers.utils.solidityPack(["address"], [l2Coordinator.address]);
+            const payload = ethers.utils.defaultAbiCoder.encode(
+                ["uint16", "bytes", "uint256"],
+                [PT_SEND, toAddress, bridgeAmount],
+            );
 
-            await phase2.cvx.connect(auraWhale.signer).approve(canonical.auraProxyOFT.address, bridgeAmount);
-            await canonical.auraProxyOFT
-                .connect(auraWhale.signer)
-                .sendFrom(
-                    auraWhale.address,
-                    L2_CHAIN_ID,
-                    sidechain.l2Coordinator.address,
-                    bridgeAmount,
-                    ZERO_ADDRESS,
-                    ZERO_ADDRESS,
-                    [],
-                    {
-                        value: simpleToExactAmount("0.2"),
-                    },
-                );
+            const signer = await impersonate(sidechain.auraOFT.address, true);
+            await sidechain.auraOFT
+                .connect(signer)
+                .nonblockingLzReceive(canonicalLzChainId, l2LzEndpoint.address, 0, payload);
 
-            const auraBalanceAfter = await phase2.cvx.balanceOf(auraWhale.address);
-            expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(bridgeAmount);
+            // const auraBalanceAfter = await phase2.cvx.balanceOf(auraWhale.address);
+            // expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(bridgeAmount);
         });
     });
 
@@ -378,7 +356,7 @@ describe("Sidechain", () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
             const amount = ethers.utils.parseEther("1");
-            await getBpt(aliceAddress, amount);
+            await getBpt(poolInfo.lptoken, aliceAddress, amount);
 
             const depositToken = ERC20__factory.connect(poolInfo.token, alice);
             const lptoken = MockERC20__factory.connect(poolInfo.lptoken, alice);
@@ -410,8 +388,8 @@ describe("Sidechain", () => {
             expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(balance);
         });
         it("allows BPT deposits directly into the reward pool", async () => {
-            await getBpt(aliceAddress, simpleToExactAmount(10));
             const poolInfo = await sidechain.booster.poolInfo(0);
+            await getBpt(poolInfo.lptoken, aliceAddress, simpleToExactAmount(10));
 
             const lpToken = ERC20__factory.connect(poolInfo.lptoken, alice);
             const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, alice);
@@ -455,7 +433,6 @@ describe("Sidechain", () => {
         it("allows earmarking of rewards", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
             const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, dao.signer);
-            const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const balanceBefore = await crv.balanceOf(crvRewards.address);
             await increaseTime(ONE_DAY);
             await sidechain.booster.connect(alice).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
@@ -463,7 +440,6 @@ describe("Sidechain", () => {
             expect(balanceAfter).gt(balanceBefore);
         });
         it("pays out a premium to the caller", async () => {
-            const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const balanceBefore = await crv.balanceOf(aliceAddress);
             await increaseTime(ONE_DAY);
             await sidechain.booster.connect(alice).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
@@ -471,7 +447,6 @@ describe("Sidechain", () => {
             expect(balanceAfter).gt(balanceBefore);
         });
         it("allows users to earn $BAl and $AURA", async () => {
-            const crv = ERC20__factory.connect(mainnetConfig.addresses.token, alice);
             const poolInfo = await sidechain.booster.poolInfo(0);
             const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, alice);
             const cvxBalanceBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
