@@ -9,8 +9,7 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
+import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
@@ -34,8 +33,8 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 const FORKING = process.env.FORKING;
 
 const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER, NATIVE_FEE] = FORKING
-    ? [goerliConfig, goerliSidechainConfig, 8971461, simpleToExactAmount("0.2")]
-    : [mainnetConfig, mainnetConfig, 17096880, simpleToExactAmount("0.2")];
+    ? [mainnetConfig, gnosisConfig, 28126088, simpleToExactAmount(50)]
+    : [mainnetConfig, mainnetConfig, 17337285, simpleToExactAmount("0.2")];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
 const sidechainConfigGlobal = _sidechainConfig as SidechainConfig;

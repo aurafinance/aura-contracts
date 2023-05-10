@@ -119,36 +119,51 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 
 #### Ethereum Mainnet (1)
 
-| Contract                   | Address                                                                     |
-| -------------------------- | --------------------------------------------------------------------------- |
-| L1Coordinator              | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
-| AuraProxyOFT (ProxyOFT)    | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
-| AuraBalProxyOFT (ProxyOFT) | [0x0000000000000000000000000000000000000000](https://etherscan.io/address/) |
+| Contract                   | Address                                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| L1Coordinator              | [0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7](https://etherscan.io/address/0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7) |
+| AuraProxyOFT (ProxyOFT)    | [0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF](https://etherscan.io/address/0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF) |
+| AuraBalProxyOFT (ProxyOFT) | [0xcD54C83759d2D55238bF742611B26A65D47F9719](https://etherscan.io/address/0xcD54C83759d2D55238bF742611B26A65D47F9719) |
+| TestDistributeAura         | [0x8ede18ede974288c8a6e0fad140aff271fd65d46](https://etherscan.io/address/0x8ede18ede974288c8a6e0fad140aff271fd65d46) |
 
 #### Arbitrum (42161)
 
-| Contract           | Address                                                                    |
-| ------------------ | -------------------------------------------------------------------------- |
-| create2Factory     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| L2Coordinator      | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraOFT            | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraBalOFT         | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraBalVault       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraBalStrategy    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| AuraVirtualRewards | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| BoosterLite        | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| VoterProxyLite     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| TokenFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| ProxyFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| StashFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| PoolManagerLite    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
-| BoosterOwner       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/) |
+| Contract           | Address                                                                                                              |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| create2Factory     | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://arbiscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator      | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| AuraOFT            | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| AuraBalOFT         | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| AuraBalVault       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| AuraBalStrategy    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| AuraVirtualRewards | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| BoosterLite        | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| VoterProxyLite     | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| TokenFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| ProxyFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| StashFactory       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| PoolManagerLite    | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
+| BoosterOwner       | [0x0000000000000000000000000000000000000000](https://arbiscan.io/address/)                                           |
 
-### Gnosis (100)
+### Gnosis (test deployment) (100)
 
 | Contract           | Address                                                                                                                |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | GnosisBridgeSender | [0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d](https://gnosisscan.io/address/0x2F70BF8d130aace466abBcbd21d34BB1A6a12c5d) |
+| create2Factory     | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://gnosisscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator      | [0x0F665A14F2FC4e488c61cA45Ea53ad27Fb7cE223](https://gnosisscan.io/address/0x0F665A14F2FC4e488c61cA45Ea53ad27Fb7cE223) |
+| AuraOFT            | [0x3B5357B10Ecd8FCA8345A03fEBA4cF0a97f01FB5](https://gnosisscan.io/address/0x3B5357B10Ecd8FCA8345A03fEBA4cF0a97f01FB5) |
+| AuraBalOFT         | [0xF3552215c697ee67827A58CEFE1Ae027f2838E77](https://gnosisscan.io/address/0xF3552215c697ee67827A58CEFE1Ae027f2838E77) |
+| AuraBalVault       | [0xf0586c2BA50c2A33eb5BbcBD496ED3E5638d3235](https://gnosisscan.io/address/0xf0586c2BA50c2A33eb5BbcBD496ED3E5638d3235) |
+| AuraBalStrategy    | [0xFa247e4e04ad17988962261175F9E9a6a46E2114](https://gnosisscan.io/address/0xFa247e4e04ad17988962261175F9E9a6a46E2114) |
+| BoosterLite        | [0x047B52d580047888902a37287E0d849e7433e85D](https://gnosisscan.io/address/0x047B52d580047888902a37287E0d849e7433e85D) |
+| VoterProxyLite     | [0x363Fcb8B79cd67956F95923a1764A5062b9b7C0C](https://gnosisscan.io/address/0x363Fcb8B79cd67956F95923a1764A5062b9b7C0C) |
+| TokenFactory       | [0xA18b88E087206BaA2f939BA0091A0aE261B239FC](https://gnosisscan.io/address/0xA18b88E087206BaA2f939BA0091A0aE261B239FC) |
+| ProxyFactory       | [0xb28aAF076ca6Dff559DC1e9855ba2bceFb4b951a](https://gnosisscan.io/address/0xb28aAF076ca6Dff559DC1e9855ba2bceFb4b951a) |
+| StashFactory       | [0x875882F7ccB5c494694cdf307290e41788857914](https://gnosisscan.io/address/0x875882F7ccB5c494694cdf307290e41788857914) |
+| RewardFactory      | [0x88786239559FcEd792f256e029B66DaD09F605C1](https://gnosisscan.io/address/0x88786239559FcEd792f256e029B66DaD09F605C1) |
+| PoolManagerLite    | [0x1F85614f2C79056EC538C127f505f0d9109c6979](https://gnosisscan.io/address/0x1F85614f2C79056EC538C127f505f0d9109c6979) |
+| BoosterOwner       | [0xb2Ae2a8004359B30fa32a8b51AD822f2a5e06c41](https://gnosisscan.io/address/0xb2Ae2a8004359B30fa32a8b51AD822f2a5e06c41) |
 
 ### Testnets
 
