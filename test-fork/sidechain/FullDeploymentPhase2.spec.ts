@@ -25,7 +25,7 @@ import {
     increaseTimeTo,
     assertBNClose,
 } from "../../test-utils";
-import { Account, LZEndpointMock } from "../../types";
+import { Account, LZEndpointMock, MockERC20__factory } from "../../types";
 import { BigNumber } from "ethers";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
@@ -603,17 +603,42 @@ describe("Full Deployment Phase 2", () => {
                 canonical.auraBalProxyOFT.connect(deployer.signer).rescue(phase2.cvxCrv.address, deployer.address, 100),
             ).to.be.revertedWith("!sudo");
         });
-        it("Can rescue tokens", async () => {
+        it("Can rescue auraBAL tokens", async () => {
             const to = deployer.address;
             const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
             const amount = simpleToExactAmount(1);
             expect(amount).lte(underlying);
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
+            const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
             await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
             const balAfter = await phase2.cvxCrv.balanceOf(to);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
 
             expect(balAfter.sub(balBefore)).eq(amount);
+            expect(internalTotalSupplyBefore.sub(internalTotalSupplyAfter)).eq(amount);
+        });
+        it("Can rescue other tokens", async () => {
+            const to = deployer.address;
+            const amount = simpleToExactAmount(10);
+
+            const dummyToken = await new MockERC20__factory(deployer.signer).deploy(
+                "",
+                "",
+                18,
+                canonical.auraBalProxyOFT.address,
+                100,
+            );
+            expect(await dummyToken.balanceOf(canonical.auraBalProxyOFT.address)).gt(0);
+
+            const balBefore = await dummyToken.balanceOf(to);
+            const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
+            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(dummyToken.address, to, amount);
+            const balAfter = await dummyToken.balanceOf(to);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
+
+            expect(balAfter.sub(balBefore)).eq(amount);
+            expect(internalTotalSupplyBefore).eq(internalTotalSupplyAfter);
         });
         it("Can rescue entire balance", async () => {
             const to = deployer.address;

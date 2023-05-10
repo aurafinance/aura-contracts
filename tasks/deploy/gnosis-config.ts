@@ -67,4 +67,5 @@ export const config: SidechainConfig = {
     extConfig,
     bridging,
     getSidechain,
+    whales: {},
 };

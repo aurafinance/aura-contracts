@@ -325,9 +325,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         // Adjust the internalTotalSupply. This means we have to harvest and process
         // any rewards if we want to rescue the entire underlyingBalance of the bridge
         // otherwise this will underflow
-        internalTotalSupply -= _amount;
-
         if (_token == address(innerToken)) {
+            internalTotalSupply -= _amount;
             _withdraw(_amount);
         }
 
