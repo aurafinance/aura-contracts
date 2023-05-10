@@ -184,6 +184,10 @@ task("deploy:sidechain:L2:phase2")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
         const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const canonicalChainLzId = lzChainIds[canonicalChainId];
+
+        if (!canonicalChainLzId) throw Error("Canonical LZ chain ID not found");
+
         const { canonical, sidechainConfig } = sidechainTaskSetup(
             deployer,
             hre.network,
@@ -201,7 +205,7 @@ task("deploy:sidechain:L2:phase2")
             sidechainConfig.extConfig,
             canonical,
             sidechainPhase1,
-            canonicalChainId,
+            canonicalChainLzId,
             debug,
             tskArgs.wait,
         );
