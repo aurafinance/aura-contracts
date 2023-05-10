@@ -4,10 +4,6 @@ import { formatEther } from "ethers/lib/utils";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    deployCanonicalPhase1,
-    deployCanonicalPhase2,
-    deploySidechainPhase1,
-    deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
     SidechainPhase1Deployed,
@@ -15,7 +11,7 @@ import {
 } from "../../scripts/deploySidechain";
 import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
 import { SidechainConfig } from "../../types/sidechain-types";
-import { ExtSystemConfig, Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
     getAuraBal,
@@ -29,7 +25,7 @@ import {
     increaseTimeTo,
     assertBNClose,
 } from "../../test-utils";
-import { Account, Create2Factory, Create2Factory__factory, LZEndpointMock, LZEndpointMock__factory } from "../../types";
+import { Account, LZEndpointMock } from "../../types";
 import { BigNumber } from "ethers";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
@@ -45,7 +41,6 @@ describe("Full Deployment Phase 2", () => {
 
     // phases
     let phase2: Phase2Deployed;
-    let phase6: Phase6Deployed;
     let vaultDeployment: AuraBalVaultDeployed;
 
     // LayerZero endpoints
@@ -54,7 +49,6 @@ describe("Full Deployment Phase 2", () => {
 
     // Canonical chain Contracts
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-    let create2Factory: Create2Factory;
 
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
@@ -83,7 +77,6 @@ describe("Full Deployment Phase 2", () => {
         const result = await setupLocalDeployment(hre, CONFIG, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
 
         phase2 = result.phase2;
-        phase6 = result.phase6;
         l1LzEndpoint = result.l1LzEndpoint;
         l2LzEndpoint = result.l2LzEndpoint;
         canonical = result.canonical;
