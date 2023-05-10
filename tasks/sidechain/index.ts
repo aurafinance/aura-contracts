@@ -124,7 +124,7 @@ task("sidechain:aura-oft-info")
                 `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
                 `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
             ],
-            [`Balance of deployer: ${await remote.auraOFT.balanceOf(deployerAddress)}`],
+            [`Balance of deployer: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`],
         );
     });
 
