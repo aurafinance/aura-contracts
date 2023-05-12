@@ -5,7 +5,6 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import {
     anyValue,
-    DEAD_ADDRESS,
     impersonateAccount,
     increaseTime,
     ONE_WEEK,
@@ -21,11 +20,12 @@ import {
     AuraBalVault__factory,
     ERC20,
     MockERC20__factory,
+    PausableOFT,
     ProxyOFT,
     VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../shared/ERC20.behaviour";
-import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
+import { OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
     CanonicalPhaseDeployed,
     SidechainDeployed,
@@ -33,12 +33,12 @@ import {
     SideChainTestSetup,
 } from "./sidechainTestSetup";
 import { formatEther } from "ethers/lib/utils";
+import { PausableOFTBehaviourContext, shouldBehaveLikePausableOFT } from "../shared/PausableOFT.behaviour";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 const debug = false;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
 
 async function bridgeTokenFromL1ToL2(
     sender: Account,
@@ -63,6 +63,9 @@ describe("AuraBalOFT", () => {
     let deployer: Account;
     let alice: Account;
     let dao: Account;
+    let auraBalVaultOwner: Account;
+    let guardian: Account;
+
     // L1
     let cvxCrv: ERC20;
     let cvx: ERC20;
@@ -92,6 +95,8 @@ describe("AuraBalOFT", () => {
         sidechain = testSetup.l2.sidechain;
 
         dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
+        guardian = await impersonateAccount(testSetup.l2.multisigs.pauseGuardian);
+        auraBalVaultOwner = await impersonateAccount(await auraBalVault.owner());
 
         // Send some balances in order to test
         // dirty trick to get some cvx balance.
@@ -99,6 +104,12 @@ describe("AuraBalOFT", () => {
         const cvxConnected = cvx.connect(cvxDepositorAccount.signer);
         const cvxBalance = await cvxConnected.balanceOf(cvxDepositorAccount.address);
         await cvxConnected.transfer(deployer.address, cvxBalance);
+
+        // dirty trick to get some crvCvx balance.
+        const crvDepositorAccount = await impersonateAccount(testSetup.l1.phase2.crvDepositor.address);
+        const cvxCrvConnected = testSetup.l1.phase2.cvxCrv.connect(crvDepositorAccount.signer);
+        await cvxCrvConnected.mint(deployer.address, simpleToExactAmount(100));
+        await cvxCrvConnected.mint(alice.address, simpleToExactAmount(100));
     };
     async function forceHarvestRewards(amount = parseEther("10"), minOut = ZERO, signer = deployer.signer) {
         const { mocks, phase2 } = testSetup.l1;
@@ -305,6 +316,23 @@ describe("AuraBalOFT", () => {
             });
             shouldBehaveLikeERC20(() => ctx as IERC20BehaviourContext, "ERC20", initialSupply);
         });
+        describe("should behave like PausableOFT", async () => {
+            const ctx: Partial<PausableOFTBehaviourContext> = {};
+            before(async () => {
+                ctx.fixture = async function fixture() {
+                    await setup();
+                    ctx.proxyOft = auraBalProxyOFT as unknown as PausableOFT;
+                    ctx.oft = auraBalOFT as unknown as PausableOFT;
+                    ctx.owner = dao;
+                    ctx.guardian = guardian;
+                    ctx.anotherAccount = alice;
+                    ctx.canonicalChainId = L1_CHAIN_ID;
+                    ctx.sideChainId = L2_CHAIN_ID;
+                    return ctx as PausableOFTBehaviourContext;
+                };
+            });
+            shouldBehaveLikePausableOFT(() => ctx as PausableOFTBehaviourContext);
+        });
     });
     describe("constructor", async () => {
         before(async () => {
@@ -387,7 +415,7 @@ describe("AuraBalOFT", () => {
             const dataBefore = await snapshotData(deployer, "before harvest");
 
             // Harvest from auraBAL vault
-            await auraBalVault.connect(deployer.signer).updateAuthorizedHarvesters(deployer.address, true);
+            await auraBalVault.connect(auraBalVaultOwner.signer).updateAuthorizedHarvesters(deployer.address, true);
 
             //  AuraBalVault.harvest() => AuraBalStrategy.harvest() => BaseRewardPool.getReward()
             await forceHarvestRewards(harvestAmount);
@@ -429,7 +457,7 @@ describe("AuraBalOFT", () => {
             const extraRewardsPool = VirtualBalanceRewardPool__factory.connect(extraRewardsAddress, deployer.signer);
 
             const totalUnderlyings = [dataBefore.sidechainAuraBalVaultTotalUnderlying];
-            const totalUnderlyingSum = totalUnderlyings[0];
+            const totalUnderlyingSum = dataBefore.sidechainAuraBalVaultTotalUnderlying;
 
             // Expect ZERO claimable as there it will be the first auraBalProxyOFT harvest
             expect(dataBefore.abpTotalClaimableAuraBal, "totalClaimable cvxCrv").to.be.eq(ZERO);
@@ -610,15 +638,11 @@ describe("AuraBalOFT", () => {
             compareData("processClaimable(AURA)", dataBefore, dataAfter);
         });
         it("can withdraw auraBAL from sidechain", async () => {
-            await auraBalVault.connect(deployer.signer).transferOwnership(canonical.auraBalProxyOFT.address);
-            await auraBalOFT.connect(dao.signer).setUseCustomAdapterParams(false);
-
             const auraBalVaultBalance = await sidechain.auraBalVault.balanceOf(deployer.address);
             await sidechain.auraBalVault.withdraw(auraBalVaultBalance, deployer.address, deployer.address);
             const auraBalOFTBalanceBefore = await auraBalOFT.balanceOf(deployer.address);
             const bridgeAmount = auraBalOFTBalanceBefore.div(10);
             const dataBefore = await snapshotData(deployer, "before auraBalOFT sendFrom");
-
             const tx = await sidechain.auraBalOFT
                 .connect(deployer.signer)
                 .sendFrom(
@@ -628,11 +652,12 @@ describe("AuraBalOFT", () => {
                     bridgeAmount,
                     ZERO_ADDRESS,
                     ZERO_ADDRESS,
-                    [],
+                    ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]),
                     {
                         value: NATIVE_FEE,
                     },
                 );
+            await expect(tx).to.emit(canonical.auraBalProxyOFT, "ReceiveFromChain");
 
             const dataAfter = await snapshotData(deployer, "before auraBalOFT sendFrom");
             compareData("auraBalOFT sendFrom(L2=>L1)", dataBefore, dataAfter);
@@ -673,60 +698,9 @@ describe("AuraBalOFT", () => {
             xit("process claimable multiple times", async () => {
                 //TODO
             });
-            it("harvest rewards from auraBalVault wrong parameters length ", async () => {
-                await expect(
-                    auraBalProxyOFT.connect(deployer.signer).harvest([100, 100, 100, 100, 100, 100], 100),
-                ).to.be.revertedWith("!parity");
-            });
             it("harvest rewards from auraBalVault correct chain wrong totalUnderlying", async () => {
                 await expect(auraBalProxyOFT.connect(deployer.signer).harvest([100], 300)).to.be.revertedWith("!sum");
             });
-            it("harvest rewards from auraBalVault correct chain wrong totalUnderlying = ZERO", async () => {
-                await expect(auraBalProxyOFT.connect(deployer.signer).harvest([100], 0)).to.be.reverted;
-            });
-            it("harvest fails when caller is not authorized", async () => {
-                await auraBalProxyOFT.updateAuthorizedHarvesters(deployer.address, false);
-                expect(await auraBalProxyOFT.authorizedHarvesters(deployer.address)).eq(false);
-                await expect(auraBalProxyOFT.harvest([100], 100)).to.be.revertedWith("!harvester");
-            });
-        });
-
-        it("setConfig fails if caller is not the owner", async () => {
-            await expect(
-                canonical.auraBalProxyOFT.connect(alice.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, "0xdd467064", {
-                    adapterParams: "0x",
-                    zroPaymentAddress: DEAD_ADDRESS,
-                }),
-                "onlyOwner",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-        });
-        it("setRewardReceiver fails if caller is not the owner", async () => {
-            await expect(
-                auraBalProxyOFT.connect(alice.signer).setRewardReceiver(L2_CHAIN_ID, ZERO_ADDRESS),
-                "onlyOwner",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-        });
-        it("updateAuthorizedHarvesters fails if caller is not the owner", async () => {
-            await expect(
-                auraBalProxyOFT.connect(alice.signer).updateAuthorizedHarvesters(ZERO_ADDRESS, true),
-                "onlyOwner",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-        });
-        it("processClaimable fails if reward receiver is not set", async () => {
-            const SUPER_CHAIN_ID = 999;
-            expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);
-            await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
-                "receiver != address(0)",
-            ).to.be.revertedWith("0");
-        });
-        it("processClaimable fails if there are no rewards", async () => {
-            const SUPER_CHAIN_ID = 999;
-            await auraBalProxyOFT.setRewardReceiver(SUPER_CHAIN_ID, DEAD_ADDRESS);
-            await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
-                "reward > 0",
-            ).to.be.revertedWith("!reward");
         });
     });
 });

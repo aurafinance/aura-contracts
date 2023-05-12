@@ -310,7 +310,7 @@ describe("L1Coordinator", () => {
             expect(l1CoordinatorAfter, "l1Coordinator balance").to.be.eq(l1CoordinatorBalance.add(feeDebt));
         });
     });
-    describe("Edge cases", () => {
+    describe("edge cases", () => {
         describe("distributeAura", async () => {
             it("fails if the chain does not exist", async () => {
                 await expect(
@@ -334,6 +334,17 @@ describe("L1Coordinator", () => {
                     l1Coordinator.connect(alice.signer).setDistributor(DEAD_ADDRESS, true),
                     "onlyOwner",
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails if the chain does not have an L2 coordinator", async () => {
+                await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
+                const feeDebtOf = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+                expect(feeDebtOf).to.be.gt(ZERO);
+                // Make sure the L2 coordinator is not set.
+                await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, ZERO_ADDRESS);
+                await expect(
+                    l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) }),
+                    "wrong chain",
+                ).to.be.revertedWith("to can not be zero");
             });
         });
 

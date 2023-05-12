@@ -25,7 +25,7 @@ import {
     increaseTimeTo,
     assertBNClose,
 } from "../../test-utils";
-import { Account, LZEndpointMock, MockERC20__factory } from "../../types";
+import { Account, LZEndpointMock } from "../../types";
 import { BigNumber } from "ethers";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
@@ -49,7 +49,6 @@ describe("Full Deployment Phase 2", () => {
 
     // Canonical chain Contracts
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let sidechainConfig: SidechainConfig;

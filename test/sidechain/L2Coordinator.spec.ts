@@ -149,10 +149,6 @@ describe("L2Coordinator", () => {
             const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const bridgeDelegateBalanceAfter = await l2mocks.token.balanceOf(bridgeDelegate);
             const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);
-            console.log(
-                "🚀 ~ file: L2Coordinator.spec.ts:163 ~ it ~ bridgeDelegateBalanceDelta:",
-                bridgeDelegateBalanceDelta,
-            );
 
             await expect(tx)
                 .to.emit(l2mocks.token, "Transfer")
@@ -207,7 +203,7 @@ describe("L2Coordinator", () => {
         });
     });
 
-    describe("Edge cases", () => {
+    describe("edge cases", () => {
         it("setBridgeDelegate fails if caller is not the owner", async () => {
             await expect(l2Coordinator.setBridgeDelegate(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
                 ERRORS.ONLY_OWNER,
