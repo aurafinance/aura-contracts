@@ -9,6 +9,8 @@ import { IBooster } from "../interfaces/IBooster.sol";
  * @title   AuraViewHelpers
  * @author  AuraFinance
  * @notice  View-only contract to combine calls
+ * @dev     IMPORTANT: These functions are extremely gas-intensive
+            and should not be called from within a transaction.
  */
 contract AuraViewHelpers {
     IBalancerVault public immutable balancerVault = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
