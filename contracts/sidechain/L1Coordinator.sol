@@ -129,7 +129,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -188,13 +188,9 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
 
-        _distributeAura(
-            _srcChainId,
-            feeDebt,
-            configs[_srcChainId][L1Coordinator.distributeAura.selector].zroPaymentAddress,
-            configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams,
-            _sendFromAdapterParams
-        );
+        Config memory config = configs[_srcChainId][keccak256("distributeAura(uint16,bytes)")];
+        _distributeAura(_srcChainId, feeDebt, config.zroPaymentAddress, config.adapterParams, _sendFromAdapterParams);
+
         emit AuraDistributed(_srcChainId, feeDebt);
     }
 

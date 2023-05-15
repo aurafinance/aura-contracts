@@ -98,7 +98,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -262,6 +262,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
 
+        Config memory config = configs[_srcChainId][
+            keccak256(abi.encodeWithSignature("processClaimable(address,uint16)", _token, _srcChainId))
+        ];
+
         if (_token == address(innerToken)) {
             require(oft == address(this), "!oft");
             // The token is this inner token so we need to call the internal
@@ -271,8 +275,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 _srcChainId,
                 abi.encode(PT_SEND, abi.encodePacked(receiver), reward),
                 payable(msg.sender),
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].zroPaymentAddress,
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams,
+                config.zroPaymentAddress,
+                config.adapterParams,
                 msg.value
             );
 
@@ -287,8 +291,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 abi.encodePacked(receiver),
                 reward,
                 payable(msg.sender),
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].zroPaymentAddress,
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams
+                config.zroPaymentAddress,
+                config.adapterParams
             );
         }
     }

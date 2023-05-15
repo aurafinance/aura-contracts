@@ -1,4 +1,5 @@
 import { ContractTransaction, ethers, Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
@@ -395,8 +396,9 @@ export async function deploySidechainPhase1(
     await waitForTx(tx, debug, waitForBlocks);
 
     const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-    const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
-    tx = await auraOFT["setConfig(uint16,bytes4,(bytes,address))"](canonicalLzChainId, lockSelector, [
+    const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
+
+    tx = await auraOFT["setConfig(uint16,bytes32,(bytes,address))"](canonicalLzChainId, lockSelector, [
         adapterParams,
         ZERO_ADDRESS,
     ] as any);

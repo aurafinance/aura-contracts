@@ -74,7 +74,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -112,7 +112,9 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(_rewards);
-        CrossChainConfig.Config memory config = configs[canonicalChainId][L2Coordinator.queueNewRewards.selector];
+        CrossChainConfig.Config memory config = configs[canonicalChainId][
+            keccak256("queueNewRewards(address,uint256)")
+        ];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID

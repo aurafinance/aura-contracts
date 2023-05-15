@@ -42,7 +42,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -62,7 +62,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
         bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);
 
-        CrossChainConfig.Config memory config = configs[canonicalChainId][AuraOFT.lock.selector];
+        CrossChainConfig.Config memory config = configs[canonicalChainId][keccak256("lock(uint256)")];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID

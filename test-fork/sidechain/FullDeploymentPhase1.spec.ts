@@ -182,7 +182,7 @@ describe("Full Deployment Phase 1", () => {
                 ),
             ).eq(true);
 
-            const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
+            const lockSelector = ethers.utils.id("lock(uint256)");
             const config = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
             const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
             expect(config.adapterParams).eq(adapterParams);

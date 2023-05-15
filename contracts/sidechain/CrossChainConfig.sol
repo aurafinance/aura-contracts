@@ -12,21 +12,21 @@ abstract contract CrossChainConfig {
         address zroPaymentAddress;
     }
 
-    mapping(uint16 => mapping(bytes4 => Config)) public configs;
+    mapping(uint16 => mapping(bytes32 => Config)) public configs;
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
-    event SetConfig(uint16 indexed srcChainId, bytes4 selector, bytes adapterParams, address zroPaymentAddress);
+    event SetConfig(uint16 indexed srcChainId, bytes32 selector, bytes adapterParams, address zroPaymentAddress);
 
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external virtual;
 
     function _setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) internal {
         configs[_srcChainId][_selector] = _config;
