@@ -1,0 +1,379 @@
+[
+    {
+        "epoch": 0.5,
+        "user": "alice",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 100,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0
+    },
+    {
+        "epoch": 0.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 100,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0
+    },
+    {
+        "epoch": 0.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 100,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0
+    },
+    {
+        "epoch": 0.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 100,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0
+    },
+
+    {
+        "epoch": 0.5,
+        "user": "alice",
+        "action": "l1BridgeToL2",
+        "actionArgs": "alice,alice",
+        "amount": 0.5
+    },
+    {
+        "epoch": 0.5,
+        "user": "alice",
+        "action": "l1BridgeToL2",
+        "actionArgs": "alice,alice",
+        "amount": 19.5
+    },
+    {
+        "epoch": 0.5,
+        "user": "alice",
+        "action": "l1BridgeToL2",
+        "actionArgs": "alice,bob",
+        "amount": 5
+    },
+    {
+        "epoch": 0.5,
+        "user": "bob",
+        "action": "l1BridgeToL2",
+        "actionArgs": "bob,bob",
+        "amount": 35
+    },
+    {
+        "epoch": 0.5,
+        "user": "carol",
+        "action": "l1BridgeToL2",
+        "actionArgs": "carol,carol",
+        "amount": 50
+    },
+
+    {
+        "epoch": 1.5,
+        "user": "alice",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 75,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 20,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 1.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 65,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 40,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 1.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 50,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 50,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 1.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 100,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+
+    {
+        "epoch": 1.5,
+        "user": "alice",
+        "action": "l1VaultDeposit",
+        "actionArgs": "alice",
+        "amount": 0.5
+    },
+    {
+        "epoch": 1.5,
+        "user": "alice",
+        "action": "l1VaultDeposit",
+        "actionArgs": "alice",
+        "amount": 19.5
+    },
+    {
+        "epoch": 1.5,
+        "user": "alice",
+        "action": "l1VaultDeposit",
+        "actionArgs": "bob",
+        "amount": 10
+    },
+    {
+        "epoch": 1.5,
+        "user": "bob",
+        "action": "l1VaultDeposit",
+        "actionArgs": "bob",
+        "amount": 20
+    },
+    {
+        "epoch": 1.5,
+        "user": "carol",
+        "action": "l1VaultDeposit",
+        "actionArgs": "carol",
+        "amount": 5
+    },
+    {
+        "epoch": 1.5,
+        "user": "daniel",
+        "action": "l1VaultDeposit",
+        "actionArgs": "daniel",
+        "amount": 55
+    },
+
+    {
+        "epoch": 2.5,
+        "user": "alice",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 20,
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 2.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 40,
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 2.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 50,
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+    {
+        "epoch": 2.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 110
+    },
+
+    {
+        "epoch": 2.5,
+        "user": "carol",
+        "action": "l2OFTransfer",
+        "actionArgs": "daniel",
+        "amount": 10
+    },
+    {
+        "epoch": 2.5,
+        "user": "alice",
+        "action": "l2VaultDeposit",
+        "actionArgs": "alice",
+        "amount": 20
+    },
+    {
+        "epoch": 2.5,
+        "user": "bob",
+        "action": "l2VaultDeposit",
+        "actionArgs": "bob",
+        "amount": 20
+    },
+    {
+        "epoch": 2.5,
+        "user": "bob",
+        "action": "l2VaultDeposit",
+        "actionArgs": "daniel",
+        "amount": 10
+    },
+    {
+        "epoch": 2.5,
+        "user": "carol",
+        "action": "l2VaultDeposit",
+        "actionArgs": "carol",
+        "amount": 20
+    },
+    {
+        "epoch": 2.5,
+        "user": "daniel",
+        "action": "l2VaultDeposit",
+        "actionArgs": "daniel",
+        "amount": 10
+    },
+
+    {
+        "epoch": 3.5,
+        "user": "alice",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 3.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 10,
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 3.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 20,
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 3.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+
+    {
+        "epoch": 3.5,
+        "user": "dao",
+        "action": "l1VaultHarvest",
+        "amount": 20
+    },
+    {
+        "epoch": 4.5,
+        "user": "dao",
+        "action": "l1OFTHarvest",
+        "amount": null
+    },
+    {
+        "epoch": 5.5,
+        "user": "dao",
+        "action": "l1OFTProcessClaimableCvxCrv",
+        "amount": null
+    },
+    {
+        "epoch": 6.5,
+        "user": "dao",
+        "action": "l1OFTProcessClaimableCvx",
+        "amount": null
+    },
+
+    {
+        "epoch": 7.5,
+        "user": "carol",
+        "action": "l2VaultTransfer",
+        "actionArgs": "daniel",
+        "amount": 5
+    },
+    {
+        "epoch": 7.5,
+        "user": "dao",
+        "action": "l2VaultHarvest",
+        "amount": null
+    },
+
+    {
+        "epoch": 8.5,
+        "user": "alice",
+        "action": "l2VaultGetReward",
+        "amount": null
+    },
+    {
+        "epoch": 8.5,
+        "user": "bob",
+        "action": "l2VaultGetReward",
+        "amount": null
+    },
+    {
+        "epoch": 8.5,
+        "user": "carol",
+        "action": "l2VaultGetReward",
+        "amount": null
+    },
+    {
+        "epoch": 8.5,
+        "user": "daniel",
+        "action": "l2VaultGetReward",
+        "amount": null
+    }
+]

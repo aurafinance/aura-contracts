@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { loadFixture } from "ethereum-waffle";
-import { Account } from "types";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { ERC20, ERC20__factory, PausableOFT, ProxyOFT } from "../../types/generated";
-import { BN, simpleToExactAmount } from "../../test-utils";
 import { ethers } from "ethers";
 import { BytesLike, formatEther } from "ethers/lib/utils";
 import { table } from "table";
+import { Account } from "types";
+
+import { BN, simpleToExactAmount } from "../../test-utils";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { ERC20, ERC20__factory, PausableOFT, ProxyOFT } from "../../types/generated";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const defaultOFTAdapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);

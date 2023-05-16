@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
 import { impersonateAccount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import { AuraOFT, AuraProxyOFT, AuraProxyOFT__factory, OFT } from "../../types/generated";
@@ -11,6 +12,7 @@ import {
     shouldBehaveLikePausableProxyOFT,
 } from "../shared/PausableProxyOFT.behaviour";
 import { SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 

@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
 import {
     anyValue,
     BN,
@@ -14,10 +15,10 @@ import { Account } from "../../types";
 import { BaseRewardPool, BaseRewardPool__factory, ERC20, L1Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
-    SideChainTestSetup,
-    sidechainTestSetup,
     CanonicalPhaseDeployed,
     SidechainDeployed,
+    SideChainTestSetup,
+    sidechainTestSetup,
 } from "./sidechainTestSetup";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");

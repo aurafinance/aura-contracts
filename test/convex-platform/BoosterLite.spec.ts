@@ -6,7 +6,7 @@ import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { increaseTime, increaseTimeTo, simpleToExactAmount } from "../../test-utils";
 import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
+import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 import { BaseRewardPool__factory, BoosterLite, ERC20__factory } from "../../types/generated";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");

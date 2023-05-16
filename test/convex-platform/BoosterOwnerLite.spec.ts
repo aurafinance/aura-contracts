@@ -2,10 +2,10 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account, SidechainMultisigConfig } from "types";
+
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { DEAD_ADDRESS, ONE_DAY, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import {
     BoosterLite,
     BoosterOwnerLite,
@@ -14,6 +14,7 @@ import {
     IERC20__factory,
     MockERC20__factory,
 } from "../../types/generated";
+import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 
 describe("BoosterLite", () => {
     let accounts: Signer[];

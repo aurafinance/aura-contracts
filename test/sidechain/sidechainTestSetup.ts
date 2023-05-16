@@ -1,16 +1,17 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
+
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deploySidechainPhase1,
     deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
-    CanonicalPhase1Deployed,
-    CanonicalPhase2Deployed,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";

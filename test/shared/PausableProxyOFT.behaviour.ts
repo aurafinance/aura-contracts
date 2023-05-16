@@ -1,12 +1,13 @@
 import { expect } from "chai";
 import { loadFixture } from "ethereum-waffle";
-import { Account } from "types";
-import { ONE_DAY, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
-import { MockERC20__factory, OFT, PausableProxyOFT, PauseGuardian__factory } from "../../types/generated";
-import { BN, anyValue, getTimestamp, increaseTime, simpleToExactAmount } from "../../test-utils";
 import { BigNumberish, ethers } from "ethers";
 import { BytesLike, formatEther } from "ethers/lib/utils";
 import { table } from "table";
+import { Account } from "types";
+
+import { anyValue, BN, getTimestamp, increaseTime, simpleToExactAmount } from "../../test-utils";
+import { ONE_DAY, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
+import { MockERC20__factory, OFT, PausableProxyOFT } from "../../types/generated";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const debug = false;

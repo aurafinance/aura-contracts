@@ -1,8 +1,10 @@
-import { table } from "table";
 import { parseEther } from "@ethersproject/units";
 import { expect } from "chai";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
+import { formatEther } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
+import { table } from "table";
+
 import {
     anyValue,
     impersonateAccount,
@@ -26,14 +28,13 @@ import {
 } from "../../types/generated";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../shared/ERC20.behaviour";
 import { OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
+import { PausableOFTBehaviourContext, shouldBehaveLikePausableOFT } from "../shared/PausableOFT.behaviour";
 import {
     CanonicalPhaseDeployed,
     SidechainDeployed,
-    sidechainTestSetup,
     SideChainTestSetup,
+    sidechainTestSetup,
 } from "./sidechainTestSetup";
-import { formatEther } from "ethers/lib/utils";
-import { PausableOFTBehaviourContext, shouldBehaveLikePausableOFT } from "../shared/PausableOFT.behaviour";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;

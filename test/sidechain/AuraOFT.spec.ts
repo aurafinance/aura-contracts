@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+import { Phase2Deployed } from "scripts/deploySystem";
+
 import {
     DEAD_ADDRESS,
     impersonateAccount,
@@ -14,9 +16,9 @@ import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../../test/shared
 import { Account } from "../../types";
 import { AuraOFT, ERC20, PausableOFT, ProxyOFT } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup, CanonicalPhaseDeployed } from "./sidechainTestSetup";
-import { Phase2Deployed } from "scripts/deploySystem";
 import { PausableOFTBehaviourContext, shouldBehaveLikePausableOFT } from "../shared/PausableOFT.behaviour";
+import { CanonicalPhaseDeployed, SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;

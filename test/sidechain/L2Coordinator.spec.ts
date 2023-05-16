@@ -1,25 +1,27 @@
+import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 import {
-    DEAD_ADDRESS,
-    ZERO,
-    ZERO_ADDRESS,
     anyValue,
+    DEAD_ADDRESS,
     impersonateAccount,
     increaseTime,
     simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
 } from "../../test-utils";
 import { Account, PoolInfo } from "../../types";
 import { BaseRewardPool__factory, L2Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
-    SideChainTestSetup,
-    sidechainTestSetup,
     CanonicalPhaseDeployed,
     SidechainDeployed,
+    SideChainTestSetup,
+    sidechainTestSetup,
 } from "./sidechainTestSetup";
-import { expect } from "chai";
-import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;

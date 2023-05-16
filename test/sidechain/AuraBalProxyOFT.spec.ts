@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
 import { DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import {
@@ -26,6 +27,7 @@ import {
     SideChainTestSetup,
     sidechainTestSetup,
 } from "./sidechainTestSetup";
+
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
