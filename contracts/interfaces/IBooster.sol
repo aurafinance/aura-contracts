@@ -23,5 +23,9 @@ interface IBooster {
 
     function earmarkRewards(uint256 _pid) external returns (bool);
 
-    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+    function poolInfo(uint256 _pid) external view returns (PoolInfo memory poolInfo);
+
+    function poolLength() external view returns (uint256);
+
+    function lockRewards() external view returns (address);
 }
