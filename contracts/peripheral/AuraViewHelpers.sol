@@ -382,6 +382,27 @@ contract AuraViewHelpers {
 
         return tokens;
     }
+
+    function getEarmarkingReward(
+        uint256 pool,
+        address booster,
+        address token
+    ) public returns (uint256 pending) {
+        uint256 start = IERC20Detailed(token).balanceOf(address(this));
+        IBooster(booster).earmarkRewards(pool);
+        pending = IERC20Detailed(token).balanceOf(address(this)) - start;
+    }
+
+    function getMultipleEarmarkingRewards(
+        uint256[] memory pools,
+        address booster,
+        address token
+    ) external returns (uint256[] memory pendings) {
+        pendings = new uint256[](pools.length);
+        for (uint256 i = 0; i < pools.length; i++) {
+            pendings[i] = getEarmarkingReward(pools[i], booster, token);
+        }
+    }
 }
 
 interface IBaseRewardPool {
