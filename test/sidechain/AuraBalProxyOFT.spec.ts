@@ -84,8 +84,8 @@ describe("AuraBalProxyOFT", () => {
         guardian = await impersonateAccount(testSetup.l2.multisigs.pauseGuardian);
         // Send some balances in order to test
         // dirty trick to get some crvCvx balance.
-        const crvDepositorAccount = await impersonateAccount(testSetup.l1.phase2.crvDepositor.address);
-        const cvxCrvConnected = testSetup.l1.phase2.cvxCrv.connect(crvDepositorAccount.signer);
+        const cvxCrvDepositorAccount = await impersonateAccount(testSetup.l1.phase2.crvDepositor.address);
+        const cvxCrvConnected = testSetup.l1.phase2.cvxCrv.connect(cvxCrvDepositorAccount.signer);
         await cvxCrvConnected.mint(deployer.address, simpleToExactAmount(100));
         await cvxCrvConnected.mint(alice.address, simpleToExactAmount(100));
 

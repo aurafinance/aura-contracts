@@ -403,9 +403,11 @@ describe("AuraBalOFT", () => {
             compareData("bridge(AURABAL)", dataBefore, dataAfter);
         });
         it("can lock auraBAL on sidechain vault", async () => {
-            const dataBefore = await snapshotData(deployer, "beefore sidechain.auraBalVault.deposit");
+            const dataBefore = await snapshotData(deployer, "before sidechain.auraBalVault.deposit");
             await sidechain.auraBalOFT.approve(sidechain.auraBalVault.address, ethers.constants.MaxUint256);
             await sidechain.auraBalVault.deposit(dataBefore.auraBalOFTBalance.div(2), deployer.address);
+            // await sidechain.auraBalVault.deposit(dataBefore.auraBalOFTBalance.div(3), alice.address);
+
             expect(await sidechain.auraBalVault.balanceOf(deployer.address), "sidechain vault balance").to.be.gt(ZERO);
             const dataAfter = await snapshotData(deployer, "after sidechain.auraBalVault.deposit ");
 
@@ -504,7 +506,7 @@ describe("AuraBalOFT", () => {
             expect(abpAuraBalBalanceAfter, "no changes on cvxCrv balance").eq(dataBefore.abpAuraBalBalance);
             compareData("dataProxyHarvest", dataBefore, dataProxyHarvestAfter);
         });
-        it("can claim auraBal tokens to sidechain", async () => {
+        it("can process claimable auraBal tokens to sidechain", async () => {
             const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT processClaimable");
 
             // L1
@@ -571,7 +573,7 @@ describe("AuraBalOFT", () => {
 
             compareData("processClaimable(AURABAL)", dataBefore, dataProxyAfter);
         });
-        it("can claim aura tokens to sidechain", async () => {
+        it("can process claimable aura tokens to sidechain", async () => {
             const dataBefore = await snapshotData(deployer, "before auraBalProxyOFT processClaimable");
 
             // L1
@@ -638,6 +640,34 @@ describe("AuraBalOFT", () => {
 
             compareData("processClaimable(AURA)", dataBefore, dataAfter);
         });
+        it("can transfer position on sidechain vault", async () => {
+            // After processing claimable, rewards are on the vault's strategy
+            const sidechainAuraBalVaultOwner = await impersonateAccount(await sidechain.auraBalVault.owner());
+            await sidechain.auraBalVault
+                .connect(sidechainAuraBalVaultOwner.signer)
+                .updateAuthorizedHarvesters(deployer.address, true);
+            await sidechain.auraBalVault["harvest()"]();
+            await increaseTime(ONE_WEEK);
+            const dataBefore = await snapshotData(deployer, "before sidechain vault transfer");
+            const extraRewards = await sidechain.auraBalVault.extraRewards(0);
+            const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(extraRewards, deployer.signer);
+            const deployerEarnedBefore = await virtualBalanceRewardPool.earned(deployer.address);
+            const aliceEarnedBefore = await virtualBalanceRewardPool.earned(alice.address);
+
+            const deployerBalance = await sidechain.auraBalVault.balanceOf(deployer.address);
+
+            await sidechain.auraBalVault.transfer(alice.address, deployerBalance.div(2));
+            await increaseTime(ONE_WEEK);
+
+            const deployerEarnedAfter = await virtualBalanceRewardPool.earned(deployer.address);
+            const aliceEarnedAfter = await virtualBalanceRewardPool.earned(alice.address);
+
+            const dataAfter = await snapshotData(deployer, "after sidechain vault transfer");
+
+            compareData("sidechain.auraBalVault.transfer", dataBefore, dataAfter);
+            expect(deployerEarnedBefore).to.be.eq(deployerEarnedAfter);
+            expect(aliceEarnedBefore).to.be.eq(aliceEarnedAfter);
+        });
         it("can withdraw auraBAL from sidechain", async () => {
             const auraBalVaultBalance = await sidechain.auraBalVault.balanceOf(deployer.address);
             await sidechain.auraBalVault.withdraw(auraBalVaultBalance, deployer.address, deployer.address);
@@ -677,7 +707,6 @@ describe("AuraBalOFT", () => {
                 dataBefore.auraBalOFTCirculatingSupply.sub(bridgeAmount),
             );
         });
-
         it("can act as owner of the auraBalVault", async () => {
             const setWithdrawalPenalty = AuraBalVault__factory.createInterface().encodeFunctionData(
                 "setWithdrawalPenalty",

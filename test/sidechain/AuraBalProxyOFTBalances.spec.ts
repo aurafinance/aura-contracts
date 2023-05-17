@@ -3,11 +3,9 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { formatEther, parseEther } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 import { table } from "table";
-import { EVENTS } from "../shared/PausableProxyOFT.behaviour";
 
 import {
     BN,
-    getTimestamp,
     impersonateAccount,
     increaseTime,
     ONE_WEEK,
@@ -15,15 +13,15 @@ import {
     ZERO,
     ZERO_ADDRESS,
 } from "../../test-utils";
-import { Account } from "../../types";
+import { Account, Nullable } from "../../types";
 import {
     AuraBalOFT,
     AuraBalProxyOFT,
-    BaseRewardPool4626__factory,
     ERC20,
     MockERC20__factory,
     VirtualBalanceRewardPool__factory,
 } from "../../types/generated";
+import { EVENTS } from "../shared/PausableProxyOFT.behaviour";
 import balanceData from "./auraBalProxyOFTBalances.json";
 import {
     L1TestSetup,
@@ -48,10 +46,9 @@ interface Action {
 }
 enum ActionName {
     balances = "balances",
-
     l1BridgeToL2 = "l1BridgeToL2",
     l1VaultDeposit = "l1VaultDeposit",
-    l1VaultWithdraw = "l1VaultWithdraw",
+    l1VaultRedeem = "l1VaultRedeem",
     l1VaultGetReward = "l1VaultGetReward",
     l1VaultTransfer = "l1VaultTransfer",
     l1VaultHarvest = "l1VaultHarvest",
@@ -60,7 +57,7 @@ enum ActionName {
     l1OFTProcessClaimableCvx = "l1OFTProcessClaimableCvx",
     l2BridgeToL1 = "l2BridgeToL1",
     l2VaultDeposit = "l2VaultDeposit",
-    l2VaultWithdraw = "l2VaultWithdraw",
+    l2VaultRedeem = "l2VaultRedeem",
     l2VaultGetReward = "l2VaultGetReward",
     l2VaultTransfer = "l2VaultTransfer",
     l2VaultHarvest = "l2VaultHarvest",
@@ -77,37 +74,62 @@ interface Balance {
 }
 interface EpochGroup {
     epoch: number;
+    test: string;
     balances: Balance[];
     actions: Action[];
 }
-type Nullable<T> = T | null;
 
-const userToAccount = async (user: UserName): Promise<Account> => {
-    const signers = await ethers.getSigners();
-    const signerToAccount = async (i: number) => ({ signer: signers[i], address: await signers[i].getAddress() });
-    switch (user.toString()) {
-        case UserName.alice.toString():
-            return await signerToAccount(4);
-        case UserName.bob.toString():
-            return await signerToAccount(5);
-        case UserName.carol.toString():
-            return await signerToAccount(6);
-        case UserName.daniel.toString():
-            return await signerToAccount(7);
-        default:
-            return null;
-    }
+type SnapshotAccountBalance = {
+    auraBalBalanceOf: BN;
+    auraBalanceOf: BN;
+    auraBalOFTBalanceOf: BN;
+    auraOFTBalanceOf: BN;
+    auraBalVaultBalanceOf: BN;
+    sidechainAuraBalVaultBalanceOf: BN;
 };
+type SnapshotAccountsBalance = {
+    [key: string]: SnapshotAccountBalance;
+};
+interface SnapshotData {
+    proxyVaultBalance: BN;
+    auraBalVaultBalanceOfUnderlyingProxy: BN;
+    auraBalVaultTotalSupply: BN;
+    abpClaimableAuraBal: BN;
+    abpClaimableAura: BN;
+    abpTotalClaimableAuraBal: BN;
+    abpTotalClaimableAura: BN;
+    abpInternalTotalSupply: BN;
+    abpCirculatingSupply: BN;
+    abpAuraBalBalance: BN;
+    abpAuraBalance: BN;
+    auraBalOFTTotalSupply: BN;
+    auraBalOFTCirculatingSupply: BN;
+    auraBalOFTBalanceOfStrategy: BN;
+    auraOFTBalanceOfStrategy: BN;
+    sidechainAuraBalVaultTotalAssets: BN;
+    sidechainAuraBalVaultTotalUnderlying: BN;
+    sidechainAuraBalVaultTotalSupply: BN;
+    sidechainAuraBalVaultBalanceOfUnderlyingProxy: BN;
+    accountsBalances: SnapshotAccountsBalance;
+}
+
 const getGroupedData = (): EpochGroup[] => {
     const scale = simpleToExactAmount(1);
-    // multiply by 10 to allow at least one decimal point
-    const parseAmount = (amount: Nullable<number>) => (amount == null ? 0 : BN.from(amount * 10).mul(scale.div(10)));
+
+    const parseAmount = (amount: Nullable<number | string>) => {
+        if (amount == null) {
+            return 0;
+        } else if (typeof amount === "string") {
+            return simpleToExactAmount(parseFloat(amount));
+        }
+        // multiply by 10 to allow at least one decimal point
+        return BN.from(amount * 10).mul(scale.div(10));
+    };
 
     const parsedData = balanceData.map(d => ({
-        epoch: d.epoch,
+        ...d,
         user: d.user as UserName,
         action: d.action as ActionName,
-        actionArgs: d.actionArgs,
         amount: parseAmount(d.amount),
         auraBalBalanceOf: parseAmount(d.auraBalBalanceOf),
         auraBalanceOf: parseAmount(d.auraBalanceOf),
@@ -121,6 +143,7 @@ const getGroupedData = (): EpochGroup[] => {
         if (len == 0 || groupedData[len - 1].epoch != d.epoch) {
             groupedData.push({
                 epoch: d.epoch,
+                test: d.test,
                 balances: [],
                 actions: [],
             });
@@ -147,19 +170,34 @@ const getGroupedData = (): EpochGroup[] => {
     return groupedData;
 };
 
-const debug = true;
+const debug = false;
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
+/**
+ * The following test scenarios are performed with 4 users, alice, bob,  carol and daniel.
+ * After each epoch the balances of each user is check with an expected value.
+ *
+ * epoch 0.5 Users bridge from L1 to L2
+ * epoch 1.5 User deposit into canonical vault
+ * epoch 2.5 User deposit into sidechain vault
+ * epoch 3.5 Harvest rewards on canonical vault
+ * epoch 4.5 Harvest canonical Proxy OFT
+ * epoch 5.5 Proxy OFT process claimable cvxCrv rewards
+ * epoch 6.5 Proxy OFT process claimable cvx rewards
+ * epoch 7.5 Harvest rewards on sidechain vault
+ * epoch 8.5 Claim rewards on sidechain vault
+ * epoch 9.5 Users redeem sidechain vault
+ * epoch 10.5 Users bridge from L2 to L1
+ * epoch 11.5 Users redeem from canonical vault
+ */
 describe("AuraBalProxyOFTBalances", () => {
     /* -- Declare shared variables -- */
     let signers: Signer[];
     let accounts: { [key: string]: Account };
     let deployer: Account;
-    let alice: Account; // TODO , DELETE ALICE
     let dao: Account;
-    let guardian: Account;
     let cvxCrv: ERC20;
 
     // Testing contract
@@ -177,7 +215,6 @@ describe("AuraBalProxyOFTBalances", () => {
         signers = await ethers.getSigners();
         // signers  0 - 3 reserved for multisig
         deployer = await impersonateAccount(await signers[0].getAddress());
-        alice = await impersonateAccount(await signers[4].getAddress());
         accounts = {};
         accounts[UserName.alice] = await impersonateAccount(await signers[4].getAddress());
         accounts[UserName.bob] = await impersonateAccount(await signers[5].getAddress());
@@ -193,7 +230,6 @@ describe("AuraBalProxyOFTBalances", () => {
         auraBalOFT = sidechain.auraBalOFT;
 
         dao = await impersonateAccount(l2.multisigs.daoMultisig);
-        guardian = await impersonateAccount(l2.multisigs.pauseGuardian);
         // Send some balances in order to test
         // dirty trick to get some cvx balance.
         const cvxDepositorAccount = await impersonateAccount(testSetup.l1.phase2.vestedEscrows[0].address);
@@ -213,12 +249,8 @@ describe("AuraBalProxyOFTBalances", () => {
                 .approve(auraBalProxyOFT.address, ethers.constants.MaxUint256);
         }
     };
-    async function snapshotData(reason = "snapshot") {
-        // const auraBalBalanceOf = await cvxCrv.balanceOf(sender.address);
-        // const auraBalanceOf = await l1.phase2.cvx.balanceOf(sender.address);
-        // const auraBalOFTBalanceOf = await auraBalOFT.balanceOf(sender.address);
-        // const sidechainAuraBalVaultBalanceOf = await sidechain.auraBalVault.balanceOf(sender.address);
-        const accountsBalances = {};
+    async function snapshotAccounts(): Promise<SnapshotAccountsBalance> {
+        const accountsBalances: SnapshotAccountsBalance = {};
         for (const userName in accounts) {
             const auraBalBalanceOf = await cvxCrv.balanceOf(accounts[userName].address);
             const auraBalanceOf = await l1.phase2.cvx.balanceOf(accounts[userName].address);
@@ -236,6 +268,10 @@ describe("AuraBalProxyOFTBalances", () => {
                 sidechainAuraBalVaultBalanceOf,
             };
         }
+        return accountsBalances;
+    }
+    async function snapshotData(): Promise<SnapshotData> {
+        const accountsBalances = await snapshotAccounts();
 
         const auraBalOFTTotalSupply = await auraBalOFT.totalSupply();
         const auraBalOFTCirculatingSupply = await auraBalOFT.circulatingSupply();
@@ -272,71 +308,7 @@ describe("AuraBalProxyOFTBalances", () => {
                 auraBalProxyOFT.address,
             );
         }
-
-        if (false) {
-            console.log(` snapshot ----------------------------  ${reason} ----------------------------`);
-
-            for (const userName in accounts) {
-                console.log(
-                    `L1 auraBalBalanceOf[${userName}]      ${formatEther(accountsBalances[userName].auraBalBalanceOf)}`,
-                );
-                console.log(
-                    `L1 auraBalanceOf[${userName}]         ${formatEther(accountsBalances[userName].auraBalanceOf)}`,
-                );
-                console.log(
-                    `L2 auraBalVaultBalanceOf[${userName}] ${formatEther(
-                        accountsBalances[userName].auraBalVaultBalanceOf,
-                    )}`,
-                );
-
-                console.log(
-                    `L2 auraBalOFTBalanceOf[${userName}]     ${formatEther(
-                        accountsBalances[userName].auraBalOFTBalanceOf,
-                    )}`,
-                );
-                console.log(
-                    `L2 auraOFTBalanceOf[${userName}]     ${formatEther(accountsBalances[userName].auraOFTBalanceOf)}`,
-                );
-
-                console.log(
-                    `L2 auraBalVaultBalanceOf[${userName}] ${formatEther(
-                        accountsBalances[userName].sidechainAuraBalVaultBalanceOf,
-                    )}`,
-                );
-            }
-
-            // console.log(`L1 auraBalBalanceOf[sender]        ${formatEther(auraBalBalanceOf)}`);
-            // console.log(`L1 auraBalanceOf[sender]           ${formatEther(auraBalanceOf)}`);
-
-            console.log(`L1 proxyVaultBalance             ${formatEther(proxyVaultBalance)}`);
-            console.log(`L1 auraBalVaultBalanceOfUndProxy ${formatEther(auraBalVaultBalanceOfUnderlyingProxy)}`);
-            console.log(`L1 auraBalVaultTotalSupply       ${formatEther(auraBalVaultTotalSupply)}`);
-
-            console.log(`L1 abpClaimableAuraBal           ${formatEther(abpClaimableAuraBal)}`);
-            console.log(`L1 abpClaimableAura              ${formatEther(abpClaimableAura)}`);
-            console.log(`L1 abpTotalClaimableAuraBal      ${formatEther(abpTotalClaimableAuraBal)}`);
-            console.log(`L1 abpTotalClaimableAura         ${formatEther(abpTotalClaimableAura)}`);
-            console.log(`L1 abpInternalTotalSupply        ${formatEther(abpInternalTotalSupply)}`);
-            console.log(`L1 abpCirculatingSupply          ${formatEther(abpCirculatingSupply)}`);
-            console.log(`L1 abpAuraBalBalance             ${formatEther(abpAuraBalBalance)}`);
-            console.log(`L1 abpAuraBalance                ${formatEther(abpAuraBalance)}`);
-
-            // console.log(`L2 auraBalOFTBalanceOf             ${formatEther(auraBalOFTBalanceOf)}`);
-            console.log(`L2 auraBalOFTTotalSupply         ${formatEther(auraBalOFTTotalSupply)}`);
-            console.log(`L2 auraBalOFTCirculatingSupply   ${formatEther(auraBalOFTCirculatingSupply)}`);
-            console.log(`L2 auraBalOFTBalanceOfStrategy   ${formatEther(auraBalOFTBalanceOfStrategy)}`);
-            // console.log(`L2 auraOFTBalanceOfStrategy   ${formatEther(auraOFTBalanceOfStrategy)}`);
-            // console.log(`L2 auraBalVaultBalanceOf         ${formatEther(sidechainAuraBalVaultBalanceOf)}`);
-            console.log(`L2 auraBalVaultTotalAssets       ${formatEther(sidechainAuraBalVaultTotalAssets)}`);
-            console.log(`L2 auraBalVaultTotalUnderlying   ${formatEther(sidechainAuraBalVaultTotalUnderlying)}`);
-            console.log(`L2 auraBalVaultTotalSupply       ${formatEther(sidechainAuraBalVaultTotalSupply)}`);
-            console.log(
-                `L2 auraBalVaultBalanceOfUnderlyingProxy ${formatEther(sidechainAuraBalVaultBalanceOfUnderlyingProxy)}`,
-            );
-        }
         return {
-            // auraBalBalanceOf,
-            // auraBalanceOf,
             proxyVaultBalance,
             auraBalVaultBalanceOfUnderlyingProxy,
             auraBalVaultTotalSupply,
@@ -348,12 +320,10 @@ describe("AuraBalProxyOFTBalances", () => {
             abpCirculatingSupply,
             abpAuraBalBalance,
             abpAuraBalance,
-            // auraBalOFTBalanceOf,
             auraBalOFTTotalSupply,
             auraBalOFTCirculatingSupply,
             auraBalOFTBalanceOfStrategy,
             auraOFTBalanceOfStrategy,
-            // sidechainAuraBalVaultBalanceOf,
             sidechainAuraBalVaultTotalAssets,
             sidechainAuraBalVaultTotalUnderlying,
             sidechainAuraBalVaultTotalSupply,
@@ -362,8 +332,7 @@ describe("AuraBalProxyOFTBalances", () => {
             accountsBalances,
         };
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function compareData(test: string, before: any, after: any) {
+    function compareData(test: string, before: SnapshotData, after: SnapshotData) {
         const compareObj = (objBefore, objAfter, property: string) => [
             formatEther(objBefore[property]),
             formatEther(objAfter[property]),
@@ -373,22 +342,6 @@ describe("AuraBalProxyOFTBalances", () => {
         const getDetails = (property: string) => compareObj(before, after, property);
         const getAccountDetails = (account: string, property: string) =>
             compareObj(before.accountsBalances[account], after.accountsBalances[account], property);
-        // const getAccountDetails = (account:string, property: string) => [
-        //     before.accountsBalances[account][property],
-        //     after.accountsBalances[account][property],
-        //     before.accountsBalances[account][property].toString() === after.accountsBalances[account][property].toString(),
-        // ];
-
-        // const getDetails = (property: string) => [
-        //     formatEther(before[property]),
-        //     formatEther(after[property]),
-        //     before[property].toString() === after[property].toString(),
-        // ];
-        // const getAccountDetails = (account:string, property: string) => [
-        //     formatEther(before.accountsBalances[account][property]),
-        //     formatEther(after.accountsBalances[account][property]),
-        //     before.accountsBalances[account][property].toString() === after.accountsBalances[account][property].toString(),
-        // ];
 
         const accountsBalances = [];
         for (const userName in before.accountsBalances) {
@@ -418,8 +371,6 @@ describe("AuraBalProxyOFTBalances", () => {
             ]);
         }
         const testData = [
-            // ["L1 auraBalBalanceOf[sender]        ", ...getDetails("auraBalBalanceOf")],
-            // ["L1 auraBalanceOf[sender]           ", ...getDetails("auraBalanceOf")],
             ...accountsBalances,
             ["L1 proxyVaultBalance             ", ...getDetails("proxyVaultBalance")],
             ["L1 auraBalVaultBalanceOfUndProxy ", ...getDetails("auraBalVaultBalanceOfUnderlyingProxy")],
@@ -432,12 +383,10 @@ describe("AuraBalProxyOFTBalances", () => {
             ["L1 auraBalProxyOFT CirculatingSupply     ", ...getDetails("abpCirculatingSupply")],
             ["L1 auraBalProxyOFT AuraBalBalance        ", ...getDetails("abpAuraBalBalance")],
             ["L1 auraBalProxyOFT AuraBalance           ", ...getDetails("abpAuraBalance")],
-            // ["L2 auraBalOFTBalanceOf             ", ...getDetails("auraBalOFTBalanceOf")],
             ["L2 auraBalOFTTotalSupply         ", ...getDetails("auraBalOFTTotalSupply")],
             ["L2 auraBalOFTCirculatingSupply   ", ...getDetails("auraBalOFTCirculatingSupply")],
             ["L2 auraBalOFTBalanceOfStrategy   ", ...getDetails("auraBalOFTBalanceOfStrategy")],
             ["L2 auraOFTBalanceOfStrategy   ", ...getDetails("auraOFTBalanceOfStrategy")],
-            // ["L2 auraBalVaultBalanceOf         ", ...getDetails("sidechainAuraBalVaultBalanceOf")],
             ["L2 auraBalVaultTotalAssets       ", ...getDetails("sidechainAuraBalVaultTotalAssets")],
             ["L2 auraBalVaultTotalUnderlying   ", ...getDetails("sidechainAuraBalVaultTotalUnderlying")],
             ["L2 auraBalVaultTotalSupply       ", ...getDetails("sidechainAuraBalVaultTotalSupply")],
@@ -458,7 +407,6 @@ describe("AuraBalProxyOFTBalances", () => {
     ): Promise<ContractTransaction> {
         const { canonical } = l1;
         const { sidechain } = l2;
-        // const defaultOFTAdapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
         const defaultOFTAdapterParams = [];
 
         await l1.phase2.cvxCrv.connect(sender.signer).approve(canonical.auraBalProxyOFT.address, amount);
@@ -482,39 +430,22 @@ describe("AuraBalProxyOFTBalances", () => {
             .to.emit(canonical.auraBalProxyOFT, "SendToChain")
             .withArgs(L2_CHAIN_ID, owner.address, receiver.address.toLowerCase(), amount);
 
-        //  expect(dataAfter.proxyOftOutflow, "outflow").to.eq(dataBefore.proxyOftOutflow.add(amount));
-        //  expect(dataAfter.proxyOftInflow, "inflow").to.eq(dataBefore.proxyOftInflow);
-        //  expect(dataAfter.proxyOftCirculatingSupply, "proxyOft CirculatingSupply").to.eq(
-        //      dataBefore.proxyOftCirculatingSupply.sub(amount),
-        //  );
-
         // Verify it was received on L2
         await expect(tx)
             .to.emit(sidechain.auraBalOFT, EVENTS.RECEIVED_FROM_CHAIN)
             .withArgs(L1_CHAIN_ID, receiver.address, amount);
         await expect(tx).to.emit(sidechain.auraBalOFT, "Transfer").withArgs(ZERO_ADDRESS, receiver.address, amount);
-        //  expect(dataAfter.oftBalanceOf, "oft balanceOf").to.eq(dataBefore.oftBalanceOf.add(amount));
-        //  expect(dataAfter.oftCirculatingSupply, "oft circulatingSupply").to.eq(
-        //      dataBefore.oftCirculatingSupply.add(amount),
-        //  );
-        //  expect(dataAfter.oftTotalSupply, "oft balanceOf").to.eq(dataBefore.oftTotalSupply.add(amount));
 
         return tx;
     }
 
     async function expectSendFromL2toL1(test: string, sender: Account, receiver: Account, owner: Account, amount: BN) {
-        const { canonical } = l1;
         const { sidechain } = l2;
         const defaultOFTAdapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-        // const proxyOftUseCustom = await ctx.proxyOft.useCustomAdapterParams();
-        // proxyOftAdapterParams = proxyOftUseCustom ? defaultOFTAdapterParams : [];
 
         await sidechain.auraBalOFT.connect(owner.signer).approve(sidechain.auraBalOFT.address, amount);
 
-        // const dataBefore = await snapshotData(ctx, { from: owner.address, to: receiver.address });
-
         // When the proxy receives tokens it flows as usual
-        // const oftAdapterParams: BytesLike = (await sidechain.auraBalOFT.useCustomAdapterParams()) ? defaultOFTAdapterParams : [];
         const tx = await sidechain.auraBalOFT
             .connect(sender.signer)
             .sendFrom(
@@ -528,25 +459,11 @@ describe("AuraBalProxyOFTBalances", () => {
                 { value: NATIVE_FEE },
             );
 
-        // const dataAfter = await snapshotData(ctx, { from: owner.address, to: receiver.address });
-        // compareData(test, dataBefore, dataAfter);
-
         // Verify it was send from L2
         await expect(tx).to.emit(sidechain.auraBalOFT, "Transfer").withArgs(owner.address, ZERO_ADDRESS, amount);
         await expect(tx)
             .to.emit(sidechain.auraBalOFT, "SendToChain")
             .withArgs(L1_CHAIN_ID, owner.address, receiver.address.toLowerCase(), amount);
-
-        // expect(dataAfter.oftBalanceOfFrom, "oft balanceOf").to.eq(dataBefore.oftBalanceOfFrom.sub(amount));
-        // expect(dataAfter.oftCirculatingSupply, "oft circulatingSupply").to.eq(dataBefore.oftCirculatingSupply.sub(amount));
-        // expect(dataAfter.oftTotalSupply, "oft balanceOf").to.eq(dataBefore.oftTotalSupply.sub(amount));
-
-        // Verify it was received on L1
-        // await expect(tx).to.emit(proxyOft, EVENTS.RECEIVED_FROM_CHAIN).withArgs(L2_CHAIN_ID, receiver.address, amount);
-        // expect(dataAfter.proxyOftCirculatingSupply, "proxyOftCirculatingSupply").to.eq(
-        //     dataBefore.proxyOftCirculatingSupply.add(amount),
-        // );
-        // expect(dataAfter.tokenBalanceOfTo, "tokenBalanceOfTo").to.eq(dataBefore.tokenBalanceOfTo.add(amount));
 
         return tx;
     }
@@ -556,25 +473,51 @@ describe("AuraBalProxyOFTBalances", () => {
         receiver: Account,
         amount: BigNumber,
     ): Promise<ContractTransaction> {
-        const { canonical } = l1;
-        const { sidechain } = l2;
-
         await l1.phase2.cvxCrv.connect(sender.signer).approve(l1.vaultDeployment.vault.address, amount);
         const tx = await l1.vaultDeployment.vault.connect(sender.signer).deposit(amount, receiver.address);
         return tx;
     }
-
+    async function expectRedeemVaultL1(
+        test: string,
+        sender: Account,
+        receiver: Account,
+        owner: Account,
+        amount: BigNumber,
+    ): Promise<ContractTransaction> {
+        if (owner.address !== sender.address) {
+            await l1.vaultDeployment.vault.connect(owner.signer).approve(sender.address, amount);
+        }
+        const tx = await l1.vaultDeployment.vault
+            .connect(sender.signer)
+            .redeem(amount, receiver.address, owner.address);
+        return tx;
+    }
     async function expectDepositVaultL2(
         test: string,
         sender: Account,
         receiver: Account,
         amount: BigNumber,
     ): Promise<ContractTransaction> {
-        const { canonical } = l1;
         const { sidechain } = l2;
 
         await sidechain.auraBalOFT.connect(sender.signer).approve(sidechain.auraBalVault.address, amount);
         const tx = await sidechain.auraBalVault.connect(sender.signer).deposit(amount, receiver.address);
+        return tx;
+    }
+    async function expectRedeemVaultL2(
+        test: string,
+        sender: Account,
+        receiver: Account,
+        owner: Account,
+        amount: BigNumber,
+    ): Promise<ContractTransaction> {
+        const { sidechain } = l2;
+
+        if (owner.address !== sender.address) {
+            await sidechain.auraBalVault.connect(owner.signer).approve(sender.address, amount);
+        }
+
+        const tx = await sidechain.auraBalVault.connect(sender.signer).redeem(amount, receiver.address, owner.address);
         return tx;
     }
     async function expectL2OFTTransfer(
@@ -583,11 +526,9 @@ describe("AuraBalProxyOFTBalances", () => {
         receiver: Account,
         amount: BigNumber,
     ): Promise<ContractTransaction> {
-        const { canonical } = l1;
         const { sidechain } = l2;
 
-        const tx = await sidechain.auraBalOFT.connect(sender.signer).transfer(receiver.address, amount);
-        return tx;
+        return await sidechain.auraBalOFT.connect(sender.signer).transfer(receiver.address, amount);
     }
     async function forceHarvestRewards(amount = parseEther("10"), minOut = ZERO, signer = deployer.signer) {
         const { mocks, phase2 } = l1;
@@ -635,54 +576,48 @@ describe("AuraBalProxyOFTBalances", () => {
     });
     describe("Run all the epochs", () => {
         for (const epochData of getGroupedData()) {
-            describe(`Epoch ${epochData.epoch}`, () => {
-                let startTime: BN;
-                let epochId: number;
-                before(async () => {
-                    startTime = await getTimestamp();
-                    epochId = Math.floor(epochData.epoch);
-                    console.log("Epoch", startTime, epochId);
-                });
+            describe(`Epoch ${epochData.epoch} ${epochData.test}`, () => {
                 after(async () => {
                     await increaseTime(ONE_WEEK);
-                });
-                xit("can transfer auraBAL to sidechain", async () => {
-                    const dataBefore = await snapshotData("before bridge");
-                    const dataAfter = await snapshotData("after bridge");
-                    compareData("bridge(AURABAL)", dataBefore, dataAfter);
                 });
                 // Just a sanity check to ensure that the balance lookups can just be mapped by index
 
                 const checkBalances = (wen: string) => {
+                    const expectBalancesForUser = (
+                        accountsBalances: SnapshotAccountsBalance,
+                        user: string,
+                        idx: number,
+                    ) => {
+                        const epochBalance = epochData.balances[idx];
+                        const accBalance = accountsBalances[user];
+                        const toPrecision13 = (n: BN) => n.div(100000).mul(100000);
+
+                        expect(toPrecision13(epochBalance.auraBalBalanceOf), `${user} auraBalBalanceOf`).eq(
+                            toPrecision13(accBalance.auraBalBalanceOf),
+                        );
+                        expect(toPrecision13(epochBalance.auraBalanceOf), `${user} auraBalanceOf`).eq(
+                            toPrecision13(accBalance.auraBalanceOf),
+                        );
+                        expect(toPrecision13(epochBalance.auraBalOFTBalanceOf), `${user} auraBalOFTBalanceOf`).eq(
+                            toPrecision13(accBalance.auraBalOFTBalanceOf),
+                        );
+                        expect(toPrecision13(epochBalance.auraBalVaultBalanceOf), `${user} auraBalVaultBalanceOf`).eq(
+                            toPrecision13(accBalance.auraBalVaultBalanceOf),
+                        );
+                        expect(
+                            toPrecision13(epochBalance.sidechainAuraBalVaultBalanceOf),
+                            `${user} sidechainAuraBalVaultBalanceOf`,
+                        ).eq(toPrecision13(accBalance.sidechainAuraBalVaultBalanceOf));
+                    };
+
                     describe(`checking balances ${wen}`, () => {
                         it(`check balances at epoch ${epochData.epoch} for users`, async () => {
-                            const data = await snapshotData("before");
+                            const data = await snapshotData();
                             const { accountsBalances } = data;
-                            const expectBalancesForUser = (user: string, idx: number) => {
-                                expect(epochData.balances[idx].auraBalBalanceOf, `${user} auraBalBalanceOf`).eq(
-                                    accountsBalances[user].auraBalBalanceOf,
-                                );
-                                expect(epochData.balances[idx].auraBalanceOf, `${user} auraBalanceOf`).eq(
-                                    accountsBalances[user].auraBalanceOf,
-                                );
-                                expect(epochData.balances[idx].auraBalOFTBalanceOf, `${user} auraBalOFTBalanceOf`).eq(
-                                    accountsBalances[user].auraBalOFTBalanceOf,
-                                );
-                                // expect(epochData.balances[idx].auraOFTBalanceOf, `${user} auraBalOFTBalanceOf`).eq(accountsBalances[user].auraOFTBalanceOf);
-
-                                expect(
-                                    epochData.balances[idx].auraBalVaultBalanceOf,
-                                    `${user} auraBalVaultBalanceOf`,
-                                ).eq(accountsBalances[user].auraBalVaultBalanceOf);
-                                expect(
-                                    epochData.balances[idx].sidechainAuraBalVaultBalanceOf,
-                                    `${user} sidechainAuraBalVaultBalanceOf`,
-                                ).eq(accountsBalances[user].sidechainAuraBalVaultBalanceOf);
-                            };
-                            expectBalancesForUser(UserName.alice, 0);
-                            expectBalancesForUser(UserName.bob, 1);
-                            expectBalancesForUser(UserName.carol, 2);
-                            expectBalancesForUser(UserName.daniel, 3);
+                            expectBalancesForUser(accountsBalances, UserName.alice, 0);
+                            expectBalancesForUser(accountsBalances, UserName.bob, 1);
+                            expectBalancesForUser(accountsBalances, UserName.carol, 2);
+                            expectBalancesForUser(accountsBalances, UserName.daniel, 3);
                         });
                     });
                 };
@@ -697,15 +632,15 @@ describe("AuraBalProxyOFTBalances", () => {
                 }
                 if (epochData.actions.length > 0) {
                     describe("performing actions", () => {
-                        let dataBefore;
-                        let dataAfter;
+                        let dataBefore: SnapshotData;
+                        let dataAfter: SnapshotData;
                         let testCase = "test";
                         before(async () => {
-                            dataBefore = await snapshotData(`before ${epochData.epoch}`);
+                            dataBefore = await snapshotData();
                         });
                         after(async () => {
-                            dataAfter = await snapshotData(`after ${epochData.epoch}`);
-                            compareData(`test at epoch ${epochData.epoch}`, dataBefore, dataAfter);
+                            dataAfter = await snapshotData();
+                            compareData(`epoch ${epochData.epoch} ${epochData.test}`, dataBefore, dataAfter);
                         });
 
                         for (const actionData of epochData.actions) {
@@ -722,7 +657,6 @@ describe("AuraBalProxyOFTBalances", () => {
                                         testCase = `bridge L1 => L2 sender: ${actionData.user}, from ${users[0]}, to ${
                                             users[1]
                                         }, amount ${formatEther(actionData.amount)}`;
-                                        console.log(testCase);
                                         await expectSendFromL1toL2(testCase, sender, to, from, actionData.amount);
                                     });
                                     break;
@@ -735,8 +669,21 @@ describe("AuraBalProxyOFTBalances", () => {
                                         testCase = `l1VaultDeposit sender: ${actionData.user}, from ${
                                             actionData.user
                                         }, to ${actionData.actionArgs}, amount ${formatEther(actionData.amount)}`;
-                                        console.log(testCase);
                                         await expectDepositVaultL1(testCase, sender, to, actionData.amount);
+                                    });
+                                    break;
+                                case ActionName.l1VaultRedeem:
+                                    it(`${actionData.user} deposits auraBAL on canonical vault ${formatEther(
+                                        actionData.amount,
+                                    )}`, async () => {
+                                        const sender = accounts[actionData.user];
+                                        const [from, to] = actionData.actionArgs
+                                            .split(",")
+                                            .map(account => accounts[account]);
+                                        testCase = `l2VaultRedeem sender: ${actionData.user},  amount ${formatEther(
+                                            actionData.amount,
+                                        )}`;
+                                        await expectRedeemVaultL1(testCase, sender, to, from, actionData.amount);
                                     });
                                     break;
                                 case ActionName.l1VaultHarvest:
@@ -747,7 +694,6 @@ describe("AuraBalProxyOFTBalances", () => {
                                         testCase = `l1VaultHarvest sender: ${actionData.user}, amount ${formatEther(
                                             actionData.amount,
                                         )}`;
-                                        console.log(testCase);
                                         const auraBalVaultOwner = await impersonateAccount(
                                             await l1.vaultDeployment.vault.owner(),
                                         );
@@ -761,7 +707,6 @@ describe("AuraBalProxyOFTBalances", () => {
                                     it(`${actionData.user} harvest auraBAL OFT on canonical ${formatEther(
                                         actionData.amount,
                                     )}`, async () => {
-                                        // const sender = accounts[actionData.user]
                                         testCase = `l1OFTHarvest sender: ${actionData.user}, amount ${formatEther(
                                             actionData.amount,
                                         )}`;
@@ -770,7 +715,6 @@ describe("AuraBalProxyOFTBalances", () => {
                                             .connect(dao.signer)
                                             .updateAuthorizedHarvesters(deployer.address, true);
 
-                                        console.log(testCase);
                                         await expectAuraBalProxyOFTHarvest();
                                     });
                                     break;
@@ -778,47 +722,42 @@ describe("AuraBalProxyOFTBalances", () => {
                                     it(`${actionData.user} process claimable Cvx ${formatEther(
                                         actionData.amount,
                                     )}`, async () => {
-                                        // const sender = accounts[actionData.user]
                                         testCase = `l1OFTProcessClaimableCvx sender: ${
                                             actionData.user
                                         }, amount ${formatEther(actionData.amount)}`;
 
-                                        console.log(testCase);
-                                        const tx = await auraBalProxyOFT.processClaimable(
-                                            l1.phase2.cvx.address,
-                                            L2_CHAIN_ID,
-                                            {
-                                                value: NATIVE_FEE,
-                                            },
-                                        );
+                                        await auraBalProxyOFT.processClaimable(l1.phase2.cvx.address, L2_CHAIN_ID, {
+                                            value: NATIVE_FEE,
+                                        });
                                     });
                                     break;
                                 case ActionName.l1OFTProcessClaimableCvxCrv:
                                     it(`${actionData.user} process claimable CvxCrv  ${formatEther(
                                         actionData.amount,
                                     )}`, async () => {
-                                        // const sender = accounts[actionData.user]
                                         testCase = `l1OFTProcessClaimableCvxCrv sender: ${
                                             actionData.user
                                         }, amount ${formatEther(actionData.amount)}`;
 
-                                        console.log(testCase);
-                                        const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
+                                        await auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
                                             value: NATIVE_FEE,
                                         });
                                     });
                                     break;
-                                case ActionName.l2VaultDeposit:
-                                    it(`${actionData.user} deposits auraBAL on sidechain vault ${formatEther(
+                                case ActionName.l2BridgeToL1:
+                                    it(`${actionData.user} bridges from L2 to L1 ${formatEther(
                                         actionData.amount,
                                     )}`, async () => {
                                         const sender = accounts[actionData.user];
-                                        const to = accounts[actionData.actionArgs];
-                                        testCase = `l2VaultDeposit sender: ${actionData.user}, from ${
-                                            actionData.user
-                                        }, to ${actionData.actionArgs}, amount ${formatEther(actionData.amount)}`;
-                                        console.log(testCase);
-                                        await expectDepositVaultL2(testCase, sender, to, actionData.amount);
+                                        const [from, to] = actionData.actionArgs
+                                            .split(",")
+                                            .map(account => accounts[account]);
+                                        const users = actionData.actionArgs.split(",");
+                                        testCase = `bridge L2 => L1 sender: ${actionData.user}, from ${users[0]}, to ${
+                                            users[1]
+                                        }, amount ${formatEther(actionData.amount)}`;
+
+                                        await expectSendFromL2toL1(testCase, sender, to, from, actionData.amount);
                                     });
                                     break;
                                 case ActionName.l2OFTransfer:
@@ -830,7 +769,7 @@ describe("AuraBalProxyOFTBalances", () => {
                                         testCase = `l2OFTransfer sender: ${actionData.user}, from ${
                                             actionData.user
                                         }, to ${actionData.actionArgs}, amount ${formatEther(actionData.amount)}`;
-                                        console.log(testCase);
+
                                         await expectL2OFTTransfer(testCase, sender, to, actionData.amount);
                                     });
                                     break;
@@ -838,12 +777,10 @@ describe("AuraBalProxyOFTBalances", () => {
                                     it(`${actionData.user} harvest sidechain vault  ${formatEther(
                                         actionData.amount,
                                     )}`, async () => {
-                                        // const sender = accounts[actionData.user]
                                         testCase = `l2VaultHarvest sender: ${actionData.user}, amount ${formatEther(
                                             actionData.amount,
                                         )}`;
 
-                                        console.log(testCase);
                                         const auraBalVaultOwner = await impersonateAccount(
                                             await sidechain.auraBalVault.owner(),
                                         );
@@ -863,11 +800,37 @@ describe("AuraBalProxyOFTBalances", () => {
                                             actionData.amount,
                                         )}`;
 
-                                        console.log(testCase);
-
                                         await sidechain.auraBalVault
                                             .connect(sender.signer)
                                             .transfer(to.address, actionData.amount);
+                                    });
+                                    break;
+                                case ActionName.l2VaultDeposit:
+                                    it(`${actionData.user} deposits auraBAL on sidechain vault ${formatEther(
+                                        actionData.amount,
+                                    )}`, async () => {
+                                        const sender = accounts[actionData.user];
+                                        const to = accounts[actionData.actionArgs];
+                                        testCase = `l2VaultDeposit sender: ${actionData.user}, from ${
+                                            actionData.user
+                                        }, to ${actionData.actionArgs}, amount ${formatEther(actionData.amount)}`;
+
+                                        await expectDepositVaultL2(testCase, sender, to, actionData.amount);
+                                    });
+                                    break;
+                                case ActionName.l2VaultRedeem:
+                                    it(`${actionData.user} redeems auraBAL from sidechain vault ${formatEther(
+                                        actionData.amount,
+                                    )}`, async () => {
+                                        const sender = accounts[actionData.user];
+                                        const [from, to] = actionData.actionArgs
+                                            .split(",")
+                                            .map(account => accounts[account]);
+                                        testCase = `l2VaultRedeem sender: ${actionData.user},  amount ${formatEther(
+                                            actionData.amount,
+                                        )}`;
+
+                                        await expectRedeemVaultL2(testCase, sender, to, from, actionData.amount);
                                     });
                                     break;
                                 case ActionName.l2VaultGetReward:
@@ -879,17 +842,15 @@ describe("AuraBalProxyOFTBalances", () => {
                                             actionData.amount,
                                         )}`;
 
-                                        console.log(testCase);
                                         const extraRewards = await sidechain.auraBalVault.extraRewards(0);
                                         const virtualBalanceRewardPool = VirtualBalanceRewardPool__factory.connect(
                                             extraRewards,
                                             sender.signer,
                                         );
-                                        const earned = await virtualBalanceRewardPool.earned(sender.address);
-                                        console.log("earned", earned);
                                         await virtualBalanceRewardPool["getReward()"]();
                                     });
                                     break;
+
                                 default:
                                     break;
                             }

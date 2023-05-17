@@ -1,6 +1,7 @@
 [
     {
         "epoch": 0.5,
+        "test": "Bridge from L1 to L2",
         "user": "alice",
         "action": "balances",
         "amount": null,
@@ -82,6 +83,7 @@
 
     {
         "epoch": 1.5,
+        "test": "User deposit into canonical vault",
         "user": "alice",
         "action": "balances",
         "amount": null,
@@ -175,6 +177,7 @@
     {
         "epoch": 2.5,
         "user": "alice",
+        "test": "User deposit into sidechain vault",
         "action": "balances",
         "amount": null,
         "auraBalBalanceOf": 45,
@@ -267,6 +270,7 @@
     {
         "epoch": 3.5,
         "user": "alice",
+        "test": "Harvest rewards on canonical vault",
         "action": "balances",
         "amount": null,
         "auraBalBalanceOf": 45,
@@ -319,20 +323,73 @@
         "action": "l1VaultHarvest",
         "amount": 20
     },
+
     {
         "epoch": 4.5,
+        "user": "alice",
+        "test": "Harvest canonical Proxy OFT",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 4.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 10,
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 4.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 20,
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 4.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 4.5,
+        "test": "Harvest canonical Proxy OFT",
         "user": "dao",
         "action": "l1OFTHarvest",
         "amount": null
     },
     {
         "epoch": 5.5,
+        "test": "Proxy OFT process claimable cvxCrv rewards",
         "user": "dao",
         "action": "l1OFTProcessClaimableCvxCrv",
         "amount": null
     },
     {
         "epoch": 6.5,
+        "test": "Proxy OFT process claimable cvx rewards",
         "user": "dao",
         "action": "l1OFTProcessClaimableCvx",
         "amount": null
@@ -340,16 +397,19 @@
 
     {
         "epoch": 7.5,
+        "test": "Harvest rewards on sidechain vault",
+        "user": "dao",
+        "action": "l2VaultHarvest",
+        "amount": null
+    },
+
+    {
+        "epoch": 8.5,
+        "test": "Claim rewards on sidechain vault",
         "user": "carol",
         "action": "l2VaultTransfer",
         "actionArgs": "daniel",
         "amount": 5
-    },
-    {
-        "epoch": 7.5,
-        "user": "dao",
-        "action": "l2VaultHarvest",
-        "amount": null
     },
 
     {
@@ -375,5 +435,320 @@
         "user": "daniel",
         "action": "l2VaultGetReward",
         "amount": null
+    },
+
+    {
+        "epoch": 9.5,
+        "user": "alice",
+        "test": "Users redeem sidechain vault",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 9.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 10,
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 20,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 9.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 20,
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 15,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 9.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": 0,
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 25,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 9.5,
+        "test": "Users redeem sidechain vault",
+        "user": "alice",
+        "action": "l2VaultRedeem",
+        "actionArgs": "alice,alice",
+        "amount": 20
+    },
+    {
+        "epoch": 9.5,
+        "user": "bob",
+        "action": "l2VaultRedeem",
+        "actionArgs": "bob,bob",
+        "amount": 20
+    },
+    {
+        "epoch": 9.5,
+        "user": "carol",
+        "action": "l2VaultRedeem",
+        "actionArgs": "carol,carol",
+        "amount": 15
+    },
+    {
+        "epoch": 9.5,
+        "user": "daniel",
+        "action": "l2VaultRedeem",
+        "actionArgs": "daniel,carol",
+        "amount": 5
+    },
+    {
+        "epoch": 9.5,
+        "user": "daniel",
+        "action": "l2VaultRedeem",
+        "actionArgs": "daniel,daniel",
+        "amount": 20
+    },
+
+    {
+        "epoch": 10.5,
+        "user": "alice",
+        "test": "Users bridge from L2 to L1",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "20.83125",
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 10.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "30.9006875",
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 10.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "41.03669872390625",
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 10.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 45,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "21.398030442760416666",
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": 220
+    },
+    {
+        "epoch": 10.5,
+        "test": "Users bridge from L2 to L1",
+        "user": "alice",
+        "action": "l2BridgeToL1",
+        "actionArgs": "alice,alice",
+        "amount": 20
+    },
+    {
+        "epoch": 10.5,
+        "user": "bob",
+        "action": "l2BridgeToL1",
+        "actionArgs": "bob,bob",
+        "amount": 30
+    },
+    {
+        "epoch": 10.5,
+        "user": "carol",
+        "action": "l2BridgeToL1",
+        "actionArgs": "carol,carol",
+        "amount": 41
+    },
+    {
+        "epoch": 10.5,
+        "user": "daniel",
+        "action": "l2BridgeToL1",
+        "actionArgs": "daniel,daniel",
+        "amount": 21
+    },
+
+    {
+        "epoch": 11.5,
+        "user": "alice",
+        "test": "Users redeem from canonical vault",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 65,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.83125",
+        "auraBalVaultBalanceOf": 20,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "112.087591240875912406"
+    },
+    {
+        "epoch": 11.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 75,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.9006875",
+        "auraBalVaultBalanceOf": 30,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "112.087591240875912406"
+    },
+    {
+        "epoch": 11.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 86,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.03669872390625",
+        "auraBalVaultBalanceOf": 5,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "112.087591240875912406"
+    },
+    {
+        "epoch": 11.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": 66,
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.398030442760416666",
+        "auraBalVaultBalanceOf": 55,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "112.087591240875912406"
+    },
+    {
+        "epoch": 11.5,
+        "test": "Users redeem from canonical vault",
+        "user": "alice",
+        "action": "l1VaultRedeem",
+        "actionArgs": "alice,alice",
+        "amount": 20
+    },
+    {
+        "epoch": 11.5,
+        "user": "bob",
+        "action": "l1VaultRedeem",
+        "actionArgs": "bob,alice",
+        "amount": 5
+    },
+    {
+        "epoch": 11.5,
+        "user": "bob",
+        "action": "l1VaultRedeem",
+        "actionArgs": "bob,bob",
+        "amount": 25
+    },
+    {
+        "epoch": 11.5,
+        "user": "carol",
+        "action": "l1VaultRedeem",
+        "actionArgs": "carol,carol",
+        "amount": 5
+    },
+    {
+        "epoch": 11.5,
+        "user": "daniel",
+        "action": "l1VaultRedeem",
+        "actionArgs": "daniel,alice",
+        "amount": 10
+    },
+    {
+        "epoch": 11.5,
+        "user": "daniel",
+        "action": "l1VaultRedeem",
+        "actionArgs": "daniel,carol",
+        "amount": 10
+    },
+    {
+        "epoch": 11.5,
+        "user": "daniel",
+        "action": "l1VaultRedeem",
+        "actionArgs": "daniel,daniel",
+        "amount": 35
+    },
+
+    {
+        "epoch": 12.5,
+        "user": "alice",
+        "test": "Final balances",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": "101.052432660954947899",
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.83125",
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "2.087591240875912406"
+    },
+    {
+        "epoch": 12.5,
+        "user": "bob",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": "100.758069388802613283",
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.9006875",
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "2.087591240875912406"
+    },
+    {
+        "epoch": 12.5,
+        "user": "carol",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": " 101.548120344517209945",
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.03669872390625",
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "2.087591240875912406"
+    },
+    {
+        "epoch": 12.5,
+        "user": "daniel",
+        "action": "balances",
+        "amount": null,
+        "auraBalBalanceOf": "102.413088282475486661",
+        "auraBalanceOf": 0,
+        "auraBalOFTBalanceOf": "0.398030442760416666",
+        "auraBalVaultBalanceOf": 0,
+        "sidechainAuraBalVaultBalanceOf": 0,
+        "auraBalVaultTotalSupply": "2.087591240875912406"
     }
 ]
