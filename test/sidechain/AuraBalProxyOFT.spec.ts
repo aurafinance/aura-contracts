@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 
 import { DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
@@ -30,7 +31,8 @@ import {
 
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 async function bridgeTokenFromL1ToL2(
     sender: Account,
@@ -172,17 +174,39 @@ describe("AuraBalProxyOFT", () => {
         });
     });
     describe("normal flow", () => {
-        it("sets configuration by selector", async () => {
-            const selectorHash = auraBalProxyOFT.interface.getSighash("processClaimable(address,uint16)");
+        it("sets configuration by selector cvxCrv", async () => {
+            const processClaimableCvxCrv = auraBalProxyOFT.interface.encodeFunctionData("processClaimable", [
+                cvxCrv.address,
+                L1_CHAIN_ID,
+            ]);
+            const selector = ethers.utils.keccak256(toUtf8Bytes(processClaimableCvxCrv));
             const config = {
                 adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
                 zroPaymentAddress: DEAD_ADDRESS,
             };
 
             //   When  config is set.
-            await auraBalProxyOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selectorHash, config);
+            await auraBalProxyOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
             // No events
-            const newConfig = await auraBalProxyOFT.configs(L2_CHAIN_ID, selectorHash);
+            const newConfig = await auraBalProxyOFT.configs(L2_CHAIN_ID, selector);
+            expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
+            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
+        });
+        it("sets configuration by selector cvx", async () => {
+            const processClaimableCvxCrv = auraBalProxyOFT.interface.encodeFunctionData("processClaimable", [
+                l1.phase2.cvx.address,
+                L1_CHAIN_ID,
+            ]);
+            const selector = ethers.utils.keccak256(toUtf8Bytes(processClaimableCvxCrv));
+            const config = {
+                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
+                zroPaymentAddress: DEAD_ADDRESS,
+            };
+
+            //   When  config is set.
+            await auraBalProxyOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
+            // No events
+            const newConfig = await auraBalProxyOFT.configs(L2_CHAIN_ID, selector);
             expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
             expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
         });
@@ -250,8 +274,9 @@ describe("AuraBalProxyOFT", () => {
     });
     describe("edge cases", () => {
         it("setConfig fails if caller is not the owner", async () => {
+            const selector = ethers.utils.keccak256(toUtf8Bytes("processClaimable(address,uint16)"));
             await expect(
-                auraBalProxyOFT.connect(alice.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, "0xdd467064", {
+                auraBalProxyOFT.connect(alice.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, {
                     adapterParams: "0x",
                     zroPaymentAddress: DEAD_ADDRESS,
                 }),

@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
 
@@ -25,7 +26,7 @@ import {
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
 
 describe("L2Coordinator", () => {
     /* -- Declare shared variables -- */
@@ -113,16 +114,17 @@ describe("L2Coordinator", () => {
     describe("setConfig", async () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
-            const selectorHash = l2Coordinator.interface.getSighash("queueNewRewards(address,uint256)");
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
+
             const config = {
                 adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
                 zroPaymentAddress: DEAD_ADDRESS,
             };
 
             //   When  config is set.
-            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selectorHash, config);
+            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, config);
             // No events
-            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selectorHash);
+            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selector);
             expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
             expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
         });
@@ -212,8 +214,9 @@ describe("L2Coordinator", () => {
             );
         });
         it("setConfig fails if caller is not the owner", async () => {
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
             await expect(
-                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, "0xdd467064", {
+                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, {
                     adapterParams: "0x",
                     zroPaymentAddress: DEAD_ADDRESS,
                 }),

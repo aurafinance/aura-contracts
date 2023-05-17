@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 import { Phase2Deployed } from "scripts/deploySystem";
 
@@ -53,7 +54,7 @@ describe("AuraOFT", () => {
     let testSetup: SideChainTestSetup;
     let canonical: CanonicalPhaseDeployed;
 
-    const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+    const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
     /* -- Declare shared functions -- */
     const setup = async () => {
         accounts = await ethers.getSigners();
@@ -251,7 +252,7 @@ describe("AuraOFT", () => {
     describe("setConfig", async () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
-            const lockSelector = auraOFT.interface.getSighash("lock");
+            const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
             const lockConfig = {
                 adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
                 zroPaymentAddress: DEAD_ADDRESS,
@@ -265,8 +266,9 @@ describe("AuraOFT", () => {
             expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(lockConfig.zroPaymentAddress);
         });
         it("fails if caller is not the owner", async () => {
+            const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
             await expect(
-                auraOFT[SET_CONFIG_SELECTOR](L1_CHAIN_ID, "0xdd467064", {
+                auraOFT[SET_CONFIG_SELECTOR](L1_CHAIN_ID, lockSelector, {
                     adapterParams: "0x",
                     zroPaymentAddress: DEAD_ADDRESS,
                 }),

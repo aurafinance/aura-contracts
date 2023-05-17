@@ -263,7 +263,7 @@ task("deploy:sidechain:config:L1:phase1")
         // Set LZ config
         const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 200_000]);
         const distributeAuraSelector = ethers.utils.id("distributeAura(uint16)").substring(0, 10);
-        const tx = await canonical.l1Coordinator["setConfig(uint16,bytes4,(bytes,address))"](
+        const tx = await canonical.l1Coordinator["setConfig(uint16,bytes32,(bytes,address))"](
             sidechainId,
             distributeAuraSelector,
             [adapterParams, ZERO_ADDRESS] as any,

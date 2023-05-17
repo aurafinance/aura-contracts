@@ -25,7 +25,7 @@ import {
     increaseTimeTo,
     assertBNClose,
 } from "../../test-utils";
-import { Account, LZEndpointMock } from "../../types";
+import { Account, LZEndpointMock, MockERC20__factory } from "../../types";
 import { BigNumber } from "ethers";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 

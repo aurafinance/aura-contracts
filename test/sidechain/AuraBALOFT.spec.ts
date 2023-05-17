@@ -640,6 +640,11 @@ describe("AuraBalOFT", () => {
 
             compareData("processClaimable(AURA)", dataBefore, dataAfter);
         });
+        it("can not process claimable more than once", async () => {
+            await expect(
+                auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE }),
+            ).to.be.revertedWith("!reward");
+        });
         it("can transfer position on sidechain vault", async () => {
             // After processing claimable, rewards are on the vault's strategy
             const sidechainAuraBalVaultOwner = await impersonateAccount(await sidechain.auraBalVault.owner());
@@ -720,14 +725,7 @@ describe("AuraBalOFT", () => {
         });
     });
     describe("Edge cases", () => {
-        // setMinDstGas
         describe("harvest", () => {
-            xit("harvest for one sidechain but try to process to another sidechain", async () => {
-                //TODO
-            });
-            xit("process claimable multiple times", async () => {
-                //TODO
-            });
             it("harvest rewards from auraBalVault correct chain wrong totalUnderlying", async () => {
                 await expect(auraBalProxyOFT.connect(deployer.signer).harvest([100], 300)).to.be.revertedWith("!sum");
             });
