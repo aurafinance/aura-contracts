@@ -224,3 +224,17 @@ interface IWeightedPoolFactory {
         address owner
     ) external returns (address);
 }
+
+interface IWeightedPoolFactoryV2 {
+    /**
+     * @dev Deploys a new `WeightedPool`.
+     */
+    function create(
+        string memory name,
+        string memory symbol,
+        IERC20[] memory tokens,
+        uint256[] memory normalizedWeights,
+        uint256 swapFeePercentage,
+        address owner
+    ) external returns (address);
+}

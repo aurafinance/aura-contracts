@@ -280,7 +280,7 @@ interface Phase8Deployed {
     boosterOwnerSecondary: BoosterOwnerSecondary;
 }
 
-function getPoolAddress(utils: any, receipt: ContractReceipt): string {
+export function getPoolAddress(utils: any, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
     return utils.hexZeroPad(utils.hexStripZeros(event.topics[1]), 20);
 }

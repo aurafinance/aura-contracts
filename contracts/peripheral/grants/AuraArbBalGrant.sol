@@ -88,11 +88,20 @@ contract AuraArbBalGrant {
         _;
     }
 
+    /**
+     * @notice Modifier that only allows something to be called when the contract is active
+     */
+    modifier whileActive() {
+        require(active, "!active");
+        _;
+    }
+
     /* ----------------------------------------------------------------
        Init 
     ---------------------------------------------------------------- */
 
     /**
+     * @dev Initialise the contract values
      * @param _aura        AURA token
      * @param _bpt         BPT token
      * @param _poolId      poolID of the 8020 pool
@@ -127,7 +136,7 @@ contract AuraArbBalGrant {
 
     /**
      * @notice Sends BAL and ARB to balancer and AURA to project
-     * grant must be inactive in order for this to be called
+     * @dev grant must be inactive in order for this to be called
      */
     function withdrawBalances() external onlyAuth whileInactive {
         // Send AURA to project msig
@@ -137,11 +146,24 @@ contract AuraArbBalGrant {
         ARB.safeTransfer(balancer, ARB.balanceOf(address(this)));
     }
 
-    /* ----------------------------------------------------------------
-       Project Functions
-    ---------------------------------------------------------------- */
+    /**
+     * @notice Join the pool
+     * @dev Only callable by an authenticated party
+     * @dev Only callable when active
+     * @param _minAmountOut Min amount of BPT to get out
+     */
+    function join(uint256 _minAmountOut) external onlyAuth whileActive {
+        _joinPool(_minAmountOut);
+    }
 
-    // ...
+    /**
+     * @notice exits BPT position
+     * grant must be inactive in order for this to be called
+     * @param  _minOuts Min out amounts
+     */
+    function exit(uint256[3] memory _minOuts) external onlyAuth whileInactive {
+        _exitPool(_minOuts);
+    }
 
     /* ----------------------------------------------------------------
        Balancer Functions 
@@ -155,22 +177,16 @@ contract AuraArbBalGrant {
         active = _active;
     }
 
-    /**
-     * @notice exits BPT position
-     * grant must be inactive in order for this to be called
-     * @param  _minOuts Min out amounts
-     */
-    function exit(uint256[3] memory _minOuts) external onlyBalancer whileInactive {
-        _exitPool(_minOuts);
-    }
-
     /* ----------------------------------------------------------------
        Internal Functions 
     ---------------------------------------------------------------- */
 
+    /**
+     * @notice Get array of pool assets in the correct order
+     */
     function _getAssetArray() internal view returns (IERC20[3] memory assets) {
         IERC20[3] memory unordered = [ARB, AURA, BAL];
-        for (uint256 i = 0; i < unordered.length; i++) {
+        for (uint256 i = 0; i < 3; i++) {
             assets[tokenOrder[i]] = unordered[i];
         }
     }

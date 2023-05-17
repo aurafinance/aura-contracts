@@ -125,7 +125,7 @@ const addresses: ExtSystemConfig = {
     balancerPoolOwner: "0xBA1BA1ba1BA1bA1bA1Ba1BA1ba1BA1bA1ba1ba1B",
     balancerPoolFactories: {
         weightedPool2Tokens: "0xA5bf2ddF098bb0Ef6d120C98217dD6B141c74EE0",
-        weightedPool: "0xcC508a455F5b0073973107Db6a878DdBDab957bC",
+        weightedPool: "0x8E9aa87E45e92bad84D5F8DD1bff34Fb92637dE9",
         stablePool: "0x8df6EfEc5547e31B0eb7d1291B511FF8a2bf987c",
         bootstrappingPool: "0x751A0bC0e3f75b38e01Cf25bFCE7fF36DE1C87DE",
     },
