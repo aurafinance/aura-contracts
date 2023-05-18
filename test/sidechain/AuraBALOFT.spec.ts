@@ -80,8 +80,6 @@ describe("AuraBalOFT", () => {
     // Testing contract
     let testSetup: SideChainTestSetup;
     let sidechains: SidechainDeployed[];
-    // L2
-    // let auraBalOFT: AuraBalOFT;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
@@ -281,11 +279,7 @@ describe("AuraBalOFT", () => {
             console.log(table([["Data", "Before", "After", "Equal"], ...testData.filter(t => !t[3])]));
         }
     }
-    before("init contract", async () => {
-        await setup();
-    });
-
-    xdescribe("behaviors", async () => {
+    describe("behaviors", async () => {
         describe("should behave like Ownable ", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};
             before(async () => {
@@ -342,7 +336,7 @@ describe("AuraBalOFT", () => {
             shouldBehaveLikePausableOFT(() => ctx as PausableOFTBehaviourContext);
         });
     });
-    xdescribe("constructor", async () => {
+    describe("constructor", async () => {
         let auraBalOFT: AuraBalOFT;
         before(async () => {
             await setup();

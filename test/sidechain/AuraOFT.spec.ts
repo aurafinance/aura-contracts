@@ -189,12 +189,7 @@ describe("AuraOFT", () => {
 
             const auraOFTBalance = await auraOFT.balanceOf(deployer.address);
             expect(auraOFTBalance, "bridge amount").to.be.eq(amount);
-            const locker = await testSetup.l1.canonical.auraProxyOFT.locker();
-            console.log(
-                "🚀 ~ file: AuraOFT.spec.ts:198 ~ it ~ phase2.cvxLocker.address:",
-                phase2.cvxLocker.address,
-                locker,
-            );
+
             // Lock
             const tx = await auraOFT.connect(deployer.signer).lock(auraOFTBalance, { value: NATIVE_FEE });
             // Verify events, storage change, balance, etc.
