@@ -157,19 +157,23 @@ contract AuraArbBalGrant {
     }
 
     /**
-     * @notice exits BPT position
-     * grant must be inactive in order for this to be called
-     * @param  _minOuts Min out amounts
-     */
-    function exit(uint256[3] memory _minOuts) external onlyAuth whileInactive {
-        _exitPool(_minOuts);
-    }
-
-    /**
      * @notice Allows auth to start cooldown timer
      */
     function startCooldown() external onlyAuth {
         cooldownStart = block.timestamp;
+    }
+
+    /* ----------------------------------------------------------------
+       Balancer Functions 
+    ---------------------------------------------------------------- */
+
+    /**
+     * @notice exits BPT position
+     * grant must be inactive in order for this to be called
+     * @param  _minOuts Min out amounts
+     */
+    function exit(uint256[3] memory _minOuts) external onlyBalancer whileInactive {
+        _exitPool(_minOuts);
     }
 
     /* ----------------------------------------------------------------

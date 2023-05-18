@@ -265,7 +265,7 @@ describe("AuraArbBalGrant", () => {
     });
     describe("exit", () => {
         it("cannot exit as not auth", async () => {
-            await expect(grant.connect(random.signer).exit([0, 0, 0])).to.be.revertedWith("!auth");
+            await expect(grant.connect(random.signer).exit([0, 0, 0])).to.be.revertedWith("!balancer");
         });
         it("can exit the pool", async () => {
             const bptBalanceBefore = await pool.balanceOf(grant.address);
