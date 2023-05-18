@@ -75,6 +75,7 @@
         "fs-extra": "^10.0.0",
         "hardhat": "^2.14.0",
         "hardhat-gas-reporter": "^1.0.4",
+        "hardhat-tracer": "^1.2.1",
         "husky": "^7.0.4",
         "lint-staged": "^11.2.6",
         "merkletreejs": "^0.2.31",
