@@ -28,10 +28,12 @@ contract AuraArbBalGrant {
     address public immutable project;
     address public immutable balancer;
 
+    uint256 public constant cooldownPeriod = 60 days;
+    uint256 public cooldownStart;
+
     IERC20 public AURA;
     IERC20 public BPT;
     bytes32 public POOL_ID;
-    bool public active;
 
     uint256[3] public tokenOrder;
 
@@ -84,7 +86,7 @@ contract AuraArbBalGrant {
      * @notice Modifier that only allows something to be called when the contract is inactive
      */
     modifier whileInactive() {
-        require(!active, "active");
+        require(cooldownStart != 0 && block.timestamp > cooldownStart + cooldownPeriod, "active");
         _;
     }
 
@@ -92,7 +94,7 @@ contract AuraArbBalGrant {
      * @notice Modifier that only allows something to be called when the contract is active
      */
     modifier whileActive() {
-        require(active, "!active");
+        require(cooldownStart == 0, "!active");
         _;
     }
 
@@ -122,8 +124,6 @@ contract AuraArbBalGrant {
         for (uint256 i; i < 3; i++) {
             tokenOrder[i] = _tokenOrder[i];
         }
-
-        active = true;
 
         _aura.safeApprove(address(BALANCER_VAULT), type(uint256).max);
         BAL.safeApprove(address(BALANCER_VAULT), type(uint256).max);
@@ -165,16 +165,11 @@ contract AuraArbBalGrant {
         _exitPool(_minOuts);
     }
 
-    /* ----------------------------------------------------------------
-       Balancer Functions 
-    ---------------------------------------------------------------- */
-
     /**
-     * @notice Allows balancer to change the state of the grant
-     * @param _active the new grant state
+     * @notice Allows auth to start cooldown timer
      */
-    function setActive(bool _active) external onlyBalancer {
-        active = _active;
+    function startCooldown() external onlyAuth {
+        cooldownStart = block.timestamp;
     }
 
     /* ----------------------------------------------------------------

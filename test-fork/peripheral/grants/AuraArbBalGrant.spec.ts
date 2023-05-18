@@ -15,7 +15,7 @@ import {
 } from "../../../types";
 import { config } from "../../../tasks/deploy/mainnet-config";
 import { getPoolAddress, Phase2Deployed } from "../../../scripts/deploySystem";
-import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount } from "../../../test-utils";
+import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, getTimestamp, increaseTime } from "../../../test-utils";
 import { AssetHelpers } from "@balancer-labs/balancer-js";
 
 const FORK_BLOCK = 17274000;
@@ -209,12 +209,6 @@ describe("AuraArbBalGrant", () => {
         it("cannot join as not auth", async () => {
             await expect(grant.connect(random.signer).join(0)).to.be.revertedWith("!auth");
         });
-        it("cannot join while inactive", async () => {
-            await grant.connect(balancer.signer).setActive(false);
-            expect(await grant.active()).eq(false);
-            await expect(grant.connect(project.signer).join(0)).to.be.revertedWith("!active");
-            await grant.connect(balancer.signer).setActive(true);
-        });
         it("can join the balance pool", async () => {
             // fund the grant contract
             await getArb(grant.address, simpleToExactAmount(10));
@@ -227,30 +221,53 @@ describe("AuraArbBalGrant", () => {
             expect(bptBalanceAfter.sub(bptBalanceBefore)).gt(0);
         });
     });
-    describe("set active", () => {
-        it("cannot set the contract to inactive as project", async () => {
-            await expect(grant.connect(project.signer).setActive(true)).to.be.revertedWith("!balancer");
+    describe("start cooldown", () => {
+        it("cannot start cooldown as non auth", async () => {
+            await expect(grant.connect(random.signer).startCooldown()).to.be.revertedWith("!auth");
         });
-        it("cannot set the contract to inactive as random", async () => {
-            await expect(grant.connect(random.signer).setActive(true)).to.be.revertedWith("!balancer");
+        it("cannot exit while active", async () => {
+            expect(await grant.cooldownStart()).eq(0);
+            await expect(grant.connect(balancer.signer).exit([0, 0, 0])).to.be.revertedWith("active");
         });
-        it("can set the contract to inactive", async () => {
-            await grant.connect(balancer.signer).setActive(false);
-            expect(await grant.active()).eq(false);
+        it("cannot withdraw while active", async () => {
+            expect(await grant.cooldownStart()).eq(0);
+            await expect(grant.connect(balancer.signer).withdrawBalances()).to.be.revertedWith("active");
+        });
+        it("can start cooldown", async () => {
+            const ts = await getTimestamp();
+            await grant.connect(balancer.signer).startCooldown();
+            expect(await grant.cooldownStart()).not.eq(0);
+            expect(await grant.cooldownStart()).gte(ts);
+        });
+        it("cannot exit before cooldown period", async () => {
+            expect(await grant.cooldownStart()).not.eq(0);
+            const cooldownStart = await grant.cooldownStart();
+            const cooldownPeriod = await grant.cooldownPeriod();
+            expect(await getTimestamp()).lt(cooldownStart.add(cooldownPeriod));
+            await expect(grant.connect(balancer.signer).exit([0, 0, 0])).to.be.revertedWith("active");
+        });
+        it("cannot withdrawBalances before cooldown period", async () => {
+            expect(await grant.cooldownStart()).not.eq(0);
+            const cooldownStart = await grant.cooldownStart();
+            const cooldownPeriod = await grant.cooldownPeriod();
+            expect(await getTimestamp()).lt(cooldownStart.add(cooldownPeriod));
+            await expect(grant.connect(balancer.signer).withdrawBalances()).to.be.revertedWith("active");
+        });
+        it("cannot join while inactive", async () => {
+            expect(await grant.cooldownStart()).not.eq(0);
+            await expect(grant.connect(project.signer).join(0)).to.be.revertedWith("!active");
+        });
+        it("increase time", async () => {
+            const cooldownStart = await grant.cooldownStart();
+            const cooldownPeriod = await grant.cooldownPeriod();
+            await increaseTime(cooldownStart.add(cooldownPeriod).add(1));
         });
     });
     describe("exit", () => {
         it("cannot exit as not auth", async () => {
             await expect(grant.connect(random.signer).exit([0, 0, 0])).to.be.revertedWith("!auth");
         });
-        it("cannot exit while active", async () => {
-            await grant.connect(balancer.signer).setActive(true);
-            expect(await grant.active()).eq(true);
-            await expect(grant.connect(balancer.signer).exit([0, 0, 0])).to.be.revertedWith("active");
-        });
         it("can exit the pool", async () => {
-            await grant.connect(balancer.signer).setActive(false);
-            expect(await grant.active()).eq(false);
             const bptBalanceBefore = await pool.balanceOf(grant.address);
             expect(bptBalanceBefore).gt(0);
             await grant.connect(balancer.signer).exit([0, 0, 0]);
@@ -262,14 +279,7 @@ describe("AuraArbBalGrant", () => {
         it("cannot withdraw as not auth", async () => {
             await expect(grant.connect(random.signer).withdrawBalances()).to.be.revertedWith("!auth");
         });
-        it("cannot withdraw while active", async () => {
-            await grant.connect(balancer.signer).setActive(true);
-            expect(await grant.active()).eq(true);
-            await expect(grant.connect(balancer.signer).withdrawBalances()).to.be.revertedWith("active");
-        });
         it("withdraw balances", async () => {
-            await grant.connect(balancer.signer).setActive(false);
-            expect(await grant.active()).eq(false);
             await grant.connect(balancer.signer).withdrawBalances();
         });
     });
