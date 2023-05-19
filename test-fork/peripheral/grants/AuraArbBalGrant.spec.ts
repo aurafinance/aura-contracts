@@ -239,6 +239,9 @@ describe("AuraArbBalGrant", () => {
             expect(await grant.cooldownStart()).not.eq(0);
             expect(await grant.cooldownStart()).gte(ts);
         });
+        it("cannot start cooldown again", async () => {
+            await expect(grant.connect(balancer.signer).startCooldown()).to.be.revertedWith("!active");
+        });
         it("cannot exit before cooldown period", async () => {
             expect(await grant.cooldownStart()).not.eq(0);
             const cooldownStart = await grant.cooldownStart();
