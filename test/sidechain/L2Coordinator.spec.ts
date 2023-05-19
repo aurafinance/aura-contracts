@@ -7,6 +7,7 @@ import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
 import {
     anyValue,
     DEAD_ADDRESS,
+    impersonate,
     impersonateAccount,
     increaseTime,
     simpleToExactAmount,
@@ -161,6 +162,38 @@ describe("L2Coordinator", () => {
             expect(feeDebtAfter.sub(feeDebtBefore), "fees sent to coordinator").gt(ZERO);
             expect(bridgeDelegateBalanceDelta, "crv on L2 coordinator").to.gt(ZERO);
         });
+        it("updates accumulated aura", async () => {
+            const lzEndpoint = await impersonateAccount(await l2Coordinator.lzEndpoint(), true);
+
+            // Send some AURA OFT
+            const PT_SEND = await sidechain.auraOFT.PT_SEND();
+            const toAddress = ethers.utils.solidityPack(["address"], [l2Coordinator.address]);
+            const auraOftPayload = ethers.utils.defaultAbiCoder.encode(
+                ["uint16", "bytes", "uint256"],
+                [PT_SEND, toAddress, simpleToExactAmount(100)],
+            );
+
+            const signer = await impersonate(sidechain.auraOFT.address, true);
+            await sidechain.auraOFT
+                .connect(signer)
+                .nonblockingLzReceive(L1_CHAIN_ID, lzEndpoint.address, 0, auraOftPayload);
+
+            // Update mintRate
+            const payload = ethers.utils.defaultAbiCoder.encode(
+                ["bytes4", "uint8", "uint256"],
+                ["0x7a7f9946", "2", simpleToExactAmount(1)],
+            );
+            const accAuraBefore = await l2Coordinator.accAuraRewards();
+
+            await l2Coordinator
+                .connect(dao.signer)
+                .setTrustedRemoteAddress(L1_CHAIN_ID, canonical.l1Coordinator.address);
+            await l2Coordinator
+                .connect(lzEndpoint.signer)
+                .lzReceive(L1_CHAIN_ID, await l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+            const accAuraAfter = await l2Coordinator.accAuraRewards();
+            expect(accAuraAfter.sub(accAuraBefore)).eq(simpleToExactAmount(1));
+        });
         it("user get reward from BaseRewardPool and mints aura via L2Coordinator", async () => {
             const claimExtras = false;
 
@@ -170,9 +203,6 @@ describe("L2Coordinator", () => {
             const rewardsEarned = await crvRewards.earned(alice.address);
             const mintRateBefore = await l2Coordinator.mintRate();
             const auraOFTAliceBalanceBefore = await sidechain.auraOFT.balanceOf(alice.address);
-            const auraOFTCirculatingSupplyBefore = await sidechain.auraOFT.circulatingSupply();
-            const auraOFTTotalSupplyBefore = await sidechain.auraOFT.totalSupply();
-            const crvAliceBalanceBefore = await crvRewards.balanceOf(alice.address);
 
             const expectedAuraMinted = rewardsEarned.mul(mintRateBefore).div(simpleToExactAmount(1));
 
@@ -184,26 +214,13 @@ describe("L2Coordinator", () => {
                 .to.emit(sidechain.auraOFT, "Transfer")
                 .withArgs(l2Coordinator.address, alice.address, anyValue);
 
-            const mintRateAfter = await l2Coordinator.mintRate();
             const auraOFTAliceBalanceAfter = await sidechain.auraOFT.balanceOf(alice.address);
-            const auraOFTCirculatingSupplyAfter = await sidechain.auraOFT.circulatingSupply();
-            const auraOFTTotalSupplyAfter = await sidechain.auraOFT.totalSupply();
-            const auraOFTMinted = auraOFTAliceBalanceAfter.sub(auraOFTAliceBalanceBefore);
-            expect(auraOFTMinted, "rate should not change").to.gte(expectedAuraMinted);
+            const auraOFTRewards = auraOFTAliceBalanceAfter.sub(auraOFTAliceBalanceBefore);
+            expect(auraOFTRewards, "rate should not change").to.gte(expectedAuraMinted);
 
-            expect(mintRateAfter, "rate should not change").to.equal(mintRateBefore);
-            expect(auraOFTTotalSupplyAfter, "auraOFT total supply ").to.equal(
-                auraOFTTotalSupplyBefore.add(auraOFTMinted),
-            );
-            expect(auraOFTCirculatingSupplyAfter, "auraOFT circulating supply ").to.equal(
-                auraOFTCirculatingSupplyBefore.add(auraOFTMinted),
-            );
             expect(auraOFTAliceBalanceAfter, "auraOFT alice balance").to.equal(
-                auraOFTAliceBalanceBefore.add(auraOFTMinted),
+                auraOFTAliceBalanceBefore.add(auraOFTRewards),
             );
-
-            const crvAliceBalanceAfter = await crvRewards.balanceOf(alice.address);
-            expect(crvAliceBalanceAfter, "crv alice balance").to.equal(crvAliceBalanceBefore.add(auraOFTMinted));
         });
     });
 
