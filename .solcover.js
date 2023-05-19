@@ -16,6 +16,8 @@ module.exports = {
         "peripheral/ClaimFeesHelper.sol",
         "peripheral/RewardPoolDepositWrapper.sol",
         "peripheral/AuraMining.sol",
+        "peripheral/AuraViewHelpers.sol",
+        "peripheral/grants/AuraArbBalGrant.sol",
         "peripheral/UniswapMigrator.sol",
         "compounder/rewardHandlers/BBUSDHandler.sol",
     ],
