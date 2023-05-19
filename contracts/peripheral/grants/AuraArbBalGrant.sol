@@ -38,6 +38,13 @@ contract AuraArbBalGrant {
     uint256[3] public tokenOrder;
 
     /* ----------------------------------------------------------------
+       Events 
+    ---------------------------------------------------------------- */
+
+    event StartCooldown(uint256 startTimestamp, uint256 endTimestamp);
+    event WithdrawBalances(uint256 auraBalance, uint256 balBalance, uint256 arbBalance);
+
+    /* ----------------------------------------------------------------
        Constructor 
     ---------------------------------------------------------------- */
 
@@ -140,10 +147,15 @@ contract AuraArbBalGrant {
      */
     function withdrawBalances() external onlyAuth whileInactive {
         // Send AURA to project msig
-        AURA.safeTransfer(project, AURA.balanceOf(address(this)));
+        uint256 auraBalance = AURA.balanceOf(address(this));
+        AURA.safeTransfer(project, auraBalance);
         // Send BAL and ARB to balancer msig
-        BAL.safeTransfer(balancer, BAL.balanceOf(address(this)));
-        ARB.safeTransfer(balancer, ARB.balanceOf(address(this)));
+        uint256 balBalance = BAL.balanceOf(address(this));
+        BAL.safeTransfer(balancer, balBalance);
+        uint256 arbBalance = ARB.balanceOf(address(this));
+        ARB.safeTransfer(balancer, arbBalance);
+
+        emit WithdrawBalances(auraBalance, balBalance, arbBalance);
     }
 
     /**
@@ -161,6 +173,7 @@ contract AuraArbBalGrant {
      */
     function startCooldown() external onlyAuth {
         cooldownStart = block.timestamp;
+        emit StartCooldown(block.timestamp, block.timestamp + cooldownPeriod);
     }
 
     /* ----------------------------------------------------------------
