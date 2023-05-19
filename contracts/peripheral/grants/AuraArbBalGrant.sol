@@ -171,7 +171,7 @@ contract AuraArbBalGrant {
     /**
      * @notice Allows auth to start cooldown timer
      */
-    function startCooldown() external onlyAuth {
+    function startCooldown() external onlyAuth whileActive {
         cooldownStart = block.timestamp;
         emit StartCooldown(block.timestamp, block.timestamp + cooldownPeriod);
     }
