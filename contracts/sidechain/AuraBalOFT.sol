@@ -9,6 +9,13 @@ import { PausableOFT } from "./PausableOFT.sol";
  * @dev Sidechain auraBAL
  */
 contract AuraBalOFT is PausableOFT {
+    /**
+     * @dev Constructs the AuraBalOFT contract.
+     * @param _name       The oft token name
+     * @param _symbol     The oft token symbol
+     * @param _lzEndpoint LayerZero endpoint contract
+     * @param _guardian   The pause guardian address
+     */
     constructor(
         string memory _name,
         string memory _symbol,

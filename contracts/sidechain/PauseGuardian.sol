@@ -5,17 +5,24 @@ import { Pausable } from "@openzeppelin/contracts-0.8/security/Pausable.sol";
 
 /**
  * @title PauseGuardian
+ * @author AuraFinance
+ * @dev Contract module which allows children to implement an emergency stop
+ * mechanism that can be triggered by an authorized immutable guardian address.
  */
 contract PauseGuardian is Pausable {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
-
+    /// @dev The guardian address
     address public immutable guardian;
 
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
+    /**
+     * @dev Constructs the PauseGuardian contract
+     * @param _guardian   The pause guardian address
+     */
 
     constructor(address _guardian) {
         require(_guardian != address(0), "guardian=0");
@@ -35,10 +42,18 @@ contract PauseGuardian is Pausable {
        Core 
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice This function pauses the contract.
+     * @dev This function can only be called by the 'guardian'.
+     */
     function pause() external onlyGuardian {
         _pause();
     }
 
+    /**
+     * @notice This function is used to unpause the contract.
+     * @dev This function can only be called by the 'guardian' of the contract.
+     */
     function unpause() external onlyGuardian {
         _unpause();
     }

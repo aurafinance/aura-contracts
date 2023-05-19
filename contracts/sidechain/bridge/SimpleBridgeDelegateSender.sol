@@ -14,6 +14,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 contract SimpleBridgeDelegateSender is BridgeDelegateSender {
     using SafeERC20 for IERC20;
 
+    /// @dev The ERC20 bridged token address.
     address public immutable token;
 
     /**

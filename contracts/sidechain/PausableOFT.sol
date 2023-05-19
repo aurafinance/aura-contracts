@@ -6,9 +6,18 @@ import { PauseGuardian } from "./PauseGuardian.sol";
 
 /**
  * @title PausableOFT
- * @dev Sidechain AURA
+ * @author AuraFinance
+ * @notice Extension to the OFT standart that allows a `guardian` address to perform an emergency pause
+ *  on the `sendFrom` function.
  */
 contract PausableOFT is OFT, PauseGuardian {
+    /**
+     * @dev Constructs the PausableOFT contract
+     * @param _name       The oft token name
+     * @param _symbol     The oft token symbol
+     * @param _lzEndpoint LayerZero endpoint contract
+     * @param _guardian   The pause guardian address
+     */
     constructor(
         string memory _name,
         string memory _symbol,

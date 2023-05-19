@@ -8,7 +8,7 @@ pragma solidity 0.8.11;
  */
 library CrossChainMessages {
     /// @dev Magic Bytes to pad the custom message with
-    /// bytes4(keccak256("_isCustomMessage(bytes)"))
+    /// bytes4(keccak256("isCustomMessage(bytes)"))
     bytes4 public constant MAGIC_BYTES = 0x7a7f9946;
 
     enum MessageType {
@@ -42,14 +42,27 @@ library CrossChainMessages {
        Encode
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice This function encodes the lock message for the sender and amount.
+     * @dev The function encodes the lock message for the sender and amount using the ABI encoding.
+     * The MAGIC_BYTES and MessageType.LOCK are used to encode the message.
+     */
     function encodeLock(address sender, uint256 amount) internal pure returns (bytes memory) {
         return abi.encode(MAGIC_BYTES, MessageType.LOCK, sender, amount);
     }
 
+    /**
+     * @notice This function encodes fees for a given amount.
+     * @dev The function takes a uint256 amount as an argument and returns a bytes memory.
+     */
     function encodeFees(uint256 amount) internal pure returns (bytes memory) {
         return abi.encode(MAGIC_BYTES, MessageType.FEES, amount);
     }
 
+    /**
+     * @notice encodeFeesCallback() is a function that encodes the cvxAmount and crvFeeAmount into a bytes memory.
+     * @dev The function takes two uint256 parameters, cvxAmount and crvFeeAmount, and returns a bytes memory.
+     */
     function encodeFeesCallback(uint256 cvxAmount, uint256 crvFeeAmount) internal pure returns (bytes memory) {
         return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount, crvFeeAmount);
     }
@@ -58,16 +71,30 @@ library CrossChainMessages {
        Decode 
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice decodeFeesCallback decodes the payload and returns the cvxAmount and crvAmount
+     * @dev decodeFeesCallback takes in a bytes memory _payload and returns a tuple
+     * of uint256 cvxAmount and uint256 crvAmount
+     */
     function decodeFeesCallback(bytes memory _payload) internal pure returns (uint256, uint256) {
         (, , uint256 cvxAmount, uint256 crvAmount) = abi.decode(_payload, (bytes4, uint8, uint256, uint256));
         return (cvxAmount, crvAmount);
     }
 
+    /**
+     * @notice decodeFees() is a function that decodes the fees from a given payload.
+     * @dev decodeFees() takes in a bytes memory _payload and returns a uint256 amount.
+     * It uses the abi.decode() function to decode the payload.
+     */
     function decodeFees(bytes memory _payload) internal pure returns (uint256) {
         (, , uint256 amount) = abi.decode(_payload, (bytes4, uint8, uint256));
         return amount;
     }
 
+    /**
+     * @notice decodeLock() is a function that decodes a payload and returns the sender address and amount.
+     * @dev decodeLock() takes a bytes memory _payload as an argument and returns an address and uint256.
+     * It uses the ABI library to decode the payload and returns the sender address and amount.*/
     function decodeLock(bytes memory _payload) internal pure returns (address, uint256) {
         (, , address sender, uint256 amount) = abi.decode(_payload, (bytes4, uint8, address, uint256));
         return (sender, amount);

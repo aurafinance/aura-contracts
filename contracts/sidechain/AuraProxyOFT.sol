@@ -26,7 +26,15 @@ contract AuraProxyOFT is PausableProxyOFT {
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
-
+    /**
+     * @dev Constructs the AuraProxyOFT contract
+     * @param _lzEndpoint   LayerZero endpoint contract
+     * @param _token        The proxied token (auraBAL)
+     * @param _locker       The Aura Locker contract address
+     * @param _guardian     The pause guardian address
+     * @param _sudo         The super user address
+     * @param _inflowLimit  Initial inflow limit per epoch
+     */
     constructor(
         address _lzEndpoint,
         address _token,
