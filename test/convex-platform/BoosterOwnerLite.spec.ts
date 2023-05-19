@@ -2,10 +2,11 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account, SidechainMultisigConfig } from "types";
+
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
+import { getTimestamp, increaseTimeTo } from "../../test-utils";
 import { DEAD_ADDRESS, ONE_DAY, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import {
     BoosterLite,
     BoosterOwnerLite,
@@ -14,6 +15,7 @@ import {
     IERC20__factory,
     MockERC20__factory,
 } from "../../types/generated";
+import { SidechainDeployed, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 
 describe("BoosterLite", () => {
     let accounts: Signer[];
@@ -26,14 +28,12 @@ describe("BoosterLite", () => {
 
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
-    let canonical: CanonicalPhaseDeployed;
 
     const setup = async () => {
         accounts = await ethers.getSigners();
         const testSetup = await sidechainTestSetup(hre, accounts);
         deployer = testSetup.deployer;
         dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
-        canonical = testSetup.l1.canonical;
         l2mocks = testSetup.l2.mocks;
         l2Multisigs = testSetup.l2.multisigs;
         sidechain = testSetup.l2.sidechain;
@@ -269,8 +269,98 @@ describe("BoosterLite", () => {
             // Then
             expect(await stash.rewardHook(), "rewardHook").to.be.eq(DEAD_ADDRESS);
         });
+        xit("set stash factory implementation", async () => {
+            const poolInfo = await booster.poolInfo(0);
+            const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer.signer);
+
+            // When sets an extra reward
+            await boosterOwner.setStashFactoryImplementation(DEAD_ADDRESS, DEAD_ADDRESS, DEAD_ADDRESS);
+
+            // Then
+            expect(await stash.rewardHook(), "rewardHook").to.be.eq(DEAD_ADDRESS);
+        });
     });
-    describe.skip("shutdownSystem", async () => {
-        // shutdownSystem, queueForceShutdown, forceShutdownSystem
+    describe("shutdown", async () => {
+        describe("shutdownSystem", async () => {
+            before(async () => {
+                await setup();
+            });
+            it("fails if pool manager is not shutdown", async () => {
+                expect(await sidechain.poolManager.isShutdown(), "pool manager is shutdown").to.be.eq(false);
+
+                await expect(
+                    boosterOwner.connect(dao.signer).shutdownSystem(),
+                    "fails shutdownSystem",
+                ).to.be.revertedWith("!poolMgrShutdown");
+            });
+            it("fails if any pool is still alive", async () => {
+                await sidechain.poolManager.connect(dao.signer).shutdownSystem();
+                const poolInfo = await sidechain.booster.poolInfo(0);
+
+                expect(poolInfo.shutdown, "poolInfo.shutdown").to.be.eq(false);
+
+                await expect(
+                    boosterOwner.connect(dao.signer).shutdownSystem(),
+                    "fails shutdownSystem",
+                ).to.be.revertedWith("!poolShutdown");
+            });
+            it("correctly shutdowns system", async () => {
+                await sidechain.poolManager.connect(dao.signer).shutdownPool(0);
+                const poolInfo = await sidechain.booster.poolInfo(0);
+                expect(poolInfo.shutdown, "poolInfo.shutdown").to.be.eq(true);
+
+                const tx = boosterOwner.connect(dao.signer).shutdownSystem();
+                await expect(tx).to.emit(boosterOwner, "ShutdownExecuted");
+                expect(await booster.isShutdown(), "booster shutdown").to.be.eq(true);
+            });
+        });
+        describe("queueForceShutdown", async () => {
+            before(async () => {
+                await setup();
+            });
+            it("fails if pool manager is not shutdown", async () => {
+                expect(await sidechain.poolManager.isShutdown(), "pool manager is shutdown").to.be.eq(false);
+
+                await expect(
+                    boosterOwner.connect(dao.signer).queueForceShutdown(),
+                    "fails queueForceShutdown",
+                ).to.be.revertedWith("!poolMgrShutdown");
+            });
+            it("fails to force shutdown if it has not queued previously", async () => {
+                expect(await sidechain.boosterOwner.isForceTimerStarted(), "isForceTimerStarted").to.be.eq(false);
+
+                await expect(
+                    boosterOwner.connect(dao.signer).forceShutdownSystem(),
+                    "fails forceShutdownSystem",
+                ).to.be.revertedWith("!timer start");
+            });
+            it("correctly queueForceShutdown", async () => {
+                await sidechain.poolManager.connect(dao.signer).shutdownSystem();
+
+                expect(await boosterOwner.isForceTimerStarted(), "isForceTimerStarted").to.be.eq(false);
+                const forceTimestamp = (await getTimestamp()).add(await boosterOwner.FORCE_DELAY());
+
+                const tx = boosterOwner.connect(dao.signer).queueForceShutdown();
+                await expect(tx).to.emit(boosterOwner, "ShutdownStarted");
+                expect(await boosterOwner.isForceTimerStarted(), "isForceTimerStarted").to.be.eq(true);
+                expect(await boosterOwner.forceTimestamp(), "forceTimestamp").to.be.gte(forceTimestamp);
+            });
+            it("fails queueForceShutdown more than once", async () => {
+                expect(await boosterOwner.isForceTimerStarted(), "isForceTimerStarted").to.be.eq(true);
+
+                await expect(
+                    boosterOwner.connect(dao.signer).queueForceShutdown(),
+                    "fails queueForceShutdown",
+                ).to.be.revertedWith("already started");
+            });
+            it("correctly forceShutdownSystem", async () => {
+                const forceTimestamp = await boosterOwner.forceTimestamp();
+                await increaseTimeTo(forceTimestamp.add(1));
+
+                const tx = boosterOwner.connect(dao.signer).forceShutdownSystem();
+                await expect(tx).to.emit(boosterOwner, "ShutdownExecuted");
+                expect(await booster.isShutdown(), "booster shutdown").to.be.eq(true);
+            });
+        });
     });
 });

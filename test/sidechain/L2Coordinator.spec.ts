@@ -1,29 +1,32 @@
+import { expect } from "chai";
 import { Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
+import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 import {
-    DEAD_ADDRESS,
-    ZERO,
-    ZERO_ADDRESS,
     anyValue,
+    DEAD_ADDRESS,
     impersonateAccount,
     increaseTime,
     simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
 } from "../../test-utils";
 import { Account, PoolInfo } from "../../types";
 import { BaseRewardPool__factory, L2Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
-    SideChainTestSetup,
-    sidechainTestSetup,
     CanonicalPhaseDeployed,
     SidechainDeployed,
+    SideChainTestSetup,
+    sidechainTestSetup,
 } from "./sidechainTestSetup";
-import { expect } from "chai";
-import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
 
 describe("L2Coordinator", () => {
     /* -- Declare shared variables -- */
@@ -111,16 +114,17 @@ describe("L2Coordinator", () => {
     describe("setConfig", async () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
-            const selectorHash = l2Coordinator.interface.getSighash("queueNewRewards(address,uint256)");
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
+
             const config = {
                 adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
                 zroPaymentAddress: DEAD_ADDRESS,
             };
 
             //   When  config is set.
-            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selectorHash, config);
+            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, config);
             // No events
-            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selectorHash);
+            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selector);
             expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
             expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
         });
@@ -149,10 +153,6 @@ describe("L2Coordinator", () => {
             const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const bridgeDelegateBalanceAfter = await l2mocks.token.balanceOf(bridgeDelegate);
             const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);
-            console.log(
-                "🚀 ~ file: L2Coordinator.spec.ts:163 ~ it ~ bridgeDelegateBalanceDelta:",
-                bridgeDelegateBalanceDelta,
-            );
 
             await expect(tx)
                 .to.emit(l2mocks.token, "Transfer")
@@ -207,15 +207,16 @@ describe("L2Coordinator", () => {
         });
     });
 
-    describe("Edge cases", () => {
+    describe("edge cases", () => {
         it("setBridgeDelegate fails if caller is not the owner", async () => {
             await expect(l2Coordinator.setBridgeDelegate(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
                 ERRORS.ONLY_OWNER,
             );
         });
         it("setConfig fails if caller is not the owner", async () => {
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
             await expect(
-                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, "0xdd467064", {
+                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, {
                     adapterParams: "0x",
                     zroPaymentAddress: DEAD_ADDRESS,
                 }),
