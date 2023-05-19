@@ -483,6 +483,8 @@ describe("Full Deployment Phase 1", () => {
             const coordinatorBalBefore = await crv.balanceOf(bridgeDelegateSender.address);
             const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const balanceOfRewardContractBefore = await crv.balanceOf(crvRewards.address);
+            const accBalBefore = await sidechain.l2Coordinator.accBalRewards();
+            const callerBalBefore = await crv.balanceOf(deployer.address);
 
             // Earmark rewards sends BAL to the reward contract and
             // the L1Coordinator is notified about new fee debt
@@ -495,12 +497,17 @@ describe("Full Deployment Phase 1", () => {
             const coordinatorBalAfter = await crv.balanceOf(bridgeDelegateSender.address);
             const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const balanceOfRewardContractAfter = await crv.balanceOf(crvRewards.address);
+            const accBalAfter = await sidechain.l2Coordinator.accBalRewards();
+            const callerBalAfter = await crv.balanceOf(deployer.address);
 
             // Verify that the bridge delegate received the fee amount ready to bridge back to L1
             // and verify that the feeDebt on the L1Coordinator has been updated
             const amountOfFees = await toFeeAmount(mintrMintAmount);
+            const callerFee = callerBalAfter.sub(callerBalBefore);
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
+            const accBal = accBalAfter.sub(accBalBefore);
+            expect(accBal).eq(mintrMintAmount.sub(amountOfFees).sub(callerFee));
 
             expect(await l2Coordinator.mintRate()).eq(0);
 
@@ -510,6 +517,7 @@ describe("Full Deployment Phase 1", () => {
             const distributedFeeDebtBefore = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const auraBalanceBefore = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceBefore = await crv.balanceOf(l1Coordinator.address);
+            const accAuraBefore = await sidechain.l2Coordinator.accAuraRewards();
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
@@ -526,15 +534,17 @@ describe("Full Deployment Phase 1", () => {
             const distributedFeeDebtAfter = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const auraOftBalanceAfter = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceAfter = await crv.balanceOf(l1Coordinator.address);
+            const accAuraAfter = await sidechain.l2Coordinator.accAuraRewards();
 
             // Verify balances are correct after AURA has been distributed
             expect(coordinatorAuraOftBalAfter.sub(coordinatorAuraOftBalBefore)).eq(mintAmount);
             expect(distributedFeeDebtAfter.sub(distributedFeeDebtBefore)).eq(feeDebtAfter);
             expect(auraOftBalanceAfter.sub(auraBalanceBefore)).eq(mintAmount);
             expect(crvBalanceBefore.sub(crvBalanceAfter)).eq(amountOfFees);
+            expect(accAuraAfter.sub(accAuraBefore)).eq(mintAmount);
 
             // Calculate what the expected mint rate is going to be on the L2
-            const expectedRate = mintAmount.mul(fullScale).div(mintrMintAmount.sub(amountOfFees));
+            const expectedRate = mintAmount.mul(fullScale).div(accBal);
             const mintRate = await l2Coordinator.mintRate();
             expect(mintRate).eq(expectedRate);
 

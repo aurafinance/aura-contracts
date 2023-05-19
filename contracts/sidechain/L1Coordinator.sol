@@ -216,7 +216,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        bytes memory payload = CCM.encodeFeesCallback(auraAmount, _feeAmount);
+        bytes memory payload = CCM.encodeFeesCallback(auraAmount);
 
         _lzSend(
             _srcChainId, ///////////// Source chain (L2 chain)

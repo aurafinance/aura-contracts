@@ -228,13 +228,15 @@ describe("L2Coordinator", () => {
         });
 
         it("queueNewRewards fails if caller is not booster", async () => {
-            await expect(l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO), "!booster").to.be.revertedWith("!booster");
+            await expect(l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO, ZERO), "!booster").to.be.revertedWith(
+                "!booster",
+            );
         });
         it("queueNewRewards fails bridge delegate is not set", async () => {
             const boosterAccount = await impersonateAccount(sidechain.booster.address);
             await l2Coordinator.connect(dao.signer).setBridgeDelegate(ZERO_ADDRESS);
             await expect(
-                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO),
+                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO, ZERO),
                 "!bridgeDelegate",
             ).to.be.revertedWith("!bridgeDelegate");
         });
