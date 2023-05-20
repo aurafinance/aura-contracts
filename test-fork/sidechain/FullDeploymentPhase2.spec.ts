@@ -49,7 +49,6 @@ describe("Full Deployment Phase 2", () => {
 
     // Canonical chain Contracts
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let sidechainConfig: SidechainConfig;

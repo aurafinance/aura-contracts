@@ -219,7 +219,7 @@ describe("Canonical", () => {
             expect(await crv.balanceOf(bridgeDelegateDeployment.bridgeDelegateReceiver.address)).to.eq(0);
             expect(await crv.balanceOf(canonical.l1Coordinator.address)).to.eq(amount);
         });
-        it("coordinator recieve l2 fees and distribute aura to l1coordinator", async () => {
+        it("coordinator receive l2 fees and distribute aura to l1coordinator", async () => {
             const crv = MockERC20__factory.connect(canonicalConfig.addresses.token, dao.signer);
             const cvx = MockERC20__factory.connect(phase2.cvx.address, dao.signer);
 
@@ -240,7 +240,7 @@ describe("Canonical", () => {
             expect(endBal).eq(0);
             expect(endOFTBalance).to.be.gt(startOFTBalance);
         });
-        it("dissable distributor", async () => {
+        it("disable distributor", async () => {
             expect(await canonical.l1Coordinator.distributors(dao.address)).eq(true);
             await canonical.l1Coordinator.setDistributor(dao.address, false);
             expect(await canonical.l1Coordinator.distributors(dao.address)).eq(false);

@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
 import { impersonateAccount, increaseTime, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import { SimpleBridgeDelegateSender } from "../../types/generated";
@@ -9,7 +10,8 @@ import {
     shouldBehaveLikeBridgeDelegateSender,
 } from "../shared/BridgeDelegateSender.behaviour";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { SideChainTestSetup, sidechainTestSetup, SidechainDeployed } from "./sidechainTestSetup";
+import { SidechainDeployed, SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 
 describe("BridgeDelegateSender", () => {

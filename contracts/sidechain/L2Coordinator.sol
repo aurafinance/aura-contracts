@@ -34,11 +34,15 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     /// @dev The BAL token contract
     address public balToken;
 
-    /// @dev Rate to send CVX on mint
-    uint256 public mintRate;
-
     /// @dev The bridge delegate contract
     address public bridgeDelegate;
+
+    /// @dev Accumulated BAL rewards
+    uint256 public accBalRewards;
+
+    /// @dev Accumulated AURA rewards
+    uint256 public accAuraRewards;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -59,6 +63,19 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     ) NonblockingLzApp(_lzEndpoint) {
         auraOFT = _auraOFT;
         canonicalChainId = _canonicalChainId;
+    }
+
+    /* -------------------------------------------------------------------
+       View Functions
+    ------------------------------------------------------------------- */
+
+    /**
+     * @notice Get mint rate based on accumulated BAL and AURA
+     * @dev Dev mint rate is aura per bal rewards
+     */
+    function mintRate() public view returns (uint256) {
+        if (accBalRewards <= 0) return 0;
+        return accAuraRewards.mul(1e18).div(accBalRewards);
     }
 
     /* -------------------------------------------------------------------
@@ -102,7 +119,14 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function mint(address _to, uint256 _amount) external {
         require(msg.sender == booster, "!booster");
-        uint256 amount = (_amount * mintRate) / 1e18;
+        uint256 _mintRate = mintRate();
+        require(_mintRate > 0, "!mintRate");
+
+        uint256 amount = (_amount * _mintRate) / 1e18;
+
+        accBalRewards = accBalRewards.sub(_amount);
+        accAuraRewards = accAuraRewards.sub(amount);
+
         IERC20(auraOFT).safeTransfer(_to, amount);
     }
 
@@ -110,18 +134,26 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      * @dev Called by the booster.earmarkRewards to register feeDebt with the L1
      *      and receive CVX tokens in return
      * @param _originalSender Sender that initiated the Booster call
-     * @param _rewards Amount of CRV that was received as rewards
+     * @param _fees Amount of CRV that was received as fees
+     * @param _rewards Amount of CRV that was received by the reward contract
      */
-    function queueNewRewards(address _originalSender, uint256 _rewards) external payable {
+    function queueNewRewards(
+        address _originalSender,
+        uint256 _fees,
+        uint256 _rewards
+    ) external payable {
         require(msg.sender == booster, "!booster");
         require(bridgeDelegate != address(0), "!bridgeDelegate");
+
+        // Update accumulated BAL rewards with the latest rewards
+        accBalRewards = accBalRewards.add(_rewards);
 
         // Transfer reward token balance to bridge delegate
         uint256 balance = IERC20(balToken).balanceOf(address(this));
         IERC20(balToken).safeTransfer(bridgeDelegate, balance);
 
         // Notify L1 chain of collected fees
-        bytes memory payload = CCM.encodeFees(_rewards);
+        bytes memory payload = CCM.encodeFees(_fees);
         CrossChainConfig.Config memory config = configs[canonicalChainId][
             keccak256("queueNewRewards(address,uint256)")
         ];
@@ -153,30 +185,11 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
         if (CCM.isCustomMessage(_payload)) {
             CCM.MessageType messageType = CCM.getMessageType(_payload);
             if (messageType == CCM.MessageType.FEES_CALLBACK) {
-                (uint256 cvxAmount, uint256 crvFeeAmount) = CCM.decodeFeesCallback(_payload);
+                uint256 cvxAmount = CCM.decodeFeesCallback(_payload);
 
-                // The mint rate is the amount of CVX we mint for 1 CRV received
-                // It is sent over each time the fee debt is updated on the L1 to try and keep
-                // the L2 rate as close as possible to the L1 rate
-                mintRate = cvxAmount.mul(1e18).div(_feeToRewardAmount(crvFeeAmount));
+                // Update accumulated rewards with the latest AURA distribution
+                accAuraRewards = accAuraRewards.add(cvxAmount);
             }
         }
-    }
-
-    /**
-     * @dev Given an amount of fees tha was paid get the amount of rewards
-     *      that would have been sent to the reward contract
-     *
-     *      total BAL farmed = fees * denominator / incetive %
-     *      total rewards = total BAL farmed - fees
-     *
-     * @param _feeAmount The amount of fees
-     */
-    function _feeToRewardAmount(uint256 _feeAmount) internal view returns (uint256) {
-        uint256 totalIncentives = IBooster(booster).lockIncentive() +
-            IBooster(booster).stakerIncentive() +
-            IBooster(booster).platformFee();
-        uint256 total = _feeAmount.mul(IBooster(booster).FEE_DENOMINATOR()).div(totalIncentives);
-        return total.sub(_feeAmount);
     }
 }

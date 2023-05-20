@@ -60,11 +60,11 @@ library CrossChainMessages {
     }
 
     /**
-     * @notice encodeFeesCallback() is a function that encodes the cvxAmount and crvFeeAmount into a bytes memory.
-     * @dev The function takes two uint256 parameters, cvxAmount and crvFeeAmount, and returns a bytes memory.
+     * @notice encodeFeesCallback() is a function that encodes the cvxAmount into a bytes memory.
+     * @dev The function takes a uint256 parameter cvxAmount, and returns a bytes memory.
      */
-    function encodeFeesCallback(uint256 cvxAmount, uint256 crvFeeAmount) internal pure returns (bytes memory) {
-        return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount, crvFeeAmount);
+    function encodeFeesCallback(uint256 cvxAmount) internal pure returns (bytes memory) {
+        return abi.encode(MAGIC_BYTES, MessageType.FEES_CALLBACK, cvxAmount);
     }
 
     /* -------------------------------------------------------------------
@@ -72,13 +72,12 @@ library CrossChainMessages {
     ------------------------------------------------------------------- */
 
     /**
-     * @notice decodeFeesCallback decodes the payload and returns the cvxAmount and crvAmount
-     * @dev decodeFeesCallback takes in a bytes memory _payload and returns a tuple
-     * of uint256 cvxAmount and uint256 crvAmount
+     * @notice decodeFeesCallback decodes the payload and returns the cvxAmount
+     * @dev decodeFeesCallback takes in a bytes memory _payload and returns an uint256 cvxAmount
      */
-    function decodeFeesCallback(bytes memory _payload) internal pure returns (uint256, uint256) {
-        (, , uint256 cvxAmount, uint256 crvAmount) = abi.decode(_payload, (bytes4, uint8, uint256, uint256));
-        return (cvxAmount, crvAmount);
+    function decodeFeesCallback(bytes memory _payload) internal pure returns (uint256) {
+        (, , uint256 cvxAmount) = abi.decode(_payload, (bytes4, uint8, uint256));
+        return (cvxAmount);
     }
 
     /**

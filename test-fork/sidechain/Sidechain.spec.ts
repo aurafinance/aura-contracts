@@ -311,11 +311,13 @@ describe("Sidechain", () => {
     describe("Setup L2 Coordinator to be able to mint rewards", () => {
         it("Can send a payload to set the mint rate", async () => {
             const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
-            const mintRateBefore = await sidechain.l2Coordinator.mintRate();
+            const accAuraRewardsBefore = await sidechain.l2Coordinator.accAuraRewards();
+
+            const amount = simpleToExactAmount(1);
 
             const payload = ethers.utils.defaultAbiCoder.encode(
-                ["bytes4", "uint8", "uint256", "uint256"],
-                ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
+                ["bytes4", "uint8", "uint256"],
+                ["0x7a7f9946", "2", amount],
             );
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
@@ -326,8 +328,8 @@ describe("Sidechain", () => {
                     payload,
                 );
 
-            const mintRateAfter = await sidechain.l2Coordinator.mintRate();
-            expect(mintRateBefore).not.eq(mintRateAfter);
+            const accAuraRewardsAfter = await sidechain.l2Coordinator.accAuraRewards();
+            expect(accAuraRewardsAfter.sub(accAuraRewardsBefore)).eq(amount);
         });
         it("Mint and send aura to l2 coordinator", async () => {
             // Transfer some AURA to L2
