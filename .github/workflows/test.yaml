@@ -14,5 +14,7 @@ jobs:
                   cache: "yarn"
 
             - run: yarn
-            - run: yarn compile
-            - run: yarn test
+            - run: yarn compile:cvx --force
+            - run: yarn compile:aura --force
+            - run: yarn compile:ts
+            - run: DISABLE_GAS_REPORT=true yarn test
