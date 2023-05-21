@@ -1,6 +1,6 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "types/sidechainTypes";
+import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "types/sidechain-types";
 
 import { sidechainNaming } from "../tasks/deploy/sidechain-naming";
 import { deployContract } from "../tasks/utils/deploy-utils";

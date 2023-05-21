@@ -45,7 +45,7 @@ import {
     VoterProxyLite,
     VoterProxyLite__factory,
 } from "../types";
-import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechainTypes";
+import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
 const SALT = "berlin";
