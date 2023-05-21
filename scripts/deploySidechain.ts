@@ -2,6 +2,7 @@ import { ContractTransaction, ethers, Signer } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
+
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
@@ -44,7 +45,7 @@ import {
     VoterProxyLite,
     VoterProxyLite__factory,
 } from "../types";
-import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
+import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechainTypes";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
 const SALT = "berlin";

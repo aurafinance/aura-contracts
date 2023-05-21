@@ -1,4 +1,4 @@
-import { SidechainNaming } from "../../types/sidechain-types";
+import { SidechainNaming } from "../../types/sidechainTypes";
 
 export const sidechainNaming: SidechainNaming = {
     auraOftName: "Aura",

@@ -1,35 +1,36 @@
 import { expect } from "chai";
-import hre, { ethers, network } from "hardhat";
 import { Signer } from "ethers";
+import hre, { ethers, network } from "hardhat";
+
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import {
-    SidechainPhase1Deployed,
-    SidechainPhase2Deployed,
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { Phase6Deployed } from "../../scripts/deploySystem";
+import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
+import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY, impersonate } from "../../test-utils";
+import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
+import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
-    L2Coordinator,
-    ExtraRewardStashV3__factory,
-    LZEndpointMock,
-    ERC20__factory,
-    MockERC20__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
     ERC20,
+    ERC20__factory,
+    ExtraRewardStashV3__factory,
+    L2Coordinator,
+    LZEndpointMock,
+    MockERC20__factory,
+    SidechainConfig,
 } from "../../types";
-import { SidechainConfig } from "../../types/sidechain-types";
 import { increaseTime } from "./../../test-utils/time";
-import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
-import { setupLocalDeployment } from "./setupLocalDeployment";
-import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
 import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const FORKING = process.env.FORKING;
 

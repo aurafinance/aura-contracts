@@ -1,3 +1,3 @@
 export * from "./common"
-export * from "./sidechain-types"
+export * from "./sidechainTypes"
 export * from "./generated"
