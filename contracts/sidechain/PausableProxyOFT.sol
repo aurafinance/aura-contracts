@@ -11,7 +11,7 @@ import { BytesLib } from "../layerzero/util/BytesLib.sol";
 /**
  * @title PausableProxyOFT
  * @author  AuraFinance
- * @notice Extension to the ProxyOFT standart that allows a `guardian` address to perform  an emergency pause.
+ * @notice Extension to the ProxyOFT standard that allows a `guardian` address to perform  an emergency pause.
  *  - When paused all messages received are added to a queue to be processed after `queueDelay` time has passed.
  *  - When paused no messages can be sent via `sendFrom`.
  */

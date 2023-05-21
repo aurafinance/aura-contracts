@@ -14,7 +14,7 @@ jobs:
                   cache: "yarn"
 
             - run: yarn
-            - run: yarn reset
+            - run: yarn compile
             - run: yarn coverage
             - name: Coveralls
               uses: coverallsapp/github-action@master
