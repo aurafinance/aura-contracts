@@ -70,19 +70,17 @@ contract PausableProxyOFT is ProxyOFT, PauseGuardian {
     ------------------------------------------------------------------- */
 
     /**
-     * @param _lzEndpoint   LayerZero endpoint contract
      * @param _token        Proxy token (eg AURA or auraBAL)
-     * @param _guardian     The pause guardian address
      * @param _sudo         The super user address
+     * @param _token        Proxy token (eg AURA or auraBAL)
+     * @param _sudo         Super user
      * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
-        address _lzEndpoint,
         address _token,
-        address _guardian,
         address _sudo,
         uint256 _inflowLimit
-    ) ProxyOFT(_lzEndpoint, _token) PauseGuardian(_guardian) {
+    ) ProxyOFT(_token) {
         sudo = _sudo;
         inflowLimit = _inflowLimit;
         queueDelay = 7 days;

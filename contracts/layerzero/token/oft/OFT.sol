@@ -9,11 +9,7 @@ import "./OFTCore.sol";
 
 // override decimal() function is needed
 contract OFT is OFTCore, ERC20, IOFT {
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _lzEndpoint
-    ) ERC20(_name, _symbol) OFTCore(_lzEndpoint) {}
+    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(OFTCore, IERC165) returns (bool) {
         return

@@ -179,19 +179,19 @@ export interface SidechainPhase2Deployed {
 /**
  * Deploys the Sidechain system contracts.
  *  - Deploys with the same address across all chains the following contracts.
+ *      - AuraOFT
  *      - VoterProxyLite
  *      - BoosterLite
  *      - TokenFactory
  *      - ProxyFactory
  *      - PoolManagerLite
+ *      - L2Coordinator
+ *      - BoosterOwnerLite
  *
  *  - Deploys with the different address the following contracts.
- *      - AuraOFT
- *      - Coordinator
  *      - RewardFactory
  *      - StashFactoryV2
  *      - ExtraRewardStashV3
- *      - BoosterOwnerLite
  *
  * @param {HardhatRuntimeEnvironment} hre - The Hardhat runtime environment
  * @param {Signer} deployer - The deployer signer
@@ -267,6 +267,11 @@ export async function deploySidechainPhase1(
         deployOptionsWithCallbacks([voterProxyInitialize]),
     );
 
+    const auraOFTInitialize = AuraOFT__factory.createInterface().encodeFunctionData("initialize", [
+        extConfig.lzEndpoint,
+        multisigs.pauseGuardian,
+    ]);
+
     const auraOFTTransferOwnership = AuraOFT__factory.createInterface().encodeFunctionData("transferOwnership", [
         deployerAddress,
     ]);
@@ -275,14 +280,8 @@ export async function deploySidechainPhase1(
         create2Factory,
         new AuraOFT__factory(deployer),
         "AuraOFT",
-        [
-            naming.auraOftName,
-            naming.auraOftSymbol,
-            extConfig.lzEndpoint,
-            multisigs.pauseGuardian,
-            extConfig.canonicalChainId,
-        ],
-        deployOptionsWithCallbacks([auraOFTTransferOwnership]),
+        [naming.auraOftName, naming.auraOftSymbol, extConfig.canonicalChainId],
+        deployOptionsWithCallbacks([auraOFTInitialize, auraOFTTransferOwnership]),
     );
 
     const l2CoordinatorTransferOwnership = L2Coordinator__factory.createInterface().encodeFunctionData(
@@ -294,7 +293,7 @@ export async function deploySidechainPhase1(
         create2Factory,
         new L2Coordinator__factory(deployer),
         "L2Coordinator",
-        [extConfig.lzEndpoint, auraOFT.address, extConfig.canonicalChainId],
+        [auraOFT.address, extConfig.canonicalChainId],
         deployOptionsWithCallbacks([l2CoordinatorTransferOwnership]),
     );
     const cvxTokenAddress = l2Coordinator.address;
@@ -379,7 +378,7 @@ export async function deploySidechainPhase1(
 
     let tx: ContractTransaction;
 
-    tx = await l2Coordinator.initialize(booster.address, extConfig.token);
+    tx = await l2Coordinator.initialize(booster.address, extConfig.token, extConfig.lzEndpoint);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.setTrustedRemote(
@@ -524,6 +523,10 @@ export async function deploySidechainPhase2(
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
 
+    const auraBalOFTInitialize = AuraBalOFT__factory.createInterface().encodeFunctionData("initialize", [
+        extConfig.lzEndpoint,
+        multisigs.pauseGuardian,
+    ]);
     const auraBalOFTTransferOwnership = AuraBalOFT__factory.createInterface().encodeFunctionData("transferOwnership", [
         deployerAddress,
     ]);
@@ -532,8 +535,8 @@ export async function deploySidechainPhase2(
         create2Factory,
         new AuraBalOFT__factory(deployer),
         "AuraBalOFT",
-        [naming.auraBalOftName, naming.auraBalOftSymbol, extConfig.lzEndpoint, multisigs.pauseGuardian],
-        deployOptionsWithCallbacks([auraBalOFTTransferOwnership]),
+        [naming.auraBalOftName, naming.auraBalOftSymbol],
+        deployOptionsWithCallbacks([auraBalOFTInitialize, auraBalOFTTransferOwnership]),
     );
 
     const virtualRewardFactory = await deployContractWithCreate2<VirtualRewardFactory, VirtualRewardFactory__factory>(

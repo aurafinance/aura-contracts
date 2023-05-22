@@ -56,11 +56,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
        Constructor 
     ------------------------------------------------------------------- */
 
-    constructor(
-        address _lzEndpoint,
-        address _auraOFT,
-        uint16 _canonicalChainId
-    ) NonblockingLzApp(_lzEndpoint) {
+    constructor(address _auraOFT, uint16 _canonicalChainId) {
         auraOFT = _auraOFT;
         canonicalChainId = _canonicalChainId;
     }
@@ -87,11 +83,17 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      * @dev This function should only be called by the owner of the contract
      * @param _booster Address of the booster
      * @param _balToken Address of the balToken
+     * @param _lzEndpoint   LayerZero endpoint contract
      */
-    function initialize(address _booster, address _balToken) external onlyOwner {
+    function initialize(
+        address _booster,
+        address _balToken,
+        address _lzEndpoint
+    ) external onlyOwner {
         require(booster == address(0), "already initialized");
         booster = _booster;
         balToken = _balToken;
+        _initializeLzApp(_lzEndpoint);
     }
 
     function setBridgeDelegate(address _bridgeDelegate) external onlyOwner {

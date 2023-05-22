@@ -13,18 +13,20 @@ contract PauseGuardian is Pausable {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
+
     /// @dev The guardian address
-    address public immutable guardian;
+    address public guardian;
 
     /* -------------------------------------------------------------------
-       Constructor 
+       Initialize       
     ------------------------------------------------------------------- */
     /**
      * @dev Constructs the PauseGuardian contract
      * @param _guardian   The pause guardian address
      */
 
-    constructor(address _guardian) {
+    function _initializePauseGuardian(address _guardian) internal {
+        require(guardian == address(0), "already initialized");
         require(_guardian != address(0), "guardian=0");
         guardian = _guardian;
     }

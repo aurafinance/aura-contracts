@@ -113,11 +113,13 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address _balToken,
         address _auraToken,
         address _auraOFT
-    ) NonblockingLzApp(_lzEndpoint) {
+    ) {
         booster = _booster;
         balToken = _balToken;
         auraToken = _auraToken;
         auraOFT = _auraOFT;
+
+        _initializeLzApp(_lzEndpoint);
 
         IERC20(_balToken).safeApprove(_booster, type(uint256).max);
         IERC20(_auraToken).safeApprove(_auraOFT, type(uint256).max);

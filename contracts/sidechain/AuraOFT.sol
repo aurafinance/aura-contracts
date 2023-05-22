@@ -17,9 +17,11 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /// @dev canonical chain ID
     uint16 public immutable canonicalChainId;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
+
     /**
      * @dev Emitted when locked cvx on the L1 chain
      * @param caller The msg.sender
@@ -41,11 +43,19 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
     constructor(
         string memory _name,
         string memory _symbol,
-        address _lzEndpoint,
-        address _guardian,
         uint16 _canonicalChainId
-    ) PausableOFT(_name, _symbol, _lzEndpoint, _guardian) {
+    ) PausableOFT(_name, _symbol) {
         canonicalChainId = _canonicalChainId;
+    }
+
+    /**
+     * Initialize the contract.
+     * @param _lzEndpoint LayerZero endpoint contract
+     * @param _guardian   The pause guardian
+     */
+    function initialize(address _lzEndpoint, address _guardian) external onlyOwner {
+        _initializeLzApp(_lzEndpoint);
+        _initializePauseGuardian(_guardian);
     }
 
     /* -------------------------------------------------------------------
