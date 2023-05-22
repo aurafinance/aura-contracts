@@ -80,9 +80,14 @@ describe("AuraBalOFT", () => {
     // Testing contract
     let testSetup: SideChainTestSetup;
     let sidechains: SidechainDeployed[];
+    let idSnapShot: number;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
         accounts = await ethers.getSigners();
         alice = await impersonateAccount(await accounts[1].getAddress());
 

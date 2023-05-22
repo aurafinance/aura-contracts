@@ -67,9 +67,14 @@ describe("AuraBalProxyOFT", () => {
     let l1: L1TestSetup;
     let l2: L2TestSetup;
     let sidechain: SidechainDeployed;
+    let idSnapShot: number;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         alice = await impersonateAccount(await accounts[6].getAddress());

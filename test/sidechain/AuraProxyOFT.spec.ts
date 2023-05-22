@@ -28,9 +28,14 @@ describe("AuraProxyOFT", () => {
     let auraOFT: AuraOFT;
     let auraProxyOFT: AuraProxyOFT;
     let testSetup: SideChainTestSetup;
+    let idSnapShot: number;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         alice = await impersonateAccount(await accounts[1].getAddress());
