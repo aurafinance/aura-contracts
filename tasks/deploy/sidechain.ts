@@ -42,6 +42,7 @@ import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 
 const debug = true;
+const SALT = "shanghai";
 
 /* ----------------------------------------------------------------------------
     Canonical Deployment Tasks
@@ -169,6 +170,7 @@ task("deploy:sidechain:L2:phase1")
             sidechainConfig.extConfig,
             canonical,
             canonicalChainId,
+            SALT,
             debug,
             tskArgs.wait,
         );
@@ -206,6 +208,7 @@ task("deploy:sidechain:L2:phase2")
             canonical,
             sidechainPhase1,
             canonicalChainLzId,
+            SALT,
             debug,
             tskArgs.wait,
         );

@@ -208,6 +208,7 @@ export async function deploySidechainPhase1(
     extConfig: ExtSidechainConfig,
     canonical: CanonicalPhase1Deployed,
     canonicalLzChainId: number,
+    salt: string = SALT,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SidechainPhase1Deployed> {
@@ -235,7 +236,7 @@ export async function deploySidechainPhase1(
     //         Protocol DAO : auraOFT.setTrustedRemote(L1_CHAIN_ID, [auraProxyOFT.address, auraOFT.address]);
     // -----------------------------
 
-    const create2Options = { amount: 0, salt: SALT, callbacks: [] };
+    const create2Options = { amount: 0, salt, callbacks: [] };
     const deployOptions = {
         overrides: {},
         create2Options,
@@ -487,6 +488,7 @@ export async function deploySidechainPhase2(
     canonical: CanonicalPhase2Deployed,
     phase1: SidechainPhase1Deployed,
     canonicalLzChainId: number,
+    salt: string = SALT,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SidechainPhase2Deployed> {
@@ -504,7 +506,7 @@ export async function deploySidechainPhase2(
     //         Protocol DAO : auraBalOFT.setTrustedRemote(L1_CHAIN_ID, [auraBalProxyOFT.address, auraBalOFT.address]);
     // -----------------------------
 
-    const create2Options = { amount: 0, salt: SALT, callbacks: [] };
+    const create2Options = { amount: 0, salt, callbacks: [] };
     const deployOptions = {
         overrides: {},
         create2Options,
