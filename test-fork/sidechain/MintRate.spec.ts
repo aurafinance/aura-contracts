@@ -212,7 +212,7 @@ describe("Mint rate", () => {
 
         console.log(`\n---------- snapshot ${i.toString().padStart(3, "0")} ----------`);
         results.forEach(([str, value, color]) => {
-            console.log(str.padEnd(16, " "), !!value ? color(formatEther(value)) : "");
+            console.log(str.padEnd(16, " "), value ? color(formatEther(value)) : "");
         });
     };
 
