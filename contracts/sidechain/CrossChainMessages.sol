@@ -8,7 +8,7 @@ pragma solidity 0.8.11;
  */
 library CrossChainMessages {
     /// @dev Magic Bytes to pad the custom message with
-    /// bytes4(keccak256("isCustomMessage(bytes)"))
+    /// bytes4(keccak256("_isCustomMessage(bytes)"))
     bytes4 public constant MAGIC_BYTES = 0x7a7f9946;
 
     enum MessageType {
