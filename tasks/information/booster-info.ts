@@ -40,7 +40,7 @@ const specialSymbolMatches = [
 ];
 
 const fetchAuraAPRs = async () => {
-    const url = "https://aura-metrics.onrender.com/tvl";
+    const url = "https://cache.aura.finance/aura/tvl-deprecated";
     const response = await axios.get(url);
     return response.data;
 };
@@ -143,6 +143,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             const newPool = poolsNewStash.find(newPool => poolBySymbolVariants(newPool, oldPool));
             const poolMapped = {
                 pid: oldPool.pid,
+                crvRewards: oldPool.crvRewards,
                 name: oldPool.poolName as string,
                 symbol: cleanUpSymbol(oldPool.poolSymbol),
                 isMigrated: !!newPool,
@@ -161,6 +162,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         const poolsMappedNew = poolsNewStash.filter(isPoolNotMigrated).map(newPool => {
             const poolMapped = {
                 pid: newPool.pid,
+                crvRewards: newPool.crvRewards,
                 name: newPool.poolName as string,
                 symbol: cleanUpSymbol(newPool.poolSymbol),
                 isMigrated: true,
