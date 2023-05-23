@@ -36,8 +36,6 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
      * @dev Constructs the AuraOFT contract.
      * @param _name             The oft token name
      * @param _symbol           The oft token symbol
-     * @param _lzEndpoint       LayerZero endpoint contract
-     * @param _guardian         The pause guardian address
      * @param _canonicalChainId The canonical chain id
      */
     constructor(

@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { ethers, Signer } from "ethers";
+import { Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
