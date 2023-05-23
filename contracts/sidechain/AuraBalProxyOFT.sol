@@ -62,6 +62,11 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
        Events 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Emitted when harvest rewards.
+     * @param caller The caller
+     * @param totalUnderlyingSum The total amount of auraBal staked on all sidechains.
+     */
     event Harvest(address indexed caller, uint256 totalUnderlyingSum);
 
     /* -------------------------------------------------------------------
@@ -69,9 +74,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @param _lzEndpoint  LayerZero endpoint contract
-     * @param _token       The proxied token (auraBAL)
-     * @param _vault       AuraBal compounder vault
+     * @dev Constructs the AuraBalProxyOFT contract
+     * @param _lzEndpoint   LayerZero endpoint contract
+     * @param _token        The proxied token (auraBAL)
+     * @param _vault        The AuraBal compounder vault
+     * @param _guardian     The pause guardian address
+     * @param _sudo         The super user address
+     * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
         address _lzEndpoint,
@@ -148,6 +157,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
        View functions 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev returns the circulating amount of tokens on current chain
+     */
     function circulatingSupply() public view override returns (uint256) {
         return innerToken.totalSupply() - internalTotalSupply;
     }
@@ -319,6 +331,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
       Overrides 
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice Rescues the specified amount of tokens from the bridge and transfers them to the specified address.
+     * @dev This function is only callable by the sudo address.
+     * @param _token The address of the token to be rescued.
+     * @param _to The address to which the tokens should be transferred.
+     * @param _amount The amount of tokens to be rescued.
+     */
     function rescue(
         address _token,
         address _to,

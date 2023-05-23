@@ -1,6 +1,9 @@
 import { expect } from "chai";
-import hre, { ethers, network } from "hardhat";
+import { BigNumber } from "ethers";
 import { formatEther } from "ethers/lib/utils";
+import hre, { ethers, network } from "hardhat";
+import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
+
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
@@ -9,24 +12,21 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
-import { SidechainConfig } from "../../types/sidechain-types";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
-    getAuraBal,
+    assertBNClose,
     getAura,
+    getAuraBal,
+    getTimestamp,
     impersonateAccount,
+    increaseTime,
+    increaseTimeTo,
+    ONE_WEEK,
     simpleToExactAmount,
     ZERO_ADDRESS,
-    increaseTime,
-    ONE_WEEK,
-    getTimestamp,
-    increaseTimeTo,
-    assertBNClose,
 } from "../../test-utils";
-import { Account, LZEndpointMock, MockERC20__factory } from "../../types";
-import { BigNumber } from "ethers";
+import { Account, LZEndpointMock, MockERC20__factory, SidechainConfig } from "../../types";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");

@@ -20,12 +20,24 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
+    /**
+     * @dev Emitted when locked cvx on the L1 chain
+     * @param caller The msg.sender
+     * @param amount The amount of cvx locked.
+     */
     event Locked(address indexed caller, uint256 amount);
 
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
-
+    /**
+     * @dev Constructs the AuraOFT contract.
+     * @param _name             The oft token name
+     * @param _symbol           The oft token symbol
+     * @param _lzEndpoint       LayerZero endpoint contract
+     * @param _guardian         The pause guardian address
+     * @param _canonicalChainId The canonical chain id
+     */
     constructor(
         string memory _name,
         string memory _symbol,
@@ -40,6 +52,12 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
        Setter Functions
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _config The configuration.
+     */
     function setConfig(
         uint16 _srcChainId,
         bytes32 _selector,

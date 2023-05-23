@@ -46,6 +46,10 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
+    /**
+     * @dev Emitted when the bridge delegate address is updated.
+     * @param bridgeDelegate    The new bridge delegate address.
+     */
     event BridgeDelegateUpdated(address bridgeDelegate);
 
     /* -------------------------------------------------------------------
@@ -78,6 +82,12 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
        Setter Functions
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice Initializes the booster and balToken addresses
+     * @dev This function should only be called by the owner of the contract
+     * @param _booster Address of the booster
+     * @param _balToken Address of the balToken
+     */
     function initialize(address _booster, address _balToken) external onlyOwner {
         require(booster == address(0), "already initialized");
         booster = _booster;
@@ -167,7 +177,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      *  Called by  L1Coordinator.distributeAura
      */
     function _nonblockingLzReceive(
-        uint16 _srcChainId,
+        uint16, /** _srcChainId */
         bytes memory,
         uint64,
         bytes memory _payload

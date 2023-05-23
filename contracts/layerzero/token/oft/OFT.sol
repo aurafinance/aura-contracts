@@ -26,6 +26,9 @@ contract OFT is OFTCore, ERC20, IOFT {
         return address(this);
     }
 
+    /**
+     * @dev returns the circulating amount of tokens on current chain
+     */
     function circulatingSupply() public view virtual override returns (uint256) {
         return totalSupply();
     }

@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" height="1814px" preserveAspectRatio="none" style="width:1342px;height:1814px;background:#FFFFFF;" version="1.1" viewBox="0 0 1342 1814" width="1342px" zoomAndPan="magnify"><defs/><g><rect fill="none" height="26.4883" id="_title" style="stroke:none;stroke-width:1.0;" width="168" x="580.25" y="5"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="158" x="585.25" y="23.5352">Sidechain deployment</text><!--MD5=[bd86d6d63d927baf366fcb2418693b47]
+cluster Canonical--><g id="cluster_Canonical"><path d="M382.5,43.4883 L453.5,43.4883 A3.75,3.75 0 0 1 456,45.9883 L463,65.9766 L1170.5,65.9766 A2.5,2.5 0 0 1 1173,68.4766 L1173,643.9183 A2.5,2.5 0 0 1 1170.5,646.4183 L382.5,646.4183 A2.5,2.5 0 0 1 380,643.9183 L380,45.9883 A2.5,2.5 0 0 1 382.5,43.4883 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="380" x2="463" y1="65.9766" y2="65.9766"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="70" x="384" y="59.0234">Canonical</text></g><!--MD5=[12dd8532c2f09e8d60ae1336a4b3d7c1]
+cluster c_lzEndpoint--><g id="cluster_c_lzEndpoint"><rect fill="#C0C0C0" height="144.31" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:1.0;" width="198" x="538" y="460.7983"/><rect fill="#C0C0C0" height="10" style="stroke:#181818;stroke-width:1.0;" width="15" x="716" y="465.7983"/><rect fill="#C0C0C0" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="714" y="467.7983"/><rect fill="#C0C0C0" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="714" y="471.7983"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="81" x="596.5" y="487.3334">«LayerZero»</text><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="134" x="570" y="503.8217">LayerZeroEndpoint</text></g><!--MD5=[6afe0657f6de06ae76ca49fa198eb5cd]
+cluster LayerZero--><g id="cluster_LayerZero"><path d="M533.5,670.4183 L604.5,670.4183 A3.75,3.75 0 0 1 607,672.9183 L614,692.9066 L690.5,692.9066 A2.5,2.5 0 0 1 693,695.4066 L693,957.8483 A2.5,2.5 0 0 1 690.5,960.3483 L533.5,960.3483 A2.5,2.5 0 0 1 531,957.8483 L531,672.9183 A2.5,2.5 0 0 1 533.5,670.4183 " fill="#C0C0C0" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="531" x2="614" y1="692.9066" y2="692.9066"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="70" x="535" y="685.9534">LayerZero</text></g><!--MD5=[6beef88cf3405dacf82069836374af83]
+cluster lz_Relayer--><g id="cluster_lz_Relayer"><rect fill="none" height="210.93" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:1.0;" width="108" x="547" y="719.4183"/><rect fill="none" height="10" style="stroke:#181818;stroke-width:1.0;" width="15" x="635" y="724.4183"/><rect fill="none" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="633" y="726.4183"/><rect fill="none" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="633" y="730.4183"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="81" x="560.5" y="745.9534">«LayerZero»</text><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="53" x="574.5" y="762.4417">Relayer</text></g><!--MD5=[0a5042351215e7d47294d63428f2372e]
+cluster Sidechain--><g id="cluster_Sidechain"><path d="M8.5,984.3483 L77.5,984.3483 A3.75,3.75 0 0 1 80,986.8483 L87,1006.8366 L1067.5,1006.8366 A2.5,2.5 0 0 1 1070,1009.3366 L1070,1805.1683 A2.5,2.5 0 0 1 1067.5,1807.6683 L8.5,1807.6683 A2.5,2.5 0 0 1 6,1805.1683 L6,986.8483 A2.5,2.5 0 0 1 8.5,984.3483 " fill="none" style="stroke:#000000;stroke-width:1.5;"/><line style="stroke:#000000;stroke-width:1.5;" x1="6" x2="87" y1="1006.8366" y2="1006.8366"/><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="68" x="10" y="999.8834">Sidechain</text></g><!--MD5=[f2416b592fe6254365dfed994fa53529]
+cluster s_lzEndpoint--><g id="cluster_s_lzEndpoint"><rect fill="#C0C0C0" height="125" rx="2.5" ry="2.5" style="stroke:#181818;stroke-width:1.0;" width="198" x="538" y="1041.3483"/><rect fill="#C0C0C0" height="10" style="stroke:#181818;stroke-width:1.0;" width="15" x="716" y="1046.3483"/><rect fill="#C0C0C0" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="714" y="1048.3483"/><rect fill="#C0C0C0" height="2" style="stroke:#181818;stroke-width:1.0;" width="4" x="714" y="1052.3483"/><text fill="#000000" font-family="sans-serif" font-size="14" font-style="italic" lengthAdjust="spacing" textLength="81" x="596.5" y="1067.8834">«LayerZero»</text><text fill="#000000" font-family="sans-serif" font-size="14" font-weight="bold" lengthAdjust="spacing" textLength="134" x="570" y="1084.3717">LayerZeroEndpoint</text></g><g id="elem_c_ms_g"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="77" x="852.5" y="579.7983"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="55" x="863.5" y="591.3998">«MultiSig»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="63" x="859.5" y="609.4663">Guardian</text><line style="stroke:#181818;stroke-width:0.5;" x1="853.5" x2="928.5" y1="614.4194" y2="614.4194"/></g><g id="elem_c_ms_s"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="65" x="752.5" y="579.7983"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="55" x="757.5" y="591.3998">«MultiSig»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="35" x="767.5" y="609.4663">Sudo</text><line style="stroke:#181818;stroke-width:0.5;" x1="753.5" x2="816.5" y1="614.4194" y2="614.4194"/></g><g id="elem_c_bal"><rect fill="#87CEFA" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="77" x="496.5" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="61" x="504.5" y="200.7098">«Balancer»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="63" x="503.5" y="218.7763">BalToken</text><line style="stroke:#181818;stroke-width:0.5;" x1="497.5" x2="572.5" y1="223.7294" y2="223.7294"/></g><g id="elem_c_booster"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="66" x="396" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="409.5" y="200.7098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="52" x="403" y="218.7763">Booster</text><line style="stroke:#181818;stroke-width:0.5;" x1="397" x2="461" y1="223.7294" y2="223.7294"/></g><g id="elem_c_aura"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="90" x="645" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="670.5" y="200.7098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="76" x="652" y="218.7763">AuraToken</text><line style="stroke:#181818;stroke-width:0.5;" x1="646" x2="734" y1="223.7294" y2="223.7294"/></g><g id="elem_c_auraBal"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="67" x="681.5" y="78.4883"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="695.5" y="90.0898">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="53" x="688.5" y="108.1563">AuraBal</text><line style="stroke:#181818;stroke-width:0.5;" x1="682.5" x2="747.5" y1="113.1094" y2="113.1094"/></g><g id="elem_c_auraLocker"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="92" x="1065" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="1091.5" y="200.7098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="78" x="1072" y="218.7763">AuraLocker</text><line style="stroke:#181818;stroke-width:0.5;" x1="1066" x2="1156" y1="223.7294" y2="223.7294"/></g><g id="elem_c_auraBalVault"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="102" x="770" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="801.5" y="200.7098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="88" x="777" y="218.7763">AuraBalVault</text><line style="stroke:#181818;stroke-width:0.5;" x1="771" x2="871" y1="223.7294" y2="223.7294"/></g><g id="elem_c_auraBalStrategy"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="123" x="907.5" y="189.1083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="949.5" y="200.7098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="109" x="914.5" y="218.7763">AuraBalStrategy</text><line style="stroke:#181818;stroke-width:0.5;" x1="908.5" x2="1029.5" y1="223.7294" y2="223.7294"/></g><g id="elem_c_auraProxyOFT"><rect fill="#F1F1F1" height="125.0625" style="stroke:#181818;stroke-width:0.5;" width="151" x="815.5" y="299.7283"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="871.5" y="311.3298">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="100" x="841" y="329.3963">AuraProxyOFT</text><line style="stroke:#181818;stroke-width:0.5;" x1="816.5" x2="965.5" y1="334.3494" y2="334.3494"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="821.5" y="351.8845">address _lzEndpoint</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="104" x="821.5" y="368.3728">address _token</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="107" x="821.5" y="384.8611">address _locker</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="127" x="821.5" y="401.3494">address _guardian</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="99" x="821.5" y="417.8377">address _sudo</text></g><g id="elem_c_auraBalProxyOFT"><rect fill="#F1F1F1" height="125.0625" style="stroke:#181818;stroke-width:0.5;" width="151" x="629.5" y="299.7283"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="685.5" y="311.3298">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="120" x="645" y="329.3963">AuraBalProxyOFT</text><line style="stroke:#181818;stroke-width:0.5;" x1="630.5" x2="779.5" y1="334.3494" y2="334.3494"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="635.5" y="351.8845">address _lzEndpoint</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="104" x="635.5" y="368.3728">address _token</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="98" x="635.5" y="384.8611">address _vault</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="127" x="635.5" y="401.3494">address _guardian</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="99" x="635.5" y="417.8377">address _sudo</text></g><g id="elem_c_l1Coordinator"><rect fill="#F1F1F1" height="125.0625" style="stroke:#181818;stroke-width:0.5;" width="151" x="443.5" y="299.7283"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="499.5" y="311.3298">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="100" x="469" y="329.3963">L1Coordinator</text><line style="stroke:#181818;stroke-width:0.5;" x1="444.5" x2="593.5" y1="334.3494" y2="334.3494"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="449.5" y="351.8845">address _lzEndpoint</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="118" x="449.5" y="368.3728">address _booster</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="129" x="449.5" y="384.8611">address _balToken</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="449.5" y="401.3494">address _auraToken</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="124" x="449.5" y="417.8377">address _auraOFT</text></g><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="165" x="554.5" y="624.6434">cpo_canonicalLzChainId</text><rect fill="#F1F1F1" height="12" style="stroke:#181818;stroke-width:1.5;" width="12" x="631" y="599.1083"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="160" x="557" y="698.4652">cpi_canonicalLzChainId</text><rect fill="#F1F1F1" height="12" style="stroke:#181818;stroke-width:1.5;" width="12" x="631" y="713.4183"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="165" x="554.5" y="949.8834">cpo_sidechainLzChainId</text><rect fill="#F1F1F1" height="12" style="stroke:#181818;stroke-width:1.5;" width="12" x="631" y="924.3483"/><g id="elem_s_ms_g"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="77" x="800.5" y="1601.4483"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="55" x="811.5" y="1613.0498">«MultiSig»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="63" x="807.5" y="1631.1163">Guardian</text><line style="stroke:#181818;stroke-width:0.5;" x1="801.5" x2="876.5" y1="1636.0694" y2="1636.0694"/></g><g id="elem_s_ms_d"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="65" x="695.5" y="1741.0483"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="55" x="700.5" y="1752.6498">«MultiSig»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="31" x="712.5" y="1770.7163">DAO</text><line style="stroke:#181818;stroke-width:0.5;" x1="696.5" x2="759.5" y1="1775.6694" y2="1775.6694"/></g><g id="elem_s_bal"><rect fill="#87CEFA" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="77" x="377.5" y="1741.0483"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="61" x="385.5" y="1752.6498">«Balancer»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="63" x="384.5" y="1770.7163">BalToken</text><line style="stroke:#181818;stroke-width:0.5;" x1="378.5" x2="453.5" y1="1775.6694" y2="1775.6694"/></g><g id="elem_s_booster"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="90" x="354" y="1432.8783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="379.5" y="1444.4798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="76" x="361" y="1462.5463">BoosterLite</text><line style="stroke:#181818;stroke-width:0.5;" x1="355" x2="443" y1="1467.4994" y2="1467.4994"/></g><g id="elem_s_boosterOwner"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="135" x="479.5" y="1432.8783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="527.5" y="1444.4798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="121" x="486.5" y="1462.5463">BoosterOwnerLite</text><line style="stroke:#181818;stroke-width:0.5;" x1="480.5" x2="613.5" y1="1467.4994" y2="1467.4994"/></g><g id="elem_s_factories"><rect fill="#F1F1F1" height="108.5742" style="stroke:#181818;stroke-width:0.5;" width="219" x="398.5" y="1572.4683"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="488.5" y="1584.0698">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="62" x="477" y="1602.1363">Factories</text><line style="stroke:#181818;stroke-width:0.5;" x1="399.5" x2="616.5" y1="1607.0894" y2="1607.0894"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="207" x="404.5" y="1624.6245">rewardFactory: RewardFactory</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="199" x="404.5" y="1641.1128">stashFactory: StashFactoryV2</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="190" x="404.5" y="1657.6011">tokenFactory: TokenFactory</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="187" x="404.5" y="1674.0894">proxyFactory: ProxyFactory</text></g><g id="elem_s_poolManager"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="128" x="926" y="1432.8783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="970.5" y="1444.4798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="114" x="933" y="1462.5463">PoolManagerLite</text><line style="stroke:#181818;stroke-width:0.5;" x1="927" x2="1053" y1="1467.4994" y2="1467.4994"/></g><g id="elem_s_bdsender"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="166" x="223" y="1247.8083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="286.5" y="1259.4098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="152" x="230" y="1277.4763">BridgeDelegateSender</text><line style="stroke:#181818;stroke-width:0.5;" x1="224" x2="388" y1="1282.4294" y2="1282.4294"/></g><g id="elem_s_voterProxy"><rect fill="#F1F1F1" height="108.5742" style="stroke:#181818;stroke-width:0.5;" width="130" x="687" y="1403.8983"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="732.5" y="1415.4998">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="100" x="702" y="1433.5663">VoterProxyLite</text><line style="stroke:#181818;stroke-width:0.5;" x1="688" x2="816" y1="1438.5194" y2="1438.5194"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="95" x="693" y="1456.0545">address mintr</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="78" x="693" y="1472.5428">address crv</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="101" x="693" y="1489.0311">address owner</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="118" x="693" y="1505.5194">address operator</text></g><g id="elem_s_auraOFT"><rect fill="#F1F1F1" height="92.0859" style="stroke:#181818;stroke-width:0.5;" width="195" x="654.5" y="1227.0783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="732.5" y="1238.6798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="61" x="721.5" y="1256.7463">AuraOFT</text><line style="stroke:#181818;stroke-width:0.5;" x1="655.5" x2="848.5" y1="1261.6994" y2="1261.6994"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="660.5" y="1279.2345">address _lzEndpoint</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="183" x="660.5" y="1295.7228">address _canonicalChainId</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="127" x="660.5" y="1312.2111">address _guardian</text></g><g id="elem_s_l2Coordinator"><rect fill="#F1F1F1" height="141.5508" style="stroke:#181818;stroke-width:0.5;" width="195" x="424.5" y="1202.3483"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="502.5" y="1213.9498">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="100" x="472" y="1232.0163">L2Coordinator</text><line style="stroke:#181818;stroke-width:0.5;" x1="425.5" x2="618.5" y1="1236.9694" y2="1236.9694"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="139" x="430.5" y="1254.5045">address _lzEndpoint</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="124" x="430.5" y="1270.9928">address _auraOFT</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="183" x="430.5" y="1287.4811">address _canonicalChainId</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="118" x="430.5" y="1303.9694">address _booster</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="129" x="430.5" y="1320.4577">address _balToken</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="170" x="430.5" y="1336.9459">address _bridgeDelegate</text></g><g id="elem_s_auraBalOFT"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="95" x="63.5" y="1247.8083"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="91.5" y="1259.4098">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="81" x="70.5" y="1277.4763">AuraBalOFT</text><line style="stroke:#181818;stroke-width:0.5;" x1="64.5" x2="157.5" y1="1282.4294" y2="1282.4294"/></g><g id="elem_s_auraBalVault"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="102" x="180" y="1432.8783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="211.5" y="1444.4798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="88" x="187" y="1462.5463">AuraBalVault</text><line style="stroke:#181818;stroke-width:0.5;" x1="181" x2="281" y1="1467.4994" y2="1467.4994"/></g><g id="elem_s_auraBalStrategy"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="123" x="21.5" y="1432.8783"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="63.5" y="1444.4798">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="109" x="28.5" y="1462.5463">AuraBalStrategy</text><line style="stroke:#181818;stroke-width:0.5;" x1="22.5" x2="143.5" y1="1467.4994" y2="1467.4994"/></g><g id="elem_s_virtualRewardFactory"><rect fill="#F1F1F1" height="50.6211" style="stroke:#181818;stroke-width:0.5;" width="160" x="92" y="1601.4483"/><text fill="#000000" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacing" textLength="39" x="152.5" y="1613.0498">«Aura»</text><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="146" x="99" y="1631.1163">VirtualRewardFactory</text><line style="stroke:#181818;stroke-width:0.5;" x1="93" x2="251" y1="1636.0694" y2="1636.0694"/></g><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="160" x="557" y="1020.3952">cpi_sidechainLzChainId</text><rect fill="#F1F1F1" height="12" style="stroke:#181818;stroke-width:1.5;" width="12" x="631" y="1035.3483"/><g id="elem_GMN88"><path d="M708.5,691.4483 L708.5,715.4183 L643.39,719.4183 L708.5,723.4183 L708.5,747.3799 A0,0 0 0 0 708.5,747.3799 L1335.5,747.3799 A0,0 0 0 0 1335.5,747.3799 L1335.5,701.4483 L1325.5,691.4483 L708.5,691.4483 A0,0 0 0 0 708.5,691.4483 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M1325.5,691.4483 L1325.5,701.4483 L1335.5,701.4483 L1325.5,691.4483 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="552" x="714.5" y="709.0166">canonical.l1Coordinator.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="552" x="714.5" y="724.3272">canonical.auraProxyOFT.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="606" x="714.5" y="739.6377">canonical.auraBalProxyOFT.setTrustedRemote(sidechain.auraBalOFT, canonical.auraBalProxyOFT)</text></g><g id="elem_GMN91"><path d="M709,902.3783 L709,926.3483 L643.24,930.3483 L709,934.3483 L709,958.3099 A0,0 0 0 0 709,958.3099 L1317,958.3099 A0,0 0 0 0 1317,958.3099 L1317,912.3783 L1307,902.3783 L709,902.3783 A0,0 0 0 0 709,902.3783 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><path d="M1307,902.3783 L1307,912.3783 L1317,912.3783 L1307,902.3783 " fill="#FEFFDD" style="stroke:#181818;stroke-width:0.5;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="587" x="715" y="919.9466">sidechain.l2Coordinator,setTrustedRemote(canonical.l1Coordinator, sidechain.l2Coordinator)</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="517" x="715" y="935.2572">sidechain.auraOFT.setTrustedRemote(canonical.auraProxyOFT, sidechain.auraOFT)</text><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="571" x="715" y="950.5677">sidechain.auraBalOFT.setTrustedRemote(canonical.auraBalProxyOFT, sidechain.auraBalOFT)</text></g><!--MD5=[4bf44359e213b43c7db094efea4534c7]
+reverse link c_bal to c_l1Coordinator--><g id="link_c_bal_c_l1Coordinator"><path codeLine="54" d="M531.63,246.1083 C529.94,261.5683 527.82,280.8883 525.8,299.2683 " fill="none" id="c_bal-backto-c_l1Coordinator" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="532.29,241.1583,527.3125,249.6568,531.7331,246.1272,535.2628,250.5478,532.29,241.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c8f12523bb4106bc7d94f0f9fcb858e6]
+reverse link c_aura to c_auraProxyOFT--><g id="link_c_aura_c_auraProxyOFT"><path codeLine="55" d="M728.89,243.6383 C753.42,261.4383 785.92,285.0183 815.38,306.3883 " fill="none" id="c_aura-backto-c_auraProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="725.1,240.1583,730.0563,248.6691,729.1541,243.0847,734.7386,242.1825,725.1,240.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[0ff9eaf41160a5e2f6a0a7ccab9ff110]
+reverse link c_aura to c_auraBalProxyOFT--><g id="link_c_aura_c_auraBalProxyOFT"><path codeLine="56" d="M693.16,246.1083 C694.75,261.5683 696.73,280.8883 698.62,299.2683 " fill="none" id="c_aura-backto-c_auraBalProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="692.54,241.1583,689.4873,250.5221,693.0545,246.1317,697.4449,249.6989,692.54,241.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c25a6ddf13addb0cd42494ea19a4478c]
+reverse link c_aura to c_l1Coordinator--><g id="link_c_aura_c_l1Coordinator"><path codeLine="57" d="M656.87,243.6783 C638.31,259.5083 614.38,279.9183 591.69,299.2683 " fill="none" id="c_aura-backto-c_l1Coordinator" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="659.99,240.1583,650.5474,242.9579,656.1867,243.404,655.7406,249.0432,659.99,240.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[08c16dc8d51746dea124be398f37521d]
+reverse link c_auraBal to c_auraBalProxyOFT--><g id="link_c_auraBal_c_auraBalProxyOFT"><path codeLine="58" d="M676.53,130.6083 C658.13,145.3283 637.98,165.5383 628,189.1083 C612.42,225.8983 629.18,266.7183 650.99,299.3783 " fill="none" id="c_auraBal-backto-c_auraBalProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="680.16,126.9883,670.6072,129.385,676.2225,130.0698,675.5377,135.6851,680.16,126.9883" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[4f700ad9a93cb4a9d34ebb9270b3d4d4]
+reverse link c_auraBal to c_auraBalVault--><g id="link_c_auraBal_c_auraBalVault"><path codeLine="59" d="M743.22,133.7183 C760.01,150.9183 781.07,172.5083 797.04,188.8683 " fill="none" id="c_auraBal-backto-c_auraBalVault" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="740.05,130.4483,743.4552,139.6897,743.5352,134.0335,749.1915,134.1134,740.05,130.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e8817b67036d56791ba2f5156a322010]
+link c_auraBalVault to c_auraBalStrategy--><g id="link_c_auraBalVault_c_auraBalStrategy"><path codeLine="61" d="M872.45,214.4183 C882.03,214.4183 891.61,214.4183 901.19,214.4183 " fill="none" id="c_auraBalVault-to-c_auraBalStrategy" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="906.15,214.4183,897.15,210.4183,901.15,214.4183,897.15,218.4183,906.15,214.4183" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[0b95a7b52a15e68cb5859ea1b5cf53c4]
+link c_auraBalVault to c_auraBalProxyOFT--><g id="link_c_auraBalVault_c_auraBalProxyOFT"><path codeLine="62" d="M797.89,244.4783 C786.37,258.9683 771.92,277.1383 757.87,294.7883 " fill="none" id="c_auraBalVault-c_auraBalProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="754.31,298.2683,763.0436,293.7159,757.423,294.3556,756.7833,288.735,754.31,298.2683" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="801.32,241.1583,792.5864,245.7107,798.207,245.071,798.8467,250.6915,801.32,241.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[eee09df05f44362fe528fcde87d7700e]
+reverse link c_auraLocker to c_auraProxyOFT--><g id="link_c_auraLocker_c_auraProxyOFT"><path codeLine="64" d="M1068.79,243.4083 C1039.98,262.5083 1001,288.3383 966.89,310.9583 " fill="none" id="c_auraLocker-backto-c_auraProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="1072.68,240.1583,1062.9662,241.7839,1068.5088,242.9153,1067.3774,248.4578,1072.68,240.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[f394700a2dbec4c1f043d395491e50d1]
+reverse link c_booster to c_l1Coordinator--><g id="link_c_booster_c_l1Coordinator"><path codeLine="65" d="M447.18,244.8783 C456.84,260.5383 469.1,280.3983 480.74,299.2683 " fill="none" id="c_booster-backto-c_l1Coordinator" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="444.27,241.1583,445.5948,250.9176,446.8969,245.4126,452.4018,246.7147,444.27,241.1583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[be9b029a863d1002782a53c2716f8eba]
+link c_auraProxyOFT to c_lzEndpoint--><g id="link_c_auraProxyOFT_c_lzEndpoint"><path codeLine="67" d="M815.03,415.7283 C809.36,418.9583 803.65,422.0183 798,424.7983 C763.44,441.7783 750.85,436.3983 716,452.7983 C711.23,455.0408 706.3875,457.5033 701.5692,460.0928 C701.2681,460.2547 700.967,460.417 700.6661,460.5798 C700.5909,460.6205 700.5156,460.6613 700.4404,460.702 " fill="none" id="c_auraProxyOFT-to-c_lzEndpoint" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="700.4404,460.702,710.259,459.9306,704.8364,458.3197,706.4473,452.8971,700.4404,460.702" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[0fe4222f37995e192cfcaed0cd8125b4]
+link c_auraProxyOFT to c_ms_s--><g id="link_c_auraProxyOFT_c_ms_s"><path codeLine="68" d="M863.7,425.2883 C842.65,473.1083 814.47,537.1483 798.17,574.1883 " fill="none" id="c_auraProxyOFT-to-c_ms_s" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="795.85,578.4483,803.1318,571.8168,797.8608,573.8704,795.8072,568.5995,795.85,578.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[8e18abcb0d344e41c65670b9fea7497f]
+link c_auraProxyOFT to c_ms_g--><g id="link_c_auraProxyOFT_c_ms_g"><path codeLine="69" d="M891,425.2883 C891,472.9183 891,536.6183 891,573.7283 " fill="none" id="c_auraProxyOFT-to-c_ms_g" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="891,578.4483,895,569.4483,891,573.4483,887,569.4483,891,578.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[4d11a3ed954a1e513a38d9373027588b]
+link c_l1Coordinator to c_lzEndpoint--><g id="link_c_l1Coordinator_c_lzEndpoint"><path codeLine="71" d="M571.79,425.0083 C581.115,435.9233 590.65,447.0808 599.4488,457.3745 C599.9987,458.0179 600.5457,458.6579 601.0897,459.2942 C601.3616,459.6124 601.6328,459.9296 601.9032,460.246 C602.0384,460.4041 602.1734,460.562 602.3082,460.7197 " fill="none" id="c_l1Coordinator-to-c_lzEndpoint" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="602.3082,460.7197,599.5008,451.2795,599.0593,456.9191,593.4197,456.4776,602.3082,460.7197" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[a19024b5103968d8d71f5e17cb2efdfb]
+link c_l1Coordinator to c_auraProxyOFT--><g id="link_c_l1Coordinator_c_auraProxyOFT"><path codeLine="72" d="M578.96,299.4583 C594.18,287.3083 611.39,276.3083 629.5,269.7283 C692.58,246.8083 717.42,246.8083 780.5,269.7283 C796.77,275.6483 812.31,285.1183 826.34,295.7983 " fill="none" id="c_l1Coordinator-to-c_auraProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="830.04,299.4583,825.3981,290.7719,826.0955,296.3856,820.4819,297.083,830.04,299.4583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[32e69abd7a447badcb0e12d69a5e9082]
+link c_auraBalProxyOFT to c_lzEndpoint--><g id="link_c_auraBalProxyOFT_c_lzEndpoint"><path codeLine="74" d="M674.58,425.0083 C669.205,435.9233 663.71,447.0808 658.6388,457.3745 C658.3218,458.0179 658.0065,458.6579 657.693,459.2942 C657.5362,459.6124 657.3799,459.9296 657.2241,460.246 C657.1462,460.4041 657.0684,460.562 656.9907,460.7197 " fill="none" id="c_auraBalProxyOFT-to-c_lzEndpoint" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="656.9907,460.7197,664.5565,454.4143,659.2005,456.2346,657.3802,450.8786,656.9907,460.7197" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[335eb9db74d9e34d655ffde5a2642f2c]
+link c_auraBalProxyOFT to c_auraProxyOFT--><g id="link_c_auraBalProxyOFT_c_auraProxyOFT"><path codeLine="75" d="M780.93,362.2683 C790.42,362.2683 799.92,362.2683 809.41,362.2683 " fill="none" id="c_auraBalProxyOFT-to-c_auraProxyOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="814.32,362.2683,805.32,358.2683,809.32,362.2683,805.32,366.2683,814.32,362.2683" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[0f5f08763305f7c9d0717d62eca4c938]
+link c_auraBalProxyOFT to c_ms_s--><g id="link_c_auraBalProxyOFT_c_ms_s"><path codeLine="76" d="M725.6,425.2883 C741.49,473.1083 762.76,537.1483 775.06,574.1883 " fill="none" id="c_auraBalProxyOFT-to-c_ms_s" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="776.81,578.4483,777.7498,568.6444,775.2246,573.7063,770.1626,571.181,776.81,578.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e392917e7a621d675f0aaf7474fd06d3]
+link c_auraBalProxyOFT to c_ms_g--><g id="link_c_auraBalProxyOFT_c_ms_g"><path codeLine="77" d="M752.9,425.2883 C790.14,473.4983 840.1,538.1983 868.59,575.0883 " fill="none" id="c_auraBalProxyOFT-to-c_ms_g" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="871.96,578.4483,869.6231,568.8807,868.9032,574.4915,863.2923,573.7716,871.96,578.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c789b37a6422058d55a3b30b8ca1ca24]
+reverse link s_lzEndpoint to s_auraOFT--><g id="link_s_lzEndpoint_s_auraOFT"><path codeLine="183" d="M668.9071,1166.4319 C668.9925,1166.5404 669.0779,1166.6491 669.1634,1166.7578 C669.5054,1167.1928 669.849,1167.6298 670.1939,1168.0685 C670.8839,1168.946 671.5796,1169.8308 672.2804,1170.7222 C675.0839,1174.2877 677.9706,1177.9592 680.9075,1181.6945 C692.655,1196.6358 705.205,1212.5983 716.44,1226.8883 " fill="none" id="s_lzEndpoint-backto-s_auraOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="668.9071,1166.4319,671.3255,1175.9792,671.9976,1170.3624,677.6144,1171.0345,668.9071,1166.4319" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[7a2b5b8342a51a8c1fe5914c2656f46a]
+reverse link s_lzEndpoint to s_l2Coordinator--><g id="link_s_lzEndpoint_s_l2Coordinator"><path codeLine="184" d="M605.0187,1166.5263 C604.9569,1166.6049 604.895,1166.6836 604.833,1166.7624 C604.5853,1167.0775 604.3367,1167.3936 604.0874,1167.7107 C603.5887,1168.3449 603.087,1168.9829 602.5825,1169.6245 C594.51,1179.8908 585.71,1191.0833 576.99,1202.1783 " fill="none" id="s_lzEndpoint-backto-s_l2Coordinator" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="605.0187,1166.5263,596.3113,1171.1285,601.9281,1170.4567,602.6,1176.0735,605.0187,1166.5263" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[f1dbb0634f14203ec9fcb7c776089123]
+link s_auraOFT to s_ms_g--><g id="link_s_auraOFT_s_ms_g"><path codeLine="186" d="M789.74,1319.3683 C807.05,1342.9983 825.75,1373.3083 835,1403.8983 C854.91,1469.7583 848.98,1551.7083 843.58,1595.2383 " fill="none" id="s_auraOFT-to-s_ms_g" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="842.83,1600.1283,847.9542,1591.7174,843.473,1595.1698,840.0207,1590.6886,842.83,1600.1283" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[7b64306fa8169c14c292bd8fd12e7495]
+link s_auraOFT to s_ms_d--><g id="link_s_auraOFT_s_ms_d"><path codeLine="187" d="M793.26,1319.5983 C812.87,1343.2883 835.21,1373.5783 850,1403.8983 C877.35,1459.9783 927.7,1627.9083 895,1681.0483 C867.1,1726.3983 806.45,1748.2383 766.43,1758.0783 " fill="none" id="s_auraOFT-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="761.68,1759.4483,771.3608,1761.26,766.5446,1758.2928,769.5119,1753.4766,761.68,1759.4483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[073ec4768e3fa9b51dacb875642fcb94]
+reverse link s_auraOFT to s_auraBalVault--><g id="link_s_auraOFT_s_auraBalVault"><path codeLine="188" d="M680.78,1322.5283 C666.71,1330.5783 651.73,1338.1583 637,1343.8983 C510.3,1393.2483 465.57,1359.6283 337,1403.8983 C315.38,1411.3383 292.58,1422.3483 273.69,1432.4283 " fill="none" id="s_auraOFT-backto-s_auraBalVault" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="684.92,1319.5483,675.1301,1320.624,680.6001,1322.0659,679.1582,1327.5359,684.92,1319.5483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[11ab1f879e687bf3ffa52222aaaf9fc4]
+reverse link s_auraOFT to s_voterProxy--><g id="link_s_auraOFT_s_voterProxy"><path codeLine="189" d="M752,1325.1583 C752,1349.6183 752,1378.9083 752,1403.6783 " fill="none" id="s_auraOFT-backto-s_voterProxy" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="752,1320.3783,748,1329.3783,752,1325.3783,756,1329.3783,752,1320.3783" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c38330f53fc9f63d8d0d2a4a3fc74401]
+reverse link s_auraBalOFT to s_auraBalVault--><g id="link_s_auraBalOFT_s_auraBalVault"><path codeLine="191" d="M130.25,1303.4783 C153.71,1339.2783 192.94,1399.1183 214.88,1432.5983 " fill="none" id="s_auraBalOFT-backto-s_auraBalVault" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="127.18,1299.8083,128.7439,1309.5322,129.9105,1303.9969,135.4457,1305.1634,127.18,1299.8083" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[1d59f2929a529b71e820102523357899]
+reverse link s_auraBalOFT to s_auraBalStrategy--><g id="link_s_auraBalOFT_s_auraBalStrategy"><path codeLine="192" d="M106.37,1304.3683 C100.89,1340.2483 91.84,1399.3883 86.76,1432.5983 " fill="none" id="s_auraBalOFT-backto-s_auraBalStrategy" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="107.22,1299.8083,101.9034,1308.0989,106.4629,1304.7506,109.8112,1309.3102,107.22,1299.8083" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[8e0794d02f94b477807eb37f182ca9c1]
+link s_l2Coordinator to s_auraOFT--><g id="link_s_l2Coordinator_s_auraOFT"><path codeLine="195" d="M619.93,1273.1283 C629.4,1273.1283 638.87,1273.1283 648.34,1273.1283 " fill="none" id="s_l2Coordinator-to-s_auraOFT" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="653.24,1273.1283,644.24,1269.1283,648.24,1273.1283,644.24,1277.1283,653.24,1273.1283" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e2861206e101153c1b21f9cf84104db8]
+link s_l2Coordinator to s_booster--><g id="link_s_l2Coordinator_s_booster"><path codeLine="196" d="M471.6,1349.1283 C453.08,1376.6983 433.17,1406.3283 418.89,1427.5783 " fill="none" id="s_l2Coordinator-s_booster" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="415.57,1431.5183,423.9113,1426.2817,418.36,1427.3691,417.2726,1421.8177,415.57,1431.5183" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="474.8,1345.3783,466.4587,1350.6149,472.01,1349.5275,473.0974,1355.0789,474.8,1345.3783" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[3b02b84fef00a342fc7b5c7633fb9f4f]
+reverse link s_bdsender to s_l2Coordinator--><g id="link_s_bdsender_s_l2Coordinator"><path codeLine="197" d="M394.86,1273.1283 C404.62,1273.1283 414.39,1273.1283 424.15,1273.1283 " fill="none" id="s_bdsender-backto-s_l2Coordinator" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="390.11,1273.1283,399.11,1277.1283,395.11,1273.1283,399.11,1269.1283,390.11,1273.1283" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[60f0fe21c0accbf3b3e321c7b9378603]
+link s_l2Coordinator to s_bal--><g id="link_s_l2Coordinator_s_bal"><path codeLine="198" d="M424.12,1337.1183 C382.57,1364.8983 342.37,1393.5683 337,1403.8983 C308.59,1458.5383 314.36,1623.7683 337,1681.0483 C345.63,1702.8883 362.89,1722.3883 379.08,1737.1183 " fill="none" id="s_l2Coordinator-to-s_bal" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="382.17,1739.7583,378.1029,1730.7884,378.4337,1736.4356,372.7866,1736.7664,382.17,1739.7583" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[c973ad8faa6eb16bc26a7c31e88852c5]
+link s_l2Coordinator to s_ms_d--><g id="link_s_l2Coordinator_s_ms_d"><path codeLine="199" d="M590.98,1344.0983 C606.22,1362.4283 621.06,1382.9583 632,1403.8983 C647.63,1433.8283 701.24,1653.7583 720.79,1735.1683 " fill="none" id="s_l2Coordinator-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="722.14,1739.7883,723.9184,1730.1013,720.9677,1734.9276,716.1414,1731.977,722.14,1739.7883" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[b8302f658caa4541a129713e8fa5b267]
+link s_booster to s_bal--><g id="link_s_booster_s_bal"><path codeLine="203" d="M385.55,1483.9683 C364.85,1525.4983 329.86,1611.4283 353,1681.0483 C359.85,1701.6483 373.91,1721.2983 387.02,1736.4283 " fill="none" id="s_booster-to-s_bal" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="389.68,1739.5683,386.7082,1730.1785,386.3653,1735.8249,380.7188,1735.482,389.68,1739.5683" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[1ccf0f4bc3f0adc31e3a72093acf1cc6]
+link s_booster to s_voterProxy--><g id="link_s_booster_s_voterProxy"><path codeLine="204" d="M418.38,1427.6983 C432.64,1408.2983 453.95,1384.8283 479.5,1373.8983 C546.11,1345.4083 573.92,1350.5583 642.5,1373.8983 C659.58,1379.7083 676.08,1389.3883 690.86,1400.1483 " fill="none" id="s_booster-s_voterProxy" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="694.39,1403.5183,689.5557,1394.9375,690.378,1400.5343,684.7813,1401.3567,694.39,1403.5183" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="414.91,1431.5383,423.4209,1426.5819,417.8364,1427.4841,416.9342,1421.8997,414.91,1431.5383" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[f8f65d8756e9d73c898f47443f8adbfb]
+link s_booster to s_poolManager--><g id="link_s_booster_s_poolManager"><path codeLine="205" d="M418.38,1427.6983 C432.64,1408.2983 453.95,1384.8283 479.5,1373.8983 C554.08,1341.9983 766.17,1352.8483 844.5,1373.8983 C884.34,1384.6083 924.54,1409.1783 952.55,1429.0483 " fill="none" id="s_booster-s_poolManager" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="956.29,1432.4383,951.3139,1423.9389,952.2291,1429.5213,946.6467,1430.4364,956.29,1432.4383" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="414.91,1431.5383,423.4209,1426.5819,417.8364,1427.4841,416.9342,1421.8997,414.91,1431.5383" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[dfba7119e7fe0c7d7dcba196ea7f70c4]
+link s_booster to s_factories--><g id="link_s_booster_s_factories"><path codeLine="206" d="M418.21,1488.5383 C432.43,1510.2683 452.27,1540.5983 469.69,1567.2183 " fill="none" id="s_booster-s_factories" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="472.91,1571.1383,471.3461,1561.4144,470.1795,1566.9497,464.6443,1565.7831,472.91,1571.1383" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="415.08,1484.7683,416.6672,1494.4884,417.8205,1488.9504,423.3585,1490.1036,415.08,1484.7683" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[ab6bc31af6f30eb108d4fbc8f808f399]
+link s_booster to s_boosterOwner--><g id="link_s_booster_s_boosterOwner"><path codeLine="207" d="M450.38,1458.1883 C458.05,1458.1883 465.72,1458.1883 473.39,1458.1883 " fill="none" id="s_booster-s_boosterOwner" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="478.26,1458.1883,469.26,1454.1883,473.26,1458.1883,469.26,1462.1883,478.26,1458.1883" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="445.38,1458.1883,454.38,1462.1883,450.38,1458.1883,454.38,1454.1883,445.38,1458.1883" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[3362800124779402619bb48db2445456]
+link s_booster to s_ms_d--><g id="link_s_booster_s_ms_d"><path codeLine="208" d="M387.13,1483.9583 C367.69,1528.5783 335.5,1623.1683 381,1681.0483 C419.07,1729.4783 607.15,1753.5183 689.39,1761.8583 " fill="none" id="s_booster-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="694.12,1762.4283,685.5641,1757.5502,689.145,1761.9294,684.7658,1765.5102,694.12,1762.4283" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[4969d4e19b8c701de7a5d6687fd9a59a]
+link s_factories to s_bal--><g id="link_s_factories_s_bal"><path codeLine="210" d="M472.17,1681.3483 C459.73,1699.9583 446.25,1720.1183 435.61,1736.0283 " fill="none" id="s_factories-to-s_bal" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="432.41,1739.8183,440.743,1734.5684,435.1934,1735.6646,434.0972,1730.115,432.41,1739.8183" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[bc5e376903521ca9bdb27b387315f885]
+link s_poolManager to s_ms_d--><g id="link_s_poolManager_s_ms_d"><path codeLine="212" d="M988.99,1483.7383 C985.88,1528.4083 973.26,1623.6683 922,1681.0483 C880.91,1727.0483 810.23,1748.9783 766.47,1758.6183 " fill="none" id="s_poolManager-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="761.75,1759.8483,771.3867,1761.8814,766.6398,1758.8045,769.7167,1754.0577,761.75,1759.8483" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[8a115c00d3841c23367abee8e184c2b3]
+link s_boosterOwner to s_poolManager--><g id="link_s_boosterOwner_s_poolManager"><path codeLine="214" d="M578.18,1432.4583 C605.02,1412.0883 645.75,1385.2583 686.5,1373.8983 C754.15,1355.0483 776.68,1355.6783 844.5,1373.8983 C884.34,1384.6083 924.54,1409.1783 952.55,1429.0483 " fill="none" id="s_boosterOwner-to-s_poolManager" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="956.29,1432.4383,951.3139,1423.9389,952.2291,1429.5213,946.6467,1430.4364,956.29,1432.4383" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[e46566aa814f01335ec3d181e5a59a90]
+link s_boosterOwner to s_factories--><g id="link_s_boosterOwner_s_factories"><path codeLine="215" d="M541.25,1483.7683 C536.16,1505.4883 528.54,1538.0383 521.87,1566.5083 " fill="none" id="s_boosterOwner-to-s_factories" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="520.55,1571.1383,526.4999,1563.2898,521.692,1566.2704,518.7114,1561.4626,520.55,1571.1383" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[9661c915083b4c7e1ef619f406afd070]
+link s_boosterOwner to s_ms_d--><g id="link_s_boosterOwner_s_ms_d"><path codeLine="216" d="M569.22,1483.9583 C588.31,1506.0683 615.72,1539.8983 635,1572.4683 C661.79,1617.7183 658.94,1633.7883 682,1681.0483 C691.01,1699.5183 702.01,1719.7483 710.99,1735.7583 " fill="none" id="s_boosterOwner-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="713.71,1739.5783,712.7733,1729.7741,711.2539,1735.2231,705.8049,1733.7038,713.71,1739.5783" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[ca3748ef45db8091f6f0783b8b0e923e]
+link s_auraBalVault to s_virtualRewardFactory--><g id="link_s_auraBalVault_s_virtualRewardFactory"><path codeLine="221" d="M222.29,1483.7683 C211.75,1513.5383 193.99,1563.6683 182.64,1595.7083 " fill="none" id="s_auraBalVault-to-s_virtualRewardFactory" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="180.74,1600.0783,187.5175,1592.9323,182.4108,1595.3657,179.9774,1590.259,180.74,1600.0783" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[28cbd4c2e6cc1d6a394cb592827f4748]
+link s_auraBalVault to s_auraBalStrategy--><g id="link_s_auraBalVault_s_auraBalStrategy"><path codeLine="222" d="M173.69,1458.1883 C166.06,1458.1883 158.44,1458.1883 150.82,1458.1883 " fill="none" id="s_auraBalVault-s_auraBalStrategy" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="145.86,1458.1883,154.86,1462.1883,150.86,1458.1883,154.86,1454.1883,145.86,1458.1883" style="stroke:#181818;stroke-width:1.0;"/><polygon fill="#181818" points="178.52,1458.1883,169.52,1454.1883,173.52,1458.1883,169.52,1462.1883,178.52,1458.1883" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[6d3fe80e3fc6fbacafe945c8930716df]
+link s_voterProxy to s_ms_d--><g id="link_s_voterProxy_s_ms_d"><path codeLine="224" d="M748.97,1512.5783 C746.28,1557.5483 742.01,1623.5483 737,1681.0483 C735.44,1698.9383 733.32,1718.9283 731.53,1734.9483 " fill="none" id="s_voterProxy-to-s_ms_d" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="730.89,1739.6683,735.8675,1731.1698,731.4469,1734.6994,727.9172,1730.2788,730.89,1739.6683" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[fe0dd771188fb0ede3ab83d61ae2072c]
+link s_voterProxy to s_bal--><g id="link_s_voterProxy_s_bal"><path codeLine="225" d="M735.97,1512.6883 C718.53,1562.4783 686.1,1635.6383 635,1681.0483 C584.81,1725.6483 508.48,1747.7683 460.47,1757.8583 " fill="none" id="s_voterProxy-to-s_bal" style="stroke:#181818;stroke-width:1.0;stroke-dasharray:7.0,7.0;"/><polygon fill="#181818" points="455.76,1759.0383,465.3852,1761.1254,460.6556,1758.0219,463.759,1753.2924,455.76,1759.0383" style="stroke:#181818;stroke-width:1.0;"/></g><!--MD5=[399460c99f4e8ce634cc4986ce13ef64]
+link cpo_canonicalLzChainId to cpi_canonicalLzChainId--><g id="link_cpo_canonicalLzChainId_cpi_canonicalLzChainId"><path codeLine="231" d="M637,617.3583 C637,638.9083 637,685.7783 637,707.2583 " fill="none" id="cpo_canonicalLzChainId-cpi_canonicalLzChainId" style="stroke:#181818;stroke-width:5.0;"/><polygon fill="#181818" points="637,712.0583,641,703.0583,637,707.0583,633,703.0583,637,712.0583" style="stroke:#181818;stroke-width:5.0;"/><polygon fill="#181818" points="637,612.5183,633,621.5183,637,617.5183,641,621.5183,637,612.5183" style="stroke:#181818;stroke-width:5.0;"/></g><!--MD5=[f2875bc008c68460ef6165a77a49cb04]
+link cpo_sidechainLzChainId to cpi_sidechainLzChainId--><g id="link_cpo_sidechainLzChainId_cpi_sidechainLzChainId"><path codeLine="232" d="M637,942.5283 C637,963.3783 637,1007.9583 637,1028.9583 " fill="none" id="cpo_sidechainLzChainId-cpi_sidechainLzChainId" style="stroke:#181818;stroke-width:5.0;"/><polygon fill="#181818" points="637,1033.8883,641,1024.8883,637,1028.8883,633,1024.8883,637,1033.8883" style="stroke:#181818;stroke-width:5.0;"/><polygon fill="#181818" points="637,937.6083,633,946.6083,637,942.6083,641,946.6083,637,937.6083" style="stroke:#181818;stroke-width:5.0;"/></g><!--MD5=[58c9bbea96a993ad82b845b99d86713c]
+@startuml
+
+title "Sidechain deployment"
+allow_mixing
+
+package "Canonical" {
+
+        object "Guardian" as  c_ms_g <<MultiSig>>  {
+        }
+        object "Sudo" as  c_ms_s <<MultiSig>>  {
+        }
+
+        component "LayerZeroEndpoint" as c_lzEndpoint <<LayerZero>>  #Silver  {
+                portout  cpo_canonicalLzChainId
+                
+                ' LayerZero
+        }
+        object "BalToken" as  c_bal <<Balancer>> #LightSkyBlue  {
+        }
+        object "Booster" as  c_booster <<Aura>>{
+        }
+        object "AuraToken" as  c_aura <<Aura>>   {
+        }
+        object "AuraBal" as  c_auraBal <<Aura>>  {
+        }
+        object "AuraLocker" as  c_auraLocker <<Aura>>  {
+        }
+        object "AuraBalVault" as  c_auraBalVault <<Aura>>  {
+        }
+        object "AuraBalStrategy" as  c_auraBalStrategy <<Aura>>  {
+        }
+
+        object "AuraProxyOFT" as c_auraProxyOFT<<Aura>> {
+                address _lzEndpoint
+                address _token
+                address _locker
+                address _guardian
+                address _sudo
+        }
+        object "AuraBalProxyOFT" as c_auraBalProxyOFT <<Aura>> {
+                address _lzEndpoint
+                address _token
+                address _vault
+                address _guardian
+                address _sudo
+        }
+        object "L1Coordinator" as c_l1Coordinator <<Aura>> {
+                address _lzEndpoint
+                address _booster
+                address _balToken
+                address _auraToken
+                address _auraOFT
+        }
+
+        c_bal           <.. c_l1Coordinator
+        c_aura          <.. c_auraProxyOFT
+        c_aura          <.. c_auraBalProxyOFT
+        c_aura          <.. c_l1Coordinator
+        c_auraBal       <.. c_auraBalProxyOFT
+        c_auraBal       <.. c_auraBalVault
+
+        c_auraBalVault .> c_auraBalStrategy
+        c_auraBalVault <..> c_auraBalProxyOFT
+
+        c_auraLocker <.. c_auraProxyOFT
+        c_booster <.. c_l1Coordinator
+
+        c_auraProxyOFT ..> c_lzEndpoint
+        c_auraProxyOFT ...> c_ms_s
+        c_auraProxyOFT ...> c_ms_g
+
+        c_l1Coordinator ..> c_lzEndpoint
+        c_l1Coordinator .> c_auraProxyOFT
+
+        c_auraBalProxyOFT ..> c_lzEndpoint
+        c_auraBalProxyOFT .> c_auraProxyOFT
+        c_auraBalProxyOFT ...> c_ms_s
+        c_auraBalProxyOFT ...> c_ms_g
+
+        
+
+        
+}
+
+
+' newpage
+package "LayerZero" #Silver  {
+
+        component "Relayer" as  lz_Relayer <<LayerZero>> {
+                portin  cpi_canonicalLzChainId
+                portout cpo_sidechainLzChainId
+        }
+
+}
+
+
+
+
+' Sidechain
+' newpage
+
+package "Sidechain" {
+        
+
+        object "Guardian" as  s_ms_g <<MultiSig>>  {
+
+        }
+        object "DAO" as  s_ms_d <<MultiSig>> {
+
+        }
+
+        component "LayerZeroEndpoint" as s_lzEndpoint <<LayerZero>>  #Silver  {
+                portin  cpi_sidechainLzChainId
+                ' LayerZero
+        }
+        object "BalToken" as  s_bal <<Balancer>> #LightSkyBlue  {
+        }
+        ' SidechainPhase1Deployed
+        object "BoosterLite" as  s_booster <<Aura>> {
+
+
+        }
+        object "BoosterOwnerLite" as  s_boosterOwner <<Aura>> {
+
+
+        }
+        object "Factories" as  s_factories <<Aura>> {
+                rewardFactory: RewardFactory
+                stashFactory: StashFactoryV2
+                tokenFactory: TokenFactory
+                proxyFactory: ProxyFactory
+        }
+        object "PoolManagerLite" as  s_poolManager <<Aura>> {
+
+
+        }
+        object "BridgeDelegateSender" as  s_bdsender <<Aura>>  {
+
+
+        }
+        object "VoterProxyLite" as s_voterProxy <<Aura>> {
+                address mintr
+                address crv
+                address owner
+                address operator
+        }
+
+        object "AuraOFT" as s_auraOFT <<Aura>>  {
+                address _lzEndpoint
+                address _canonicalChainId
+                address _guardian
+        }
+
+        object "L2Coordinator" as s_l2Coordinator <<Aura>> {
+                address _lzEndpoint
+                address _auraOFT
+                address _canonicalChainId
+                address _booster
+                address _balToken
+                address _bridgeDelegate
+        }
+
+        ' SidechainPhase2Deployed
+        object "AuraBalOFT" as  s_auraBalOFT <<Aura>> {
+
+
+        }
+        object "AuraBalVault" as  s_auraBalVault <<Aura>> {
+
+
+        }
+        object "AuraBalStrategy" as  s_auraBalStrategy <<Aura>> {
+
+
+        }
+        object "VirtualRewardFactory" as  s_virtualRewardFactory <<Aura>> {
+
+
+        }
+
+        ' Sidechain
+
+
+        s_lzEndpoint <.. s_auraOFT
+        s_lzEndpoint <.. s_l2Coordinator
+
+        s_auraOFT ...> s_ms_g
+        s_auraOFT ...> s_ms_d
+        s_auraOFT <.. s_auraBalVault
+        s_auraOFT <.. s_voterProxy
+
+        s_auraBalOFT <.. s_auraBalVault
+        s_auraBalOFT <.. s_auraBalStrategy
+
+        
+        s_l2Coordinator .> s_auraOFT
+        s_l2Coordinator <..> s_booster
+        s_bdsender <. s_l2Coordinator
+        s_l2Coordinator ...> s_bal
+        s_l2Coordinator ...> s_ms_d
+
+
+
+        s_booster .> s_bal
+        s_booster <.> s_voterProxy
+        s_booster <.> s_poolManager
+        s_booster <..> s_factories
+        s_booster <.> s_boosterOwner
+        s_booster ...> s_ms_d
+
+        s_factories ..> s_bal
+
+        s_poolManager ...> s_ms_d
+
+        s_boosterOwner .> s_poolManager
+        s_boosterOwner .> s_factories
+        s_boosterOwner ...> s_ms_d
+
+
+
+
+        s_auraBalVault ..> s_virtualRewardFactory
+        s_auraBalVault <.> s_auraBalStrategy
+
+        s_voterProxy ...> s_ms_d
+        s_voterProxy .> s_bal
+
+
+}
+
+
+cpo_canonicalLzChainId <- -[thickness=5]> cpi_canonicalLzChainId
+cpo_sidechainLzChainId <- -[thickness=5]> cpi_sidechainLzChainId
+
+                note right of cpi_canonicalLzChainId
+                        canonical.l1Coordinator.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)
+                        canonical.auraProxyOFT.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)
+                        canonical.auraBalProxyOFT.setTrustedRemote(sidechain.auraBalOFT, canonical.auraBalProxyOFT)
+                end note
+
+                note right of cpo_sidechainLzChainId
+                        sidechain.l2Coordinator,setTrustedRemote(canonical.l1Coordinator, sidechain.l2Coordinator)
+                        sidechain.auraOFT.setTrustedRemote(canonical.auraProxyOFT, sidechain.auraOFT)
+                        sidechain.auraBalOFT.setTrustedRemote(canonical.auraBalProxyOFT, sidechain.auraBalOFT)
+                end note
+
+
+@enduml
+
+@startuml
+
+title "Sidechain deployment"
+allow_mixing
+
+package "Canonical" {
+
+        object "Guardian" as  c_ms_g <<MultiSig>>  {
+        }
+        object "Sudo" as  c_ms_s <<MultiSig>>  {
+        }
+
+        component "LayerZeroEndpoint" as c_lzEndpoint <<LayerZero>>  #Silver  {
+                portout  cpo_canonicalLzChainId
+                
+        }
+        object "BalToken" as  c_bal <<Balancer>> #LightSkyBlue  {
+        }
+        object "Booster" as  c_booster <<Aura>>{
+        }
+        object "AuraToken" as  c_aura <<Aura>>   {
+        }
+        object "AuraBal" as  c_auraBal <<Aura>>  {
+        }
+        object "AuraLocker" as  c_auraLocker <<Aura>>  {
+        }
+        object "AuraBalVault" as  c_auraBalVault <<Aura>>  {
+        }
+        object "AuraBalStrategy" as  c_auraBalStrategy <<Aura>>  {
+        }
+
+        object "AuraProxyOFT" as c_auraProxyOFT<<Aura>> {
+                address _lzEndpoint
+                address _token
+                address _locker
+                address _guardian
+                address _sudo
+        }
+        object "AuraBalProxyOFT" as c_auraBalProxyOFT <<Aura>> {
+                address _lzEndpoint
+                address _token
+                address _vault
+                address _guardian
+                address _sudo
+        }
+        object "L1Coordinator" as c_l1Coordinator <<Aura>> {
+                address _lzEndpoint
+                address _booster
+                address _balToken
+                address _auraToken
+                address _auraOFT
+        }
+
+        c_bal           <.. c_l1Coordinator
+        c_aura          <.. c_auraProxyOFT
+        c_aura          <.. c_auraBalProxyOFT
+        c_aura          <.. c_l1Coordinator
+        c_auraBal       <.. c_auraBalProxyOFT
+        c_auraBal       <.. c_auraBalVault
+
+        c_auraBalVault .> c_auraBalStrategy
+        c_auraBalVault <..> c_auraBalProxyOFT
+
+        c_auraLocker <.. c_auraProxyOFT
+        c_booster <.. c_l1Coordinator
+
+        c_auraProxyOFT ..> c_lzEndpoint
+        c_auraProxyOFT ...> c_ms_s
+        c_auraProxyOFT ...> c_ms_g
+
+        c_l1Coordinator ..> c_lzEndpoint
+        c_l1Coordinator .> c_auraProxyOFT
+
+        c_auraBalProxyOFT ..> c_lzEndpoint
+        c_auraBalProxyOFT .> c_auraProxyOFT
+        c_auraBalProxyOFT ...> c_ms_s
+        c_auraBalProxyOFT ...> c_ms_g
+
+        
+
+        
+}
+
+
+package "LayerZero" #Silver  {
+
+        component "Relayer" as  lz_Relayer <<LayerZero>> {
+                portin  cpi_canonicalLzChainId
+                portout cpo_sidechainLzChainId
+        }
+
+}
+
+
+
+
+
+package "Sidechain" {
+        
+
+        object "Guardian" as  s_ms_g <<MultiSig>>  {
+
+        }
+        object "DAO" as  s_ms_d <<MultiSig>> {
+
+        }
+
+        component "LayerZeroEndpoint" as s_lzEndpoint <<LayerZero>>  #Silver  {
+                portin  cpi_sidechainLzChainId
+        }
+        object "BalToken" as  s_bal <<Balancer>> #LightSkyBlue  {
+        }
+        object "BoosterLite" as  s_booster <<Aura>> {
+
+
+        }
+        object "BoosterOwnerLite" as  s_boosterOwner <<Aura>> {
+
+
+        }
+        object "Factories" as  s_factories <<Aura>> {
+                rewardFactory: RewardFactory
+                stashFactory: StashFactoryV2
+                tokenFactory: TokenFactory
+                proxyFactory: ProxyFactory
+        }
+        object "PoolManagerLite" as  s_poolManager <<Aura>> {
+
+
+        }
+        object "BridgeDelegateSender" as  s_bdsender <<Aura>>  {
+
+
+        }
+        object "VoterProxyLite" as s_voterProxy <<Aura>> {
+                address mintr
+                address crv
+                address owner
+                address operator
+        }
+
+        object "AuraOFT" as s_auraOFT <<Aura>>  {
+                address _lzEndpoint
+                address _canonicalChainId
+                address _guardian
+        }
+
+        object "L2Coordinator" as s_l2Coordinator <<Aura>> {
+                address _lzEndpoint
+                address _auraOFT
+                address _canonicalChainId
+                address _booster
+                address _balToken
+                address _bridgeDelegate
+        }
+
+        object "AuraBalOFT" as  s_auraBalOFT <<Aura>> {
+
+
+        }
+        object "AuraBalVault" as  s_auraBalVault <<Aura>> {
+
+
+        }
+        object "AuraBalStrategy" as  s_auraBalStrategy <<Aura>> {
+
+
+        }
+        object "VirtualRewardFactory" as  s_virtualRewardFactory <<Aura>> {
+
+
+        }
+
+
+
+        s_lzEndpoint <.. s_auraOFT
+        s_lzEndpoint <.. s_l2Coordinator
+
+        s_auraOFT ...> s_ms_g
+        s_auraOFT ...> s_ms_d
+        s_auraOFT <.. s_auraBalVault
+        s_auraOFT <.. s_voterProxy
+
+        s_auraBalOFT <.. s_auraBalVault
+        s_auraBalOFT <.. s_auraBalStrategy
+
+        
+        s_l2Coordinator .> s_auraOFT
+        s_l2Coordinator <..> s_booster
+        s_bdsender <. s_l2Coordinator
+        s_l2Coordinator ...> s_bal
+        s_l2Coordinator ...> s_ms_d
+
+
+
+        s_booster .> s_bal
+        s_booster <.> s_voterProxy
+        s_booster <.> s_poolManager
+        s_booster <..> s_factories
+        s_booster <.> s_boosterOwner
+        s_booster ...> s_ms_d
+
+        s_factories ..> s_bal
+
+        s_poolManager ...> s_ms_d
+
+        s_boosterOwner .> s_poolManager
+        s_boosterOwner .> s_factories
+        s_boosterOwner ...> s_ms_d
+
+
+
+
+        s_auraBalVault ..> s_virtualRewardFactory
+        s_auraBalVault <.> s_auraBalStrategy
+
+        s_voterProxy ...> s_ms_d
+        s_voterProxy .> s_bal
+
+
+}
+
+
+cpo_canonicalLzChainId <- -[thickness=5]> cpi_canonicalLzChainId
+cpo_sidechainLzChainId <- -[thickness=5]> cpi_sidechainLzChainId
+
+                note right of cpi_canonicalLzChainId
+                        canonical.l1Coordinator.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)
+                        canonical.auraProxyOFT.setTrustedRemote(sidechain.auraOFT, canonical.auraProxyOFT)
+                        canonical.auraBalProxyOFT.setTrustedRemote(sidechain.auraBalOFT, canonical.auraBalProxyOFT)
+                end note
+
+                note right of cpo_sidechainLzChainId
+                        sidechain.l2Coordinator,setTrustedRemote(canonical.l1Coordinator, sidechain.l2Coordinator)
+                        sidechain.auraOFT.setTrustedRemote(canonical.auraProxyOFT, sidechain.auraOFT)
+                        sidechain.auraBalOFT.setTrustedRemote(canonical.auraBalProxyOFT, sidechain.auraBalOFT)
+                end note
+
+
+@enduml
+
+PlantUML version 1.2022.7(Mon Aug 22 19:01:30 CEST 2022)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: GB
+--></g></svg>

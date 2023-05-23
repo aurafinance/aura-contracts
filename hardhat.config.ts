@@ -98,6 +98,7 @@ const config: HardhatUserConfig = {
     docgen: {
         outputDir: "./docs/natspec",
         templates: "./docs/templates",
+        exclude: ["_mocks", "test", "layerzero"],
     },
 };
 
