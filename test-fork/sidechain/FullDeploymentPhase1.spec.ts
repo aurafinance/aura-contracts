@@ -463,9 +463,9 @@ describe("Full Deployment Phase 1", () => {
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
-            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE })).to.be.revertedWith(
-                "!distributor",
-            );
+            await expect(
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
+            ).to.be.revertedWith("!distributor");
         });
         it("Can set deployer as distributor", async () => {
             await expect(
@@ -521,7 +521,7 @@ describe("Full Deployment Phase 1", () => {
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
-                .distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>

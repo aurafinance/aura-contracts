@@ -29,7 +29,15 @@ import { deployContract } from "../../tasks/utils";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { fullScale, getBal, impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount } from "../../test-utils";
+import {
+    fullScale,
+    getBal,
+    impersonateAccount,
+    increaseTime,
+    ONE_WEEK,
+    simpleToExactAmount,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
@@ -164,7 +172,9 @@ describe("Mint rate", () => {
     };
 
     const distribute = async () => {
-        await l1Coordinator.connect(deployer.signer).distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+        await l1Coordinator
+            .connect(deployer.signer)
+            .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
     };
 
     const snapshotRate = async (i: number, pid: number, accounts: Account[]) => {

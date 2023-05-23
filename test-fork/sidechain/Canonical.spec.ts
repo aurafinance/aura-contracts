@@ -226,7 +226,7 @@ describe("Canonical", () => {
             const totalSupplyStart = await cvx.totalSupply();
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            await canonical.l1Coordinator.distributeAura(sidechainLzChainId, "0x", {
+            await canonical.l1Coordinator.distributeAura(sidechainLzChainId, ZERO_ADDRESS, "0x", {
                 value: simpleToExactAmount("0.5"),
             });
 
