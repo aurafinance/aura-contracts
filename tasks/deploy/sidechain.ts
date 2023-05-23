@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { ethers, Signer } from "ethers";
+import { Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
@@ -15,6 +15,10 @@ import {
     PoolManagerLite__factory,
     AuraOFT__factory,
     BoosterOwnerLite__factory,
+    AuraBalOFT__factory,
+    AuraBalVault__factory,
+    SimpleStrategy__factory,
+    VirtualRewardFactory__factory,
 } from "../../types";
 import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -40,7 +44,7 @@ import {
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
-
+import { config as gnosisSidechainConfig } from "./gnosis-config";
 const debug = true;
 const SALT = "shanghai";
 
@@ -291,7 +295,9 @@ task("sidechain:addresses")
         const deployer = await getSigner(hre);
         const configs = {
             [chainIds.goerli]: goerliSidechainConfig,
+            [chainIds.gnosis]: gnosisSidechainConfig,
         };
+
         const config = configs[hre.network.config.chainId];
 
         if (!config) {
@@ -299,32 +305,34 @@ task("sidechain:addresses")
         }
 
         const { extConfig, naming, multisigs } = config;
+        const SALT = "berlin";
 
+        // SidechainPhase1Deployed
         const voterProxyAddress = await computeCreate2Address<VoterProxyLite__factory>(
             extConfig.create2Factory,
             new VoterProxyLite__factory(deployer),
-            "VoterProxyLite",
+            SALT,
             [],
         );
 
         const auraOFTAddress = await computeCreate2Address<AuraOFT__factory>(
             extConfig.create2Factory,
             new AuraOFT__factory(deployer),
-            "AuraOFT",
-            [naming.auraOftName, naming.auraOftSymbol, extConfig.lzEndpoint, extConfig.canonicalChainId],
+            SALT,
+            [naming.auraOftName, naming.auraOftSymbol, multisigs.pauseGuardian, extConfig.canonicalChainId],
         );
 
-        const coordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
+        const l2CoordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
             extConfig.create2Factory,
             new L2Coordinator__factory(deployer),
-            "L2Coordinator",
-            [extConfig.lzEndpoint, auraOFTAddress, extConfig.canonicalChainId],
+            SALT,
+            [auraOFTAddress, extConfig.canonicalChainId],
         );
 
         const boosterAddress = await computeCreate2Address<BoosterLite__factory>(
             extConfig.create2Factory,
             new BoosterLite__factory(deployer),
-            "BoosterLite",
+            SALT,
             [voterProxyAddress],
         );
 
@@ -332,21 +340,21 @@ task("sidechain:addresses")
         const rewardFactoryAddress = await computeCreate2Address<RewardFactory__factory>(
             extConfig.create2Factory,
             new RewardFactory__factory(deployer),
-            "RewardFactory",
+            SALT,
             [boosterAddress, extConfig.token],
         );
 
         const tokenFactoryAddress = await computeCreate2Address<TokenFactory__factory>(
             extConfig.create2Factory,
             new TokenFactory__factory(deployer),
-            "TokenFactory",
+            SALT,
             [boosterAddress, naming.tokenFactoryNamePostfix, naming.auraOftName.toLowerCase()],
         );
 
         const proxyFactoryAddress = await computeCreate2Address<ProxyFactory__factory>(
             extConfig.create2Factory,
             new ProxyFactory__factory(deployer),
-            "ProxyFactory",
+            SALT,
             [],
         );
 
@@ -354,7 +362,7 @@ task("sidechain:addresses")
         const stashFactoryAddress = await computeCreate2Address<StashFactoryV2__factory>(
             extConfig.create2Factory,
             new StashFactoryV2__factory(deployer),
-            "StashFactory",
+            SALT,
             [boosterAddress, rewardFactoryAddress, proxyFactoryAddress],
         );
 
@@ -362,14 +370,14 @@ task("sidechain:addresses")
         const stashV3Address = await computeCreate2Address<ExtraRewardStashV3__factory>(
             extConfig.create2Factory,
             new ExtraRewardStashV3__factory(deployer),
-            "ExtraRewardStashV3",
+            SALT,
             [extConfig.token],
         );
 
         const poolManagerAddress = await computeCreate2Address<PoolManagerLite__factory>(
             extConfig.create2Factory,
             new PoolManagerLite__factory(deployer),
-            "PoolManagerLite",
+            SALT,
             [boosterAddress],
         );
 
@@ -377,23 +385,58 @@ task("sidechain:addresses")
         const boosterOwnerAddress = await computeCreate2Address<BoosterOwnerLite__factory>(
             extConfig.create2Factory,
             new BoosterOwnerLite__factory(deployer),
-            "BoosterOwnerLite",
+            SALT,
             [multisigs.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
         );
 
+        //
+
+        const auraBalOFTAddress = await computeCreate2Address<AuraBalOFT__factory>(
+            extConfig.create2Factory,
+            new AuraBalOFT__factory(deployer),
+            SALT,
+            [naming.auraBalOftName, naming.auraBalOftSymbol, multisigs.pauseGuardian],
+        );
+        const virtualRewardFactoryAddress = await computeCreate2Address<VirtualRewardFactory__factory>(
+            extConfig.create2Factory,
+            new VirtualRewardFactory__factory(deployer),
+            SALT,
+            [],
+        );
+        const auraBalVaultAddress = await computeCreate2Address<AuraBalVault__factory>(
+            extConfig.create2Factory,
+            new AuraBalVault__factory(deployer),
+            SALT,
+            [auraBalOFTAddress, virtualRewardFactoryAddress],
+        );
+
+        const auraBalStrategyAddress = await computeCreate2Address<SimpleStrategy__factory>(
+            extConfig.create2Factory,
+            new SimpleStrategy__factory(deployer),
+            SALT,
+            [auraBalOFTAddress, auraBalVaultAddress],
+        );
+
         const deployed = {
-            voterProxyAddress,
-            coordinatorAddress,
+            "--SidechainPhase1--": "------------------------------------------",
+            auraOFTAddress,
             boosterAddress,
-            tokenFactoryAddress,
+            boosterOwnerAddress,
+            l2CoordinatorAddress,
+            voterProxyAddress,
+            poolManagerAddress,
             proxyFactoryAddress,
             stashFactoryAddress,
+            tokenFactoryAddress,
             stashV3Address,
-            poolManagerAddress,
-            boosterOwnerAddress,
+            "--SidechainPhase2--": "------------------------------------------",
+            auraBalOFTAddress,
+            auraBalVaultAddress,
+            auraBalStrategyAddress,
+            virtualRewardFactoryAddress,
         };
 
         Object.keys(deployed).forEach(key => {
-            console.log(`${key}:`.padEnd(24, " "), deployed[key]);
+            console.log(`${key}:`.padEnd(30, " "), deployed[key]);
         });
     });

@@ -45,6 +45,7 @@ const config: HardhatUserConfig = {
             url: process.env.NODE_URL || "",
         },
         gnosis: {
+            chainId: chainIds.gnosis,
             url: process.env.NODE_URL || "",
         },
         kovan: {

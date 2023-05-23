@@ -15,15 +15,8 @@ contract PausableOFT is OFT, PauseGuardian {
      * @dev Constructs the PausableOFT contract
      * @param _name       The oft token name
      * @param _symbol     The oft token symbol
-     * @param _lzEndpoint LayerZero endpoint contract
-     * @param _guardian   The pause guardian address
      */
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        address _lzEndpoint,
-        address _guardian
-    ) OFT(_name, _symbol, _lzEndpoint) PauseGuardian(_guardian) {}
+    constructor(string memory _name, string memory _symbol) OFT(_name, _symbol) {}
 
     /**
      * @dev Override sendFrom to add pause modifier

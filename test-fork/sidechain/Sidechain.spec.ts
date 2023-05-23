@@ -134,6 +134,13 @@ describe("Sidechain", () => {
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
             expect(await auraOFT.canonicalChainId()).eq(canonicalLzChainId);
+            expect(await auraOFT.guardian()).eq(sidechainConfig.multisigs.pauseGuardian);
+        });
+        it("AuraOFT has correct config", async () => {
+            expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
+            expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
+            expect(await sidechain.auraBalOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
+            expect(await sidechain.auraBalOFT.guardian()).eq(sidechainConfig.multisigs.pauseGuardian);
         });
         it("L2Coordinator has correct config", async () => {
             expect(await l2Coordinator.canonicalChainId()).eq(canonicalLzChainId);

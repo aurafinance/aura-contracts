@@ -39,6 +39,7 @@ export const ERRORS = {
     ONLY_GUARDIAN: "!guardian",
     ONLY_SUDO: "!sudo",
     GUARDIAN_ZERO_ADDRESS: "guardian=0",
+    ENDPOINT_ZERO_ADDRESS: "endpoint=0",
     PAUSED: "Pausable: paused",
     NOT_PAUSED: "Pausable: not paused",
     ONLY_OWNER: "Ownable: caller is not the owner",

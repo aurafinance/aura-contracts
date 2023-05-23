@@ -141,11 +141,13 @@ describe("Canonical", () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
+            expect(await canonical.auraBalProxyOFT.guardian()).eq(mainnetConfig.multisigs.pauseGuardian);
         });
         it("AuraProxyOFT has correct config", async () => {
             expect(await canonical.auraProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraProxyOFT.token()).eq(phase2.cvx.address);
             expect(await canonical.auraProxyOFT.locker()).eq(phase2.cvxLocker.address);
+            expect(await canonical.auraProxyOFT.guardian()).eq(mainnetConfig.multisigs.pauseGuardian);
             expect(Number(await canonical.auraProxyOFT.epochDuration())).eq(Number(60 * 60 * 24 * 7));
             // Allowances
             expect(await phase2.cvx.allowance(canonical.auraProxyOFT.address, phase2.cvxLocker.address)).eq(

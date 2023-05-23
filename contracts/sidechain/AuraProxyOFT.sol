@@ -42,8 +42,11 @@ contract AuraProxyOFT is PausableProxyOFT {
         address _guardian,
         address _sudo,
         uint256 _inflowLimit
-    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _sudo, _inflowLimit) {
+    ) PausableProxyOFT(_token, _sudo, _inflowLimit) {
         locker = _locker;
+
+        _initializeLzApp(_lzEndpoint);
+        _initializePauseGuardian(_guardian);
 
         IERC20(_token).safeApprove(_locker, type(uint256).max);
     }

@@ -110,7 +110,7 @@ describe("AuraProxyOFT", () => {
                     ZERO,
                 ),
                 ERRORS.GUARDIAN_ZERO_ADDRESS,
-            ).to.be.revertedWith(ERRORS.GUARDIAN_ZERO_ADDRESS);
+            ).to.be.revertedWith(ERRORS.ENDPOINT_ZERO_ADDRESS);
         });
     });
 
