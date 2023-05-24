@@ -297,11 +297,11 @@ task("sidechain:addresses")
             [chainIds.goerli]: goerliSidechainConfig,
             [chainIds.gnosis]: gnosisSidechainConfig,
         };
-
-        const config = configs[hre.network.config.chainId];
+        const chainId = hre.network.config.chainId;
+        const config = configs[chainId];
 
         if (!config) {
-            throw new Error(`Config for chain ID ${hre.network.config.chainId} not found`);
+            throw new Error(`Config for chain ID ${chainId} not found`);
         }
 
         const { extConfig, naming, multisigs } = config;
@@ -319,7 +319,7 @@ task("sidechain:addresses")
             extConfig.create2Factory,
             new AuraOFT__factory(deployer),
             SALT,
-            [naming.auraOftName, naming.auraOftSymbol, multisigs.pauseGuardian, extConfig.canonicalChainId],
+            [naming.auraOftName, naming.auraOftSymbol, extConfig.canonicalChainId],
         );
 
         const l2CoordinatorAddress = await computeCreate2Address<L2Coordinator__factory>(
@@ -389,13 +389,11 @@ task("sidechain:addresses")
             [multisigs.daoMultisig, poolManagerAddress, boosterAddress, stashFactoryAddress, ZERO_ADDRESS, true],
         );
 
-        //
-
         const auraBalOFTAddress = await computeCreate2Address<AuraBalOFT__factory>(
             extConfig.create2Factory,
             new AuraBalOFT__factory(deployer),
             SALT,
-            [naming.auraBalOftName, naming.auraBalOftSymbol, multisigs.pauseGuardian],
+            [naming.auraBalOftName, naming.auraBalOftSymbol],
         );
         const virtualRewardFactoryAddress = await computeCreate2Address<VirtualRewardFactory__factory>(
             extConfig.create2Factory,
@@ -428,6 +426,7 @@ task("sidechain:addresses")
             proxyFactoryAddress,
             stashFactoryAddress,
             tokenFactoryAddress,
+            rewardFactoryAddress,
             stashV3Address,
             "--SidechainPhase2--": "------------------------------------------",
             auraBalOFTAddress,
