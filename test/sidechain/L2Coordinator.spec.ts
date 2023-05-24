@@ -106,13 +106,13 @@ describe("L2Coordinator", () => {
         it("initialize fails if initialize is called more than once", async () => {
             expect(await l2Coordinator.booster()).to.not.be.eq(ZERO_ADDRESS);
             await expect(
-                l2Coordinator.connect(dao.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS),
+                l2Coordinator.connect(dao.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "init call twice",
             ).to.be.revertedWith("already initialized");
         });
         it("initialize fails if initialize is caller is not the owner", async () => {
             await expect(
-                l2Coordinator.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS),
+                l2Coordinator.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "onlyOwner",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });

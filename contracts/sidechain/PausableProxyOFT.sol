@@ -11,6 +11,9 @@ import { BytesLib } from "../layerzero/util/BytesLib.sol";
 /**
  * @title PausableProxyOFT
  * @author  AuraFinance
+ * @notice Extension to the ProxyOFT standard that allows a `guardian` address to perform  an emergency pause.
+ *  - When paused all messages received are added to a queue to be processed after `queueDelay` time has passed.
+ *  - When paused no messages can be sent via `sendFrom`.
  */
 contract PausableProxyOFT is ProxyOFT, PauseGuardian {
     using AuraMath for uint256;
@@ -67,19 +70,17 @@ contract PausableProxyOFT is ProxyOFT, PauseGuardian {
     ------------------------------------------------------------------- */
 
     /**
-     * @param _lzEndpoint   Layer Zero endpoint contract
      * @param _token        Proxy token (eg AURA or auraBAL)
-     * @param _guardian     The pause guardian address
+     * @param _sudo         The super user address
+     * @param _token        Proxy token (eg AURA or auraBAL)
      * @param _sudo         Super user
      * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
-        address _lzEndpoint,
         address _token,
-        address _guardian,
         address _sudo,
         uint256 _inflowLimit
-    ) ProxyOFT(_lzEndpoint, _token) PauseGuardian(_guardian) {
+    ) ProxyOFT(_token) {
         sudo = _sudo;
         inflowLimit = _inflowLimit;
         queueDelay = 7 days;

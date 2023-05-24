@@ -17,29 +17,55 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /// @dev canonical chain ID
     uint16 public immutable canonicalChainId;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
+
+    /**
+     * @dev Emitted when locked cvx on the L1 chain
+     * @param caller The msg.sender
+     * @param amount The amount of cvx locked.
+     */
     event Locked(address indexed caller, uint256 amount);
 
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
-
+    /**
+     * @dev Constructs the AuraOFT contract.
+     * @param _name             The oft token name
+     * @param _symbol           The oft token symbol
+     * @param _canonicalChainId The canonical chain id
+     */
     constructor(
         string memory _name,
         string memory _symbol,
-        address _lzEndpoint,
-        address _guardian,
         uint16 _canonicalChainId
-    ) PausableOFT(_name, _symbol, _lzEndpoint, _guardian) {
+    ) PausableOFT(_name, _symbol) {
         canonicalChainId = _canonicalChainId;
+    }
+
+    /**
+     * Initialize the contract.
+     * @param _lzEndpoint LayerZero endpoint contract
+     * @param _guardian   The pause guardian
+     */
+    function initialize(address _lzEndpoint, address _guardian) external onlyOwner {
+        _initializeLzApp(_lzEndpoint);
+        _initializePauseGuardian(_guardian);
     }
 
     /* -------------------------------------------------------------------
        Setter Functions
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _config The configuration.
+     */
     function setConfig(
         uint16 _srcChainId,
         bytes32 _selector,

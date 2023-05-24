@@ -14,8 +14,10 @@ import { IL1Coordinator } from "../interfaces/IL1Coordinator.sol";
 contract BridgeDelegateReceiver is Ownable {
     using SafeERC20 for IERC20;
 
+    /// @dev The L1Coordinator address
     address public immutable l1Coordinator;
 
+    /// @dev The source chain id
     uint16 public immutable srcChainId;
 
     /**

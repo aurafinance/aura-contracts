@@ -175,7 +175,7 @@ describe("AuraBalProxyOFT", () => {
                     ZERO,
                 ),
                 ERRORS.GUARDIAN_ZERO_ADDRESS,
-            ).to.be.revertedWith(ERRORS.GUARDIAN_ZERO_ADDRESS);
+            ).to.be.revertedWith(ERRORS.ENDPOINT_ZERO_ADDRESS);
         });
     });
     describe("normal flow", () => {

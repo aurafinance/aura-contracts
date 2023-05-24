@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import hre, { ethers, network } from "hardhat";
-import { deployContract } from "../../tasks/utils";
+
+import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
@@ -11,6 +12,8 @@ import {
 } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { compareAddresses } from "../../tasks/snapshot/utils";
+import { deployContract } from "../../tasks/utils";
 import {
     assertBNClosePercent,
     fullScale,
@@ -25,21 +28,19 @@ import {
     Account,
     AuraOFT,
     AuraProxyOFT,
-    L2Coordinator,
-    L1Coordinator,
+    BaseRewardPool4626__factory,
+    BridgeDelegateReceiver,
     ERC20,
     ExtraRewardStashV3__factory,
+    L1Coordinator,
+    L2Coordinator,
     LZEndpointMock,
     MockCurveMinter,
     MockCurveMinter__factory,
     MockERC20__factory,
+    SidechainConfig,
     SimpleBridgeDelegateSender,
-    BridgeDelegateReceiver,
-    BaseRewardPool4626__factory,
 } from "../../types";
-import { SidechainConfig } from "../../types/sidechain-types";
-import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
-import { compareAddresses } from "../../tasks/snapshot/utils";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
@@ -463,9 +464,9 @@ describe("Full Deployment Phase 1", () => {
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
-            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE })).to.be.revertedWith(
-                "!distributor",
-            );
+            await expect(
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
+            ).to.be.revertedWith("!distributor");
         });
         it("Can set deployer as distributor", async () => {
             await expect(
@@ -521,7 +522,7 @@ describe("Full Deployment Phase 1", () => {
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
-                .distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>
