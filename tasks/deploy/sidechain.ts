@@ -177,7 +177,7 @@ task("deploy:sidechain:L2:phase1")
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
             canonical,
-            canonicalChainId,
+            lzChainIds[canonicalChainId],
             SALT,
             debug,
             tskArgs.wait,
