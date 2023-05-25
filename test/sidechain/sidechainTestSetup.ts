@@ -141,6 +141,7 @@ export const deployL2 = async (
     const deployer = await impersonateAccount(await accounts[0].getAddress());
     const l2mocks = await deploySidechainMocks(hre, deployer.signer, canonicalChainId, debug, waitForBlocks);
     const l2Multisigs = await getL2MockMultisigs(accounts[3]);
+    const l1Multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
     const dao = await impersonateAccount(l2Multisigs.daoMultisig);
 
     // deploy sidechain
@@ -192,13 +193,20 @@ export const deployL2 = async (
     // Add Mock Gauge
     await sidechain.poolManager["addPool(address)"](l2mocks.gauge.address);
 
+    await setTrustedRemoteCanonicalPhase1(l1.canonical, sidechain, sidechainLzChainId, {
+        ...l1Multisigs,
+        daoMultisig: dao.address,
+    });
+    await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId, {
+        ...l1Multisigs,
+        daoMultisig: dao.address,
+    });
+
     // Emulate DAO Settings - L1 Stuff
     await l1.phase6.booster.connect(dao.signer).setBridgeDelegate(l1.canonical.l1Coordinator.address);
     l1.canonical.l1Coordinator = l1.canonical.l1Coordinator.connect(dao.signer);
     l1.canonical.auraProxyOFT = l1.canonical.auraProxyOFT.connect(dao.signer);
     l1.canonical.auraBalProxyOFT = l1.canonical.auraBalProxyOFT.connect(dao.signer);
-    await setTrustedRemoteCanonicalPhase1(l1.canonical, sidechain, sidechainLzChainId);
-    await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId);
     await l1.canonical.auraBalProxyOFT.setRewardReceiver(sidechainLzChainId, sidechain.auraBalStrategy.address);
 
     // Emulate DAO Settings - L2 Stuff

@@ -224,21 +224,12 @@ task("deploy:sidechain:L2:phase2")
     Canonical Configuration Tasks
 ---------------------------------------------------------------------------- */
 
-const setupCanonicalTask = (
-    deployer: Signer,
-    network: HardhatRuntimeEnvironment["network"],
-    sidechainId: number,
-    force = false,
-) => {
+const setupCanonicalTask = (deployer: Signer, network: HardhatRuntimeEnvironment["network"], sidechainId: number) => {
     assert(canonicalChains.includes(network.config.chainId), "Must be canonical chain");
     assert(sideChains.includes(sidechainId), "Must be sidechain chain");
 
     const canonicalConfig = canonicalConfigs[network.config.chainId];
     assert(canonicalConfig, `Local config for chain ID ${network.config.chainId} not found`);
-
-    if (!force) {
-        assert(Number(sidechainId) === remoteChainMap[network.config.chainId], "Incorrect remote chain ID");
-    }
 
     const sidechainConfig = sidechainConfigs[sidechainId];
     assert(sidechainConfig, `Remote config for chain ID ${sidechainId} not found`);
@@ -248,7 +239,7 @@ const setupCanonicalTask = (
     const canonical = canonicalConfig.getSidechain(deployer);
     const remote = sidechainConfig.getSidechain(deployer);
 
-    return { canonical, remote, sidechainLzChainId };
+    return { canonical, remote, sidechainLzChainId, canonicalConfig };
 };
 
 task("deploy:sidechain:config:L1:phase1")
@@ -258,14 +249,21 @@ task("deploy:sidechain:config:L1:phase1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
-        const { canonical, remote, sidechainLzChainId } = setupCanonicalTask(
+
+        const { canonicalConfig, remote, sidechainLzChainId, canonical } = setupCanonicalTask(
             deployer,
             hre.network,
             sidechainId,
-            tskArgs.force,
         );
 
-        await setTrustedRemoteCanonicalPhase1(canonical, remote, sidechainLzChainId, debug, tskArgs.wait);
+        await setTrustedRemoteCanonicalPhase1(
+            canonical,
+            remote,
+            sidechainLzChainId,
+            canonicalConfig.multisigs,
+            debug,
+            tskArgs.wait,
+        );
     });
 
 task("deploy:sidechain:config:L1:phase2")
@@ -275,14 +273,20 @@ task("deploy:sidechain:config:L1:phase2")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
-        const { canonical, remote, sidechainLzChainId } = setupCanonicalTask(
+        const { canonicalConfig, canonical, remote, sidechainLzChainId } = setupCanonicalTask(
             deployer,
             hre.network,
             sidechainId,
-            tskArgs.force,
         );
 
-        await setTrustedRemoteCanonicalPhase2(canonical, remote, sidechainLzChainId, debug, tskArgs.wait);
+        await setTrustedRemoteCanonicalPhase2(
+            canonical,
+            remote,
+            sidechainLzChainId,
+            canonicalConfig.multisigs,
+            debug,
+            tskArgs.wait,
+        );
     });
 
 /* ----------------------------------------------------------------------------

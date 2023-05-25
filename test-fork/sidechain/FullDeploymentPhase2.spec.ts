@@ -7,8 +7,6 @@ import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    setTrustedRemoteCanonicalPhase1,
-    setTrustedRemoteCanonicalPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
@@ -118,9 +116,6 @@ describe("Full Deployment Phase 2", () => {
             await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
         });
         it("set canonical trusted remotes", async () => {
-            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
-            await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
-
             expect(
                 await canonical.auraBalProxyOFT.isTrustedRemote(
                     L2_CHAIN_ID,

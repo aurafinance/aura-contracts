@@ -99,12 +99,6 @@ export async function deployCanonicalPhase1(
         waitForBlocks,
     );
 
-    let tx = await l1Coordinator.transferOwnership(multisigs.daoMultisig);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await auraProxyOFT.transferOwnership(multisigs.daoMultisig);
-    await waitForTx(tx, debug, waitForBlocks);
-
     return { auraProxyOFT, l1Coordinator };
 }
 
@@ -144,9 +138,6 @@ export async function deployCanonicalPhase2(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await auraBalProxyOFT.setOFT(phase2.cvx.address, canonicalPhase1.auraProxyOFT.address);
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
     return { auraBalProxyOFT };
@@ -624,6 +615,7 @@ export async function setTrustedRemoteCanonicalPhase1(
     canonical: CanonicalPhase1Deployed,
     sidechain: SidechainPhase1Deployed,
     sidechainLzChainId: number,
+    multisigs: MultisigConfig,
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -643,21 +635,31 @@ export async function setTrustedRemoteCanonicalPhase1(
         ethers.utils.solidityPack(["address", "address"], [sidechain.auraOFT.address, canonical.auraProxyOFT.address]),
     );
     await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.l1Coordinator.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.auraProxyOFT.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
 }
 
 export async function setTrustedRemoteCanonicalPhase2(
     canonical: CanonicalPhase2Deployed,
     sidechain: SidechainPhase2Deployed,
     sidechainLzChainId: number,
+    multisigs: MultisigConfig,
     debug = false,
     waitForBlocks = 0,
 ) {
-    const tx = await canonical.auraBalProxyOFT.setTrustedRemote(
+    let tx = await canonical.auraBalProxyOFT.setTrustedRemote(
         sidechainLzChainId,
         ethers.utils.solidityPack(
             ["address", "address"],
             [sidechain.auraBalOFT.address, canonical.auraBalProxyOFT.address],
         ),
     );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 }

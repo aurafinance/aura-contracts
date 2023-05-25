@@ -6,7 +6,6 @@ import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    setTrustedRemoteCanonicalPhase1,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
@@ -301,17 +300,6 @@ describe("Full Deployment Phase 1", () => {
             expect(await phase6.booster.bridgeDelegate()).not.eq(l1Coordinator.address);
             await phase6.booster.connect(dao.signer).setBridgeDelegate(l1Coordinator.address);
             expect(await phase6.booster.bridgeDelegate()).eq(l1Coordinator.address);
-        });
-        it("add trusted remotes to layerzero endpoints", async () => {
-            // L1 Stuff
-            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
-
-            await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
-            await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
-
-            // L2 Stuff
-            await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);
-            await l2LzEndpoint.setDestLzEndpoint(auraProxyOFT.address, l1LzEndpoint.address);
         });
         it("add pools to the booster", async () => {
             // As this test suite is running the bridge from L1 -> L1 forked on
