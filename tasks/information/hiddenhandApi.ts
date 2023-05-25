@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BigNumberish } from "ethers";
+import { BigNumber as BN, BigNumberish } from "ethers";
 
 const log = console.log;
 
@@ -12,7 +12,7 @@ interface Birb {
     chainId: number;
     value: BigNumberish;
 }
-export interface Proposal {
+interface Proposal {
     proposal: number;
     proposalHash: string;
     title: string;
@@ -22,7 +22,13 @@ export interface Proposal {
     valuePerVote: number;
     bribes: Array<Birb>;
 }
-
+export interface Incentive {
+    to: string;
+    title: string;
+    proposal: Proposal;
+    amount: BN;
+    ratio: number;
+}
 interface HiddenHandsProposals {
     error: boolean;
     data: Array<Proposal>;
