@@ -193,6 +193,13 @@ export const deployL2 = async (
     // Add Mock Gauge
     await sidechain.poolManager["addPool(address)"](l2mocks.gauge.address);
 
+    const l1CoordinatorOwner = await l1.canonical.l1Coordinator.owner();
+    // It means at least 1 side chain already was deployed and the coordinator owner is DAO.
+    if (l1CoordinatorOwner.toLocaleLowerCase() === dao.address.toLocaleLowerCase()) {
+        l1.canonical.l1Coordinator = l1.canonical.l1Coordinator.connect(dao.signer);
+        l1.canonical.auraProxyOFT = l1.canonical.auraProxyOFT.connect(dao.signer);
+    }
+
     await setTrustedRemoteCanonicalPhase1(l1.canonical, sidechain, sidechainLzChainId, {
         ...l1Multisigs,
         daoMultisig: dao.address,
