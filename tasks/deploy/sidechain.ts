@@ -47,7 +47,7 @@ import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as gnosisSidechainConfig } from "./gnosis-config";
 
 const debug = true;
-const SALT = "shanghai";
+const SALT = "lisbon";
 
 /* ----------------------------------------------------------------------------
     Canonical Deployment Tasks
@@ -312,7 +312,6 @@ task("sidechain:addresses")
         }
 
         const { extConfig, naming, multisigs } = config;
-        const SALT = "berlin";
 
         // SidechainPhase1Deployed
         const voterProxyAddress = await computeCreate2Address<VoterProxyLite__factory>(

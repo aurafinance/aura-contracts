@@ -23,15 +23,14 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
 
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
+import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 
 const FORKING = process.env.FORKING;
 
 const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER] = FORKING
-    ? [goerliConfig, goerliSidechainConfig, 8971316]
-    : [mainnetConfig, mainnetConfig, 17096880];
+    ? [mainnetConfig, gnosisConfig, 17337380]
+    : [mainnetConfig, mainnetConfig, 17337285];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
 const sidechainConfig = _sidechainConfig as SidechainConfig;

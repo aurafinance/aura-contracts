@@ -169,6 +169,7 @@ const addresses: ExtSystemConfig = {
 
 const whales = {
     "0xCfCA23cA9CA720B6E98E3Eb9B6aa0fFC4a5C08B9": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
+    "0x072f14B85ADd63488DDaD88f855Fda4A99d6aC9B": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
 };
 
 const multisigs: MultisigConfig = {
@@ -407,9 +408,9 @@ const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", deployer);
 
 const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhase2Deployed => ({
-    auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+    auraProxyOFT: AuraProxyOFT__factory.connect("0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xcD54C83759d2D55238bF742611B26A65D47F9719", deployer),
 });
 
 export const config = {

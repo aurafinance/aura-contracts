@@ -9,9 +9,7 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { Phase6Deployed } from "../../scripts/deploySystem";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
+import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
@@ -34,9 +32,9 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const FORKING = process.env.FORKING;
 
-const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER] = FORKING
-    ? [goerliConfig, goerliSidechainConfig, 8971461]
-    : [mainnetConfig, mainnetConfig, 17096880];
+const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER, NATIVE_FEE] = FORKING
+    ? [mainnetConfig, gnosisConfig, 28126088, simpleToExactAmount(50)]
+    : [mainnetConfig, mainnetConfig, 17337285, simpleToExactAmount("0.2")];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
 const sidechainConfigGlobal = _sidechainConfig as SidechainConfig;
@@ -50,8 +48,6 @@ describe("Sidechain", () => {
     let deployer: Account;
     let notAuthorised: Account;
     let dao: Account;
-    // phases
-    let phase6: Phase6Deployed;
     // LayerZero endpoints
     let l2LzEndpoint: LZEndpointMock;
     let crv: ERC20;
@@ -68,7 +64,7 @@ describe("Sidechain", () => {
 
     const getBpt = async (token: string, recipient: string, amount = simpleToExactAmount(250)) => {
         const whale = sidechainConfig.whales[token];
-        if (!whale) throw new Error("No BPT whale found");
+        if (!whale) throw new Error(`No BPT whale found for ${token}`);
         const tokenWhaleSigner = await impersonateAccount(whale);
         const tokenContract = MockERC20__factory.connect(token, tokenWhaleSigner.signer);
         await tokenContract.transfer(recipient, amount);
@@ -101,12 +97,12 @@ describe("Sidechain", () => {
                 sidechainConfigGlobal,
                 deployer,
                 sidechainLzChainId,
+                { deployBridgeSender: true },
             );
         } else {
             result = await setupLocalDeployment(hre, canonicalConfig, deployer, canonicalLzChainId, sidechainLzChainId);
         }
 
-        phase6 = result.phase6;
         l2LzEndpoint = result.l2LzEndpoint;
         canonical = result.canonical;
         sidechain = result.sidechain;
@@ -226,17 +222,11 @@ describe("Sidechain", () => {
         it("add pools to the booster", async () => {
             // As this test suite is running the bridge from L1 -> L1 forked on
             // mainnet. We can just add the first 10 active existing Aura pools
-            let i = 0;
-            const boosterPoolLen = await phase6.booster.poolLength();
-            const targetLen = boosterPoolLen.lt(10) ? boosterPoolLen.toNumber() : 10;
-            while ((await sidechain.booster.poolLength()).lt(targetLen)) {
-                const poolInfo = await phase6.booster.poolInfo(i);
-                if (!poolInfo.shutdown) {
-                    await sidechain.poolManager.connect(dao.signer)["addPool(address)"](poolInfo.gauge);
-                }
-                i++;
+            for (let i = 1; i < sidechainConfig.extConfig.gauges.length - 1; i++) {
+                await sidechain.poolManager
+                    .connect(dao.signer)
+                    ["addPool(address)"](sidechainConfig.extConfig.gauges[i]);
             }
-            expect(await sidechain.booster.poolLength()).eq(targetLen);
         });
         it("can unprotected poolManager add pool", async () => {
             await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
@@ -445,14 +435,14 @@ describe("Sidechain", () => {
             const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, dao.signer);
             const balanceBefore = await crv.balanceOf(crvRewards.address);
             await increaseTime(ONE_DAY);
-            await sidechain.booster.connect(alice).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
+            await sidechain.booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
             const balanceAfter = await crv.balanceOf(crvRewards.address);
             expect(balanceAfter).gt(balanceBefore);
         });
         it("pays out a premium to the caller", async () => {
             const balanceBefore = await crv.balanceOf(aliceAddress);
             await increaseTime(ONE_DAY);
-            await sidechain.booster.connect(alice).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
+            await sidechain.booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
             const balanceAfter = await crv.balanceOf(aliceAddress);
             expect(balanceAfter).gt(balanceBefore);
         });
@@ -466,7 +456,7 @@ describe("Sidechain", () => {
             for (let i = 0; i < 7; i++) {
                 await increaseTime(ONE_DAY);
                 await increaseTime(ONE_DAY);
-                await sidechain.booster.connect(dao.signer).earmarkRewards(0, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.connect(dao.signer).earmarkRewards(0, { value: NATIVE_FEE });
             }
 
             const earned = await rewards.earned(aliceAddress);
