@@ -308,8 +308,6 @@ task("migratepools47:generate", "Generates txs file to migrate selected pid").se
             }),
         )
     ).filter(pool => !pool.shutdown);
-    console.log("🚀 ~ file: index.ts:337 ~ pools.length :", pools.length, pids.length);
-    console.log("🚀 ~ file: index.ts:337 ~ pools.length :", pools);
 
     if (pools.length !== pids.length) throw new Error("All pools should be alive");
 
