@@ -16,8 +16,6 @@ abstract contract OFTCore is NonblockingLzApp, ERC165, IOFTCore {
 
     bool public useCustomAdapterParams;
 
-    constructor(address _lzEndpoint) NonblockingLzApp(_lzEndpoint) {}
-
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IOFTCore).interfaceId || super.supportsInterface(interfaceId);
     }

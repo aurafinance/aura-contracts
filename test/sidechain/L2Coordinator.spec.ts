@@ -1,29 +1,33 @@
+import { expect } from "chai";
 import { Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
+import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 import {
-    DEAD_ADDRESS,
-    ZERO,
-    ZERO_ADDRESS,
     anyValue,
+    DEAD_ADDRESS,
+    impersonate,
     impersonateAccount,
     increaseTime,
     simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
 } from "../../test-utils";
 import { Account, PoolInfo } from "../../types";
 import { BaseRewardPool__factory, L2Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
-    SideChainTestSetup,
-    sidechainTestSetup,
     CanonicalPhaseDeployed,
     SidechainDeployed,
+    SideChainTestSetup,
+    sidechainTestSetup,
 } from "./sidechainTestSetup";
-import { expect } from "chai";
-import { DeployL2MocksResult } from "scripts/deploySidechainMocks";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes4,(bytes,address))";
+const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
 
 describe("L2Coordinator", () => {
     /* -- Declare shared variables -- */
@@ -40,9 +44,14 @@ describe("L2Coordinator", () => {
     let sidechain: SidechainDeployed;
     let canonical: CanonicalPhaseDeployed;
     const pid = 0;
+    let idSnapShot: number;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         alice = await impersonateAccount(await accounts[1].getAddress());
@@ -97,13 +106,13 @@ describe("L2Coordinator", () => {
         it("initialize fails if initialize is called more than once", async () => {
             expect(await l2Coordinator.booster()).to.not.be.eq(ZERO_ADDRESS);
             await expect(
-                l2Coordinator.connect(dao.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS),
+                l2Coordinator.connect(dao.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "init call twice",
             ).to.be.revertedWith("already initialized");
         });
         it("initialize fails if initialize is caller is not the owner", async () => {
             await expect(
-                l2Coordinator.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS),
+                l2Coordinator.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "onlyOwner",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
@@ -111,16 +120,17 @@ describe("L2Coordinator", () => {
     describe("setConfig", async () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
-            const selectorHash = l2Coordinator.interface.getSighash("queueNewRewards(address,uint256)");
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
+
             const config = {
                 adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
                 zroPaymentAddress: DEAD_ADDRESS,
             };
 
             //   When  config is set.
-            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selectorHash, config);
+            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, config);
             // No events
-            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selectorHash);
+            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selector);
             expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
             expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
         });
@@ -149,10 +159,6 @@ describe("L2Coordinator", () => {
             const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const bridgeDelegateBalanceAfter = await l2mocks.token.balanceOf(bridgeDelegate);
             const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);
-            console.log(
-                "🚀 ~ file: L2Coordinator.spec.ts:163 ~ it ~ bridgeDelegateBalanceDelta:",
-                bridgeDelegateBalanceDelta,
-            );
 
             await expect(tx)
                 .to.emit(l2mocks.token, "Transfer")
@@ -160,6 +166,38 @@ describe("L2Coordinator", () => {
 
             expect(feeDebtAfter.sub(feeDebtBefore), "fees sent to coordinator").gt(ZERO);
             expect(bridgeDelegateBalanceDelta, "crv on L2 coordinator").to.gt(ZERO);
+        });
+        it("updates accumulated aura", async () => {
+            const lzEndpoint = await impersonateAccount(await l2Coordinator.lzEndpoint(), true);
+
+            // Send some AURA OFT
+            const PT_SEND = await sidechain.auraOFT.PT_SEND();
+            const toAddress = ethers.utils.solidityPack(["address"], [l2Coordinator.address]);
+            const auraOftPayload = ethers.utils.defaultAbiCoder.encode(
+                ["uint16", "bytes", "uint256"],
+                [PT_SEND, toAddress, simpleToExactAmount(100)],
+            );
+
+            const signer = await impersonate(sidechain.auraOFT.address, true);
+            await sidechain.auraOFT
+                .connect(signer)
+                .nonblockingLzReceive(L1_CHAIN_ID, lzEndpoint.address, 0, auraOftPayload);
+
+            // Update mintRate
+            const payload = ethers.utils.defaultAbiCoder.encode(
+                ["bytes4", "uint8", "uint256"],
+                ["0x7a7f9946", "2", simpleToExactAmount(1)],
+            );
+            const accAuraBefore = await l2Coordinator.accAuraRewards();
+
+            await l2Coordinator
+                .connect(dao.signer)
+                .setTrustedRemoteAddress(L1_CHAIN_ID, canonical.l1Coordinator.address);
+            await l2Coordinator
+                .connect(lzEndpoint.signer)
+                .lzReceive(L1_CHAIN_ID, await l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+            const accAuraAfter = await l2Coordinator.accAuraRewards();
+            expect(accAuraAfter.sub(accAuraBefore)).eq(simpleToExactAmount(1));
         });
         it("user get reward from BaseRewardPool and mints aura via L2Coordinator", async () => {
             const claimExtras = false;
@@ -170,9 +208,6 @@ describe("L2Coordinator", () => {
             const rewardsEarned = await crvRewards.earned(alice.address);
             const mintRateBefore = await l2Coordinator.mintRate();
             const auraOFTAliceBalanceBefore = await sidechain.auraOFT.balanceOf(alice.address);
-            const auraOFTCirculatingSupplyBefore = await sidechain.auraOFT.circulatingSupply();
-            const auraOFTTotalSupplyBefore = await sidechain.auraOFT.totalSupply();
-            const crvAliceBalanceBefore = await crvRewards.balanceOf(alice.address);
 
             const expectedAuraMinted = rewardsEarned.mul(mintRateBefore).div(simpleToExactAmount(1));
 
@@ -184,38 +219,26 @@ describe("L2Coordinator", () => {
                 .to.emit(sidechain.auraOFT, "Transfer")
                 .withArgs(l2Coordinator.address, alice.address, anyValue);
 
-            const mintRateAfter = await l2Coordinator.mintRate();
             const auraOFTAliceBalanceAfter = await sidechain.auraOFT.balanceOf(alice.address);
-            const auraOFTCirculatingSupplyAfter = await sidechain.auraOFT.circulatingSupply();
-            const auraOFTTotalSupplyAfter = await sidechain.auraOFT.totalSupply();
-            const auraOFTMinted = auraOFTAliceBalanceAfter.sub(auraOFTAliceBalanceBefore);
-            expect(auraOFTMinted, "rate should not change").to.gte(expectedAuraMinted);
+            const auraOFTRewards = auraOFTAliceBalanceAfter.sub(auraOFTAliceBalanceBefore);
+            expect(auraOFTRewards, "rate should not change").to.gte(expectedAuraMinted);
 
-            expect(mintRateAfter, "rate should not change").to.equal(mintRateBefore);
-            expect(auraOFTTotalSupplyAfter, "auraOFT total supply ").to.equal(
-                auraOFTTotalSupplyBefore.add(auraOFTMinted),
-            );
-            expect(auraOFTCirculatingSupplyAfter, "auraOFT circulating supply ").to.equal(
-                auraOFTCirculatingSupplyBefore.add(auraOFTMinted),
-            );
             expect(auraOFTAliceBalanceAfter, "auraOFT alice balance").to.equal(
-                auraOFTAliceBalanceBefore.add(auraOFTMinted),
+                auraOFTAliceBalanceBefore.add(auraOFTRewards),
             );
-
-            const crvAliceBalanceAfter = await crvRewards.balanceOf(alice.address);
-            expect(crvAliceBalanceAfter, "crv alice balance").to.equal(crvAliceBalanceBefore.add(auraOFTMinted));
         });
     });
 
-    describe("Edge cases", () => {
+    describe("edge cases", () => {
         it("setBridgeDelegate fails if caller is not the owner", async () => {
             await expect(l2Coordinator.setBridgeDelegate(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
                 ERRORS.ONLY_OWNER,
             );
         });
         it("setConfig fails if caller is not the owner", async () => {
+            const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
             await expect(
-                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, "0xdd467064", {
+                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, {
                     adapterParams: "0x",
                     zroPaymentAddress: DEAD_ADDRESS,
                 }),
@@ -227,13 +250,15 @@ describe("L2Coordinator", () => {
         });
 
         it("queueNewRewards fails if caller is not booster", async () => {
-            await expect(l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO), "!booster").to.be.revertedWith("!booster");
+            await expect(l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO, ZERO), "!booster").to.be.revertedWith(
+                "!booster",
+            );
         });
         it("queueNewRewards fails bridge delegate is not set", async () => {
             const boosterAccount = await impersonateAccount(sidechain.booster.address);
             await l2Coordinator.connect(dao.signer).setBridgeDelegate(ZERO_ADDRESS);
             await expect(
-                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO),
+                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO, ZERO),
                 "!bridgeDelegate",
             ).to.be.revertedWith("!bridgeDelegate");
         });

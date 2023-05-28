@@ -10,7 +10,7 @@ contract ProxyOFT is OFTCore {
 
     IERC20 internal immutable innerToken;
 
-    constructor(address _lzEndpoint, address _token) OFTCore(_lzEndpoint) {
+    constructor(address _token) {
         innerToken = IERC20(_token);
     }
 

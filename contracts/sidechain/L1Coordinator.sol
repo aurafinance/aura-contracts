@@ -113,11 +113,13 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address _balToken,
         address _auraToken,
         address _auraOFT
-    ) NonblockingLzApp(_lzEndpoint) {
+    ) {
         booster = _booster;
         balToken = _balToken;
         auraToken = _auraToken;
         auraOFT = _auraOFT;
+
+        _initializeLzApp(_lzEndpoint);
 
         IERC20(_balToken).safeApprove(_booster, type(uint256).max);
         IERC20(_auraToken).safeApprove(_auraOFT, type(uint256).max);
@@ -129,7 +131,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -183,18 +185,25 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      *      contract mint AURA by calling distributeL2Fees on the Booster
      *      and then send those AURA tokens to the src chain
      */
-    function distributeAura(uint16 _srcChainId, bytes memory _sendFromAdapterParams) external payable onlyDistributor {
+    function distributeAura(
+        uint16 _srcChainId,
+        address _sendFromZroPaymentAddress,
+        bytes memory _sendFromAdapterParams
+    ) external payable onlyDistributor {
         uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
 
+        Config memory config = configs[_srcChainId][keccak256("distributeAura(uint16,address,bytes)")];
         _distributeAura(
             _srcChainId,
             feeDebt,
-            configs[_srcChainId][L1Coordinator.distributeAura.selector].zroPaymentAddress,
-            configs[_srcChainId][L1Coordinator.distributeAura.selector].adapterParams,
+            config.zroPaymentAddress,
+            _sendFromZroPaymentAddress,
+            config.adapterParams,
             _sendFromAdapterParams
         );
+
         emit AuraDistributed(_srcChainId, feeDebt);
     }
 
@@ -210,6 +219,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         uint16 _srcChainId,
         uint256 _feeAmount,
         address _zroPaymentAddress,
+        address _sendFromZroPaymentAddress,
         bytes memory _adapterParams,
         bytes memory _sendFromAdapterParams
     ) internal {
@@ -220,13 +230,13 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        bytes memory payload = CCM.encodeFeesCallback(auraAmount, _feeAmount);
+        bytes memory payload = CCM.encodeFeesCallback(auraAmount);
 
         _lzSend(
             _srcChainId, ///////////// Source chain (L2 chain)
             payload, ///////////////// Payload
             payable(address(this)), // Refund address
-            address(0), ////////////// ZRO payment address
+            _zroPaymentAddress, ////// ZRO payment address
             _adapterParams, ////////// Adapter params
             msg.value //////////////// Native fee
         );
@@ -237,7 +247,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             abi.encodePacked(to),
             auraAmount,
             payable(msg.sender),
-            _zroPaymentAddress,
+            _sendFromZroPaymentAddress,
             _sendFromAdapterParams
         );
     }

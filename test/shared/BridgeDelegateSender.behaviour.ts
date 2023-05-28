@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { loadFixture } from "ethereum-waffle";
 import { Account } from "types";
+
 import { DEAD_ADDRESS, ZERO_ADDRESS } from "../../test-utils/constants";
 import { BridgeDelegateSender } from "../../types/generated";
 
