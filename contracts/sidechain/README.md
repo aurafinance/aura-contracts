@@ -15,9 +15,9 @@ contracts/sidechain
 ├── CrossChainMessages.sol  Shared LZ messaging library
 ├── L1Coordinator.sol       L1 Coordinator handles sending messages to canonical chain
 ├── L2Coordinator.sol       L2 Coordinator handles sending messages to canonical chain
-├── PausableOFT.sol         L2 Coordinator handles sending messages to canonical chain
-├── PausableProxyOFT.sol    L2 Coordinator handles sending messages to canonical chain
-└── PauseGuardian.sol       Shared LZ messaging library
+├── PausableOFT.sol         OFT extension  that allows a `guardian` address to perform an emergency pause
+├── PausableProxyOFT.sol    Proxy OFT extension  that allows a `guardian` address to perform an emergency pause
+└── PauseGuardian.sol       Allows to implement pauses triggered by a `guardian` address
 ```
 
 ## Deployment Tasks
@@ -179,3 +179,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | VirtualRewardsFactory | [0xE4B11aa0ca5FE0d51CB2c53a4E583406FC338224](https://goerli.etherscan.io/address/0xE4B11aa0ca5FE0d51CB2c53a4E583406FC338224) |
 | AuraBalVault          | [0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c](https://goerli.etherscan.io/address/0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c) |
 | AuraBalStrategy       | [0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285](https://goerli.etherscan.io/address/0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285) |
+
+## Deployment Diagram
+
+![SideChain Deployment Diagram](../../docs/sidechain/sidechainDeployment.svg)

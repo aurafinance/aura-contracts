@@ -1,11 +1,13 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
 import { DEAD_ADDRESS, impersonateAccount, increaseTime, simpleToExactAmount, ZERO } from "../../test-utils";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../../test/shared/Ownable.behaviour";
 import { Account } from "../../types";
 import { BridgeDelegateReceiver, IERC20__factory, L1Coordinator } from "../../types/generated";
-import { SideChainTestSetup, SidechainDeployed, sidechainTestSetup } from "./sidechainTestSetup";
+import { SidechainDeployed, SideChainTestSetup, sidechainTestSetup } from "./sidechainTestSetup";
+
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
@@ -21,9 +23,14 @@ describe("BridgeDelegateReceiver", () => {
     let l1Coordinator: L1Coordinator;
     let testSetup: SideChainTestSetup;
     let sidechain: SidechainDeployed;
+    let idSnapShot: number;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         alice = await impersonateAccount(await accounts[1].getAddress());
