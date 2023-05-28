@@ -12,7 +12,7 @@ import {
     Phase6Deployed,
 } from "../../scripts/deploySystem";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
-import { HandlerBaseBehaviourContext, shouldBehaveLikeHandlerBase } from "../shared/HandlerBase.behavior";
+import { HandlerBaseBehaviourContext, shouldBehaveLikeHandlerBase } from "../shared/HandlerBase.behaviour";
 import { deployVault } from "../../scripts/deployVault";
 import { ZERO, impersonate, simpleToExactAmount } from "../../test-utils";
 

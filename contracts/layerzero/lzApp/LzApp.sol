@@ -17,7 +17,7 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
     // ua can not send payload larger than this by default, but it can be changed by the ua owner
     uint256 public constant DEFAULT_PAYLOAD_SIZE_LIMIT = 10000;
 
-    ILayerZeroEndpoint public immutable lzEndpoint;
+    ILayerZeroEndpoint public lzEndpoint;
     mapping(uint16 => bytes) public trustedRemoteLookup;
     mapping(uint16 => mapping(uint16 => uint256)) public minDstGasLookup;
     mapping(uint16 => uint256) public payloadSizeLimitLookup;
@@ -28,7 +28,9 @@ abstract contract LzApp is Ownable, ILayerZeroReceiver, ILayerZeroUserApplicatio
     event SetTrustedRemoteAddress(uint16 _remoteChainId, bytes _remoteAddress);
     event SetMinDstGas(uint16 _dstChainId, uint16 _type, uint256 _minDstGas);
 
-    constructor(address _endpoint) {
+    function _initializeLzApp(address _endpoint) internal {
+        require(address(lzEndpoint) == address(0), "already initialized");
+        require(_endpoint != address(0), "endpoint=0");
         lzEndpoint = ILayerZeroEndpoint(_endpoint);
     }
 

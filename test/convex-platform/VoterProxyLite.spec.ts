@@ -2,12 +2,13 @@ import { expect } from "chai";
 import { BigNumberish, Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
+
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { simpleToExactAmount } from "../../test-utils";
 import { ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
 import { impersonateAccount } from "../../test-utils/fork";
-import { SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
 import { BoosterLite__factory, VoterProxyLite, VoterProxyLite__factory } from "../../types/generated";
+import { SidechainDeployed, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 
 describe("VoterProxyLite", () => {
     let accounts: Signer[];
