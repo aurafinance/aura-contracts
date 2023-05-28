@@ -5,8 +5,8 @@ import { Account, PoolInfo } from "types";
 import { DeployL2MocksResult } from "../../scripts/deploySidechainMocks";
 import { increaseTime, increaseTimeTo, simpleToExactAmount } from "../../test-utils";
 import { DEAD_ADDRESS, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
-import { impersonateAccount } from "../../test-utils/fork";
-import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../../test/sidechain/sidechainTestSetup";
+import { impersonate, impersonateAccount } from "../../test-utils/fork";
+import { CanonicalPhaseDeployed, SidechainDeployed, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 import { BaseRewardPool__factory, BoosterLite, ERC20__factory } from "../../types/generated";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
@@ -28,8 +28,15 @@ describe("BoosterLite", () => {
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
     let canonical: CanonicalPhaseDeployed;
+    let idSnapShot: number;
+
     const mintrMintAmount = simpleToExactAmount(1); // Rate of the MockCurveMinter.
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            return;
+        }
+
         accounts = await ethers.getSigners();
         const testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
         deployer = testSetup.deployer;
@@ -51,6 +58,7 @@ describe("BoosterLite", () => {
 
         alice = accounts[5];
         aliceAddress = await alice.getAddress();
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     async function toFeeAmount(n: BigNumber) {
         const lockIncentive = await sidechain.booster.lockIncentive();
@@ -221,6 +229,39 @@ describe("BoosterLite", () => {
                 rate.sub(totalIncentive).sub(callIncentive),
             );
         });
+        it("updates accumulated aura", async () => {
+            const { l2Coordinator } = sidechain;
+            const lzEndpoint = await impersonateAccount(await l2Coordinator.lzEndpoint(), true);
+
+            // Send some AURA OFT
+            const PT_SEND = await sidechain.auraOFT.PT_SEND();
+            const toAddress = ethers.utils.solidityPack(["address"], [l2Coordinator.address]);
+            const auraOftPayload = ethers.utils.defaultAbiCoder.encode(
+                ["uint16", "bytes", "uint256"],
+                [PT_SEND, toAddress, simpleToExactAmount(100)],
+            );
+
+            const signer = await impersonate(sidechain.auraOFT.address, true);
+            await sidechain.auraOFT
+                .connect(signer)
+                .nonblockingLzReceive(L1_CHAIN_ID, lzEndpoint.address, 0, auraOftPayload);
+
+            // Update mintRate
+            const payload = ethers.utils.defaultAbiCoder.encode(
+                ["bytes4", "uint8", "uint256"],
+                ["0x7a7f9946", "2", simpleToExactAmount(1)],
+            );
+            const accAuraBefore = await l2Coordinator.accAuraRewards();
+
+            await l2Coordinator
+                .connect(dao.signer)
+                .setTrustedRemoteAddress(L1_CHAIN_ID, canonical.l1Coordinator.address);
+            await l2Coordinator
+                .connect(lzEndpoint.signer)
+                .lzReceive(L1_CHAIN_ID, await l2Coordinator.trustedRemoteLookup(L1_CHAIN_ID), 0, payload);
+            const accAuraAfter = await l2Coordinator.accAuraRewards();
+            expect(accAuraAfter.sub(accAuraBefore)).eq(simpleToExactAmount(1));
+        });
         it("Get reward from BaseRewardPool", async () => {
             const claimExtras = false;
 
@@ -274,7 +315,7 @@ describe("BoosterLite", () => {
                 "onlyOwner",
             ).to.be.revertedWith("!auth");
         });
-        it("initialize fails if initialize is caller is not the owner", async () => {
+        it("initialize fails if called more than once", async () => {
             const boosterOwner = await booster.owner();
             const ownerAccount = await impersonateAccount(boosterOwner);
             expect(await booster.crv(), "crv").to.not.be.eq(ZERO_ADDRESS);

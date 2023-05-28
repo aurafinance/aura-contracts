@@ -1,35 +1,36 @@
 import { expect } from "chai";
-import hre, { ethers, network } from "hardhat";
 import { Signer } from "ethers";
+import hre, { ethers, network } from "hardhat";
+
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import {
-    SidechainPhase1Deployed,
-    SidechainPhase2Deployed,
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
+    SidechainPhase1Deployed,
+    SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { Phase6Deployed } from "../../scripts/deploySystem";
+import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
+import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { impersonateAccount, ZERO_ADDRESS, simpleToExactAmount, ONE_DAY, impersonate } from "../../test-utils";
+import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
+import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import {
     Account,
     AuraOFT,
-    L2Coordinator,
-    ExtraRewardStashV3__factory,
-    LZEndpointMock,
-    ERC20__factory,
-    MockERC20__factory,
     BaseRewardPool4626__factory,
     BaseRewardPool__factory,
     ERC20,
+    ERC20__factory,
+    ExtraRewardStashV3__factory,
+    L2Coordinator,
+    LZEndpointMock,
+    MockERC20__factory,
+    SidechainConfig,
 } from "../../types";
-import { SidechainConfig } from "../../types/sidechain-types";
 import { increaseTime } from "./../../test-utils/time";
-import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
-import { setupLocalDeployment } from "./setupLocalDeployment";
-import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
 import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
+import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const FORKING = process.env.FORKING;
 
@@ -133,6 +134,13 @@ describe("Sidechain", () => {
             expect(await auraOFT.symbol()).eq(sidechainConfig.naming.auraOftSymbol);
             expect(await auraOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
             expect(await auraOFT.canonicalChainId()).eq(canonicalLzChainId);
+            expect(await auraOFT.guardian()).eq(sidechainConfig.multisigs.pauseGuardian);
+        });
+        it("AuraOFT has correct config", async () => {
+            expect(await sidechain.auraBalOFT.name()).eq(sidechainConfig.naming.auraBalOftName);
+            expect(await sidechain.auraBalOFT.symbol()).eq(sidechainConfig.naming.auraBalOftSymbol);
+            expect(await sidechain.auraBalOFT.lzEndpoint()).eq(sidechainConfig.extConfig.lzEndpoint);
+            expect(await sidechain.auraBalOFT.guardian()).eq(sidechainConfig.multisigs.pauseGuardian);
         });
         it("L2Coordinator has correct config", async () => {
             expect(await l2Coordinator.canonicalChainId()).eq(canonicalLzChainId);
@@ -311,11 +319,13 @@ describe("Sidechain", () => {
     describe("Setup L2 Coordinator to be able to mint rewards", () => {
         it("Can send a payload to set the mint rate", async () => {
             const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
-            const mintRateBefore = await sidechain.l2Coordinator.mintRate();
+            const accAuraRewardsBefore = await sidechain.l2Coordinator.accAuraRewards();
+
+            const amount = simpleToExactAmount(1);
 
             const payload = ethers.utils.defaultAbiCoder.encode(
-                ["bytes4", "uint8", "uint256", "uint256"],
-                ["0x7a7f9946", "2", (1e18).toString(), (10e18).toString()],
+                ["bytes4", "uint8", "uint256"],
+                ["0x7a7f9946", "2", amount],
             );
             await sidechain.l2Coordinator
                 .connect(endpoint.signer)
@@ -326,8 +336,8 @@ describe("Sidechain", () => {
                     payload,
                 );
 
-            const mintRateAfter = await sidechain.l2Coordinator.mintRate();
-            expect(mintRateBefore).not.eq(mintRateAfter);
+            const accAuraRewardsAfter = await sidechain.l2Coordinator.accAuraRewards();
+            expect(accAuraRewardsAfter.sub(accAuraRewardsBefore)).eq(amount);
         });
         it("Mint and send aura to l2 coordinator", async () => {
             // Transfer some AURA to L2

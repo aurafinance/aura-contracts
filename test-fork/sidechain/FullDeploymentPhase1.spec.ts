@@ -1,16 +1,18 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import hre, { ethers, network } from "hardhat";
-import { deployContract } from "../../tasks/utils";
+
+import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    setTrustedRemoteCanonicalPhase1,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { compareAddresses } from "../../tasks/snapshot/utils";
+import { deployContract } from "../../tasks/utils";
 import {
     assertBNClosePercent,
     fullScale,
@@ -25,21 +27,19 @@ import {
     Account,
     AuraOFT,
     AuraProxyOFT,
-    L2Coordinator,
-    L1Coordinator,
+    BaseRewardPool4626__factory,
+    BridgeDelegateReceiver,
     ERC20,
     ExtraRewardStashV3__factory,
+    L1Coordinator,
+    L2Coordinator,
     LZEndpointMock,
     MockCurveMinter,
     MockCurveMinter__factory,
     MockERC20__factory,
+    SidechainConfig,
     SimpleBridgeDelegateSender,
-    BridgeDelegateReceiver,
-    BaseRewardPool4626__factory,
 } from "../../types";
-import { SidechainConfig } from "../../types/sidechain-types";
-import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
-import { compareAddresses } from "../../tasks/snapshot/utils";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
@@ -182,7 +182,7 @@ describe("Full Deployment Phase 1", () => {
                 ),
             ).eq(true);
 
-            const lockSelector = ethers.utils.id("lock(uint256)").substring(0, 10);
+            const lockSelector = ethers.utils.id("lock(uint256)");
             const config = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
             const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
             expect(config.adapterParams).eq(adapterParams);
@@ -300,17 +300,6 @@ describe("Full Deployment Phase 1", () => {
             expect(await phase6.booster.bridgeDelegate()).not.eq(l1Coordinator.address);
             await phase6.booster.connect(dao.signer).setBridgeDelegate(l1Coordinator.address);
             expect(await phase6.booster.bridgeDelegate()).eq(l1Coordinator.address);
-        });
-        it("add trusted remotes to layerzero endpoints", async () => {
-            // L1 Stuff
-            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
-
-            await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
-            await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
-
-            // L2 Stuff
-            await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);
-            await l2LzEndpoint.setDestLzEndpoint(auraProxyOFT.address, l1LzEndpoint.address);
         });
         it("add pools to the booster", async () => {
             // As this test suite is running the bridge from L1 -> L1 forked on
@@ -463,9 +452,9 @@ describe("Full Deployment Phase 1", () => {
     describe('Earmark rewards on L2 "mints" (transfers) AURA', () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
-            await expect(l1Coordinator.distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE })).to.be.revertedWith(
-                "!distributor",
-            );
+            await expect(
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
+            ).to.be.revertedWith("!distributor");
         });
         it("Can set deployer as distributor", async () => {
             await expect(
@@ -483,6 +472,8 @@ describe("Full Deployment Phase 1", () => {
             const coordinatorBalBefore = await crv.balanceOf(bridgeDelegateSender.address);
             const feeDebtBefore = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const balanceOfRewardContractBefore = await crv.balanceOf(crvRewards.address);
+            const accBalBefore = await sidechain.l2Coordinator.accBalRewards();
+            const callerBalBefore = await crv.balanceOf(deployer.address);
 
             // Earmark rewards sends BAL to the reward contract and
             // the L1Coordinator is notified about new fee debt
@@ -495,12 +486,17 @@ describe("Full Deployment Phase 1", () => {
             const coordinatorBalAfter = await crv.balanceOf(bridgeDelegateSender.address);
             const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             const balanceOfRewardContractAfter = await crv.balanceOf(crvRewards.address);
+            const accBalAfter = await sidechain.l2Coordinator.accBalRewards();
+            const callerBalAfter = await crv.balanceOf(deployer.address);
 
             // Verify that the bridge delegate received the fee amount ready to bridge back to L1
             // and verify that the feeDebt on the L1Coordinator has been updated
             const amountOfFees = await toFeeAmount(mintrMintAmount);
+            const callerFee = callerBalAfter.sub(callerBalBefore);
             expect(coordinatorBalAfter.sub(coordinatorBalBefore)).eq(amountOfFees);
             expect(feeDebtAfter.sub(feeDebtBefore)).eq(amountOfFees);
+            const accBal = accBalAfter.sub(accBalBefore);
+            expect(accBal).eq(mintrMintAmount.sub(amountOfFees).sub(callerFee));
 
             expect(await l2Coordinator.mintRate()).eq(0);
 
@@ -510,10 +506,11 @@ describe("Full Deployment Phase 1", () => {
             const distributedFeeDebtBefore = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const auraBalanceBefore = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceBefore = await crv.balanceOf(l1Coordinator.address);
+            const accAuraBefore = await sidechain.l2Coordinator.accAuraRewards();
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
-                .distributeAura(L2_CHAIN_ID, [], { value: NATIVE_FEE.mul(2) });
+                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>
@@ -526,15 +523,17 @@ describe("Full Deployment Phase 1", () => {
             const distributedFeeDebtAfter = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
             const auraOftBalanceAfter = await sidechain.auraOFT.balanceOf(l2Coordinator.address);
             const crvBalanceAfter = await crv.balanceOf(l1Coordinator.address);
+            const accAuraAfter = await sidechain.l2Coordinator.accAuraRewards();
 
             // Verify balances are correct after AURA has been distributed
             expect(coordinatorAuraOftBalAfter.sub(coordinatorAuraOftBalBefore)).eq(mintAmount);
             expect(distributedFeeDebtAfter.sub(distributedFeeDebtBefore)).eq(feeDebtAfter);
             expect(auraOftBalanceAfter.sub(auraBalanceBefore)).eq(mintAmount);
             expect(crvBalanceBefore.sub(crvBalanceAfter)).eq(amountOfFees);
+            expect(accAuraAfter.sub(accAuraBefore)).eq(mintAmount);
 
             // Calculate what the expected mint rate is going to be on the L2
-            const expectedRate = mintAmount.mul(fullScale).div(mintrMintAmount.sub(amountOfFees));
+            const expectedRate = mintAmount.mul(fullScale).div(accBal);
             const mintRate = await l2Coordinator.mintRate();
             expect(mintRate).eq(expectedRate);
 

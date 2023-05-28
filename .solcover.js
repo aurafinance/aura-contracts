@@ -20,6 +20,10 @@ module.exports = {
         "peripheral/grants/AuraArbBalGrant.sol",
         "peripheral/UniswapMigrator.sol",
         "compounder/rewardHandlers/BBUSDHandler.sol",
+        "layerzero/interfaces",
+        "layerzero/libraries",
+        "layerzero/mocks",
+        "layerzero/util",
     ],
     configureYulOptimizer: true,
 };

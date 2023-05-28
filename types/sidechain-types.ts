@@ -32,7 +32,7 @@ export interface SidechainBridging {
 
 export interface SidechainConfig {
     chainId: number;
-    whales: { [key: string]: string };
+    whales?: { [key: string]: string };
     multisigs: SidechainMultisigConfig;
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;

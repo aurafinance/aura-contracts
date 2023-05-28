@@ -62,6 +62,11 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
        Events 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Emitted when harvest rewards.
+     * @param caller The caller
+     * @param totalUnderlyingSum The total amount of auraBal staked on all sidechains.
+     */
     event Harvest(address indexed caller, uint256 totalUnderlyingSum);
 
     /* -------------------------------------------------------------------
@@ -69,9 +74,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @param _lzEndpoint  LayerZero endpoint contract
-     * @param _token       The proxied token (auraBAL)
-     * @param _vault       AuraBal compounder vault
+     * @dev Constructs the AuraBalProxyOFT contract
+     * @param _lzEndpoint   LayerZero endpoint contract
+     * @param _token        The proxied token (auraBAL)
+     * @param _vault        The AuraBal compounder vault
+     * @param _guardian     The pause guardian address
+     * @param _sudo         The super user address
+     * @param _inflowLimit  Initial inflow limit per epoch
      */
     constructor(
         address _lzEndpoint,
@@ -80,8 +89,11 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         address _guardian,
         address _sudo,
         uint256 _inflowLimit
-    ) PausableProxyOFT(_lzEndpoint, _token, _guardian, _sudo, _inflowLimit) {
+    ) PausableProxyOFT(_token, _sudo, _inflowLimit) {
         vault = _vault;
+
+        _initializeLzApp(_lzEndpoint);
+        _initializePauseGuardian(_guardian);
 
         IERC20(_token).safeApprove(_vault, type(uint256).max);
     }
@@ -98,7 +110,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      */
     function setConfig(
         uint16 _srcChainId,
-        bytes4 _selector,
+        bytes32 _selector,
         Config memory _config
     ) external override onlyOwner {
         _setConfig(_srcChainId, _selector, _config);
@@ -148,6 +160,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
        View functions 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev returns the circulating amount of tokens on current chain
+     */
     function circulatingSupply() public view override returns (uint256) {
         return innerToken.totalSupply() - internalTotalSupply;
     }
@@ -262,6 +277,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
 
+        Config memory config = configs[_srcChainId][
+            keccak256(abi.encodeWithSignature("processClaimable(address,uint16)", _token, _srcChainId))
+        ];
+
         if (_token == address(innerToken)) {
             require(oft == address(this), "!oft");
             // The token is this inner token so we need to call the internal
@@ -271,8 +290,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 _srcChainId,
                 abi.encode(PT_SEND, abi.encodePacked(receiver), reward),
                 payable(msg.sender),
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].zroPaymentAddress,
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams,
+                config.zroPaymentAddress,
+                config.adapterParams,
                 msg.value
             );
 
@@ -287,8 +306,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 abi.encodePacked(receiver),
                 reward,
                 payable(msg.sender),
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].zroPaymentAddress,
-                configs[_srcChainId][AuraBalProxyOFT.processClaimable.selector].adapterParams
+                config.zroPaymentAddress,
+                config.adapterParams
             );
         }
     }
@@ -315,6 +334,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
       Overrides 
     ------------------------------------------------------------------- */
 
+    /**
+     * @notice Rescues the specified amount of tokens from the bridge and transfers them to the specified address.
+     * @dev This function is only callable by the sudo address.
+     * @param _token The address of the token to be rescued.
+     * @param _to The address to which the tokens should be transferred.
+     * @param _amount The amount of tokens to be rescued.
+     */
     function rescue(
         address _token,
         address _to,
@@ -325,9 +351,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         // Adjust the internalTotalSupply. This means we have to harvest and process
         // any rewards if we want to rescue the entire underlyingBalance of the bridge
         // otherwise this will underflow
-        internalTotalSupply -= _amount;
-
         if (_token == address(innerToken)) {
+            internalTotalSupply -= _amount;
             _withdraw(_amount);
         }
 

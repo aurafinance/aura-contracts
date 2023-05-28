@@ -700,7 +700,6 @@ describe("Full Migration", () => {
             // claim rewards from claim zap
             const option = 1 + 8;
             const expectedRewards = await phase4.cvxCrvRewards.earned(stakerAddress);
-            console.log("🚀 ~ file: FullMigration.spec.ts:889 ~ it ~ expectedRewards", expectedRewards.toString());
             const claimZapV1 = new ethers.Contract(
                 "0x623B83755a39B12161A63748f3f595A530917Ab2",
                 AuraClaimZapV1.abi,

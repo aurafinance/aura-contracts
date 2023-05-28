@@ -10,6 +10,7 @@ import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 import "./tasks/coverage";
 import { chainIds } from "./tasks/utils/networkAddressFactory";
+import "hardhat-tracer";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -44,6 +45,7 @@ const config: HardhatUserConfig = {
             url: process.env.NODE_URL || "",
         },
         gnosis: {
+            chainId: chainIds.gnosis,
             url: process.env.NODE_URL || "",
         },
         kovan: {
@@ -97,6 +99,7 @@ const config: HardhatUserConfig = {
     docgen: {
         outputDir: "./docs/natspec",
         templates: "./docs/templates",
+        exclude: ["_mocks", "test", "layerzero"],
     },
 };
 

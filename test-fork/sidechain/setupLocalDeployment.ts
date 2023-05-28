@@ -6,6 +6,8 @@ import {
     deployCanonicalPhase2,
     deploySidechainPhase1,
     deploySidechainPhase2,
+    setTrustedRemoteCanonicalPhase1,
+    setTrustedRemoteCanonicalPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
@@ -119,6 +121,9 @@ export const setupLocalDeployment = async (
     );
     const sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
     const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
+
+    await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID, config.multisigs);
+    await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID, config.multisigs);
 
     // Connect contracts to its owner signer.
     canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);

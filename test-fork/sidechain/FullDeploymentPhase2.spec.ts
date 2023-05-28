@@ -1,32 +1,30 @@
 import { expect } from "chai";
-import hre, { ethers, network } from "hardhat";
+import { BigNumber } from "ethers";
 import { formatEther } from "ethers/lib/utils";
+import hre, { ethers, network } from "hardhat";
+import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
+
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
-    setTrustedRemoteCanonicalPhase1,
-    setTrustedRemoteCanonicalPhase2,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { AuraBalVaultDeployed } from "tasks/deploy/goerli-config";
-import { SidechainConfig } from "../../types/sidechain-types";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import {
-    getAuraBal,
+    assertBNClose,
     getAura,
+    getAuraBal,
+    getTimestamp,
     impersonateAccount,
+    increaseTime,
+    increaseTimeTo,
+    ONE_WEEK,
     simpleToExactAmount,
     ZERO_ADDRESS,
-    increaseTime,
-    ONE_WEEK,
-    getTimestamp,
-    increaseTimeTo,
-    assertBNClose,
 } from "../../test-utils";
-import { Account, LZEndpointMock } from "../../types";
-import { BigNumber } from "ethers";
+import { Account, LZEndpointMock, MockERC20__factory, SidechainConfig } from "../../types";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
@@ -49,7 +47,6 @@ describe("Full Deployment Phase 2", () => {
 
     // Canonical chain Contracts
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
-
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
     let sidechainConfig: SidechainConfig;
@@ -119,9 +116,6 @@ describe("Full Deployment Phase 2", () => {
             await l1LzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
         });
         it("set canonical trusted remotes", async () => {
-            await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID);
-            await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID);
-
             expect(
                 await canonical.auraBalProxyOFT.isTrustedRemote(
                     L2_CHAIN_ID,
@@ -603,17 +597,42 @@ describe("Full Deployment Phase 2", () => {
                 canonical.auraBalProxyOFT.connect(deployer.signer).rescue(phase2.cvxCrv.address, deployer.address, 100),
             ).to.be.revertedWith("!sudo");
         });
-        it("Can rescue tokens", async () => {
+        it("Can rescue auraBAL tokens", async () => {
             const to = deployer.address;
             const underlying = await vaultDeployment.vault.balanceOfUnderlying(canonical.auraBalProxyOFT.address);
             const amount = simpleToExactAmount(1);
             expect(amount).lte(underlying);
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
+            const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
             await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
             const balAfter = await phase2.cvxCrv.balanceOf(to);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
 
             expect(balAfter.sub(balBefore)).eq(amount);
+            expect(internalTotalSupplyBefore.sub(internalTotalSupplyAfter)).eq(amount);
+        });
+        it("Can rescue other tokens", async () => {
+            const to = deployer.address;
+            const amount = simpleToExactAmount(10);
+
+            const dummyToken = await new MockERC20__factory(deployer.signer).deploy(
+                "",
+                "",
+                18,
+                canonical.auraBalProxyOFT.address,
+                100,
+            );
+            expect(await dummyToken.balanceOf(canonical.auraBalProxyOFT.address)).gt(0);
+
+            const balBefore = await dummyToken.balanceOf(to);
+            const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
+            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(dummyToken.address, to, amount);
+            const balAfter = await dummyToken.balanceOf(to);
+            const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
+
+            expect(balAfter.sub(balBefore)).eq(amount);
+            expect(internalTotalSupplyBefore).eq(internalTotalSupplyAfter);
         });
         it("Can rescue entire balance", async () => {
             const to = deployer.address;
