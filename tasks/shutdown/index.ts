@@ -4,7 +4,7 @@ import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
-import { Phase2Deployed } from "scripts/deploySystem";
+import { Phase2Deployed, Phase6Deployed } from "scripts/deploySystem";
 import { config } from "../deploy/mainnet-config";
 import { chunk } from "lodash";
 import { Contract } from "ethers";
@@ -25,7 +25,7 @@ const txMeta = (transactions: Array<any>) => ({
 });
 
 const shutdownPool = (pid: string) => ({
-    to: "0xf843F61508Fc17543412DE55B10ED87f4C28DE50",
+    to: "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
     value: "0",
     data: null,
     contractMethod: {
@@ -104,7 +104,7 @@ const updateOperator = (operator: string) => [
 
 const addPools = (gauges: Array<string>) =>
     gauges.map(gauge => ({
-        to: "0xB58Eb197c35157E6F3351718C4C387D284562BE5",
+        to: "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
         value: "0",
         data: null,
         contractMethod: {
@@ -288,4 +288,60 @@ task("addpools:generate", "Add pools to booster").setAction(async function (_: T
         const tx = txMeta(addPools(chunks[i]));
         fs.writeFileSync(path.resolve(__dirname, `gnosis_tx_${i}_add_new_pools.json`), JSON.stringify(tx));
     }
+});
+
+task("migratepools47:generate", "Generates txs file to migrate selected pid").setAction(async function (
+    _: TaskArguments,
+    hre: HardhatRuntime,
+) {
+    const signer = await getSigner(hre);
+    const pids = [0, 1, 3, 4, 5, 6, 7, 14, 15, 17, 18, 19, 22, 25, 29, 33, 35, 40, 41, 42, 43, 45, 46];
+
+    // Get pools to shutdown
+    const phase6: Phase6Deployed = await config.getPhase6(signer);
+    // shutdown pools
+    const pools = (
+        await Promise.all(
+            pids.map(async pid => {
+                const poolInfo = await phase6.booster.poolInfo(pid);
+                return { ...poolInfo, pid: pid };
+            }),
+        )
+    ).filter(pool => !pool.shutdown);
+
+    if (pools.length !== pids.length) throw new Error("All pools should be alive");
+
+    const poolsChunks = chunk(pools, Math.ceil(3));
+
+    const shutdownPoolsTransactionsAll = [];
+    const addPoolsTransactionsAll = [];
+    for (let i = 0; i < poolsChunks.length; i++) {
+        const poolsChunk = poolsChunks[i];
+        /* -------------------------------------------------------
+         * Phase 1 shutdown pools
+         * ----------------------------------------------------- */
+
+        const shutdownPoolsTransactions = poolsChunk.map(pool => shutdownPool(pool.pid.toString()));
+        shutdownPoolsTransactionsAll.push(...shutdownPoolsTransactions);
+
+        /* -------------------------------------------------------
+         * Phase 2 Add Pool
+         * ----------------------------------------------------- */
+
+        const addPoolsTransactions = addPools(poolsChunk.map(pool => pool.gauge));
+        addPoolsTransactionsAll.push(...addPoolsTransactions);
+
+        const migratePoolTransaction = txMeta([...shutdownPoolsTransactions, ...addPoolsTransactions]);
+        fs.writeFileSync(
+            path.resolve(__dirname, `./aip26/aip_26_tx_${i}_migrate_pools.json`),
+            JSON.stringify(migratePoolTransaction),
+        );
+    }
+
+    /* -------------------------------------------------------
+     * Phase DEV All
+     * ----------------------------------------------------- */
+    const allTransactions = [...shutdownPoolsTransactionsAll, ...addPoolsTransactionsAll];
+    const allTransaction = txMeta(allTransactions);
+    fs.writeFileSync(path.resolve(__dirname, "./aip26/aip_26_tx_DEV_all.json"), JSON.stringify(allTransaction));
 });

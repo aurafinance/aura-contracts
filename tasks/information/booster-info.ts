@@ -20,11 +20,22 @@ interface PoolMetadata {
     shutdown: boolean;
     pid: number;
     poolTotalSupply: BigNumber;
-    poolValue: BigNumber;
+    poolValue: number;
     poolName: string;
     poolSymbol: string;
     periodFinish: BigNumber;
     isKilled: boolean;
+}
+interface PoolMetadataMapped {
+    pid: number;
+    poolName: string;
+    poolSymbol: string;
+    isMigrated: boolean;
+    oldPool: PoolMetadata;
+    newPool: PoolMetadata;
+    periodFinish: BigNumber;
+    isKilled: boolean;
+    shutdown: boolean;
 }
 
 const crvRewardsABI = [
@@ -58,6 +69,7 @@ const truncateNumber = (amount: number, fixed = 2) => Number.parseFloat(Number(a
 
 /**
  * Compares two pools by it symbol with the following criteria:
+ * - Gauge address are the same, returns true.
  * - Symbol lower case are the same, ie: wsteth-acx == wsteth-acx returns true.
  * - Symbol is reversed,  ie: wsteth-acx == acx-wsteth returns true
  * - Symbol Matches special criteria defined on constant `specialSymbolMatches`
@@ -70,6 +82,12 @@ const poolBySymbolVariants = (newPool: PoolMetadata, oldPool: PoolMetadata): boo
     const ignorePIds = [2];
     if (ignorePIds.includes(oldPool.pid)) return false;
 
+    // by gauge address
+    if (oldPool.gauge.toLowerCase() === newPool.gauge.toLowerCase()) {
+        console.log(`found by gauge ${newPool.gauge}`);
+        return true;
+    }
+
     const isSameSymbol = cleanUpSymbol(newPool.poolSymbol) === cleanUpSymbol(oldPool.poolSymbol);
     if (isSameSymbol) return true;
     // aura
@@ -79,10 +97,10 @@ const poolBySymbolVariants = (newPool: PoolMetadata, oldPool: PoolMetadata): boo
     const isReverseSymbol = newPoolSymbol == oldPoolSymbolReversed;
     if (isReverseSymbol) return true;
 
-    const isSpecialMath = specialSymbolMatches.find(
+    const isSpecialMatch = specialSymbolMatches.find(
         m => oldPoolSymbol == m.oldPoolSymbol && newPoolSymbol == m.newPoolSymbol,
     );
-    return !!isSpecialMath;
+    return !!isSpecialMatch;
 };
 
 task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster")
@@ -90,7 +108,7 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntime) {
         // Handy constant to include or not on the report  pools above `maxOldStashPid`, default value false.
         const showAllPools = false;
-        const showOnlyMigrated = tskArgs.migrated;
+        const showOnlyMigrated = tskArgs.migrated as boolean;
         const signer = await getSigner(hre);
 
         // Get pools to shutdown
@@ -141,11 +159,10 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         // for each old pool, search if it has already being migrated.
         const poolsMapped = poolsOldStash.map(oldPool => {
             const newPool = poolsNewStash.find(newPool => poolBySymbolVariants(newPool, oldPool));
-            const poolMapped = {
+            const poolMapped: PoolMetadataMapped = {
                 pid: oldPool.pid,
-                crvRewards: oldPool.crvRewards,
-                name: oldPool.poolName as string,
-                symbol: cleanUpSymbol(oldPool.poolSymbol),
+                poolName: oldPool.poolName as string,
+                poolSymbol: cleanUpSymbol(oldPool.poolSymbol),
                 isMigrated: !!newPool,
                 oldPool,
                 newPool,
@@ -160,11 +177,10 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         const isPoolNotMigrated = (newPool: PoolMetadata) =>
             !poolsMapped.find(pm => pm.isMigrated && pm.newPool.pid === newPool.pid);
         const poolsMappedNew = poolsNewStash.filter(isPoolNotMigrated).map(newPool => {
-            const poolMapped = {
+            const poolMapped: PoolMetadataMapped = {
                 pid: newPool.pid,
-                crvRewards: newPool.crvRewards,
-                name: newPool.poolName as string,
-                symbol: cleanUpSymbol(newPool.poolSymbol),
+                poolName: newPool.poolName as string,
+                poolSymbol: cleanUpSymbol(newPool.poolSymbol),
                 isMigrated: true,
                 oldPool: undefined,
                 newPool,
@@ -176,14 +192,14 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
             return poolMapped;
         });
 
-        let allPoolsMapped = [].concat(poolsMapped.concat(showAllPools ? poolsMappedNew : []));
+        let allPoolsMapped: PoolMetadataMapped[] = [].concat(poolsMapped.concat(showAllPools ? poolsMappedNew : []));
         if (showOnlyMigrated) {
             allPoolsMapped = allPoolsMapped.filter(pool => pool.isMigrated);
         }
 
-        const toConsoleData = pm => [
+        const toConsoleData = (pm: PoolMetadataMapped) => [
             pm.pid, // PID
-            pm.symbol, // Name
+            pm.poolSymbol, // Name
             pm.isMigrated ? pm.newPool.pid : "N/A", // New Pid
             pm.oldPool ? truncateNumber(pm.oldPool.poolValue) : "N/A", // New Old Pool TVL
             pm.isMigrated ? truncateNumber(pm.newPool.poolValue) : "N/A", // New Pool TVL
