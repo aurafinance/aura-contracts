@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "chainId": "1",
-    "createdAt": 1685097662153,
+    "createdAt": 1685395889045,
     "meta": {
         "name": "Shutdown",
         "description": "",
@@ -20,7 +20,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "22" }
+            "contractInputsValues": { "_pid": "45" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -31,18 +31,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "25" }
-        },
-        {
-            "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
-                "name": "shutdownPool",
-                "payable": false
-            },
-            "contractInputsValues": { "_pid": "29" }
+            "contractInputsValues": { "_pid": "46" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -53,7 +42,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF" }
+            "contractInputsValues": { "_gauge": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -64,18 +53,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0x75cAceBb5b4a73a530EdcdFdE7cFfbfea44c026E" }
-        },
-        {
-            "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [{ "internalType": "address", "name": "_gauge", "type": "address" }],
-                "name": "addPool",
-                "payable": false
-            },
-            "contractInputsValues": { "_gauge": "0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE" }
+            "contractInputsValues": { "_gauge": "0x81C452E84B103555C2Dd2DEc0bFABC0c4d6B3065" }
         }
     ]
 }

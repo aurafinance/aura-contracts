@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "chainId": "1",
-    "createdAt": 1685097662153,
+    "createdAt": 1685395889044,
     "meta": {
         "name": "Shutdown",
         "description": "",
@@ -20,7 +20,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "33" }
+            "contractInputsValues": { "_pid": "22" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -31,7 +31,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "35" }
+            "contractInputsValues": { "_pid": "25" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -42,7 +42,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "40" }
+            "contractInputsValues": { "_pid": "29" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -53,7 +53,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0xCB664132622f29943f67FA56CCfD1e24CC8B4995" }
+            "contractInputsValues": { "_gauge": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -64,7 +64,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0x2e79D6f631177F8E7f08Fbd5110e893e1b1D790A" }
+            "contractInputsValues": { "_gauge": "0x75cAceBb5b4a73a530EdcdFdE7cFfbfea44c026E" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -75,7 +75,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0x63E3951212cCCAFE3eDC7588FD4D20Ee5e7Ad73f" }
+            "contractInputsValues": { "_gauge": "0xcD4722B7c24C29e0413BDCd9e51404B4539D14aE" }
         }
     ]
 }

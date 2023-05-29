@@ -333,7 +333,7 @@ task("migratepools47:generate", "Generates txs file to migrate selected pid").se
 
         const migratePoolTransaction = txMeta([...shutdownPoolsTransactions, ...addPoolsTransactions]);
         fs.writeFileSync(
-            path.resolve(__dirname, `./aip_26_tx_${i}_migrate_pools.json`),
+            path.resolve(__dirname, `./aip26/aip_26_tx_${i}_migrate_pools.json`),
             JSON.stringify(migratePoolTransaction),
         );
     }
@@ -343,5 +343,5 @@ task("migratepools47:generate", "Generates txs file to migrate selected pid").se
      * ----------------------------------------------------- */
     const allTransactions = [...shutdownPoolsTransactionsAll, ...addPoolsTransactionsAll];
     const allTransaction = txMeta(allTransactions);
-    fs.writeFileSync(path.resolve(__dirname, "./aip_26_tx_DEV_all.json"), JSON.stringify(allTransaction));
+    fs.writeFileSync(path.resolve(__dirname, "./aip26/aip_26_tx_DEV_all.json"), JSON.stringify(allTransaction));
 });

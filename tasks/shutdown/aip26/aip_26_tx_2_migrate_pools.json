@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "chainId": "1",
-    "createdAt": 1685097662153,
+    "createdAt": 1685395889043,
     "meta": {
         "name": "Shutdown",
         "description": "",
@@ -20,7 +20,7 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "45" }
+            "contractInputsValues": { "_pid": "7" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -31,7 +31,18 @@
                 "name": "shutdownPool",
                 "payable": false
             },
-            "contractInputsValues": { "_pid": "46" }
+            "contractInputsValues": { "_pid": "14" }
+        },
+        {
+            "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_pid": "15" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -42,7 +53,7 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b" }
+            "contractInputsValues": { "_gauge": "0x1249c510e066731FF14422500466A7102603da9e" }
         },
         {
             "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
@@ -53,7 +64,18 @@
                 "name": "addPool",
                 "payable": false
             },
-            "contractInputsValues": { "_gauge": "0x81C452E84B103555C2Dd2DEc0bFABC0c4d6B3065" }
+            "contractInputsValues": { "_gauge": "0x39a9E78c3b9b5B47f1f6632BD74890E2430215Cf" }
+        },
+        {
+            "to": "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [{ "internalType": "address", "name": "_gauge", "type": "address" }],
+                "name": "addPool",
+                "payable": false
+            },
+            "contractInputsValues": { "_gauge": "0x79eF6103A513951a3b25743DB509E267685726B7" }
         }
     ]
 }
