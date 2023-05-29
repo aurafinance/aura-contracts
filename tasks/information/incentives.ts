@@ -115,7 +115,7 @@ const auraApprovalTx = (amount: BN) => ({
         amount: amount.toString(),
     },
 });
-const depositBribeERC20Tx = (incentive: Incentive) => {
+const depositERC20Tx = (incentive: Incentive) => {
     console.log(
         `${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${utils.formatEther(incentive.amount)}`,
     );
@@ -232,7 +232,7 @@ task("create:hh:incentives")
         const depositTsx = incentives
             .map(scaleIncentiveAmount)
             .filter(i => i.amount.gt(0))
-            .map(depositBribeERC20Tx);
+            .map(depositERC20Tx);
         const totalDeposits = depositTsx
             .map(d => BN.from(d.contractInputsValues.amount))
             .reduce((a, b) => a.add(b), BN.from(0));
