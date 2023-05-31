@@ -227,7 +227,6 @@ task("deploy:sidechain:L2:phase2")
     });
 
 task("deploy:sidechain:L2:boosterHelper")
-    .addParam("salt", "CREATE2 salt")
     .addParam("wait", "wait for blocks")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
@@ -235,8 +234,7 @@ task("deploy:sidechain:L2:boosterHelper")
         const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, deployer);
         const sidechain = sidechainConfig.getSidechain(deployer);
 
-        const salt = tskArgs.salt;
-        const create2Options = { amount: 0, salt, callbacks: [] };
+        const create2Options = { amount: 0, SALT, callbacks: [] };
         const deployOptions = {
             overrides: {},
             create2Options,

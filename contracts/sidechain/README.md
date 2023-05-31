@@ -157,6 +157,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | AuraBalVault       | [0xf0586c2BA50c2A33eb5BbcBD496ED3E5638d3235](https://gnosisscan.io/address/0xf0586c2BA50c2A33eb5BbcBD496ED3E5638d3235) |
 | AuraBalStrategy    | [0xFa247e4e04ad17988962261175F9E9a6a46E2114](https://gnosisscan.io/address/0xFa247e4e04ad17988962261175F9E9a6a46E2114) |
 | BoosterLite        | [0x047B52d580047888902a37287E0d849e7433e85D](https://gnosisscan.io/address/0x047B52d580047888902a37287E0d849e7433e85D) |
+| BoosterHelper      | [0x0000000000000000000000000000000000000000](https://gnosisscan.io/address/0x0000000000000000000000000000000000000000) |
 | VoterProxyLite     | [0x363Fcb8B79cd67956F95923a1764A5062b9b7C0C](https://gnosisscan.io/address/0x363Fcb8B79cd67956F95923a1764A5062b9b7C0C) |
 | TokenFactory       | [0xA18b88E087206BaA2f939BA0091A0aE261B239FC](https://gnosisscan.io/address/0xA18b88E087206BaA2f939BA0091A0aE261B239FC) |
 | ProxyFactory       | [0xb28aAF076ca6Dff559DC1e9855ba2bceFb4b951a](https://gnosisscan.io/address/0xb28aAF076ca6Dff559DC1e9855ba2bceFb4b951a) |
