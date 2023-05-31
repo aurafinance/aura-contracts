@@ -16,6 +16,8 @@ import {
     AuraOFT__factory,
     AuraProxyOFT,
     AuraProxyOFT__factory,
+    BoosterHelper,
+    BoosterHelper__factory,
     BoosterLite,
     BoosterLite__factory,
     BoosterOwnerLite,
@@ -165,6 +167,7 @@ export interface SidechainPhase2Deployed {
     virtualRewardFactory: VirtualRewardFactory;
     auraBalVault: AuraBalVault;
     auraBalStrategy: SimpleStrategy;
+    boosterHelper: BoosterHelper;
 }
 
 /**
@@ -561,6 +564,15 @@ export async function deploySidechainPhase2(
         deployOptions,
     );
 
+    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+        hre,
+        create2Factory,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [phase1.booster.address, extConfig.token],
+        deployOptions,
+    );
+
     let tx: ContractTransaction;
 
     tx = await auraBalVault.setStrategy(auraBalStrategy.address);
@@ -589,6 +601,7 @@ export async function deploySidechainPhase2(
         virtualRewardFactory,
         auraBalVault,
         auraBalStrategy,
+        boosterHelper,
     };
 }
 

@@ -67,8 +67,6 @@ const addresses: ExtSystemConfig = {
     votingEscrow: "0x33A99Dcc4C85C014cf12626959111D5898bbCAbF",
     feeDistribution: "0x42B67611B208E2e9b4CC975F6D74c87b865aE066",
     gaugeController: "0xBB1CE49b16d55A1f2c6e88102f32144C7334B116",
-    voteOwnership: ZERO_ADDRESS,
-    voteParameter: ZERO_ADDRESS,
     gauges: ["0xec94b0453E14cde7fE1A66B54DCA29E9547C57ef"],
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     balancerPoolId: "0xf8a0623ab66f985effc1c69d05f1af4badb01b00000200000000000000000060",
@@ -80,16 +78,7 @@ const addresses: ExtSystemConfig = {
     },
     balancerGaugeFactory: "0x224E808FBD9e491Be8988B8A0451FBF777C81B8A",
     weth: "0xdFCeA9088c8A88A76FF74892C1457C17dfeef9C1",
-    uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-    sushiswapRouter: "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506",
     feeToken: "0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd",
-    feeTokenHandlerPath: {
-        poolIds: [
-            "0x13acd41c585d7ebb4a9460f7c8f50be60dc080cd00000000000000000000005f",
-            "0xe8075304a388f2f9b2af61f502741a88ff21d9a4000200000000000000000070",
-        ],
-        assetsIn: ["0x13ACD41C585d7EbB4a9460f7C8f50BE60DC080Cd", "0x0595D1Df64279ddB51F1bdC405Fe2D0b4Cc86681"],
-    },
     lzEndpoint: "0xbfD2135BFfbb0B5378b56643c2Df8a87552Bfa23",
     sidechain: {
         auraBalInflowLimit: parseEther("1000000"),

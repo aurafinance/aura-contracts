@@ -19,6 +19,7 @@ import {
     ExtSidechainConfig,
     SidechainConfig,
     SidechainBridging,
+    BoosterHelper__factory,
 } from "../../types";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { sidechainNaming } from "./sidechain-naming";
@@ -65,6 +66,7 @@ export const getSidechain = (signer: Signer) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect("0xD6847262790a6A04A15F688Ade2ef42cA8F9e162", signer),
     auraBalVault: AuraBalVault__factory.connect("0xf0586c2BA50c2A33eb5BbcBD496ED3E5638d3235", signer),
     auraBalStrategy: SimpleStrategy__factory.connect("0xFa247e4e04ad17988962261175F9E9a6a46E2114", signer),
+    boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config: SidechainConfig = {
