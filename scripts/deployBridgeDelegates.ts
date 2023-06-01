@@ -18,6 +18,47 @@ export interface SimplyBridgeDelegateDeployed {
     bridgeDelegateReceiver: BridgeDelegateReceiver;
 }
 
+export async function deploySimpleBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    config: ExtSystemConfig,
+    deployer: Signer,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): Promise<{ bridgeDelegateSender: SimpleBridgeDelegateSender }> {
+    const bridgeDelegateSender = await deployContract<SimpleBridgeDelegateSender>(
+        hre,
+        new SimpleBridgeDelegateSender__factory(deployer),
+        "SimpleBridgeDelegateSender",
+        [config.token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { bridgeDelegateSender };
+}
+
+export async function deploySimpleBridgeReceiver(
+    hre: HardhatRuntimeEnvironment,
+    canonical: CanonicalPhase1Deployed,
+    srcChainId: number,
+    deployer: Signer,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): Promise<{ bridgeDelegateReceiver: BridgeDelegateReceiver }> {
+    const bridgeDelegateReceiver = await deployContract<BridgeDelegateReceiver>(
+        hre,
+        new BridgeDelegateReceiver__factory(deployer),
+        "BridgeDelegateReceiver",
+        [canonical.l1Coordinator.address, srcChainId],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { bridgeDelegateReceiver };
+}
+
 /**
  * Deploy simple bridge delegate used for testing
  */
@@ -30,22 +71,12 @@ export async function deploySimpleBridgeDelegates(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<SimplyBridgeDelegateDeployed> {
-    const bridgeDelegateSender = await deployContract<SimpleBridgeDelegateSender>(
+    const { bridgeDelegateSender } = await deploySimpleBridgeSender(hre, config, deployer, debug, waitForBlocks);
+    const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(
         hre,
-        new SimpleBridgeDelegateSender__factory(deployer),
-        "SimpleBridgeDelegateSender",
-        [config.token],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const bridgeDelegateReceiver = await deployContract<BridgeDelegateReceiver>(
-        hre,
-        new BridgeDelegateReceiver__factory(deployer),
-        "BridgeDelegateReceiver",
-        [canonical.l1Coordinator.address, srcChainId],
-        {},
+        canonical,
+        srcChainId,
+        deployer,
         debug,
         waitForBlocks,
     );

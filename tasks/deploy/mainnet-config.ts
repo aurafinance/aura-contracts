@@ -169,6 +169,7 @@ const addresses: ExtSystemConfig = {
 
 const whales = {
     "0xCfCA23cA9CA720B6E98E3Eb9B6aa0fFC4a5C08B9": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
+    "0x072f14B85ADd63488DDaD88f855Fda4A99d6aC9B": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
 };
 
 const multisigs: MultisigConfig = {

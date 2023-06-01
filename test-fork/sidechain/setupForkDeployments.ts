@@ -9,7 +9,11 @@ import { impersonateAccount } from "../../test-utils";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
 import { Account, LZEndpointMock, LZEndpointMock__factory, SidechainConfig } from "../../types";
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import {
+    deploySimpleBridgeReceiver,
+    deploySimpleBridgeSender,
+    SimplyBridgeDelegateDeployed,
+} from "../../scripts/deployBridgeDelegates";
 
 export interface TestSuiteDeployment {
     dao: Account;
@@ -30,6 +34,10 @@ export const setupForkDeployment = async (
     sidechainConfig: SidechainConfig,
     deployer: Account,
     L2_CHAIN_ID: number,
+    opts: { deployBridgeSender?: boolean; deployBridgeReceiver?: boolean } = {
+        deployBridgeSender: true,
+        deployBridgeReceiver: true,
+    },
 ): Promise<TestSuiteDeployment> => {
     const dao = await impersonateAccount(canonicalConfig.multisigs.daoMultisig);
 
@@ -43,13 +51,13 @@ export const setupForkDeployment = async (
     const canonical = canonicalConfig.getSidechain(deployer.signer);
     const sidechain = sidechainConfig.getSidechain(deployer.signer);
 
-    const bridgeDelegateDeployment = await deploySimpleBridgeDelegates(
-        hre,
-        canonicalConfig.addresses,
-        canonical,
-        L2_CHAIN_ID,
-        deployer.signer,
-    );
+    const bridgeSender = opts.deployBridgeSender
+        ? await deploySimpleBridgeSender(hre, canonicalConfig.addresses, deployer.signer)
+        : undefined;
+    const bridgeReceiver = opts.deployBridgeReceiver
+        ? await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer)
+        : undefined;
+    const bridgeDelegateDeployment = { ...bridgeSender, ...bridgeReceiver };
 
     return {
         dao,
