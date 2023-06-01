@@ -89,14 +89,14 @@ describe("Sidechain", () => {
         const whale = mainnetConfig.addresses.balancerVault;
         if (!whale) throw new Error("No BPT whale found");
         const tokenWhaleSigner = await impersonateAccount(whale);
-        const tokenContract = phase2.cvx.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
+        await phase2.cvx.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
     };
 
     const getBal = async (recipient: string, amount = simpleToExactAmount(250)) => {
         const whale = "0x740a4AEEfb44484853AA96aB12545FC0290805F3";
         if (!whale) throw new Error("No BPT whale found");
         const tokenWhaleSigner = await impersonateAccount(whale);
-        const tokenContract = crv.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
+        await crv.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
     };
 
     before(async () => {
