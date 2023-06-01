@@ -569,7 +569,7 @@ export async function deploySidechainPhase2(
         create2Factory,
         new BoosterHelper__factory(deployer),
         "BoosterHelper",
-        [phase1.booster.address, extConfig.token],
+        [phase1.booster.address],
         deployOptions,
     );
 

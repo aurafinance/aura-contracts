@@ -58,14 +58,14 @@ task("deploy:mainnet:feeCollector").setAction(async function (taskArguments: Tas
 
 task("deploy:mainnet:boosterHelper").setAction(async function (taskArguments: TaskArguments, hre) {
     const deployer = await getSigner(hre);
-    const { getPhase2, addresses } = config;
+    const { getPhase2 } = config;
 
     const phase2: Phase2Deployed = await getPhase2(deployer);
     const boosterHelper = await deployContract<BoosterHelper>(
         hre,
         new BoosterHelper__factory(deployer),
         "BoosterHelper",
-        [phase2.booster.address, addresses.token],
+        [phase2.booster.address],
         {},
         debug,
         waitForBlocks,

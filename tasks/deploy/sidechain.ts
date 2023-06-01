@@ -246,7 +246,7 @@ task("deploy:sidechain:L2:boosterHelper")
             create2Factory,
             new BoosterHelper__factory(deployer),
             "BoosterHelper",
-            [sidechain.booster.address, sidechainConfig.extConfig.token],
+            [sidechain.booster.address],
             deployOptions,
         );
 

@@ -16,18 +16,20 @@ contract BoosterHelper {
     using SafeERC20 for IERC20;
 
     IBooster public immutable booster;
-    address public immutable crv;
 
     /**
-     * @param _booster      Booster.sol, e.g. 0xF403C135812408BFbE8713b5A23a04b3D48AAE31
-     * @param _crv          Crv  e.g. 0xba100000625a3754423978a60c9317c58a424e3D
+     * @param _booster      Booster.sol
      */
-    constructor(address _booster, address _crv) {
+    constructor(address _booster) {
         booster = IBooster(_booster);
-        crv = _crv;
     }
 
-    function earmarkRewards(uint256[] memory _pids) external returns (uint256) {
+    /**
+     * @notice Invoke earmarkRewards for each pool id.
+     * @param crv  crv address token (caller incentive)
+     * @param _pids Array of pool ids
+     */
+    function earmarkRewards(address crv, uint256[] memory _pids) external returns (uint256) {
         uint256 len = _pids.length;
         require(len > 0, "!pids");
 
