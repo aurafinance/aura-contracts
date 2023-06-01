@@ -13,8 +13,7 @@ import { IAuraOFT } from "../interfaces/IAuraOFT.sol";
  * @author  AuraFinance
  * @notice  Claim zap to bundle various reward claims
  * @dev     Claims from all pools, Bridges/Locks to L1 if Wanted and compounds if needed.
- *           v4:
- *            - She's now a side chainooor
+ *
  */
 contract SidechainClaimZap {
     using SafeERC20 for IERC20;
@@ -204,7 +203,7 @@ contract SidechainClaimZap {
             if (continued) IAuraOFT(cvx).sendFrom{value: msg.value}(
                 address(this), 
                 canonicalChainID, 
-                abi.encode(_l1receiver), 
+                abi.encodePacked(_l1receiver), 
                 cvxBalance,
                 payable(_l1receiver), 
                 zro, 

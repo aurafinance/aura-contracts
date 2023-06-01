@@ -85,6 +85,20 @@ describe("Sidechain", () => {
         await tokenContract.transfer(recipient, amount);
     };
 
+    const getAura = async (recipient: string, amount = simpleToExactAmount(250)) => {
+        const whale = mainnetConfig.addresses.balancerVault;
+        if (!whale) throw new Error("No BPT whale found");
+        const tokenWhaleSigner = await impersonateAccount(whale);
+        const tokenContract = phase2.cvx.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
+    };
+
+    const getBal = async (recipient: string, amount = simpleToExactAmount(250)) => {
+        const whale = "0x740a4AEEfb44484853AA96aB12545FC0290805F3";
+        if (!whale) throw new Error("No BPT whale found");
+        const tokenWhaleSigner = await impersonateAccount(whale);
+        const tokenContract = crv.connect(tokenWhaleSigner.signer).transfer(recipient, amount);
+    };
+
     before(async () => {
         await network.provider.request({
             method: "hardhat_reset",
@@ -211,7 +225,7 @@ describe("Sidechain", () => {
             const endpoint = await impersonateAccount(await sidechain.l2Coordinator.lzEndpoint());
             const accAuraRewardsBefore = await sidechain.l2Coordinator.accAuraRewards();
 
-            const amount = simpleToExactAmount(1);
+            const amount = simpleToExactAmount("10000");
 
             let payload = ethers.utils.defaultAbiCoder.encode(
                 ["bytes4", "uint8", "uint256"],
@@ -256,6 +270,20 @@ describe("Sidechain", () => {
             await sidechain.auraBalOFT
                 .connect(signer)
                 .nonblockingLzReceive(canonicalLzChainId, l2LzEndpoint.address, 0, payload);
+
+            await getAura(canonical.auraProxyOFT.address, simpleToExactAmount("1000000"));
+
+            const poolInfo = await sidechain.booster.poolInfo(0);
+
+            signer = await impersonate(sidechain.booster.address, true);
+            await getBal(poolInfo.crvRewards, simpleToExactAmount("1000"));
+            await getBal(l2Coordinator.address, simpleToExactAmount("3333"));
+            await sidechain.l2Coordinator
+                .connect(signer)
+                .queueNewRewards(deployer.address, simpleToExactAmount("3333"), simpleToExactAmount("1000"), {
+                    gasLimit: 4000000,
+                    value: simpleToExactAmount("0.2"),
+                });
         });
     });
 
@@ -295,7 +323,7 @@ describe("Sidechain", () => {
     describe("Zap Testing", () => {
         it("Deposit to Pool", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
-            await getBpt(poolInfo.lptoken, aliceAddress, simpleToExactAmount(10));
+            await getBpt(poolInfo.lptoken, aliceAddress, simpleToExactAmount("200"));
 
             const lpToken = ERC20__factory.connect(poolInfo.lptoken, alice);
             const baseRewardPool = BaseRewardPool4626__factory.connect(poolInfo.crvRewards, alice);
@@ -308,14 +336,14 @@ describe("Sidechain", () => {
             await baseRewardPool.deposit(lpTokenBalance, aliceAddress);
             const rewardBalanceAfter = await baseRewardPool.balanceOf(aliceAddress);
 
-            expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq;
+            expect(rewardBalanceAfter.sub(rewardBalanceBefore)).eq(simpleToExactAmount("200"));
         });
 
         it("User can claim rewards from pool on l2", async () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
@@ -354,7 +382,7 @@ describe("Sidechain", () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
@@ -394,7 +422,7 @@ describe("Sidechain", () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
@@ -434,7 +462,7 @@ describe("Sidechain", () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
@@ -512,13 +540,13 @@ describe("Sidechain", () => {
             const poolId = 0;
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
-            for (let i = 0; i < 2; i++) {
+            for (let i = 0; i < 4; i++) {
                 await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
             const options: OptionsStruct = {
-                useAllWalletFunds: false,
+                useAllWalletFunds: true,
                 sendCvxToL1: true,
                 lockCvxL1: false,
                 useCompounder: false,
