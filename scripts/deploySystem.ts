@@ -1237,7 +1237,6 @@ async function deployPhase5(
     const deployer = signer;
 
     const {
-        token,
         balancerPoolFactories,
         balancerVault,
         balancerGaugeFactory,
