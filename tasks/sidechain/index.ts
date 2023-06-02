@@ -16,7 +16,6 @@ import {
 } from "../../scripts/deploySidechain";
 import {
     canonicalChains,
-    remoteChainMap,
     lzChainIds,
     canonicalConfigs,
     sidechainConfigs,

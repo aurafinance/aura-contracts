@@ -19,8 +19,6 @@ import {
     AuraBalVault__factory,
     SimpleStrategy__factory,
     VirtualRewardFactory__factory,
-    BoosterHelper,
-    BoosterHelper__factory,
 } from "../../types";
 import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -34,7 +32,7 @@ import {
     setTrustedRemoteCanonicalPhase2,
 } from "../../scripts/deploySidechain";
 import { waitForTx, chainIds } from "../../tasks/utils";
-import { computeCreate2Address, deployContractWithCreate2, logContracts } from "../utils/deploy-utils";
+import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
 import {
     canonicalChains,
     canonicalConfigs,
@@ -47,7 +45,6 @@ import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as gnosisSidechainConfig } from "./gnosis-config";
-import { Create2Factory__factory } from "types/generated/factories/Create2Factory__factory";
 
 const debug = true;
 const SALT = "lisbon";
@@ -227,32 +224,6 @@ task("deploy:sidechain:L2:phase2")
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
-task("deploy:sidechain:L2:boosterHelper")
-    .addParam("wait", "wait for blocks")
-    .setAction(async function (tskArgs: TaskArguments, hre) {
-        const deployer = await getSigner(hre);
-        const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
-        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, deployer);
-        const sidechain = sidechainConfig.getSidechain(deployer);
-
-        const create2Options = { amount: 0, SALT, callbacks: [] };
-        const deployOptions = {
-            overrides: {},
-            create2Options,
-            debug,
-            waitForBlocks: tskArgs.wait,
-        };
-        const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
-            hre,
-            create2Factory,
-            new BoosterHelper__factory(deployer),
-            "BoosterHelper",
-            [sidechain.booster.address],
-            deployOptions,
-        );
-
-        console.log("update boosterHelper address to:", boosterHelper.address);
-    });
 /* ----------------------------------------------------------------------------
     Canonical Configuration Tasks
 ---------------------------------------------------------------------------- */
