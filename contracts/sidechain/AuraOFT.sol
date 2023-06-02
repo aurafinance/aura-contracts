@@ -80,25 +80,26 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /**
      * @dev Lock CVX on the L1 chain
+     * @param _receiver address that will be receiving the refund and vlaura lock
      * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
      */
-    function lock(uint256 _cvxAmount) external payable {
+    function lock(address _receiver, uint256 _cvxAmount) external payable {
         require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
-        bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);
+        bytes memory payload = CCM.encodeLock(_receiver, _cvxAmount);
 
         CrossChainConfig.Config memory config = configs[canonicalChainId][keccak256("lock(uint256)")];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
-            payable(msg.sender), /////// Refund address
+            payable(_receiver), /////// Refund address
             config.zroPaymentAddress, // ZRO payment address
             config.adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
         );
 
-        emit Locked(msg.sender, _cvxAmount);
+        emit Locked(_receiver, _cvxAmount);
     }
 }

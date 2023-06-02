@@ -44,6 +44,8 @@ import {
     VirtualRewardFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
+    SidechainClaimZap,
+    SidechainClaimZap__factory,
 } from "../types";
 import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
@@ -662,4 +664,50 @@ export async function setTrustedRemoteCanonicalPhase2(
 
     tx = await canonical.auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
+}
+
+export async function deploySidechainClaimZap(
+    extConfig: ExtSidechainConfig,
+    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    salt: string = SALT,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ sidechainClaimZap: SidechainClaimZap }> {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const sidechainInitialize = SidechainClaimZap__factory.createInterface().encodeFunctionData("initialize", [
+        await signer.getAddress(),
+        sidechain.auraOFT.address,
+        sidechain.auraBalOFT.address,
+        sidechain.auraBalVault.address,
+    ]);
+
+    const sidechainClaimZap = await deployContractWithCreate2<SidechainClaimZap, SidechainClaimZap__factory>(
+        hre,
+        create2Factory,
+        new SidechainClaimZap__factory(signer),
+        "SidechainClaimZap",
+        [],
+        deployOptionsWithCallbacks([sidechainInitialize]),
+    );
+
+    return { sidechainClaimZap };
 }
