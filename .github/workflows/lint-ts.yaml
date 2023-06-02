@@ -14,5 +14,5 @@ jobs:
                   cache: "yarn"
 
             - run: yarn
-            - run: yarn compile
+            - run: yarn typechain
             - run: yarn lint:ts
