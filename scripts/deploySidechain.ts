@@ -683,7 +683,22 @@ export async function deploySidechainClaimZap(
         waitForBlocks,
     };
 
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const sidechainInitialize = SidechainClaimZap__factory.createInterface().encodeFunctionData("initialize", [
+        await signer.getAddress(),
+        sidechain.auraOFT.address,
+        sidechain.auraBalOFT.address,
+        sidechain.auraBalVault.address,
+    ]);
 
     const sidechainClaimZap = await deployContractWithCreate2<SidechainClaimZap, SidechainClaimZap__factory>(
         hre,
@@ -691,15 +706,8 @@ export async function deploySidechainClaimZap(
         new SidechainClaimZap__factory(signer),
         "SidechainClaimZap",
         [],
-        deployOptions,
+        deployOptionsWithCallbacks([sidechainInitialize]),
     );
-
-    const tx = await sidechainClaimZap.init(
-        sidechain.auraOFT.address,
-        sidechain.auraBalOFT.address,
-        sidechain.auraBalVault.address,
-    );
-    await waitForTx(tx, debug, waitForBlocks);
 
     return { sidechainClaimZap };
 }

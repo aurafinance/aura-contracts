@@ -80,10 +80,10 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /**
      * @dev Lock CVX on the L1 chain
-     * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
      * @param _receiver address that will be receiving the refund and vlaura lock
+     * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
      */
-    function lock(uint256 _cvxAmount, address _receiver) external payable {
+    function lock(address _receiver, uint256 _cvxAmount) external payable {
         require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 

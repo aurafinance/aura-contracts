@@ -294,6 +294,7 @@ describe("Sidechain", () => {
     describe("Check config", () => {
         it("Zap has correct config", async () => {
             expect(await sidechainClaimZap.getName()).to.be.eq("Sidechain ClaimZap V1.0");
+            expect(await sidechainClaimZap.owner()).eq(deployer.address);
             expect(await sidechainClaimZap.cvx()).eq(sidechain.auraOFT.address);
             expect(await sidechainClaimZap.cvxCrv()).eq(sidechain.auraBalOFT.address);
             expect(await sidechainClaimZap.compounder()).eq(sidechain.auraBalVault.address);
@@ -310,8 +311,13 @@ describe("Sidechain", () => {
             await expect(
                 sidechainClaimZap
                     .connect(alice)
-                    .init(sidechain.auraOFT.address, sidechain.auraBalOFT.address, sidechain.auraBalVault.address),
-            ).to.be.revertedWith("INIT");
+                    .initialize(
+                        aliceAddress,
+                        sidechain.auraOFT.address,
+                        sidechain.auraBalOFT.address,
+                        sidechain.auraBalVault.address,
+                    ),
+            ).to.be.revertedWith("already initialized");
         });
 
         it("verifies only owner can set approvals", async () => {
@@ -359,6 +365,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: ZERO_ADDRESS,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -395,6 +403,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: ZERO_ADDRESS,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -435,6 +445,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: ZERO_ADDRESS,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -475,6 +487,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: ZERO_ADDRESS,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -511,6 +525,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: ZERO_ADDRESS,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -553,8 +569,9 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: true,
                 l1Receiever: daveAddress,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
-
             const amounts: ClaimRewardsAmountsStruct = {
                 lockCvxMaxAmount: ethers.constants.MaxUint256,
                 depositCvxCrvMaxAmount: ethers.constants.MaxUint256,
@@ -583,6 +600,8 @@ describe("Sidechain", () => {
                 refundEth: false,
                 overrideL1Receiver: false,
                 l1Receiever: daveAddress,
+                zro: ZERO_ADDRESS,
+                adapterParams: "0x",
             };
 
             const amounts: ClaimRewardsAmountsStruct = {
@@ -593,16 +612,6 @@ describe("Sidechain", () => {
             await expect(
                 sidechainClaimZap.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], amounts, options),
             ).to.be.revertedWith("!parity");
-        });
-
-        it("owner can set zro", async () => {
-            await sidechainClaimZap.setZro(daveAddress);
-            expect(await sidechainClaimZap.zro()).eq(daveAddress);
-        });
-
-        it("verifies only owner can set zro", async () => {
-            expect(await sidechainClaimZap.owner()).not.eq(aliceAddress);
-            await expect(sidechainClaimZap.connect(alice).setZro(aliceAddress)).to.be.revertedWith("!auth");
         });
     });
 });

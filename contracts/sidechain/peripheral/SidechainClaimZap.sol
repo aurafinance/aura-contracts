@@ -24,7 +24,6 @@ contract SidechainClaimZap {
     address public cvx;
     address public cvxCrv;
     address public compounder;
-    address public zro;
     address public owner;
     uint16 public canonicalChainID;
 
@@ -49,6 +48,8 @@ contract SidechainClaimZap {
      * - refundEth               Flag: Send Eth Remainder Back to Sender
      * - overrideL1Receiver      Flag: Override receiving L1 Address
      * - l1Receiever             Flag: L1 Address to receive to
+     * - zro                     Flag: Zro address passed by user
+     * - adapterParams           Flag: adapter params passed by user
      */
     struct Options {
         bool useAllWalletFunds;
@@ -58,27 +59,22 @@ contract SidechainClaimZap {
         bool refundEth;
         bool overrideL1Receiver;
         address l1Receiever;
+        address zro;
+        bytes adapterParams;
     }
 
-    function init(
+    function initialize(
+        address _owner,
         address _cvx,
         address _cvxCrv,
         address _compounder
     ) external {
-        require(cvx == address(0), "INIT");
+        require(cvx == address(0), "already initialized");
+        owner = _owner;
         cvx = _cvx;
         cvxCrv = _cvxCrv;
         compounder = _compounder;
         canonicalChainID = IAuraOFT(_cvx).canonicalChainId();
-        owner = msg.sender;
-    }
-
-    /**
-     * @notice Owner can set zro value
-     */
-    function setZro(address _zro) external {
-        require(msg.sender == owner, "!auth");
-        zro = _zro;
     }
 
     /**
@@ -190,7 +186,7 @@ contract SidechainClaimZap {
                 removeCvxBalance, 
                 amounts.lockCvxMaxAmount
             );
-            if (continued) IAuraOFT(cvx).lock{value: msg.value}(cvxBalance, _l1receiver);
+            if (continued) IAuraOFT(cvx).lock{value: msg.value}(_l1receiver, cvxBalance);
         }
         //or bridge it back to l1
         else if (options.sendCvxToL1) {
@@ -206,8 +202,8 @@ contract SidechainClaimZap {
                 abi.encodePacked(_l1receiver), 
                 cvxBalance,
                 payable(_l1receiver), 
-                zro, 
-                new bytes(0)
+                options.zro, 
+                options.adapterParams
             );
         }
 

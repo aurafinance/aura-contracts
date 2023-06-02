@@ -432,7 +432,7 @@ describe("Full Deployment Phase 1", () => {
         });
         it("lock AURA from L2 -> L1", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await auraOFT.connect(deployer.signer).lock(lockAmount, deployer.address, { value: NATIVE_FEE });
+            await auraOFT.connect(deployer.signer).lock(deployer.address, lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
@@ -440,7 +440,7 @@ describe("Full Deployment Phase 1", () => {
         it("lock AURA from L2 -> L1 on behalf of another address", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(dao.address);
             const auraBalanceBefore = await auraOFT.balanceOf(deployer.address);
-            await auraOFT.connect(deployer.signer).lock(lockAmount, dao.address, { value: NATIVE_FEE });
+            await auraOFT.connect(deployer.signer).lock(dao.address, lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(dao.address);
             const auraBalanceAfter = await auraOFT.balanceOf(deployer.address);
             await increaseTime(ONE_WEEK);
@@ -451,7 +451,7 @@ describe("Full Deployment Phase 1", () => {
             await phase2.cvxLocker.connect(dao.signer).shutdown();
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
-            await auraOFT.lock(lockAmount, deployer.address, { value: NATIVE_FEE });
+            await auraOFT.lock(deployer.address, lockAmount, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
             expect(balancesAfter.locked).eq(balancesBefore.locked);

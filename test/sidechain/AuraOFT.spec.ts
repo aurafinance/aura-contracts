@@ -199,7 +199,7 @@ describe("AuraOFT", () => {
             // Lock
             const tx = await auraOFT
                 .connect(deployer.signer)
-                .lock(auraOFTBalance, deployer.address, { value: NATIVE_FEE });
+                .lock(deployer.address, auraOFTBalance, { value: NATIVE_FEE });
             // Verify events, storage change, balance, etc.
             await expect(tx).to.emit(auraOFT, "Transfer").withArgs(deployer.address, ZERO_ADDRESS, amount);
             await expect(tx)
@@ -212,18 +212,18 @@ describe("AuraOFT", () => {
             expect(stakedAfter, "staked").to.be.eq(stakedBefore.add(amount));
         });
         it("fails if sender has no balance", async () => {
-            await expect(auraOFT.lock(1, deployer.address), "no balance").to.be.revertedWith(
+            await expect(auraOFT.lock(deployer.address, 1), "no balance").to.be.revertedWith(
                 "ERC20: burn amount exceeds balance",
             );
         });
         it("fails if no fee is sent", async () => {
             await bridgeTokenFromL1ToL2(deployer, phase2.cvx, canonical.auraProxyOFT, L2_CHAIN_ID, amount);
-            await expect(auraOFT.lock(amount, deployer.address), "native fee").to.be.revertedWith(
+            await expect(auraOFT.lock(deployer.address, amount), "native fee").to.be.revertedWith(
                 "LayerZeroMock: not enough native for fees",
             );
         });
         it("fails if amount is zero", async () => {
-            await expect(auraOFT.lock(ZERO, deployer.address, { value: NATIVE_FEE }), "zero amount").to.be.revertedWith(
+            await expect(auraOFT.lock(deployer.address, ZERO, { value: NATIVE_FEE }), "zero amount").to.be.revertedWith(
                 "!amount",
             );
         });
@@ -237,7 +237,7 @@ describe("AuraOFT", () => {
             const auraOFTBalance = await auraOFT.balanceOf(deployer.address);
             expect(auraOFTBalance, "bridge amount").to.be.eq(amount);
             // When it is locked
-            const tx = await auraOFT.connect(deployer.signer).lock(amount, deployer.address, { value: NATIVE_FEE });
+            const tx = await auraOFT.connect(deployer.signer).lock(deployer.address, amount, { value: NATIVE_FEE });
 
             // Verify events, storage change, balance, etc.
             await expect(tx).to.emit(auraOFT, "Transfer").withArgs(deployer.address, ZERO_ADDRESS, amount);
