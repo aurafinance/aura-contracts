@@ -129,12 +129,18 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
        Setter Functions
     ------------------------------------------------------------------- */
 
-    function setConfig(
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
+     */
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /**
@@ -187,6 +193,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function distributeAura(
         uint16 _srcChainId,
+        address _zroPaymentAddress,
         address _sendFromZroPaymentAddress,
         bytes memory _sendFromAdapterParams
     ) external payable onlyDistributor {
@@ -194,13 +201,14 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
 
-        Config memory config = configs[_srcChainId][keccak256("distributeAura(uint16,address,bytes)")];
+        bytes memory adapterParams = getAdapterParams[_srcChainId][keccak256("distributeAura(uint16,address,bytes)")];
+
         _distributeAura(
             _srcChainId,
             feeDebt,
-            config.zroPaymentAddress,
+            _zroPaymentAddress,
             _sendFromZroPaymentAddress,
-            config.adapterParams,
+            adapterParams,
             _sendFromAdapterParams
         );
 

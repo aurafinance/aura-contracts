@@ -310,7 +310,9 @@ describe("Full Deployment Phase 2", () => {
             const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
             const auraBalBalanceBefore = await sidechain.auraBalOFT.balanceOf(sidechain.auraBalStrategy.address);
 
-            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE });
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, ZERO_ADDRESS, {
+                value: NATIVE_FEE,
+            });
 
             const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
             const claimableAuraBalAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvxCrv.address);
@@ -320,7 +322,9 @@ describe("Full Deployment Phase 2", () => {
             expect(auraBalBalanceAfter.sub(auraBalBalanceBefore)).eq(claimableAuraBal);
 
             const auraRewardBefore = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
-            await canonical.auraBalProxyOFT.processClaimable(phase2.cvx.address, L2_CHAIN_ID, { value: NATIVE_FEE });
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvx.address, L2_CHAIN_ID, ZERO_ADDRESS, {
+                value: NATIVE_FEE,
+            });
 
             const auraRewardAfter = await sidechain.auraOFT.balanceOf(sidechain.auraBalStrategy.address);
             const claimableAuraAfter = await canonical.auraBalProxyOFT.totalClaimable(phase2.cvx.address);
@@ -651,7 +655,9 @@ describe("Full Deployment Phase 2", () => {
                 .reverted;
 
             await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([100], 100);
-            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, { value: NATIVE_FEE });
+            await canonical.auraBalProxyOFT.processClaimable(phase2.cvxCrv.address, L2_CHAIN_ID, ZERO_ADDRESS, {
+                value: NATIVE_FEE,
+            });
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
             await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);

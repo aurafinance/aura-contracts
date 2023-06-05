@@ -101,12 +101,18 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
         emit BridgeDelegateUpdated(bridgeDelegate);
     }
 
-    function setConfig(
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
+     */
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /* -------------------------------------------------------------------
@@ -138,11 +144,13 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      * @param _originalSender Sender that initiated the Booster call
      * @param _fees Amount of CRV that was received as fees
      * @param _rewards Amount of CRV that was received by the reward contract
+     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
     function queueNewRewards(
         address _originalSender,
         uint256 _fees,
-        uint256 _rewards
+        uint256 _rewards,
+        address _zroPaymentAddress
     ) external payable {
         require(msg.sender == booster, "!booster");
         require(bridgeDelegate != address(0), "!bridgeDelegate");
@@ -156,16 +164,14 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(_fees);
-        CrossChainConfig.Config memory config = configs[canonicalChainId][
-            keccak256("queueNewRewards(address,uint256)")
-        ];
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("queueNewRewards(address,uint256)")];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
             payable(_originalSender), // Refund address
-            config.zroPaymentAddress, // ZRO payment address
-            config.adapterParams, ////// Adapter params
+            _zroPaymentAddress, // ZRO payment address
+            adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
         );
     }

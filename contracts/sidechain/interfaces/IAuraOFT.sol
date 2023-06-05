@@ -6,7 +6,11 @@ pragma solidity 0.8.11;
  * @author  AuraFinance
  */
 interface IAuraOFT {
-    function lock(address receiver, uint256 _cvxAmount) external payable;
+    function lock(
+        address receiver,
+        uint256 _cvxAmount,
+        address zroPaymentAddress
+    ) external payable;
 
     function sendFrom(
         address _from,

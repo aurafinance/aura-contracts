@@ -15,14 +15,7 @@ import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
 import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
-import {
-    impersonate,
-    impersonateAccount,
-    ONE_DAY,
-    simpleToExactAmount,
-    ZERO_ADDRESS,
-    ONE_WEEK,
-} from "../../test-utils";
+import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS, ONE_WEEK } from "../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -280,10 +273,16 @@ describe("Sidechain", () => {
             await getBal(l2Coordinator.address, simpleToExactAmount("3333"));
             await sidechain.l2Coordinator
                 .connect(signer)
-                .queueNewRewards(deployer.address, simpleToExactAmount("3333"), simpleToExactAmount("1000"), {
-                    gasLimit: 4000000,
-                    value: simpleToExactAmount("0.2"),
-                });
+                .queueNewRewards(
+                    deployer.address,
+                    simpleToExactAmount("3333"),
+                    simpleToExactAmount("1000"),
+                    ZERO_ADDRESS,
+                    {
+                        gasLimit: 4000000,
+                        value: simpleToExactAmount("0.2"),
+                    },
+                );
         });
     });
 
@@ -350,7 +349,7 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
             for (let i = 0; i < 4; i++) {
-                await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.earmarkRewards(poolId, ZERO_ADDRESS, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
@@ -375,7 +374,9 @@ describe("Sidechain", () => {
                 bridgeCvxMaxAmount: ethers.constants.MaxUint256,
             };
 
-            await sidechainClaimZap.connect(alice).claimRewards([poolInfo.crvRewards], [], [], [], amounts, options);
+            await sidechainClaimZap
+                .connect(alice)
+                .claimRewards(ZERO_ADDRESS, [poolInfo.crvRewards], [], [], [], amounts, options);
 
             const crvBalanceAfter = await crv.balanceOf(aliceAddress);
             const cvxBalanceAfter = await auraOFT.balanceOf(aliceAddress);
@@ -391,7 +392,7 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
             for (let i = 0; i < 4; i++) {
-                await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.earmarkRewards(poolId, ZERO_ADDRESS, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
@@ -416,7 +417,7 @@ describe("Sidechain", () => {
             const balancesBefore = await phase2.cvxLocker.balances(aliceAddress);
             const tx = await sidechainClaimZap
                 .connect(alice)
-                .claimRewards([poolInfo.crvRewards], [], [], [], amounts, options, {
+                .claimRewards(ZERO_ADDRESS, [poolInfo.crvRewards], [], [], [], amounts, options, {
                     value: simpleToExactAmount("0.2"),
                 });
             const balancesAfter = await phase2.cvxLocker.balances(aliceAddress);
@@ -433,7 +434,7 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
             for (let i = 0; i < 4; i++) {
-                await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.earmarkRewards(poolId, ZERO_ADDRESS, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
@@ -458,7 +459,7 @@ describe("Sidechain", () => {
             const balancesBefore = await phase2.cvx.balanceOf(aliceAddress);
             const tx = await sidechainClaimZap
                 .connect(alice)
-                .claimRewards([poolInfo.crvRewards], [], [], [], amounts, options, {
+                .claimRewards(ZERO_ADDRESS, [poolInfo.crvRewards], [], [], [], amounts, options, {
                     value: simpleToExactAmount("0.2"),
                 });
             const balancesAfter = await phase2.cvx.balanceOf(aliceAddress);
@@ -475,7 +476,7 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
             for (let i = 0; i < 4; i++) {
-                await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.earmarkRewards(poolId, ZERO_ADDRESS, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
@@ -500,7 +501,7 @@ describe("Sidechain", () => {
             const balancesBefore = await sidechain.auraOFT.balanceOf(aliceAddress);
             const tx = await sidechainClaimZap
                 .connect(alice)
-                .claimRewards([poolInfo.crvRewards], [], [], [], amounts, options, {
+                .claimRewards(ZERO_ADDRESS, [poolInfo.crvRewards], [], [], [], amounts, options, {
                     value: simpleToExactAmount("0.2"),
                 });
             const balancesAfter = await sidechain.auraOFT.balanceOf(aliceAddress);
@@ -538,7 +539,7 @@ describe("Sidechain", () => {
             const vaultBefore = await sidechain.auraBalVault.balanceOf(aliceAddress);
             const tx = await sidechainClaimZap
                 .connect(alice)
-                .claimRewards([], [], [], [], amounts, options, { value: simpleToExactAmount("0.2") });
+                .claimRewards(ZERO_ADDRESS, [], [], [], [], amounts, options, { value: simpleToExactAmount("0.2") });
             const balancesAfter = await sidechain.auraBalOFT.balanceOf(aliceAddress);
             const vaultAfter = await sidechain.auraBalVault.balanceOf(aliceAddress);
 
@@ -557,7 +558,7 @@ describe("Sidechain", () => {
             const poolInfo = await sidechain.booster.poolInfo(poolId);
 
             for (let i = 0; i < 4; i++) {
-                await sidechain.booster.earmarkRewards(poolId, { value: simpleToExactAmount("0.2") });
+                await sidechain.booster.earmarkRewards(poolId, ZERO_ADDRESS, { value: simpleToExactAmount("0.2") });
                 await increaseTime(ONE_WEEK.mul("1"));
             }
 
@@ -581,7 +582,7 @@ describe("Sidechain", () => {
             const balancesBefore = await phase2.cvx.balanceOf(daveAddress);
             const tx = await sidechainClaimZap
                 .connect(alice)
-                .claimRewards([poolInfo.crvRewards], [], [], [], amounts, options, {
+                .claimRewards(ZERO_ADDRESS, [poolInfo.crvRewards], [], [], [], amounts, options, {
                     value: simpleToExactAmount("0.2"),
                 });
             const balancesAfter = await phase2.cvx.balanceOf(daveAddress);
@@ -610,7 +611,9 @@ describe("Sidechain", () => {
                 bridgeCvxMaxAmount: ethers.constants.MaxUint256,
             };
             await expect(
-                sidechainClaimZap.connect(alice).claimRewards([], [], [], [ZERO_ADDRESS], amounts, options),
+                sidechainClaimZap
+                    .connect(alice)
+                    .claimRewards(ZERO_ADDRESS, [], [], [], [ZERO_ADDRESS], amounts, options),
             ).to.be.revertedWith("!parity");
         });
     });

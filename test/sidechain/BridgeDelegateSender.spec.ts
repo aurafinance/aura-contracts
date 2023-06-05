@@ -103,7 +103,7 @@ describe("BridgeDelegateSender", () => {
             await increaseTime(60 * 60 * 24);
 
             // Send fees
-            await sidechain.booster.earmarkRewards(pid, { value: NATIVE_FEE });
+            await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: NATIVE_FEE });
 
             const bridgeDelegateBalanceAfter = await testSetup.l2.mocks.token.balanceOf(bridgeDelegateSender.address);
             const bridgeDelegateBalanceDelta = bridgeDelegateBalanceAfter.sub(bridgeDelegateBalanceBefore);

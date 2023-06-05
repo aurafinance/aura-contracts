@@ -201,7 +201,7 @@ task("sidechhain:test:lock-aura")
         const scaledAmount = parseEther(tskArgs.amount);
         assert(auraBalance >= scaledAmount, "Not enough ARUA");
 
-        const tx = await deployment.auraOFT.lock(deployerAddress, scaledAmount, {
+        const tx = await deployment.auraOFT.lock(deployerAddress, scaledAmount, ZERO_ADDRESS, {
             value: simpleToExactAmount(0.05),
             gasLimit: 600_000,
         });

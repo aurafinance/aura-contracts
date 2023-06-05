@@ -103,17 +103,17 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Set cross chain config for selector
-     * @param _srcChainId Source chain layer zero chainId
-     * @param _selector The function selector
-     * @param _config Config struct for adapterParams and zroPaymentAddress etc
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
      */
-    function setConfig(
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /**
@@ -264,8 +264,13 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
      * @dev Process claimable rewards
      * @param _token The token to process
      * @param _srcChainId The source chain ID
+     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
-    function processClaimable(address _token, uint16 _srcChainId) external payable {
+    function processClaimable(
+        address _token,
+        uint16 _srcChainId,
+        address _zroPaymentAddress
+    ) external payable {
         address receiver = rewardReceiver[_srcChainId];
         uint256 reward = claimable[_token][_srcChainId];
         address oft = ofts[_token];
@@ -277,7 +282,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
 
-        Config memory config = configs[_srcChainId][
+        bytes memory adapterParams = getAdapterParams[_srcChainId][
             keccak256(abi.encodeWithSignature("processClaimable(address,uint16)", _token, _srcChainId))
         ];
 
@@ -290,8 +295,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 _srcChainId,
                 abi.encode(PT_SEND, abi.encodePacked(receiver), reward),
                 payable(msg.sender),
-                config.zroPaymentAddress,
-                config.adapterParams,
+                _zroPaymentAddress,
+                adapterParams,
                 msg.value
             );
 
@@ -306,8 +311,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 abi.encodePacked(receiver),
                 reward,
                 payable(msg.sender),
-                config.zroPaymentAddress,
-                config.adapterParams
+                _zroPaymentAddress,
+                adapterParams
             );
         }
     }

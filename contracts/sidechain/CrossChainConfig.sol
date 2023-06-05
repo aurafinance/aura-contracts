@@ -7,42 +7,39 @@ pragma solidity 0.8.11;
  * @dev     Setter/Getter logic for cross chain layer zero config
  */
 abstract contract CrossChainConfig {
-    struct Config {
-        bytes adapterParams;
-        address zroPaymentAddress;
-    }
-
     /// @dev srcChainId mapped to selector and configuration
-    mapping(uint16 => mapping(bytes32 => Config)) public configs;
+    mapping(uint16 => mapping(bytes32 => bytes)) public getAdapterParams;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
+
     /**
      * @dev Emitted a configuration is set for a given source chain id.
      * @param srcChainId    The source chain ID.
      * @param selector      The selector.
      * @param adapterParams The configuration.
      */
-    event SetConfig(uint16 indexed srcChainId, bytes32 selector, bytes adapterParams, address zroPaymentAddress);
+    event SetAdapterParams(uint16 indexed srcChainId, bytes32 selector, bytes adapterParams);
 
     /**
      * @dev Sets the configuration for a given source chain ID and selector.
      * @param _srcChainId The source chain ID.
      * @param _selector The selector.
-     * @param _config The configuration.
+     * @param _adapterParams The adapter params.
      */
-    function setConfig(
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external virtual;
 
-    function _setConfig(
+    function _setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) internal {
-        configs[_srcChainId][_selector] = _config;
-        emit SetConfig(_srcChainId, _selector, _config.adapterParams, _config.zroPaymentAddress);
+        getAdapterParams[_srcChainId][_selector] = _adapterParams;
+        emit SetAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 }

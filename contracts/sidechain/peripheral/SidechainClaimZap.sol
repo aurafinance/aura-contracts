@@ -113,6 +113,7 @@ contract SidechainClaimZap {
      * @param options                Claim options
      */
     function claimRewards(
+        address zroPaymentAddress,
         address[] calldata rewardContracts,
         address[] calldata extraRewardContracts,
         address[] calldata tokenRewardContracts,
@@ -145,7 +146,7 @@ contract SidechainClaimZap {
 
         // deposit/lock/stake
         if (_callOptions(options)) {
-            _handleRewards(cvxBalance, cvxCrvBalance, amounts, options);
+            _handleRewards(cvxBalance, cvxCrvBalance, zroPaymentAddress, amounts, options);
         }
 
         if (options.refundEth) {
@@ -173,6 +174,7 @@ contract SidechainClaimZap {
     function _handleRewards( // solhint-disable-line 
         uint256 removeCvxBalance,   
         uint256 removeCvxCrvBalance,       
+        address zroPaymentAddress,
         ClaimRewardsAmounts calldata amounts, 
         Options calldata options
     ) internal {
@@ -186,7 +188,7 @@ contract SidechainClaimZap {
                 removeCvxBalance, 
                 amounts.lockCvxMaxAmount
             );
-            if (continued) IAuraOFT(cvx).lock{value: msg.value}(_l1receiver, cvxBalance);
+            if (continued) IAuraOFT(cvx).lock{value: msg.value}(_l1receiver, cvxBalance, zroPaymentAddress);
         }
         //or bridge it back to l1
         else if (options.sendCvxToL1) {

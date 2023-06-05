@@ -726,9 +726,14 @@ describe("AuraBalProxyOFTBalances", () => {
                                             actionData.user
                                         }, amount ${formatEther(actionData.amount)}`;
 
-                                        await auraBalProxyOFT.processClaimable(l1.phase2.cvx.address, L2_CHAIN_ID, {
-                                            value: NATIVE_FEE,
-                                        });
+                                        await auraBalProxyOFT.processClaimable(
+                                            l1.phase2.cvx.address,
+                                            L2_CHAIN_ID,
+                                            ZERO_ADDRESS,
+                                            {
+                                                value: NATIVE_FEE,
+                                            },
+                                        );
                                     });
                                     break;
                                 case ActionName.l1OFTProcessClaimableCvxCrv:
@@ -739,9 +744,14 @@ describe("AuraBalProxyOFTBalances", () => {
                                             actionData.user
                                         }, amount ${formatEther(actionData.amount)}`;
 
-                                        await auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
-                                            value: NATIVE_FEE,
-                                        });
+                                        await auraBalProxyOFT.processClaimable(
+                                            cvxCrv.address,
+                                            L2_CHAIN_ID,
+                                            ZERO_ADDRESS,
+                                            {
+                                                value: NATIVE_FEE,
+                                            },
+                                        );
                                     });
                                     break;
                                 case ActionName.l2BridgeToL1:

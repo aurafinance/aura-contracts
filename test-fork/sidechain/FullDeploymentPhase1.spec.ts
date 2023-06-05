@@ -183,10 +183,8 @@ describe("Full Deployment Phase 1", () => {
             ).eq(true);
 
             const lockSelector = ethers.utils.id("lock(uint256)");
-            const config = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
-            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-            expect(config.adapterParams).eq(adapterParams);
-            expect(config.zroPaymentAddress).eq(ZERO_ADDRESS);
+            const adapterParams = await auraOFT.getAdapterParams(L1_CHAIN_ID, lockSelector);
+            expect(adapterParams).eq(ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]));
         });
         it("L2Coordinator has correct config", async () => {
             expect(await l2Coordinator.canonicalChainId()).eq(L1_CHAIN_ID);
@@ -432,7 +430,9 @@ describe("Full Deployment Phase 1", () => {
         });
         it("lock AURA from L2 -> L1", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await auraOFT.connect(deployer.signer).lock(deployer.address, lockAmount, { value: NATIVE_FEE });
+            await auraOFT
+                .connect(deployer.signer)
+                .lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
@@ -440,7 +440,7 @@ describe("Full Deployment Phase 1", () => {
         it("lock AURA from L2 -> L1 on behalf of another address", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(dao.address);
             const auraBalanceBefore = await auraOFT.balanceOf(deployer.address);
-            await auraOFT.connect(deployer.signer).lock(dao.address, lockAmount, { value: NATIVE_FEE });
+            await auraOFT.connect(deployer.signer).lock(dao.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(dao.address);
             const auraBalanceAfter = await auraOFT.balanceOf(deployer.address);
             await increaseTime(ONE_WEEK);
@@ -451,7 +451,7 @@ describe("Full Deployment Phase 1", () => {
             await phase2.cvxLocker.connect(dao.signer).shutdown();
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
-            await auraOFT.lock(deployer.address, lockAmount, { value: NATIVE_FEE });
+            await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
             expect(balancesAfter.locked).eq(balancesBefore.locked);
@@ -463,7 +463,7 @@ describe("Full Deployment Phase 1", () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
             await expect(
-                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
             ).to.be.revertedWith("!distributor");
         });
         it("Can set deployer as distributor", async () => {
@@ -488,7 +488,7 @@ describe("Full Deployment Phase 1", () => {
             // Earmark rewards sends BAL to the reward contract and
             // the L1Coordinator is notified about new fee debt
             await withMockMinter(async () => {
-                await sidechain.booster.earmarkRewards(0, {
+                await sidechain.booster.earmarkRewards(0, ZERO_ADDRESS, {
                     value: NATIVE_FEE,
                 });
             });
@@ -520,7 +520,7 @@ describe("Full Deployment Phase 1", () => {
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
-                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
+                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>

@@ -4,15 +4,7 @@ import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 import { Phase2Deployed } from "scripts/deploySystem";
 
-import {
-    DEAD_ADDRESS,
-    impersonateAccount,
-    increaseTime,
-    ONE_WEEK,
-    simpleToExactAmount,
-    ZERO,
-    ZERO_ADDRESS,
-} from "../../test-utils";
+import { impersonateAccount, increaseTime, ONE_WEEK, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import shouldBehaveLikeERC20, { IERC20BehaviourContext } from "../../test/shared/ERC20.behaviour";
 import { Account } from "../../types";
 import { AuraOFT, ERC20, PausableOFT, ProxyOFT } from "../../types/generated";
@@ -54,7 +46,6 @@ describe("AuraOFT", () => {
     let testSetup: SideChainTestSetup;
     let canonical: CanonicalPhaseDeployed;
 
-    const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
     let idSnapShot: number;
 
     /* -- Declare shared functions -- */
@@ -199,7 +190,7 @@ describe("AuraOFT", () => {
             // Lock
             const tx = await auraOFT
                 .connect(deployer.signer)
-                .lock(deployer.address, auraOFTBalance, { value: NATIVE_FEE });
+                .lock(deployer.address, auraOFTBalance, ZERO_ADDRESS, { value: NATIVE_FEE });
             // Verify events, storage change, balance, etc.
             await expect(tx).to.emit(auraOFT, "Transfer").withArgs(deployer.address, ZERO_ADDRESS, amount);
             await expect(tx)
@@ -212,20 +203,21 @@ describe("AuraOFT", () => {
             expect(stakedAfter, "staked").to.be.eq(stakedBefore.add(amount));
         });
         it("fails if sender has no balance", async () => {
-            await expect(auraOFT.lock(deployer.address, 1), "no balance").to.be.revertedWith(
+            await expect(auraOFT.lock(deployer.address, 1, ZERO_ADDRESS), "no balance").to.be.revertedWith(
                 "ERC20: burn amount exceeds balance",
             );
         });
         it("fails if no fee is sent", async () => {
             await bridgeTokenFromL1ToL2(deployer, phase2.cvx, canonical.auraProxyOFT, L2_CHAIN_ID, amount);
-            await expect(auraOFT.lock(deployer.address, amount), "native fee").to.be.revertedWith(
+            await expect(auraOFT.lock(deployer.address, amount, ZERO_ADDRESS), "native fee").to.be.revertedWith(
                 "LayerZeroMock: not enough native for fees",
             );
         });
         it("fails if amount is zero", async () => {
-            await expect(auraOFT.lock(deployer.address, ZERO, { value: NATIVE_FEE }), "zero amount").to.be.revertedWith(
-                "!amount",
-            );
+            await expect(
+                auraOFT.lock(deployer.address, ZERO, ZERO_ADDRESS, { value: NATIVE_FEE }),
+                "zero amount",
+            ).to.be.revertedWith("!amount");
         });
         it("should lock from L2 to L1 staking it on cvxLocker when it is shutdown", async () => {
             // AuraOFT.lock => AuraProxyOFT.lzReceive => AuraLocker.lock
@@ -237,7 +229,9 @@ describe("AuraOFT", () => {
             const auraOFTBalance = await auraOFT.balanceOf(deployer.address);
             expect(auraOFTBalance, "bridge amount").to.be.eq(amount);
             // When it is locked
-            const tx = await auraOFT.connect(deployer.signer).lock(deployer.address, amount, { value: NATIVE_FEE });
+            const tx = await auraOFT
+                .connect(deployer.signer)
+                .lock(deployer.address, amount, ZERO_ADDRESS, { value: NATIVE_FEE });
 
             // Verify events, storage change, balance, etc.
             await expect(tx).to.emit(auraOFT, "Transfer").withArgs(deployer.address, ZERO_ADDRESS, amount);
@@ -260,27 +254,19 @@ describe("AuraOFT", () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
             const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
-            const lockConfig = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const setAdapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]);
 
             //   When  config is set.
-            await auraOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, lockSelector, lockConfig);
+            await auraOFT.connect(dao.signer).setAdapterParams(L1_CHAIN_ID, lockSelector, setAdapterParams);
             // No events
-            const newConfig = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
-            expect(newConfig.adapterParams, "adapterParams").to.be.eq(lockConfig.adapterParams);
-            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(lockConfig.zroPaymentAddress);
+            const adapterParams = await auraOFT.getAdapterParams(L1_CHAIN_ID, lockSelector);
+            expect(adapterParams, "adapterParams").to.be.eq(setAdapterParams);
         });
         it("fails if caller is not the owner", async () => {
             const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
-            await expect(
-                auraOFT[SET_CONFIG_SELECTOR](L1_CHAIN_ID, lockSelector, {
-                    adapterParams: "0x",
-                    zroPaymentAddress: DEAD_ADDRESS,
-                }),
-                "fails due to ",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            await expect(auraOFT.setAdapterParams(L1_CHAIN_ID, lockSelector, "0x"), "fails due to ").to.be.revertedWith(
+                ERRORS.ONLY_OWNER,
+            );
         });
     });
 });

@@ -25,7 +25,7 @@ import {
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
+
 describe("L1Coordinator", () => {
     /* -- Declare shared variables -- */
     let accounts: Signer[];
@@ -147,25 +147,18 @@ describe("L1Coordinator", () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("distributeAura(uint16,address,bytes)"));
-            const config = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]);
 
             //   When  config is set.
-            await l1Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
+            await l1Coordinator.connect(dao.signer).setAdapterParams(L2_CHAIN_ID, selector, adapterParams);
             // No events
-            const newConfig = await l1Coordinator.configs(L2_CHAIN_ID, selector);
-            expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
-            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
+            const newAdapterParams = await l1Coordinator.getAdapterParams(L2_CHAIN_ID, selector);
+            expect(newAdapterParams, "adapterParams").to.be.eq(adapterParams);
         });
         it("fails if caller is not the owner", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("distributeAura(uint16,address,bytes)"));
             await expect(
-                l1Coordinator[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, {
-                    adapterParams: "0x",
-                    zroPaymentAddress: DEAD_ADDRESS,
-                }),
+                l1Coordinator.setAdapterParams(L2_CHAIN_ID, selector, "0x"),
                 "fails due to ",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
@@ -221,7 +214,7 @@ describe("L1Coordinator", () => {
             const coordinatorBalBefore = await testSetup.l2.mocks.token.balanceOf(
                 testSetup.bridgeDelegates.bridgeDelegateSender.address,
             );
-            await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
             const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             feeDebt = feeDebtAfter.sub(feeDebtBefore);
             const coordinatorBalAfter = await testSetup.l2.mocks.token.balanceOf(
@@ -244,11 +237,13 @@ describe("L1Coordinator", () => {
             expect(await sidechain.l2Coordinator.mintRate()).eq(0);
             // When distribute Aura
             await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(false);
-            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
+            const tx = await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                value: NATIVE_FEE.mul(2),
+            });
 
             // Verify that calling it twice it does not distribute twice
             await expect(
-                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
             ).to.be.revertedWith("SafeMath: division by zero");
 
             // Expect aura to be received on L2 Coordinator
@@ -322,13 +317,13 @@ describe("L1Coordinator", () => {
         describe("distributeAura", async () => {
             it("fails if the chain does not exist", async () => {
                 await expect(
-                    l1Coordinator.distributeAura(999, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
+                    l1Coordinator.distributeAura(999, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
                     "wrong chain",
                 ).to.be.revertedWith("SafeMath: division by zero");
             });
             xit("fails if no native fees are provided", async () => {
                 await expect(
-                    l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, []),
+                    l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, []),
                     "!feeAmount",
                 ).to.be.revertedWith("!feeAmount");
             });
@@ -336,7 +331,7 @@ describe("L1Coordinator", () => {
                 await expect(
                     l1Coordinator
                         .connect(alice.signer)
-                        .distributeAura(999, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
+                        .distributeAura(999, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
                     "onlyDistributor",
                 ).to.be.revertedWith("!distributor");
             });
@@ -347,13 +342,15 @@ describe("L1Coordinator", () => {
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
             it("fails if the chain does not have an L2 coordinator", async () => {
-                await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
+                await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
                 const feeDebtOf = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
                 expect(feeDebtOf).to.be.gt(ZERO);
                 // Make sure the L2 coordinator is not set.
                 await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, ZERO_ADDRESS);
                 await expect(
-                    l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) }),
+                    l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                        value: NATIVE_FEE.mul(2),
+                    }),
                     "wrong chain",
                 ).to.be.revertedWith("to can not be zero");
             });
@@ -386,16 +383,15 @@ describe("L1Coordinator", () => {
         });
         xit("DAO goes rogue breaks distributeAura", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("distributeAura(uint16,address,bytes)"));
-            const config = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 10]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 10]);
             //   When  config is set.
             await crv.transfer(l1Coordinator.address, simpleToExactAmount(10));
             await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(false);
-            await l1Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
-            await sidechain.booster.connect(alice.signer).earmarkRewards(0, { value: NATIVE_FEE });
-            await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
+            await l1Coordinator.connect(dao.signer).setAdapterParams(L2_CHAIN_ID, selector, adapterParams);
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                value: NATIVE_FEE.mul(2),
+            });
         });
     });
 });

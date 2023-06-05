@@ -165,7 +165,7 @@ describe("Mint rate", () => {
 
     const earmarkRewards = async (amount: BigNumber, pid: number) => {
         await withMockMinter(amount, async () => {
-            await sidechain.booster.earmarkRewards(pid, {
+            await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, {
                 value: NATIVE_FEE,
             });
         });
@@ -174,7 +174,7 @@ describe("Mint rate", () => {
     const distribute = async () => {
         await l1Coordinator
             .connect(deployer.signer)
-            .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
+            .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
     };
 
     const snapshotRate = async (i: number, pid: number, accounts: Account[]) => {

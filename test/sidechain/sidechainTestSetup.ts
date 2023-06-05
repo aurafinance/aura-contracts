@@ -1,6 +1,6 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
-import { ZERO_ADDRESS } from "test-utils";
+import { ZERO_ADDRESS } from "../../test-utils";
 
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";

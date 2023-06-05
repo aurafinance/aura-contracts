@@ -436,14 +436,14 @@ describe("Sidechain", () => {
             const crvRewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, dao.signer);
             const balanceBefore = await crv.balanceOf(crvRewards.address);
             await increaseTime(ONE_DAY);
-            await sidechain.booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balanceAfter = await crv.balanceOf(crvRewards.address);
             expect(balanceAfter).gt(balanceBefore);
         });
         it("pays out a premium to the caller", async () => {
             const balanceBefore = await crv.balanceOf(aliceAddress);
             await increaseTime(ONE_DAY);
-            await sidechain.booster.connect(alice).earmarkRewards(0, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balanceAfter = await crv.balanceOf(aliceAddress);
             expect(balanceAfter).gt(balanceBefore);
         });
@@ -457,7 +457,7 @@ describe("Sidechain", () => {
             for (let i = 0; i < 7; i++) {
                 await increaseTime(ONE_DAY);
                 await increaseTime(ONE_DAY);
-                await sidechain.booster.connect(dao.signer).earmarkRewards(0, { value: NATIVE_FEE });
+                await sidechain.booster.connect(dao.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
             }
 
             const earned = await rewards.earned(aliceAddress);
