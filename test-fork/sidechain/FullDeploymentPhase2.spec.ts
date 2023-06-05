@@ -155,6 +155,7 @@ describe("Full Deployment Phase 2", () => {
             expect(await sidechain.auraBalVault.underlying()).eq(sidechain.auraBalOFT.address);
             expect(await sidechain.auraBalVault.virtualRewardFactory()).eq(sidechain.virtualRewardFactory.address);
             expect(await sidechain.auraBalVault.strategy()).eq(sidechain.auraBalStrategy.address);
+            expect(await sidechain.auraBalVault.isHarvestPermissioned()).eq(false);
         });
         it("auraBalStrategy has correct config", async () => {
             expect(await sidechain.auraBalStrategy.auraBalToken()).eq(sidechain.auraBalOFT.address);

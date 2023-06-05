@@ -47,7 +47,12 @@ import {
     SidechainClaimZap,
     SidechainClaimZap__factory,
 } from "../types";
-import { ExtSidechainConfig, SidechainMultisigConfig, SidechainNaming } from "../types/sidechain-types";
+import {
+    SidechainBridging,
+    ExtSidechainConfig,
+    SidechainMultisigConfig,
+    SidechainNaming,
+} from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
 const SALT = "berlin";
@@ -200,6 +205,7 @@ export async function deploySidechainPhase1(
     naming: SidechainNaming,
     multisigs: SidechainMultisigConfig,
     extConfig: ExtSidechainConfig,
+    bridging: SidechainBridging,
     canonical: CanonicalPhase1Deployed,
     canonicalLzChainId: number,
     salt: string = SALT,
@@ -378,6 +384,9 @@ export async function deploySidechainPhase1(
         canonicalLzChainId,
         ethers.utils.solidityPack(["address", "address"], [canonical.l1Coordinator.address, l2Coordinator.address]),
     );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l2Coordinator.setBridgeDelegate(bridging.l2Sender);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.transferOwnership(multisigs.daoMultisig);

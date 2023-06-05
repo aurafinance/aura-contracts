@@ -1,5 +1,6 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
+import { ZERO_ADDRESS } from "test-utils";
 
 import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
@@ -160,6 +161,7 @@ export const deployL2 = async (
             ...l2mocks.addresses,
             create2Factory: create2Factory.address,
         },
+        { l2Sender: ZERO_ADDRESS, l1Receiver: ZERO_ADDRESS, nativeBridge: ZERO_ADDRESS },
         l1.canonical,
         canonicalChainId,
     );

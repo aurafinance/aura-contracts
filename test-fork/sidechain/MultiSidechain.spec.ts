@@ -101,6 +101,7 @@ describe("Multi Sidechain AURA", () => {
             sidechainConfig__1.naming,
             sidechainConfig__1.multisigs,
             sidechainConfig__1.extConfig,
+            sidechainConfig__1.bridging,
             canonical,
             L1_CHAIN_ID,
             "shenzhen",

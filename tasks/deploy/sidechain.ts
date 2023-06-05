@@ -176,6 +176,7 @@ task("deploy:sidechain:L2:phase1")
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
+            sidechainConfig.bridging,
             canonical,
             lzChainIds[canonicalChainId],
             SALT,

@@ -106,6 +106,7 @@ export const setupLocalDeployment = async (
         sidechainConfig.naming,
         sidechainConfig.multisigs,
         sidechainConfig.extConfig,
+        sidechainConfig.bridging,
         canonicalPhase1,
         L1_CHAIN_ID,
     );
