@@ -577,6 +577,9 @@ export async function deploySidechainPhase2(
     tx = await auraBalVault.setStrategy(auraBalStrategy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await auraBalVault.setHarvestPermissions(false);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await auraBalVault.addExtraReward(phase1.auraOFT.address);
     await waitForTx(tx, debug, waitForBlocks);
 
