@@ -9,6 +9,10 @@ import { table } from "table";
 import axios from "axios";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+
+import { resolve } from "path";
+import { config as dotenvConfig } from "dotenv";
+dotenvConfig({ path: resolve(__dirname, "../../.env") });
 dayjs.extend(relativeTime);
 
 interface PoolMetadata {
@@ -257,3 +261,34 @@ task("info:booster:pools-tvl", "Gets the TVL for each pool added to the booster"
         console.log(table(poolsMappedData));
         console.log(table(totalsData));
     });
+
+task("info:booster:stashversions", "Gets the TVL for each pool added to the booster").setAction(async function (
+    tskArgs: TaskArguments,
+    hre: HardhatRuntime,
+) {
+    const signer = await getSigner(hre);
+    const phase6: Phase6Deployed = await config.getPhase6(signer);
+    const poolLength = await phase6.booster.poolLength();
+
+    const oldByteCode = "0x363d3d373d3d3d363d7337c3ebfd4b0cf66df19a413e92dd21e556915f985af43d82803e903d91602b57fd5bf3";
+    const newByteCode = "0x363d3d373d3d3d363d734a53301fe213eca70f904cd3766c07db3a621bf85af43d82803e903d91602b57fd5bf3";
+    const provider = hre.ethers.getDefaultProvider(process.env.ETHEREUM_NODE_URL);
+    const pools = [];
+
+    for (let i = 0; i < Number(poolLength); i++) {
+        const poolInfo = await phase6.booster.poolInfo(i);
+        const code = await provider.getCode(poolInfo.stash);
+
+        if (code == oldByteCode) {
+            console.log("Stash %d is Old Stash", i);
+            pools.push([i, "A"]);
+        } else if (code == newByteCode) {
+            console.log("Stash %d is New Stash", i);
+            pools.push([i, "B"]);
+        } else {
+            console.log("Stash %d is Unrecognised", i);
+            pools.push([i, "?"]);
+        }
+    }
+    console.log(pools);
+});
