@@ -24,18 +24,17 @@ contract AuraArbBalGrant {
 
     IERC20 public immutable ARB;
     IERC20 public immutable BAL;
-    IBalancerVault public immutable BALANCER_VAULT;
-    address public immutable project;
-    address public immutable balancer;
+    IERC20 public AURA;
 
-    uint256 public constant cooldownPeriod = 60 days;
+    address public immutable PROJECT;
+    address public immutable BALANCER;
+
+    uint256 public constant COOLDOWN_PERIOD = 60 days;
     uint256 public cooldownStart;
 
-    IERC20 public AURA;
-    IERC20 public BPT;
+    IBalancerVault public immutable BALANCER_VAULT;
     bytes32 public POOL_ID;
-
-    uint256[3] public tokenOrder;
+    address[] public poolTokens;
 
     /* ----------------------------------------------------------------
        Events 
@@ -51,22 +50,22 @@ contract AuraArbBalGrant {
     /**
      * @param _arb              ARB token
      * @param _bal              BAL token
-     * @param _balancerVault    core balancer vault
      * @param _project          the multisig that manages the project  functions
      * @param _balancer         the multisig that manages the balancer functions
+     * @param _balancerVault    core balancer vault
      */
     constructor(
         IERC20 _arb,
         IERC20 _bal,
-        IBalancerVault _balancerVault,
         address _project,
-        address _balancer
+        address _balancer,
+        IBalancerVault _balancerVault
     ) {
         ARB = _arb;
         BAL = _bal;
+        PROJECT = _project;
+        BALANCER = _balancer;
         BALANCER_VAULT = _balancerVault;
-        project = _project;
-        balancer = _balancer;
     }
 
     /* ----------------------------------------------------------------
@@ -77,7 +76,7 @@ contract AuraArbBalGrant {
      * @notice Modifier that allows only Project or Balancer can trigger a function
      */
     modifier onlyAuth() {
-        require(msg.sender == project || msg.sender == balancer, "!auth");
+        require(msg.sender == PROJECT || msg.sender == BALANCER, "!auth");
         _;
     }
 
@@ -85,7 +84,7 @@ contract AuraArbBalGrant {
      * @notice Modifier that allows only Balancer to trigger a function
      */
     modifier onlyBalancer() {
-        require(msg.sender == balancer, "!balancer");
+        require(msg.sender == BALANCER, "!balancer");
         _;
     }
 
@@ -93,7 +92,7 @@ contract AuraArbBalGrant {
      * @notice Modifier that only allows something to be called when the contract is inactive
      */
     modifier whileInactive() {
-        require(cooldownStart != 0 && block.timestamp > cooldownStart + cooldownPeriod, "active");
+        require(cooldownStart != 0 && block.timestamp > cooldownStart + COOLDOWN_PERIOD, "active");
         _;
     }
 
@@ -110,26 +109,19 @@ contract AuraArbBalGrant {
     ---------------------------------------------------------------- */
 
     /**
-     * @dev Initialise the contract values
+     * @dev Initialize the contract values
      * @param _aura        AURA token
-     * @param _bpt         BPT token
      * @param _poolId      poolID of the 8020 pool
-     * @param _tokenOrder  Order of AURA, BAL, ARB in the pool
      */
-    function init(
-        IERC20 _aura,
-        IERC20 _bpt,
-        bytes32 _poolId,
-        uint256[3] memory _tokenOrder
-    ) external onlyAuth {
+    function init(IERC20 _aura, bytes32 _poolId) external onlyAuth {
         require(address(AURA) == address(0), "already initialized");
 
         AURA = _aura;
-        BPT = _bpt;
         POOL_ID = _poolId;
 
-        for (uint256 i; i < 3; i++) {
-            tokenOrder[i] = _tokenOrder[i];
+        (address[] memory _poolTokens, , ) = BALANCER_VAULT.getPoolTokens(_poolId);
+        for (uint256 i = 0; i < _poolTokens.length; i++) {
+            poolTokens.push(_poolTokens[i]);
         }
 
         _aura.safeApprove(address(BALANCER_VAULT), type(uint256).max);
@@ -148,12 +140,12 @@ contract AuraArbBalGrant {
     function withdrawBalances() external onlyAuth whileInactive {
         // Send AURA to project msig
         uint256 auraBalance = AURA.balanceOf(address(this));
-        AURA.safeTransfer(project, auraBalance);
+        AURA.safeTransfer(PROJECT, auraBalance);
         // Send BAL and ARB to balancer msig
         uint256 balBalance = BAL.balanceOf(address(this));
-        BAL.safeTransfer(balancer, balBalance);
+        BAL.safeTransfer(BALANCER, balBalance);
         uint256 arbBalance = ARB.balanceOf(address(this));
-        ARB.safeTransfer(balancer, arbBalance);
+        ARB.safeTransfer(BALANCER, arbBalance);
 
         emit WithdrawBalances(auraBalance, balBalance, arbBalance);
     }
@@ -173,7 +165,7 @@ contract AuraArbBalGrant {
      */
     function startCooldown() external onlyAuth whileActive {
         cooldownStart = block.timestamp;
-        emit StartCooldown(block.timestamp, block.timestamp + cooldownPeriod);
+        emit StartCooldown(block.timestamp, block.timestamp + COOLDOWN_PERIOD);
     }
 
     /* ----------------------------------------------------------------
@@ -185,7 +177,7 @@ contract AuraArbBalGrant {
      * grant must be inactive in order for this to be called
      * @param  _minOuts Min out amounts
      */
-    function exit(uint256[3] memory _minOuts) external onlyBalancer whileInactive {
+    function exit(uint256[] memory _minOuts) external onlyBalancer whileInactive {
         _exitPool(_minOuts);
     }
 
@@ -196,11 +188,14 @@ contract AuraArbBalGrant {
     /**
      * @notice Get array of pool assets in the correct order
      */
-    function _getAssetArray() internal view returns (IERC20[3] memory assets) {
-        IERC20[3] memory unordered = [ARB, AURA, BAL];
-        for (uint256 i = 0; i < 3; i++) {
-            assets[tokenOrder[i]] = unordered[i];
+    function _getAssetArray() internal view returns (IAsset[] memory) {
+        uint256 len = poolTokens.length;
+        IAsset[] memory assets = new IAsset[](len);
+        for (uint256 i = 0; i < len; i++) {
+            address poolToken = poolTokens[i];
+            assets[i] = IAsset(poolToken);
         }
+        return assets;
     }
 
     /**
@@ -208,14 +203,11 @@ contract AuraArbBalGrant {
      * @param  _minAmountOut slippage check for BPT output
      */
     function _joinPool(uint256 _minAmountOut) internal {
-        IAsset[] memory assets = new IAsset[](3);
-        uint256[] memory maxAmountsIn = new uint256[](3);
-        IERC20[3] memory assetArr = _getAssetArray();
+        IAsset[] memory assets = _getAssetArray();
+        uint256[] memory maxAmountsIn = new uint256[](assets.length);
 
-        for (uint256 i = 0; i < 3; i++) {
-            IERC20 asset = assetArr[i];
-            assets[i] = IAsset(address(asset));
-            maxAmountsIn[i] = asset.balanceOf(address(this));
+        for (uint256 i = 0; i < assets.length; i++) {
+            maxAmountsIn[i] = IERC20(address(assets[i])).balanceOf(address(this));
         }
 
         BALANCER_VAULT.joinPool(
@@ -235,18 +227,11 @@ contract AuraArbBalGrant {
      * @notice withdraws BAL, AURA and ARB from BPT position
      * @param  _minOuts Min out slippage checks for output
      */
-    function _exitPool(uint256[3] memory _minOuts) internal {
-        IAsset[] memory assets = new IAsset[](3);
-        uint256[] memory minAmountsOut = new uint256[](3);
-        IERC20[3] memory assetArr = _getAssetArray();
+    function _exitPool(uint256[] memory _minOuts) internal {
+        IAsset[] memory assets = _getAssetArray();
 
-        for (uint256 i = 0; i < 3; i++) {
-            IERC20 asset = assetArr[i];
-            assets[i] = IAsset(address(asset));
-            minAmountsOut[i] = _minOuts[i];
-        }
-
-        uint256 bptBalance = BPT.balanceOf(address(this));
+        (address bpt, ) = BALANCER_VAULT.getPool(POOL_ID);
+        uint256 bptBalance = IERC20(bpt).balanceOf(address(this));
 
         BALANCER_VAULT.exitPool(
             POOL_ID,
@@ -254,7 +239,7 @@ contract AuraArbBalGrant {
             payable(address(this)),
             IBalancerVault.ExitPoolRequest(
                 assets,
-                minAmountsOut,
+                _minOuts,
                 abi.encode(IBalancerVault.ExitKind.EXACT_BPT_IN_FOR_TOKENS_OUT, bptBalance),
                 false // Don't use internal balances
             )

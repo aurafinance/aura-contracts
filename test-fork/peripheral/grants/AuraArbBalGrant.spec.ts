@@ -127,9 +127,9 @@ describe("AuraArbBalGrant", () => {
         grant = await fgrant.deploy(
             ARB_TOKEN,
             balToken.address,
-            config.addresses.balancerVault,
             project.address,
             balancer.address,
+            config.addresses.balancerVault,
         );
     });
 
@@ -138,8 +138,8 @@ describe("AuraArbBalGrant", () => {
             expect(await grant.ARB()).eq(ARB_TOKEN);
             expect(await grant.BAL()).eq(config.addresses.token);
             expect(await grant.BALANCER_VAULT()).eq(config.addresses.balancerVault);
-            expect(await grant.project()).eq(project.address);
-            expect(await grant.balancer()).eq(balancer.address);
+            expect(await grant.PROJECT()).eq(project.address);
+            expect(await grant.BALANCER()).eq(balancer.address);
         });
     });
     describe("init", () => {
@@ -147,31 +147,20 @@ describe("AuraArbBalGrant", () => {
             await expect(
                 grant
                     .connect(random.signer)
-                    .init(
-                        ZERO_ADDRESS,
-                        ZERO_ADDRESS,
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                        deployedPool.tokenOrder,
-                    ),
+                    .init(ZERO_ADDRESS, "0x0000000000000000000000000000000000000000000000000000000000000000"),
             ).to.be.revertedWith("!auth");
         });
         it("can be initialized", async () => {
             const poolId = await pool.getPoolId();
-            await grant.connect(project.signer).init(phase2.cvx.address, pool.address, poolId, deployedPool.tokenOrder);
+            await grant.connect(project.signer).init(phase2.cvx.address, poolId);
             expect(await grant.AURA()).eq(phase2.cvx.address);
-            expect((await grant.BPT()).toLowerCase()).eq(pool.address.toLowerCase());
             expect(await grant.POOL_ID()).eq(poolId);
         });
         it("can not be initialized a second time", async () => {
             await expect(
                 grant
                     .connect(project.signer)
-                    .init(
-                        ZERO_ADDRESS,
-                        ZERO_ADDRESS,
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                        deployedPool.tokenOrder,
-                    ),
+                    .init(ZERO_ADDRESS, "0x0000000000000000000000000000000000000000000000000000000000000000"),
             ).to.be.revertedWith("already initialized");
         });
     });
@@ -245,14 +234,14 @@ describe("AuraArbBalGrant", () => {
         it("cannot exit before cooldown period", async () => {
             expect(await grant.cooldownStart()).not.eq(0);
             const cooldownStart = await grant.cooldownStart();
-            const cooldownPeriod = await grant.cooldownPeriod();
+            const cooldownPeriod = await grant.COOLDOWN_PERIOD();
             expect(await getTimestamp()).lt(cooldownStart.add(cooldownPeriod));
             await expect(grant.connect(balancer.signer).exit([0, 0, 0])).to.be.revertedWith("active");
         });
         it("cannot withdrawBalances before cooldown period", async () => {
             expect(await grant.cooldownStart()).not.eq(0);
             const cooldownStart = await grant.cooldownStart();
-            const cooldownPeriod = await grant.cooldownPeriod();
+            const cooldownPeriod = await grant.COOLDOWN_PERIOD();
             expect(await getTimestamp()).lt(cooldownStart.add(cooldownPeriod));
             await expect(grant.connect(balancer.signer).withdrawBalances()).to.be.revertedWith("active");
         });
@@ -262,7 +251,7 @@ describe("AuraArbBalGrant", () => {
         });
         it("increase time", async () => {
             const cooldownStart = await grant.cooldownStart();
-            const cooldownPeriod = await grant.cooldownPeriod();
+            const cooldownPeriod = await grant.COOLDOWN_PERIOD();
             await increaseTime(cooldownStart.add(cooldownPeriod).add(1));
         });
     });
