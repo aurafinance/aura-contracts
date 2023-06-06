@@ -174,8 +174,8 @@ yarn task timeTravel --duration 69420 --network forking
 | rewardPoolDepositWrapper        | [0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59](https://etherscan.io/address/0xB188b1CB84Fb0bA13cb9ee1292769F903A9feC59) |
 | ChefForwarder                   | [0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9](https://etherscan.io/address/0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9) |
 | ChefForwarderSiphonToken        | [0xc9307D63B3709F537D2158F43199a69682Ff0967](https://etherscan.io/address/0xc9307D63B3709F537D2158F43199a69682Ff0967) |
-| masterChefRewardHook            | [TBD](https://etherscan.io/address/TBD)                                                                               |
-| masterChefRewardHookSiphonToken | [0xbB7A6Ec509D42177C100273b4cd785816daF8e4f](https://etherscan.io/address/0xbB7A6Ec509D42177C100273b4cd785816daF8e4f) |
+| masterChefRewardHook            | [0x9593062B34DB348d604d972090242106dE7b6560](https://etherscan.io/address/0x9593062B34DB348d604d972090242106dE7b6560) |
+| masterChefRewardHookSiphonToken | [0x71061C238Ea7736d3709E801d61e09423E4be4ad](https://etherscan.io/address/0x71061C238Ea7736d3709E801d61e09423E4be4ad) |
 | gaugeMigrator                   | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
 | poolMigrator                    | [0x12addE99768a82871EAaecFbDB065b12C56F0578](https://etherscan.io/address/0x12addE99768a82871EAaecFbDB065b12C56F0578) |
 | siphonToken                     | [TBD](https://etherscan.io/address/TBD)                                                                               |

@@ -186,7 +186,7 @@ task("mainnet:getStashes").setAction(async function (_: TaskArguments, hre) {
 
 task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     const debug = true;
-    const waitForBlocks = 3;
+    const waitForBlocks = 2;
     const mintAmount = simpleToExactAmount("1");
 
     const signer = await getSigner(hre);
@@ -194,7 +194,7 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
 
     const protocolMultisig = config.multisigs.daoMultisig;
     // auraBAL reward stash address
-    const stashAddress = "0xF801a238a1Accc7A63b429E8c343B198d51fbbb9";
+    const stashAddress = "0x0000000000000000000000000000000000000000";
 
     // deploy chef forwarded
     const chefForwarder = await deployContract<ChefForwarder>(
@@ -233,7 +233,7 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     await deployContract<SiphonToken>(
         hre,
         new SiphonToken__factory(signer),
-        "SiphonTokenBribes",
+        "SiphonTokenRewardHook",
         [masterChefRewardHook.address, mintAmount],
         {},
         debug,
