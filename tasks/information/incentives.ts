@@ -20,8 +20,10 @@ import {
 
 const auraTokenAddress = "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf";
 const balTokenAddress = "0xba100000625a3754423978a60c9317c58a424e3d";
-
 const chefForwarderAddress = "0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9";
+
+// Hidden hands
+const hhIncentiveVaultAddress = "0x9DDb2da7Dd76612e0df237B89AF2CF4413733212";
 const vlAuraIncentiveAddress = "0x642c59937A62cf7dc92F70Fd78A13cEe0aa2Bd9c";
 const veBalIncentiveAddress = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
 const auraEthVeBALId = "0xb355f196c7ab330d85a3a392623204f81c8f2d668baaeda4e78f87c9f50bef04";
@@ -98,7 +100,7 @@ const chefClaimTx = {
         token: auraTokenAddress,
     },
 };
-const auraApprovalTx = (amount: BN) => ({
+const auraApprovalTx = (amount: BN, spender: string) => ({
     to: auraTokenAddress,
     value: "0",
     data: null,
@@ -111,7 +113,7 @@ const auraApprovalTx = (amount: BN) => ({
         payable: false,
     },
     contractInputsValues: {
-        spender: "0x9DDb2da7Dd76612e0df237B89AF2CF4413733212",
+        spender: spender,
         amount: amount.toString(),
     },
 });
@@ -166,12 +168,12 @@ const createQuestTx = (quest: PaladinQuest) => {
         contractInputsValues: {
             gauge: quest.gauge,
             rewardToken: quest.rewardToken,
-            duration: quest.duration,
+            duration: quest.duration.toString(),
             objective: quest.objective.toString(),
             rewardPerVote: quest.rewardPerVote.toString(),
             totalRewardAmount: quest.totalRewardAmount.toString(),
             feeAmount: quest.feeAmount.toString(),
-            blacklist: `[${quest.blacklist.join(",")}]`,
+            blacklist: `["${quest.blacklist.join(`","`)}"]`,
         },
     };
 };
@@ -242,7 +244,7 @@ task("create:hh:incentives")
          * ----------------------------------------------------- */
 
         const incentivesTransactions = txMeta(
-            [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits)).concat(depositTsx),
+            [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, hhIncentiveVaultAddress)).concat(depositTsx),
         );
         fs.writeFileSync(
             path.resolve(__dirname, "./gnosis_tx_hh_incentives.json"),
@@ -275,8 +277,8 @@ task("create:paladin:incentives")
         const duration = 2; // 2 WEEKS
         const calculateVeBalPrice = (balPrice: number) => {
             const weeklyEmission = 121929.980212;
-            const totalVotes = 9800000;
-            const premium = 1.125;
+            const totalVotes = 9580000;
+            const premium = 1.05;
             const dollarEmission = balPrice * weeklyEmission;
             const veBALPrice = (dollarEmission / totalVotes) * premium;
             return Number(veBALPrice.toFixed(5));
@@ -349,7 +351,7 @@ task("create:paladin:incentives")
          * ----------------------------------------------------- */
 
         const incentivesTransactions = txMeta(
-            [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits)).concat(createQuestTxs),
+            [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, darkQuestBoardAddress)).concat(createQuestTxs),
         );
         fs.writeFileSync(
             path.resolve(__dirname, "./gnosis_tx_paladin_incentives.json"),
