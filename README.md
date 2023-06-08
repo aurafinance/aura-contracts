@@ -191,6 +191,12 @@ yarn task timeTravel --duration 69420 --network forking
 | feeScheduler                    | [0x1a65276A9B6A0611506763839B1fFAe3E86718b4](https://etherscan.io/address/0x1a65276A9B6A0611506763839B1fFAe3E86718b4) |
 | veBalGrant                      | [0x89f67f3054bFD662971854190Dbc18dcaBb416f6](https://etherscan.io/address/0x89f67f3054bFD662971854190Dbc18dcaBb416f6) |
 
+### Arbitrum (42161)
+
+| Contract        | Address                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| AuraArbBalGrant | [0x8D803f7f7e26E586ee90E5A872cf7830e21f7727](https://arbiscan.io/address/0x8D803f7f7e26E586ee90E5A872cf7830e21f7727) |
+
 ### Goerli (5)
 
 | Contract                  | Address                                                                                                                      |
