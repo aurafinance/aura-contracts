@@ -53,7 +53,7 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
             /////////////////////////////////////
             cleanedGauges.push(g);
         } catch (e) {
-            console.log("Snapshot generate task error:", e, g);
+            console.log("Snapshot generate task error:", i, e, g);
         }
     }
 

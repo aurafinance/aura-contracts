@@ -18,7 +18,7 @@ export const symbolOverrides = {
 };
 
 export const priorityGuagesAddresses = [
-    "0xe867ad0a48e8f815dc0cda2cdb275e0f163a480b", // veBAL
+    "0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d", // veBAL
     "0x0312aa8d0ba4a1969fddb382235870bf55f7f242", // auraBAL-B-80BAL-20WETH
     "0x275df57d2b23d53e20322b4bb71bf1dcb21d0a00", // WETH-AURA
     "0x2e79d6f631177f8e7f08fbd5110e893e1b1d790a", // 33auraBAL-33graviAURA-33WETH
