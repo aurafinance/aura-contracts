@@ -270,7 +270,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         address _token,
         uint16 _srcChainId,
         address _zroPaymentAddress
-    ) external payable {
+    ) external payable whenNotPaused {
         address receiver = rewardReceiver[_srcChainId];
         uint256 reward = claimable[_token][_srcChainId];
         address oft = ofts[_token];

@@ -343,6 +343,16 @@ describe("AuraBalProxyOFT", () => {
                     "oft != address(0)",
                 ).to.be.revertedWith("!oft");
         });
+        it("processClaimable fails if paused", async () => {
+            const SUPER_CHAIN_ID = 999;
+            await auraBalProxyOFT.pause();
+            expect(await auraBalProxyOFT.paused()).eq(true);
+            await expect(
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID, ZERO_ADDRESS),
+            ).to.be.revertedWith("Pausable: paused");
+            await auraBalProxyOFT.unpause();
+            expect(await auraBalProxyOFT.paused()).eq(false);
+        });
         it("processClaimable fails if reward receiver is not set", async () => {
             const SUPER_CHAIN_ID = 999;
             expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);

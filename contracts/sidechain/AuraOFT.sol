@@ -88,7 +88,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
         address _receiver,
         uint256 _cvxAmount,
         address _zroPaymentAddress
-    ) external payable {
+    ) external payable whenNotPaused {
         require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 

@@ -207,6 +207,15 @@ describe("AuraOFT", () => {
                 "ERC20: burn amount exceeds balance",
             );
         });
+        it("fails if paused", async () => {
+            await auraOFT.connect(dao.signer).pause();
+            expect(await auraOFT.paused()).eq(true);
+            await expect(auraOFT.lock(deployer.address, 1, ZERO_ADDRESS), "paused").to.be.revertedWith(
+                "Pausable: paused",
+            );
+            await auraOFT.connect(dao.signer).unpause();
+            expect(await auraOFT.paused()).eq(false);
+        });
         it("fails if no fee is sent", async () => {
             await bridgeTokenFromL1ToL2(deployer, phase2.cvx, canonical.auraProxyOFT, L2_CHAIN_ID, amount);
             await expect(auraOFT.lock(deployer.address, amount, ZERO_ADDRESS), "native fee").to.be.revertedWith(
