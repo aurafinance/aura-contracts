@@ -255,9 +255,14 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
             }
 
             totalClaimable[harvestToken.token] += totalHarvested;
-            require(accUnderlying == _totalUnderlyingSum, "!sum");
+
+            if (j + 1 == harvestTokenslen) {
+                // We only need to emit this event and run this require
+                // at the end of the last loop as it is the same for each
+                require(accUnderlying == _totalUnderlyingSum, "!sum");
+                emit Harvest(msg.sender, _totalUnderlyingSum);
+            }
         }
-        emit Harvest(msg.sender, _totalUnderlyingSum);
     }
 
     /**
