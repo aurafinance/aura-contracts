@@ -283,7 +283,9 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         totalClaimable[_token] -= reward;
 
         bytes memory adapterParams = getAdapterParams[_srcChainId][
-            keccak256(abi.encodeWithSignature("processClaimable(address,uint16)", _token, _srcChainId))
+            keccak256(
+                abi.encodeWithSignature("processClaimable(address,uint16,address)", _token, _srcChainId, address(0))
+            )
         ];
 
         if (_token == address(innerToken)) {

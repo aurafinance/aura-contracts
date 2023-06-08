@@ -201,7 +201,9 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
 
-        bytes memory adapterParams = getAdapterParams[_srcChainId][keccak256("distributeAura(uint16,address,bytes)")];
+        bytes memory adapterParams = getAdapterParams[_srcChainId][
+            keccak256("distributeAura(uint16,address,address,bytes)")
+        ];
 
         _distributeAura(
             _srcChainId,

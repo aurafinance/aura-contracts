@@ -94,7 +94,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
         bytes memory payload = CCM.encodeLock(_receiver, _cvxAmount);
 
-        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("lock(uint256)")];
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("lock(address,uint256,address)")];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID

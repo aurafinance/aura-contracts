@@ -399,7 +399,7 @@ export async function deploySidechainPhase1(
     await waitForTx(tx, debug, waitForBlocks);
 
     const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-    const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(uint256)"));
+    const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(address,uint256,address)"));
 
     tx = await auraOFT.setAdapterParams(canonicalLzChainId, lockSelector, adapterParams);
     await waitForTx(tx, debug, waitForBlocks);

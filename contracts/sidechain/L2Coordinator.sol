@@ -164,7 +164,9 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(_fees);
-        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("queueNewRewards(address,uint256)")];
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][
+            keccak256("queueNewRewards(address,uint256,uint256,address)")
+        ];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
