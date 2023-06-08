@@ -176,7 +176,7 @@ yarn task timeTravel --duration 69420 --network forking
 | ChefForwarderSiphonToken        | [0xc9307D63B3709F537D2158F43199a69682Ff0967](https://etherscan.io/address/0xc9307D63B3709F537D2158F43199a69682Ff0967) |
 | masterChefRewardHook            | [TBD](https://etherscan.io/address/TBD)                                                                               |
 | masterChefRewardHookSiphonToken | [0xbB7A6Ec509D42177C100273b4cd785816daF8e4f](https://etherscan.io/address/0xbB7A6Ec509D42177C100273b4cd785816daF8e4f) |
-| gaugeMigrator                   | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
+| gaugeMigrator                   | [0xCd36ed329d338C88775D6f499E99265989DeBA53](https://etherscan.io/address/0xCd36ed329d338C88775D6f499E99265989DeBA53) |
 | poolMigrator                    | [0x12addE99768a82871EAaecFbDB065b12C56F0578](https://etherscan.io/address/0x12addE99768a82871EAaecFbDB065b12C56F0578) |
 | siphonToken                     | [TBD](https://etherscan.io/address/TBD)                                                                               |
 | uniswapMigrator                 | [0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6](https://etherscan.io/address/0x5B6159F43585e8A130b0Bc1d31e38Ce7028145b6) |
@@ -262,6 +262,7 @@ yarn task timeTravel --duration 69420 --network forking
 
 | extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
 | poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
+| gaugeMigrator | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
 
 ### Goerli (5) @deprecated
 
