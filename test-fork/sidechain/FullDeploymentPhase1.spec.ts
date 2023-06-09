@@ -460,7 +460,11 @@ describe("Full Deployment Phase 1", () => {
 
             const tx = await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const resp = await tx.wait();
-            console.log(resp.events);
+            const queueEvent = resp.events.find(
+                // topic hash for QueuedFromChain(uint256,uint16,address,uint256,uint256)
+                e => e.topics[0] === "0xa0381c37c26d93bfda7e2060ab159ac4cbb9cddae7f4b2ecb28dc131d13bbd76",
+            );
+            expect(Boolean(queueEvent)).eq(true);
 
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
