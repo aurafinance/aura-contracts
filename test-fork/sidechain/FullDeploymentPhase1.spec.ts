@@ -209,6 +209,9 @@ describe("Full Deployment Phase 1", () => {
             expect(await l1Coordinator.auraToken()).eq(phase2.cvx.address);
             expect(await l1Coordinator.auraOFT()).eq(auraProxyOFT.address);
             expect(await l1Coordinator.lzEndpoint()).eq(l1LzEndpoint.address);
+            expect(await l1Coordinator.rewardMultiplier()).eq(10000);
+            expect(await l1Coordinator.REWARD_MULTIPLIER_DENOMINATOR()).eq(10000);
+            expect(await l1Coordinator.treasury()).eq(mainnetConfig.multisigs.treasuryMultisig);
             // Allowances
             expect(await phase2.cvx.allowance(l1Coordinator.address, auraProxyOFT.address)).eq(
                 ethers.constants.MaxUint256,

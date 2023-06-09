@@ -313,6 +313,37 @@ describe("L1Coordinator", () => {
             expect(l1CoordinatorAfter, "l1Coordinator balance").to.be.eq(l1CoordinatorBalance.add(feeDebt));
         });
     });
+    describe("reward multiplier", () => {
+        it("only DAO can set reward multiplier", async () => {
+            await expect(l1Coordinator.setRewardMultiplier(0)).to.be.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("DAO can set reward multiplier", async () => {
+            expect(await l1Coordinator.rewardMultiplier()).eq(10000);
+            await l1Coordinator.connect(dao.signer).setRewardMultiplier(5000);
+            expect(await l1Coordinator.rewardMultiplier()).eq(5000);
+        });
+        it("distributeAura sends rewards to treasury", async () => {
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const feeDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            expect(feeDebt).gt(0);
+
+            const l2CoordinatorBalanceBefore = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
+            const treasuryBalanceBefore = await cvx.balanceOf(testSetup.l1.multisigs.treasuryMultisig);
+            await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
+                value: NATIVE_FEE.mul(2),
+            });
+            const treasuryBalanceAfter = await cvx.balanceOf(testSetup.l1.multisigs.treasuryMultisig);
+            const l2CoordinatorBalanceAfter = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
+
+            const treasuryAmount = treasuryBalanceAfter.sub(treasuryBalanceBefore);
+            expect(treasuryAmount).gt(0);
+            expect(l2CoordinatorBalanceAfter.sub(l2CoordinatorBalanceBefore)).eq(treasuryAmount);
+        });
+        it("reset reward multiplier", async () => {
+            await l1Coordinator.connect(dao.signer).setRewardMultiplier(10000);
+            expect(await l1Coordinator.rewardMultiplier()).eq(10000);
+        });
+    });
     describe("edge cases", () => {
         describe("distributeAura", async () => {
             it("fails if the chain does not exist", async () => {

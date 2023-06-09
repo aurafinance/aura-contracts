@@ -24,6 +24,9 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
        Storage 
     ------------------------------------------------------------------- */
 
+    // Reward multiplier for increasing or decreasing AURA rewards per PID
+    uint256 public constant REWARD_MULTIPLIER_DENOMINATOR = 10000;
+
     /// @dev Booster contract address
     address public immutable booster;
 
@@ -35,6 +38,12 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /// @dev AURA OFT token contract
     address public immutable auraOFT;
+
+    /// @dev AURA treasury address
+    address public immutable treasury;
+
+    /// @dev Reward multiplier
+    uint256 public rewardMultiplier;
 
     /// @dev src chain ID mapped to total feeDebt
     mapping(uint16 => uint256) public feeDebtOf;
@@ -94,6 +103,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     event FeeDebtSettled(uint16 srcChainId, uint256 amount);
 
+    /**
+     * @param multiplier The reward multiplier
+     */
+    event RewardMultiplierUpdated(uint256 multiplier);
+
     /* -------------------------------------------------------------------
        Modifiers  
     ------------------------------------------------------------------- */
@@ -112,12 +126,15 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address _booster,
         address _balToken,
         address _auraToken,
-        address _auraOFT
+        address _auraOFT,
+        address _treasury
     ) {
         booster = _booster;
         balToken = _balToken;
         auraToken = _auraToken;
         auraOFT = _auraOFT;
+        treasury = _treasury;
+        rewardMultiplier = REWARD_MULTIPLIER_DENOMINATOR;
 
         _initializeLzApp(_lzEndpoint);
 
@@ -171,6 +188,16 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     function setDistributor(address _distributor, bool _active) external onlyOwner {
         distributors[_distributor] = _active;
         emit DisributorUpdated(_distributor, _active);
+    }
+
+    /**
+     * @dev Set the reward multiplier
+     * @param _multiplier The new multiplier
+     */
+    function setRewardMultiplier(uint256 _multiplier) external onlyOwner {
+        require(_multiplier <= REWARD_MULTIPLIER_DENOMINATOR, "too high");
+        rewardMultiplier = _multiplier;
+        emit RewardMultiplierUpdated(_multiplier);
     }
 
     /* -------------------------------------------------------------------
@@ -235,12 +262,25 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     ) internal {
         uint256 auraBefore = IERC20(auraToken).balanceOf(address(this));
         IBooster(booster).distributeL2Fees(_feeAmount);
-        uint256 auraAmount = IERC20(auraToken).balanceOf(address(this)).sub(auraBefore);
 
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        bytes memory payload = CCM.encodeFeesCallback(auraAmount);
+        // Calculate the amount of AURA to send as rewards and the amount
+        // to send to the treasury based on the current reward multiplier
+        uint256 auraRewardAmount;
+        {
+            uint256 auraAmount = IERC20(auraToken).balanceOf(address(this)).sub(auraBefore);
+            auraRewardAmount = auraAmount.mul(rewardMultiplier).div(REWARD_MULTIPLIER_DENOMINATOR);
+            require(auraRewardAmount > 0, "!reward");
+            uint256 auraTreasuryAmount = auraAmount.sub(auraRewardAmount);
+
+            if (auraTreasuryAmount > 0) {
+                IERC20(auraToken).safeTransfer(treasury, auraTreasuryAmount);
+            }
+        }
+
+        bytes memory payload = CCM.encodeFeesCallback(auraRewardAmount);
 
         _lzSend(
             _srcChainId, ///////////// Source chain (L2 chain)
@@ -255,7 +295,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             address(this),
             _srcChainId,
             abi.encodePacked(to),
-            auraAmount,
+            auraRewardAmount,
             payable(msg.sender),
             _sendFromZroPaymentAddress,
             _sendFromAdapterParams
