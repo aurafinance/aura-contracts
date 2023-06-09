@@ -186,8 +186,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig, ReentrancyGuard 
         uint256 _amount
     ) internal override returns (uint256) {
         uint256 amount = super._debitFrom(_from, _srcChainId, _toAddress, _amount);
+        amount = _stakeAll();
         internalTotalSupply += amount;
-        _stakeAll();
         return amount;
     }
 
@@ -394,9 +394,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig, ReentrancyGuard 
     /**
      * @dev Stake all auraBAL in vault
      */
-    function _stakeAll() internal {
+    function _stakeAll() internal returns (uint256) {
         uint256 amount = innerToken.balanceOf(address(this));
         IGenericVault(vault).deposit(amount, address(this));
+        return amount;
     }
 
     /**
