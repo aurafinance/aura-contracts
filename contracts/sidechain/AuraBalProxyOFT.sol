@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
@@ -17,7 +18,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
  *        all auraBAL sat in this bridge will be staked in the auraBAL
  *        compounder and rewards distributed to the L2 staking contracts
  */
-contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
+contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using AuraMath for uint256;
 
@@ -275,7 +276,7 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         address _token,
         uint16 _srcChainId,
         address _zroPaymentAddress
-    ) external payable whenNotPaused {
+    ) external payable whenNotPaused nonReentrant {
         address receiver = rewardReceiver[_srcChainId];
         uint256 reward = claimable[_token][_srcChainId];
         address oft = ofts[_token];

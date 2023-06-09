@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -14,7 +15,7 @@ import { IBooster } from "../interfaces/IBooster.sol";
  * @author  AuraFinance
  * @dev     Coordinates LZ messages and actions from the L1 on the L2
  */
-contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
+contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -151,7 +152,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
         uint256 _fees,
         uint256 _rewards,
         address _zroPaymentAddress
-    ) external payable {
+    ) external payable nonReentrant {
         require(msg.sender == booster, "!booster");
         require(bridgeDelegate != address(0), "!bridgeDelegate");
 

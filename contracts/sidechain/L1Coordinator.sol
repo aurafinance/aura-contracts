@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -16,7 +17,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
  * @dev Tracks the amount of fee debt accrued by each sidechain and
  *      sends AURA back to each sidechain for rewards
  */
-contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
+contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -223,7 +224,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address _zroPaymentAddress,
         address _sendFromZroPaymentAddress,
         bytes memory _sendFromAdapterParams
-    ) external payable onlyDistributor {
+    ) external payable onlyDistributor nonReentrant {
         uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
@@ -306,7 +307,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      * @dev Receive CRV from the L2 via some thirdpart bridge
      *      to settle the feeDebt for the remote chain
      */
-    function settleFeeDebt(uint16 _srcChainId, uint256 _amount) external {
+    function settleFeeDebt(uint16 _srcChainId, uint256 _amount) external nonReentrant {
         address bridgeDelegate = bridgeDelegates[_srcChainId];
         require(bridgeDelegate == msg.sender, "!bridgeDelegate");
 

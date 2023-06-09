@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { PausableOFT } from "./PausableOFT.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -10,7 +11,7 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
  * @author  AuraFinance
  * @dev     Sidechain AURA
  */
-contract AuraOFT is PausableOFT, CrossChainConfig {
+contract AuraOFT is PausableOFT, CrossChainConfig, ReentrancyGuard {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -88,7 +89,7 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
         address _receiver,
         uint256 _cvxAmount,
         address _zroPaymentAddress
-    ) external payable whenNotPaused {
+    ) external payable whenNotPaused nonReentrant {
         require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
