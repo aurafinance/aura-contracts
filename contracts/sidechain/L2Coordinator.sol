@@ -53,6 +53,13 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
      */
     event BridgeDelegateUpdated(address bridgeDelegate);
 
+    /**
+     * @dev Emmitted when rewards are added
+     * @param token   The reward token
+     * @param reward  The reward amount
+     */
+    event RewardAdded(address token, uint256 reward);
+
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
@@ -177,6 +184,8 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
             adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
         );
+
+        emit RewardAdded(balToken, _rewards);
     }
 
     /* -------------------------------------------------------------------
@@ -200,6 +209,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
 
                 // Update accumulated rewards with the latest AURA distribution
                 accAuraRewards = accAuraRewards.add(cvxAmount);
+                emit RewardAdded(auraOFT, cvxAmount);
             }
         }
     }
