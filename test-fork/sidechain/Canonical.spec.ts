@@ -252,7 +252,6 @@ describe("Canonical", () => {
             expect(await proxyOft.precrime()).eq(deployer.address);
             await proxyOft.setPrecrime(ZERO_ADDRESS);
         });
-
         it("Can set inflow limit", async () => {
             const limit = simpleToExactAmount(1000);
 

@@ -414,7 +414,7 @@ describe("Full Deployment Phase 1", () => {
         const lockAmount = simpleToExactAmount(5);
         before(async () => {
             // Transfer some AURA to L2
-            const bridgeAmount = lockAmount.mul(3);
+            const bridgeAmount = lockAmount.mul(4);
             await phase2.cvx.connect(auraWhale.signer).approve(auraProxyOFT.address, bridgeAmount);
             await auraProxyOFT
                 .connect(auraWhale.signer)
@@ -450,8 +450,30 @@ describe("Full Deployment Phase 1", () => {
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
             expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(lockAmount);
         });
-        it("locking from L2 -> l1 when shutdown", async () => {
+        it("locking from L2 -> L1 when paused", async () => {
+            expect(await phase2.cvxLocker.isShutdown()).eq(false);
+            await auraProxyOFT.pause();
+            expect(await auraProxyOFT.paused()).eq(true);
+
+            const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
+            const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
+
+            const tx = await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const resp = await tx.wait();
+            console.log(resp.events);
+
+            const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
+
+            expect(balancesAfter.locked).eq(balancesBefore.locked);
+            expect(balanceAfter).eq(balanceBefore);
+
+            await auraProxyOFT.unpause();
+            expect(await auraProxyOFT.paused()).eq(false);
+        });
+        it("locking from L2 -> L1 when shutdown", async () => {
             await phase2.cvxLocker.connect(dao.signer).shutdown();
+            expect(await phase2.cvxLocker.isShutdown()).eq(true);
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
             await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
