@@ -3,7 +3,14 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import hre, { ethers } from "hardhat";
 
-import { DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO, ZERO_ADDRESS } from "../../test-utils";
+import {
+    DEAD_ADDRESS,
+    getAuraBal,
+    impersonateAccount,
+    simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import { Account } from "../../types";
 import {
     AuraBalOFT,
@@ -321,6 +328,17 @@ describe("AuraBalProxyOFT", () => {
             await sidechain.auraBalVault.deposit(bridgeAmount.div(4), deployer.address);
 
             // Harvest and the process all claimable.
+            // Make a desposit and then withdraw to suffer a withdraw penalty which
+            // will make there be some harvestable rewards
+            await cvxCrv.approve(l1.vaultDeployment.vault.address, ethers.constants.MaxUint256);
+            await l1.vaultDeployment.vault.deposit(simpleToExactAmount(10), deployer.address);
+            await l1.vaultDeployment.vault.withdraw(
+                await l1.vaultDeployment.vault.maxWithdraw(deployer.address),
+                deployer.address,
+                deployer.address,
+            );
+            await l1.vaultDeployment.vault["harvest()"]();
+
             const totalUnderlyings = [await sidechain.auraBalVault.totalUnderlying()];
             const totalUnderlyingSum = await sidechain.auraBalVault.totalUnderlying();
             await auraBalProxyOFT.connect(deployer.signer).harvest(totalUnderlyings, totalUnderlyingSum);

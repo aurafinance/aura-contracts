@@ -11,7 +11,6 @@ import {
     SimpleBridgeDelegateSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
-import { ExtSystemConfig } from "./deploySystem";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
 
 export interface SimplyBridgeDelegateDeployed {

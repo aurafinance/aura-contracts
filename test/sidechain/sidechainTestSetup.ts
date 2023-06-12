@@ -2,7 +2,11 @@ import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
 import { ZERO_ADDRESS } from "../../test-utils";
 
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import {
+    deploySimpleBridgeReceiver,
+    deploySimpleBridgeSender,
+    SimplyBridgeDelegateDeployed,
+} from "../../scripts/deployBridgeDelegates";
 import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from "../../scripts/deployMocks";
 import {
     CanonicalPhase1Deployed,
@@ -118,7 +122,13 @@ export const deployL1 = async (
     const canonicalPhase2 = await deployCanonicalPhase2(
         hre,
         deployer.signer,
-        l1Multisigs,
+        {
+            ...l1Multisigs,
+            defender: {
+                l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
+                auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+            },
+        },
         l1Mocks.addresses,
         phase2,
         vaultDeployment,
@@ -210,12 +220,20 @@ export const deployL2 = async (
         {
             ...l1Multisigs,
             daoMultisig: dao.address,
+            defender: {
+                l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
+                auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+            },
         },
         bridging,
     );
     await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId, {
         ...l1Multisigs,
         daoMultisig: dao.address,
+        defender: {
+            l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
+            auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+        },
     });
 
     // Emulate DAO Settings - L1 Stuff
@@ -231,13 +249,19 @@ export const deployL2 = async (
     sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
 
     // Emulate DAO Settings - L1 Stuff
-    const sbd = await deploySimpleBridgeDelegates(
+    const { bridgeDelegateSender } = await deploySimpleBridgeSender(
         hre,
-        l1.mocks.addresses,
+        { extConfig: l1.mocks.addresses } as any,
+        deployer.signer,
+    );
+    const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(
+        hre,
         l1.canonical,
         sidechainLzChainId,
         deployer.signer,
     );
+    const sbd = { bridgeDelegateSender, bridgeDelegateReceiver };
+
     await l1.canonical.l1Coordinator
         .connect(dao.signer)
         .setBridgeDelegate(sidechainLzChainId, sbd.bridgeDelegateReceiver.address);
@@ -280,6 +304,7 @@ export const sidechainTestSetup = async (
 ): Promise<SideChainTestSetup> => {
     const deployer = await impersonateAccount(await accounts[0].getAddress());
     const l1Deployed = await deployL1(hre, accounts, debug, waitForBlocks);
+    await l1Deployed.vaultDeployment.vault.setHarvestPermissions(false);
     await l1Deployed.vaultDeployment.vault.transferOwnership(l1Deployed.canonical.auraBalProxyOFT.address);
 
     const l2Deployed = await deployL2(
