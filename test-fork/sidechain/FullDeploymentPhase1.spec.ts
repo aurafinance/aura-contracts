@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import hre, { ethers, network } from "hardhat";
 
-import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
@@ -69,6 +69,7 @@ describe("Full Deployment Phase 1", () => {
     let crv: ERC20;
     let bridgeDelegateReceiver: BridgeDelegateReceiver;
     let l1Coordinator: L1Coordinator;
+    let bridgeDelegateDeployment: SimplyBridgeDelegateDeployed;
 
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
@@ -130,6 +131,7 @@ describe("Full Deployment Phase 1", () => {
         sidechain = result.sidechain;
         sidechainConfig = result.sidechainConfig;
         dao = result.dao;
+        bridgeDelegateDeployment = result.bridgeDelegateDeployment;
 
         auraProxyOFT = canonical.auraProxyOFT;
         l1Coordinator = canonical.l1Coordinator;
@@ -321,7 +323,6 @@ describe("Full Deployment Phase 1", () => {
             expect(await crv.balanceOf(l1Coordinator.address)).gte(floatAmount);
         });
         it("Set l2Coordinator on l1Coordinator", async () => {
-            expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).not.to.eq(l2Coordinator.address);
             await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).to.eq(l2Coordinator.address);
         });
@@ -329,15 +330,8 @@ describe("Full Deployment Phase 1", () => {
 
     describe("Deploy and setup simple bridge delegate", () => {
         it("Deploy simple bridge delegate", async () => {
-            const result = await deploySimpleBridgeDelegates(
-                hre,
-                mainnetConfig.addresses,
-                canonical,
-                L2_CHAIN_ID,
-                deployer.signer,
-            );
-            bridgeDelegateSender = result.bridgeDelegateSender as SimpleBridgeDelegateSender;
-            bridgeDelegateReceiver = result.bridgeDelegateReceiver;
+            bridgeDelegateSender = bridgeDelegateDeployment.bridgeDelegateSender as SimpleBridgeDelegateSender;
+            bridgeDelegateReceiver = bridgeDelegateDeployment.bridgeDelegateReceiver;
         });
         it("Bridge delegate sender has correct config", async () => {
             expect(await bridgeDelegateSender.token()).eq(sidechainConfig.extConfig.token);
@@ -432,13 +426,16 @@ describe("Full Deployment Phase 1", () => {
                 );
         });
         it("lock AURA from L2 -> L1", async () => {
+            const auraOftBalanceBefore = await sidechain.auraOFT.balanceOf(deployer.address);
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             await auraOFT
                 .connect(deployer.signer)
                 .lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            const auraOftBalanceAfter = await sidechain.auraOFT.balanceOf(deployer.address);
             await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
+            expect(auraOftBalanceBefore.sub(auraOftBalanceAfter)).eq(lockAmount);
         });
         it("lock AURA from L2 -> L1 on behalf of another address", async () => {
             const balancesBefore = await phase2.cvxLocker.balances(dao.address);
@@ -592,7 +589,6 @@ describe("Full Deployment Phase 1", () => {
             await getBal(mainnetConfig.addresses, bridgeDelegateReceiver.address, simpleToExactAmount(10_000));
         });
         it("set bridge delegate for L2", async () => {
-            expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(ZERO_ADDRESS);
             await l1Coordinator.connect(dao.signer).setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegateReceiver.address);
         });

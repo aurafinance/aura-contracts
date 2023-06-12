@@ -107,22 +107,17 @@ describe("Canonical", () => {
         await getAuraBal(phase2, canonicalConfig.addresses, deployer.address, simpleToExactAmount(100));
     });
 
-    describe("setup", () => {
-        it("set bridge delegates", async () => {
-            await canonical.l1Coordinator
-                .connect(dao.signer)
-                .setBridgeDelegate(sidechainLzChainId, bridgeDelegateDeployment.bridgeDelegateReceiver.address);
-            expect(await canonical.l1Coordinator.bridgeDelegates(sidechainLzChainId)).to.eq(
-                bridgeDelegateDeployment.bridgeDelegateReceiver.address,
-            );
-        });
-    });
     describe("Check configs", () => {
         it("auraBalProxyOFT has correct config", async () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
             expect(await canonical.auraBalProxyOFT.guardian()).eq(mainnetConfig.multisigs.pauseGuardian);
+            expect(
+                await canonical.auraBalProxyOFT.authorizedHarvesters(
+                    mainnetConfig.multisigs.defender?.auraBalProxyOFTHarvestor,
+                ),
+            ).eq(true);
         });
         it("AuraProxyOFT has correct config", async () => {
             expect(await canonical.auraProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
@@ -141,6 +136,17 @@ describe("Canonical", () => {
             expect(await canonical.l1Coordinator.auraToken()).eq(phase2.cvx.address);
             expect(await canonical.l1Coordinator.auraOFT()).eq(canonical.auraProxyOFT.address);
             expect(await canonical.l1Coordinator.lzEndpoint()).eq(l1LzEndpoint.address);
+            expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).eq(
+                sidechain.l2Coordinator.address,
+            );
+            expect(
+                await canonical.l1Coordinator.distributors(
+                    canonicalConfig.multisigs.defender?.l1CoordinatorDistributor,
+                ),
+            ).eq(true);
+            expect(await canonical.l1Coordinator.bridgeDelegates(sidechainLzChainId)).to.eq(
+                bridgeDelegateDeployment.bridgeDelegateReceiver.address,
+            );
             // Allowances
             expect(await phase2.cvx.allowance(canonical.l1Coordinator.address, canonical.auraProxyOFT.address)).eq(
                 ethers.constants.MaxUint256,
@@ -160,16 +166,12 @@ describe("Canonical", () => {
     });
     describe("L1Coordinator", () => {
         it("set l2coordinator", async () => {
-            expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).not.eq(
-                sidechain.l2Coordinator.address,
-            );
             await canonical.l1Coordinator.setL2Coordinator(sidechainLzChainId, sidechain.l2Coordinator.address);
             expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).eq(
                 sidechain.l2Coordinator.address,
             );
         });
         it("set distributors", async () => {
-            expect(await canonical.l1Coordinator.distributors(dao.address)).eq(false);
             await canonical.l1Coordinator.setDistributor(dao.address, true);
             expect(await canonical.l1Coordinator.distributors(dao.address)).eq(true);
         });

@@ -28,9 +28,6 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     // Reward multiplier for increasing or decreasing AURA rewards per PID
     uint256 public constant REWARD_MULTIPLIER_DENOMINATOR = 10000;
 
-    /// @dev Booster contract address
-    address public immutable booster;
-
     /// @dev BAL token contract
     address public immutable balToken;
 
@@ -42,6 +39,9 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
 
     /// @dev AURA treasury address
     address public immutable treasury;
+
+    /// @dev Booster contract address
+    address public booster;
 
     /// @dev Reward multiplier
     uint256 public rewardMultiplier;
@@ -108,6 +108,11 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
      * @param multiplier The reward multiplier
      */
     event RewardMultiplierUpdated(uint256 multiplier);
+
+    /**
+     * @param booster The booster contract
+     */
+    event BoosterUpdated(address booster);
 
     /* -------------------------------------------------------------------
        Modifiers  
@@ -199,6 +204,15 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
         require(_multiplier <= REWARD_MULTIPLIER_DENOMINATOR, "too high");
         rewardMultiplier = _multiplier;
         emit RewardMultiplierUpdated(_multiplier);
+    }
+
+    /**
+     * @dev Set the booster address
+     * @param _booster The booster contract address
+     */
+    function setBooster(address _booster) external onlyOwner {
+        booster = _booster;
+        emit BoosterUpdated(_booster);
     }
 
     /* -------------------------------------------------------------------

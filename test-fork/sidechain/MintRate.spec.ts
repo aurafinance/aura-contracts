@@ -125,7 +125,13 @@ describe("Mint rate", () => {
         await l2Coordinator.connect(dao.signer).setBridgeDelegate(deployer.address);
         await phase6.booster.connect(dao.signer).setBridgeDelegate(l1Coordinator.address);
         // LayerZero
-        await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID, CONFIG.multisigs);
+        await setTrustedRemoteCanonicalPhase1(
+            canonical,
+            sidechain,
+            L2_CHAIN_ID,
+            CONFIG.multisigs,
+            sidechainConfig.bridging,
+        );
         await l1LzEndpoint.setDestLzEndpoint(l2Coordinator.address, l2LzEndpoint.address);
         await l1LzEndpoint.setDestLzEndpoint(auraOFT.address, l2LzEndpoint.address);
         await l2LzEndpoint.setDestLzEndpoint(l1Coordinator.address, l1LzEndpoint.address);

@@ -46,6 +46,8 @@ import {
     VoterProxyLite__factory,
     SidechainClaimZap,
     SidechainClaimZap__factory,
+    BoosterHelper,
+    BoosterHelper__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -154,6 +156,13 @@ export async function deployCanonicalPhase2(
     tx = await auraBalProxyOFT.setOFT(phase2.cvx.address, canonicalPhase1.auraProxyOFT.address);
     await waitForTx(tx, debug, waitForBlocks);
 
+    if (!multisigs.defender?.auraBalProxyOFTHarvestor) {
+        throw new Error("auraBalProxyOFTHarvestor not set");
+    }
+
+    tx = await auraBalProxyOFT.updateAuthorizedHarvesters(multisigs.defender?.auraBalProxyOFTHarvestor, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
     return { auraBalProxyOFT };
 }
 
@@ -167,6 +176,7 @@ interface Factories {
 export interface SidechainPhase1Deployed {
     voterProxy: VoterProxyLite;
     booster: BoosterLite;
+    boosterHelper: BoosterHelper;
     boosterOwner: BoosterOwnerLite;
     factories: Factories;
     poolManager: PoolManagerLite;
@@ -317,6 +327,16 @@ export async function deploySidechainPhase1(
         [voterProxy.address],
         deployOptionsWithCallbacks([boosterLiteInitialize]),
     );
+
+    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+        hre,
+        create2Factory,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [booster.address, extConfig.token],
+        deployOptions,
+    );
+
     // Not a constant address
     const rewardFactory = await deployContractWithCreate2<RewardFactory, RewardFactory__factory>(
         hre,
@@ -393,9 +413,6 @@ export async function deploySidechainPhase1(
     );
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await l2Coordinator.setBridgeDelegate(bridging.l2Sender);
-    await waitForTx(tx, debug, waitForBlocks);
-
     tx = await l2Coordinator.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -447,6 +464,7 @@ export async function deploySidechainPhase1(
     return {
         voterProxy,
         booster,
+        boosterHelper,
         boosterOwner,
         factories: {
             rewardFactory,
@@ -634,6 +652,7 @@ export async function setTrustedRemoteCanonicalPhase1(
     sidechain: SidechainPhase1Deployed,
     sidechainLzChainId: number,
     multisigs: MultisigConfig,
+    bridging: SidechainBridging,
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -652,6 +671,19 @@ export async function setTrustedRemoteCanonicalPhase1(
         sidechainLzChainId,
         ethers.utils.solidityPack(["address", "address"], [sidechain.auraOFT.address, canonical.auraProxyOFT.address]),
     );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.l1Coordinator.setBridgeDelegate(sidechainLzChainId, bridging.l1Receiver);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.l1Coordinator.setL2Coordinator(sidechainLzChainId, sidechain.l2Coordinator.address);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    if (!multisigs.defender?.l1CoordinatorDistributor) {
+        throw new Error("No l1CoordinatorDistributor found in config");
+    }
+
+    tx = await canonical.l1Coordinator.setDistributor(multisigs.defender?.l1CoordinatorDistributor, true);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await canonical.l1Coordinator.transferOwnership(multisigs.daoMultisig);

@@ -265,6 +265,7 @@ task("deploy:sidechain:config:L1:phase1")
             remote,
             sidechainLzChainId,
             canonicalConfig.multisigs,
+            sidechainConfigs[sidechainId].bridging,
             debug,
             tskArgs.wait,
         );

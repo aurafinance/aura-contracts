@@ -62,6 +62,8 @@ import {
     AuraProxyOFT__factory,
     L1Coordinator__factory,
     AuraBalProxyOFT__factory,
+    BridgeDelegateReceiver__factory,
+    BridgeDelegateReceiver,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -178,6 +180,10 @@ const multisigs: MultisigConfig = {
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     sudoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    defender: {
+        l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
+        auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+    },
 };
 
 const contributorDistro = [

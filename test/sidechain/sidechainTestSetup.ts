@@ -152,6 +152,7 @@ export const deployL2 = async (
     const l2LzEndpoint = await new LZEndpointMock__factory(deployer.signer).deploy(sidechainLzChainId);
     l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
 
+    const bridging = { l2Sender: ZERO_ADDRESS, l1Receiver: ZERO_ADDRESS, nativeBridge: ZERO_ADDRESS };
     const sidechainPhase1 = await deploySidechainPhase1(
         hre,
         deployer.signer,
@@ -161,7 +162,7 @@ export const deployL2 = async (
             ...l2mocks.addresses,
             create2Factory: create2Factory.address,
         },
-        { l2Sender: ZERO_ADDRESS, l1Receiver: ZERO_ADDRESS, nativeBridge: ZERO_ADDRESS },
+        bridging,
         l1.canonical,
         canonicalChainId,
     );
@@ -202,10 +203,16 @@ export const deployL2 = async (
         l1.canonical.auraProxyOFT = l1.canonical.auraProxyOFT.connect(dao.signer);
     }
 
-    await setTrustedRemoteCanonicalPhase1(l1.canonical, sidechain, sidechainLzChainId, {
-        ...l1Multisigs,
-        daoMultisig: dao.address,
-    });
+    await setTrustedRemoteCanonicalPhase1(
+        l1.canonical,
+        sidechain,
+        sidechainLzChainId,
+        {
+            ...l1Multisigs,
+            daoMultisig: dao.address,
+        },
+        bridging,
+    );
     await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId, {
         ...l1Multisigs,
         daoMultisig: dao.address,

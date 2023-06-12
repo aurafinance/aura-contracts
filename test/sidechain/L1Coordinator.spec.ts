@@ -163,6 +163,20 @@ describe("L1Coordinator", () => {
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
     });
+    describe("setBooster", async () => {
+        it("updates booster", async () => {
+            const bootserBefore = await l1Coordinator.booster();
+            await l1Coordinator.connect(dao.signer).setBooster(deployer.address);
+            expect(await l1Coordinator.booster()).eq(deployer.address);
+            await l1Coordinator.connect(dao.signer).setBooster(bootserBefore);
+        });
+        it("fails if caller is not the owner", async () => {
+            await expect(l1Coordinator.setBooster(deployer.address), "fails due to ").to.be.revertedWith(
+                ERRORS.ONLY_OWNER,
+            );
+        });
+    });
+
     describe("setBridgeDelegate", async () => {
         it("updates the bridgeDelegate", async () => {
             const bridgeDelegateBefore = await l1Coordinator.bridgeDelegates(L2_CHAIN_ID);

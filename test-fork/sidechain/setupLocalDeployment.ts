@@ -22,7 +22,12 @@ import {
     LZEndpointMock__factory,
     SidechainConfig,
 } from "../../types";
-import { deploySimpleBridgeDelegates, SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import {
+    deploySimpleBridgeReceiver,
+    deploySimpleBridgeSender,
+    SimplyBridgeDelegateDeployed,
+} from "../../scripts/deployBridgeDelegates";
+import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 
 interface TestSuiteDeployment {
     dao: Account;
@@ -39,7 +44,7 @@ interface TestSuiteDeployment {
 
 export const setupLocalDeployment = async (
     hre: HardhatRuntimeEnvironment,
-    config: any,
+    config: typeof mainnetConfig,
     deployer: Account,
     L1_CHAIN_ID: number,
     L2_CHAIN_ID: number,
@@ -123,7 +128,19 @@ export const setupLocalDeployment = async (
     const sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
     const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
-    await setTrustedRemoteCanonicalPhase1(canonical, sidechain, L2_CHAIN_ID, config.multisigs);
+    const { bridgeDelegateSender } = await deploySimpleBridgeSender(hre, sidechainConfig, deployer.signer);
+    const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer);
+
+    sidechainConfig.bridging.l1Receiver = bridgeDelegateReceiver.address;
+    sidechainConfig.bridging.l2Sender = bridgeDelegateSender.address;
+
+    await setTrustedRemoteCanonicalPhase1(
+        canonical,
+        sidechain,
+        L2_CHAIN_ID,
+        config.multisigs,
+        sidechainConfig.bridging,
+    );
     await setTrustedRemoteCanonicalPhase2(canonical, sidechain, L2_CHAIN_ID, config.multisigs);
 
     // Connect contracts to its owner signer.
@@ -139,14 +156,6 @@ export const setupLocalDeployment = async (
     await l2LzEndpoint.setDestLzEndpoint(canonical.auraProxyOFT.address, l1LzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(canonical.auraBalProxyOFT.address, l1LzEndpoint.address);
 
-    const bridgeDelegateDeployment = await deploySimpleBridgeDelegates(
-        hre,
-        l1Addresses,
-        canonical,
-        L2_CHAIN_ID,
-        deployer.signer,
-    );
-
     return {
         dao,
         phase2,
@@ -156,7 +165,10 @@ export const setupLocalDeployment = async (
         canonical,
         sidechain,
         vaultDeployment,
-        bridgeDelegateDeployment,
+        bridgeDelegateDeployment: {
+            bridgeDelegateSender,
+            bridgeDelegateReceiver,
+        },
         sidechainConfig,
     };
 };
