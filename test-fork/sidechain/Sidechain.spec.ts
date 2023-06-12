@@ -261,15 +261,8 @@ describe("Sidechain", () => {
 
             owner = await impersonateAccount(await bridgeDelegateDeployment.bridgeDelegateSender.owner());
 
-            await bridgeDelegateDeployment.bridgeDelegateSender
-                .connect(owner.signer)
-                .setL2Coordinator(sidechain.l2Coordinator.address);
-
             expect(await sidechain.l2Coordinator.bridgeDelegate()).to.eq(
                 bridgeDelegateDeployment.bridgeDelegateSender.address,
-            );
-            expect(await bridgeDelegateDeployment.bridgeDelegateSender.l2Coordinator()).to.eq(
-                sidechain.l2Coordinator.address,
             );
         });
         it("add trusted remotes to layerzero endpoints", async () => {

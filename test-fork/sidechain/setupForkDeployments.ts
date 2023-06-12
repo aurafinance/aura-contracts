@@ -52,7 +52,7 @@ export const setupForkDeployment = async (
     const sidechain = sidechainConfig.getSidechain(deployer.signer);
 
     const bridgeSender = opts.deployBridgeSender
-        ? await deploySimpleBridgeSender(hre, canonicalConfig.addresses, deployer.signer)
+        ? await deploySimpleBridgeSender(hre, sidechainConfig, deployer.signer)
         : undefined;
     const bridgeReceiver = opts.deployBridgeReceiver
         ? await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer)
