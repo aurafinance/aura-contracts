@@ -294,7 +294,6 @@ describe("Full Deployment Phase 1", () => {
             const { booster, poolManager } = sidechain;
             expect(await poolManager.booster()).eq(booster.address);
             expect(await poolManager.operator()).eq(dao.address);
-            expect(await poolManager.protectAddPool()).eq(true);
         });
     });
 

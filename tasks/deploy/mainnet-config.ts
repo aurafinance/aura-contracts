@@ -420,9 +420,9 @@ const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
 const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhase2Deployed => ({
-    auraProxyOFT: AuraProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x0000000000000000000000000000000000000000", deployer),
-    l1Coordinator: L1Coordinator__factory.connect("0x0000000000000000000000000000000000000000", deployer),
+    auraProxyOFT: AuraProxyOFT__factory.connect("0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xcD54C83759d2D55238bF742611B26A65D47F9719", deployer),
 });
 
 export const config = {

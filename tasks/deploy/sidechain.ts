@@ -1,5 +1,5 @@
 import { assert } from "chai";
-import { Signer } from "ethers";
+import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
@@ -297,6 +297,71 @@ task("deploy:sidechain:config:L1:phase2")
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
+
+task("deploy:sidechain:safe")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+
+        // Safe factory address for all networks
+        const safeFactoryAddress = "0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2";
+        // Gnosis safe L2 singleton
+        const singleton = "0x3e5c63644e683549055b9be8653de26e0b4cd36e";
+        const fallbackHandler = "0xf48f2b2d2a534e402487b3ee7c18c33aec0fe5e4";
+        const salt = 8888;
+        const threshold = 4;
+
+        // Treasury
+        // const addresses = [
+        //     "0x2BE293361aEA6136a42036Ef68FF248fC379b4f8",
+        //     "0x3dB7FCD09cF12df1b8978ddf66F8bbF9f039eDd8",
+        //     "0x71df067D1d2dF5291278b7C660Fd37d9b6272b4C",
+        //     "0xC02ad7b9a9121fc849196E844DC869D2250DF3A6",
+        //     "0xB65c1Ab1bF106F86a363dC10230a4AF11cCD063E",
+        //     "0x4Ab5E3F0b2d1604dD2002CfEcA6163802D74c6Cb",
+        //     "0x337F8f3316E1326B3188E534913F759460bd57CB",
+        // ];
+
+        // Protocol DAO
+        const addresses = [
+            "0x2BE293361aEA6136a42036Ef68FF248fC379b4f8",
+            "0x82621E3a9584013B166f6939677Df67793530C7B",
+            "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
+            "0x512fce9B07Ce64590849115EE6B32fd40eC0f5F3",
+            "0xF01Cc7154e255D20489E091a5aEA10Bc136696a8",
+            "0x6429602699fEC6D205e0b9531C7f33476BA11Fb0",
+            "0x6c97fd6eCCa478E2163920eC9bdb68873a4c3B43",
+        ];
+
+        const safeFactory = new ethers.Contract(
+            safeFactoryAddress,
+            [
+                "event ProxyCreation(address indexed proxy, address singleton)",
+                "function createProxyWithNonce(address _singleton, bytes memory initializer, uint256 saltNonce) public returns (address)",
+                "function setup( address[] calldata _owners, uint256 _threshold, address to, bytes calldata data, address fallbackHandler, address paymentToken, uint256 payment, address payable paymentReceiver ) external",
+            ],
+            deployer,
+        );
+
+        const initializer = safeFactory.interface.encodeFunctionData("setup", [
+            addresses,
+            threshold,
+            ZERO_ADDRESS, // to
+            "0x", // data
+            fallbackHandler,
+            ZERO_ADDRESS, // paymentToken
+            0, // payment
+            ZERO_ADDRESS, // paymentReceiver
+        ]);
+
+        const tx = await safeFactory.createProxyWithNonce(singleton, initializer, salt, {
+            gasPrice: 500000000000,
+        });
+        const resp = await waitForTx(tx, debug, tskArgs.wait);
+        const address = ethers.utils.defaultAbiCoder.decode(["address", "address"], resp.events[1].data)[0];
+
+        console.log("Safe deployed to:", address);
+    });
 
 task("sidechain:addresses")
     .addOptionalParam("chainId", "The chain ID, default arbitrumGoerli")

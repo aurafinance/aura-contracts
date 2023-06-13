@@ -161,9 +161,6 @@ describe("Sidechain", () => {
             }
             expect(await sidechain.booster.poolLength()).eq(targetLen);
 
-            await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
-            expect(await sidechain.poolManager.protectAddPool()).eq(false);
-
             const gauge = sidechainConfig.extConfig.gauges[0];
             await sidechain.poolManager["addPool(address)"](gauge);
 
