@@ -27,7 +27,7 @@ interface IBooster {
 
     function lockRewards() external view returns (address);
 
-    function poolInfo(uint256 _pid) external returns (PoolInfo memory poolInfo);
+    function poolInfo(uint256 _pid) external view returns (PoolInfo memory poolInfo);
 
     function distributeL2Fees(uint256 _amount) external;
 
