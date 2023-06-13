@@ -150,7 +150,7 @@ contract SidechainClaimZap {
         }
 
         if (options.refundEth) {
-            (bool sent, bytes memory data) = payable(msg.sender).call{ value: address(this).balance }("");
+            (bool sent, ) = payable(msg.sender).call{ value: address(this).balance }("");
             require(sent, "!refund");
         }
     }
@@ -159,7 +159,7 @@ contract SidechainClaimZap {
      * @notice returns a bool if handling of rewards should occur
      * @param options                Claim options
      */
-    function _callOptions(Options calldata options) internal view returns (bool) {
+    function _callOptions(Options calldata options) internal pure returns (bool) {
         return (options.lockCvxL1 || options.sendCvxToL1 || options.useCompounder);
     }
 
