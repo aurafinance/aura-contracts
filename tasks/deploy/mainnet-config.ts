@@ -62,8 +62,6 @@ import {
     AuraProxyOFT__factory,
     L1Coordinator__factory,
     AuraBalProxyOFT__factory,
-    BridgeDelegateReceiver__factory,
-    BridgeDelegateReceiver,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
