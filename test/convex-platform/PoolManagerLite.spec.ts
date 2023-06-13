@@ -66,7 +66,7 @@ describe("PoolManagerLite", () => {
 
         it("addPool called by operator", async () => {
             // const tx = await poolManager["addPool(address)"](gauge.address);
-            const tx = await poolManager["addPool(address)"](gauge.address);
+            const tx = await poolManager.connect(dao.signer)["addPool(address)"](gauge.address);
 
             await tx.wait();
 
@@ -76,7 +76,7 @@ describe("PoolManagerLite", () => {
         });
 
         it("reverts if gauge has already been added", async () => {
-            const failedTx = poolManager["addPool(address)"](gauge.address);
+            const failedTx = poolManager.connect(dao.signer)["addPool(address)"](gauge.address);
             await expect(failedTx).to.revertedWith("already registered gauge");
         });
         it("reverts if gauge/lptoken has already been added", async () => {
@@ -89,7 +89,7 @@ describe("PoolManagerLite", () => {
                 false,
             );
 
-            const failedTx = poolManager["addPool(address)"](gaugeWithSameToken.address);
+            const failedTx = poolManager.connect(dao.signer)["addPool(address)"](gaugeWithSameToken.address);
             await expect(failedTx).to.revertedWith("already registered lptoken");
         });
     });
