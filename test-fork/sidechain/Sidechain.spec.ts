@@ -9,8 +9,7 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
+import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
@@ -34,8 +33,8 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 const FORKING = process.env.FORKING;
 
 const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER, NATIVE_FEE] = FORKING
-    ? [goerliConfig, goerliSidechainConfig, 8971461, simpleToExactAmount("0.2")]
-    : [mainnetConfig, mainnetConfig, 17096880, simpleToExactAmount("0.2")];
+    ? [mainnetConfig, gnosisConfig, 28126088, simpleToExactAmount(50)]
+    : [mainnetConfig, mainnetConfig, 17337285, simpleToExactAmount("0.2")];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
 const sidechainConfigGlobal = _sidechainConfig as SidechainConfig;
@@ -211,7 +210,6 @@ describe("Sidechain", () => {
             const { booster, poolManager } = sidechain;
             expect(await poolManager.booster()).eq(booster.address);
             expect(await poolManager.operator()).eq(dao.address);
-            expect(await poolManager.protectAddPool()).eq(true);
         });
     });
 
@@ -228,13 +226,6 @@ describe("Sidechain", () => {
                     .connect(dao.signer)
                     ["addPool(address)"](sidechainConfig.extConfig.gauges[i]);
             }
-        });
-        it("can unprotected poolManager add pool", async () => {
-            await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
-            expect(await sidechain.poolManager.protectAddPool()).eq(false);
-
-            const gauge = sidechainConfig.extConfig.gauges[0];
-            await sidechain.poolManager["addPool(address)"](gauge);
         });
         it("Pool stash has the correct config", async () => {
             const pool0 = await sidechain.booster.poolInfo(0);
@@ -558,14 +549,7 @@ describe("Sidechain", () => {
 
     describe("Protected functions", () => {
         it("PoolManager protected functions", async () => {
-            const owner = await impersonateAccount(await sidechain.poolManager.operator());
-            await sidechain.poolManager.connect(owner.signer).setProtectPool(true);
-            expect(await sidechain.poolManager.protectAddPool()).eq(true);
-
             await expect(sidechain.poolManager.connect(notAuthorised.signer).shutdownPool(0)).to.revertedWith("!auth");
-            await expect(sidechain.poolManager.connect(notAuthorised.signer).setProtectPool(true)).to.revertedWith(
-                "!auth",
-            );
             await expect(
                 sidechain.poolManager.connect(notAuthorised.signer).setOperator(notAuthorised.address),
             ).to.revertedWith("!auth");

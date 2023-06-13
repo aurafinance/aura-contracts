@@ -191,8 +191,6 @@ export const deployL2 = async (
     );
     const sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
 
-    await sidechain.poolManager.connect(dao.signer).setProtectPool(false);
-
     // Mock L1 Endpoints  configuration
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
@@ -204,7 +202,7 @@ export const deployL2 = async (
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.auraBalProxyOFT.address, l1.mocks.lzEndpoint.address);
 
     // Add Mock Gauge
-    await sidechain.poolManager["addPool(address)"](l2mocks.gauge.address);
+    await sidechain.poolManager.connect(dao.signer)["addPool(address)"](l2mocks.gauge.address);
 
     const l1CoordinatorOwner = await l1.canonical.l1Coordinator.owner();
     // It means at least 1 side chain already was deployed and the coordinator owner is DAO.
