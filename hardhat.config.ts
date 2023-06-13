@@ -42,6 +42,7 @@ const config: HardhatUserConfig = {
             allowUnlimitedContractSize: true,
         },
         mainnet: {
+            chainId: chainIds.mainnet,
             url: process.env.NODE_URL || "",
         },
         gnosis: {
@@ -58,6 +59,7 @@ const config: HardhatUserConfig = {
             chainId: chainIds.goerli,
         },
         arbitrum: {
+            chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",
         },
         arbitrumGoerli: {

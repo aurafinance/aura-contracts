@@ -594,7 +594,7 @@ describe("AuraBalOFT", () => {
                     const auraBalOFTCirculatingSupplyBefore = await sidechain.auraBalOFT.circulatingSupply();
 
                     // When processing auraBal , invoke _lzSend to bridge tokens to L2
-                    const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, sideChainId, {
+                    const tx = await auraBalProxyOFT.processClaimable(cvxCrv.address, sideChainId, ZERO_ADDRESS, {
                         value: NATIVE_FEE,
                     });
                     const dataAfter = await snapshotData(
@@ -672,7 +672,7 @@ describe("AuraBalOFT", () => {
 
                     // When processing auraBal , invoke _lzSend to bridge tokens to L2
                     //  AuraBalProxyOFT.processClaimable => AuraOFT.sendFrom => AuraOFT._send => AuraOFT._debitFrom => AuraOFT.lzReceive
-                    const tx = await auraBalProxyOFT.processClaimable(cvx.address, sideChainId, {
+                    const tx = await auraBalProxyOFT.processClaimable(cvx.address, sideChainId, ZERO_ADDRESS, {
                         value: NATIVE_FEE,
                         gasLimit: 1000000,
                     });
@@ -735,7 +735,9 @@ describe("AuraBalOFT", () => {
                 it(`can not process claimable more than once ${sideChainIds[i]}`, async () => {
                     const sideChainId = sideChainIds[i];
                     await expect(
-                        auraBalProxyOFT.processClaimable(cvxCrv.address, sideChainId, { value: NATIVE_FEE }),
+                        auraBalProxyOFT.processClaimable(cvxCrv.address, sideChainId, ZERO_ADDRESS, {
+                            value: NATIVE_FEE,
+                        }),
                     ).to.be.revertedWith("!reward");
                 });
                 it(`can transfer position on sidechain vault ${sideChainIds[i]}`, async () => {

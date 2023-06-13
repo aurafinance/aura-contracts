@@ -35,7 +35,6 @@ export function shouldBehaveLikeBridgeDelegateSender(_ctx: () => BridgeDelegateS
             it("should properly store constructor arguments", async () => {
                 expect(await bridgeDelegateSender.crv(), "crv").to.eq(crvAddress);
                 expect(await bridgeDelegateSender.l1Receiver(), "l1Receiver").to.eq(ZERO_ADDRESS);
-                expect(await bridgeDelegateSender.l2Coordinator(), "l2Coordinator").to.eq(ZERO_ADDRESS);
             });
         });
         describe("setL1Receiver", async () => {
@@ -58,28 +57,6 @@ export function shouldBehaveLikeBridgeDelegateSender(_ctx: () => BridgeDelegateS
                 const l1ReceiverAfter = await bridgeDelegateSender.l1Receiver();
                 expect(l1ReceiverAfter, "l1Receiver").to.not.be.eq(l1ReceiverBefore);
                 expect(l1ReceiverAfter, "l1Receiver").to.be.eq(DEAD_ADDRESS);
-            });
-        });
-        describe("setL2Coordinator", async () => {
-            it("fails if caller is not the owner", async () => {
-                await expect(
-                    bridgeDelegateSender.connect(anotherAccount.signer).setL2Coordinator(ZERO_ADDRESS),
-                    "onlyOwner",
-                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-            });
-            it("fails if address is ZERO_ADDRESS", async () => {
-                await expect(
-                    bridgeDelegateSender.connect(owner.signer).setL2Coordinator(ZERO_ADDRESS),
-                    "!ZERO_ADDRESS",
-                ).to.be.revertedWith(ERRORS.ZERO_ADDRESS);
-            });
-            it("updates the L2Coordinator", async () => {
-                const l2CoordinatorBefore = await bridgeDelegateSender.l2Coordinator();
-                await bridgeDelegateSender.setL2Coordinator(DEAD_ADDRESS);
-                // No events
-                const l2CoordinatorAfter = await bridgeDelegateSender.l2Coordinator();
-                expect(l2CoordinatorAfter, "l2Coordinator").to.not.be.eq(l2CoordinatorBefore);
-                expect(l2CoordinatorAfter, "l2Coordinator").to.be.eq(DEAD_ADDRESS);
             });
         });
     });

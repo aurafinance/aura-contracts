@@ -16,8 +16,18 @@ import {
     simpleToExactAmount,
     getBal,
     getTimestamp,
+    getAura,
+    getAuraBal,
 } from "../../test-utils";
-import { Account, LZEndpointMock, MockERC20__factory, SidechainConfig } from "../../types";
+import {
+    Account,
+    LZEndpointMock,
+    MockERC20__factory,
+    SidechainConfig,
+    ERC20,
+    AuraBalProxyOFT,
+    AuraProxyOFT,
+} from "../../types";
 import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import { setupLocalDeployment } from "./setupLocalDeployment";
 import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
@@ -92,56 +102,22 @@ describe("Canonical", () => {
         vaultDeployment = result.vaultDeployment;
         bridgeDelegateDeployment = result.bridgeDelegateDeployment;
         dao = result.dao;
+
+        await getAura(phase2, canonicalConfig.addresses, deployer.address, simpleToExactAmount(100));
+        await getAuraBal(phase2, canonicalConfig.addresses, deployer.address, simpleToExactAmount(100));
     });
 
-    describe("setup", () => {
-        it("add trusted remotes to layerzero endpoints", async () => {
-            // L1 Stuff
-            await canonical.l1Coordinator
-                .connect(dao.signer)
-                .setTrustedRemote(
-                    sidechainLzChainId,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.l2Coordinator.address, canonical.l1Coordinator.address],
-                    ),
-                );
-
-            await canonical.auraProxyOFT
-                .connect(dao.signer)
-                .setTrustedRemote(
-                    sidechainLzChainId,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-                    ),
-                );
-
-            await canonical.auraProxyOFT
-                .connect(dao.signer)
-                .setTrustedRemote(
-                    sidechainLzChainId,
-                    ethers.utils.solidityPack(
-                        ["address", "address"],
-                        [sidechain.auraOFT.address, canonical.auraProxyOFT.address],
-                    ),
-                );
-        });
-        it("set bridge delegates", async () => {
-            await canonical.l1Coordinator
-                .connect(dao.signer)
-                .setBridgeDelegate(sidechainLzChainId, bridgeDelegateDeployment.bridgeDelegateReceiver.address);
-            expect(await canonical.l1Coordinator.bridgeDelegates(sidechainLzChainId)).to.eq(
-                bridgeDelegateDeployment.bridgeDelegateReceiver.address,
-            );
-        });
-    });
     describe("Check configs", () => {
         it("auraBalProxyOFT has correct config", async () => {
             expect(await canonical.auraBalProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
             expect(await canonical.auraBalProxyOFT.vault()).eq(vaultDeployment.vault.address);
             expect(await canonical.auraBalProxyOFT.internalTotalSupply()).eq(0);
             expect(await canonical.auraBalProxyOFT.guardian()).eq(mainnetConfig.multisigs.pauseGuardian);
+            expect(
+                await canonical.auraBalProxyOFT.authorizedHarvesters(
+                    mainnetConfig.multisigs.defender?.auraBalProxyOFTHarvestor,
+                ),
+            ).eq(true);
         });
         it("AuraProxyOFT has correct config", async () => {
             expect(await canonical.auraProxyOFT.lzEndpoint()).eq(l1LzEndpoint.address);
@@ -160,6 +136,17 @@ describe("Canonical", () => {
             expect(await canonical.l1Coordinator.auraToken()).eq(phase2.cvx.address);
             expect(await canonical.l1Coordinator.auraOFT()).eq(canonical.auraProxyOFT.address);
             expect(await canonical.l1Coordinator.lzEndpoint()).eq(l1LzEndpoint.address);
+            expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).eq(
+                sidechain.l2Coordinator.address,
+            );
+            expect(
+                await canonical.l1Coordinator.distributors(
+                    canonicalConfig.multisigs.defender?.l1CoordinatorDistributor,
+                ),
+            ).eq(true);
+            expect(await canonical.l1Coordinator.bridgeDelegates(sidechainLzChainId)).to.eq(
+                bridgeDelegateDeployment.bridgeDelegateReceiver.address,
+            );
             // Allowances
             expect(await phase2.cvx.allowance(canonical.l1Coordinator.address, canonical.auraProxyOFT.address)).eq(
                 ethers.constants.MaxUint256,
@@ -177,18 +164,14 @@ describe("Canonical", () => {
             expect(await phase6.booster.bridgeDelegate()).eq(canonical.l1Coordinator.address);
         });
     });
-    describe("L1Coordinator tests", () => {
+    describe("L1Coordinator", () => {
         it("set l2coordinator", async () => {
-            expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).not.eq(
-                sidechain.l2Coordinator.address,
-            );
             await canonical.l1Coordinator.setL2Coordinator(sidechainLzChainId, sidechain.l2Coordinator.address);
             expect(await canonical.l1Coordinator.l2Coordinators(sidechainLzChainId)).eq(
                 sidechain.l2Coordinator.address,
             );
         });
         it("set distributors", async () => {
-            expect(await canonical.l1Coordinator.distributors(dao.address)).eq(false);
             await canonical.l1Coordinator.setDistributor(dao.address, true);
             expect(await canonical.l1Coordinator.distributors(dao.address)).eq(true);
         });
@@ -228,7 +211,7 @@ describe("Canonical", () => {
             const totalSupplyStart = await cvx.totalSupply();
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            await canonical.l1Coordinator.distributeAura(sidechainLzChainId, ZERO_ADDRESS, "0x", {
+            await canonical.l1Coordinator.distributeAura(sidechainLzChainId, ZERO_ADDRESS, ZERO_ADDRESS, "0x", {
                 value: simpleToExactAmount("0.5"),
             });
 
@@ -248,23 +231,115 @@ describe("Canonical", () => {
             expect(await canonical.l1Coordinator.distributors(dao.address)).eq(false);
         });
     });
-    describe("AuraProxyOFT", () => {
+    function shouldBehaveLikeProxyOft(ctx: () => { token: ERC20; proxyOft: AuraBalProxyOFT | AuraProxyOFT }) {
+        let token: ERC20;
+        let proxyOft: AuraBalProxyOFT | AuraProxyOFT;
+
+        before(() => {
+            ({ token, proxyOft } = ctx());
+        });
         it("Can Pause OFT", async () => {
-            expect(await canonical.auraProxyOFT.paused()).eq(false);
-            await canonical.auraProxyOFT.pause();
-            expect(await canonical.auraProxyOFT.paused()).eq(true);
+            expect(await proxyOft.paused()).eq(false);
+            await proxyOft.pause();
+            expect(await proxyOft.paused()).eq(true);
         });
         it("Can unpause OFT", async () => {
-            expect(await canonical.auraProxyOFT.paused()).eq(true);
-            await canonical.auraProxyOFT.unpause();
-            expect(await canonical.auraProxyOFT.paused()).eq(false);
+            expect(await proxyOft.paused()).eq(true);
+            await proxyOft.unpause();
+            expect(await proxyOft.paused()).eq(false);
         });
         it("Can set precrime", async () => {
-            expect(await canonical.auraProxyOFT.precrime()).eq(ZERO_ADDRESS);
-            await canonical.auraProxyOFT.setPrecrime(deployer.address);
-            expect(await canonical.auraProxyOFT.precrime()).eq(deployer.address);
-            await canonical.auraProxyOFT.setPrecrime(ZERO_ADDRESS);
+            expect(await proxyOft.precrime()).eq(ZERO_ADDRESS);
+            await proxyOft.setPrecrime(deployer.address);
+            expect(await proxyOft.precrime()).eq(deployer.address);
+            await proxyOft.setPrecrime(ZERO_ADDRESS);
         });
+        it("Can set inflow limit", async () => {
+            const limit = simpleToExactAmount(1000);
+
+            await proxyOft.setInflowLimit(limit);
+            expect(await proxyOft.inflowLimit()).eq(limit);
+        });
+        it("Can set queue delay", async () => {
+            const delay = ONE_WEEK.mul(4);
+
+            await proxyOft.connect(dao.signer).setQueueDelay(delay);
+            expect(await proxyOft.queueDelay()).eq(delay);
+        });
+        it("Queued transfer can NOT be processed when paused", async () => {
+            await proxyOft.pause();
+            expect(await proxyOft.paused()).eq(true);
+
+            const epoch = await proxyOft.getCurrentEpoch();
+            const amount = await proxyOft.inflowLimit();
+            const ts = (await getTimestamp()).add(1_000);
+            const queued: [BigNumber, BigNumber, string, BigNumber, BigNumber] = [
+                epoch,
+                BigNumber.from(sidechainLzChainId),
+                deployer.address,
+                amount,
+                ts,
+            ];
+
+            await expect(proxyOft.processQueued(...queued)).to.be.revertedWith("Pausable: paused");
+
+            await proxyOft.unpause();
+            expect(await canonical.auraBalProxyOFT.paused()).eq(false);
+        });
+        it("Can pause auraProxyOFT transfers", async () => {
+            expect(await proxyOft.paused()).eq(false);
+            await proxyOft.connect(dao.signer).pause();
+            expect(await proxyOft.paused()).eq(true);
+
+            const amount = simpleToExactAmount(1);
+            await token.connect(deployer.signer).approve(proxyOft.address, amount);
+            await expect(
+                proxyOft
+                    .connect(deployer.signer)
+                    .sendFrom(
+                        deployer.address,
+                        sidechainLzChainId,
+                        deployer.address,
+                        amount,
+                        ZERO_ADDRESS,
+                        ZERO_ADDRESS,
+                        [],
+                        {
+                            value: simpleToExactAmount("0.2"),
+                        },
+                    ),
+            ).to.be.revertedWith("Pausable: paused");
+
+            await proxyOft.connect(dao.signer).unpause();
+            expect(await proxyOft.paused()).eq(false);
+        });
+        it("Can bridge auraProxyOFT", async () => {
+            const amount = simpleToExactAmount(1);
+            await token.connect(deployer.signer).approve(proxyOft.address, amount);
+            const balanceBefore = await token.balanceOf(deployer.address);
+            await proxyOft
+                .connect(deployer.signer)
+                .sendFrom(
+                    deployer.address,
+                    sidechainLzChainId,
+                    deployer.address,
+                    amount,
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
+                    [],
+                    {
+                        value: simpleToExactAmount("0.2"),
+                    },
+                );
+            const balanceAfter = await token.balanceOf(deployer.address);
+            expect(balanceBefore.sub(balanceAfter)).eq(amount);
+        });
+    }
+    describe("AuraProxyOFT", () => {
+        shouldBehaveLikeProxyOft(() => ({
+            proxyOft: canonical.auraProxyOFT,
+            token: phase2.cvx,
+        }));
         it("Can lock for a user via lock message", async () => {
             const amount = simpleToExactAmount("100");
             const endpoint = await impersonateAccount(await canonical.auraProxyOFT.lzEndpoint());
@@ -286,61 +361,11 @@ describe("Canonical", () => {
             const balancesAfter = await phase2.cvxLocker.balances(aliceAddress);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).to.eq(amount);
         });
-        it("Can set inflow limit", async () => {
-            const limit = simpleToExactAmount(1000);
-
-            await canonical.auraProxyOFT.setInflowLimit(limit);
-            expect(await canonical.auraProxyOFT.inflowLimit()).eq(limit);
-        });
-        it("Can set queue delay", async () => {
-            const delay = ONE_WEEK.mul(4);
-
-            await canonical.auraProxyOFT.connect(dao.signer).setQueueDelay(delay);
-            expect(await canonical.auraProxyOFT.queueDelay()).eq(delay);
-        });
-        it("Queued transfer can NOT be processed when paused", async () => {
-            await canonical.auraProxyOFT.pause();
-            expect(await canonical.auraProxyOFT.paused()).eq(true);
-
-            const epoch = await canonical.auraBalProxyOFT.getCurrentEpoch();
-            const amount = await canonical.auraProxyOFT.inflowLimit();
-            const ts = (await getTimestamp()).add(1_000);
-            const queued: [BigNumber, BigNumber, string, BigNumber, BigNumber] = [
-                epoch,
-                BigNumber.from(sidechainLzChainId),
-                deployer.address,
-                amount,
-                ts,
-            ];
-
-            await expect(canonical.auraProxyOFT.processQueued(...queued)).to.be.revertedWith("Pausable: paused");
-
-            await canonical.auraProxyOFT.unpause();
-            expect(await canonical.auraBalProxyOFT.paused()).eq(false);
-        });
-        it("Can pause auraProxyOFT transfers", async () => {
-            expect(await canonical.auraProxyOFT.paused()).eq(false);
-            await canonical.auraProxyOFT.connect(dao.signer).pause();
-            expect(await canonical.auraProxyOFT.paused()).eq(true);
-
-            const amount = simpleToExactAmount(1);
-            await phase2.cvxCrv.connect(deployer.signer).approve(canonical.auraProxyOFT.address, amount);
-            await expect(
-                canonical.auraProxyOFT
-                    .connect(deployer.signer)
-                    .sendFrom(
-                        deployer.address,
-                        sidechainLzChainId,
-                        deployer.address,
-                        amount,
-                        ZERO_ADDRESS,
-                        ZERO_ADDRESS,
-                        [],
-                        {
-                            value: simpleToExactAmount("0.2"),
-                        },
-                    ),
-            ).to.be.revertedWith("Pausable: paused");
-        });
+    });
+    describe("AuraBalProxyOFT", () => {
+        shouldBehaveLikeProxyOft(() => ({
+            proxyOft: canonical.auraBalProxyOFT,
+            token: phase2.cvxCrv,
+        }));
     });
 });

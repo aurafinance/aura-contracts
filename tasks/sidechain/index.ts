@@ -16,12 +16,13 @@ import {
 } from "../../scripts/deploySidechain";
 import {
     canonicalChains,
-    remoteChainMap,
     lzChainIds,
     canonicalConfigs,
     sidechainConfigs,
     sideChains,
 } from "../deploy/sidechain-constants";
+import { AuraBalOFT, AuraBalProxyOFT, AuraOFT, AuraProxyOFT } from "types";
+import { ethers } from "ethers";
 
 const debug = true;
 
@@ -87,6 +88,7 @@ task("sidechain:aura-oft-info")
             "Local",
             [
                 "AuraOFT address: " + local.auraProxyOFT.address,
+                "AuraBalOFT address: " + local.auraBalProxyOFT.address,
                 "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
                 `Trusted remote address (${sidechainLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
                     sidechainLzChainId,
@@ -96,6 +98,7 @@ task("sidechain:aura-oft-info")
             [
                 "Lock balance: " + formatEther((await phase2.cvxLocker.balances(deployerAddress)).locked),
                 "AURA balance: " + formatEther(await phase2.cvx.balanceOf(deployerAddress)),
+                "auraBAL balance: " + formatEther(await phase2.cvxCrv.balanceOf(deployerAddress)),
             ],
         );
 
@@ -124,67 +127,58 @@ task("sidechain:aura-oft-info")
                 `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
                 `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
             ],
-            [`Balance of deployer: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`],
+            [
+                `AuraOFT balance: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`,
+                `AuraBalOFT balance: ${formatEther(await remote.auraBalOFT.balanceOf(deployerAddress))}`,
+            ],
         );
     });
 
-task("sidechain:test:send-aura-to-sidechain")
+task("sidechain:test:send-aura-oft")
     .addParam("wait", "Wait for blocks")
     .addParam("amount", "Amount of AURA")
-    .addParam("sidechainid", "Remote chain to send AURA too")
-    .addParam("force", "Force")
+    .addParam("remotechainid", "Remote chain to send AURA too")
     .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
         const deployer = await getSigner(hre);
         const deployerAddress = await deployer.getAddress();
-        const remoteChainId = tskArgs.sidechainid;
+        const remoteChainId = tskArgs.remotechainid;
+        const scaledAmount = parseEther(tskArgs.amount);
 
-        const localConfig = canonicalConfigs[hre.network.config.chainId];
-        assert(localConfig, `Local config for chain ID ${hre.network.config.chainId} not found`);
+        const configs = { ...sidechainConfigs, ...canonicalConfigs };
 
-        if (!tskArgs.force) {
-            assert(
-                Number(remoteChainId) === Number(remoteChainMap[hre.network.config.chainId]),
-                `Incorrect remote chain ID ${remoteChainId} !== ${remoteChainMap[hre.network.config.chainId]}`,
-            );
-        }
+        let oft: AuraProxyOFT | AuraOFT;
 
-        const remoteConfig = sidechainConfigs[remoteChainId];
-        assert(remoteConfig, `Remote config for chain ID ${remoteChainId} not found`);
-
-        const remoteLzChainId = lzChainIds[remoteChainId];
-        assert(remoteLzChainId, "LZ chain ID not found");
-
-        const local = localConfig.getSidechain(deployer);
-        const remote = remoteConfig.getSidechain(deployer);
-
-        if ("auraProxyOFT" in local && "l2Coordinator" in remote) {
-            // L1 -> L2
-            const phase2: Phase2Deployed = await (localConfig as any).getPhase2(deployer);
-            const auraBalance = await phase2.cvx.balanceOf(deployerAddress);
-            const scaledAmount = parseEther(tskArgs.amount);
-            assert(auraBalance >= scaledAmount, "Not enough AURA");
-
-            let tx = await phase2.cvx.approve(local.auraProxyOFT.address, scaledAmount);
+        if (canonicalChains.includes(hre.network.config.chainId)) {
+            // Canonical chain config
+            const config = configs[hre.network.config.chainId] as any;
+            const contracts = config.getSidechain(deployer);
+            const phase2: Phase2Deployed = await config.getPhase2(deployer);
+            const tx = await phase2.cvx.approve(contracts.auraProxyOFT.address, scaledAmount);
             await waitForTx(tx, debug, tskArgs.wait);
 
-            tx = await local.auraProxyOFT.sendFrom(
-                deployerAddress,
-                lzChainIds[remoteChainId],
-                deployerAddress,
-                scaledAmount,
-                ZERO_ADDRESS,
-                ZERO_ADDRESS,
-                [],
-                {
-                    value: simpleToExactAmount(0.05),
-                    gasLimit: 600_000,
-                },
-            );
-            await waitForTx(tx, debug, tskArgs.wait);
-        } else if ("coordinator" in local && "auraOFT" in remote) {
-            // L2 -> L1
-            // TODO:
+            oft = contracts.auraProxyOFT;
+        } else {
+            // Sidechain config
+            const config = configs[hre.network.config.chainId] as any;
+            const contracts = config.getSidechain(deployer);
+            oft = contracts.auraOFT;
         }
+
+        const fees = await oft.estimateSendFee(lzChainIds[remoteChainId], deployerAddress, scaledAmount, false, []);
+        const tx = await oft.sendFrom(
+            deployerAddress,
+            lzChainIds[remoteChainId],
+            deployerAddress,
+            scaledAmount,
+            ZERO_ADDRESS,
+            ZERO_ADDRESS,
+            [],
+            {
+                value: fees.nativeFee,
+                gasLimit: 600_000,
+            },
+        );
+        await waitForTx(tx, debug, tskArgs.wait);
     });
 
 task("sidechhain:test:lock-aura")
@@ -207,9 +201,69 @@ task("sidechhain:test:lock-aura")
         const scaledAmount = parseEther(tskArgs.amount);
         assert(auraBalance >= scaledAmount, "Not enough ARUA");
 
-        const tx = await deployment.auraOFT.lock(scaledAmount, {
+        const tx = await deployment.auraOFT.lock(deployerAddress, scaledAmount, ZERO_ADDRESS, {
             value: simpleToExactAmount(0.05),
             gasLimit: 600_000,
         });
+        await waitForTx(tx, debug, tskArgs.wait);
+    });
+
+task("sidechain:test:send-auraBal-oft")
+    .addParam("wait", "Wait for blocks")
+    .addParam("amount", "Amount of AURA")
+    .addParam("remotechainid", "Remote chain to send AURA too")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const deployerAddress = await deployer.getAddress();
+        const remoteChainId = tskArgs.remotechainid;
+        const scaledAmount = parseEther(tskArgs.amount);
+
+        const configs = { ...sidechainConfigs, ...canonicalConfigs };
+
+        let oft: AuraBalProxyOFT | AuraBalOFT;
+
+        const isCanonical = canonicalChains.includes(hre.network.config.chainId);
+
+        if (isCanonical) {
+            // Canonical chain config
+            const config = configs[hre.network.config.chainId] as any;
+            const contracts = config.getSidechain(deployer);
+            const phase2: Phase2Deployed = await config.getPhase2(deployer);
+
+            const allowance = await phase2.cvxCrv.allowance(deployerAddress, contracts.auraBalProxyOFT.address);
+            if (allowance.lt(scaledAmount)) {
+                const tx = await phase2.cvxCrv.approve(contracts.auraBalProxyOFT.address, scaledAmount);
+                await waitForTx(tx, debug, tskArgs.wait);
+            }
+
+            oft = contracts.auraBalProxyOFT;
+        } else {
+            // Sidechain config
+            const config = configs[hre.network.config.chainId] as any;
+            const contracts = config.getSidechain(deployer);
+            oft = contracts.auraBalOFT;
+        }
+
+        const adapterParams = isCanonical ? [] : ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
+        const fees = await oft.estimateSendFee(
+            lzChainIds[remoteChainId],
+            deployerAddress,
+            scaledAmount,
+            false,
+            adapterParams,
+        );
+        const tx = await oft.sendFrom(
+            deployerAddress,
+            lzChainIds[remoteChainId],
+            deployerAddress,
+            scaledAmount,
+            ZERO_ADDRESS,
+            ZERO_ADDRESS,
+            adapterParams,
+            {
+                value: fees.nativeFee,
+                gasLimit: 600_000,
+            },
+        );
         await waitForTx(tx, debug, tskArgs.wait);
     });

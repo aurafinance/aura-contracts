@@ -45,8 +45,9 @@ import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as gnosisSidechainConfig } from "./gnosis-config";
+
 const debug = true;
-const SALT = "shanghai";
+const SALT = "lisbon";
 
 /* ----------------------------------------------------------------------------
     Canonical Deployment Tasks
@@ -144,6 +145,9 @@ task("deploy:sidechain:create2Factory")
         const deployer = await getSigner(hre);
         const waitForBlocks = tskArgs.wait;
 
+        const nonce = await deployer.getTransactionCount();
+        console.log("Nonce:", nonce);
+
         const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
 
         const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
@@ -172,8 +176,9 @@ task("deploy:sidechain:L2:phase1")
             sidechainConfig.naming,
             sidechainConfig.multisigs,
             sidechainConfig.extConfig,
+            sidechainConfig.bridging,
             canonical,
-            canonicalChainId,
+            lzChainIds[canonicalChainId],
             SALT,
             debug,
             tskArgs.wait,
@@ -245,7 +250,6 @@ const setupCanonicalTask = (deployer: Signer, network: HardhatRuntimeEnvironment
 task("deploy:sidechain:config:L1:phase1")
     .addParam("wait", "Wait for blocks")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
-    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
@@ -261,6 +265,7 @@ task("deploy:sidechain:config:L1:phase1")
             remote,
             sidechainLzChainId,
             canonicalConfig.multisigs,
+            sidechainConfigs[sidechainId].bridging,
             debug,
             tskArgs.wait,
         );
@@ -269,10 +274,10 @@ task("deploy:sidechain:config:L1:phase1")
 task("deploy:sidechain:config:L1:phase2")
     .addParam("wait", "Wait for blocks")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
-    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
+
         const { canonicalConfig, canonical, remote, sidechainLzChainId } = setupCanonicalTask(
             deployer,
             hre.network,

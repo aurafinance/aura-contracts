@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IGenericVault } from "../interfaces/IGenericVault.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
@@ -17,7 +18,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
  *        all auraBAL sat in this bridge will be staked in the auraBAL
  *        compounder and rewards distributed to the L2 staking contracts
  */
-contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
+contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using AuraMath for uint256;
 
@@ -103,17 +104,17 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Set cross chain config for selector
-     * @param _srcChainId Source chain layer zero chainId
-     * @param _selector The function selector
-     * @param _config Config struct for adapterParams and zroPaymentAddress etc
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
      */
-    function setConfig(
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /**
@@ -185,8 +186,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         uint256 _amount
     ) internal override returns (uint256) {
         uint256 amount = super._debitFrom(_from, _srcChainId, _toAddress, _amount);
+        amount = _stakeAll();
         internalTotalSupply += amount;
-        _stakeAll();
         return amount;
     }
 
@@ -255,17 +256,27 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
             }
 
             totalClaimable[harvestToken.token] += totalHarvested;
-            require(accUnderlying == _totalUnderlyingSum, "!sum");
+
+            if (j + 1 == harvestTokenslen) {
+                // We only need to emit this event and run this require
+                // at the end of the last loop as it is the same for each
+                require(accUnderlying == _totalUnderlyingSum, "!sum");
+                emit Harvest(msg.sender, _totalUnderlyingSum);
+            }
         }
-        emit Harvest(msg.sender, _totalUnderlyingSum);
     }
 
     /**
      * @dev Process claimable rewards
      * @param _token The token to process
      * @param _srcChainId The source chain ID
+     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
-    function processClaimable(address _token, uint16 _srcChainId) external payable {
+    function processClaimable(
+        address _token,
+        uint16 _srcChainId,
+        address _zroPaymentAddress
+    ) external payable whenNotPaused nonReentrant {
         address receiver = rewardReceiver[_srcChainId];
         uint256 reward = claimable[_token][_srcChainId];
         address oft = ofts[_token];
@@ -277,8 +288,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
         claimable[_token][_srcChainId] = 0;
         totalClaimable[_token] -= reward;
 
-        Config memory config = configs[_srcChainId][
-            keccak256(abi.encodeWithSignature("processClaimable(address,uint16)", _token, _srcChainId))
+        bytes memory adapterParams = getAdapterParams[_srcChainId][
+            keccak256(
+                abi.encodeWithSignature("processClaimable(address,uint16,address)", _token, _srcChainId, address(0))
+            )
         ];
 
         if (_token == address(innerToken)) {
@@ -290,8 +303,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 _srcChainId,
                 abi.encode(PT_SEND, abi.encodePacked(receiver), reward),
                 payable(msg.sender),
-                config.zroPaymentAddress,
-                config.adapterParams,
+                _zroPaymentAddress,
+                adapterParams,
                 msg.value
             );
 
@@ -306,8 +319,8 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
                 abi.encodePacked(receiver),
                 reward,
                 payable(msg.sender),
-                config.zroPaymentAddress,
-                config.adapterParams
+                _zroPaymentAddress,
+                adapterParams
             );
         }
     }
@@ -381,9 +394,10 @@ contract AuraBalProxyOFT is PausableProxyOFT, CrossChainConfig {
     /**
      * @dev Stake all auraBAL in vault
      */
-    function _stakeAll() internal {
+    function _stakeAll() internal returns (uint256) {
         uint256 amount = innerToken.balanceOf(address(this));
         IGenericVault(vault).deposit(amount, address(this));
+        return amount;
     }
 
     /**

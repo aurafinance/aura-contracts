@@ -23,6 +23,7 @@ import {
     SidechainBridging,
     SidechainConfig,
     SidechainMultisigConfig,
+    BoosterHelper__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import { sidechainNaming } from "./sidechain-naming";
@@ -55,6 +56,7 @@ export const bridging: SidechainBridging = {
 export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect("0x2B89339C923595b8e6Cc7bc87c83dbbd53f1FEb4", signer),
     booster: BoosterLite__factory.connect("0x852aD2fdE4cFEAd5c420F6f8027Dc14f877947C6", signer),
+    boosterHelper: BoosterHelper__factory.connect("0x0000000000000000000000000000000000000000", signer),
     boosterOwner: BoosterOwner__factory.connect("0xE01d927481978b59E6aEbB32601A4435C8a05fb8", signer),
     poolManager: PoolManagerLite__factory.connect("0xEE6c82b8Ef215E43d485b25de0B490f0f2F708BD", signer),
     l2Coordinator: L2Coordinator__factory.connect("0xbF6A1859e2503441dE34197e73Bd32d8f82698b0", signer),
