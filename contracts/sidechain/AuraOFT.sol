@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { PausableOFT } from "./PausableOFT.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -10,7 +11,7 @@ import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
  * @author  AuraFinance
  * @dev     Sidechain AURA
  */
-contract AuraOFT is PausableOFT, CrossChainConfig {
+contract AuraOFT is PausableOFT, CrossChainConfig, ReentrancyGuard {
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
@@ -64,14 +65,14 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
      * @dev Sets the configuration for a given source chain ID and selector.
      * @param _srcChainId The source chain ID.
      * @param _selector The selector.
-     * @param _config The configuration.
+     * @param _adapterParams The adapter params.
      */
-    function setConfig(
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /* -------------------------------------------------------------------
@@ -80,25 +81,31 @@ contract AuraOFT is PausableOFT, CrossChainConfig {
 
     /**
      * @dev Lock CVX on the L1 chain
+     * @param _receiver address that will be receiving the refund and vlaura lock
      * @param _cvxAmount Amount of CVX to lock for vlCVX on L1
+     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
-    function lock(uint256 _cvxAmount) external payable {
+    function lock(
+        address _receiver,
+        uint256 _cvxAmount,
+        address _zroPaymentAddress
+    ) external payable whenNotPaused nonReentrant {
         require(_cvxAmount > 0, "!amount");
         _debitFrom(msg.sender, canonicalChainId, bytes(""), _cvxAmount);
 
-        bytes memory payload = CCM.encodeLock(msg.sender, _cvxAmount);
+        bytes memory payload = CCM.encodeLock(_receiver, _cvxAmount);
 
-        CrossChainConfig.Config memory config = configs[canonicalChainId][keccak256("lock(uint256)")];
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("lock(address,uint256,address)")];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
-            payable(msg.sender), /////// Refund address
-            config.zroPaymentAddress, // ZRO payment address
-            config.adapterParams, ////// Adapter params
+            payable(_receiver), //////// Refund address
+            _zroPaymentAddress, //////// ZRO payment address
+            adapterParams, ///////////// Adapter params
             msg.value ////////////////// Native fee
         );
 
-        emit Locked(msg.sender, _cvxAmount);
+        emit Locked(_receiver, _cvxAmount);
     }
 }

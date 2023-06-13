@@ -190,6 +190,10 @@ interface MultisigConfig {
     daoMultisig: string;
     sudoMultisig: string;
     pauseGuardian: string;
+    defender?: {
+        l1CoordinatorDistributor?: string;
+        auraBalProxyOFTHarvestor?: string;
+    };
 }
 
 interface BPTData {

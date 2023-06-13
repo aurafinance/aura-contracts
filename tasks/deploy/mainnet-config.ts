@@ -177,6 +177,7 @@ const addresses: ExtSystemConfig = {
 
 const whales = {
     "0xCfCA23cA9CA720B6E98E3Eb9B6aa0fFC4a5C08B9": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
+    "0x072f14B85ADd63488DDaD88f855Fda4A99d6aC9B": "0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10",
 };
 
 const multisigs: MultisigConfig = {
@@ -185,6 +186,10 @@ const multisigs: MultisigConfig = {
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     sudoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    defender: {
+        l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
+        auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+    },
 };
 
 const contributorDistro = [

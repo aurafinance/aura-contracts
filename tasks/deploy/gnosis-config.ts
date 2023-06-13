@@ -19,6 +19,7 @@ import {
     ExtSidechainConfig,
     SidechainConfig,
     SidechainBridging,
+    BoosterHelper__factory,
 } from "../../types";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { sidechainNaming } from "./sidechain-naming";
@@ -44,6 +45,7 @@ export const bridging: SidechainBridging = {
 export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect(ZERO_ADDRESS, signer),
     booster: BoosterLite__factory.connect(ZERO_ADDRESS, signer),
+    boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
     boosterOwner: BoosterOwner__factory.connect(ZERO_ADDRESS, signer),
     poolManager: PoolManagerLite__factory.connect(ZERO_ADDRESS, signer),
     l2Coordinator: L2Coordinator__factory.connect(ZERO_ADDRESS, signer),

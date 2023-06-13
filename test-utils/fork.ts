@@ -19,7 +19,7 @@ export const impersonate = async (addr: string, fund = true): Promise<Signer> =>
         // Give the account 10 Ether
         await network.provider.request({
             method: "hardhat_setBalance",
-            params: [addr, "0x8AC7230489E80000"],
+            params: [addr, "0x8AC7230489E8000000"],
         });
     }
     return ethers.provider.getSigner(addr);
