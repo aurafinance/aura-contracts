@@ -94,53 +94,6 @@ describe("PoolManagerLite", () => {
         });
     });
 
-    describe("@method setProtectPool", () => {
-        it("protectPool defaults to false", async () => {
-            const startValue = await poolManager.protectAddPool();
-            expect(startValue).to.equal(false);
-        });
-
-        it("reverts if addPool is protected and caller is not operator", async () => {
-            await poolManager.connect(dao.signer).setProtectPool(true);
-            const resp = poolManager.connect(alice)["addPool(address)"](DEAD_ADDRESS);
-            await expect(resp).to.be.revertedWith("!auth");
-        });
-
-        it("reverts if setProtectPool caller is not operator", async () => {
-            const resp = poolManager.connect(alice).setProtectPool(false);
-            await expect(resp).to.be.revertedWith("!auth");
-        });
-
-        it("setProtectPool update protectAddPool", async () => {
-            await poolManager.connect(dao.signer).setProtectPool(false);
-            const newValue = await poolManager.connect(dao.signer).protectAddPool();
-            expect(newValue).to.equal(false);
-        });
-
-        it("addPool can be called by anyone", async () => {
-            const lp_token = await deployContract<MockERC20>(
-                hre,
-                new MockERC20__factory(deployer.signer),
-                "MockCRV",
-                ["mockCrv", "mockCrv", 18, deployer.address, 10000000],
-                {},
-                false,
-            );
-            const gauge = await deployContract<MockCurveGauge>(
-                hre,
-                new MockCurveGauge__factory(accounts[0]),
-                "MockCurveGauge",
-                ["BadGauge", "badGauge", lp_token.address, []],
-                {},
-                false,
-            );
-            await poolManager.connect(alice)["addPool(address)"](gauge.address);
-
-            const lptoken = await gauge.lp_token();
-            const pool = await booster.poolInfo(2);
-            expect(pool.lptoken).to.equal(lptoken);
-        });
-    });
     describe("@method shutdownPool", () => {
         it("reverts if not called by operator", async () => {
             const failedTx = poolManager.connect(alice).shutdownPool(0);

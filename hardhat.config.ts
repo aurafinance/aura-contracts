@@ -62,6 +62,15 @@ const config: HardhatUserConfig = {
             chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",
         },
+        optimism: {
+            chainId: chainIds.optimism,
+            url: process.env.NODE_URL || "",
+        },
+        polygon: {
+            chainId: chainIds.polygon,
+            gasPrice: 55000000000,
+            url: process.env.NODE_URL || "",
+        },
         arbitrumGoerli: {
             url: process.env.NODE_URL || "",
             gasPrice: 3000000000,

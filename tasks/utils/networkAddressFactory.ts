@@ -153,6 +153,7 @@ export const resolveToken = (
 };
 
 export const chainIds = {
+    optimism: 10,
     goerli: 5,
     hardhat: 31337,
     kovan: 42,
