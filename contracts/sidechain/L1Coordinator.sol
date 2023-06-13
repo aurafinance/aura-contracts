@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -16,7 +17,7 @@ import { AuraMath } from "../utils/AuraMath.sol";
  * @dev Tracks the amount of fee debt accrued by each sidechain and
  *      sends AURA back to each sidechain for rewards
  */
-contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
+contract L1Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -24,8 +25,8 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
        Storage 
     ------------------------------------------------------------------- */
 
-    /// @dev Booster contract address
-    address public immutable booster;
+    // Reward multiplier for increasing or decreasing AURA rewards per PID
+    uint256 public constant REWARD_MULTIPLIER_DENOMINATOR = 10000;
 
     /// @dev BAL token contract
     address public immutable balToken;
@@ -35,6 +36,15 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
 
     /// @dev AURA OFT token contract
     address public immutable auraOFT;
+
+    /// @dev AURA treasury address
+    address public immutable treasury;
+
+    /// @dev Booster contract address
+    address public booster;
+
+    /// @dev Reward multiplier
+    uint256 public rewardMultiplier;
 
     /// @dev src chain ID mapped to total feeDebt
     mapping(uint16 => uint256) public feeDebtOf;
@@ -94,6 +104,16 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     event FeeDebtSettled(uint16 srcChainId, uint256 amount);
 
+    /**
+     * @param multiplier The reward multiplier
+     */
+    event RewardMultiplierUpdated(uint256 multiplier);
+
+    /**
+     * @param booster The booster contract
+     */
+    event BoosterUpdated(address booster);
+
     /* -------------------------------------------------------------------
        Modifiers  
     ------------------------------------------------------------------- */
@@ -112,12 +132,15 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         address _booster,
         address _balToken,
         address _auraToken,
-        address _auraOFT
+        address _auraOFT,
+        address _treasury
     ) {
         booster = _booster;
         balToken = _balToken;
         auraToken = _auraToken;
         auraOFT = _auraOFT;
+        treasury = _treasury;
+        rewardMultiplier = REWARD_MULTIPLIER_DENOMINATOR;
 
         _initializeLzApp(_lzEndpoint);
 
@@ -129,12 +152,18 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
        Setter Functions
     ------------------------------------------------------------------- */
 
-    function setConfig(
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
+     */
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /**
@@ -167,6 +196,25 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
         emit DisributorUpdated(_distributor, _active);
     }
 
+    /**
+     * @dev Set the reward multiplier
+     * @param _multiplier The new multiplier
+     */
+    function setRewardMultiplier(uint256 _multiplier) external onlyOwner {
+        require(_multiplier <= REWARD_MULTIPLIER_DENOMINATOR, "too high");
+        rewardMultiplier = _multiplier;
+        emit RewardMultiplierUpdated(_multiplier);
+    }
+
+    /**
+     * @dev Set the booster address
+     * @param _booster The booster contract address
+     */
+    function setBooster(address _booster) external onlyOwner {
+        booster = _booster;
+        emit BoosterUpdated(_booster);
+    }
+
     /* -------------------------------------------------------------------
        Core Functions
     ------------------------------------------------------------------- */
@@ -187,20 +235,24 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      */
     function distributeAura(
         uint16 _srcChainId,
+        address _zroPaymentAddress,
         address _sendFromZroPaymentAddress,
         bytes memory _sendFromAdapterParams
-    ) external payable onlyDistributor {
+    ) external payable onlyDistributor nonReentrant {
         uint256 distributedFeeDebt = distributedFeeDebtOf[_srcChainId];
         uint256 feeDebt = feeDebtOf[_srcChainId].sub(distributedFeeDebt);
         distributedFeeDebtOf[_srcChainId] = distributedFeeDebt.add(feeDebt);
 
-        Config memory config = configs[_srcChainId][keccak256("distributeAura(uint16,address,bytes)")];
+        bytes memory adapterParams = getAdapterParams[_srcChainId][
+            keccak256("distributeAura(uint16,address,address,bytes)")
+        ];
+
         _distributeAura(
             _srcChainId,
             feeDebt,
-            config.zroPaymentAddress,
+            _zroPaymentAddress,
             _sendFromZroPaymentAddress,
-            config.adapterParams,
+            adapterParams,
             _sendFromAdapterParams
         );
 
@@ -225,12 +277,25 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
     ) internal {
         uint256 auraBefore = IERC20(auraToken).balanceOf(address(this));
         IBooster(booster).distributeL2Fees(_feeAmount);
-        uint256 auraAmount = IERC20(auraToken).balanceOf(address(this)).sub(auraBefore);
 
         address to = l2Coordinators[_srcChainId];
         require(to != address(0), "to can not be zero");
 
-        bytes memory payload = CCM.encodeFeesCallback(auraAmount);
+        // Calculate the amount of AURA to send as rewards and the amount
+        // to send to the treasury based on the current reward multiplier
+        uint256 auraRewardAmount;
+        {
+            uint256 auraAmount = IERC20(auraToken).balanceOf(address(this)).sub(auraBefore);
+            auraRewardAmount = auraAmount.mul(rewardMultiplier).div(REWARD_MULTIPLIER_DENOMINATOR);
+            require(auraRewardAmount > 0, "!reward");
+            uint256 auraTreasuryAmount = auraAmount.sub(auraRewardAmount);
+
+            if (auraTreasuryAmount > 0) {
+                IERC20(auraToken).safeTransfer(treasury, auraTreasuryAmount);
+            }
+        }
+
+        bytes memory payload = CCM.encodeFeesCallback(auraRewardAmount);
 
         _lzSend(
             _srcChainId, ///////////// Source chain (L2 chain)
@@ -245,7 +310,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
             address(this),
             _srcChainId,
             abi.encodePacked(to),
-            auraAmount,
+            auraRewardAmount,
             payable(msg.sender),
             _sendFromZroPaymentAddress,
             _sendFromAdapterParams
@@ -256,7 +321,7 @@ contract L1Coordinator is NonblockingLzApp, CrossChainConfig {
      * @dev Receive CRV from the L2 via some thirdpart bridge
      *      to settle the feeDebt for the remote chain
      */
-    function settleFeeDebt(uint16 _srcChainId, uint256 _amount) external {
+    function settleFeeDebt(uint16 _srcChainId, uint256 _amount) external nonReentrant {
         address bridgeDelegate = bridgeDelegates[_srcChainId];
         require(bridgeDelegate == msg.sender, "!bridgeDelegate");
 

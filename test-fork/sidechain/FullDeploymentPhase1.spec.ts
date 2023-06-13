@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import hre, { ethers, network } from "hardhat";
 
-import { deploySimpleBridgeDelegates } from "../../scripts/deployBridgeDelegates";
+import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
@@ -69,6 +69,7 @@ describe("Full Deployment Phase 1", () => {
     let crv: ERC20;
     let bridgeDelegateReceiver: BridgeDelegateReceiver;
     let l1Coordinator: L1Coordinator;
+    let bridgeDelegateDeployment: SimplyBridgeDelegateDeployed;
 
     // Sidechain Contracts
     let sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed;
@@ -130,6 +131,7 @@ describe("Full Deployment Phase 1", () => {
         sidechain = result.sidechain;
         sidechainConfig = result.sidechainConfig;
         dao = result.dao;
+        bridgeDelegateDeployment = result.bridgeDelegateDeployment;
 
         auraProxyOFT = canonical.auraProxyOFT;
         l1Coordinator = canonical.l1Coordinator;
@@ -182,11 +184,9 @@ describe("Full Deployment Phase 1", () => {
                 ),
             ).eq(true);
 
-            const lockSelector = ethers.utils.id("lock(uint256)");
-            const config = await auraOFT.configs(L1_CHAIN_ID, lockSelector);
-            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
-            expect(config.adapterParams).eq(adapterParams);
-            expect(config.zroPaymentAddress).eq(ZERO_ADDRESS);
+            const lockSelector = ethers.utils.id("lock(address,uint256,address)");
+            const adapterParams = await auraOFT.getAdapterParams(L1_CHAIN_ID, lockSelector);
+            expect(adapterParams).eq(ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]));
         });
         it("L2Coordinator has correct config", async () => {
             expect(await l2Coordinator.canonicalChainId()).eq(L1_CHAIN_ID);
@@ -211,6 +211,9 @@ describe("Full Deployment Phase 1", () => {
             expect(await l1Coordinator.auraToken()).eq(phase2.cvx.address);
             expect(await l1Coordinator.auraOFT()).eq(auraProxyOFT.address);
             expect(await l1Coordinator.lzEndpoint()).eq(l1LzEndpoint.address);
+            expect(await l1Coordinator.rewardMultiplier()).eq(10000);
+            expect(await l1Coordinator.REWARD_MULTIPLIER_DENOMINATOR()).eq(10000);
+            expect(await l1Coordinator.treasury()).eq(mainnetConfig.multisigs.treasuryMultisig);
             // Allowances
             expect(await phase2.cvx.allowance(l1Coordinator.address, auraProxyOFT.address)).eq(
                 ethers.constants.MaxUint256,
@@ -320,7 +323,6 @@ describe("Full Deployment Phase 1", () => {
             expect(await crv.balanceOf(l1Coordinator.address)).gte(floatAmount);
         });
         it("Set l2Coordinator on l1Coordinator", async () => {
-            expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).not.to.eq(l2Coordinator.address);
             await l1Coordinator.connect(dao.signer).setL2Coordinator(L2_CHAIN_ID, l2Coordinator.address);
             expect(await l1Coordinator.l2Coordinators(L2_CHAIN_ID)).to.eq(l2Coordinator.address);
         });
@@ -328,15 +330,8 @@ describe("Full Deployment Phase 1", () => {
 
     describe("Deploy and setup simple bridge delegate", () => {
         it("Deploy simple bridge delegate", async () => {
-            const result = await deploySimpleBridgeDelegates(
-                hre,
-                mainnetConfig.addresses,
-                canonical,
-                L2_CHAIN_ID,
-                deployer.signer,
-            );
-            bridgeDelegateSender = result.bridgeDelegateSender as SimpleBridgeDelegateSender;
-            bridgeDelegateReceiver = result.bridgeDelegateReceiver;
+            bridgeDelegateSender = bridgeDelegateDeployment.bridgeDelegateSender as SimpleBridgeDelegateSender;
+            bridgeDelegateReceiver = bridgeDelegateDeployment.bridgeDelegateReceiver;
         });
         it("Bridge delegate sender has correct config", async () => {
             expect(await bridgeDelegateSender.token()).eq(sidechainConfig.extConfig.token);
@@ -413,7 +408,7 @@ describe("Full Deployment Phase 1", () => {
         const lockAmount = simpleToExactAmount(5);
         before(async () => {
             // Transfer some AURA to L2
-            const bridgeAmount = lockAmount.mul(2);
+            const bridgeAmount = lockAmount.mul(4);
             await phase2.cvx.connect(auraWhale.signer).approve(auraProxyOFT.address, bridgeAmount);
             await auraProxyOFT
                 .connect(auraWhale.signer)
@@ -431,17 +426,58 @@ describe("Full Deployment Phase 1", () => {
                 );
         });
         it("lock AURA from L2 -> L1", async () => {
+            const auraOftBalanceBefore = await sidechain.auraOFT.balanceOf(deployer.address);
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
-            await auraOFT.connect(deployer.signer).lock(lockAmount, { value: NATIVE_FEE });
+            await auraOFT
+                .connect(deployer.signer)
+                .lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            const auraOftBalanceAfter = await sidechain.auraOFT.balanceOf(deployer.address);
             await increaseTime(ONE_WEEK);
             expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
+            expect(auraOftBalanceBefore.sub(auraOftBalanceAfter)).eq(lockAmount);
         });
-        it("locking from L2 -> l1 when shutdown", async () => {
-            await phase2.cvxLocker.connect(dao.signer).shutdown();
+        it("lock AURA from L2 -> L1 on behalf of another address", async () => {
+            const balancesBefore = await phase2.cvxLocker.balances(dao.address);
+            const auraBalanceBefore = await auraOFT.balanceOf(deployer.address);
+            await auraOFT.connect(deployer.signer).lock(dao.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const balancesAfter = await phase2.cvxLocker.balances(dao.address);
+            const auraBalanceAfter = await auraOFT.balanceOf(deployer.address);
+            await increaseTime(ONE_WEEK);
+            expect(balancesAfter.locked.sub(balancesBefore.locked)).eq(lockAmount);
+            expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(lockAmount);
+        });
+        it("locking from L2 -> L1 when paused", async () => {
+            expect(await phase2.cvxLocker.isShutdown()).eq(false);
+            await auraProxyOFT.pause();
+            expect(await auraProxyOFT.paused()).eq(true);
+
             const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
             const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
-            await auraOFT.lock(lockAmount, { value: NATIVE_FEE });
+
+            const tx = await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const resp = await tx.wait();
+            const queueEvent = resp.events.find(
+                // topic hash for QueuedFromChain(uint256,uint16,address,uint256,uint256)
+                e => e.topics[0] === "0xa0381c37c26d93bfda7e2060ab159ac4cbb9cddae7f4b2ecb28dc131d13bbd76",
+            );
+            expect(Boolean(queueEvent)).eq(true);
+
+            const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
+            const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
+
+            expect(balancesAfter.locked).eq(balancesBefore.locked);
+            expect(balanceAfter).eq(balanceBefore);
+
+            await auraProxyOFT.unpause();
+            expect(await auraProxyOFT.paused()).eq(false);
+        });
+        it("locking from L2 -> L1 when shutdown", async () => {
+            await phase2.cvxLocker.connect(dao.signer).shutdown();
+            expect(await phase2.cvxLocker.isShutdown()).eq(true);
+            const balancesBefore = await phase2.cvxLocker.balances(deployer.address);
+            const balanceBefore = await phase2.cvx.balanceOf(deployer.address);
+            await auraOFT.lock(deployer.address, lockAmount, ZERO_ADDRESS, { value: NATIVE_FEE });
             const balancesAfter = await phase2.cvxLocker.balances(deployer.address);
             const balanceAfter = await phase2.cvx.balanceOf(deployer.address);
             expect(balancesAfter.locked).eq(balancesBefore.locked);
@@ -453,7 +489,7 @@ describe("Full Deployment Phase 1", () => {
         it("Can not distribute AURA as no distributor", async () => {
             expect(await l1Coordinator.distributors(deployer.address)).eq(false);
             await expect(
-                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
+                l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE }),
             ).to.be.revertedWith("!distributor");
         });
         it("Can set deployer as distributor", async () => {
@@ -478,7 +514,7 @@ describe("Full Deployment Phase 1", () => {
             // Earmark rewards sends BAL to the reward contract and
             // the L1Coordinator is notified about new fee debt
             await withMockMinter(async () => {
-                await sidechain.booster.earmarkRewards(0, {
+                await sidechain.booster.earmarkRewards(0, ZERO_ADDRESS, {
                     value: NATIVE_FEE,
                 });
             });
@@ -510,7 +546,7 @@ describe("Full Deployment Phase 1", () => {
 
             const tx = await l1Coordinator
                 .connect(deployer.signer)
-                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
+                .distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], { value: NATIVE_FEE.mul(2) });
             const reciept = await tx.wait();
             const mintEvent = reciept.events.find(
                 (x: any) =>
@@ -553,7 +589,6 @@ describe("Full Deployment Phase 1", () => {
             await getBal(mainnetConfig.addresses, bridgeDelegateReceiver.address, simpleToExactAmount(10_000));
         });
         it("set bridge delegate for L2", async () => {
-            expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(ZERO_ADDRESS);
             await l1Coordinator.connect(dao.signer).setBridgeDelegate(L2_CHAIN_ID, bridgeDelegateReceiver.address);
             expect(await l1Coordinator.bridgeDelegates(L2_CHAIN_ID)).eq(bridgeDelegateReceiver.address);
         });

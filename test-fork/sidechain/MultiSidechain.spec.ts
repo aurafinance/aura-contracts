@@ -101,6 +101,7 @@ describe("Multi Sidechain AURA", () => {
             sidechainConfig__1.naming,
             sidechainConfig__1.multisigs,
             sidechainConfig__1.extConfig,
+            sidechainConfig__1.bridging,
             canonical,
             L1_CHAIN_ID,
             "shenzhen",
@@ -121,8 +122,20 @@ describe("Multi Sidechain AURA", () => {
         await getAura(phase2, CONFIG.addresses, deployer.address, simpleToExactAmount(1_000));
 
         // LayerZero setup
-        await setTrustedRemoteCanonicalPhase1(canonical, sidechain__0, L2_CHAIN_ID__0, CONFIG.multisigs);
-        await setTrustedRemoteCanonicalPhase1(canonical, sidechain__1, L2_CHAIN_ID__1, CONFIG.multisigs);
+        await setTrustedRemoteCanonicalPhase1(
+            canonical,
+            sidechain__0,
+            L2_CHAIN_ID__0,
+            CONFIG.multisigs,
+            sidechainConfig__0.bridging,
+        );
+        await setTrustedRemoteCanonicalPhase1(
+            canonical,
+            sidechain__1,
+            L2_CHAIN_ID__1,
+            CONFIG.multisigs,
+            sidechainConfig__1.bridging,
+        );
 
         // Canonical -> Sidechain
         await l1LzEndpoint.setDestLzEndpoint(sidechain__0.l2Coordinator.address, l2LzEndpoint__0.address);

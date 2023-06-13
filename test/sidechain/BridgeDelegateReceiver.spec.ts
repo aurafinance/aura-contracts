@@ -2,7 +2,14 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 
-import { DEAD_ADDRESS, impersonateAccount, increaseTime, simpleToExactAmount, ZERO } from "../../test-utils";
+import {
+    DEAD_ADDRESS,
+    impersonateAccount,
+    increaseTime,
+    simpleToExactAmount,
+    ZERO,
+    ZERO_ADDRESS,
+} from "../../test-utils";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../../test/shared/Ownable.behaviour";
 import { Account } from "../../types";
 import { BridgeDelegateReceiver, IERC20__factory, L1Coordinator } from "../../types/generated";
@@ -11,6 +18,7 @@ import { SidechainDeployed, SideChainTestSetup, sidechainTestSetup } from "./sid
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
+
 describe("BridgeDelegateReceiver", () => {
     /* -- Declare shared variables -- */
     let accounts: Signer[];
@@ -99,7 +107,7 @@ describe("BridgeDelegateReceiver", () => {
             await sidechain.booster.deposit(pid, amount, stake);
             await increaseTime(60 * 60 * 24);
             // Send fees
-            await sidechain.booster.earmarkRewards(pid, { value: NATIVE_FEE });
+            await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: NATIVE_FEE });
 
             const feeDebtAfter = await l1Coordinator.feeDebtOf(srcChainId);
             expect(feeDebtAfter, "feeDebt").to.be.gt(feeDebtBefore);

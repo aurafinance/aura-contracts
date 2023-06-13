@@ -16,6 +16,7 @@ export interface ExtSidechainConfig {
     lzEndpoint: string;
     create2Factory: string;
     gauge?: string;
+    balancerVault?: string;
     gauges?: string[];
 }
 

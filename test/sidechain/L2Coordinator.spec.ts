@@ -27,7 +27,6 @@ import {
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
 
 describe("L2Coordinator", () => {
     /* -- Declare shared variables -- */
@@ -121,18 +120,13 @@ describe("L2Coordinator", () => {
         // CrossChainConfig
         it("sets configuration by selector", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
-
-            const config = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]);
 
             //   When  config is set.
-            await l2Coordinator.connect(dao.signer)[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, config);
+            await l2Coordinator.connect(dao.signer).setAdapterParams(L1_CHAIN_ID, selector, adapterParams);
             // No events
-            const newConfig = await l2Coordinator.configs(L1_CHAIN_ID, selector);
-            expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
-            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
+            const newAdapterParams = await l2Coordinator.getAdapterParams(L1_CHAIN_ID, selector);
+            expect(newAdapterParams, "adapterParams").to.be.eq(adapterParams);
         });
     });
     describe("normal flow", async () => {
@@ -152,7 +146,7 @@ describe("L2Coordinator", () => {
             const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
             // const amountOfFees = await toFeeAmount(mintrMintAmount);
             // When earmarkRewards
-            const tx = await sidechain.booster.earmarkRewards(pid, { value: NATIVE_FEE });
+            const tx = await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: NATIVE_FEE });
             // It calls L2Coordinator.queueNewRewards()
             // No events
             // Then sends fees to L2 and increase l1 fee debt
@@ -237,28 +231,25 @@ describe("L2Coordinator", () => {
         });
         it("setConfig fails if caller is not the owner", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("queueNewRewards(address,uint256)"));
-            await expect(
-                l2Coordinator[SET_CONFIG_SELECTOR](L1_CHAIN_ID, selector, {
-                    adapterParams: "0x",
-                    zroPaymentAddress: DEAD_ADDRESS,
-                }),
-                "onlyOwner",
-            ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            await expect(l2Coordinator.setAdapterParams(L1_CHAIN_ID, selector, "0x"), "onlyOwner").to.be.revertedWith(
+                ERRORS.ONLY_OWNER,
+            );
         });
         it("mint fails if caller is not booster", async () => {
             await expect(l2Coordinator.mint(ZERO_ADDRESS, ZERO), "!booster").to.be.revertedWith("!booster");
         });
 
         it("queueNewRewards fails if caller is not booster", async () => {
-            await expect(l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO, ZERO), "!booster").to.be.revertedWith(
+            await expect(
+                l2Coordinator.queueNewRewards(ZERO_ADDRESS, ZERO, ZERO, ZERO_ADDRESS),
                 "!booster",
-            );
+            ).to.be.revertedWith("!booster");
         });
         it("queueNewRewards fails bridge delegate is not set", async () => {
             const boosterAccount = await impersonateAccount(sidechain.booster.address);
             await l2Coordinator.connect(dao.signer).setBridgeDelegate(ZERO_ADDRESS);
             await expect(
-                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO, ZERO),
+                l2Coordinator.connect(boosterAccount.signer).queueNewRewards(ZERO_ADDRESS, ZERO, ZERO, ZERO_ADDRESS),
                 "!bridgeDelegate",
             ).to.be.revertedWith("!bridgeDelegate");
         });

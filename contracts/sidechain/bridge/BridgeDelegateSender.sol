@@ -18,8 +18,6 @@ abstract contract BridgeDelegateSender is Ownable {
     /// @dev The L1Receiver address
     address public l1Receiver;
 
-    /// @dev The L2Coordinator address
-    address public l2Coordinator;
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -36,12 +34,6 @@ abstract contract BridgeDelegateSender is Ownable {
      */
     event L1ReceiverUpated(address l1Receiver);
 
-    /**
-     * @dev Emitted when the l2 coordinator address is updated.
-     * @param l2Coordinator    The new l2 coordinator address.
-     */
-    event L2CoordinatorUpated(address l2Coordinator);
-
     /* -------------------------------------------------------------------
        Setter Functions
     ------------------------------------------------------------------- */
@@ -55,18 +47,6 @@ abstract contract BridgeDelegateSender is Ownable {
         require(_l1Receiver != address(0), "!0");
         l1Receiver = _l1Receiver;
         emit L1ReceiverUpated(_l1Receiver);
-    }
-
-    /**
-     * @notice Allows the owner of the contract to set the L2 coordinator address.
-     * @dev  This function requires the owner of the contract to call it and pass in a valid address.
-     * If the address is valid, the l2Coordinator variable is updated and an `L2CoordinatorUpated` event is emitted.
-     * @param _l2Coordinator    The new l2 coordinator address.
-     */
-    function setL2Coordinator(address _l2Coordinator) external onlyOwner {
-        require(_l2Coordinator != address(0), "!0");
-        l2Coordinator = _l2Coordinator;
-        emit L2CoordinatorUpated(_l2Coordinator);
     }
 
     /**

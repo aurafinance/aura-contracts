@@ -65,8 +65,8 @@ contract AuraProxyOFT is PausableProxyOFT {
         address _sender,
         uint256 _amount
     ) internal {
-        if (IAuraLocker(locker).isShutdown()) {
-            _creditTo(_srcChainId, _sender, _amount);
+        if (IAuraLocker(locker).isShutdown() || paused()) {
+            _safeCreditTo(_srcChainId, _sender, _amount);
         } else {
             IAuraLocker(locker).lock(_sender, _amount);
         }

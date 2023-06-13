@@ -31,7 +31,6 @@ import {
 
 const L1_CHAIN_ID = 111;
 const L2_CHAIN_ID = 222;
-const SET_CONFIG_SELECTOR = "setConfig(uint16,bytes32,(bytes,address))";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 async function bridgeTokenFromL1ToL2(
@@ -183,37 +182,31 @@ describe("AuraBalProxyOFT", () => {
             const processClaimableCvxCrv = auraBalProxyOFT.interface.encodeFunctionData("processClaimable", [
                 cvxCrv.address,
                 L1_CHAIN_ID,
+                ZERO_ADDRESS,
             ]);
             const selector = ethers.utils.keccak256(toUtf8Bytes(processClaimableCvxCrv));
-            const config = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]);
 
             //   When  config is set.
-            await auraBalProxyOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
+            await auraBalProxyOFT.connect(dao.signer).setAdapterParams(L2_CHAIN_ID, selector, adapterParams);
             // No events
-            const newConfig = await auraBalProxyOFT.configs(L2_CHAIN_ID, selector);
-            expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
-            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
+            const newAdapterParams = await auraBalProxyOFT.getAdapterParams(L2_CHAIN_ID, selector);
+            expect(newAdapterParams, "adapterParams").to.be.eq(adapterParams);
         });
         it("sets configuration by selector cvx", async () => {
             const processClaimableCvxCrv = auraBalProxyOFT.interface.encodeFunctionData("processClaimable", [
                 l1.phase2.cvx.address,
                 L1_CHAIN_ID,
+                ZERO_ADDRESS,
             ]);
             const selector = ethers.utils.keccak256(toUtf8Bytes(processClaimableCvxCrv));
-            const config = {
-                adapterParams: ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]),
-                zroPaymentAddress: DEAD_ADDRESS,
-            };
+            const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 1000_000]);
 
             //   When  config is set.
-            await auraBalProxyOFT.connect(dao.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, config);
+            await auraBalProxyOFT.connect(dao.signer).setAdapterParams(L2_CHAIN_ID, selector, adapterParams);
             // No events
-            const newConfig = await auraBalProxyOFT.configs(L2_CHAIN_ID, selector);
-            expect(newConfig.adapterParams, "adapterParams").to.be.eq(config.adapterParams);
-            expect(newConfig.zroPaymentAddress, "zroPaymentAddress").to.be.eq(config.zroPaymentAddress);
+            const newAdapterParams = await auraBalProxyOFT.getAdapterParams(L2_CHAIN_ID, selector);
+            expect(newAdapterParams, "adapterParams").to.be.eq(adapterParams);
         });
         it("sets reward receiver by srcChainId", async () => {
             const rewardReceiverBefore = await auraBalProxyOFT.rewardReceiver(L2_CHAIN_ID);
@@ -281,10 +274,7 @@ describe("AuraBalProxyOFT", () => {
         it("setConfig fails if caller is not the owner", async () => {
             const selector = ethers.utils.keccak256(toUtf8Bytes("processClaimable(address,uint16)"));
             await expect(
-                auraBalProxyOFT.connect(alice.signer)[SET_CONFIG_SELECTOR](L2_CHAIN_ID, selector, {
-                    adapterParams: "0x",
-                    zroPaymentAddress: DEAD_ADDRESS,
-                }),
+                auraBalProxyOFT.connect(alice.signer).setAdapterParams(L2_CHAIN_ID, selector, "0x"),
                 "onlyOwner",
             ).to.be.revertedWith(ERRORS.ONLY_OWNER);
         });
@@ -331,6 +321,17 @@ describe("AuraBalProxyOFT", () => {
             await sidechain.auraBalVault.deposit(bridgeAmount.div(4), deployer.address);
 
             // Harvest and the process all claimable.
+            // Make a desposit and then withdraw to suffer a withdraw penalty which
+            // will make there be some harvestable rewards
+            await cvxCrv.approve(l1.vaultDeployment.vault.address, ethers.constants.MaxUint256);
+            await l1.vaultDeployment.vault.deposit(simpleToExactAmount(10), deployer.address);
+            await l1.vaultDeployment.vault.withdraw(
+                await l1.vaultDeployment.vault.maxWithdraw(deployer.address),
+                deployer.address,
+                deployer.address,
+            );
+            await l1.vaultDeployment.vault["harvest()"]();
+
             const totalUnderlyings = [await sidechain.auraBalVault.totalUnderlying()];
             const totalUnderlyingSum = await sidechain.auraBalVault.totalUnderlying();
             await auraBalProxyOFT.connect(deployer.signer).harvest(totalUnderlyings, totalUnderlyingSum);
@@ -338,7 +339,7 @@ describe("AuraBalProxyOFT", () => {
             // Make sure the oft is not set
             await auraBalProxyOFT.connect(dao.signer).setOFT(cvxCrv.address, ZERO_ADDRESS),
                 await expect(
-                    auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
+                    auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, ZERO_ADDRESS, {
                         value: NATIVE_FEE,
                     }),
                     "oft != address(0)",
@@ -347,17 +348,27 @@ describe("AuraBalProxyOFT", () => {
             // Sets the wrong OFT for cvxCrv
             await auraBalProxyOFT.connect(dao.signer).setOFT(cvxCrv.address, DEAD_ADDRESS),
                 await expect(
-                    auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, {
+                    auraBalProxyOFT.processClaimable(cvxCrv.address, L2_CHAIN_ID, ZERO_ADDRESS, {
                         value: NATIVE_FEE,
                     }),
                     "oft != address(0)",
                 ).to.be.revertedWith("!oft");
         });
+        it("processClaimable fails if paused", async () => {
+            const SUPER_CHAIN_ID = 999;
+            await auraBalProxyOFT.pause();
+            expect(await auraBalProxyOFT.paused()).eq(true);
+            await expect(
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID, ZERO_ADDRESS),
+            ).to.be.revertedWith("Pausable: paused");
+            await auraBalProxyOFT.unpause();
+            expect(await auraBalProxyOFT.paused()).eq(false);
+        });
         it("processClaimable fails if reward receiver is not set", async () => {
             const SUPER_CHAIN_ID = 999;
             expect(await auraBalProxyOFT.rewardReceiver(SUPER_CHAIN_ID), "reward receiver").to.be.eq(ZERO_ADDRESS);
             await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID, ZERO_ADDRESS),
                 "receiver != address(0)",
             ).to.be.revertedWith("0");
         });
@@ -365,7 +376,7 @@ describe("AuraBalProxyOFT", () => {
             const SUPER_CHAIN_ID = 999;
             await auraBalProxyOFT.setRewardReceiver(SUPER_CHAIN_ID, DEAD_ADDRESS);
             await expect(
-                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID),
+                auraBalProxyOFT.processClaimable(ZERO_ADDRESS, SUPER_CHAIN_ID, ZERO_ADDRESS),
                 "reward > 0",
             ).to.be.revertedWith("!reward");
         });

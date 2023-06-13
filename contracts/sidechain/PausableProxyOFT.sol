@@ -154,23 +154,30 @@ contract PausableProxyOFT is ProxyOFT, PauseGuardian {
         bytes memory _payload
     ) internal override {
         (, bytes memory toAddressBytes, uint256 amount) = abi.decode(_payload, (uint16, bytes, uint256));
+        address to = toAddressBytes.toAddress(0);
+        _safeCreditTo(_srcChainId, to, amount);
+    }
 
+    function _safeCreditTo(
+        uint16 _srcChainId,
+        address _to,
+        uint256 _amount
+    ) internal {
         uint256 epoch = _getCurrentEpoch();
         uint256 currInflow = inflow[epoch];
-        uint256 newInflow = currInflow.add(amount);
+        uint256 newInflow = currInflow.add(_amount);
         inflow[epoch] = newInflow;
-        address to = toAddressBytes.toAddress(0);
 
         if (_getNetInflow(newInflow, outflow[epoch]) > inflowLimit || paused()) {
             // If the net inflow is greater than the limit for this epoch OR the bridge
             // is currently paused we send each transfer to a queue for delayed processing.
             // In the case of a doomsday event this limits the exposure to the bridge.
-            queue[keccak256(abi.encode(epoch, _srcChainId, to, amount, block.timestamp))] = true;
-            emit QueuedFromChain(epoch, _srcChainId, to, amount, block.timestamp);
+            queue[keccak256(abi.encode(epoch, _srcChainId, _to, _amount, block.timestamp))] = true;
+            emit QueuedFromChain(epoch, _srcChainId, _to, _amount, block.timestamp);
         } else {
             // Process the transfer as normal
-            amount = _creditTo(_srcChainId, to, amount);
-            emit ReceiveFromChain(_srcChainId, to, amount);
+            _amount = _creditTo(_srcChainId, _to, _amount);
+            emit ReceiveFromChain(_srcChainId, _to, _amount);
         }
     }
 

@@ -3,6 +3,7 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
 import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { CrossChainConfig } from "./CrossChainConfig.sol";
 import { CrossChainMessages as CCM } from "./CrossChainMessages.sol";
@@ -14,7 +15,7 @@ import { IBooster } from "../interfaces/IBooster.sol";
  * @author  AuraFinance
  * @dev     Coordinates LZ messages and actions from the L1 on the L2
  */
-contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
+contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -51,6 +52,13 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      * @param bridgeDelegate    The new bridge delegate address.
      */
     event BridgeDelegateUpdated(address bridgeDelegate);
+
+    /**
+     * @dev Emmitted when rewards are added
+     * @param token   The reward token
+     * @param reward  The reward amount
+     */
+    event RewardAdded(address token, uint256 reward);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -101,12 +109,18 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
         emit BridgeDelegateUpdated(bridgeDelegate);
     }
 
-    function setConfig(
+    /**
+     * @dev Sets the configuration for a given source chain ID and selector.
+     * @param _srcChainId The source chain ID.
+     * @param _selector The selector.
+     * @param _adapterParams The adapter params.
+     */
+    function setAdapterParams(
         uint16 _srcChainId,
         bytes32 _selector,
-        Config memory _config
+        bytes memory _adapterParams
     ) external override onlyOwner {
-        _setConfig(_srcChainId, _selector, _config);
+        _setAdapterParams(_srcChainId, _selector, _adapterParams);
     }
 
     /* -------------------------------------------------------------------
@@ -138,12 +152,14 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
      * @param _originalSender Sender that initiated the Booster call
      * @param _fees Amount of CRV that was received as fees
      * @param _rewards Amount of CRV that was received by the reward contract
+     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
     function queueNewRewards(
         address _originalSender,
         uint256 _fees,
-        uint256 _rewards
-    ) external payable {
+        uint256 _rewards,
+        address _zroPaymentAddress
+    ) external payable nonReentrant {
         require(msg.sender == booster, "!booster");
         require(bridgeDelegate != address(0), "!bridgeDelegate");
 
@@ -156,18 +172,20 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(_fees);
-        CrossChainConfig.Config memory config = configs[canonicalChainId][
-            keccak256("queueNewRewards(address,uint256)")
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][
+            keccak256("queueNewRewards(address,uint256,uint256,address)")
         ];
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
             payable(_originalSender), // Refund address
-            config.zroPaymentAddress, // ZRO payment address
-            config.adapterParams, ////// Adapter params
+            _zroPaymentAddress, // ZRO payment address
+            adapterParams, ////// Adapter params
             msg.value ////////////////// Native fee
         );
+
+        emit RewardAdded(balToken, _rewards);
     }
 
     /* -------------------------------------------------------------------
@@ -191,6 +209,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig {
 
                 // Update accumulated rewards with the latest AURA distribution
                 accAuraRewards = accAuraRewards.add(cvxAmount);
+                emit RewardAdded(auraOFT, cvxAmount);
             }
         }
     }

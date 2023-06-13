@@ -6,11 +6,11 @@ import {
     BridgeDelegateSender,
     GnosisBridgeSender,
     GnosisBridgeSender__factory,
+    SidechainConfig,
     SimpleBridgeDelegateSender,
     SimpleBridgeDelegateSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
-import { ExtSystemConfig } from "./deploySystem";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
 
 export interface SimplyBridgeDelegateDeployed {
@@ -18,28 +18,34 @@ export interface SimplyBridgeDelegateDeployed {
     bridgeDelegateReceiver: BridgeDelegateReceiver;
 }
 
-/**
- * Deploy simple bridge delegate used for testing
- */
-export async function deploySimpleBridgeDelegates(
+export async function deploySimpleBridgeSender(
     hre: HardhatRuntimeEnvironment,
-    config: ExtSystemConfig,
-    canonical: CanonicalPhase1Deployed,
-    srcChainId: number,
+    config: SidechainConfig,
     deployer: Signer,
     debug: boolean = false,
     waitForBlocks: number = 0,
-): Promise<SimplyBridgeDelegateDeployed> {
+): Promise<{ bridgeDelegateSender: SimpleBridgeDelegateSender }> {
     const bridgeDelegateSender = await deployContract<SimpleBridgeDelegateSender>(
         hre,
         new SimpleBridgeDelegateSender__factory(deployer),
         "SimpleBridgeDelegateSender",
-        [config.token],
+        [config.extConfig.token],
         {},
         debug,
         waitForBlocks,
     );
 
+    return { bridgeDelegateSender };
+}
+
+export async function deploySimpleBridgeReceiver(
+    hre: HardhatRuntimeEnvironment,
+    canonical: CanonicalPhase1Deployed,
+    srcChainId: number,
+    deployer: Signer,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): Promise<{ bridgeDelegateReceiver: BridgeDelegateReceiver }> {
     const bridgeDelegateReceiver = await deployContract<BridgeDelegateReceiver>(
         hre,
         new BridgeDelegateReceiver__factory(deployer),
@@ -50,7 +56,7 @@ export async function deploySimpleBridgeDelegates(
         waitForBlocks,
     );
 
-    return { bridgeDelegateSender, bridgeDelegateReceiver };
+    return { bridgeDelegateReceiver };
 }
 
 export async function deployGnosisBridgeSender(
