@@ -3,6 +3,7 @@ import { config as goerliConfig } from "./goerli-config";
 import { config as mainnetConfig } from "./mainnet-config";
 import { config as gnosisConfig } from "./gnosis-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
+import { config as arbitrumConfig } from "./arbitrum-config";
 
 export const sideChains = [
     chainIds.arbitrum,
@@ -50,6 +51,7 @@ export const canonicalConfigs = {
 export const sidechainConfigs = {
     [chainIds.goerli]: goerliSidechainConfig,
     [chainIds.gnosis]: gnosisConfig,
+    [chainIds.arbitrum]: arbitrumConfig,
     // For fork mode
-    [chainIds.hardhat]: gnosisConfig,
+    [chainIds.hardhat]: arbitrumConfig,
 };
