@@ -1,6 +1,8 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
+    ArbitrumBridgeSender,
+    ArbitrumBridgeSender__factory,
     BridgeDelegateReceiver,
     BridgeDelegateReceiver__factory,
     BridgeDelegateSender,
@@ -76,5 +78,27 @@ export async function deployGnosisBridgeSender(
         debug,
         waitForBlocks,
     );
+    return bridgeDelegate;
+}
+
+export async function deployArbitrumBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    gatewayRouter: string,
+    token: string,
+    l1Token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<ArbitrumBridgeSender> {
+    const bridgeDelegate = await deployContract<ArbitrumBridgeSender>(
+        hre,
+        new ArbitrumBridgeSender__factory(deployer),
+        "ArbitrumBridgeSender",
+        [gatewayRouter, token, l1Token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
     return bridgeDelegate;
 }

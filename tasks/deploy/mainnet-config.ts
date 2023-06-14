@@ -170,8 +170,8 @@ const addresses: ExtSystemConfig = {
     },
     lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
     sidechain: {
-        auraBalInflowLimit: parseEther("1000000"),
-        auraInflowLimit: parseEther("1000000"),
+        auraBalInflowLimit: parseEther("50000"),
+        auraInflowLimit: parseEther("250000"),
     },
 };
 
@@ -184,11 +184,11 @@ const multisigs: MultisigConfig = {
     vestingMultisig: "0xab9ff9Fbc44Bb889751c4E70AD2F6977267A1E09",
     treasuryMultisig: "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9",
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-    sudoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    sudoMultisig: "0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46",
     pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     defender: {
-        l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
-        auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
+        l1CoordinatorDistributor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
+        auraBalProxyOFTHarvestor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
     },
 };
 
@@ -420,9 +420,9 @@ const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
 const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhase2Deployed => ({
-    auraProxyOFT: AuraProxyOFT__factory.connect("0xF8b6a90154D8AB85e543AB2fe10F94d4b20bC9AF", deployer),
-    l1Coordinator: L1Coordinator__factory.connect("0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7", deployer),
-    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xcD54C83759d2D55238bF742611B26A65D47F9719", deployer),
+    auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
+    l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
+    auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
 });
 
 export const config = {

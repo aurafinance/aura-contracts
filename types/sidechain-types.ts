@@ -18,6 +18,7 @@ export interface ExtSidechainConfig {
     gauge?: string;
     balancerVault?: string;
     gauges?: string[];
+    gatewayRouter?: string;
 }
 
 export interface SidechainMultisigConfig {

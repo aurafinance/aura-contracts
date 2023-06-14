@@ -26,6 +26,7 @@ import {
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCreate2Factory,
+    deploySidechainClaimZap,
     deploySidechainPhase1,
     deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
@@ -45,9 +46,10 @@ import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 // Configs
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as gnosisSidechainConfig } from "./gnosis-config";
+import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
 
 const debug = true;
-const SALT = "lisbon";
+const SALT = "3333";
 
 /* ----------------------------------------------------------------------------
     Canonical Deployment Tasks
@@ -62,6 +64,23 @@ task("deploy:sidechain:mocks")
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { addresses, namingConfig, ...contracts } = result;
         logContracts(contracts as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:sidechain:L1:bridgeReceiver")
+    .addParam("wait", "wait for blocks")
+    .addParam("sidechainid", "Sidechain chain ID")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const config = canonicalConfigs[hre.network.config.chainId];
+        const sidechainId = lzChainIds[tskArgs.sidechainid];
+
+        assert(config, `Config for chain ID ${hre.network.config.chainId} not found`);
+
+        const canonical = config.getSidechain(deployer);
+
+        const result = await deploySimpleBridgeReceiver(hre, canonical, sidechainId, deployer);
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L1:phase1")
@@ -126,9 +145,12 @@ const sidechainTaskSetup = (
 ) => {
     const sidechainConfig = sidechainConfigs[network.config.chainId];
     const canonicalConfig = canonicalConfigs[canonicalChainId];
-    const canonical = canonicalConfig.getSidechain(deployer);
 
     assert(sidechainConfig, `Sidechain config for chain ID ${network.config.chainId} not found`);
+    assert(canonicalConfig, `Canonical config for chain ID ${canonicalChainId} not found`);
+
+    const canonical = canonicalConfig.getSidechain(deployer);
+    const sidechain = sidechainConfig.getSidechain(deployer);
 
     if (!force) {
         assert(sideChains.includes(network.config.chainId), "Must be sidechain");
@@ -136,7 +158,7 @@ const sidechainTaskSetup = (
         assert(canonicalChainId === remoteChainMap[network.config.chainId], "Incorrect canonical chain ID");
     }
 
-    return { canonical, canonicalConfig, sidechainConfig };
+    return { sidechain, canonical, canonicalConfig, sidechainConfig };
 };
 
 task("deploy:sidechain:create2Factory")
@@ -154,6 +176,24 @@ task("deploy:sidechain:create2Factory")
         await waitForTx(tx, debug);
 
         logContracts(phase as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:sidechain:L2:bridgeSender:arbitrum")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { canonicalConfig, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const gatewayRouter = sidechainConfig.bridging.nativeBridge;
+        const crv = sidechainConfig.extConfig.token;
+        const l1Crv = canonicalConfig.addresses.token;
+
+        const bridgeSender = await deployArbitrumBridgeSender(hre, deployer, gatewayRouter, crv, l1Crv);
+
+        const result = { bridgeSender };
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:L2:phase1")
@@ -297,6 +337,20 @@ task("deploy:sidechain:config:L1:phase2")
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
+
+task("deploy:sidechain:zap")
+    .addParam("wait", "Wait for blocks")
+    .addParam("canonicalchainid", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const canonicalId = Number(tskArgs.canonicalchainid);
+
+        const { sidechain, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
+
+        const result = await deploySidechainClaimZap(sidechainConfig.extConfig, sidechain, hre, deployer);
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 
 task("deploy:sidechain:safe")
     .addParam("wait", "Wait for blocks")
