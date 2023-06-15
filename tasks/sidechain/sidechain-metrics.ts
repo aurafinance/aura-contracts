@@ -8,7 +8,7 @@ import { formatEther } from "ethers/lib/utils";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
-import { ERC20__factory } from "types";
+import { ERC20__factory } from "../../types";
 
 import {
     CanonicalPhase1Deployed,
@@ -333,21 +333,66 @@ task("sidechain:metrics")
         log(
             "Local",
             [
-                "AuraOFT address: " + local.auraProxyOFT.address,
-                "AuraBalOFT address: " + local.auraBalProxyOFT.address,
-                "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
-                `Trusted remote address (${sidechainLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
+                `AuraOFT address:                                   ${local.auraProxyOFT.address}`,
+                `AuraBalOFT address:                                ${local.auraBalProxyOFT.address}`,
+                `AURA balance of AuraOFT:                           ${formatEther(
+                    await phase2.cvx.balanceOf(local.auraProxyOFT.address),
+                )}`,
+                `Trusted remote address (${sidechainLzChainId}):        ${await local.auraProxyOFT.trustedRemoteLookup(
                     sidechainLzChainId,
                 )}`,
-                `Endpoint: ${await local.auraProxyOFT.lzEndpoint()}`,
+                `Endpoint:                                          ${await local.auraProxyOFT.lzEndpoint()}`,
             ],
             [
-                "Lock balance: " + formatEther((await phase2.cvxLocker.balances(deployerAddress)).locked),
-                "AURA balance: " + formatEther(await phase2.cvx.balanceOf(deployerAddress)),
-                "auraBAL balance: " + formatEther(await phase2.cvxCrv.balanceOf(deployerAddress)),
+                `Lock balance:                                      ${formatEther(
+                    (await phase2.cvxLocker.balances(deployerAddress)).locked,
+                )}`,
+                `AURA balance:                                      ${formatEther(
+                    await phase2.cvx.balanceOf(deployerAddress),
+                )}`,
+                `auraBAL balance:                                   ${formatEther(
+                    await phase2.cvxCrv.balanceOf(deployerAddress),
+                )}`,
             ],
         );
 
+        /* ---------------------------------------------------------------
+         * Local Metrics 
+        --------------------------------------------------------------- */
+        const canonicalCoordinatorInformation = canonicalMetrics[0];
+        log("Local Metrics", [
+            `Sidechain ID:                                      ${canonicalCoordinatorInformation.sidechainId}`,
+            `L1Coordinator BAL Balance:                         ${canonicalMetrics.l1CoordinatorData.balBalance}`,
+            `L1Coordinator feeDebtOf:                           ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf}`,
+            `L1Coordinator settledFeeDebtOf:                    ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf}`,
+            `L1Coordinator settledFeeDebtOf:                    ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf}`,
+            `L1Coordinator distributedFeeDebtOf:                ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.distributedFeeDebtOf}`,
+            `L1Coordinator bridgeDelegate:                      ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegate}`,
+            `L1Coordinator l2Coordinator:                       ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.l2Coordinator}`,
+            `L1Coordinator bridgeDelegateBalBalance:            ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegateBalBalance}`,
+            `auraProxyOFT Epoch:                                ${canonicalMetrics.auraProxyOFTData.epoch}`,
+            `auraProxyOFT inflowLimit:                          ${canonicalMetrics.auraProxyOFTData.inflowLimit}`,
+            `auraProxyOFT outflow:                              ${canonicalMetrics.auraProxyOFTData.outflow}`,
+            `auraProxyOFT inflow:                               ${canonicalMetrics.auraProxyOFTData.inflow}`,
+            `auraProxyOFT circulatingSupply:                    ${canonicalMetrics.auraProxyOFTData.circulatingSupply}`,
+            `auraProxyOFT paused:                               ${canonicalMetrics.auraProxyOFTData.paused}`,
+            `auraProxyOFT auraProxyOFTAuraBalance:              ${canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance}`,
+            `auraBalProxyOFT epoch:                             ${canonicalMetrics.auraBalProxyOFTData.epoch}`,
+            `auraBalProxyOFT inflowLimit:                       ${canonicalMetrics.auraBalProxyOFTData.inflowLimit}`,
+            `auraBalProxyOFT outflow:                           ${canonicalMetrics.auraBalProxyOFTData.outflow}`,
+            `auraBalProxyOFT inflow:                            ${canonicalMetrics.auraBalProxyOFTData.inflow}`,
+            `auraBalProxyOFT circulatingSupply:                 ${canonicalMetrics.auraBalProxyOFTData.circulatingSupply}`,
+            `auraBalProxyOFT paused:                            ${canonicalMetrics.auraBalProxyOFTData.paused}`,
+            `auraBalProxyOFT totalClaimableAuraBal:             ${canonicalMetrics.auraBalProxyOFTData.totalClaimableAuraBal}`,
+            `auraBalProxyOFT totalClaimableAura:                ${canonicalMetrics.auraBalProxyOFTData.totalClaimableAura}`,
+            `auraBalProxyOFT internalTotalSupply:               ${canonicalMetrics.auraBalProxyOFTData.internalTotalSupply}`,
+            `auraBalProxyOFT auraBalance:                       ${canonicalMetrics.auraBalProxyOFTData.auraBalance}`,
+            `auraBalProxyOFT auraBalBalance:                    ${canonicalMetrics.auraBalProxyOFTData.auraBalBalance}`,
+            `auraBalProxyOFT auraBalVaultBalance:               ${canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalance}`,
+            `auraBalProxyOFT auraBalVaultBalanceOfUnderlying:   ${canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalanceOfUnderlying}`,
+            `auraBalProxyOFT claimableAuraBal:                  ${canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAuraBal}`,
+            `auraBalProxyOFT claimableAura:                     ${canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAura}`,
+        ]);
         /* ---------------------------------------------------------------
          * Remote 
         --------------------------------------------------------------- */
@@ -361,21 +406,49 @@ task("sidechain:metrics")
         const remote: SidechainPhase1Deployed & SidechainPhase2Deployed = sidechainConfig.getSidechain(
             remoteDeployer,
         ) as any;
-        const remoteMetrics = await getSidechainMetrics(deployer, remote, "bridgeDelegateAddress", remoteChainId);
+        const remoteMetrics = await getSidechainMetrics(
+            deployer,
+            remote,
+            sidechainConfig.bridging.l2Sender,
+            remoteChainId,
+        );
         log(
             "Remote",
             [
-                `Coordinator address: ${remote.l2Coordinator.address}`,
-                `Total supply: ${await remote.auraOFT.totalSupply()}`,
-                `Trusted remote address (${canonicalLzChainId}): ${await remote.l2Coordinator.trustedRemoteLookup(
+                `Coordinator address:                               ${remote.l2Coordinator.address}`,
+                `Total supply:                                      ${await remote.auraOFT.totalSupply()}`,
+                `Trusted remote address (${canonicalLzChainId}):                      ${await remote.l2Coordinator.trustedRemoteLookup(
                     canonicalLzChainId,
                 )}`,
-                `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
-                `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
+                `Endpoint AuraOFT:                                  ${await remote.auraOFT.lzEndpoint()}`,
+                `Endpoint l2Coordinator:                            ${await remote.l2Coordinator.lzEndpoint()}`,
             ],
             [
-                `AuraOFT balance: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`,
-                `AuraBalOFT balance: ${formatEther(await remote.auraBalOFT.balanceOf(deployerAddress))}`,
+                `AuraOFT balance:                                   ${formatEther(
+                    await remote.auraOFT.balanceOf(deployerAddress),
+                )}`,
+                `AuraBalOFT balance:                                ${formatEther(
+                    await remote.auraBalOFT.balanceOf(deployerAddress),
+                )}`,
             ],
         );
+
+        /* ---------------------------------------------------------------
+         * Remote Metrics 
+        --------------------------------------------------------------- */
+        log("Local Metrics", [
+            `Sidechain ID:                                      ${remoteMetrics.sidechainId}`,
+            `L2CoordinatorData mintRate:                        ${remoteMetrics.l2CoordinatorData.mintRate}`,
+            `L2CoordinatorData accBalRewards:                   ${remoteMetrics.l2CoordinatorData.accBalRewards}`,
+            `L2CoordinatorData accAuraRewards:                  ${remoteMetrics.l2CoordinatorData.accAuraRewards}`,
+            `L2CoordinatorData auraBalance:                     ${remoteMetrics.l2CoordinatorData.auraBalance}`,
+            `auraOFT circulatingSupply:                         ${remoteMetrics.auraOFTData.circulatingSupply}`,
+            `auraOFT totalSupply:                               ${remoteMetrics.auraOFTData.totalSupply}`,
+            `auraOFT paused:                                    ${remoteMetrics.auraOFTData.paused}`,
+            `auraOFT bridgeDelegateAuraBalance:                 ${remoteMetrics.auraOFTData.bridgeDelegateAuraBalance}`,
+            `auraBalOFT circulatingSupply:                      ${remoteMetrics.auraBalOFTData.circulatingSupply}`,
+            `auraBalOFT totalSupply:                            ${remoteMetrics.auraBalOFTData.totalSupply}`,
+            `auraBalOFT paused:                                 ${remoteMetrics.auraBalOFTData.paused}`,
+            `auraBalOFT auraBalStrategyAuraBalOFTBalance:       ${remoteMetrics.auraBalOFTData.auraBalStrategyAuraBalOFTBalance}`,
+        ]);
     });
