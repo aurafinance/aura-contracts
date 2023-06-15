@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import { AuraBalVaultDeployed } from "../tasks/deploy/mainnet-config";
 import { ZERO } from "../test-utils/constants";
 
 interface VaultConfig {
@@ -24,6 +25,7 @@ interface VaultConfig {
     multisigs: MultisigConfig;
     getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
+    getAuraBalVault: (deployer: Signer) => Promise<AuraBalVaultDeployed>;
 }
 
 export async function deployFeeForwarder(
@@ -44,6 +46,38 @@ export async function deployFeeForwarder(
     );
 
     return { feeForwarder };
+}
+
+export async function deployBBUSDHandlerV3(
+    config: VaultConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const compounder = await config.getAuraBalVault(signer);
+    const bbusdHandler = await deployContract<BalancerSwapsHandler>(
+        hre,
+        new BalancerSwapsHandler__factory(signer),
+        "BBUSDHandlerv4",
+        [
+            config.addresses.feeToken,
+            compounder.strategy.address,
+            config.addresses.balancerVault,
+            config.addresses.weth,
+            {
+                poolIds: config.addresses.feeTokenHandlerPath.poolIds,
+                assetsIn: config.addresses.feeTokenHandlerPath.assetsIn,
+            },
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        bbusdHandler,
+    };
 }
 
 export async function deployVault(

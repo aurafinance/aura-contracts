@@ -138,7 +138,8 @@ const addresses: ExtSystemConfig = {
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
     // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2", @deprecated
-    feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44",
+    // feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44", @deprecated
+    feeToken: "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016",
     feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
@@ -148,10 +149,17 @@ const addresses: ExtSystemConfig = {
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
     feeTokenHandlerPath: {
         poolIds: [
-            "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387",
-            "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080",
+            "0xfebb0bbf162e64fb9d0dfe186e517d84c395f016000000000000000000000502",
+            "0xa1697f9af0875b63ddc472d6eebada8c1fab85680000000000000000000004f9",
+            "0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7",
+            "0x08775ccb6674d6bdceb0797c364c2653ed84f3840002000000000000000004f0",
         ],
-        assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
+        assetsIn: [
+            "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016",
+            "0xA1697F9Af0875B63DdC472d6EeBADa8C1fAB8568",
+            "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "0x79c58f70905F734641735BC61e45c19dD9Ad60bC",
+        ],
     },
 };
 
