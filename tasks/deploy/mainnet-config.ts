@@ -138,7 +138,8 @@ const addresses: ExtSystemConfig = {
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
     // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2", @deprecated
-    feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44",
+    // feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44", @deprecated
+    feeToken: "0xfebb0bbf162e64fb9d0dfe186e517d84c395f016",
     feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
@@ -151,7 +152,7 @@ const addresses: ExtSystemConfig = {
             "0x25accb7943fd73dda5e23ba6329085a3c24bfb6a000200000000000000000387",
             "0x32296969ef14eb0c6d29669c550d4a0449130230000200000000000000000080",
         ],
-        assetsIn: ["0xA13a9247ea42D743238089903570127DdA72fE44", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
+        assetsIn: ["0xfebb0bbf162e64fb9d0dfe186e517d84c395f016", "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"],
     },
 };
 
@@ -381,7 +382,7 @@ export interface AuraBalVaultDeployed {
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
-    bbusdHandler: BalancerSwapsHandler__factory.connect("0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d", deployer),
+    bbusdHandler: BalancerSwapsHandler__factory.connect("TODO", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 

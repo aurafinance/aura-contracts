@@ -101,7 +101,7 @@ export async function deployVault(
     const bbusdHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
-        "BBUSDHandlerv3",
+        "BBUSDHandlerv4",
         [
             config.addresses.feeToken,
             strategy.address,
