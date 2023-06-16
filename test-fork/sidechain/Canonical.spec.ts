@@ -18,6 +18,7 @@ import {
     getTimestamp,
     getAura,
     getAuraBal,
+    impersonate,
 } from "../../test-utils";
 import {
     Account,
@@ -33,13 +34,13 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 import { setupForkDeployment, TestSuiteDeployment } from "./setupForkDeployments";
 
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
+import { config as arbitrumConfig } from "../../tasks/deploy/arbitrum-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 
 const FORKING = process.env.FORKING;
 
 const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER] = FORKING
-    ? [mainnetConfig, gnosisConfig, 17371473]
+    ? [mainnetConfig, arbitrumConfig, 17483983]
     : [mainnetConfig, mainnetConfig, 17337285];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
@@ -104,6 +105,16 @@ describe("Canonical", () => {
 
         await getAura(phase2, canonicalConfig.addresses, deployer.address, simpleToExactAmount(100));
         await getAuraBal(phase2, canonicalConfig.addresses, deployer.address, simpleToExactAmount(100));
+
+        if (FORKING) {
+            // If forking from a block prior to transfering the the DAO, we do that here
+            // Also update the booster on the L1Coordinator to the real one and not the test contract
+            const a = await impersonateAccount("0x30019eB135532bDdF2Da17659101cc000C73c8e4", true);
+            await canonical.l1Coordinator.connect(a.signer).transferOwnership(canonicalConfig.multisigs.daoMultisig);
+            await canonical.auraProxyOFT.connect(a.signer).transferOwnership(canonicalConfig.multisigs.daoMultisig);
+            await canonical.auraBalProxyOFT.connect(a.signer).transferOwnership(canonicalConfig.multisigs.daoMultisig);
+            await canonical.l1Coordinator.setBooster(phase6.booster.address);
+        }
     });
 
     describe("Check configs", () => {
@@ -192,9 +203,10 @@ describe("Canonical", () => {
             expect(await canonical.l1Coordinator.feeDebtOf(sidechainLzChainId)).to.eq(amount);
         });
         it("Can Settle Fee Debt", async () => {
+            const sender = await impersonate(await bridgeDelegateDeployment.bridgeDelegateReceiver.owner(), true);
             const amount = simpleToExactAmount("100");
             await getBal(canonicalConfig.addresses, bridgeDelegateDeployment.bridgeDelegateReceiver.address, amount);
-            await bridgeDelegateDeployment.bridgeDelegateReceiver.settleFeeDebt(amount);
+            await bridgeDelegateDeployment.bridgeDelegateReceiver.connect(sender).settleFeeDebt(amount);
 
             const crv = MockERC20__factory.connect(canonicalConfig.addresses.token, dao.signer);
 
@@ -210,9 +222,11 @@ describe("Canonical", () => {
             const totalSupplyStart = await cvx.totalSupply();
             const startOFTBalance = await cvx.balanceOf(canonical.auraProxyOFT.address);
 
-            await canonical.l1Coordinator.distributeAura(sidechainLzChainId, ZERO_ADDRESS, ZERO_ADDRESS, "0x", {
-                value: simpleToExactAmount("0.5"),
-            });
+            await canonical.l1Coordinator
+                .connect(dao.signer)
+                .distributeAura(sidechainLzChainId, ZERO_ADDRESS, ZERO_ADDRESS, "0x", {
+                    value: simpleToExactAmount("0.5"),
+                });
 
             const endAura = await cvx.balanceOf(canonical.l1Coordinator.address);
             const endBal = await crv.balanceOf(canonical.l1Coordinator.address);

@@ -130,26 +130,27 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 
 #### Arbitrum (42161)
 
-| Contract              | Address                                                                                                              |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| create2Factory        | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://arbiscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
-| L2Coordinator         | [0xeC1c780A275438916E7CEb174D80878f29580606](https://arbiscan.io/address/0xeC1c780A275438916E7CEb174D80878f29580606) |
-| AuraOFT               | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://arbiscan.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
-| AuraBalOFT            | [0x223738a747383d6F9f827d95964e4d8E8AC754cE](https://arbiscan.io/address/0x223738a747383d6F9f827d95964e4d8E8AC754cE) |
-| AuraBalVault          | [0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9](https://arbiscan.io/address/0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9) |
-| AuraBalStrategy       | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://arbiscan.io/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
-| VirtualRewardsFactory | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://arbiscan.io/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
-| BoosterLite           | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://arbiscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
-| VoterProxyLite        | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://arbiscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
-| TokenFactory          | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://arbiscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
-| ProxyFactory          | [0x731886426a3199b988194831031dfb993F25D961](https://arbiscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
-| RewardFactory         | [0xda2e6bA0B1aBBCA925b70E9747AFbD481C16e7dB](https://arbiscan.io/address/0xda2e6bA0B1aBBCA925b70E9747AFbD481C16e7dB) |
-| StashFactory          | [0x779aa2880d7a701FB46d320C710944a72E2A049b](https://arbiscan.io/address/0x779aa2880d7a701FB46d320C710944a72E2A049b) |
-| PoolManagerLite       | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://arbiscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
-| BoosterOwner          | [0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66](https://arbiscan.io/address/0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66) |
-| ProtocolDAO           | [0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62](https://arbiscan.io/address/0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62) |
-| ClaimZap              | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
-| Treasury              | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://arbiscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| Contract                 | Address                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| create2Factory           | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://arbiscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator            | [0xeC1c780A275438916E7CEb174D80878f29580606](https://arbiscan.io/address/0xeC1c780A275438916E7CEb174D80878f29580606) |
+| AuraOFT                  | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://arbiscan.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| AuraBalOFT               | [0x223738a747383d6F9f827d95964e4d8E8AC754cE](https://arbiscan.io/address/0x223738a747383d6F9f827d95964e4d8E8AC754cE) |
+| AuraBalVault             | [0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9](https://arbiscan.io/address/0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9) |
+| AuraBalStrategy          | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://arbiscan.io/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
+| VirtualRewardsFactory    | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://arbiscan.io/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
+| BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://arbiscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://arbiscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://arbiscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://arbiscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
+| RewardFactory            | [0xda2e6bA0B1aBBCA925b70E9747AFbD481C16e7dB](https://arbiscan.io/address/0xda2e6bA0B1aBBCA925b70E9747AFbD481C16e7dB) |
+| StashFactory             | [0x779aa2880d7a701FB46d320C710944a72E2A049b](https://arbiscan.io/address/0x779aa2880d7a701FB46d320C710944a72E2A049b) |
+| PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://arbiscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwner             | [0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66](https://arbiscan.io/address/0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66) |
+| ProtocolDAO              | [0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62](https://arbiscan.io/address/0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62) |
+| ClaimZap                 | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
+| Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://arbiscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| RewardPoolDepositWrapper | [0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be](https://arbiscan.io/address/0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be) |
 
 ### Gnosis (test deployment) (100)
 

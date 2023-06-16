@@ -35,7 +35,12 @@ const extConfig: ExtSidechainConfig = {
     token: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8",
     create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-    gauges: [],
+    gauges: [
+        "0xb438c6cc53315FfA3fcD1bc8b27d6c3155b0B56A",
+        "0xae9F2cE52FE89DD78e6F13d5d7b33125aE3dFF8C",
+        "0xeF767E740D83d410794519c2F93Db32e44359a5C",
+        "0xB154E017848b65270e0265274bC20b813e732a3b",
+    ],
 };
 
 export const bridging: SidechainBridging = {
@@ -71,5 +76,10 @@ export const config: SidechainConfig = {
     extConfig,
     bridging,
     getSidechain,
-    whales: {},
+    whales: {
+        "0x542f16da0efb162d20bf4358efa095b70a100f9e": "0xba12222222228d8ba445958a75a0704d566bf2c8",
+        "0x5a7f39435fd9c381e4932fa2047c9a5136a5e3e7": "0xba12222222228d8ba445958a75a0704d566bf2c8",
+        "0xb3028ca124b80cfe6e9ca57b70ef2f0ccc41ebd4": "0xba12222222228d8ba445958a75a0704d566bf2c8",
+        "0x519cce718fcd11ac09194cff4517f12d263be067": "0xba12222222228d8ba445958a75a0704d566bf2c8",
+    },
 };

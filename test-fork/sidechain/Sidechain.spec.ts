@@ -9,7 +9,7 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
+import { config as arbitrumConfig } from "../../tasks/deploy/arbitrum-config";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
 import { impersonate, impersonateAccount, ONE_DAY, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
@@ -33,7 +33,7 @@ import { setupLocalDeployment } from "./setupLocalDeployment";
 const FORKING = process.env.FORKING;
 
 const [_canonicalConfig, _sidechainConfig, BLOCK_NUMBER, NATIVE_FEE] = FORKING
-    ? [mainnetConfig, gnosisConfig, 28126088, simpleToExactAmount(50)]
+    ? [mainnetConfig, arbitrumConfig, 101362532, simpleToExactAmount("0.2")]
     : [mainnetConfig, mainnetConfig, 17337285, simpleToExactAmount("0.2")];
 
 const canonicalConfig = _canonicalConfig as typeof mainnetConfig;
@@ -63,9 +63,9 @@ describe("Sidechain", () => {
      * --------------------------------------------------------------------- */
 
     const getBpt = async (token: string, recipient: string, amount = simpleToExactAmount(250)) => {
-        const whale = sidechainConfig.whales[token];
+        const whale = sidechainConfig.whales[token.toLowerCase()];
         if (!whale) throw new Error(`No BPT whale found for ${token}`);
-        const tokenWhaleSigner = await impersonateAccount(whale);
+        const tokenWhaleSigner = await impersonateAccount(whale, true);
         const tokenContract = MockERC20__factory.connect(token, tokenWhaleSigner.signer);
         await tokenContract.transfer(recipient, amount);
     };
@@ -330,9 +330,6 @@ describe("Sidechain", () => {
             await sidechain.auraOFT
                 .connect(signer)
                 .nonblockingLzReceive(canonicalLzChainId, l2LzEndpoint.address, 0, payload);
-
-            // const auraBalanceAfter = await phase2.cvx.balanceOf(auraWhale.address);
-            // expect(auraBalanceBefore.sub(auraBalanceAfter)).eq(bridgeAmount);
         });
     });
 
@@ -457,11 +454,13 @@ describe("Sidechain", () => {
         });
         it("allows extra rewards to be added to pool", async () => {
             const poolInfo = await sidechain.booster.poolInfo(0);
-            const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, dao.signer);
-            const manager = await impersonateAccount(await rewards.rewardManager());
-            await rewards.connect(manager.signer).addExtraReward(sidechain.auraBalOFT.address);
-            expect(await rewards.extraRewards(0)).to.eq(sidechain.auraBalOFT.address);
-            expect(await rewards.extraRewardsLength()).to.eq(1);
+            const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer.signer);
+            const rewards = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer.signer);
+
+            const extraLenBefore = await rewards.extraRewardsLength();
+            await sidechain.boosterOwner.setStashExtraReward(stash.address, sidechain.auraOFT.address);
+            const extraLenAfter = await rewards.extraRewardsLength();
+            expect(extraLenAfter.sub(extraLenBefore)).to.eq(1);
         });
     });
 

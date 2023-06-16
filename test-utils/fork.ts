@@ -1,4 +1,6 @@
 import { BigNumberish, Signer } from "ethers";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import fetch from "node-fetch";
 import { ExtSystemConfig, Phase2Deployed } from "scripts/deploySystem";
 import { Account, IERC20__factory, MockERC20__factory } from "../types";
 import { simpleToExactAmount } from "./math";
@@ -68,3 +70,31 @@ export async function getAura(phase2: Phase2Deployed, config: ExtSystemConfig, t
 
 export const getCrv = getBal;
 export const getCvx = getAura;
+
+export async function forkWithTenderly(hre: HardhatRuntimeEnvironment, startBlock: number) {
+    console.log("Forking with tenderly");
+    const TENDERLY_ACCESS_KEY = process.env.TENDERLY_ACCESS_KEY;
+    const TENDERLY_USER = process.env.TENDERLY_USER;
+    const TENDERLY_PROJECT = process.env.TENDERLY_PROJECT;
+
+    const TENDERLY_FORK_API = `https://api.tenderly.co/api/v1/account/${TENDERLY_USER}/project/${TENDERLY_PROJECT}/fork`;
+
+    console.log("Fork: requesting API");
+    const res = await fetch(TENDERLY_FORK_API, {
+        method: "POST",
+        body: JSON.stringify({
+            network_id: "42161",
+            block_number: startBlock,
+        }),
+        headers: {
+            "X-Access-Key": TENDERLY_ACCESS_KEY,
+            "Content-Type": "application/json",
+        },
+    });
+    const json = await res.json();
+    const forkId = json.simulation_fork.id;
+    console.log(`Fork ID: ${forkId}`);
+    const forkRPC = `https://rpc.tenderly.co/fork/${forkId}`;
+    const provider = new hre.ethers.providers.JsonRpcProvider(forkRPC);
+    hre.ethers.provider = provider;
+}

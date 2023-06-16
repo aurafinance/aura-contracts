@@ -153,8 +153,12 @@ task("sidechain:test:send-aura-oft")
             const config = configs[hre.network.config.chainId] as any;
             const contracts = config.getSidechain(deployer);
             const phase2: Phase2Deployed = await config.getPhase2(deployer);
-            const tx = await phase2.cvx.approve(contracts.auraProxyOFT.address, scaledAmount);
-            await waitForTx(tx, debug, tskArgs.wait);
+
+            const allowance = await phase2.cvx.allowance(deployerAddress, contracts.auraProxyOFT.address);
+            if (allowance.lt(scaledAmount)) {
+                const tx = await phase2.cvx.approve(contracts.auraProxyOFT.address, scaledAmount);
+                await waitForTx(tx, debug, tskArgs.wait);
+            }
 
             oft = contracts.auraProxyOFT;
         } else {
