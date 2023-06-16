@@ -5,10 +5,17 @@ import {
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
-import { impersonateAccount } from "../../test-utils";
+import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
-import { Account, LZEndpointMock, LZEndpointMock__factory, SidechainConfig } from "../../types";
+import {
+    Account,
+    BridgeDelegateReceiver__factory,
+    BridgeDelegateSender__factory,
+    LZEndpointMock,
+    LZEndpointMock__factory,
+    SidechainConfig,
+} from "../../types";
 import {
     deploySimpleBridgeReceiver,
     deploySimpleBridgeSender,
@@ -52,10 +59,24 @@ export const setupForkDeployment = async (
     const sidechain = sidechainConfig.getSidechain(deployer.signer);
 
     const bridgeSender = opts.deployBridgeSender
-        ? await deploySimpleBridgeSender(hre, sidechainConfig, deployer.signer)
+        ? sidechainConfig.bridging.l2Sender !== ZERO_ADDRESS
+            ? {
+                  bridgeDelegateSender: BridgeDelegateSender__factory.connect(
+                      sidechainConfig.bridging.l2Sender,
+                      deployer.signer,
+                  ),
+              }
+            : await deploySimpleBridgeSender(hre, sidechainConfig, deployer.signer)
         : undefined;
     const bridgeReceiver = opts.deployBridgeReceiver
-        ? await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer)
+        ? sidechainConfig.bridging.l1Receiver !== ZERO_ADDRESS
+            ? {
+                  bridgeDelegateReceiver: BridgeDelegateReceiver__factory.connect(
+                      sidechainConfig.bridging.l1Receiver,
+                      deployer.signer,
+                  ),
+              }
+            : await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer)
         : undefined;
     const bridgeDelegateDeployment = { ...bridgeSender, ...bridgeReceiver };
 
