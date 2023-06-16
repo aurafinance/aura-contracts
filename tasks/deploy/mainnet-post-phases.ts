@@ -24,7 +24,7 @@ import {
     IERC20__factory,
 } from "../../types/generated";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
-import { deployFeeForwarder, deployVault } from "../../scripts/deployVault";
+import { deployBBUSDHandlerV3, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { waitForTx } from "../../tasks/utils";
@@ -300,4 +300,12 @@ task("deploy:mainnet:veBalGrant")
         const project = tskArgs.project;
         const result = await deployVeBalGrant(hre, deployer, config.addresses, project, balancer, debug, tskArgs.wait);
         console.log("VeBalGrant:", result.veBalGrant.address);
+    });
+
+task("deploy:mainnet:bbusdHandlerV3")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const result = await deployBBUSDHandlerV3(config, hre, deployer, debug, tskArgs.wait);
+        console.log("Handler:", result.bbusdHandler.address);
     });

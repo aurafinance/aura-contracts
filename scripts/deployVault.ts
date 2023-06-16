@@ -59,7 +59,7 @@ export async function deployBBUSDHandlerV3(
     const bbusdHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
-        "BBUSDHandlerv4",
+        "BBUSDHandlerv3",
         [
             config.addresses.feeToken,
             compounder.strategy.address,

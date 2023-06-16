@@ -1,13 +1,12 @@
-import hre, { network } from "hardhat";
+import { network } from "hardhat";
 import { expect } from "chai";
-import { Account, BalancerSwapsHandler } from "../../types";
+import { Account, BalancerSwapsHandler, BalancerSwapsHandler__factory } from "../../types";
 import { Phase6Deployed } from "../../scripts/deploySystem";
 import { impersonateAccount, increaseTime } from "../../test-utils";
 import { ZERO_ADDRESS, ONE_WEEK } from "../../test-utils/constants";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
-import { deployBBUSDHandlerV3 } from "../../scripts/deployVault";
 
-const FORK_BLOCK = 17491445;
+const FORK_BLOCK = 17491480;
 
 describe("BB-A-USD Handler V3", () => {
     let dao: Account;
@@ -37,7 +36,7 @@ describe("BB-A-USD Handler V3", () => {
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         phase6 = await config.getPhase6(dao.signer);
 
-        handler = (await deployBBUSDHandlerV3(config, hre, dao.signer))["bbusdHandler"];
+        handler = BalancerSwapsHandler__factory.connect("0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC", dao.signer);
         compounder = await config.getAuraBalVault?.(dao.signer);
 
         newFeeToken = "0xfebb0bbf162e64fb9d0dfe186e517d84c395f016";
