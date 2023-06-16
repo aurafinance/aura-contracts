@@ -25,7 +25,7 @@ interface VaultConfig {
     multisigs: MultisigConfig;
     getPhase2: (deployer: Signer) => Promise<Phase2Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
-    getAuraBalVault: (deployer: Signer) => Promise<AuraBalVaultDeployed>;
+    getAuraBalVault?: (deployer: Signer) => Promise<AuraBalVaultDeployed>;
 }
 
 export async function deployFeeForwarder(

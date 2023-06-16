@@ -1,32 +1,18 @@
 import hre, { network } from "hardhat";
 import { expect } from "chai";
-import { Account, BBUSDHandlerv3 } from "../../types";
+import { Account, BalancerSwapsHandler } from "../../types";
 import { Phase6Deployed } from "../../scripts/deploySystem";
 import { impersonateAccount, increaseTime } from "../../test-utils";
 import { ZERO_ADDRESS, ONE_WEEK } from "../../test-utils/constants";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { AuraBalVaultDeployed } from "../../tasks/deploy/mainnet-config";
+import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
 import { deployBBUSDHandlerV3 } from "../../scripts/deployVault";
 
-const testConfigs = {
-    mainnet: {
-        forkBlock: 17485900,
-        auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
-        auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
-        bbaUsdWhale: "0x43b650399F2E4D6f03503f44042fabA8F7D73470",
-        bbaUsdV3Whale: "0x000000000dFDe7deaF24138722987c9a6991e2D4",
-        config: mainnetConfig,
-        deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
-    },
-};
-
-const testConfig = testConfigs["mainnet"];
-const config = testConfig.config;
+const FORK_BLOCK = 17491445;
 
 describe("BB-A-USD Handler V3", () => {
     let dao: Account;
     let phase6: Phase6Deployed;
-    let handler: BBUSDHandlerv3;
+    let handler: BalancerSwapsHandler;
     let compounder: AuraBalVaultDeployed;
     let newFeeToken: string;
     let oldFeeToken: string;
@@ -42,7 +28,7 @@ describe("BB-A-USD Handler V3", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: testConfig.forkBlock,
+                        blockNumber: FORK_BLOCK,
                     },
                 },
             ],
@@ -52,7 +38,7 @@ describe("BB-A-USD Handler V3", () => {
         phase6 = await config.getPhase6(dao.signer);
 
         handler = (await deployBBUSDHandlerV3(config, hre, dao.signer))["bbusdHandler"];
-        compounder = await config.getAuraBalVault(dao.signer);
+        compounder = await config.getAuraBalVault?.(dao.signer);
 
         newFeeToken = "0xfebb0bbf162e64fb9d0dfe186e517d84c395f016";
         oldFeeToken = "0xA13a9247ea42D743238089903570127DdA72fE44";
@@ -68,19 +54,6 @@ describe("BB-A-USD Handler V3", () => {
             expect(await handler.WETH_TOKEN()).eq(config.addresses.weth);
             expect(await handler.token()).eq(config.addresses.feeToken);
             expect(await handler.balVault()).eq(config.addresses.balancerVault);
-        });
-    });
-
-    describe("Prepare Protocol", () => {
-        it("Update booster fee info", async () => {
-            const boosterOwner = await impersonateAccount(await phase6.booster.owner());
-            await phase6.booster.earmarkFees(oldFeeToken); //collect fees
-            await phase6.booster.connect(boosterOwner.signer).updateFeeInfo(oldFeeToken, false); // remove old fee
-
-            await phase6.booster
-                .connect(boosterOwner.signer)
-                .setFeeInfo(newFeeToken, "0xD3cf852898b21fc233251427c2DC93d3d604F3BB"); // add new fee
-            await phase6.booster.earmarkFees(newFeeToken);
         });
     });
 
