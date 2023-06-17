@@ -232,7 +232,9 @@ async function getSidechainMetrics(
             circulatingSupply: formatEther(sidechainData.auraBalOftData.circulatingSupply),
             totalSupply: formatEther(sidechainData.auraBalOftData.totalSupply),
             paused: sidechainData.auraBalOftData.paused,
-            auraBalStrategyAuraBalOFTBalance: sidechainData.auraBalOftData.auraBalStrategyAuraBalOFTBalance,
+            auraBalStrategyAuraBalOFTBalance: formatEther(
+                sidechainData.auraBalOftData.auraBalStrategyAuraBalOFTBalance,
+            ),
             lzEndpoint: sidechainData.auraBalOftData.lzEndpoint,
             trustedRemote: sidechainData.auraBalOftData.trustedRemote,
         },
