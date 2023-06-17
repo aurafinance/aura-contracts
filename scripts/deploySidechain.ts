@@ -233,7 +233,7 @@ export async function deploySidechainPhase1(
 
     // -----------------------------
     // Pre-1:  Deploy create2Factory
-    //         Protocol DAO : create2Factory.updateDeployer(deployer.address, true);
+    //         Protocol DAO : creat12Factory.updateDeployer(deployer.address, true);
     //         Protocol DAO : booster.bridgeDelegate(l1Coordinator.address)
     // -----------------------------
     // 1. Sidechain system:
@@ -411,6 +411,9 @@ export async function deploySidechainPhase1(
         canonicalLzChainId,
         ethers.utils.solidityPack(["address", "address"], [canonical.l1Coordinator.address, l2Coordinator.address]),
     );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l2Coordinator.setBridgeDelegate(bridging.l2Sender);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l2Coordinator.transferOwnership(multisigs.daoMultisig);

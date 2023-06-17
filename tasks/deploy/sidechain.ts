@@ -19,6 +19,7 @@ import {
     AuraBalVault__factory,
     SimpleStrategy__factory,
     VirtualRewardFactory__factory,
+    BridgeDelegateSender__factory,
 } from "../../types";
 import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -291,6 +292,9 @@ task("deploy:sidechain:config:L1:phase1")
     .addParam("wait", "Wait for blocks")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        // NOTICE: This task can only be run for the first deployment, future deployments
+        // will have to be triggered via the protocol DAO which will be the owner
+        // of the mainnet sidechain deployment
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
 
@@ -315,6 +319,9 @@ task("deploy:sidechain:config:L1:phase2")
     .addParam("wait", "Wait for blocks")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        // NOTICE: This task can only be run for the first deployment, future deployments
+        // will have to be triggered via the protocol DAO which will be the owner
+        // of the mainnet sidechain deployment
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
 
