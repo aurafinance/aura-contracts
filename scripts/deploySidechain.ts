@@ -48,6 +48,8 @@ import {
     SidechainClaimZap__factory,
     BoosterHelper,
     BoosterHelper__factory,
+    SidechainView,
+    SidechainView__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -189,6 +191,10 @@ export interface SidechainPhase2Deployed {
     virtualRewardFactory: VirtualRewardFactory;
     auraBalVault: AuraBalVault;
     auraBalStrategy: SimpleStrategy;
+}
+
+export interface SidechainViewDeployed {
+    SidechainView: SidechainView;
 }
 
 /**
@@ -761,4 +767,33 @@ export async function deploySidechainClaimZap(
     );
 
     return { sidechainClaimZap };
+}
+
+export async function deploySidechainView(
+    sidechainId: number,
+    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const sidechainView = await deployContract<SidechainView>(
+        hre,
+        new SidechainView__factory(signer),
+        "SidechainView",
+        [
+            sidechainId,
+            sidechain.l2Coordinator.address,
+            sidechain.auraOFT.address,
+            sidechain.auraBalOFT.address,
+            sidechain.auraBalStrategy.address,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        sidechainView,
+    };
 }

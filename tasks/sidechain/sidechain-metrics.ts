@@ -10,12 +10,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 import { ERC20__factory } from "../../types";
 
-import {
-    CanonicalPhase1Deployed,
-    CanonicalPhase2Deployed,
-    SidechainPhase1Deployed,
-    SidechainPhase2Deployed,
-} from "../../scripts/deploySidechain";
+import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, SidechainViewDeployed } from "../../scripts/deploySidechain";
 import { ExtSystemConfig, Phase2Deployed } from "../../scripts/deploySystem";
 import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { getSigner } from "../utils";
@@ -199,64 +194,51 @@ async function getCanonicalMetrics(
  * * * * * * * * * * * * * * * * * * * * * *
  */
 
-async function getL2CoordinatorData(l2Coordinator: ethers.Contract, auraOFT: ethers.Contract) {
-    const mintRate: BN = await l2Coordinator.mintRate();
-    const accBalRewards: BN = await l2Coordinator.accBalRewards();
-    const accAuraRewards: BN = await l2Coordinator.accAuraRewards();
-    const auraBalance = await auraOFT.balanceOf(l2Coordinator.address);
-    return { mintRate, accBalRewards, accAuraRewards, auraBalance };
-}
-async function getOFTData(oft: ethers.Contract) {
-    const totalSupply = await oft.totalSupply();
-    const circulatingSupply = await oft.circulatingSupply();
-    const paused = await oft.paused();
-
-    return { circulatingSupply, totalSupply, paused };
-}
-async function getAuraOFTData(auraOFT: ethers.Contract, bridgeDelegateAddress: string) {
-    const oftData = await getOFTData(auraOFT);
-    const bridgeDelegateAuraBalance = await auraOFT.balanceOf(bridgeDelegateAddress);
-    return { ...oftData, bridgeDelegateAuraBalance };
-}
-
-async function getAuraBalOFTData(auraBalOFT: ethers.Contract, auraBalStrategyAddress: string) {
-    const oftData = await getOFTData(auraBalOFT);
-    const auraBalStrategyAuraBalOFTBalance: BN = await auraBalOFT.balanceOf(auraBalStrategyAddress);
-
-    return { ...oftData, auraBalStrategyAuraBalOFTBalance };
+async function getSidechainData(sidechainView: ethers.Contract, address: string) {
+    const sidechainData = await sidechainView.getDataAndBalances(address);
+    return { ...sidechainData };
 }
 
 async function getSidechainMetrics(
     signer: Signer,
-    sidechainDeployed: SidechainPhase1Deployed & SidechainPhase2Deployed,
-    bridgeDelegateAddress: string,
+    sidechainViewDeployed: SidechainViewDeployed,
     sidechainId: string,
 ): Promise<any> {
-    const { l2Coordinator, auraOFT, auraBalOFT, auraBalStrategy } = sidechainDeployed;
-
-    const l2CoordinatorData = await getL2CoordinatorData(l2Coordinator, auraOFT);
-    const auraOFTData = await getAuraOFTData(auraOFT, bridgeDelegateAddress);
-    const auraBalOFTData = await getAuraBalOFTData(auraBalOFT, auraBalStrategy.address);
+    const sidechainData = await getSidechainData(sidechainViewDeployed.sidechainView, await signer.getAddress());
 
     return {
-        sidechainId,
+        sidechainId: sidechainData.sidechainId,
+        canonicalId: sidechainData.canonicalChainId,
         l2CoordinatorData: {
-            mintRate: formatEther(l2CoordinatorData.mintRate),
-            accBalRewards: formatEther(l2CoordinatorData.accBalRewards),
-            accAuraRewards: formatEther(l2CoordinatorData.accAuraRewards),
-            auraBalance: formatEther(l2CoordinatorData.auraBalance),
+            address: sidechainData.l2CoordData._address,
+            mintRate: formatEther(sidechainData.l2CoordData.mintRate),
+            accBalRewards: formatEther(sidechainData.l2CoordData.accBalRewards),
+            accAuraRewards: formatEther(sidechainData.l2CoordData.accAuraRewards),
+            auraBalance: formatEther(sidechainData.l2CoordData.auraBalance),
+            lzEndpoint: sidechainData.l2CoordData.lzEndpoint,
+            trustedRemote: sidechainData.l2CoordData.trustedRemote,
         },
         auraOFTData: {
-            circulatingSupply: formatEther(auraOFTData.circulatingSupply),
-            totalSupply: formatEther(auraOFTData.totalSupply),
-            paused: auraOFTData.paused,
-            bridgeDelegateAuraBalance: formatEther(auraOFTData.bridgeDelegateAuraBalance),
+            address: sidechainData.auraOftData._address,
+            circulatingSupply: formatEther(sidechainData.auraOftData.circulatingSupply),
+            totalSupply: formatEther(sidechainData.auraOftData.totalSupply),
+            paused: sidechainData.auraOftData.paused,
+            bridgeDelegateAuraBalance: formatEther(sidechainData.auraOftData.bridgeDelegateAuraBalance),
+            lzEndpoint: sidechainData.auraOftData.lzEndpoint,
+            trustedRemote: sidechainData.auraOftData.trustedRemote,
         },
         auraBalOFTData: {
-            circulatingSupply: formatEther(auraBalOFTData.circulatingSupply),
-            totalSupply: formatEther(auraBalOFTData.totalSupply),
-            paused: auraOFTData.paused,
-            auraBalStrategyAuraBalOFTBalance: formatEther(auraBalOFTData.auraBalStrategyAuraBalOFTBalance),
+            address: sidechainData.auraBalOftData._address,
+            circulatingSupply: formatEther(sidechainData.auraBalOftData.circulatingSupply),
+            totalSupply: formatEther(sidechainData.auraBalOftData.totalSupply),
+            paused: sidechainData.auraBalOftData.paused,
+            auraBalStrategyAuraBalOFTBalance: sidechainData.auraBalOftData.auraBalStrategyAuraBalOFTBalance,
+            lzEndpoint: sidechainData.auraBalOftData.lzEndpoint,
+            trustedRemote: sidechainData.auraBalOftData.trustedRemote,
+        },
+        deployer: {
+            auraOftBalance: formatEther(sidechainData.auraBalanceOf),
+            auraBalOftBalance: formatEther(sidechainData.auraBalBalanceOf),
         },
     };
 }
@@ -403,52 +385,44 @@ task("sidechain:metrics")
         console.log("Provider ready!");
 
         const remoteDeployer = deployer.connect(jsonProvider);
-        const remote: SidechainPhase1Deployed & SidechainPhase2Deployed = sidechainConfig.getSidechain(
-            remoteDeployer,
-        ) as any;
-        const remoteMetrics = await getSidechainMetrics(
-            deployer,
-            remote,
-            sidechainConfig.bridging.l2Sender,
-            remoteChainId,
-        );
-        log(
-            "Remote",
-            [
-                `Coordinator address:                               ${remote.l2Coordinator.address}`,
-                `Total supply:                                      ${await remote.auraOFT.totalSupply()}`,
-                `Trusted remote address (${canonicalLzChainId}):                      ${await remote.l2Coordinator.trustedRemoteLookup(
-                    canonicalLzChainId,
-                )}`,
-                `Endpoint AuraOFT:                                  ${await remote.auraOFT.lzEndpoint()}`,
-                `Endpoint l2Coordinator:                            ${await remote.l2Coordinator.lzEndpoint()}`,
-            ],
-            [
-                `AuraOFT balance:                                   ${formatEther(
-                    await remote.auraOFT.balanceOf(deployerAddress),
-                )}`,
-                `AuraBalOFT balance:                                ${formatEther(
-                    await remote.auraBalOFT.balanceOf(deployerAddress),
-                )}`,
-            ],
-        );
+        const remoteView: SidechainViewDeployed = sidechainConfig.getView(remoteDeployer) as any;
+        const remoteMetrics = await getSidechainMetrics(deployer, remoteView, remoteChainId);
 
         /* ---------------------------------------------------------------
          * Remote Metrics 
         --------------------------------------------------------------- */
-        log("Local Metrics", [
-            `Sidechain ID:                                      ${remoteMetrics.sidechainId}`,
-            `L2CoordinatorData mintRate:                        ${remoteMetrics.l2CoordinatorData.mintRate}`,
-            `L2CoordinatorData accBalRewards:                   ${remoteMetrics.l2CoordinatorData.accBalRewards}`,
-            `L2CoordinatorData accAuraRewards:                  ${remoteMetrics.l2CoordinatorData.accAuraRewards}`,
-            `L2CoordinatorData auraBalance:                     ${remoteMetrics.l2CoordinatorData.auraBalance}`,
-            `auraOFT circulatingSupply:                         ${remoteMetrics.auraOFTData.circulatingSupply}`,
-            `auraOFT totalSupply:                               ${remoteMetrics.auraOFTData.totalSupply}`,
-            `auraOFT paused:                                    ${remoteMetrics.auraOFTData.paused}`,
-            `auraOFT bridgeDelegateAuraBalance:                 ${remoteMetrics.auraOFTData.bridgeDelegateAuraBalance}`,
-            `auraBalOFT circulatingSupply:                      ${remoteMetrics.auraBalOFTData.circulatingSupply}`,
-            `auraBalOFT totalSupply:                            ${remoteMetrics.auraBalOFTData.totalSupply}`,
-            `auraBalOFT paused:                                 ${remoteMetrics.auraBalOFTData.paused}`,
-            `auraBalOFT auraBalStrategyAuraBalOFTBalance:       ${remoteMetrics.auraBalOFTData.auraBalStrategyAuraBalOFTBalance}`,
-        ]);
+        log(
+            "Local Metrics",
+            [
+                `Sidechain ID:                                      ${remoteMetrics.sidechainId}`,
+                `L2CoordinatorData address:                         ${remoteMetrics.l2CoordinatorData.address}`,
+                `L2CoordinatorData mintRate:                        ${remoteMetrics.l2CoordinatorData.mintRate}`,
+                `L2CoordinatorData accBalRewards:                   ${remoteMetrics.l2CoordinatorData.accBalRewards}`,
+                `L2CoordinatorData accAuraRewards:                  ${remoteMetrics.l2CoordinatorData.accAuraRewards}`,
+                `L2CoordinatorData auraBalance:                     ${remoteMetrics.l2CoordinatorData.auraBalance}`,
+                `L2CoordinatorData trustedRemote:                   ${remoteMetrics.l2CoordinatorData.trustedRemote}`,
+
+                `auraOFT address:                                   ${remoteMetrics.auraOFTData.address}`,
+                `auraOFT circulatingSupply:                         ${remoteMetrics.auraOFTData.circulatingSupply}`,
+                `auraOFT totalSupply:                               ${remoteMetrics.auraOFTData.totalSupply}`,
+                `auraOFT paused:                                    ${remoteMetrics.auraOFTData.paused}`,
+                `auraOFT bridgeDelegateAuraBalance:                 ${remoteMetrics.auraOFTData.bridgeDelegateAuraBalance}`,
+                `auraOFT trustedRemote:                             ${remoteMetrics.auraOFTData.trustedRemote}`,
+
+                `auraBalOFT address:                                ${remoteMetrics.auraBalOFTData.address}`,
+                `auraBalOFT circulatingSupply:                      ${remoteMetrics.auraBalOFTData.circulatingSupply}`,
+                `auraBalOFT totalSupply:                            ${remoteMetrics.auraBalOFTData.totalSupply}`,
+                `auraBalOFT paused:                                 ${remoteMetrics.auraBalOFTData.paused}`,
+                `auraBalOFT auraBalStrategyAuraBalOFTBalance:       ${remoteMetrics.auraBalOFTData.auraBalStrategyAuraBalOFTBalance}`,
+                `auraBalOFT trustedRemote:                          ${remoteMetrics.auraBalOFTData.trustedRemote}`,
+
+                `Endpoint l2Coordinator:                            ${remoteMetrics.l2CoordinatorData.lzEndpoint}`,
+                `Endpoint AuraOFT:                                  ${remoteMetrics.auraOFTData.lzEndpoint}`,
+                `Endpoint AuraBalOFT:                               ${remoteMetrics.auraBalOFTData.lzEndpoint}`,
+            ],
+            [
+                `AuraOFT balance:                                   ${remoteMetrics.deployer.auraOftBalance}`,
+                `AuraBalOFT balance:                                ${remoteMetrics.deployer.auraBalOftBalance}`,
+            ],
+        );
     });

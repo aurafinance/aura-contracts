@@ -32,6 +32,7 @@ import {
     deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
+    deploySidechainView,
 } from "../../scripts/deploySidechain";
 import { waitForTx, chainIds } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
@@ -423,6 +424,14 @@ task("deploy:sidechain:safe")
 
         console.log("Safe deployed to:", address);
     });
+
+task("deploy:sidechain:view").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+    const deployer = await getSigner(hre);
+    const remoteChainId = hre.network.config.chainId;
+    const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
+    const result = await deploySidechainView(lzChainIds[remoteChainId], sidechainConfig, hre, deployer, false);
+    console.log("sidechainView:", result.sidechainView.address);
+});
 
 task("sidechain:addresses")
     .addOptionalParam("chainId", "The chain ID, default arbitrumGoerli")

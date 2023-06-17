@@ -20,6 +20,7 @@ import {
     SidechainConfig,
     SidechainBridging,
     BoosterHelper__factory,
+    SidechainView__factory,
 } from "../../types";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { sidechainNaming } from "./sidechain-naming";
@@ -69,6 +70,10 @@ export const getSidechain = (signer: Signer) => ({
     auraBalStrategy: SimpleStrategy__factory.connect("0xFa247e4e04ad17988962261175F9E9a6a46E2114", signer),
 });
 
+export const getView = (signer: Signer) => ({
+    sidechainView: SidechainView__factory.connect("0xC2c63A38a60DCE8CB730e2E77742061871eD1cA1", signer),
+});
+
 export const config: SidechainConfig = {
     chainId: chainIds.gnosis,
     multisigs,
@@ -76,6 +81,7 @@ export const config: SidechainConfig = {
     extConfig,
     bridging,
     getSidechain,
+    getView,
     whales: {
         "0x66f33ae36dd80327744207a48122f874634b3ada": extConfig.balancerVault,
         "0xF48f01DCB2CbB3ee1f6AaB0e742c2D3941039d56": "0xf752dd899f87a91370c1c8ac1488aef6be687505",
