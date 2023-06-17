@@ -35,6 +35,7 @@ const CONFIG = mainnetConfig;
 
 describe("Full Deployment Phase 2", () => {
     let dao: Account;
+    let sudo: Account;
     let deployer: Account;
 
     // phases
@@ -81,6 +82,7 @@ describe("Full Deployment Phase 2", () => {
         sidechainConfig = result.sidechainConfig;
         vaultDeployment = result.vaultDeployment;
         dao = result.dao;
+        sudo = await impersonateAccount(mainnetConfig.multisigs.sudoMultisig, true);
 
         // Connect contracts to its owner signer.
         canonical.l1Coordinator = canonical.l1Coordinator.connect(dao.signer);
@@ -610,7 +612,7 @@ describe("Full Deployment Phase 2", () => {
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
             const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
-            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
+            await canonical.auraBalProxyOFT.connect(sudo.signer).rescue(phase2.cvxCrv.address, to, amount);
             const balAfter = await phase2.cvxCrv.balanceOf(to);
             const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
 
@@ -632,7 +634,7 @@ describe("Full Deployment Phase 2", () => {
 
             const balBefore = await dummyToken.balanceOf(to);
             const internalTotalSupplyBefore = await canonical.auraBalProxyOFT.internalTotalSupply();
-            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(dummyToken.address, to, amount);
+            await canonical.auraBalProxyOFT.connect(sudo.signer).rescue(dummyToken.address, to, amount);
             const balAfter = await dummyToken.balanceOf(to);
             const internalTotalSupplyAfter = await canonical.auraBalProxyOFT.internalTotalSupply();
 
@@ -651,7 +653,7 @@ describe("Full Deployment Phase 2", () => {
 
             const amount = underlying;
 
-            await expect(canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount)).to.be
+            await expect(canonical.auraBalProxyOFT.connect(sudo.signer).rescue(phase2.cvxCrv.address, to, amount)).to.be
                 .reverted;
 
             await canonical.auraBalProxyOFT.connect(deployer.signer).harvest([100], 100);
@@ -660,10 +662,23 @@ describe("Full Deployment Phase 2", () => {
             });
 
             const balBefore = await phase2.cvxCrv.balanceOf(to);
-            await canonical.auraBalProxyOFT.connect(dao.signer).rescue(phase2.cvxCrv.address, to, amount);
+            await canonical.auraBalProxyOFT.connect(sudo.signer).rescue(phase2.cvxCrv.address, to, amount);
             const balAfter = await phase2.cvxCrv.balanceOf(to);
 
             expect(balAfter.sub(balBefore)).eq(amount);
+        });
+    });
+
+    describe("AuraBalProxyOFT can call vault", () => {
+        it("can call vault normally", async () => {
+            const newHarvester = "0x000000000000000000000000000000000000dead";
+            const data = vaultDeployment.vault.interface.encodeFunctionData("updateAuthorizedHarvesters", [
+                newHarvester,
+                true,
+            ]);
+            expect(await vaultDeployment.vault.authorizedHarvesters(newHarvester)).eq(false);
+            await canonical.auraBalProxyOFT.vaultExecute(0, data);
+            expect(await vaultDeployment.vault.authorizedHarvesters(newHarvester)).eq(true);
         });
     });
 });
