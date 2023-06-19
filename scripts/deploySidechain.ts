@@ -762,3 +762,36 @@ export async function deploySidechainClaimZap(
 
     return { sidechainClaimZap };
 }
+
+export async function deployBoosterLiteHelper(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    extConfig: ExtSidechainConfig,
+    sidechain: SidechainPhase1Deployed,
+    salt: string = SALT,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+) {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
+
+    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+        hre,
+        create2Factory,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [sidechain.booster.address, extConfig.token],
+        deployOptions,
+    );
+
+    return {
+        boosterHelper,
+    };
+}
