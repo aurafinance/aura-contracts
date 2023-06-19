@@ -160,7 +160,7 @@ contract CanonicalView {
         data.inflow = proxyOft.inflow(data.epoch);
         data.paused = proxyOft.paused();
 
-        IAuraBalProxyOFT _auraBalProxyOft = IAuraBalProxyOFT(auraProxyOft);
+        IAuraBalProxyOFT _auraBalProxyOft = IAuraBalProxyOFT(auraBalProxyOft);
         data.totalClaimableAuraBal = _auraBalProxyOft.totalClaimable(aurabal);
         data.totalClaimableAura = _auraBalProxyOft.totalClaimable(aura);
         data.internalTotalSupply = _auraBalProxyOft.internalTotalSupply();
@@ -177,7 +177,7 @@ contract CanonicalView {
         returns (AurabalProxySidechainInfo memory data)
     {
         data.sidechainId = sidechainId;
-        IAuraBalProxyOFT _auraBalProxyOft = IAuraBalProxyOFT(auraProxyOft);
+        IAuraBalProxyOFT _auraBalProxyOft = IAuraBalProxyOFT(auraBalProxyOft);
         data.claimableAuraBal = _auraBalProxyOft.claimable(aurabal, sidechainId);
         data.claimableAura = _auraBalProxyOft.claimable(aura, sidechainId);
     }
