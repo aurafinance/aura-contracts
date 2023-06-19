@@ -423,6 +423,8 @@ task("sidechain:metrics")
             canonicalMetrics.auraBalProxyOFTData.outflow - canonicalMetrics.auraBalProxyOFTData.inflow <=
             canonicalMetrics.auraBalProxyOFTData.inflowLimit;
 
+        console.log(`WIP CHECKS`);
+
         console.log(`auraOFT supply <= balance:                     ${auraIsFunded}`);
         console.log(`auraInflow is within limit:                    ${auraInflow}`);
         console.log(`auraBalInflow is within limit:                 ${auraBalInflow}`);
