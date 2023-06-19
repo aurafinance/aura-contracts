@@ -411,6 +411,7 @@ task("sidechain:metrics")
 
         /* ---------------------------------------------------------------
          * SAFETY CHECKS
+         * TODO: Make into functions and print nicely.
         --------------------------------------------------------------- */
 
         const auraIsFunded =
@@ -425,4 +426,26 @@ task("sidechain:metrics")
         console.log(`auraOFT supply <= balance:                     ${auraIsFunded}`);
         console.log(`auraInflow is within limit:                    ${auraInflow}`);
         console.log(`auraBalInflow is within limit:                 ${auraBalInflow}`);
+
+        // check funding.
+        const sidechain = await sidechainConfig.getSidechain(remoteDeployer);
+        const poolLength = await sidechain.booster.poolLength();
+        const balOnSidechain = ERC20__factory.connect(sidechainConfig.extConfig.token, remoteDeployer);
+        let totalBal = 0;
+        for (let i = 0; i < Number(poolLength); i++) {
+            const pool = await sidechain.booster.poolInfo(i);
+            const balance = await balOnSidechain.balanceOf(pool.crvRewards);
+            totalBal += Number(balance);
+        }
+        const totalPendingAura = totalBal * remoteMetrics.l2CoordinatorData.mintRate;
+        const enoughAura = remoteMetrics.l2CoordinatorData.auraBalance > totalPendingAura;
+
+        console.log(`pending bal rewards is:                        ${totalBal}`);
+        console.log(`pending aura rewards is:                       ${totalPendingAura}`);
+        console.log(`l2 coordinator has enough aura rewards:        ${enoughAura}`);
+
+        if (!enoughAura) {
+            const shortFall = totalPendingAura - remoteMetrics.l2CoordinatorData.auraBalance;
+            console.log(`l2 coordinator aura shortfall:                 ${shortFall}`);
+        }
     });
