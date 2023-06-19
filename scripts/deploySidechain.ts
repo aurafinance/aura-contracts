@@ -48,6 +48,8 @@ import {
     SidechainClaimZap__factory,
     BoosterHelper,
     BoosterHelper__factory,
+    BoosterLiteHelper,
+    BoosterLiteHelper__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -782,11 +784,11 @@ export async function deployBoosterLiteHelper(
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
 
-    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+    const boosterHelper = await deployContractWithCreate2<BoosterLiteHelper, BoosterLiteHelper__factory>(
         hre,
         create2Factory,
-        new BoosterHelper__factory(deployer),
-        "BoosterHelper",
+        new BoosterLiteHelper__factory(deployer),
+        "BoosterLiteHelper",
         [sidechain.booster.address, extConfig.token],
         deployOptions,
     );

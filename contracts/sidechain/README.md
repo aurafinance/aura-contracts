@@ -140,7 +140,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | AuraBalStrategy          | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://arbiscan.io/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
 | VirtualRewardsFactory    | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://arbiscan.io/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
 | BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://arbiscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
-| BoosterLiteHelper        | [0x9BA1E8f1fe847FB0355Bfe74C80E9Db4c89a6b6E](https://arbiscan.io/address/0x9BA1E8f1fe847FB0355Bfe74C80E9Db4c89a6b6E) |
+| BoosterLiteHelper        | [0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42](https://arbiscan.io/address/0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42) |
 | VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://arbiscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
 | TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://arbiscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
 | ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://arbiscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
