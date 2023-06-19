@@ -11,7 +11,7 @@ interface IBoosterLite {
         bool shutdown;
     }
 
-    function earmarkRewards(uint256 _pid, address _zroPaymentAddress) external returns (bool);
+    function earmarkRewards(uint256 _pid, address _zroPaymentAddress) external payable returns (bool);
 
     function poolLength() external view returns (uint256);
 

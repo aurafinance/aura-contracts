@@ -27,12 +27,12 @@ contract BoosterLiteHelper {
         crv = _crv;
     }
 
-    function earmarkRewards(uint256[] memory _pids, address _zroPaymentAddress) external returns (uint256) {
+    function earmarkRewards(uint256[] memory _pids, address _zroPaymentAddress) external payable returns (uint256) {
         uint256 len = _pids.length;
         require(len > 0, "!pids");
 
         for (uint256 i = 0; i < len; i++) {
-            require(booster.earmarkRewards(_pids[i], _zroPaymentAddress), "!earmark reward");
+            require(booster.earmarkRewards{ value: msg.value }(_pids[i], _zroPaymentAddress), "!earmark reward");
         }
         // Return all incentives to the sender
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
