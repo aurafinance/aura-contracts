@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { IAuraBalVault } from "../../interfaces/IAuraBalVault.sol";
 
 interface IL1Coordinator {
     function balBalance() external view returns (uint256);
@@ -37,10 +38,6 @@ interface IAuraBalProxyOFT {
     function internalTotalSupply() external view returns (uint256);
 
     function claimable(address, uint16) external view returns (uint256);
-}
-
-interface IAurabalVault {
-    function balanceOfUnderlying(address) external view returns (uint256);
 }
 
 struct L1CoordSidechainData {
@@ -166,7 +163,7 @@ contract CanonicalView {
         data.auraBalBalance = IERC20(aurabal).balanceOf(auraBalProxyOft);
         data.auraBalance = IERC20(aura).balanceOf(auraBalProxyOft);
         data.auraBalVaultBalance = IERC20(aurabalVault).balanceOf(auraBalProxyOft);
-        data.auraBalVaultBalanceOfUnderlying = IAurabalVault(aurabalVault).balanceOfUnderlying(auraBalProxyOft);
+        data.auraBalVaultBalanceOfUnderlying = IAuraBalVault(aurabalVault).balanceOfUnderlying(auraBalProxyOft);
     }
 
     function getAuraBalProxySidechainData(uint16 sidechainId)
