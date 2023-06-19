@@ -3,8 +3,9 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BN } from "../../test-utils/math";
 import assert from "assert";
-import { BigNumber, ethers, Signer } from "ethers";
+import { BigNumber, BigNumberish, ethers, Signer } from "ethers";
 import { formatEther } from "ethers/lib/utils";
+import { table } from "table";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { ERC20__factory } from "../../types";
@@ -18,6 +19,8 @@ import {
 import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { getSigner } from "../utils";
 import { fullScale } from "../../test-utils/constants";
+import { isBigNumberish } from "@ethersproject/bignumber/lib/bignumber";
+import chalk from "chalk";
 
 /*
  * * * * * * * * * * * * * * * * * * * * * *
@@ -253,22 +256,32 @@ task("sidechain:metrics")
         const sidechainLzChainId = lzChainIds[remoteChainId];
         assert(sidechainLzChainId, "Remote LZ chain ID not found");
 
-        const log = (title: string, general?: string[], signer?: string[]) => {
-            console.log("===================");
-            console.log(title);
-            console.log("===================");
-            console.log("");
-            if (general) {
-                console.log("#### General ####");
-                general.forEach(s => console.log(s));
-                console.log("");
-            }
-            if (signer) {
-                console.log("#### Signer ####");
-                signer.forEach(s => console.log(s));
-                console.log("");
-            }
-            console.log("");
+        const log = (
+            logLabel: string,
+            rows: ([string, BigNumberish | boolean, (x: BigNumberish) => string] | [string, BigNumberish | boolean])[],
+        ) => {
+            console.log(
+                table(
+                    rows.map(([label, value, formatter]) => {
+                        return [
+                            label,
+                            formatter && isBigNumberish(value)
+                                ? formatter(value)
+                                : typeof value === "boolean"
+                                ? value
+                                    ? chalk.bgGreen.black(" YES ")
+                                    : chalk.bgRed.white(" NO ")
+                                : value,
+                        ];
+                    }),
+                    {
+                        header: {
+                            alignment: "center",
+                            content: logLabel,
+                        },
+                    },
+                ),
+            );
         };
 
         /* ---------------------------------------------------------------
@@ -276,10 +289,10 @@ task("sidechain:metrics")
         --------------------------------------------------------------- */
 
         log("Config", [
-            `Deployer: ${deployerAddress}`,
-            `Local chain ID: ${hre.network.config.chainId}`,
-            `Remote chain ID: ${remoteChainId}`,
-            `Remote node URL: ${remoteNodeUrl}`,
+            ["Deployer", deployerAddress],
+            ["Local chain ID", hre.network.config.chainId],
+            ["Remote chain ID", remoteChainId],
+            ["Remote node URL", remoteNodeUrl],
         ]);
 
         /* ---------------------------------------------------------------
@@ -293,68 +306,60 @@ task("sidechain:metrics")
         const canonicalMetrics = await getCanonicalMetrics(deployer, canonicalView, sidechainLzChainId);
 
         log(
-            "Local",
+            "Canonical chain",
+            // prettier-ignore
             [
-                `AuraOFT address:                                   ${local.auraProxyOFT.address}`,
-                `AuraBalOFT address:                                ${local.auraBalProxyOFT.address}`,
-                `AURA balance of AuraOFT:                           ${formatEther(
-                    await phase2.cvx.balanceOf(local.auraProxyOFT.address),
-                )}`,
-                `Trusted remote address (${sidechainLzChainId}):        ${await local.auraProxyOFT.trustedRemoteLookup(
-                    sidechainLzChainId,
-                )}`,
-                `Endpoint:                                          ${await local.auraProxyOFT.lzEndpoint()}`,
-            ],
-            [
-                `Lock balance:                                      ${formatEther(
-                    (await phase2.cvxLocker.balances(deployerAddress)).locked,
-                )}`,
-                `AURA balance:                                      ${formatEther(
-                    await phase2.cvx.balanceOf(deployerAddress),
-                )}`,
-                `auraBAL balance:                                   ${formatEther(
-                    await phase2.cvxCrv.balanceOf(deployerAddress),
-                )}`,
+                ["AuraOFT address",                           local.auraProxyOFT.address],
+                ["AuraBalOFT address",                        local.auraBalProxyOFT.address],
+                ["AURA balance of AuraOFT",                   await phase2.cvx.balanceOf(local.auraProxyOFT.address), formatEther],
+                [`Trusted remote (${sidechainLzChainId})`,    await local.auraProxyOFT.trustedRemoteLookup(sidechainLzChainId)],
+                ["Endpoint",                                  await local.auraProxyOFT.lzEndpoint()],
             ],
         );
 
         /* ---------------------------------------------------------------
          * Local Metrics 
         --------------------------------------------------------------- */
+
         const canonicalCoordinatorInformation = canonicalMetrics[0];
-        log("Local Metrics", [
-            `Sidechain ID:                                      ${canonicalCoordinatorInformation.sidechainId}`,
-            `L1Coordinator BAL Balance:                         ${canonicalMetrics.l1CoordinatorData.balBalance}`,
-            `L1Coordinator feeDebtOf:                           ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf}`,
-            `L1Coordinator settledFeeDebtOf:                    ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf}`,
-            `L1Coordinator settledFeeDebtOf:                    ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf}`,
-            `L1Coordinator distributedFeeDebtOf:                ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.distributedFeeDebtOf}`,
-            `L1Coordinator bridgeDelegate:                      ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegate}`,
-            `L1Coordinator l2Coordinator:                       ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.l2Coordinator}`,
-            `L1Coordinator bridgeDelegateBalBalance:            ${canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegateBalBalance}`,
-            `auraProxyOFT Epoch:                                ${canonicalMetrics.auraProxyOFTData.epoch}`,
-            `auraProxyOFT inflowLimit:                          ${canonicalMetrics.auraProxyOFTData.inflowLimit}`,
-            `auraProxyOFT outflow:                              ${canonicalMetrics.auraProxyOFTData.outflow}`,
-            `auraProxyOFT inflow:                               ${canonicalMetrics.auraProxyOFTData.inflow}`,
-            `auraProxyOFT circulatingSupply:                    ${canonicalMetrics.auraProxyOFTData.circulatingSupply}`,
-            `auraProxyOFT paused:                               ${canonicalMetrics.auraProxyOFTData.paused}`,
-            `auraProxyOFT auraProxyOFTAuraBalance:              ${canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance}`,
-            `auraBalProxyOFT epoch:                             ${canonicalMetrics.auraBalProxyOFTData.epoch}`,
-            `auraBalProxyOFT inflowLimit:                       ${canonicalMetrics.auraBalProxyOFTData.inflowLimit}`,
-            `auraBalProxyOFT outflow:                           ${canonicalMetrics.auraBalProxyOFTData.outflow}`,
-            `auraBalProxyOFT inflow:                            ${canonicalMetrics.auraBalProxyOFTData.inflow}`,
-            `auraBalProxyOFT circulatingSupply:                 ${canonicalMetrics.auraBalProxyOFTData.circulatingSupply}`,
-            `auraBalProxyOFT paused:                            ${canonicalMetrics.auraBalProxyOFTData.paused}`,
-            `auraBalProxyOFT totalClaimableAuraBal:             ${canonicalMetrics.auraBalProxyOFTData.totalClaimableAuraBal}`,
-            `auraBalProxyOFT totalClaimableAura:                ${canonicalMetrics.auraBalProxyOFTData.totalClaimableAura}`,
-            `auraBalProxyOFT internalTotalSupply:               ${canonicalMetrics.auraBalProxyOFTData.internalTotalSupply}`,
-            `auraBalProxyOFT auraBalance:                       ${canonicalMetrics.auraBalProxyOFTData.auraBalance}`,
-            `auraBalProxyOFT auraBalBalance:                    ${canonicalMetrics.auraBalProxyOFTData.auraBalBalance}`,
-            `auraBalProxyOFT auraBalVaultBalance:               ${canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalance}`,
-            `auraBalProxyOFT auraBalVaultBalanceOfUnderlying:   ${canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalanceOfUnderlying}`,
-            `auraBalProxyOFT claimableAuraBal:                  ${canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAuraBal}`,
-            `auraBalProxyOFT claimableAura:                     ${canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAura}`,
-        ]);
+        log(
+            "Local Metrics",
+            // prettier-ignore
+            [
+              ["Sidechain ID",                                      canonicalCoordinatorInformation.sidechainId],
+              ["L1Coordinator BAL Balance",                         canonicalMetrics.l1CoordinatorData.balBalance, formatEther],
+              ["L1Coordinator feeDebtOf",                           canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf, formatEther],
+              ["L1Coordinator settledFeeDebtOf",                    canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf, formatEther],
+              ["L1Coordinator settledFeeDebtOf",                    canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf, formatEther],
+              ["L1Coordinator distributedFeeDebtOf",                canonicalCoordinatorInformation.l1CoordinatorSidechainData.distributedFeeDebtOf, formatEther],
+              ["L1Coordinator bridgeDelegate",                      canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegate],
+              ["L1Coordinator l2Coordinator",                       canonicalCoordinatorInformation.l1CoordinatorSidechainData.l2Coordinator],
+              ["L1Coordinator bridgeDelegateBalBalance",            canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegateBalBalance, formatEther],
+              ["auraProxyOFT Epoch",                                canonicalMetrics.auraProxyOFTData.epoch],
+              ["auraProxyOFT inflowLimit",                          canonicalMetrics.auraProxyOFTData.inflowLimit, formatEther],
+              ["auraProxyOFT outflow",                              canonicalMetrics.auraProxyOFTData.outflow, formatEther],
+              ["auraProxyOFT inflow",                               canonicalMetrics.auraProxyOFTData.inflow, formatEther],
+              ["auraProxyOFT circulatingSupply",                    canonicalMetrics.auraProxyOFTData.circulatingSupply, formatEther],
+              ["auraProxyOFT paused",                               canonicalMetrics.auraProxyOFTData.paused],
+              ["auraProxyOFT auraProxyOFTAuraBalance",              canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance, formatEther],
+              ["auraBalProxyOFT epoch",                             canonicalMetrics.auraBalProxyOFTData.epoch],
+              ["auraBalProxyOFT inflowLimit",                       canonicalMetrics.auraBalProxyOFTData.inflowLimit, formatEther],
+              ["auraBalProxyOFT outflow",                           canonicalMetrics.auraBalProxyOFTData.outflow, formatEther],
+              ["auraBalProxyOFT inflow",                            canonicalMetrics.auraBalProxyOFTData.inflow, formatEther],
+              ["auraBalProxyOFT circulatingSupply",                 canonicalMetrics.auraBalProxyOFTData.circulatingSupply, formatEther],
+              ["auraBalProxyOFT paused",                            canonicalMetrics.auraBalProxyOFTData.paused],
+              ["auraBalProxyOFT totalClaimableAuraBal",             canonicalMetrics.auraBalProxyOFTData.totalClaimableAuraBal, formatEther],
+              ["auraBalProxyOFT totalClaimableAura",                canonicalMetrics.auraBalProxyOFTData.totalClaimableAura, formatEther],
+              ["auraBalProxyOFT internalTotalSupply",               canonicalMetrics.auraBalProxyOFTData.internalTotalSupply, formatEther],
+              ["auraBalProxyOFT auraBalance",                       canonicalMetrics.auraBalProxyOFTData.auraBalance, formatEther],
+              ["auraBalProxyOFT auraBalBalance",                    canonicalMetrics.auraBalProxyOFTData.auraBalBalance, formatEther],
+              ["auraBalProxyOFT auraBalVaultBalance",               canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalance, formatEther],
+              ["auraBalProxyOFT auraBalVaultBalanceOfUnderlying",   canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalanceOfUnderlying, formatEther],
+              ["auraBalProxyOFT claimableAuraBal",                  canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAuraBal, formatEther],
+              ["auraBalProxyOFT claimableAura",                     canonicalCoordinatorInformation.auraBalProxyOFTSidechainData.claimableAura, formatEther],
+          ],
+        );
+
         /* ---------------------------------------------------------------
          * Remote 
         --------------------------------------------------------------- */
@@ -373,43 +378,40 @@ task("sidechain:metrics")
         --------------------------------------------------------------- */
         log(
             "Remote Metrics",
+            // prettier-ignore
             [
-                `Sidechain ID:                                      ${remoteMetrics.sidechainId}`,
-                `L2CoordinatorData address:                         ${remoteMetrics.l2CoordinatorData.address}`,
-                `L2CoordinatorData mintRate:                        ${remoteMetrics.l2CoordinatorData.mintRate}`,
-                `L2CoordinatorData accBalRewards:                   ${remoteMetrics.l2CoordinatorData.accBalRewards}`,
-                `L2CoordinatorData accAuraRewards:                  ${remoteMetrics.l2CoordinatorData.accAuraRewards}`,
-                `L2CoordinatorData auraBalance:                     ${remoteMetrics.l2CoordinatorData.auraBalance}`,
-                `L2CoordinatorData trustedRemote:                   ${remoteMetrics.l2CoordinatorData.trustedRemote}`,
-
-                `auraOFT address:                                   ${remoteMetrics.auraOFTData.address}`,
-                `auraOFT circulatingSupply:                         ${remoteMetrics.auraOFTData.circulatingSupply}`,
-                `auraOFT totalSupply:                               ${remoteMetrics.auraOFTData.totalSupply}`,
-                `auraOFT paused:                                    ${remoteMetrics.auraOFTData.paused}`,
-                `auraOFT bridgeDelegateAuraBalance:                 ${remoteMetrics.auraOFTData.bridgeDelegateAuraBalance}`,
-                `auraOFT trustedRemote:                             ${remoteMetrics.auraOFTData.trustedRemote}`,
-
-                `auraBalOFT address:                                ${remoteMetrics.auraBalOFTData.address}`,
-                `auraBalOFT circulatingSupply:                      ${remoteMetrics.auraBalOFTData.circulatingSupply}`,
-                `auraBalOFT totalSupply:                            ${remoteMetrics.auraBalOFTData.totalSupply}`,
-                `auraBalOFT paused:                                 ${remoteMetrics.auraBalOFTData.paused}`,
-                `auraBalOFT auraBalStrategyAuraBalOFTBalance:       ${remoteMetrics.auraBalOFTData.auraBalStrategyAuraBalOFTBalance}`,
-                `auraBalOFT trustedRemote:                          ${remoteMetrics.auraBalOFTData.trustedRemote}`,
-
-                `Endpoint l2Coordinator:                            ${remoteMetrics.l2CoordinatorData.lzEndpoint}`,
-                `Endpoint AuraOFT:                                  ${remoteMetrics.auraOFTData.lzEndpoint}`,
-                `Endpoint AuraBalOFT:                               ${remoteMetrics.auraBalOFTData.lzEndpoint}`,
-            ],
-            [
-                `AuraOFT balance:                                   ${remoteMetrics.deployer.auraOftBalance}`,
-                `AuraBalOFT balance:                                ${remoteMetrics.deployer.auraBalOftBalance}`,
+                ["Sidechain ID",                                      remoteMetrics.sidechainId],
+                ["L2CoordinatorData address",                         remoteMetrics.l2CoordinatorData.address],
+                ["L2CoordinatorData mintRate",                        remoteMetrics.l2CoordinatorData.mintRate, formatEther],
+                ["L2CoordinatorData accBalRewards",                   remoteMetrics.l2CoordinatorData.accBalRewards, formatEther],
+                ["L2CoordinatorData accAuraRewards",                  remoteMetrics.l2CoordinatorData.accAuraRewards, formatEther],
+                ["L2CoordinatorData auraBalance",                     remoteMetrics.l2CoordinatorData.auraBalance, formatEther],
+                ["auraOFT address",                                   remoteMetrics.auraOFTData.address],
+                ["auraOFT circulatingSupply",                         remoteMetrics.auraOFTData.circulatingSupply, formatEther],
+                ["auraOFT totalSupply",                               remoteMetrics.auraOFTData.totalSupply, formatEther],
+                ["auraOFT paused",                                    remoteMetrics.auraOFTData.paused],
+                ["auraOFT bridgeDelegateAuraBalance",                 remoteMetrics.auraOFTData.bridgeDelegateAuraBalance, formatEther],
+                ["auraBalOFT address",                                remoteMetrics.auraBalOFTData.address],
+                ["auraBalOFT circulatingSupply",                      remoteMetrics.auraBalOFTData.circulatingSupply, formatEther],
+                ["auraBalOFT totalSupply",                            remoteMetrics.auraBalOFTData.totalSupply, formatEther],
+                ["auraBalOFT paused",                                 remoteMetrics.auraBalOFTData.paused],
+                ["auraBalOFT auraBalStrategyAuraBalOFTBalance",       remoteMetrics.auraBalOFTData.auraBalStrategyAuraBalOFTBalance, formatEther],
+                ["Endpoint l2Coordinator",                            remoteMetrics.l2CoordinatorData.lzEndpoint],
+                ["Endpoint AuraOFT",                                  remoteMetrics.auraOFTData.lzEndpoint],
+                ["Endpoint AuraBalOFT",                               remoteMetrics.auraBalOFTData.lzEndpoint],
+                ["AuraOFT balance",                                   remoteMetrics.deployer.auraOftBalance, formatEther],
+                ["AuraBalOFT balance",                                remoteMetrics.deployer.auraBalOftBalance, formatEther],
             ],
         );
 
         /* ---------------------------------------------------------------
          * SAFETY CHECKS
-         * TODO: Make into functions and print nicely.
         --------------------------------------------------------------- */
+
+        const checksResults: (
+            | [string, BigNumberish | boolean, (x: BigNumberish) => string]
+            | [string, BigNumberish | boolean]
+        )[] = [];
 
         const auraIsFunded = remoteMetrics.auraOFTData.totalSupply.eq(
             canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance,
@@ -421,11 +423,9 @@ task("sidechain:metrics")
             .sub(canonicalMetrics.auraBalProxyOFTData.inflow)
             .lte(canonicalMetrics.auraBalProxyOFTData.inflowLimit);
 
-        console.log(`WIP CHECKS`);
-
-        console.log(`auraOFT supply <= balance:                     ${auraIsFunded}`);
-        console.log(`auraInflow is within limit:                    ${auraInflow}`);
-        console.log(`auraBalInflow is within limit:                 ${auraBalInflow}`);
+        checksResults.push(["auraOFT is funded", auraIsFunded]);
+        checksResults.push(["auraInflow is within limit", auraInflow]);
+        checksResults.push(["auraBalInflow is within limit", auraBalInflow]);
 
         // check funding.
         const sidechain = sidechainConfig.getSidechain(remoteDeployer);
@@ -440,12 +440,14 @@ task("sidechain:metrics")
         const totalPendingAura = totalBal.mul(remoteMetrics.l2CoordinatorData.mintRate).div(fullScale);
         const enoughAura = remoteMetrics.l2CoordinatorData.auraBalance.gt(totalPendingAura);
 
-        console.log(`pending bal rewards is:                        ${totalBal}`);
-        console.log(`pending aura rewards is:                       ${totalPendingAura}`);
-        console.log(`l2 coordinator has enough aura rewards:        ${enoughAura}`);
+        checksResults.push(["pending bal rewards is", totalBal, formatEther]);
+        checksResults.push(["pending aura rewards is", totalPendingAura, formatEther]);
+        checksResults.push(["l2 coordinator has enough aura rewards", enoughAura]);
 
         if (!enoughAura) {
             const shortFall = totalPendingAura.sub(remoteMetrics.l2CoordinatorData.auraBalance);
-            console.log(`l2 coordinator aura shortfall:                 ${shortFall}`);
+            checksResults.push(["l2 coordinator aura shortfall", shortFall, formatEther]);
         }
+
+        log("Checks", checksResults);
     });
