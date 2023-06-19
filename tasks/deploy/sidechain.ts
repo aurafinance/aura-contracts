@@ -426,25 +426,36 @@ task("deploy:sidechain:safe")
         console.log("Safe deployed to:", address);
     });
 
-task("deploy:sidechain:view").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-    const deployer = await getSigner(hre);
-    const remoteChainId = hre.network.config.chainId;
-    const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
-    const result = await deploySidechainView(lzChainIds[remoteChainId], sidechainConfig, hre, deployer, false);
-    console.log("sidechainView:", result.sidechainView.address);
-});
+task("deploy:sidechain:L2:view")
+    .addParam("wait", "Blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const remoteChainId = hre.network.config.chainId;
+        const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
+        const result = await deploySidechainView(
+            lzChainIds[remoteChainId],
+            sidechainConfig,
+            hre,
+            deployer,
+            true,
+            tskArgs.wait,
+        );
+        console.log("sidechainView:", result.sidechainView.address);
+    });
 
-task("deploy:sidechain:canonical").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-    const deployer = await getSigner(hre);
-    const chainId = hre.network.config.chainId;
-    const canonicalConfig = canonicalConfigs[chainId];
-    const ext = canonicalConfig.addresses;
-    const phase2 = await canonicalConfig.getPhase2(deployer);
-    const canonical = await canonicalConfig.getSidechain(deployer);
-    const vault = await canonicalConfig.getAuraBalVault(deployer);
-    const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, false);
-    console.log("canonicalView:", result.canonicalView.address);
-});
+task("deploy:sidechain:L1:view")
+    .addParam("wait", "Blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const chainId = hre.network.config.chainId;
+        const canonicalConfig = canonicalConfigs[chainId];
+        const ext = canonicalConfig.addresses;
+        const phase2 = await canonicalConfig.getPhase2(deployer);
+        const canonical = canonicalConfig.getSidechain(deployer);
+        const vault = await canonicalConfig.getAuraBalVault(deployer);
+        const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, true, tskArgs.wait);
+        console.log("canonicalView:", result.canonicalView.address);
+    });
 
 task("sidechain:addresses")
     .addOptionalParam("chainId", "The chain ID, default arbitrumGoerli")
