@@ -20,6 +20,7 @@ import {
     SidechainConfig,
     SidechainBridging,
     BoosterHelper__factory,
+    SidechainView__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
 
@@ -69,6 +70,10 @@ export const getSidechain = (signer: Signer) => ({
     auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
 });
 
+export const getView = (signer: Signer) => ({
+    sidechainView: SidechainView__factory.connect("0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083", signer),
+});
+
 export const config: SidechainConfig = {
     chainId: chainIds.arbitrum,
     multisigs,
@@ -76,6 +81,7 @@ export const config: SidechainConfig = {
     extConfig,
     bridging,
     getSidechain,
+    getView,
     whales: {
         "0x542f16da0efb162d20bf4358efa095b70a100f9e": "0xba12222222228d8ba445958a75a0704d566bf2c8",
         "0x5a7f39435fd9c381e4932fa2047c9a5136a5e3e7": "0xba12222222228d8ba445958a75a0704d566bf2c8",

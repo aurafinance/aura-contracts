@@ -10,7 +10,12 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 import { ERC20__factory } from "../../types";
 
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, SidechainViewDeployed } from "../../scripts/deploySidechain";
+import {
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    SidechainViewDeployed,
+    CanonicalViewDeployed,
+} from "../../scripts/deploySidechain";
 import { ExtSystemConfig, Phase2Deployed } from "../../scripts/deploySystem";
 import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { getSigner } from "../utils";
@@ -107,82 +112,67 @@ async function getAuraProxyOFTData(auraProxyOFT: ethers.Contract, aura: ethers.C
     };
 }
 
+async function getCanonicalData(canonicalView: ethers.Contract, sidechainId: number) {
+    const canonicalData = await canonicalView.getCanonicalData([sidechainId]);
+    return { ...canonicalData };
+}
+
 async function getCanonicalMetrics(
     signer: Signer,
-    addresses: ExtSystemConfig,
-    phase2: Phase2Deployed,
-    vaultDeployment: AuraBalVaultDeployed,
-    canonicalSidechain: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
-    sidechains: Array<{ sidechainId: number }>,
+    canonicalView: CanonicalViewDeployed,
+    sidechainId: number,
 ): Promise<any> {
-    const { auraProxyOFT, auraBalProxyOFT, l1Coordinator } = canonicalSidechain;
-    const { vault: auraBalVault } = vaultDeployment;
-
-    const aura = phase2.cvx;
-    const bal = ERC20__factory.connect(addresses.token, signer);
-    const auraBal = phase2.cvxCrv;
-
-    // Mainnet
-    const l1CoordinatorData = await getL1CoordinatorData(l1Coordinator, bal);
-    const auraProxyOFTData = await getAuraProxyOFTData(auraProxyOFT, aura);
-    const auraBalProxyOFTData = await getAuraBalProxyOFTData(auraBalProxyOFT, aura, auraBal, auraBalVault);
+    const canonicalData = await getCanonicalData(canonicalView.canonicalView, sidechainId);
 
     // Per sidechain
     const sidechainsData = [];
-    for (let i = 0; i < sidechains.length; i++) {
-        const { sidechainId } = sidechains[i];
-        const l1CoordinatorSidechainData = await getL1CoordinatorSidechainData(l1Coordinator, bal, sidechainId);
-        const auraBalProxyOFTSidechainData = await getAuraBalProxyOFTSidechainData(
-            auraBalProxyOFT,
-            aura,
-            auraBal,
-            sidechainId,
-        );
+    console.log(canonicalData);
+    const l1CoordinatorSidechainData = canonicalData.l1CoordinatorSidechainData[0];
+    const auraBalProxyOFTSidechainData = canonicalData.aurabalProxySidechainData[0];
 
-        sidechainsData.push({
-            sidechainId,
-            l1CoordinatorSidechainData: {
-                feeDebtOf: formatEther(l1CoordinatorSidechainData.feeDebtOf),
-                settledFeeDebtOf: formatEther(l1CoordinatorSidechainData.settledFeeDebtOf),
-                distributedFeeDebtOf: formatEther(l1CoordinatorSidechainData.distributedFeeDebtOf),
-                bridgeDelegate: l1CoordinatorSidechainData.bridgeDelegate,
-                l2Coordinator: l1CoordinatorSidechainData.l2Coordinator,
-                bridgeDelegateBalBalance: formatEther(l1CoordinatorSidechainData.bridgeDelegateBalBalance),
-            },
-            auraBalProxyOFTSidechainData: {
-                claimableAuraBal: formatEther(auraBalProxyOFTSidechainData.claimableAuraBal),
-                claimableAura: formatEther(auraBalProxyOFTSidechainData.claimableAura),
-            },
-        });
-    }
+    sidechainsData.push({
+        sidechainId,
+        l1CoordinatorSidechainData: {
+            feeDebtOf: formatEther(l1CoordinatorSidechainData.feeDebtOf),
+            settledFeeDebtOf: formatEther(l1CoordinatorSidechainData.settledFeeDebtOf),
+            distributedFeeDebtOf: formatEther(l1CoordinatorSidechainData.distributedFeeDebtOf),
+            bridgeDelegate: l1CoordinatorSidechainData.bridgeDelegate,
+            l2Coordinator: l1CoordinatorSidechainData.l2Coordinator,
+            bridgeDelegateBalBalance: formatEther(l1CoordinatorSidechainData.bridgeDelegateBalBalance),
+        },
+        auraBalProxyOFTSidechainData: {
+            claimableAuraBal: formatEther(auraBalProxyOFTSidechainData.claimableAuraBal),
+            claimableAura: formatEther(auraBalProxyOFTSidechainData.claimableAura),
+        },
+    });
 
     return {
         l1CoordinatorData: {
-            balBalance: formatEther(l1CoordinatorData.balBalance),
+            balBalance: formatEther(canonicalData.l1coordinator.balBalance),
         },
         auraProxyOFTData: {
-            epoch: auraProxyOFTData.epoch.toNumber(),
-            inflowLimit: formatEther(auraProxyOFTData.inflowLimit),
-            outflow: formatEther(auraProxyOFTData.outflow),
-            inflow: formatEther(auraProxyOFTData.inflow),
-            circulatingSupply: formatEther(auraProxyOFTData.circulatingSupply),
-            paused: auraProxyOFTData.paused,
-            auraProxyOFTAuraBalance: formatEther(auraProxyOFTData.auraProxyOFTAuraBalance),
+            epoch: canonicalData.auraProxyOft.epoch.toNumber(),
+            inflowLimit: formatEther(canonicalData.auraProxyOft.inflowLimit),
+            outflow: formatEther(canonicalData.auraProxyOft.outflow),
+            inflow: formatEther(canonicalData.auraProxyOft.inflow),
+            circulatingSupply: formatEther(canonicalData.auraProxyOft.circulatingSupply),
+            paused: canonicalData.auraProxyOft.paused,
+            auraProxyOFTAuraBalance: formatEther(canonicalData.auraProxyOft.auraProxyOFTAuraBalance),
         },
         auraBalProxyOFTData: {
-            epoch: auraBalProxyOFTData.epoch.toNumber(),
-            inflowLimit: formatEther(auraBalProxyOFTData.inflowLimit),
-            outflow: formatEther(auraBalProxyOFTData.outflow),
-            inflow: formatEther(auraBalProxyOFTData.inflow),
-            circulatingSupply: formatEther(auraBalProxyOFTData.circulatingSupply),
-            paused: auraBalProxyOFTData.paused,
-            totalClaimableAuraBal: formatEther(auraBalProxyOFTData.totalClaimableAuraBal),
-            totalClaimableAura: formatEther(auraBalProxyOFTData.totalClaimableAura),
-            internalTotalSupply: formatEther(auraBalProxyOFTData.internalTotalSupply),
-            auraBalance: formatEther(auraBalProxyOFTData.auraBalance),
-            auraBalBalance: formatEther(auraBalProxyOFTData.auraBalBalance),
-            auraBalVaultBalance: formatEther(auraBalProxyOFTData.auraBalVaultBalance),
-            auraBalVaultBalanceOfUnderlying: formatEther(auraBalProxyOFTData.auraBalVaultBalanceOfUnderlying),
+            epoch: canonicalData.aurabalProxyOft.epoch.toNumber(),
+            inflowLimit: formatEther(canonicalData.aurabalProxyOft.inflowLimit),
+            outflow: formatEther(canonicalData.aurabalProxyOft.outflow),
+            inflow: formatEther(canonicalData.aurabalProxyOft.inflow),
+            circulatingSupply: formatEther(canonicalData.aurabalProxyOft.circulatingSupply),
+            paused: canonicalData.aurabalProxyOft.paused,
+            totalClaimableAuraBal: formatEther(canonicalData.aurabalProxyOft.totalClaimableAuraBal),
+            totalClaimableAura: formatEther(canonicalData.aurabalProxyOft.totalClaimableAura),
+            internalTotalSupply: formatEther(canonicalData.aurabalProxyOft.internalTotalSupply),
+            auraBalance: formatEther(canonicalData.aurabalProxyOft.auraBalance),
+            auraBalBalance: formatEther(canonicalData.aurabalProxyOft.auraBalBalance),
+            auraBalVaultBalance: formatEther(canonicalData.aurabalProxyOft.auraBalVaultBalance),
+            auraBalVaultBalanceOfUnderlying: formatEther(canonicalData.aurabalProxyOft.auraBalVaultBalanceOfUnderlying),
         },
         ...sidechainsData,
     };
@@ -302,17 +292,9 @@ task("sidechain:metrics")
 
         const local: CanonicalPhase1Deployed & CanonicalPhase2Deployed = canonicalConfig.getSidechain(deployer) as any;
         const phase2 = await canonicalConfig.getPhase2(deployer);
-        const canonicalSidechain = canonicalConfig.getSidechain(deployer);
-        const getAuraBalVault = await canonicalConfig.getAuraBalVault(deployer);
+        const canonicalView = await canonicalConfig.getCanonicalView(deployer);
 
-        const canonicalMetrics = await getCanonicalMetrics(
-            deployer,
-            canonicalConfig.addresses,
-            phase2,
-            getAuraBalVault,
-            canonicalSidechain,
-            [{ sidechainId: remoteChainId }],
-        );
+        const canonicalMetrics = await getCanonicalMetrics(deployer, canonicalView, remoteChainId);
 
         log(
             "Local",

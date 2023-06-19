@@ -199,6 +199,10 @@ export interface SidechainViewDeployed {
     sidechainView: SidechainView;
 }
 
+export interface CanonicalViewDeployed {
+    canonicalView: CanonicalView;
+}
+
 /**
  * Deploys the Sidechain system contracts.
  *  - Deploys with the same address across all chains the following contracts.

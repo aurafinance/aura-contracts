@@ -62,6 +62,7 @@ import {
     AuraProxyOFT__factory,
     L1Coordinator__factory,
     AuraBalProxyOFT__factory,
+    CanonicalView__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -417,6 +418,10 @@ const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhas
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
 });
 
+export const getCanonicalView = (signer: Signer) => ({
+    canonicalView: CanonicalView__factory.connect("0x208024E643564fb4C990481eB4F9ec1957f64c11", signer),
+});
+
 export const config = {
     chainId: chainIds.mainnet,
     whales,
@@ -436,4 +441,5 @@ export const config = {
     getAuraBalVault,
     getAuraClaimZapV3,
     getSidechain,
+    getCanonicalView,
 };
