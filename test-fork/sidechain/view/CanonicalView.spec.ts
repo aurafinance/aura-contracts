@@ -20,7 +20,6 @@ describe("Sidechain", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.ETHEREUM_NODE_URL,
-                        blockNumber: 17513400,
                     },
                 },
             ],
@@ -42,7 +41,7 @@ describe("Sidechain", () => {
      * --------------------------------------------------------------------- */
 
     describe("Can Call View Functions", () => {
-        const sidechainId = 101;
+        const sidechainId = 110;
         it("Get L1 Coordinator Data", async () => {
             const data = await canonicalView.getL1CoordData();
             console.log(data);

@@ -122,12 +122,13 @@ async function getCanonicalMetrics(
     canonicalView: CanonicalViewDeployed,
     sidechainId: number,
 ): Promise<any> {
-    const canonicalData = await getCanonicalData(canonicalView.canonicalView, sidechainId);
+    let canonicalData = await getCanonicalData(canonicalView.canonicalView, sidechainId);
 
     // Per sidechain
     const sidechainsData = [];
     console.log(canonicalData);
-    const l1CoordinatorSidechainData = canonicalData.l1CoordinatorSidechainData[0];
+    const l1CoordinatorSidechainData = await canonicalView.canonicalView.getL1CoordSidechainData(sidechainId); //canonicalData.l1CoordinatorSidechainData//[0];
+    console.log(l1CoordinatorSidechainData);
     const auraBalProxyOFTSidechainData = canonicalData.aurabalProxySidechainData[0];
 
     sidechainsData.push({
@@ -294,7 +295,7 @@ task("sidechain:metrics")
         const phase2 = await canonicalConfig.getPhase2(deployer);
         const canonicalView = await canonicalConfig.getCanonicalView(deployer);
 
-        const canonicalMetrics = await getCanonicalMetrics(deployer, canonicalView, remoteChainId);
+        const canonicalMetrics = await getCanonicalMetrics(deployer, canonicalView, sidechainLzChainId);
 
         log(
             "Local",

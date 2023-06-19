@@ -453,8 +453,9 @@ task("deploy:sidechain:L1:view")
         const phase2 = await canonicalConfig.getPhase2(deployer);
         const canonical = canonicalConfig.getSidechain(deployer);
         const vault = await canonicalConfig.getAuraBalVault(deployer);
-        const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, true, tskArgs.wait);
-        console.log("canonicalView:", result.canonicalView.address);
+        console.log(canonical);
+        //const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, true, tskArgs.wait);
+        //console.log("canonicalView:", result.canonicalView.address);
     });
 
 task("sidechain:addresses")
