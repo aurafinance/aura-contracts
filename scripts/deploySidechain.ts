@@ -196,7 +196,7 @@ export interface SidechainPhase2Deployed {
 }
 
 export interface SidechainViewDeployed {
-    SidechainView: SidechainView;
+    sidechainView: SidechainView;
 }
 
 /**
