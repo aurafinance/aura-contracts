@@ -124,7 +124,7 @@ async function getCanonicalMetrics(
     canonicalView: CanonicalViewDeployed,
     sidechainId: number,
 ): Promise<any> {
-    let canonicalData = await getCanonicalData(canonicalView.canonicalView, sidechainId);
+    const canonicalData = await getCanonicalData(canonicalView.canonicalView, sidechainId);
 
     // Per sidechain
     const sidechainsData = [];
@@ -416,6 +416,9 @@ task("sidechain:metrics")
         const auraIsFunded = remoteMetrics.auraOFTData.totalSupply.eq(
             canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance,
         );
+        const auraBalIsFunded = remoteMetrics.auraBalOFTData.totalSupply.lte(
+            canonicalMetrics.auraBalProxyOFTData.auraBalVaultBalanceOfUnderlying,
+        );
         const auraInflow = canonicalMetrics.auraProxyOFTData.outflow
             .sub(canonicalMetrics.auraProxyOFTData.inflow)
             .lte(canonicalMetrics.auraProxyOFTData.inflowLimit);
@@ -424,6 +427,7 @@ task("sidechain:metrics")
             .lte(canonicalMetrics.auraBalProxyOFTData.inflowLimit);
 
         checksResults.push(["auraOFT is funded", auraIsFunded]);
+        checksResults.push(["auraBalOFT is funded", auraBalIsFunded]);
         checksResults.push(["auraInflow is within limit", auraInflow]);
         checksResults.push(["auraBalInflow is within limit", auraBalInflow]);
 
