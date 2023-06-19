@@ -3,11 +3,10 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { BN } from "../../test-utils/math";
 import assert from "assert";
-import { ethers, Signer } from "ethers";
+import { BigNumber, ethers, Signer } from "ethers";
 import { formatEther } from "ethers/lib/utils";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
-import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 import { ERC20__factory } from "../../types";
 
 import {
@@ -16,9 +15,9 @@ import {
     SidechainViewDeployed,
     CanonicalViewDeployed,
 } from "../../scripts/deploySidechain";
-import { ExtSystemConfig, Phase2Deployed } from "../../scripts/deploySystem";
 import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { getSigner } from "../utils";
+import { fullScale } from "../../test-utils/constants";
 
 /*
  * * * * * * * * * * * * * * * * * * * * * *
@@ -132,46 +131,46 @@ async function getCanonicalMetrics(
     sidechainsData.push({
         sidechainId,
         l1CoordinatorSidechainData: {
-            feeDebtOf: formatEther(l1CoordinatorSidechainData.feeDebtOf),
-            settledFeeDebtOf: formatEther(l1CoordinatorSidechainData.settledFeeDebtOf),
-            distributedFeeDebtOf: formatEther(l1CoordinatorSidechainData.distributedFeeDebtOf),
+            feeDebtOf: l1CoordinatorSidechainData.feeDebtOf,
+            settledFeeDebtOf: l1CoordinatorSidechainData.settledFeeDebtOf,
+            distributedFeeDebtOf: l1CoordinatorSidechainData.distributedFeeDebtOf,
             bridgeDelegate: l1CoordinatorSidechainData.bridgeDelegate,
             l2Coordinator: l1CoordinatorSidechainData.l2Coordinator,
-            bridgeDelegateBalBalance: formatEther(l1CoordinatorSidechainData.bridgeDelegateBalBalance),
+            bridgeDelegateBalBalance: l1CoordinatorSidechainData.bridgeDelegateBalBalance,
         },
         auraBalProxyOFTSidechainData: {
-            claimableAuraBal: formatEther(auraBalProxyOFTSidechainData.claimableAuraBal),
-            claimableAura: formatEther(auraBalProxyOFTSidechainData.claimableAura),
+            claimableAuraBal: auraBalProxyOFTSidechainData.claimableAuraBal,
+            claimableAura: auraBalProxyOFTSidechainData.claimableAura,
         },
     });
 
     return {
         l1CoordinatorData: {
-            balBalance: formatEther(canonicalData.l1coordinator.balBalance),
+            balBalance: canonicalData.l1coordinator.balBalance,
         },
         auraProxyOFTData: {
             epoch: canonicalData.auraProxyOft.epoch.toNumber(),
-            inflowLimit: formatEther(canonicalData.auraProxyOft.inflowLimit),
-            outflow: formatEther(canonicalData.auraProxyOft.outflow),
-            inflow: formatEther(canonicalData.auraProxyOft.inflow),
-            circulatingSupply: formatEther(canonicalData.auraProxyOft.circulatingSupply),
+            inflowLimit: canonicalData.auraProxyOft.inflowLimit,
+            outflow: canonicalData.auraProxyOft.outflow,
+            inflow: canonicalData.auraProxyOft.inflow,
+            circulatingSupply: canonicalData.auraProxyOft.circulatingSupply,
             paused: canonicalData.auraProxyOft.paused,
-            auraProxyOFTAuraBalance: formatEther(canonicalData.auraProxyOft.auraProxyOFTAuraBalance),
+            auraProxyOFTAuraBalance: canonicalData.auraProxyOft.auraProxyOFTAuraBalance,
         },
         auraBalProxyOFTData: {
             epoch: canonicalData.aurabalProxyOft.epoch.toNumber(),
-            inflowLimit: formatEther(canonicalData.aurabalProxyOft.inflowLimit),
-            outflow: formatEther(canonicalData.aurabalProxyOft.outflow),
-            inflow: formatEther(canonicalData.aurabalProxyOft.inflow),
-            circulatingSupply: formatEther(canonicalData.aurabalProxyOft.circulatingSupply),
+            inflowLimit: canonicalData.aurabalProxyOft.inflowLimit,
+            outflow: canonicalData.aurabalProxyOft.outflow,
+            inflow: canonicalData.aurabalProxyOft.inflow,
+            circulatingSupply: canonicalData.aurabalProxyOft.circulatingSupply,
             paused: canonicalData.aurabalProxyOft.paused,
-            totalClaimableAuraBal: formatEther(canonicalData.aurabalProxyOft.totalClaimableAuraBal),
-            totalClaimableAura: formatEther(canonicalData.aurabalProxyOft.totalClaimableAura),
-            internalTotalSupply: formatEther(canonicalData.aurabalProxyOft.internalTotalSupply),
-            auraBalance: formatEther(canonicalData.aurabalProxyOft.auraBalance),
-            auraBalBalance: formatEther(canonicalData.aurabalProxyOft.auraBalBalance),
-            auraBalVaultBalance: formatEther(canonicalData.aurabalProxyOft.auraBalVaultBalance),
-            auraBalVaultBalanceOfUnderlying: formatEther(canonicalData.aurabalProxyOft.auraBalVaultBalanceOfUnderlying),
+            totalClaimableAuraBal: canonicalData.aurabalProxyOft.totalClaimableAuraBal,
+            totalClaimableAura: canonicalData.aurabalProxyOft.totalClaimableAura,
+            internalTotalSupply: canonicalData.aurabalProxyOft.internalTotalSupply,
+            auraBalance: canonicalData.aurabalProxyOft.auraBalance,
+            auraBalBalance: canonicalData.aurabalProxyOft.auraBalBalance,
+            auraBalVaultBalance: canonicalData.aurabalProxyOft.auraBalVaultBalance,
+            auraBalVaultBalanceOfUnderlying: canonicalData.aurabalProxyOft.auraBalVaultBalanceOfUnderlying,
         },
         ...sidechainsData,
     };
@@ -200,36 +199,34 @@ async function getSidechainMetrics(
         canonicalId: sidechainData.canonicalChainId,
         l2CoordinatorData: {
             address: sidechainData.l2CoordData._address,
-            mintRate: formatEther(sidechainData.l2CoordData.mintRate),
-            accBalRewards: formatEther(sidechainData.l2CoordData.accBalRewards),
-            accAuraRewards: formatEther(sidechainData.l2CoordData.accAuraRewards),
-            auraBalance: formatEther(sidechainData.l2CoordData.auraBalance),
+            mintRate: sidechainData.l2CoordData.mintRate,
+            accBalRewards: sidechainData.l2CoordData.accBalRewards,
+            accAuraRewards: sidechainData.l2CoordData.accAuraRewards,
+            auraBalance: sidechainData.l2CoordData.auraBalance,
             lzEndpoint: sidechainData.l2CoordData.lzEndpoint,
             trustedRemote: sidechainData.l2CoordData.trustedRemote,
         },
         auraOFTData: {
             address: sidechainData.auraOftData._address,
-            circulatingSupply: formatEther(sidechainData.auraOftData.circulatingSupply),
-            totalSupply: formatEther(sidechainData.auraOftData.totalSupply),
+            circulatingSupply: sidechainData.auraOftData.circulatingSupply,
+            totalSupply: sidechainData.auraOftData.totalSupply,
             paused: sidechainData.auraOftData.paused,
-            bridgeDelegateAuraBalance: formatEther(sidechainData.auraOftData.bridgeDelegateAuraBalance),
+            bridgeDelegateAuraBalance: sidechainData.auraOftData.bridgeDelegateAuraBalance,
             lzEndpoint: sidechainData.auraOftData.lzEndpoint,
             trustedRemote: sidechainData.auraOftData.trustedRemote,
         },
         auraBalOFTData: {
             address: sidechainData.auraBalOftData._address,
-            circulatingSupply: formatEther(sidechainData.auraBalOftData.circulatingSupply),
-            totalSupply: formatEther(sidechainData.auraBalOftData.totalSupply),
+            circulatingSupply: sidechainData.auraBalOftData.circulatingSupply,
+            totalSupply: sidechainData.auraBalOftData.totalSupply,
             paused: sidechainData.auraBalOftData.paused,
-            auraBalStrategyAuraBalOFTBalance: formatEther(
-                sidechainData.auraBalOftData.auraBalStrategyAuraBalOFTBalance,
-            ),
+            auraBalStrategyAuraBalOFTBalance: sidechainData.auraBalOftData.auraBalStrategyAuraBalOFTBalance,
             lzEndpoint: sidechainData.auraBalOftData.lzEndpoint,
             trustedRemote: sidechainData.auraBalOftData.trustedRemote,
         },
         deployer: {
-            auraOftBalance: formatEther(sidechainData.auraBalanceOf),
-            auraBalOftBalance: formatEther(sidechainData.auraBalBalanceOf),
+            auraOftBalance: sidechainData.auraBalanceOf,
+            auraBalOftBalance: sidechainData.auraBalBalanceOf,
         },
     };
 }
@@ -238,7 +235,7 @@ task("sidechain:metrics")
     .addParam("sidechainid", "Remote standard chain ID (can not be eth mainnet)")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const remoteNodeUrl = process.env.REMOTE_NODE_URL;
-        assert(remoteNodeUrl.length > 0, "REMOTE_NODE_URL not set");
+        assert(remoteNodeUrl?.length > 0, "REMOTE_NODE_URL not set");
 
         const deployer = await getSigner(hre);
         const deployerAddress = await deployer.getAddress();
@@ -291,7 +288,7 @@ task("sidechain:metrics")
 
         const local: CanonicalPhase1Deployed & CanonicalPhase2Deployed = canonicalConfig.getSidechain(deployer) as any;
         const phase2 = await canonicalConfig.getPhase2(deployer);
-        const canonicalView = await canonicalConfig.getCanonicalView(deployer);
+        const canonicalView = canonicalConfig.getCanonicalView(deployer);
 
         const canonicalMetrics = await getCanonicalMetrics(deployer, canonicalView, sidechainLzChainId);
 
@@ -414,14 +411,15 @@ task("sidechain:metrics")
          * TODO: Make into functions and print nicely.
         --------------------------------------------------------------- */
 
-        const auraIsFunded =
-            remoteMetrics.auraOFTData.totalSupply <= canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance;
-        const auraInflow =
-            canonicalMetrics.auraProxyOFTData.outflow - canonicalMetrics.auraProxyOFTData.inflow <=
-            canonicalMetrics.auraProxyOFTData.inflowLimit;
-        const auraBalInflow =
-            canonicalMetrics.auraBalProxyOFTData.outflow - canonicalMetrics.auraBalProxyOFTData.inflow <=
-            canonicalMetrics.auraBalProxyOFTData.inflowLimit;
+        const auraIsFunded = remoteMetrics.auraOFTData.totalSupply.eq(
+            canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance,
+        );
+        const auraInflow = canonicalMetrics.auraProxyOFTData.outflow
+            .sub(canonicalMetrics.auraProxyOFTData.inflow)
+            .lte(canonicalMetrics.auraProxyOFTData.inflowLimit);
+        const auraBalInflow = canonicalMetrics.auraBalProxyOFTData.outflow
+            .sub(canonicalMetrics.auraBalProxyOFTData.inflow)
+            .lte(canonicalMetrics.auraBalProxyOFTData.inflowLimit);
 
         console.log(`WIP CHECKS`);
 
@@ -430,24 +428,24 @@ task("sidechain:metrics")
         console.log(`auraBalInflow is within limit:                 ${auraBalInflow}`);
 
         // check funding.
-        const sidechain = await sidechainConfig.getSidechain(remoteDeployer);
+        const sidechain = sidechainConfig.getSidechain(remoteDeployer);
         const poolLength = await sidechain.booster.poolLength();
         const balOnSidechain = ERC20__factory.connect(sidechainConfig.extConfig.token, remoteDeployer);
-        let totalBal = 0;
+        let totalBal = BigNumber.from(0);
         for (let i = 0; i < Number(poolLength); i++) {
             const pool = await sidechain.booster.poolInfo(i);
             const balance = await balOnSidechain.balanceOf(pool.crvRewards);
-            totalBal += Number(balance);
+            totalBal = totalBal.add(balance);
         }
-        const totalPendingAura = totalBal * remoteMetrics.l2CoordinatorData.mintRate;
-        const enoughAura = remoteMetrics.l2CoordinatorData.auraBalance > totalPendingAura;
+        const totalPendingAura = totalBal.mul(remoteMetrics.l2CoordinatorData.mintRate).div(fullScale);
+        const enoughAura = remoteMetrics.l2CoordinatorData.auraBalance.gt(totalPendingAura);
 
         console.log(`pending bal rewards is:                        ${totalBal}`);
         console.log(`pending aura rewards is:                       ${totalPendingAura}`);
         console.log(`l2 coordinator has enough aura rewards:        ${enoughAura}`);
 
         if (!enoughAura) {
-            const shortFall = totalPendingAura - remoteMetrics.l2CoordinatorData.auraBalance;
+            const shortFall = totalPendingAura.sub(remoteMetrics.l2CoordinatorData.auraBalance);
             console.log(`l2 coordinator aura shortfall:                 ${shortFall}`);
         }
     });
