@@ -126,9 +126,7 @@ async function getCanonicalMetrics(
 
     // Per sidechain
     const sidechainsData = [];
-    console.log(canonicalData);
     const l1CoordinatorSidechainData = await canonicalView.canonicalView.getL1CoordSidechainData(sidechainId); //canonicalData.l1CoordinatorSidechainData//[0];
-    console.log(l1CoordinatorSidechainData);
     const auraBalProxyOFTSidechainData = canonicalData.aurabalProxySidechainData[0];
 
     sidechainsData.push({
@@ -377,7 +375,7 @@ task("sidechain:metrics")
          * Remote Metrics 
         --------------------------------------------------------------- */
         log(
-            "Local Metrics",
+            "Remote Metrics",
             [
                 `Sidechain ID:                                      ${remoteMetrics.sidechainId}`,
                 `L2CoordinatorData address:                         ${remoteMetrics.l2CoordinatorData.address}`,
@@ -410,4 +408,21 @@ task("sidechain:metrics")
                 `AuraBalOFT balance:                                ${remoteMetrics.deployer.auraBalOftBalance}`,
             ],
         );
+
+        /* ---------------------------------------------------------------
+         * SAFETY CHECKS
+        --------------------------------------------------------------- */
+
+        const auraIsFunded =
+            remoteMetrics.auraOFTData.totalSupply <= canonicalMetrics.auraProxyOFTData.auraProxyOFTAuraBalance;
+        const auraInflow =
+            canonicalMetrics.auraProxyOFTData.outflow - canonicalMetrics.auraProxyOFTData.inflow <=
+            canonicalMetrics.auraProxyOFTData.inflowLimit;
+        const auraBalInflow =
+            canonicalMetrics.auraBalProxyOFTData.outflow - canonicalMetrics.auraBalProxyOFTData.inflow <=
+            canonicalMetrics.auraBalProxyOFTData.inflowLimit;
+
+        console.log(`auraOFT supply <= balance:                     ${auraIsFunded}`);
+        console.log(`auraInflow is within limit:                    ${auraInflow}`);
+        console.log(`auraBalInflow is within limit:                 ${auraBalInflow}`);
     });
