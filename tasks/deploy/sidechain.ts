@@ -33,6 +33,7 @@ import {
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
     deploySidechainView,
+    deployCanonicalView,
 } from "../../scripts/deploySidechain";
 import { waitForTx, chainIds } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
@@ -431,6 +432,18 @@ task("deploy:sidechain:view").setAction(async function (tskArgs: TaskArguments, 
     const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
     const result = await deploySidechainView(lzChainIds[remoteChainId], sidechainConfig, hre, deployer, false);
     console.log("sidechainView:", result.sidechainView.address);
+});
+
+task("deploy:sidechain:canonical").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+    const deployer = await getSigner(hre);
+    const chainId = hre.network.config.chainId;
+    const canonicalConfig = canonicalConfigs[chainId];
+    const ext = canonicalConfig.addresses;
+    const phase2 = await canonicalConfig.getPhase2(deployer);
+    const canonical = await canonicalConfig.getSidechain(deployer);
+    const vault = await canonicalConfig.getAuraBalVault(deployer);
+    const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, false);
+    console.log("canonicalView:", result.canonicalView.address);
 });
 
 task("sidechain:addresses")
