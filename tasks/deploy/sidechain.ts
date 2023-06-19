@@ -24,6 +24,7 @@ import {
 import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
+    deployBoosterLiteHelper,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCreate2Factory,
@@ -344,6 +345,20 @@ task("deploy:sidechain:config:L1:phase2")
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
+
+task("deploy:sidechain:boosterLiteHelper")
+    .addParam("wait", "Wait for blocks")
+    .addParam("canonicalchainid", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const canonicalId = Number(tskArgs.canonicalchainid);
+
+        const { sidechain, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
+
+        const result = await deployBoosterLiteHelper(hre, deployer, sidechainConfig.extConfig, sidechain);
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 
 task("deploy:sidechain:zap")
     .addParam("wait", "Wait for blocks")
