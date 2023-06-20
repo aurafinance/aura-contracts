@@ -33,6 +33,8 @@ import {
     deploySidechainPhase2,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
+    deploySidechainView,
+    deployCanonicalView,
 } from "../../scripts/deploySidechain";
 import { waitForTx, chainIds } from "../../tasks/utils";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
@@ -437,6 +439,37 @@ task("deploy:sidechain:safe")
         const address = ethers.utils.defaultAbiCoder.decode(["address", "address"], resp.events[1].data)[0];
 
         console.log("Safe deployed to:", address);
+    });
+
+task("deploy:sidechain:L2:view")
+    .addParam("wait", "Blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const remoteChainId = hre.network.config.chainId;
+        const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
+        const result = await deploySidechainView(
+            lzChainIds[remoteChainId],
+            sidechainConfig,
+            hre,
+            deployer,
+            true,
+            tskArgs.wait,
+        );
+        console.log("sidechainView:", result.sidechainView.address);
+    });
+
+task("deploy:sidechain:L1:view")
+    .addParam("wait", "Blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const chainId = hre.network.config.chainId;
+        const canonicalConfig = canonicalConfigs[chainId];
+        const ext = canonicalConfig.addresses;
+        const phase2 = await canonicalConfig.getPhase2(deployer);
+        const canonical = canonicalConfig.getSidechain(deployer);
+        const vault = await canonicalConfig.getAuraBalVault(deployer);
+        const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, true, tskArgs.wait);
+        console.log("canonicalView:", result.canonicalView.address);
     });
 
 task("sidechain:addresses")

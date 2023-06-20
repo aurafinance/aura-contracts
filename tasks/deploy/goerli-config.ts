@@ -50,6 +50,7 @@ import {
     L1Coordinator__factory,
     AuraProxyOFT__factory,
     AuraBalProxyOFT__factory,
+    CanonicalView__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -228,6 +229,10 @@ const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhas
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x76A383895103bde55987cEF54dbA7a2A57B72B73", deployer),
 });
 
+export const getCanonicalView = (signer: Signer) => ({
+    canonicalView: CanonicalView__factory.connect("0x0000000000000000000000000000000000000000", signer),
+});
+
 export const config = {
     chainId: chainIds.goerli,
     addresses,
@@ -242,4 +247,5 @@ export const config = {
     getPhase8,
     getAuraBalVault,
     getSidechain,
+    getCanonicalView,
 };
