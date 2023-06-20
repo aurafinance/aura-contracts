@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { IBalancerPool, IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol";
 import { AuraLocker } from "../core/AuraLocker.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
+import { IAuraBalVault } from "../interfaces/IAuraBalVault.sol";
 
 /**
  * @title   AuraViewHelpers
@@ -443,22 +444,4 @@ interface IERC20Detailed {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address owner) external view returns (uint256);
-}
-
-interface IAuraBalVault {
-    function underlying() external view returns (address);
-
-    function withdrawalPenalty() external view returns (uint256);
-
-    function extraRewards(uint256 index) external view returns (address);
-
-    function extraRewardsLength() external view returns (uint256);
-
-    function totalUnderlying() external view returns (uint256);
-
-    function balanceOf(address user) external view returns (uint256);
-
-    function balanceOfUnderlying(address user) external view returns (uint256);
-
-    function totalSupply() external view returns (uint256);
 }

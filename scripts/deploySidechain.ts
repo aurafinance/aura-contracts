@@ -50,6 +50,10 @@ import {
     BoosterHelper__factory,
     BoosterLiteHelper,
     BoosterLiteHelper__factory,
+    SidechainView,
+    SidechainView__factory,
+    CanonicalView,
+    CanonicalView__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -191,6 +195,14 @@ export interface SidechainPhase2Deployed {
     virtualRewardFactory: VirtualRewardFactory;
     auraBalVault: AuraBalVault;
     auraBalStrategy: SimpleStrategy;
+}
+
+export interface SidechainViewDeployed {
+    sidechainView: SidechainView;
+}
+
+export interface CanonicalViewDeployed {
+    canonicalView: CanonicalView;
 }
 
 /**
@@ -795,5 +807,67 @@ export async function deployBoosterLiteHelper(
 
     return {
         boosterHelper,
+    };
+}
+
+export async function deploySidechainView(
+    sidechainId: number,
+    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const sidechainView = await deployContract<SidechainView>(
+        hre,
+        new SidechainView__factory(signer),
+        "SidechainView",
+        [
+            sidechainId,
+            sidechain.l2Coordinator.address,
+            sidechain.auraOFT.address,
+            sidechain.auraBalOFT.address,
+            sidechain.auraBalStrategy.address,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        sidechainView,
+    };
+}
+
+export async function deployCanonicalView(
+    config: ExtSystemConfig,
+    phase2: Phase2Deployed,
+    aurabalVault: AuraBalVaultDeployed,
+    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const canonicalView = await deployContract<CanonicalView>(
+        hre,
+        new CanonicalView__factory(signer),
+        "CanonicalView",
+        [
+            phase2.cvx.address,
+            canonical.auraProxyOFT.address,
+            canonical.auraBalProxyOFT.address,
+            phase2.cvxCrv.address,
+            aurabalVault.vault.address,
+            config.token,
+            canonical.l1Coordinator.address,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        canonicalView,
     };
 }
