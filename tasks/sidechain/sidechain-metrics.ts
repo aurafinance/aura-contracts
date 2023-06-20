@@ -330,7 +330,6 @@ task("sidechain:metrics")
               ["L1Coordinator BAL Balance",                         canonicalMetrics.l1CoordinatorData.balBalance, formatEther],
               ["L1Coordinator feeDebtOf",                           canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf, formatEther],
               ["L1Coordinator settledFeeDebtOf",                    canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf, formatEther],
-              ["L1Coordinator settledFeeDebtOf",                    canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf, formatEther],
               ["L1Coordinator distributedFeeDebtOf",                canonicalCoordinatorInformation.l1CoordinatorSidechainData.distributedFeeDebtOf, formatEther],
               ["L1Coordinator bridgeDelegate",                      canonicalCoordinatorInformation.l1CoordinatorSidechainData.bridgeDelegate],
               ["L1Coordinator l2Coordinator",                       canonicalCoordinatorInformation.l1CoordinatorSidechainData.l2Coordinator],
@@ -425,11 +424,19 @@ task("sidechain:metrics")
         const auraBalInflow = canonicalMetrics.auraBalProxyOFTData.outflow
             .sub(canonicalMetrics.auraBalProxyOFTData.inflow)
             .lte(canonicalMetrics.auraBalProxyOFTData.inflowLimit);
+        const feeSettledLimitCheck = canonicalCoordinatorInformation.l1CoordinatorSidechainData.settledFeeDebtOf.lte(
+            canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf,
+        );
+        const feeDebtLimitCheck = canonicalCoordinatorInformation.l1CoordinatorSidechainData.distributedFeeDebtOf.lte(
+            canonicalCoordinatorInformation.l1CoordinatorSidechainData.feeDebtOf,
+        );
 
         checksResults.push(["auraOFT is funded", auraIsFunded]);
         checksResults.push(["auraBalOFT is funded", auraBalIsFunded]);
         checksResults.push(["auraInflow is within limit", auraInflow]);
         checksResults.push(["auraBalInflow is within limit", auraBalInflow]);
+        checksResults.push(["Settled Fee Debt is within limit", feeSettledLimitCheck]);
+        checksResults.push(["distributedFeeDebt is within feeDebt limit", feeDebtLimitCheck]);
 
         // check funding.
         const sidechain = sidechainConfig.getSidechain(remoteDeployer);
@@ -444,9 +451,9 @@ task("sidechain:metrics")
         const totalPendingAura = totalBal.mul(remoteMetrics.l2CoordinatorData.mintRate).div(fullScale);
         const enoughAura = remoteMetrics.l2CoordinatorData.auraBalance.gt(totalPendingAura);
 
+        checksResults.push(["l2 coordinator has enough aura rewards", enoughAura]);
         checksResults.push(["pending bal rewards is", totalBal, formatEther]);
         checksResults.push(["pending aura rewards is", totalPendingAura, formatEther]);
-        checksResults.push(["l2 coordinator has enough aura rewards", enoughAura]);
 
         if (!enoughAura) {
             const shortFall = totalPendingAura.sub(remoteMetrics.l2CoordinatorData.auraBalance);
