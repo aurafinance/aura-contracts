@@ -37,6 +37,7 @@ contract AuraViewHelpersLite {
         address[] poolTokens;
         uint256[] underlying;
         uint256 totalSupply;
+        uint256 bptTotalSupply;
         RewardsData rewardsData;
         ExtraRewards[] extraRewards;
     }
@@ -174,7 +175,8 @@ contract AuraViewHelpersLite {
                 underlying: underlying,
                 rewardsData: rewardsData,
                 extraRewards: extraRewards,
-                totalSupply: pool.totalSupply()
+                totalSupply: pool.totalSupply(),
+                bptTotalSupply: 0
             });
     }
 
@@ -257,7 +259,8 @@ contract AuraViewHelpersLite {
                 underlying: underlying,
                 rewardsData: rewardsData,
                 extraRewards: extraRewards,
-                totalSupply: rewardPool.totalSupply()
+                totalSupply: rewardPool.totalSupply(),
+                bptTotalSupply: balancerPool.totalSupply()
             });
     }
 
