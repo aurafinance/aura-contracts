@@ -5,7 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IBoosterLite } from "../../interfaces/IBoosterLite.sol";
 import { IRewardStaking } from "../../interfaces/IRewardStaking.sol";
-import "hardhat/console.sol";
 
 /**
  * @title   BoosterLiteHelper
@@ -42,7 +41,6 @@ contract BoosterLiteHelper {
         require(len > 0, "!pids");
         uint256 nativeFee = msg.value / len;
         for (uint256 i = 0; i < len; i++) {
-            console.log("earmarkRewards sender %s pid %s nativeFee %s", msg.sender, _pids[i], nativeFee);
             require(booster.earmarkRewards{ value: nativeFee }(_pids[i], _zroPaymentAddress), "!earmark reward");
         }
         // Return all incentives to the sender
