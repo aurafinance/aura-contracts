@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+
 interface IAuraBalProxyOFT {
     function harvest(uint256[] calldata _totalUnderlying, uint256 _totalUnderlyingSum) external;
 
@@ -19,16 +21,14 @@ interface IAuraBalProxyOFT {
  * @notice  Allows to invoke harvest and process claimable for all supported chains.
  */
 
-contract AuraBalProxyOFTHelper {
+contract AuraBalProxyOFTHelper is Ownable {
     IAuraBalProxyOFT public immutable auraBalProxy;
-    address public immutable owner;
 
     /**
      * @param _auraBalProxy     AuraBalProxy.sol
      */
     constructor(address _auraBalProxy) {
         auraBalProxy = IAuraBalProxyOFT(_auraBalProxy);
-        owner = msg.sender;
     }
 
     receive() external payable {}
@@ -52,8 +52,7 @@ contract AuraBalProxyOFTHelper {
         address[] memory _tokens,
         uint16[] memory _srcChainIds,
         address[] memory _zroPaymentAddresses
-    ) external payable {
-        require(msg.sender == owner, "!owner");
+    ) external payable onlyOwner {
         auraBalProxy.harvest(_totalUnderlying, _totalUnderlyingSum);
         _processClaimable(_tokens, _srcChainIds, _zroPaymentAddresses);
     }
@@ -69,8 +68,7 @@ contract AuraBalProxyOFTHelper {
         address[] memory _tokens,
         uint16[] memory _srcChainIds,
         address[] memory _zroPaymentAddresses
-    ) external payable {
-        require(msg.sender == owner, "!owner");
+    ) external payable onlyOwner {
         _processClaimable(_tokens, _srcChainIds, _zroPaymentAddresses);
     }
 

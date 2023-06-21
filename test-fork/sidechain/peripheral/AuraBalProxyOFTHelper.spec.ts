@@ -84,13 +84,13 @@ describe("AuraBalProxyOFTHelper", () => {
             auraBalProxyOFTHelper
                 .connect(harvester.signer)
                 .processClaimable([aura, auraBal], [110, 110], [ZERO_ADDRESS, ZERO_ADDRESS], { value: nativeFee }),
-        ).to.be.revertedWith("!owner");
+        ).to.be.revertedWith("Ownable: caller is not the owner");
         await expect(
             auraBalProxyOFTHelper
                 .connect(harvester.signer)
                 .callHarvestAndProcessClaimable([1], 1, [aura, auraBal], [110, 110], [ZERO_ADDRESS, ZERO_ADDRESS], {
                     value: nativeFee,
                 }),
-        ).to.be.revertedWith("!owner");
+        ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 });
