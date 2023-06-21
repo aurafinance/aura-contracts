@@ -24,6 +24,7 @@ import {
 import { getSigner } from "../utils/signerFactory";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
+    deployAuraBalProxyOFTHelper,
     deployBoosterLiteHelper,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
@@ -360,6 +361,17 @@ task("deploy:sidechain:boosterLiteHelper")
         const result = await deployBoosterLiteHelper(hre, deployer, sidechainConfig.extConfig, sidechain);
 
         logContracts(result as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:sidechain:auraBalProxyOFTHelper")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const chainId = hre.network.config.chainId;
+        const canonicalConfig = canonicalConfigs[chainId];
+        const canonical = canonicalConfig.getSidechain(deployer);
+        const result = await deployAuraBalProxyOFTHelper(hre, deployer, canonical);
+        console.log("canonicalView:", result.auraBalProxyOFTHelper.address);
     });
 
 task("deploy:sidechain:zap")
