@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 
 interface IBridgeDelegateReceiver {
@@ -13,9 +12,7 @@ interface IBridgeDelegateReceiver {
  * @author  AuraFinance
  * @notice  Forwards fees from multiple receivers
  */
-contract BridgeDelegateReceiverHelper {
-    using SafeERC20 for IERC20;
-
+contract BridgeDelegateReceiverHelper is Ownable {
     function transferReceiverOwnership(address _receiver, address _newOwner) external onlyOwner {
         Ownable(_receiver).transferOwnership(_newOwner);
     }

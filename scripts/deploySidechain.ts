@@ -56,6 +56,8 @@ import {
     CanonicalView__factory,
     AuraBalProxyOFTHelper,
     AuraBalProxyOFTHelper__factory,
+    BridgeDelegateReceiverHelper,
+    BridgeDelegateReceiverHelper__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -831,6 +833,27 @@ export async function deployAuraBalProxyOFTHelper(
 
     return {
         auraBalProxyOFTHelper,
+    };
+}
+
+export async function deployBridgeDelegateReceiverHelper(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+) {
+    const bridgeDelegateReceiverHelper = await deployContract<BridgeDelegateReceiverHelper>(
+        hre,
+        new BridgeDelegateReceiverHelper__factory(deployer),
+        "BridgeDelegateReceiverHelper",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        bridgeDelegateReceiverHelper,
     };
 }
 
