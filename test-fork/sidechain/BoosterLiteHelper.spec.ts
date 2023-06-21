@@ -27,7 +27,7 @@ describe("BoosterLiteHelper", () => {
         });
 
         console.log("🚀 ~ file: BoosterLiteHelper.spec.ts:28 ~ before ~ hre.network.name:", hre.network.name);
-        // const accounts = await ethers.getSigners();
+
         relayer = await impersonateAccount(relayerAddress, true);
         deployer = await impersonateAccount("0xb07d2d6a03f2d4878dc1680f8581e871dae47494", true);
         const create2Factory = Create2Factory__factory.connect(config.extConfig.create2Factory, deployer.signer);
@@ -44,7 +44,6 @@ describe("BoosterLiteHelper", () => {
 
     it("earmarkRewards", async () => {
         const nativeFee = simpleToExactAmount(1);
-        hre.tracer.enabled = true;
         const tx = await boosterHelper
             .connect(relayer.signer)
             .earmarkRewards([0, 1, 2, 3, 4, 5, 6, 7], ZERO_ADDRESS, { value: nativeFee });
