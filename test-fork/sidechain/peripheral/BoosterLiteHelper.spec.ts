@@ -1,11 +1,11 @@
 import hre, { network } from "hardhat";
-import { deployBoosterLiteHelper } from "../../scripts/deploySidechain";
+import { deployBoosterLiteHelper } from "../../../scripts/deploySidechain";
 import { Account } from "types/common";
 
-import { config } from "../../tasks/deploy/arbitrum-config";
-import { impersonateAccount, ZERO_ADDRESS } from "../../test-utils";
-import { simpleToExactAmount } from "../../test-utils/math";
-import { BoosterLiteHelper, Create2Factory__factory } from "../../types/generated";
+import { config } from "../../../tasks/deploy/arbitrum-config";
+import { impersonateAccount, ZERO_ADDRESS } from "../../../test-utils";
+import { simpleToExactAmount } from "../../../test-utils/math";
+import { BoosterLiteHelper, Create2Factory__factory } from "../../../types/generated";
 
 const ALCHEMY_API_KEY = process.env.NODE_URL;
 const relayerAddress = "0xfc3f4e28d914da71447d94829c48b1248c7c0b46";

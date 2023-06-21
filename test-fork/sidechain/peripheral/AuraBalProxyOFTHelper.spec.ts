@@ -1,12 +1,12 @@
 import hre, { network } from "hardhat";
 import { expect } from "chai";
-import { deployAuraBalProxyOFTHelper } from "../../scripts/deploySidechain";
+import { deployAuraBalProxyOFTHelper } from "../../../scripts/deploySidechain";
 import { Account } from "types/common";
 
-import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
-import { impersonateAccount, ZERO_ADDRESS, increaseTime, ONE_WEEK } from "../../test-utils";
-import { simpleToExactAmount } from "../../test-utils/math";
-import { AuraBalProxyOFTHelper } from "../../types/generated";
+import { AuraBalVaultDeployed, config } from "../../../tasks/deploy/mainnet-config";
+import { impersonateAccount, ZERO_ADDRESS, increaseTime, ONE_WEEK } from "../../../test-utils";
+import { simpleToExactAmount } from "../../../test-utils/math";
+import { AuraBalProxyOFTHelper } from "../../../types/generated";
 
 const ALCHEMY_API_KEY = process.env.NODE_URL;
 const relayerAddress = "0xfc3f4e28d914da71447d94829c48b1248c7c0b46";

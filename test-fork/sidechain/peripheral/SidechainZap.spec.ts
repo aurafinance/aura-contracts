@@ -2,20 +2,20 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers, network } from "hardhat";
 
-import { SimplyBridgeDelegateDeployed } from "../../scripts/deployBridgeDelegates";
+import { SimplyBridgeDelegateDeployed } from "../../../scripts/deployBridgeDelegates";
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
     deploySidechainClaimZap,
-} from "../../scripts/deploySidechain";
-import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { config as goerliSidechainConfig } from "../../tasks/deploy/goerliSidechain-config";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
-import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS, ONE_WEEK } from "../../test-utils";
+} from "../../../scripts/deploySidechain";
+import { Phase2Deployed, Phase6Deployed } from "../../../scripts/deploySystem";
+import { config as goerliConfig } from "../../../tasks/deploy/goerli-config";
+import { config as goerliSidechainConfig } from "../../../tasks/deploy/goerliSidechain-config";
+import { config as mainnetConfig } from "../../../tasks/deploy/mainnet-config";
+import { lzChainIds } from "../../../tasks/deploy/sidechain-constants";
+import { impersonate, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS, ONE_WEEK } from "../../../test-utils";
 import {
     Account,
     AuraOFT,
@@ -27,11 +27,11 @@ import {
     MockERC20__factory,
     SidechainConfig,
     SidechainClaimZap,
-} from "../../types";
-import { ClaimRewardsAmountsStruct, OptionsStruct } from "../../types/generated/SidechainClaimZap";
-import { increaseTime } from "./../../test-utils/time";
-import { TestSuiteDeployment } from "./setupForkDeployments";
-import { setupLocalDeployment } from "./setupLocalDeployment";
+} from "../../../types";
+import { ClaimRewardsAmountsStruct, OptionsStruct } from "../../../types/generated/SidechainClaimZap";
+import { increaseTime } from "./../../../test-utils/time";
+import { TestSuiteDeployment } from "../setupForkDeployments";
+import { setupLocalDeployment } from "../setupLocalDeployment";
 
 const FORKING = process.env.FORKING;
 
