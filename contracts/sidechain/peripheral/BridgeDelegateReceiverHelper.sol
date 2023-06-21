@@ -21,9 +21,9 @@ contract BridgeDelegateReceiverHelper is Ownable {
         IBridgeDelegateReceiver(_receiver).settleFeeDebt(_amount);
     }
 
-    function settleMultipleFeeDebt(address[] _receivers, uint256[] calldata _amounts) external onlyOwner {
+    function settleMultipleFeeDebt(address[] calldata _receivers, uint256[] calldata _amounts) external onlyOwner {
         require(_receivers.length == _amounts.length, "!parity");
-        for (uint256 i = 0; i < _receivers; i++) {
+        for (uint256 i = 0; i < _receivers.length; i++) {
             settleFeeDebt(_receivers[i], _amounts[i]);
         }
     }
