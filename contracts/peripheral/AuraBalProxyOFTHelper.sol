@@ -4,6 +4,8 @@ pragma solidity 0.8.11;
 interface IAuraBalProxyOFT {
     function harvest(uint256[] calldata _totalUnderlying, uint256 _totalUnderlyingSum) external;
 
+    function harvestSrcChainIds() external view returns (uint16[] memory);
+
     function processClaimable(
         address _token,
         uint16 _srcChainId,
@@ -19,16 +21,21 @@ interface IAuraBalProxyOFT {
 
 contract AuraBalProxyOFTHelper {
     IAuraBalProxyOFT public immutable auraBalProxy;
+    address public immutable owner;
 
     /**
      * @param _auraBalProxy     AuraBalProxy.sol
      */
     constructor(address _auraBalProxy) {
         auraBalProxy = IAuraBalProxyOFT(_auraBalProxy);
+        owner = msg.sender;
     }
+
+    receive() external payable {}
 
     /**
      * @dev Multicall, first harvest the auraBalProxyOFT then it process claimable rewards.
+     * Can only be called by owner for security reasons
      *  -- harvest --
      * @param _totalUnderlying Array of totalUnderlying auraBAL staked on the source chain
      * @param _totalUnderlyingSum Sum of values in _totalUnderlying array
@@ -45,11 +52,34 @@ contract AuraBalProxyOFTHelper {
         address[] memory _tokens,
         uint16[] memory _srcChainIds,
         address[] memory _zroPaymentAddresses
-    ) external {
+    ) external payable {
+        require(msg.sender == owner, "!owner");
         auraBalProxy.harvest(_totalUnderlying, _totalUnderlyingSum);
         _processClaimable(_tokens, _srcChainIds, _zroPaymentAddresses);
     }
 
+    /**
+     * @dev Multicall for process claimable rewards
+     * Can only be called by owner for security reasons
+     * @param _tokens The tokens to process
+     * @param _srcChainIds The source chain IDs
+     * @param _zroPaymentAddresses The LayerZero ZRO payment addresses
+     */
+    function processClaimable(
+        address[] memory _tokens,
+        uint16[] memory _srcChainIds,
+        address[] memory _zroPaymentAddresses
+    ) external payable {
+        require(msg.sender == owner, "!owner");
+        _processClaimable(_tokens, _srcChainIds, _zroPaymentAddresses);
+    }
+
+    /**
+     * @dev Multicall for process claimable rewards
+     * @param _tokens The tokens to process
+     * @param _srcChainIds The source chain IDs
+     * @param _zroPaymentAddresses The LayerZero ZRO payment addresses
+     */
     function _processClaimable(
         address[] memory _tokens,
         uint16[] memory _srcChainIds,
@@ -61,19 +91,5 @@ contract AuraBalProxyOFTHelper {
         for (uint256 i = 0; i < tokensLen; i++) {
             auraBalProxy.processClaimable{ value: nativeFee }(_tokens[i], _srcChainIds[i], _zroPaymentAddresses[i]);
         }
-    }
-
-    /**
-     * @dev Multicall for process claimable rewards
-     * @param _tokens The tokens to process
-     * @param _srcChainIds The source chain IDs
-     * @param _zroPaymentAddresses The LayerZero ZRO payment addresses
-     */
-    function processClaimable(
-        address[] memory _tokens,
-        uint16[] memory _srcChainIds,
-        address[] memory _zroPaymentAddresses
-    ) external payable {
-        _processClaimable(_tokens, _srcChainIds, _zroPaymentAddresses);
     }
 }

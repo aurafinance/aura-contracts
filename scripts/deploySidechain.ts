@@ -54,6 +54,8 @@ import {
     SidechainView__factory,
     CanonicalView,
     CanonicalView__factory,
+    AuraBalProxyOFTHelper,
+    AuraBalProxyOFTHelper__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -807,6 +809,28 @@ export async function deployBoosterLiteHelper(
 
     return {
         boosterHelper,
+    };
+}
+
+export async function deployAuraBalProxyOFTHelper(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+) {
+    const auraBalProxyOFTHelper = await deployContract<AuraBalProxyOFTHelper>(
+        hre,
+        new AuraBalProxyOFTHelper__factory(deployer),
+        "AuraBalProxyOFTHelper",
+        [canonical.auraBalProxyOFT.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        auraBalProxyOFTHelper,
     };
 }
 
