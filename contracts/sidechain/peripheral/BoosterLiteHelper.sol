@@ -3,8 +3,8 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { IBoosterLite } from "../interfaces/IBoosterLite.sol";
-import { IRewardStaking } from "../interfaces/IRewardStaking.sol";
+import { IBoosterLite } from "../../interfaces/IBoosterLite.sol";
+import { IRewardStaking } from "../../interfaces/IRewardStaking.sol";
 import "hardhat/console.sol";
 
 /**
