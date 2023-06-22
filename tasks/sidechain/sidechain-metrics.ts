@@ -190,7 +190,7 @@ task("sidechain:metrics")
             const netInflowBelowLimit = netInflow.lte(inflowLimit);
 
             const rows = [
-                ["Aura OFTs are funded", auraIsFunded],
+                ["Aura OFTs are funded", formatBool(auraIsFunded)],
                 ["AuraProxyOFT AURA balance", formatEther(auraProxyOftAuraBalance)],
                 [arbitrumText("AuraOFT total supply"), formatEther(remoteMetrics.auraOFTData.totalSupply)],
                 ["AuraProxyOFT net inflow", formatBool(netInflowBelowLimit, formatEther(netInflow))],
