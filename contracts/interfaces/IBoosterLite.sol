@@ -15,8 +15,6 @@ interface IBoosterLite {
 
     function poolLength() external view returns (uint256);
 
-    function lockRewards() external view returns (address);
-
     function poolInfo(uint256 _pid) external view returns (PoolInfo memory poolInfo);
 
     function lockIncentive() external view returns (uint256);
