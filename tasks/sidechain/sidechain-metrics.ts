@@ -1,23 +1,17 @@
 /* eslint-disable no-await-in-loop */
 import { JsonRpcProvider } from "@ethersproject/providers";
 import assert from "assert";
-import { BigNumber, BigNumberish, ethers, Signer } from "ethers";
+import { BigNumber } from "ethers";
 import { formatEther } from "ethers/lib/utils";
 import { table } from "table";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { ERC20__factory } from "../../types";
 
-import {
-    CanonicalPhase1Deployed,
-    CanonicalPhase2Deployed,
-    SidechainViewDeployed,
-    CanonicalViewDeployed,
-} from "../../scripts/deploySidechain";
+import { SidechainViewDeployed, CanonicalViewDeployed } from "../../scripts/deploySidechain";
 import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { getSigner } from "../utils";
 import { fullScale } from "../../test-utils/constants";
-import { isBigNumberish } from "@ethersproject/bignumber/lib/bignumber";
 import chalk from "chalk";
 
 async function getCanonicalMetrics(viewDeployment: CanonicalViewDeployed, sidechainIds: number[]) {
