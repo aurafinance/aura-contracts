@@ -61,9 +61,5 @@ describe("Sidechain", () => {
             const data = await sidechainView.getData();
             console.log(data);
         });
-        it("Get SidechainData and balances", async () => {
-            const data = await sidechainView.getDataAndBalances(deployer.address);
-            console.log(data);
-        });
     });
 });

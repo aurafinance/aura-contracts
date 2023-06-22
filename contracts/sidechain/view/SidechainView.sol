@@ -134,10 +134,4 @@ contract SidechainView {
         data.auraOftData = getAuraOftData();
         data.auraBalOftData = getAuraBalOftData();
     }
-
-    function getDataAndBalances(address account) public view returns (SidechainInformation memory data) {
-        data = getData();
-        data.auraBalanceOf = IOFT(auraOft).balanceOf(account);
-        data.auraBalBalanceOf = IOFT(auraBalOft).balanceOf(account);
-    }
 }
