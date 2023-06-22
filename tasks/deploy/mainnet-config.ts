@@ -427,7 +427,7 @@ const getSidechain = (deployer: Signer): CanonicalPhase1Deployed & CanonicalPhas
 });
 
 export const getCanonicalView = (signer: Signer) => ({
-    canonicalView: CanonicalView__factory.connect("0x269aF06E6eAbee70a314990Feb0C814B2118E3b7", signer),
+    canonicalView: CanonicalView__factory.connect("0xbC4990b6607F456477d07c4Dd80FB35258ac0B57", signer),
 });
 
 export const config = {

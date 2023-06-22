@@ -132,7 +132,7 @@ contract CanonicalView {
         data.distributedFeeDebtOf = IL1Coordinator(l1Coordinator).distributedFeeDebtOf(sidechainId);
         data.bridgeDelegate = IL1Coordinator(l1Coordinator).bridgeDelegates(sidechainId);
         data.l2Coordinator = IL1Coordinator(l1Coordinator).l2Coordinators(sidechainId);
-        data.feeDebtOf = IERC20(bal).balanceOf(data.bridgeDelegate);
+        data.bridgeDelegateBalBalance = IERC20(bal).balanceOf(data.bridgeDelegate);
     }
 
     function getAuraProxyOftData() public view returns (AuraProxyOftData memory data) {
