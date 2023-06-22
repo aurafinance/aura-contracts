@@ -30,6 +30,23 @@ contract ExtraRewardStashScheduler {
         return block.timestamp.div(epochDuration);
     }
 
+    function _queueRewards(
+        address _stash,
+        uint256 _nEpochs,
+        uint256 _amount,
+        bool force
+    ) internal {
+        IERC20(cvx).safeTransferFrom(msg.sender, address(this), _amount);
+
+        uint256 rewardAmount = _amount.div(_nEpochs);
+        uint256 epoch = _getCurrentEpoch();
+        for (uint256 i = 0; i < _nEpochs; i++) {
+            require(epochRewards[epoch][_stash] == 0 || force, "already queued");
+            epochRewards[epoch][_stash] += rewardAmount;
+            epoch++;
+        }
+    }
+
     /**
      * @dev Get current epoch
      */
@@ -39,6 +56,7 @@ contract ExtraRewardStashScheduler {
 
     /**
      * @dev Queue rewards to a stash, it splits the rewards evenly by the number of epochs provided.
+     * It reverts if an epoch already has some queued rewards.
      * @param _stash the extra reward stash to queue the rewards to.
      * @param _nEpochs Number of epochs to split the rewards
      * @param _amount Amount of rewards.
@@ -49,14 +67,21 @@ contract ExtraRewardStashScheduler {
         uint256 _nEpochs,
         uint256 _amount
     ) external {
-        IERC20(cvx).safeTransferFrom(msg.sender, address(this), _amount);
+        _queueRewards(_stash, _nEpochs, _amount, false);
+    }
 
-        uint256 rewardAmount = _amount.div(_nEpochs);
-        uint256 epoch = _getCurrentEpoch();
-        for (uint256 i = 0; i < _nEpochs; i++) {
-            epochRewards[epoch][_stash] += rewardAmount;
-            epoch++;
-        }
+    /**
+     * @dev Queue rewards to a stash, it splits the rewards evenly by the number of epochs provided.
+     * @param _stash the extra reward stash to queue the rewards to.
+     * @param _nEpochs Number of epochs to split the rewards
+     * @param _amount Amount of rewards.
+     */
+    function forceQueueRewards(
+        address _stash,
+        uint256 _nEpochs,
+        uint256 _amount
+    ) external {
+        _queueRewards(_stash, _nEpochs, _amount, true);
     }
 
     function _forwardRewards(address _stash, uint256 _epoch) internal {

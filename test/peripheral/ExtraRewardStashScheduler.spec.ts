@@ -1,6 +1,11 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
+
+import { deployContract } from "../../tasks/utils";
+import { getTimestamp, increaseTime } from "../../test-utils";
+import { DEAD_ADDRESS, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
+import { simpleToExactAmount } from "../../test-utils/math";
 import {
     ExtraRewardStashScheduler,
     ExtraRewardStashScheduler__factory,
@@ -9,11 +14,6 @@ import {
     MockERC20,
     MockERC20__factory,
 } from "../../types/generated";
-
-import { deployContract } from "../../tasks/utils";
-import { getTimestamp, increaseTime } from "../../test-utils";
-import { DEAD_ADDRESS, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
-import { simpleToExactAmount } from "../../test-utils/math";
 
 const debug = false;
 
@@ -92,9 +92,6 @@ describe("ExtraRewardStashScheduler", () => {
     before("init contract", async () => {
         await setup();
     });
-    beforeEach(async () => {
-        /* before each context */
-    });
 
     describe("constructor", async () => {
         it("should properly store valid arguments", async () => {
@@ -107,7 +104,6 @@ describe("ExtraRewardStashScheduler", () => {
         });
     });
 
-    //
     describe("queueRewards for one stash", async () => {
         const amount = simpleToExactAmount(20);
 
@@ -126,7 +122,6 @@ describe("ExtraRewardStashScheduler", () => {
         });
         it("verifies epochRewards rewards are correct ", async () => {
             const epoch = await extraRewardStashScheduler.getCurrentEpoch();
-            console.log("🚀 ~ file: ExtraRewardStashScheduler.spec.ts:112 ~ it ~ epoch:", epoch.toString());
             const epoch1Amount = await extraRewardStashScheduler.epochRewards(epoch, extraRewardStashAuraBal.address);
             const epoch2Amount = await extraRewardStashScheduler.epochRewards(
                 epoch.add(1),
@@ -140,7 +135,7 @@ describe("ExtraRewardStashScheduler", () => {
     describe("queueRewards for another stash more than once", async () => {
         const amount = simpleToExactAmount(20);
 
-        it("should add a reward for 1 periods", async () => {
+        it("should add a reward for 1 period", async () => {
             const nEpochs = 1;
             const stashAddress = extraRewardStashAuraWeth.address;
             await cvx.connect(alice).approve(extraRewardStashScheduler.address, amount);
@@ -163,6 +158,14 @@ describe("ExtraRewardStashScheduler", () => {
             expect(epoch2Amount, "epoch reward amounts").to.be.eq(ZERO);
             expect(epoch1Amount.add(epoch2Amount), "epoch reward amounts").to.be.eq(amount);
         });
+        it("fails to  add rewards again", async () => {
+            await cvx.connect(alice).approve(extraRewardStashScheduler.address, amount);
+            const stashAddress = extraRewardStashAuraWeth.address;
+            await expect(extraRewardStashScheduler.queueRewards(stashAddress, 1, amount), "error").to.be.revertedWith(
+                "already queued",
+            );
+        });
+
         it("should add rewards again for 2 periods", async () => {
             const nEpochs = 2;
             const stashAddress = extraRewardStashAuraWeth.address;
@@ -171,7 +174,7 @@ describe("ExtraRewardStashScheduler", () => {
             const cvxBalanceBefore = await cvx.balanceOf(extraRewardStashScheduler.address);
 
             // Test
-            await extraRewardStashScheduler.queueRewards(stashAddress, nEpochs, amount);
+            await extraRewardStashScheduler.forceQueueRewards(stashAddress, nEpochs, amount);
 
             const cvxBalanceAfter = await cvx.balanceOf(extraRewardStashScheduler.address);
             expect(cvxBalanceAfter, "balance after").to.be.eq(cvxBalanceBefore.add(amount));

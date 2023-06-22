@@ -1,17 +1,20 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+
+import { config } from "../tasks/deploy/mainnet-config";
+import { deployContract } from "../tasks/utils";
 import {
     AuraBalStaker,
     AuraBalStaker__factory,
     AuraBalVault,
     CvxCrvToken,
+    ExtraRewardStashScheduler,
+    ExtraRewardStashScheduler__factory,
     FeeScheduler,
     FeeScheduler__factory,
     VeBalGrant,
     VeBalGrant__factory,
 } from "../types";
-import { deployContract } from "../tasks/utils";
-import { config } from "../tasks/deploy/mainnet-config";
 import { ExtSystemConfig } from "./deploySystem";
 
 export async function deployAuraBalStaker(
@@ -86,4 +89,22 @@ export async function deployVeBalGrant(
     return {
         veBalGrant,
     };
+}
+export async function deployExtraRewardStashScheduler(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const phase2 = await config.getPhase2(signer);
+    const extraRewardStashScheduler = await deployContract<ExtraRewardStashScheduler>(
+        hre,
+        new ExtraRewardStashScheduler__factory(signer),
+        "ExtraRewardStashScheduler",
+        [phase2.cvx.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return { extraRewardStashScheduler };
 }
