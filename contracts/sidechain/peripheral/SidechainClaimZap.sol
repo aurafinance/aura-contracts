@@ -203,7 +203,7 @@ contract SidechainClaimZap {
                 canonicalChainID, 
                 abi.encodePacked(_l1receiver), 
                 cvxBalance,
-                payable(_l1receiver), 
+                payable(msg.sender), 
                 options.zro, 
                 options.adapterParams
             );

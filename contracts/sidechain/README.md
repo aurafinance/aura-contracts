@@ -150,7 +150,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://arbiscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
 | BoosterOwner             | [0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66](https://arbiscan.io/address/0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66) |
 | ProtocolDAO              | [0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62](https://arbiscan.io/address/0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62) |
-| ClaimZap                 | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
+| ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://arbiscan.io/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
 | Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://arbiscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
 | RewardPoolDepositWrapper | [0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be](https://arbiscan.io/address/0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be) |
 | BridgeSender             | [0x713E883C22fa543fb28cE96E0677aE347096fBe6](https://arbiscan.io/address/0x713E883C22fa543fb28cE96E0677aE347096fBe6) |
@@ -206,6 +206,14 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | VirtualRewardsFactory | [0xE4B11aa0ca5FE0d51CB2c53a4E583406FC338224](https://goerli.etherscan.io/address/0xE4B11aa0ca5FE0d51CB2c53a4E583406FC338224) |
 | AuraBalVault          | [0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c](https://goerli.etherscan.io/address/0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c) |
 | AuraBalStrategy       | [0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285](https://goerli.etherscan.io/address/0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285) |
+
+
+
+#### Arbitrum (42161) @deprecated
+
+| Contract                 | Address                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| ClaimZap                 | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
 
 ## Deployment Diagram
 
