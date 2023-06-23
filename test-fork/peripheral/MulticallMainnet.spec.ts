@@ -20,7 +20,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
     let sidechain: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
     let compounder: AuraBalVaultDeployed;
     let phase2: Phase2Deployed;
-    let multicall3: KeeperMulticall3;
+    let keeperMulticall3: KeeperMulticall3;
     const sidechainId = 110;
     const nativeFee = simpleToExactAmount(1);
     const relayerAddress = "0xcC247CDe79624801169475C9Ba1f716dB3959B8f";
@@ -49,19 +49,21 @@ describe("KeeperMulticall3 - Mainnet", () => {
         const create2Factory = await new Create2Factory__factory(deployer.signer).deploy();
         await create2Factory.updateDeployer(relayerAddress, true);
 
-        ({ multicall3 } = await deployKeeperMulticall3(hre, relayer.signer, relayer.address));
+        ({ keeperMulticall3 } = await deployKeeperMulticall3(hre, relayer.signer, relayer.address));
     });
     it("Fund the multicall contract ", async () => {
         await relayer.signer.sendTransaction({
-            to: multicall3.address,
+            to: keeperMulticall3.address,
             value: nativeFee,
         });
     });
     it("set authorised harvesters", async () => {
-        await sidechain.auraBalProxyOFT.connect(owner.signer).updateAuthorizedHarvesters(multicall3.address, true);
+        await sidechain.auraBalProxyOFT
+            .connect(owner.signer)
+            .updateAuthorizedHarvesters(keeperMulticall3.address, true);
     });
     it("set authorised keeper", async () => {
-        await multicall3.updateAuthorizedKeepers(relayer.address, true);
+        await keeperMulticall3.updateAuthorizedKeepers(relayer.address, true);
     });
     it("processClaimable", async () => {
         await increaseTime(ONE_WEEK);
@@ -100,8 +102,8 @@ describe("KeeperMulticall3 - Mainnet", () => {
         ];
 
         // Test harvest all chains (1), process all claimable permutations (token - chain)
-        const tx = await multicall3.connect(relayer.signer).aggregate3Funded([harvest, ...processClaimables]);
-        await expect(tx).to.emit(sidechain.auraBalProxyOFT, "Harvest").withArgs(multicall3.address, 1);
+        const tx = await keeperMulticall3.connect(relayer.signer).aggregate3Funded([harvest, ...processClaimables]);
+        await expect(tx).to.emit(sidechain.auraBalProxyOFT, "Harvest").withArgs(keeperMulticall3.address, 1);
         await expect(tx).to.emit(sidechain.auraBalProxyOFT, "SendToChain");
     });
 
@@ -114,8 +116,8 @@ describe("KeeperMulticall3 - Mainnet", () => {
             callData: encodedHarvest,
         });
 
-        await expect(multicall3.connect(deployer.signer).aggregate3Funded([buildHarvestCall()])).to.be.revertedWith(
-            "!keeper",
-        );
+        await expect(
+            keeperMulticall3.connect(deployer.signer).aggregate3Funded([buildHarvestCall()]),
+        ).to.be.revertedWith("!keeper");
     });
 });

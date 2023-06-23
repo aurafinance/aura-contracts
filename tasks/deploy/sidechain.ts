@@ -3,57 +3,54 @@ import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
+import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
 import {
-    VoterProxyLite__factory,
-    L2Coordinator__factory,
-    BoosterLite__factory,
-    RewardFactory__factory,
-    TokenFactory__factory,
-    ProxyFactory__factory,
-    StashFactoryV2__factory,
-    ExtraRewardStashV3__factory,
-    PoolManagerLite__factory,
-    AuraOFT__factory,
-    BoosterOwnerLite__factory,
-    AuraBalOFT__factory,
-    AuraBalVault__factory,
-    SimpleStrategy__factory,
-    VirtualRewardFactory__factory,
-    BridgeDelegateSender__factory,
-} from "../../types";
-import { getSigner } from "../utils/signerFactory";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
-import {
-    deployAuraBalProxyOFTHelper,
-    deployBoosterLiteHelper,
-    deployBridgeDelegateReceiverHelper,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
+    deployCanonicalView,
     deployCreate2Factory,
+    deployKeeperMulticall3,
     deploySidechainClaimZap,
     deploySidechainPhase1,
     deploySidechainPhase2,
+    deploySidechainView,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
-    deploySidechainView,
-    deployCanonicalView,
 } from "../../scripts/deploySidechain";
-import { waitForTx, chainIds } from "../../tasks/utils";
+import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
+import { chainIds, waitForTx } from "../../tasks/utils";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
+import {
+    AuraBalOFT__factory,
+    AuraBalVault__factory,
+    AuraOFT__factory,
+    BoosterLite__factory,
+    BoosterOwnerLite__factory,
+    ExtraRewardStashV3__factory,
+    L2Coordinator__factory,
+    PoolManagerLite__factory,
+    ProxyFactory__factory,
+    RewardFactory__factory,
+    SimpleStrategy__factory,
+    StashFactoryV2__factory,
+    TokenFactory__factory,
+    VirtualRewardFactory__factory,
+    VoterProxyLite__factory,
+} from "../../types";
 import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
+import { getSigner } from "../utils/signerFactory";
+import { config as gnosisSidechainConfig } from "./gnosis-config";
+import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import {
     canonicalChains,
     canonicalConfigs,
-    sidechainConfigs,
     lzChainIds,
     remoteChainMap,
+    sidechainConfigs,
     sideChains,
 } from "./sidechain-constants";
-import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
-// Configs
-import { config as goerliSidechainConfig } from "./goerliSidechain-config";
-import { config as gnosisSidechainConfig } from "./gnosis-config";
-import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
 
+// Configs
 const debug = true;
 const SALT = "3333";
 
@@ -350,37 +347,18 @@ task("deploy:sidechain:config:L1:phase2")
     Helper Tasks
 ---------------------------------------------------------------------------- */
 
-task("deploy:sidechain:boosterLiteHelper")
+task("deploy:sidechain:keeperMulticall3")
     .addParam("wait", "Wait for blocks")
     .addParam("canonicalchainid", "Wait for blocks")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const canonicalId = Number(tskArgs.canonicalchainid);
 
-        const { sidechain, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
 
-        const result = await deployBoosterLiteHelper(hre, deployer, sidechainConfig.extConfig, sidechain);
+        const result = await deployKeeperMulticall3(hre, deployer, sidechainConfig.extConfig);
 
         logContracts(result as unknown as { [key: string]: { address: string } });
-    });
-
-task("deploy:sidechain:auraBalProxyOFTHelper")
-    .addParam("wait", "Wait for blocks")
-    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const deployer = await getSigner(hre);
-        const chainId = hre.network.config.chainId;
-        const canonicalConfig = canonicalConfigs[chainId];
-        const canonical = canonicalConfig.getSidechain(deployer);
-        const result = await deployAuraBalProxyOFTHelper(hre, deployer, canonical);
-        console.log("auraBalProxyOFTHelper:", result.auraBalProxyOFTHelper.address);
-    });
-
-task("deploy:sidechain:bridgeDelegateReceiverHelper")
-    .addParam("wait", "Wait for blocks")
-    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const deployer = await getSigner(hre);
-        const result = await deployBridgeDelegateReceiverHelper(hre, deployer);
-        console.log("bridgeDelegateReceiverHelper:", result.bridgeDelegateReceiverHelper.address);
     });
 
 task("deploy:sidechain:zap")

@@ -7,6 +7,7 @@ import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import {
     deployAuraBalStaker,
     deployExtraRewardStashScheduler,
+    deployKeeperMulticall3,
     deployFeeScheduler,
     deployVeBalGrant,
 } from "../../scripts/deployPeripheral";
@@ -322,4 +323,13 @@ task("deploy:mainnet:extraRewardStashScheduler")
         const deployer = await getSigner(hre);
         const result = await deployExtraRewardStashScheduler(hre, deployer, debug, tskArgs.wait);
         console.log("ExtraRewardStashScheduler:", result.extraRewardStashScheduler.address);
+    });
+
+task("deploy:mainnet:keeperMulticall3")
+    .addParam("owner", "Address of balancer")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const result = await deployKeeperMulticall3(hre, deployer, tskArgs.owner, tskArgs.wait);
+        console.log("KeeperMulticall3:", result.keeperMulticall3.address);
     });

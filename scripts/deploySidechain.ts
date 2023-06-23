@@ -16,14 +16,20 @@ import {
     AuraOFT__factory,
     AuraProxyOFT,
     AuraProxyOFT__factory,
+    BoosterHelper,
+    BoosterHelper__factory,
     BoosterLite,
     BoosterLite__factory,
     BoosterOwnerLite,
     BoosterOwnerLite__factory,
+    CanonicalView,
+    CanonicalView__factory,
     Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
+    KeeperMulticall3,
+    KeeperMulticall3__factory,
     L1Coordinator,
     L1Coordinator__factory,
     L2Coordinator,
@@ -34,6 +40,10 @@ import {
     ProxyFactory__factory,
     RewardFactory,
     RewardFactory__factory,
+    SidechainClaimZap,
+    SidechainClaimZap__factory,
+    SidechainView,
+    SidechainView__factory,
     SimpleStrategy,
     SimpleStrategy__factory,
     StashFactoryV2,
@@ -44,26 +54,10 @@ import {
     VirtualRewardFactory__factory,
     VoterProxyLite,
     VoterProxyLite__factory,
-    SidechainClaimZap,
-    SidechainClaimZap__factory,
-    BoosterHelper,
-    BoosterHelper__factory,
-    BoosterLiteHelper,
-    BoosterLiteHelper__factory,
-    SidechainView,
-    SidechainView__factory,
-    CanonicalView,
-    CanonicalView__factory,
-    AuraBalProxyOFTHelper,
-    AuraBalProxyOFTHelper__factory,
-    BridgeDelegateReceiverHelper,
-    BridgeDelegateReceiverHelper__factory,
-    KeeperMulticall3,
-    KeeperMulticall3__factory,
 } from "../types";
 import {
-    SidechainBridging,
     ExtSidechainConfig,
+    SidechainBridging,
     SidechainMultisigConfig,
     SidechainNaming,
 } from "../types/sidechain-types";
@@ -783,82 +777,6 @@ export async function deploySidechainClaimZap(
     return { sidechainClaimZap };
 }
 
-export async function deployBoosterLiteHelper(
-    hre: HardhatRuntimeEnvironment,
-    deployer: Signer,
-    extConfig: ExtSidechainConfig,
-    sidechain: SidechainPhase1Deployed,
-    salt: string = SALT,
-    debug: boolean = false,
-    waitForBlocks: number = 0,
-) {
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-
-    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
-
-    const boosterHelper = await deployContractWithCreate2<BoosterLiteHelper, BoosterLiteHelper__factory>(
-        hre,
-        create2Factory,
-        new BoosterLiteHelper__factory(deployer),
-        "BoosterLiteHelper",
-        [sidechain.booster.address, extConfig.token],
-        deployOptions,
-    );
-
-    return {
-        boosterHelper,
-    };
-}
-
-export async function deployAuraBalProxyOFTHelper(
-    hre: HardhatRuntimeEnvironment,
-    deployer: Signer,
-    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
-    debug: boolean = false,
-    waitForBlocks: number = 0,
-) {
-    const auraBalProxyOFTHelper = await deployContract<AuraBalProxyOFTHelper>(
-        hre,
-        new AuraBalProxyOFTHelper__factory(deployer),
-        "AuraBalProxyOFTHelper",
-        [canonical.auraBalProxyOFT.address],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    return {
-        auraBalProxyOFTHelper,
-    };
-}
-
-export async function deployBridgeDelegateReceiverHelper(
-    hre: HardhatRuntimeEnvironment,
-    deployer: Signer,
-    debug: boolean = false,
-    waitForBlocks: number = 0,
-) {
-    const bridgeDelegateReceiverHelper = await deployContract<BridgeDelegateReceiverHelper>(
-        hre,
-        new BridgeDelegateReceiverHelper__factory(deployer),
-        "BridgeDelegateReceiverHelper",
-        [],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    return {
-        bridgeDelegateReceiverHelper,
-    };
-}
-
 export async function deploySidechainView(
     sidechainId: number,
     sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
@@ -939,7 +857,7 @@ export async function deployKeeperMulticall3(
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
 
-    const multicall3 = await deployContractWithCreate2<KeeperMulticall3, KeeperMulticall3__factory>(
+    const keeperMulticall3 = await deployContractWithCreate2<KeeperMulticall3, KeeperMulticall3__factory>(
         hre,
         create2Factory,
         new KeeperMulticall3__factory(deployer),
@@ -949,6 +867,6 @@ export async function deployKeeperMulticall3(
     );
 
     return {
-        multicall3,
+        keeperMulticall3,
     };
 }

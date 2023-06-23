@@ -118,7 +118,7 @@ export async function deployKeeperMulticall3(
     waitForBlocks = 0,
 ) {
     console.log("deployKeeperMulticall3");
-    const multicall3 = await deployContract<KeeperMulticall3>(
+    const keeperMulticall3 = await deployContract<KeeperMulticall3>(
         hre,
         new KeeperMulticall3__factory(signer),
         "KeeperMulticall3",
@@ -127,5 +127,5 @@ export async function deployKeeperMulticall3(
         debug,
         waitForBlocks,
     );
-    return { multicall3 };
+    return { keeperMulticall3 };
 }

@@ -23,7 +23,7 @@ describe("Multichain - Sidechain", () => {
     let relayer: Account;
     let token: ERC20;
     let sidechain: SidechainPhaseDeployed;
-    let multicall3: KeeperMulticall3;
+    let keeperMulticall3: KeeperMulticall3;
 
     before(async () => {
         await network.provider.request({
@@ -45,24 +45,24 @@ describe("Multichain - Sidechain", () => {
         await create2Factory.updateDeployer(relayerAddress, true);
         token = ERC20__factory.connect(config.extConfig.token, deployer.signer);
 
-        ({ multicall3 } = await deployKeeperMulticall3(hre, relayer.signer, config.extConfig));
+        ({ keeperMulticall3 } = await deployKeeperMulticall3(hre, relayer.signer, config.extConfig));
     });
 
-    it("multicall3 properties", async () => {
-        expect(await multicall3.owner(), "owner ").to.be.eq(relayer.address);
+    it("keeperMulticall3 properties", async () => {
+        expect(await keeperMulticall3.owner(), "owner ").to.be.eq(relayer.address);
     });
     it("set authorised keeper", async () => {
-        await multicall3.updateAuthorizedKeepers(relayer.address, true);
+        await keeperMulticall3.updateAuthorizedKeepers(relayer.address, true);
     });
     it("earmarkRewards via multicall", async () => {
         const nativeFee = simpleToExactAmount(1);
         await relayer.signer.sendTransaction({
-            to: multicall3.address,
+            to: keeperMulticall3.address,
             value: nativeFee,
         });
 
-        const tokenBalanceBefore = await token.balanceOf(multicall3.address);
-        const balanceBefore = await ethers.provider.getBalance(multicall3.address);
+        const tokenBalanceBefore = await token.balanceOf(keeperMulticall3.address);
+        const balanceBefore = await ethers.provider.getBalance(keeperMulticall3.address);
 
         const encondeEarmarkRewards = (pid: number) =>
             BoosterLite__factory.createInterface().encodeFunctionData("earmarkRewards", [pid, ZERO_ADDRESS]);
@@ -76,10 +76,10 @@ describe("Multichain - Sidechain", () => {
         const earmarkRewards: Array<Call3ValueStruct> = [...[0, 1, 2, 3, 4, 5, 6, 7].map(buildEarmarkRewardCall)];
 
         // Test earmarkRewards
-        await multicall3.aggregate3Funded(earmarkRewards);
+        await keeperMulticall3.aggregate3Funded(earmarkRewards);
 
-        const balanceAfter = await ethers.provider.getBalance(multicall3.address);
-        const tokenBalanceAfter = await token.balanceOf(multicall3.address);
+        const balanceAfter = await ethers.provider.getBalance(keeperMulticall3.address);
+        const tokenBalanceAfter = await token.balanceOf(keeperMulticall3.address);
 
         expect(balanceAfter, "eth balance").to.be.lt(balanceBefore);
         expect(tokenBalanceAfter, "token balance").to.be.gt(tokenBalanceBefore);
@@ -87,8 +87,8 @@ describe("Multichain - Sidechain", () => {
         // Recover all tokens from the multicall
         const tokenBalanceRelayerBefore = await token.balanceOf(relayer.address);
 
-        await multicall3.recoverERC20(token.address, tokenBalanceAfter);
-        const tokenBalanceMulticallAfter = await token.balanceOf(multicall3.address);
+        await keeperMulticall3.recoverERC20(token.address, tokenBalanceAfter);
+        const tokenBalanceMulticallAfter = await token.balanceOf(keeperMulticall3.address);
         const tokenBalanceRelayerAfter = await token.balanceOf(relayer.address);
 
         expect(tokenBalanceMulticallAfter, "eth balance").to.be.eq(ZERO);
