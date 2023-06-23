@@ -12,6 +12,8 @@ import {
     ExtraRewardStashScheduler__factory,
     FeeScheduler,
     FeeScheduler__factory,
+    KeeperMulticall3,
+    KeeperMulticall3__factory,
     VeBalGrant,
     VeBalGrant__factory,
 } from "../types";
@@ -107,4 +109,23 @@ export async function deployExtraRewardStashScheduler(
         waitForBlocks,
     );
     return { extraRewardStashScheduler };
+}
+export async function deployKeeperMulticall3(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    owner: string,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    console.log("deployKeeperMulticall3");
+    const multicall3 = await deployContract<KeeperMulticall3>(
+        hre,
+        new KeeperMulticall3__factory(signer),
+        "KeeperMulticall3",
+        [owner],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return { multicall3 };
 }

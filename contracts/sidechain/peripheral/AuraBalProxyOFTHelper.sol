@@ -89,5 +89,8 @@ contract AuraBalProxyOFTHelper is Ownable {
         for (uint256 i = 0; i < tokensLen; i++) {
             auraBalProxy.processClaimable{ value: nativeFee }(_tokens[i], _srcChainIds[i], _zroPaymentAddresses[i]);
         }
+        // Refund any balance
+        (bool sent, ) = payable(msg.sender).call{ value: address(this).balance }("");
+        require(sent, "!refund");
     }
 }

@@ -58,6 +58,8 @@ import {
     AuraBalProxyOFTHelper__factory,
     BridgeDelegateReceiverHelper,
     BridgeDelegateReceiverHelper__factory,
+    KeeperMulticall3,
+    KeeperMulticall3__factory,
 } from "../types";
 import {
     SidechainBridging,
@@ -916,5 +918,37 @@ export async function deployCanonicalView(
 
     return {
         canonicalView,
+    };
+}
+
+export async function deployKeeperMulticall3(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    extConfig: ExtSidechainConfig,
+    salt: string = SALT,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+) {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
+
+    const multicall3 = await deployContractWithCreate2<KeeperMulticall3, KeeperMulticall3__factory>(
+        hre,
+        create2Factory,
+        new KeeperMulticall3__factory(deployer),
+        "KeeperMulticall3",
+        [await deployer.getAddress()],
+        deployOptions,
+    );
+
+    return {
+        multicall3,
     };
 }

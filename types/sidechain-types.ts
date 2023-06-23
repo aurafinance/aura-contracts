@@ -31,7 +31,7 @@ export interface SidechainBridging {
     l2Sender: string;
     nativeBridge: string;
 }
-
+export type SidechainPhaseDeployed =  SidechainPhase1Deployed & SidechainPhase2Deployed;
 export interface SidechainConfig {
     chainId: number;
     whales?: { [key: string]: string };
@@ -39,6 +39,6 @@ export interface SidechainConfig {
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;
-    getSidechain?: (s: Signer) => SidechainPhase1Deployed & SidechainPhase2Deployed ;
+    getSidechain?: (s: Signer) => SidechainPhaseDeployed ;
     getView?: (s: Signer) => SidechainViewDeployed;
 }

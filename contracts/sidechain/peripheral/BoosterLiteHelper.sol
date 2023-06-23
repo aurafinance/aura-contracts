@@ -43,9 +43,13 @@ contract BoosterLiteHelper {
         for (uint256 i = 0; i < len; i++) {
             require(booster.earmarkRewards{ value: nativeFee }(_pids[i], _zroPaymentAddress), "!earmark reward");
         }
-        // Return all incentives to the sender
+        // Return all incentives and left over native fee to the sender
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
         IERC20(crv).safeTransfer(msg.sender, crvBal);
+
+        // (bool sent, ) = payable(msg.sender).call{ value: address(this).balance }("");
+        // require(sent, "!refund");
+
         return crvBal;
     }
 
