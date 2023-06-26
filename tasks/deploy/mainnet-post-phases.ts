@@ -1,34 +1,41 @@
+import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { BigNumber, ContractReceipt, ethers } from "ethers";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
-import { AssetHelpers } from "@balancer-labs/balancer-js";
-import { deployContract } from "../utils/deploy-utils";
-import { getSigner } from "../utils";
-import { Phase2Deployed } from "../../scripts/deploySystem";
-import { config } from "./mainnet-config";
-import { config as goerliConfig } from "./goerli-config";
+
+import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import {
-    UniswapMigrator,
-    UniswapMigrator__factory,
+    deployAuraBalStaker,
+    deployExtraRewardStashScheduler,
+    deployKeeperMulticall3,
+    deployFeeScheduler,
+    deployVeBalGrant,
+} from "../../scripts/deployPeripheral";
+import { Phase2Deployed } from "../../scripts/deploySystem";
+import { deployUpgrade01 } from "../../scripts/deployUpgrades";
+import { deployBBUSDHandlerV3, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
+import { waitForTx } from "../../tasks/utils";
+import { simpleToExactAmount } from "../../test-utils/math";
+import {
+    AuraMining,
+    AuraMining__factory,
     BoosterHelper,
     BoosterHelper__factory,
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
     GaugeMigrator,
     GaugeMigrator__factory,
-    AuraMining,
-    AuraMining__factory,
-    IStablePoolFactory__factory,
     IBalancerPool__factory,
     IBalancerVault__factory,
     IERC20__factory,
+    IStablePoolFactory__factory,
+    UniswapMigrator,
+    UniswapMigrator__factory,
 } from "../../types/generated";
-import { deployUpgrade01 } from "../../scripts/deployUpgrades";
-import { deployBBUSDHandlerV3, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
-import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
-import { simpleToExactAmount } from "../../test-utils/math";
-import { waitForTx } from "../../tasks/utils";
-import { deployAuraBalStaker, deployFeeScheduler, deployVeBalGrant } from "../../scripts/deployPeripheral";
+import { getSigner } from "../utils";
+import { deployContract } from "../utils/deploy-utils";
+import { config as goerliConfig } from "./goerli-config";
+import { config } from "./mainnet-config";
 
 const waitForBlocks = 2;
 const debug = true;
@@ -308,4 +315,21 @@ task("deploy:mainnet:bbusdHandlerV3")
         const deployer = await getSigner(hre);
         const result = await deployBBUSDHandlerV3(config, hre, deployer, debug, tskArgs.wait);
         console.log("Handler:", result.bbusdHandler.address);
+    });
+
+task("deploy:mainnet:extraRewardStashScheduler")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const result = await deployExtraRewardStashScheduler(hre, deployer, debug, tskArgs.wait);
+        console.log("ExtraRewardStashScheduler:", result.extraRewardStashScheduler.address);
+    });
+
+task("deploy:mainnet:keeperMulticall3")
+    .addParam("owner", "Address of balancer")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const result = await deployKeeperMulticall3(hre, deployer, tskArgs.owner, tskArgs.wait);
+        console.log("KeeperMulticall3:", result.keeperMulticall3.address);
     });
