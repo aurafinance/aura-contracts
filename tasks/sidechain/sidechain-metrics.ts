@@ -190,7 +190,7 @@ task("sidechain:metrics")
                 ["AuraProxyOFT net inflow", formatBool(netInflowBelowLimit, formatEther(netInflow))],
                 ["AuraProxyOFT inflow", formatEther(remoteMetrics.auraOFTData.totalSupply)],
                 ["AuraProxyOFT outflow", formatEther(remoteMetrics.auraOFTData.totalSupply)],
-                ["AuraProxyOFT inflow limit", formatEther(remoteMetrics.auraOFTData.totalSupply)],
+                ["AuraProxyOFT inflow limit", formatEther(inflowLimit)],
                 ["AuraProxyOFT paused", formatPaused(canonicalMetrics.auraProxyOFTData.paused)],
                 [arbitrumText("AuraOFT paused"), formatPaused(remoteMetrics.auraOFTData.paused)],
             ];
@@ -218,7 +218,7 @@ task("sidechain:metrics")
                 ["AuraBalProxyOFT net inflow", formatBool(netInflowBelowLimit, formatEther(netInflow))],
                 ["AuraBalProxyOFT inflow", formatEther(remoteMetrics.auraBalOFTData.totalSupply)],
                 ["AuraBalProxyOFT outflow", formatEther(remoteMetrics.auraBalOFTData.totalSupply)],
-                ["AuraBalProxyOFT inflow limit", formatEther(remoteMetrics.auraBalOFTData.totalSupply)],
+                ["AuraBalProxyOFT inflow limit", formatEther(inflowLimit)],
                 ["AuraBalProxyOFT paused", formatPaused(canonicalMetrics.auraBalProxyOFTData.paused)],
                 [arbitrumText("AuraBalOFT paused"), formatPaused(remoteMetrics.auraBalOFTData.paused)],
             ];
