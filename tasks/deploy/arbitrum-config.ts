@@ -19,10 +19,11 @@ import {
     ExtSidechainConfig,
     SidechainConfig,
     SidechainBridging,
-    BoosterHelper__factory,
+    KeeperMulticall3__factory,
     SidechainView__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
@@ -53,7 +54,7 @@ export const bridging: SidechainBridging = {
 export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
     booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
-    boosterHelper: BoosterHelper__factory.connect("0xe029c2edA9Cfa729BA6418D41A17276fD121F876", signer),
+    keeperMulticall3: KeeperMulticall3__factory.connect(ZERO_ADDRESS, signer),
     boosterOwner: BoosterOwner__factory.connect("0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66", signer),
     poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
     l2Coordinator: L2Coordinator__factory.connect("0xeC1c780A275438916E7CEb174D80878f29580606", signer),
