@@ -59,11 +59,10 @@ contract OptimismBridgeSender is BridgeDelegateSender {
      * - The caller must be the owner of the contract.
      * @param _amount The amount of CRV tokens to be sent
      */
-    function send(uint256 _amount, uint32 _l1Gas) external override onlyOwner {
+    function send(uint256 _amount) external override onlyOwner {
         require(l1Receiver != address(0), "L1ReceiverNotSet");
         IERC20(crv).safeApprove(l2StandardBridge, _amount);
-        IL2StandardBridge(l2StandardBridge).withdrawTo(crv, l1Crv, _amount, )
-        IArbitrumGatewayRouter(gatewayRouter).outboundTransfer(l1Crv, l1Receiver, _amount, _l1Gas, bytes(""));
+        IL2StandardBridge(l2StandardBridge).withdrawTo(crv, l1Receiver, _amount, 0, bytes(""));
         emit Send(l1Receiver, _amount);
     }
 }
