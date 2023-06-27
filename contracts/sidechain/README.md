@@ -141,7 +141,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | AuraBalStrategy          | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://arbiscan.io/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
 | VirtualRewardsFactory    | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://arbiscan.io/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
 | BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://arbiscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
-| BoosterLiteHelper        | [0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42](https://arbiscan.io/address/0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42) |
+| KeeperMulticall3         | [TODO](https://arbiscan.io/address/TODO)                                                                             |
 | VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://arbiscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
 | TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://arbiscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
 | ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://arbiscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
@@ -207,13 +207,12 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | AuraBalVault          | [0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c](https://goerli.etherscan.io/address/0xae8E14E01Fa6c651A6Cc4E410E8E623DFBa8BD1c) |
 | AuraBalStrategy       | [0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285](https://goerli.etherscan.io/address/0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285) |
 
-
-
 #### Arbitrum (42161) @deprecated
 
-| Contract                 | Address                                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| ClaimZap                 | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
+| Contract          | Address                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| ClaimZap          | [0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d](https://arbiscan.io/address/0x809195e57ce1c7ca9f339a4dbee5b3636cbff70d) |
+| BoosterLiteHelper | [0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42](https://arbiscan.io/address/0x5A0F54Eef14c3F6F0b2EefB6C618cd80B9B95e42) |
 
 ## Deployment Diagram
 

@@ -16,8 +16,6 @@ import {
     AuraOFT__factory,
     AuraProxyOFT,
     AuraProxyOFT__factory,
-    BoosterHelper,
-    BoosterHelper__factory,
     BoosterLite,
     BoosterLite__factory,
     BoosterOwnerLite,
@@ -182,7 +180,7 @@ interface Factories {
 export interface SidechainPhase1Deployed {
     voterProxy: VoterProxyLite;
     booster: BoosterLite;
-    boosterHelper: BoosterHelper;
+    keeperMulticall3: KeeperMulticall3;
     boosterOwner: BoosterOwnerLite;
     factories: Factories;
     poolManager: PoolManagerLite;
@@ -265,6 +263,8 @@ export async function deploySidechainPhase1(
     //         Protocol DAO : auraProxyOFT.setTrustedRemote(L2_CHAIN_ID, [auraBalOFT.address, auraBalProxyOFT.address]);
     //         Protocol DAO : l2Coordinator.setTrustedRemote(L1_CHAIN_ID, [l1Coordinator.address, l2Coordinator.address]);
     //         Protocol DAO : auraOFT.setTrustedRemote(L1_CHAIN_ID, [auraProxyOFT.address, auraOFT.address]);
+    //         Deployer: keeperMulticall3.updateAuthorizedKeepers(keeperAddress)
+    //         Deployer: keeperMulticall3.transferOwnership(protocolDAO.address)
     // -----------------------------
 
     const create2Options = { amount: 0, salt, callbacks: [] };
@@ -342,12 +342,12 @@ export async function deploySidechainPhase1(
         deployOptionsWithCallbacks([boosterLiteInitialize]),
     );
 
-    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+    const keeperMulticall3 = await deployContractWithCreate2<KeeperMulticall3, KeeperMulticall3__factory>(
         hre,
         create2Factory,
-        new BoosterHelper__factory(deployer),
-        "BoosterHelper",
-        [booster.address, extConfig.token],
+        new KeeperMulticall3__factory(deployer),
+        "KeeperMulticall3",
+        [deployerAddress],
         deployOptions,
     );
 
@@ -481,7 +481,7 @@ export async function deploySidechainPhase1(
     return {
         voterProxy,
         booster,
-        boosterHelper,
+        keeperMulticall3,
         boosterOwner,
         factories: {
             rewardFactory,

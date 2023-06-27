@@ -231,9 +231,7 @@ describe("ExtraRewardStashScheduler", () => {
             const stashAddress = extraRewardStashAuraWeth.address;
 
             const now = await getTimestamp();
-            console.log("🚀 ~ file: ExtraRewardStashScheduler.spec.ts:211 ~ it ~ now:", now);
             const currentEpoch = now.div(await extraRewardStashScheduler.epochDuration());
-            console.log("🚀 ~ file: ExtraRewardStashScheduler.spec.ts:213 ~ it ~ currentEpoch:", currentEpoch);
             const epoch = (await extraRewardStashScheduler.getCurrentEpoch()).sub(1);
 
             expect(currentEpoch, "currentEpoch").to.be.gt(epoch);
