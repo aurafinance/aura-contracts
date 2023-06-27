@@ -210,11 +210,20 @@ task("sidechain:metrics")
             const inflowLimit = canonicalMetrics.auraBalProxyOFTData.inflowLimit;
             const netInflow = outflow.sub(inflow);
             const netInflowBelowLimit = netInflow.lte(inflowLimit);
+            const internalTotalSupply = canonicalMetrics.auraBalProxyOFTData.internalTotalSupply;
+            const claimableAura = canonicalMetrics.auraBalProxyOFTData.totalClaimableAura;
+            const claimableAuraBal = auraBalProxyOftAuraBalBalance.sub(internalTotalSupply);
 
             const rows = [
                 ["AuraBal OFTs are funded", auraBalIsFunded],
-                ["AuraBalProxyOFT AURA balance", formatEther(auraBalProxyOftAuraBalBalance)],
+                ["AuraBalProxyOFT auraBAL balance", formatEther(auraBalProxyOftAuraBalBalance)],
+                ["AuraBalProxyOFT internal total supply", formatEther(internalTotalSupply)],
                 [arbitrumText("AuraBalOFT total supply"), formatEther(remoteMetrics.auraBalOFTData.totalSupply)],
+                [
+                    arbitrumText("Claimable auraBAL"),
+                    formatBool(claimableAuraBal.lt(fullScale), formatEther(claimableAuraBal)),
+                ],
+                [arbitrumText("Claimable AURA"), formatBool(claimableAura.lt(fullScale), formatEther(claimableAura))],
                 ["AuraBalProxyOFT net inflow", formatBool(netInflowBelowLimit, formatEther(netInflow))],
                 ["AuraBalProxyOFT inflow", formatEther(inflow)],
                 ["AuraBalProxyOFT outflow", formatEther(outflow)],
