@@ -184,7 +184,6 @@ yarn task timeTravel --duration 69420 --network forking
 | VirtualRewardsFactory           | [0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3](https://etherscan.io/address/0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3) |
 | auraBalVault                    | [0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6](https://etherscan.io/address/0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6) |
 | auraBalVault Strategy           | [0x7372EcE4C18bEABc19981A53b557be90dcBd2b66](https://etherscan.io/address/0x7372EcE4C18bEABc19981A53b557be90dcBd2b66) |
-| auraBalVault BBUSDHandler (v2)  | [0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d](https://etherscan.io/address/0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d) |
 | auraBalVault BBUSDHandler (v3)  | [0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC](https://etherscan.io/address/0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC) |
 | auraBalVault VirtualRewards     | [0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147](https://etherscan.io/address/0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147) |
 | auraClaimZapV3                  | [0x5b2364fD757E262253423373E4D57C5c011Ad7F4](https://etherscan.io/address/0x5b2364fD757E262253423373E4D57C5c011Ad7F4) |
@@ -192,6 +191,7 @@ yarn task timeTravel --duration 69420 --network forking
 | feeScheduler                    | [0x1a65276A9B6A0611506763839B1fFAe3E86718b4](https://etherscan.io/address/0x1a65276A9B6A0611506763839B1fFAe3E86718b4) |
 | veBalGrant                      | [0x89f67f3054bFD662971854190Dbc18dcaBb416f6](https://etherscan.io/address/0x89f67f3054bFD662971854190Dbc18dcaBb416f6) |
 | auraViewHelpers                 | [0x129bBda5087e132983e7c20ae1F761333D40c229](https://etherscan.io/address/0x129bBda5087e132983e7c20ae1F761333D40c229) |
+| KeeperMulticall3                | [0x817F426B5a79599464488eCCf82c3F54b9330E15](https://etherscan.io/address/0x817F426B5a79599464488eCCf82c3F54b9330E15) |
 
 ### Arbitrum (42161)
 
@@ -276,6 +276,7 @@ yarn task timeTravel --duration 69420 --network forking
 
 ### Ethereum Mainnet (2) @deprecated
 
+| auraBalVault BBUSDHandler (v2) | [0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d](https://etherscan.io/address/0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d) |
 | extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
 | poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
 | gaugeMigrator | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
