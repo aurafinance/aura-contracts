@@ -54,7 +54,7 @@ export const bridging: SidechainBridging = {
 export const getSidechain = (signer: Signer) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
     booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
-    keeperMulticall3: KeeperMulticall3__factory.connect(ZERO_ADDRESS, signer),
+    keeperMulticall3: KeeperMulticall3__factory.connect("0x5C97f09506d60B90a817EB547ea4F03Ae990E798", signer),
     boosterOwner: BoosterOwner__factory.connect("0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66", signer),
     poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
     l2Coordinator: L2Coordinator__factory.connect("0xeC1c780A275438916E7CEb174D80878f29580606", signer),
