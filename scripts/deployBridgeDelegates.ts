@@ -8,6 +8,8 @@ import {
     BridgeDelegateSender,
     GnosisBridgeSender,
     GnosisBridgeSender__factory,
+    OptimismBridgeSender,
+    OptimismBridgeSender__factory,
     SidechainConfig,
     SimpleBridgeDelegateSender,
     SimpleBridgeDelegateSender__factory,
@@ -95,6 +97,28 @@ export async function deployArbitrumBridgeSender(
         new ArbitrumBridgeSender__factory(deployer),
         "ArbitrumBridgeSender",
         [gatewayRouter, token, l1Token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return bridgeDelegate;
+}
+
+export async function deployOptimismBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    standardBridge: string,
+    token: string,
+    l1Token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<OptimismBridgeSender> {
+    const bridgeDelegate = await deployContract<OptimismBridgeSender>(
+        hre,
+        new OptimismBridgeSender__factory(deployer),
+        "OptimismBridgeSender",
+        [standardBridge, token, l1Token],
         {},
         debug,
         waitForBlocks,

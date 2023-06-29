@@ -23,7 +23,7 @@ contract OptimismBridgeSender is BridgeDelegateSender {
        Storage 
     ------------------------------------------------------------------- */
 
-    /// @dev The Gnosis bridge address
+    /// @dev The bridge address
     address public immutable l2StandardBridge;
 
     /// @dev Mainnet CRV token address
@@ -34,7 +34,6 @@ contract OptimismBridgeSender is BridgeDelegateSender {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Constructs the GnosisBridgeSender contract.
      * @param _l2StandardBridge The optimism l2 standard bridge address.
      * @param _crv The L2 token address.
      * @param _l1Crv The L1 token address.

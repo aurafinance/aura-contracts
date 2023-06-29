@@ -3,7 +3,11 @@ import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
+import {
+    deployArbitrumBridgeSender,
+    deployOptimismBridgeSender,
+    deploySimpleBridgeReceiver,
+} from "../../scripts/deployBridgeDelegates";
 import {
     deployCanonicalPhase1,
     deployCanonicalPhase2,
@@ -194,6 +198,24 @@ task("deploy:sidechain:L2:bridgeSender:arbitrum")
         const l1Crv = canonicalConfig.addresses.token;
 
         const bridgeSender = await deployArbitrumBridgeSender(hre, deployer, gatewayRouter, crv, l1Crv);
+
+        const result = { bridgeSender };
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:sidechain:L2:bridgeSender:optimism")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { canonicalConfig, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const standardBridge = sidechainConfig.bridging.nativeBridge;
+        const crv = sidechainConfig.extConfig.token;
+        const l1Crv = canonicalConfig.addresses.token;
+
+        const bridgeSender = await deployOptimismBridgeSender(hre, deployer, standardBridge, crv, l1Crv);
 
         const result = { bridgeSender };
         logContracts(result as unknown as { [key: string]: { address: string } });
