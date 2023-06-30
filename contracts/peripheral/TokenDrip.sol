@@ -4,6 +4,7 @@ pragma solidity 0.8.11;
 import { AuraMath } from "../utils/AuraMath.sol";
 import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @author Aura Finance
@@ -12,6 +13,7 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
  */
 contract TokenDrip is Ownable {
     using AuraMath for uint256;
+    using SafeERC20 for IERC20;
 
     /* -------------------------------------------------------------------
        Storage 
@@ -40,7 +42,7 @@ contract TokenDrip is Ownable {
     ------------------------------------------------------------------- */
 
     event UpdateDrip(uint256 lastUpdated, uint256 current, uint256 target, uint256 rate);
-    event Drip(uint256 amount);
+    event Drip(address to, uint256 amount);
     event Cancel(uint256 lastUpdated, uint256 current, uint256 target, uint256 rate);
 
     /* -------------------------------------------------------------------
@@ -96,9 +98,9 @@ contract TokenDrip is Ownable {
         current = newCurrent;
         lastUpdated = block.timestamp;
 
-        IERC20(token).transfer(to, amount);
+        IERC20(token).safeTransfer(to, amount);
 
-        emit Drip(amount);
+        emit Drip(to, amount);
     }
 
     /**
@@ -137,7 +139,7 @@ contract TokenDrip is Ownable {
         address _to,
         uint256 _amount
     ) external onlyOwner {
-        IERC20(_token).transfer(_to, _amount);
+        IERC20(_token).safeTransfer(_to, _amount);
     }
 
     /* -------------------------------------------------------------------
