@@ -6,7 +6,7 @@ import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory } from "../../types/generated";
 import { configs } from "./constants";
-import { Gauge, GaugeChoice, getGaugeChoices, getGaugeSnapshot, parseLabel } from "./utils";
+import { GaugeChoice, getGaugeChoices, getGaugeSnapshot, parseLabel } from "./utils";
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
