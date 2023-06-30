@@ -19,6 +19,13 @@ describe("FeeReduction", () => {
     let originalAura: BigNumber;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
 
+    function calcMintRate(fees, distributedAura) {
+        const feePercentage = sidechainFees / 10000;
+        const invertedFee = Number(fees) / feePercentage;
+        const effectiveMintRate = Number(distributedAura) / (invertedFee - invertedFee * feePercentage);
+        return effectiveMintRate;
+    }
+
     beforeEach(async () => {
         await network.provider.request({
             method: "hardhat_reset",
@@ -75,10 +82,12 @@ describe("FeeReduction", () => {
             const { distributedAura, fees } = await distributeAura();
 
             originalAura = distributedAura;
+            const effectiveMintRate = calcMintRate(fees, distributedAura);
 
             // prettier-ignore
             {
               console.log(`Multiplier:            ${1000}`);
+              console.log(`Mint Rate:             ${effectiveMintRate}`);
               console.log(`New Aura Sent:         ${formatEther(distributedAura)}`);
               console.log(`Bal Fees:              ${formatEther(fees)}`);
             }
@@ -92,11 +101,13 @@ describe("FeeReduction", () => {
             expect(await canonical.l1Coordinator.rewardMultiplier()).eq(multiplier);
 
             const { distributedAura, fees } = await distributeAura();
+            const effectiveMintRate = calcMintRate(fees, distributedAura);
 
             // prettier-ignore
             {
               console.log(`New Multiplier:        ${multiplier}`);
               console.log(`New Aura Sent:         ${formatEther(distributedAura)}`);
+              console.log(`Mint Rate:             ${effectiveMintRate}`);
               console.log(`Change In Aura Sent:   ${chalk.red("-")}${chalk.red(formatEther(originalAura.sub(distributedAura)))}`);
               console.log(`Bal Fees:              ${formatEther(fees)}`);
             }
