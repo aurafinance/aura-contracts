@@ -20,7 +20,6 @@ describe("TokenDrip", () => {
     let mockToken: ERC20;
 
     let initialLastUpdated: BigNumber;
-    const initialCurrent = 0;
     const initialTarget = simpleToExactAmount(2_000);
     const initialRate = simpleToExactAmount(2_000).div(ONE_DAY.mul(30)); // 2,000 every 30 days
 
@@ -41,8 +40,6 @@ describe("TokenDrip", () => {
         tokenDrip = await new TokenDrip__factory(deployer.signer).deploy(
             mockToken.address,
             receiver.address,
-            initialLastUpdated,
-            initialCurrent,
             initialTarget,
             initialRate,
         );
@@ -56,8 +53,8 @@ describe("TokenDrip", () => {
             expect(await tokenDrip.token()).eq(mockToken.address);
             expect(await tokenDrip.to()).eq(receiver.address);
             // Mutables
-            expect(await tokenDrip.lastUpdated()).eq(initialLastUpdated);
-            expect(await tokenDrip.current()).eq(initialCurrent);
+            expect(await tokenDrip.lastUpdated()).gte(initialLastUpdated);
+            expect(await tokenDrip.current()).eq(0);
             expect(await tokenDrip.target()).eq(initialTarget);
             expect(await tokenDrip.rate()).eq(initialRate);
         });

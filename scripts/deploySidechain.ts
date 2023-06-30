@@ -2,9 +2,10 @@ import { ContractTransaction, ethers, Signer } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
+import { simpleToExactAmount } from "../test-utils/math";
 
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
-import { ZERO_ADDRESS } from "../test-utils/constants";
+import { ONE_DAY, ZERO_ADDRESS } from "../test-utils/constants";
 import {
     AuraBalOFT,
     AuraBalOFT__factory,
@@ -46,6 +47,8 @@ import {
     SimpleStrategy__factory,
     StashFactoryV2,
     StashFactoryV2__factory,
+    TokenDrip,
+    TokenDrip__factory,
     TokenFactory,
     TokenFactory__factory,
     VirtualRewardFactory,
@@ -868,5 +871,34 @@ export async function deployKeeperMulticall3(
 
     return {
         keeperMulticall3,
+    };
+}
+
+export async function deployTokenDrip(
+    phase2: Phase2Deployed,
+    multisigs: MultisigConfig,
+    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const rate = simpleToExactAmount(2_000).div(ONE_DAY.mul(30)); // 2,000 every 30 days
+
+    const tokenDrip = await deployContract<TokenDrip>(
+        hre,
+        new TokenDrip__factory(signer),
+        "TokenDrip",
+        [phase2.cvx.address, canonical.l1Coordinator.address, simpleToExactAmount(10_000), rate],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const tx = await tokenDrip.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return {
+        tokenDrip,
     };
 }

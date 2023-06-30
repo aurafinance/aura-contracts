@@ -48,23 +48,21 @@ contract TokenDrip is Ownable {
     ------------------------------------------------------------------- */
 
     /**
-     * @param _lastUpdated  The last updated time
-     * @param _current      The current value that has been dripped
-     * @param _target       The target amount to drip in total
-     * @param _rate         The rate per second to drip tokens
+     * @param _token    The token address
+     * @param _to       The address to drip to
+     * @param _target   The target amount to drip in total
+     * @param _rate     The rate per second to drip tokens
      */
     constructor(
         address _token,
         address _to,
-        uint256 _lastUpdated,
-        uint256 _current,
         uint256 _target,
         uint256 _rate
     ) {
         token = _token;
         to = _to;
 
-        _updateDrip(_lastUpdated, _current, _target, _rate);
+        _updateDrip(block.timestamp, 0, _target, _rate);
     }
 
     /* -------------------------------------------------------------------
