@@ -17,12 +17,22 @@ contract TokenDrip is Ownable {
        Storage 
     ------------------------------------------------------------------- */
 
+    /// @dev The token to send to the address
     address public immutable token;
+
+    /// @dev The address to send the tokens to
     address public immutable to;
 
+    /// @dev The last time the drip was called/updated
     uint256 public lastUpdated;
+
+    /// @dev Current accumulated dripped value
     uint256 public current;
+
+    /// @dev Target total dripped amount
     uint256 public target;
+
+    /// @dev The rate per second of the drip
     uint256 public rate;
 
     /* -------------------------------------------------------------------
@@ -31,6 +41,7 @@ contract TokenDrip is Ownable {
 
     event UpdateDrip(uint256 lastUpdated, uint256 current, uint256 target, uint256 rate);
     event Drip(uint256 amount);
+    event Cancel(uint256 lastUpdated, uint256 current, uint256 target, uint256 rate);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -113,6 +124,8 @@ contract TokenDrip is Ownable {
      */
     function cancel() external onlyOwner {
         _updateDrip(0, 0, 0, 0);
+
+        emit Cancel(lastUpdated, current, target, rate);
     }
 
     /**
