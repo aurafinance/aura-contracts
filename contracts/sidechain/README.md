@@ -160,30 +160,26 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 
 #### Optimism (10)
 
-| Contract                 | Address                                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| create2Factory           | [](https://arbiscan.io/address/)                                                                                     |
-| L2Coordinator            | [](https://arbiscan.io/address/)                                                                                     |
-| AuraOFT                  | [](https://arbiscan.io/address/)                                                                                     |
-| AuraBalOFT               | [](https://arbiscan.io/address/)                                                                                     |
-| AuraBalVault             | [](https://arbiscan.io/address/)                                                                                     |
-| AuraBalStrategy          | [](https://arbiscan.io/address/)                                                                                     |
-| VirtualRewardsFactory    | [](https://arbiscan.io/address/)                                                                                     |
-| BoosterLite              | [](https://arbiscan.io/address/)                                                                                     |
-| KeeperMulticall3         | [](https://arbiscan.io/address/)                                                                                     |
-| VoterProxyLite           | [](https://arbiscan.io/address/)                                                                                     |
-| TokenFactory             | [](https://arbiscan.io/address/)                                                                                     |
-| ProxyFactory             | [](https://arbiscan.io/address/)                                                                                     |
-| RewardFactory            | [](https://arbiscan.io/address/)                                                                                     |
-| StashFactory             | [](https://arbiscan.io/address/)                                                                                     |
-| PoolManagerLite          | [](https://arbiscan.io/address/)                                                                                     |
-| BoosterOwner             | [](https://arbiscan.io/address/)                                                                                     |
-| ProtocolDAO              | [](https://arbiscan.io/address/)                                                                                     |
-| ClaimZap                 | [](https://arbiscan.io/address/)                                                                                     |
-| Treasury                 | [](https://arbiscan.io/address/)                                                                                     |
-| RewardPoolDepositWrapper | [](https://arbiscan.io/address/)                                                                                     |
-| BridgeSender             | [0x0451255563e2aca170b2552111837572e7a0bacd](https://arbiscan.io/address/0x0451255563e2aca170b2552111837572e7a0bacd) |
-| View                     | [](https://arbiscan.io/address/)                                                                                     |
+| Contract                 | Address                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| create2Factory           | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://optimistic.etherscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator            | [0xeC1c780A275438916E7CEb174D80878f29580606](https://optimistic.etherscan.io/address/0xeC1c780A275438916E7CEb174D80878f29580606) |
+| AuraOFT                  | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://optimistic.etherscan.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://optimistic.etherscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3         | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://optimistic.etherscan.io/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://optimistic.etherscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://optimistic.etherscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://optimistic.etherscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
+| RewardFactory            | [0x2F4CdF0D46F4E3E6D4d37836E73073046138D4f7](https://optimistic.etherscan.io/address/0x2F4CdF0D46F4E3E6D4d37836E73073046138D4f7) |
+| StashFactory             | [0x8401B48760E70A39e6bBf861ABd050c00362bAE8](https://optimistic.etherscan.io/address/0x8401B48760E70A39e6bBf861ABd050c00362bAE8) |
+| PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://optimistic.etherscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwner             | [0xF044eE152C7D731825280350D876CF760181D96F](https://optimistic.etherscan.io/address/0xF044eE152C7D731825280350D876CF760181D96F) |
+| ProtocolDAO              | [0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b](https://optimistic.etherscan.io/address/0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b) |
+| ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://optimistic.etherscan.io/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
+| Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://optimistic.etherscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| RewardPoolDepositWrapper | [](https://optimistic.etherscan.io/address/)                                                                                     |
+| BridgeSender             | [0x0451255563e2aca170b2552111837572e7a0bacd](https://optimistic.etherscan.io/address/0x0451255563e2aca170b2552111837572e7a0bacd) |
+| View                     | [](https://optimistic.etherscan.io/address/)                                                                                     |
 
 ### Gnosis (test deployment) (100)
 

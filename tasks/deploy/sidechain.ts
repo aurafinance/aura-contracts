@@ -392,7 +392,14 @@ task("deploy:sidechain:zap")
 
         const { sidechain, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
 
-        const result = await deploySidechainClaimZap(sidechainConfig.extConfig, sidechain, hre, deployer);
+        const result = await deploySidechainClaimZap(
+            sidechainConfig.extConfig,
+            sidechain,
+            hre,
+            deployer,
+            debug,
+            tskArgs.wait,
+        );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });

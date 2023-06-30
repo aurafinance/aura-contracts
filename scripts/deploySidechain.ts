@@ -736,9 +736,9 @@ export async function deploySidechainClaimZap(
     sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
-    salt: string = SALT,
     debug = false,
     waitForBlocks = 0,
+    salt: string = SALT,
 ): Promise<{ sidechainClaimZap: SidechainClaimZap }> {
     const create2Options = { amount: 0, salt, callbacks: [] };
     const deployOptions = {
