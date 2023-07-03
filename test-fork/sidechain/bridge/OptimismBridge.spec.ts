@@ -6,7 +6,7 @@ import { config as mainnetConfig } from "../../../tasks/deploy/mainnet-config";
 import { config as optimismConfig } from "../../../tasks/deploy/optimism-config";
 import { impersonateAccount, simpleToExactAmount } from "../../../test-utils";
 import { Account, ERC20, MockERC20__factory, OptimismBridgeSender } from "../../../types";
-import { CrossChainMessenger, CrossChainMessage } from "@eth-optimism/sdk";
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
 
 describe("OptimismBridge", () => {
     const ethBlockNumber: number = 17612600;
@@ -121,85 +121,42 @@ describe("OptimismBridge", () => {
             const customProvider = new ethers.providers.JsonRpcProvider(process.env.OPTIMISM_NODE_URL);
             const receipt = await customProvider.getTransactionReceipt(withdrawTxHash);
 
-            //console.log(receipt)
+            await network.provider.request({
+                method: "hardhat_reset",
+                params: [
+                    {
+                        forking: {
+                            jsonRpcUrl: process.env.ETHEREUM_NODE_URL,
+                            blockNumber: ethBlockNumber,
+                        },
+                    },
+                ],
+            });
 
-            let logIndex;
-            let blockNumber;
-            let nonce;
-            let value = BigNumber.from("0");
-            let minGasLimit = BigNumber.from("0");
-
-            let message;
-            for (var i in receipt.logs) {
-                const log = receipt.logs[i];
-                try {
-                    if (log.address == crossDomainMessanger) {
-                        const iface = new ethers.utils.Interface([
-                            "event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)",
-                        ]);
-                        const logs = iface.parseLog(log);
-                        message = logs.args.message;
-                        logIndex = log.logIndex;
-                        blockNumber = log.blockNumber;
-                        nonce = BigNumber.from(logs.args.messageNonce);
-                    }
-                } catch {}
-            }
+            const accounts = await ethers.getSigners();
+            deployer = await impersonateAccount(await accounts[0].getAddress());
 
             const CCM = new CrossChainMessenger({
                 l1ChainId: 1,
-                l1SignerOrProvider: process.env.ETHEREUM_NODE_URL,
+                l1SignerOrProvider: deployer.signer,
                 l2ChainId: 10,
                 l2SignerOrProvider: process.env.OPTIMISM_NODE_URL,
+                bedrock: true,
             });
 
-            // const withdrawMessage: CrossChainMessage = {
-            //     direction: 1,
-            //     logIndex: logIndex,
-            //     blockNumber: blockNumber,
-            //     transactionHash: withdrawTxHash,
-            //     sender: receipt.from,
-            //     target: receipt.to,
-            //     message: message,
-            //     messageNonce: nonce,
-            //     value: value,
-            //     minGasLimit: minGasLimit
-            // }
+            const message = await CCM.toCrossChainMessage(receipt);
+            const status = await CCM.getMessageStatus(message);
 
-            // const overrides = {fromBlock: '0x11', toBlock: '0x9819f0'}
+            if (status == MessageStatus.READY_TO_PROVE) {
+                const prove = await CCM.proveMessage(message);
+                console.log(prove);
+            } else if (status == MessageStatus.READY_FOR_RELAY) {
+                const withdraw = await CCM.finalizeMessage(message);
+                console.log(withdraw);
+            }
 
-            const m = await CCM.toCrossChainMessage(receipt);
-            const stateRoot = await CCM.getMessageStateRoot(m);
-
-            console.log(m, stateRoot);
-
-            const proof = await CCM.getMessageProof(m);
-
-            // await network.provider.request({
-            //     method: "hardhat_reset",
-            //     params: [
-            //         {
-            //             forking: {
-            //                 jsonRpcUrl: process.env.ETHEREUM_NODE_URL,
-            //                 blockNumber: ethBlockNumber,
-            //             },
-            //         },
-            //     ],
-            // });
-
-            // crv = MockERC20__factory.connect(mainnetConfig.addresses.token, deployer.signer);
-            // const startBalance = await crv.balanceOf(dao.address);
-
-            // const abi = ["function executeSignatures(bytes _data, bytes _signatures) external"];
-            // const smartContract = new ethers.Contract(ambOnEth, abi);
-
-            // await smartContract.connect(deployer.signer).executeSignatures(signData, signatures);
-
-            // const endBalance = await crv.balanceOf(dao.address);
-
-            // console.log("Bridged " + (Number(endBalance) - Number(startBalance)).toString() + " BAL");
-            // expect(Number(endBalance)).to.be.gt(Number(startBalance));
-            // console.log(dao.address);
+            const newStatus = await CCM.getMessageStatus(message);
+            expect(newStatus).not.eq(status);
         });
     });
 });
