@@ -31,20 +31,10 @@ contract WardQuestScheduler is Ownable {
     address public immutable darkQuestBoard;
 
     /** @notice List of Quest questId => stash */
-    mapping(uint256 => Quest) public quests;
+    mapping(uint256 => address) public quests;
 
     /** @notice List of queued rewards (epoch => stash => amount) */
     mapping(uint256 => mapping(address => uint256)) public rewardsQueue;
-
-    /** @notice Struct holding the parameters of the Quest common for all periods */
-    struct Quest {
-        // Address of the ERC20 used for rewards
-        address stash;
-        // Epoch for the quest.
-        uint256 epoch;
-        // Total amount of rewards paid for this Quest
-        uint256 totalRewardAmount;
-    }
 
     /** @notice Event emitted when rewards are queued  */
     event QueuedRewards(address stash, uint256 epoch, uint256 rewardAmount);
@@ -100,7 +90,7 @@ contract WardQuestScheduler is Ownable {
             feeAmount,
             blacklist
         );
-        quests[questID].stash = stash;
+        quests[questID] = stash;
     }
 
     /**
@@ -108,7 +98,7 @@ contract WardQuestScheduler is Ownable {
      * @param questID ID of the Quest
      */
     function withdrawAndQueueUnusedRewards(uint256 questID) external returns (uint256 amount) {
-        address stash = quests[questID].stash;
+        address stash = quests[questID];
         require(stash != address(0), "!questID");
 
         uint256 balanceBefore = IERC20(cvx).balanceOf(address(this));
@@ -126,8 +116,7 @@ contract WardQuestScheduler is Ownable {
      * @param questID ID of the Quest
      */
     function emergencyWithdraw(uint256 questID) external {
-        address stash = quests[questID].stash;
-        require(stash != address(0), "!questID");
+        require(quests[questID] != address(0), "!questID");
         IDarkQuestBoard(darkQuestBoard).emergencyWithdraw(questID, owner());
     }
 
