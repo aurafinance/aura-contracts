@@ -15,7 +15,8 @@ describe("FeeReduction", () => {
     let deployer: Account;
     let dao: Account;
     const sidechainFees = 2500;
-    const mainnetFees = 2250;
+    let actualMintRate;
+    //const mainnetFees = 2250;
     let originalAura: BigNumber;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
 
@@ -83,6 +84,7 @@ describe("FeeReduction", () => {
 
             originalAura = distributedAura;
             const effectiveMintRate = calcMintRate(fees, distributedAura);
+            actualMintRate = effectiveMintRate;
 
             // prettier-ignore
             {
@@ -94,14 +96,25 @@ describe("FeeReduction", () => {
         });
 
         it("Should be able to adjust the mint rate to account for fees", async () => {
-            const adjustmentNeeded = 1.0 - (sidechainFees / mainnetFees / (sidechainFees - mainnetFees)) * 10;
+            let auraMining = await mainnetConfig.getAuraMining(deployer.signer);
+            const expectedMintRate = Number(
+                formatEther(await auraMining.auraMining.convertCrvToCvx(simpleToExactAmount("1"))),
+            );
+            const adjustmentNeeded = expectedMintRate / actualMintRate;
             const multiplier = Math.floor(adjustmentNeeded * 10000);
 
             await canonical.l1Coordinator.connect(dao.signer).setRewardMultiplier(multiplier);
             expect(await canonical.l1Coordinator.rewardMultiplier()).eq(multiplier);
 
+            const phase2 = await mainnetConfig.getPhase2(deployer.signer);
+            const startTreasuryBalance = await phase2.cvx.balanceOf(mainnetConfig.multisigs.treasuryMultisig);
+
             const { distributedAura, fees } = await distributeAura();
             const effectiveMintRate = calcMintRate(fees, distributedAura);
+
+            const endTreasuryBalance = await phase2.cvx.balanceOf(mainnetConfig.multisigs.treasuryMultisig);
+
+            expect(endTreasuryBalance.sub(startTreasuryBalance)).eq(originalAura.sub(distributedAura));
 
             // prettier-ignore
             {
@@ -109,6 +122,7 @@ describe("FeeReduction", () => {
               console.log(`New Aura Sent:         ${formatEther(distributedAura)}`);
               console.log(`Mint Rate:             ${effectiveMintRate}`);
               console.log(`Change In Aura Sent:   ${chalk.red("-")}${chalk.red(formatEther(originalAura.sub(distributedAura)))}`);
+              console.log(`Treasury Aura Change:  ${chalk.green("+")}${chalk.green(formatEther(endTreasuryBalance.sub(startTreasuryBalance)))}`);
               console.log(`Bal Fees:              ${formatEther(fees)}`);
             }
         });
