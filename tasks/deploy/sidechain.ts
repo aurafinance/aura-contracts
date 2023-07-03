@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
 import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
 import {
+    deployAuraDistributor,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCanonicalView,
@@ -14,7 +15,6 @@ import {
     deploySidechainPhase1,
     deploySidechainPhase2,
     deploySidechainView,
-    deployTokenDrip,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
 } from "../../scripts/deploySidechain";
@@ -348,7 +348,7 @@ task("deploy:sidechain:config:L1:phase2")
     Helper Tasks
 ---------------------------------------------------------------------------- */
 
-task("deploy:sidechain:l1CoordinatorTokenDrip")
+task("deploy:sidechain:auraDistributor")
     .addParam("wait", "Wait for blocks")
     .addParam("canonicalchainid", "Wait for blocks")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
@@ -357,10 +357,8 @@ task("deploy:sidechain:l1CoordinatorTokenDrip")
 
         const { canonicalConfig, canonical } = sidechainTaskSetup(deployer, hre.network, canonicalId);
 
-        const phase2 = await canonicalConfig.getPhase2(deployer);
-
-        const result = await deployTokenDrip(
-            phase2,
+        const result = await deployAuraDistributor(
+            canonicalConfig.addresses,
             canonicalConfig.multisigs,
             canonical,
             hre,
