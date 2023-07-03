@@ -13,11 +13,6 @@ import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from 
 import { getSigner } from "../utils";
 import { fullScale } from "../../test-utils/constants";
 import chalk from "chalk";
-import * as fs from "fs";
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function getCanonicalMetrics(viewDeployment: CanonicalViewDeployed, sidechainIds: number[]) {
     const data = await viewDeployment.canonicalView.getCanonicalData(sidechainIds);
@@ -302,28 +297,3 @@ task("sidechain:metrics")
             console.log(table([[chalk.bold("Mint rate"), ""], ...rows]));
         }
     });
-
-task("sidechain:mintrate").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-    const deployer = await getSigner(hre);
-    const remoteChainId = hre.network.config.chainId;
-    const sidechainConfig = sidechainConfigs[remoteChainId];
-
-    const sidechain = await sidechainConfig.getSidechain(deployer);
-
-    const bn = 102228230;
-    const en = 106608900;
-    const df = en - bn;
-    const steps = 1023;
-    const step = Math.floor(df / steps);
-    const res = [];
-
-    for (let i = 0; i < steps + 1; i++) {
-        const block = bn + i * step;
-        const rate = await sidechain.l2Coordinator.mintRate({ blockTag: block });
-        await sleep(10);
-        res.push({ block: block, mintRate: Number(rate) / 1e18 });
-    }
-
-    const data = JSON.stringify(res);
-    fs.writeFileSync("mintRate.json", data);
-});
