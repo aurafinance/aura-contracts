@@ -44,6 +44,7 @@
         "@codechecks/client": "^0.1.12",
         "@commitlint/cli": "^14.1.0",
         "@commitlint/config-conventional": "^14.1.0",
+        "@eth-optimism/sdk": "^3.0.0",
         "@ethersproject/abi": "^5.5.0",
         "@ethersproject/abstract-signer": "^5.5.0",
         "@ethersproject/bignumber": "^5.5.0",
