@@ -215,7 +215,7 @@ task("sidechain:metrics")
             const claimableAuraBal = auraBalProxyOftAuraBalBalance.sub(internalTotalSupply);
 
             const rows = [
-                ["AuraBal OFTs are funded", auraBalIsFunded],
+                ["AuraBal OFTs are funded", formatBool(auraBalIsFunded)],
                 ["AuraBalProxyOFT auraBAL balance", formatEther(auraBalProxyOftAuraBalBalance)],
                 ["AuraBalProxyOFT internal total supply", formatEther(internalTotalSupply)],
                 [arbitrumText("AuraBalOFT total supply"), formatEther(remoteMetrics.auraBalOFTData.totalSupply)],
