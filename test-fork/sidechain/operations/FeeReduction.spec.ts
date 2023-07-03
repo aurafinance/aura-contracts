@@ -1,30 +1,29 @@
+import chalk from "chalk";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers, network } from "hardhat";
-import chalk from "chalk";
+import { formatEther } from "ethers/lib/utils";
 
 import { Account } from "../../../types";
 import { config as mainnetConfig } from "../../../tasks/deploy/mainnet-config";
 import { CanonicalPhase1Deployed, CanonicalPhase2Deployed } from "scripts/deploySidechain";
 import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../../test-utils";
-import { formatEther } from "ethers/lib/utils";
+
+const ethBlockNumber: number = 17591447;
+const sidechainFees = 2500;
 
 describe("FeeReduction", () => {
-    const ethBlockNumber: number = 17591447;
-
     let deployer: Account;
     let dao: Account;
-    const sidechainFees = 2500;
-    let actualMintRate;
+    let actualMintRate: number;
     //const mainnetFees = 2250;
     let originalAura: BigNumber;
     let canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
 
-    function calcMintRate(fees, distributedAura) {
+    function calcMintRate(fees: number, distributedAura: number) {
         const feePercentage = sidechainFees / 10000;
-        const invertedFee = Number(fees) / feePercentage;
-        const effectiveMintRate = Number(distributedAura) / (invertedFee - invertedFee * feePercentage);
-        return effectiveMintRate;
+        const invertedFee = fees / feePercentage;
+        return distributedAura / (invertedFee - invertedFee * feePercentage);
     }
 
     beforeEach(async () => {
@@ -75,28 +74,29 @@ describe("FeeReduction", () => {
             }
         }
 
-        return { distributedAura, fees };
+        const effectiveMintRate = calcMintRate(Number(fees), Number(distributedAura));
+
+        return { distributedAura, fees, effectiveMintRate };
     };
 
     describe("Adjust Sidechain Mint Rate", () => {
         it("Should be able to see current mint rate based on a pending distribute", async () => {
-            const { distributedAura, fees } = await distributeAura();
+            const { distributedAura, fees, effectiveMintRate } = await distributeAura();
 
             originalAura = distributedAura;
-            const effectiveMintRate = calcMintRate(fees, distributedAura);
             actualMintRate = effectiveMintRate;
 
             // prettier-ignore
             {
               console.log(`Multiplier:            ${1000}`);
-              console.log(`Mint Rate:             ${effectiveMintRate}`);
+              console.log(`Mint Rate:             ${actualMintRate}`);
               console.log(`New Aura Sent:         ${formatEther(distributedAura)}`);
               console.log(`Bal Fees:              ${formatEther(fees)}`);
             }
         });
 
         it("Should be able to adjust the mint rate to account for fees", async () => {
-            let auraMining = await mainnetConfig.getAuraMining(deployer.signer);
+            const auraMining = await mainnetConfig.getAuraMining(deployer.signer);
             const expectedMintRate = Number(
                 formatEther(await auraMining.auraMining.convertCrvToCvx(simpleToExactAmount("1"))),
             );
@@ -109,8 +109,7 @@ describe("FeeReduction", () => {
             const phase2 = await mainnetConfig.getPhase2(deployer.signer);
             const startTreasuryBalance = await phase2.cvx.balanceOf(mainnetConfig.multisigs.treasuryMultisig);
 
-            const { distributedAura, fees } = await distributeAura();
-            const effectiveMintRate = calcMintRate(fees, distributedAura);
+            const { distributedAura, fees, effectiveMintRate } = await distributeAura();
 
             const endTreasuryBalance = await phase2.cvx.balanceOf(mainnetConfig.multisigs.treasuryMultisig);
 
