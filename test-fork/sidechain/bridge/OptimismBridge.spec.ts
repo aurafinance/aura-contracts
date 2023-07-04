@@ -1,6 +1,6 @@
 import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumberish } from "ethers";
 import { deployOptimismBridgeSender } from "../../../scripts/deployBridgeDelegates";
 import { config as mainnetConfig } from "../../../tasks/deploy/mainnet-config";
 import { config as optimismConfig } from "../../../tasks/deploy/optimism-config";
@@ -15,18 +15,12 @@ describe("OptimismBridge", () => {
     const withdrawTxHash: string = "0x90db8fc43d4182fb1804136cc183ab6f8fa42bcf80f01093d22976c0743f53a2";
 
     let deployer: Account;
-    let dao: Account;
 
     // Canonical chain Contracts
     let crv: ERC20;
 
     // Sender Contract
     let bridgeSender: OptimismBridgeSender;
-
-    //Data for testing
-    let signData: string;
-    let messageId: string;
-    let signatures: string;
 
     /* ---------------------------------------------------------------------
      * Helper Functions
@@ -51,7 +45,6 @@ describe("OptimismBridge", () => {
 
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
-        dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
 
         // Deploy mocks
         crv = MockERC20__factory.connect(optimismConfig.extConfig.token, deployer.signer);
@@ -87,7 +80,6 @@ describe("OptimismBridge", () => {
 
             let hasBridgeRequest = false;
             let hasMessageSent = false;
-            let receiver;
 
             let i;
             for (i in receipt.logs) {
@@ -108,9 +100,13 @@ describe("OptimismBridge", () => {
                         const iface = new ethers.utils.Interface([
                             "event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)",
                         ]);
+                        const logs = iface.parseLog(log);
+                        expect(logs.args.sender).eq(optimismConfig.bridging.nativeBridge);
                         hasMessageSent = true;
                     }
-                } catch {}
+                } catch {
+                    continue;
+                }
             }
 
             expect(hasMessageSent).eq(true);
