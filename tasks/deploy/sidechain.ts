@@ -354,8 +354,8 @@ task("deploy:sidechain:auraDistributor")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const canonicalId = Number(tskArgs.canonicalchainid);
-
-        const { canonicalConfig, canonical } = sidechainTaskSetup(deployer, hre.network, canonicalId);
+        const canonicalConfig = canonicalConfigs[canonicalId];
+        const canonical = canonicalConfig.getSidechain(deployer);
 
         const result = await deployAuraDistributor(
             canonicalConfig.addresses,

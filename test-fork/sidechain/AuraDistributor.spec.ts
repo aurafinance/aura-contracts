@@ -65,7 +65,7 @@ describe("AuraDistributor", () => {
             await expect(ad.withdrawERC20(balToken.address, simpleToExactAmount(1))).to.be.revertedWith(errorMsg);
             await expect(ad.setDistributor(deployer.address)).to.be.revertedWith(errorMsg);
             // Not distributor
-            await expect(ad.distributedAura([], [], [], [], [])).to.be.revertedWith("!distributor");
+            await expect(ad.distributeAura([], [], [], [], [])).to.be.revertedWith("!distributor");
         });
 
         it("set distributor", async () => {
@@ -120,7 +120,7 @@ describe("AuraDistributor", () => {
             const distributedFeeDebtBefore = await distributedFeeDebtOf();
             const balBalanceBefore = await balBalance();
 
-            await auraDistributor.distributedAura(
+            await auraDistributor.distributeAura(
                 [110],
                 [ZERO_ADDRESS],
                 [ZERO_ADDRESS],
@@ -157,6 +157,38 @@ describe("AuraDistributor", () => {
 
             expect(balBalanceDelta).eq(distributed);
             expect(distributed).gt(0);
+        });
+
+        it("Cannot be called with wrong argument length", async () => {
+            await expect(
+                auraDistributor.distributeAura([], [ZERO_ADDRESS], [ZERO_ADDRESS], [[]], [simpleToExactAmount(0.1)], {
+                    value: simpleToExactAmount(0.1),
+                }),
+            ).to.be.revertedWith("!length");
+
+            await expect(
+                auraDistributor.distributeAura([110], [], [ZERO_ADDRESS], [[]], [simpleToExactAmount(0.1)], {
+                    value: simpleToExactAmount(0.1),
+                }),
+            ).to.be.revertedWith("!length");
+
+            await expect(
+                auraDistributor.distributeAura([110], [ZERO_ADDRESS], [], [[]], [simpleToExactAmount(0.1)], {
+                    value: simpleToExactAmount(0.1),
+                }),
+            ).to.be.revertedWith("!length");
+
+            await expect(
+                auraDistributor.distributeAura([110], [ZERO_ADDRESS], [ZERO_ADDRESS], [], [simpleToExactAmount(0.1)], {
+                    value: simpleToExactAmount(0.1),
+                }),
+            ).to.be.revertedWith("!length");
+
+            await expect(
+                auraDistributor.distributeAura([110], [ZERO_ADDRESS], [ZERO_ADDRESS], [[]], [], {
+                    value: simpleToExactAmount(0.1),
+                }),
+            ).to.be.revertedWith("!length");
         });
     });
 });

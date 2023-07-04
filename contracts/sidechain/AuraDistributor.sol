@@ -75,7 +75,7 @@ contract AuraDistributor is Ownable {
     /**
      * @dev Distribute AURA tokens to the L1's
      */
-    function distributedAura(
+    function distributeAura(
         uint16[] memory _srcChainId,
         address[] memory _zroPaymentAddress,
         address[] memory _sendFromZroPaymentAddress,
