@@ -8,8 +8,8 @@ import {
     AuraBalStaker__factory,
     AuraBalVault,
     CvxCrvToken,
-    ExtraRewardStashScheduler,
-    ExtraRewardStashScheduler__factory,
+    WardQuestScheduler,
+    WardQuestScheduler__factory,
     FeeScheduler,
     FeeScheduler__factory,
     KeeperMulticall3,
@@ -92,23 +92,29 @@ export async function deployVeBalGrant(
         veBalGrant,
     };
 }
-export async function deployExtraRewardStashScheduler(
+export async function deployWardQuestScheduler(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     debug = false,
     waitForBlocks = 0,
 ) {
     const phase2 = await config.getPhase2(signer);
-    const extraRewardStashScheduler = await deployContract<ExtraRewardStashScheduler>(
+    const phase6 = await config.getPhase6(signer);
+    const wardQuestScheduler = await deployContract<WardQuestScheduler>(
         hre,
-        new ExtraRewardStashScheduler__factory(signer),
-        "ExtraRewardStashScheduler",
-        [phase2.cvx.address],
+        new WardQuestScheduler__factory(signer),
+        "WardQuestScheduler",
+        [
+            phase6.booster.address,
+            phase2.cvx.address,
+            config.addresses.darkQuestBoard,
+            config.multisigs.incentivesMultisig,
+        ],
         {},
         debug,
         waitForBlocks,
     );
-    return { extraRewardStashScheduler };
+    return { wardQuestScheduler };
 }
 export async function deployKeeperMulticall3(
     hre: HardhatRuntimeEnvironment,

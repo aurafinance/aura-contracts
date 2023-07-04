@@ -172,6 +172,7 @@ interface ExtSystemConfig {
         auraBalInflowLimit: BigNumber;
         auraInflowLimit: BigNumber;
     };
+    darkQuestBoard?: string;
 }
 
 interface NamingConfig {
@@ -190,6 +191,7 @@ interface MultisigConfig {
     daoMultisig: string;
     sudoMultisig: string;
     pauseGuardian: string;
+    incentivesMultisig?: string;
     defender?: {
         l1CoordinatorDistributor?: string;
         auraBalProxyOFTHarvestor?: string;

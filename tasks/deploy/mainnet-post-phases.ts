@@ -6,7 +6,7 @@ import { TaskArguments } from "hardhat/types";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import {
     deployAuraBalStaker,
-    deployExtraRewardStashScheduler,
+    deployWardQuestScheduler,
     deployKeeperMulticall3,
     deployFeeScheduler,
     deployVeBalGrant,
@@ -317,12 +317,12 @@ task("deploy:mainnet:bbusdHandlerV3")
         console.log("Handler:", result.bbusdHandler.address);
     });
 
-task("deploy:mainnet:extraRewardStashScheduler")
+task("deploy:mainnet:wardQuestScheduler")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-        const result = await deployExtraRewardStashScheduler(hre, deployer, debug, tskArgs.wait);
-        console.log("ExtraRewardStashScheduler:", result.extraRewardStashScheduler.address);
+        const result = await deployWardQuestScheduler(hre, deployer, debug, tskArgs.wait);
+        console.log("WardQuestScheduler:", result.wardQuestScheduler.address);
     });
 
 task("deploy:mainnet:keeperMulticall3")

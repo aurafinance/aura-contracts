@@ -51,4 +51,21 @@ interface IDarkQuestBoard {
     function addMultipleToBlacklist(uint256 questID, address[] calldata accounts) external;
 
     function removeFromBlacklist(uint256 questID, address account) external;
+
+    function closeQuestPeriod(uint256 period) external returns (uint256 closed, uint256 skipped);
+
+    function quests(uint256 questID)
+        external
+        returns (
+            address creator,
+            address rewardToken,
+            address gauge,
+            uint48 duration,
+            uint48 periodStart,
+            uint256 totalRewardAmount
+        );
+
+    function questBlacklist(uint256 questID, uint256 idx) external view returns (address);
+
+    event RemoveVoterBlacklist(uint256 indexed questID, address indexed account);
 }
