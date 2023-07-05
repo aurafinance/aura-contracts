@@ -12,6 +12,8 @@ import {
     AuraBalProxyOFT__factory,
     AuraBalVault,
     AuraBalVault__factory,
+    AuraDistributor,
+    AuraDistributor__factory,
     AuraOFT,
     AuraOFT__factory,
     AuraProxyOFT,
@@ -868,5 +870,37 @@ export async function deployKeeperMulticall3(
 
     return {
         keeperMulticall3,
+    };
+}
+
+export async function deployAuraDistributor(
+    extConfig: ExtSystemConfig,
+    multisigs: MultisigConfig,
+    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const auraDistributor = await deployContract<AuraDistributor>(
+        hre,
+        new AuraDistributor__factory(signer),
+        "AuraDistributor",
+        [
+            multisigs.treasuryMultisig,
+            extConfig.token,
+            canonical.l1Coordinator.address,
+            multisigs.defender.l1CoordinatorDistributor,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const tx = await auraDistributor.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return {
+        auraDistributor,
     };
 }

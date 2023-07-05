@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
 import { deployArbitrumBridgeSender, deploySimpleBridgeReceiver } from "../../scripts/deployBridgeDelegates";
 import {
+    deployAuraDistributor,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCanonicalView,
@@ -346,6 +347,28 @@ task("deploy:sidechain:config:L1:phase2")
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
+
+task("deploy:sidechain:auraDistributor")
+    .addParam("wait", "Wait for blocks")
+    .addParam("canonicalchainid", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const canonicalId = Number(tskArgs.canonicalchainid);
+        const canonicalConfig = canonicalConfigs[canonicalId];
+        const canonical = canonicalConfig.getSidechain(deployer);
+
+        const result = await deployAuraDistributor(
+            canonicalConfig.addresses,
+            canonicalConfig.multisigs,
+            canonical,
+            hre,
+            deployer,
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 
 task("deploy:sidechain:keeperMulticall3")
     .addParam("wait", "Wait for blocks")
