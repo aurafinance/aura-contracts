@@ -15,9 +15,9 @@ import { IBooster } from "../interfaces/IBooster.sol";
  * @dev  The complete flow from quest to stash takes 4 epochs:
  *
  *  1.- Anyone at epoch N creates a quest with duration of 2 epochs.
- *  2.- Anyone at epoch N+3 withdraws undistributed rewards and queues them for epochs (N+3, N+4).
- *  3.- Anyone at epoch N+3 forwards queued rewards for a given pid.
- *  4.- Anyone at epoch N+4 forwards queued rewards for a given pid.
+ *  2.- Keeper at epoch N+3 withdraws undistributed rewards and queues them for epochs (N+3, N+4).
+ *  3.- Keeper at epoch N+3 forwards queued rewards for a given pid.
+ *  4.- Keeper at epoch N+4 forwards queued rewards for a given pid.
  */
 contract WardenQuestScheduler is KeeperRole {
     using AuraMath for uint256;
@@ -144,7 +144,7 @@ contract WardenQuestScheduler is KeeperRole {
         address _to,
         uint256 _value,
         bytes memory _data
-    ) external onlyKeeper returns (bool, bytes memory) {
+    ) external onlyOwner returns (bool, bytes memory) {
         (bool success, bytes memory result) = _to.call{ value: _value }(_data);
         require(success, "!success");
 

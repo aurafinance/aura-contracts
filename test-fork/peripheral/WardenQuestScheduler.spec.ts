@@ -170,7 +170,7 @@ describe("WardenQuestScheduler", () => {
             const account = questBlacklist;
 
             const calldata = darkQuestBoard.interface.encodeFunctionData("removeFromBlacklist", [questID, account]);
-            const tx = await wardenQuestScheduler.connect(keeper).execute(darkQuestBoard.address, 0, calldata);
+            const tx = await wardenQuestScheduler.connect(multisig).execute(darkQuestBoard.address, 0, calldata);
             await expect(tx).to.emit(darkQuestBoard, "RemoveVoterBlacklist").withArgs(questID, account);
 
             const questBlacklistAfter = await darkQuestBoard.questBlacklist(questID, 0);
