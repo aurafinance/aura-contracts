@@ -63,6 +63,7 @@ import {
     L1Coordinator__factory,
     AuraBalProxyOFT__factory,
     CanonicalView__factory,
+    AuraMining__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -403,6 +404,10 @@ const getFeeForwarder = async (deployer: Signer) => ({
     feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
 });
 
+const getAuraMining = async (deployer: Signer) => ({
+    auraMining: AuraMining__factory.connect("0x744Be650cea753de1e69BF6BAd3c98490A855f52", deployer),
+});
+
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
@@ -450,4 +455,5 @@ export const config = {
     getAuraClaimZapV3,
     getSidechain,
     getCanonicalView,
+    getAuraMining,
 };
