@@ -4,12 +4,12 @@ pragma solidity 0.8.11;
 import { AuraMath } from "../utils/AuraMath.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
+import { KeeperRole } from "./KeeperRole.sol";
 import { IDarkQuestBoard } from "../interfaces/IDarkQuestBoard.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 
 /**
- * @title   WardQuestScheduler
+ * @title   WardenQuestScheduler
  * @author  AuraFinance
  * @notice   Creates wards Quests  and withdraws incentives from Closed Quests.
  * @dev  The complete flow from quest to stash takes 4 epochs:
@@ -19,7 +19,7 @@ import { IBooster } from "../interfaces/IBooster.sol";
  *  3.- Anyone at epoch N+3 forwards queued rewards for a given pid.
  *  4.- Anyone at epoch N+4 forwards queued rewards for a given pid.
  */
-contract WardQuestScheduler is Ownable {
+contract WardenQuestScheduler is KeeperRole {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -58,11 +58,10 @@ contract WardQuestScheduler is Ownable {
         address _cvx,
         address _darkQuestBoard,
         address _owner
-    ) Ownable() {
+    ) KeeperRole(_owner) {
         booster = _booster;
         cvx = _cvx;
         darkQuestBoard = _darkQuestBoard;
-        _transferOwnership(_owner);
     }
 
     /**
@@ -107,7 +106,7 @@ contract WardQuestScheduler is Ownable {
      * @notice Withdraw all undistributed rewards from Closed Quest Periods and queues them to it's linked pid.
      * @param questID ID of the Quest
      */
-    function withdrawAndQueueUnusedRewards(uint256 questID) external returns (uint256 amount) {
+    function withdrawAndQueueUnusedRewards(uint256 questID) external onlyKeeper returns (uint256 amount) {
         uint256 pid = quests[questID];
         IBooster.PoolInfo memory poolInfo = IBooster(booster).poolInfo(quests[questID]);
         require(poolInfo.stash != address(0), "!questID");
@@ -135,7 +134,6 @@ contract WardQuestScheduler is Ownable {
         IDarkQuestBoard(darkQuestBoard).emergencyWithdraw(questID, owner());
     }
 
-    //
     /**
      * @notice allow arbitrary calls to any contract to allow to manage the created quest.
      * @param _to Target address
@@ -146,20 +144,7 @@ contract WardQuestScheduler is Ownable {
         address _to,
         uint256 _value,
         bytes memory _data
-    ) external onlyOwner returns (bool, bytes memory) {
-        require(_to == darkQuestBoard, "!invalid target");
-        bytes4 sig;
-        assembly {
-            sig := mload(add(_data, 32))
-        }
-
-        require(
-            sig != IDarkQuestBoard.createQuest.selector &&
-                sig != IDarkQuestBoard.withdrawUnusedRewards.selector &&
-                sig != IDarkQuestBoard.emergencyWithdraw.selector,
-            "!allowed"
-        );
-
+    ) external onlyKeeper returns (bool, bytes memory) {
         (bool success, bytes memory result) = _to.call{ value: _value }(_data);
         require(success, "!success");
 
@@ -170,7 +155,7 @@ contract WardQuestScheduler is Ownable {
      * @dev Forward rewards available at current epoch
      * @param _pid the pool id
      */
-    function forwardRewards(uint256 _pid) external {
+    function forwardRewards(uint256 _pid) external onlyKeeper {
         _forwardRewards(_getCurrentEpoch(), _pid);
     }
 
@@ -179,7 +164,7 @@ contract WardQuestScheduler is Ownable {
      * @param _epoch the epoch in which the rewards were queded
      * @param _pid the pool id
      */
-    function forwardQueuedRewards(uint256 _epoch, uint256 _pid) external {
+    function forwardQueuedRewards(uint256 _epoch, uint256 _pid) external onlyKeeper {
         _forwardRewards(_epoch, _pid);
     }
 
@@ -236,6 +221,7 @@ contract WardQuestScheduler is Ownable {
         rewardsQueue[_epoch][_pid] = 0;
         IBooster.PoolInfo memory poolInfo = IBooster(booster).poolInfo(_pid);
 
+        require(!poolInfo.shutdown, "!shutdown");
         IERC20(cvx).safeTransfer(poolInfo.stash, amount);
         emit ForwardedRewards(_epoch, _pid, amount);
     }
