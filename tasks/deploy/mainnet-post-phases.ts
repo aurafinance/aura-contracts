@@ -6,7 +6,7 @@ import { TaskArguments } from "hardhat/types";
 import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
 import {
     deployAuraBalStaker,
-    deployExtraRewardStashScheduler,
+    deployWardenQuestScheduler,
     deployKeeperMulticall3,
     deployFeeScheduler,
     deployVeBalGrant,
@@ -317,12 +317,18 @@ task("deploy:mainnet:bbusdHandlerV3")
         console.log("Handler:", result.bbusdHandler.address);
     });
 
-task("deploy:mainnet:extraRewardStashScheduler")
+task("deploy:mainnet:wardenQuestScheduler")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-        const result = await deployExtraRewardStashScheduler(hre, deployer, debug, tskArgs.wait);
-        console.log("ExtraRewardStashScheduler:", result.extraRewardStashScheduler.address);
+        const result = await deployWardenQuestScheduler(hre, deployer, debug, tskArgs.wait);
+        const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
+
+        await result.wardenQuestScheduler.updateAuthorizedKeepers(keeperAddress, true);
+        await result.wardenQuestScheduler.updateAuthorizedKeepers(config.multisigs.incentivesMultisig, true);
+        await result.wardenQuestScheduler.transferOwnership(config.multisigs.incentivesMultisig);
+
+        console.log("WardenQuestScheduler:", result.wardenQuestScheduler.address);
     });
 
 task("deploy:mainnet:keeperMulticall3")

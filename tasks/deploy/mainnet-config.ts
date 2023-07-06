@@ -175,6 +175,7 @@ const addresses: ExtSystemConfig = {
         auraBalInflowLimit: parseEther("50000"),
         auraInflowLimit: parseEther("250000"),
     },
+    darkQuestBoard: "0x609FB23b9EA7CB3eDaF56DB5dAF07C8E94C155De",
 };
 
 const whales = {
@@ -188,6 +189,7 @@ const multisigs: MultisigConfig = {
     daoMultisig: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     sudoMultisig: "0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46",
     pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+    incentivesMultisig: "0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff",
     defender: {
         l1CoordinatorDistributor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
         auraBalProxyOFTHarvestor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
