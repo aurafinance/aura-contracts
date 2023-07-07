@@ -192,6 +192,7 @@ yarn task timeTravel --duration 69420 --network forking
 | veBalGrant                      | [0x89f67f3054bFD662971854190Dbc18dcaBb416f6](https://etherscan.io/address/0x89f67f3054bFD662971854190Dbc18dcaBb416f6) |
 | auraViewHelpers                 | [0x129bBda5087e132983e7c20ae1F761333D40c229](https://etherscan.io/address/0x129bBda5087e132983e7c20ae1F761333D40c229) |
 | KeeperMulticall3                | [0x817F426B5a79599464488eCCf82c3F54b9330E15](https://etherscan.io/address/0x817F426B5a79599464488eCCf82c3F54b9330E15) |
+| WardenQuestScheduler            | [0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47](https://etherscan.io/address/0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47) |
 
 ### Arbitrum (42161)
 
