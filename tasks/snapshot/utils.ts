@@ -43,6 +43,8 @@ export function saveGaugeChoices(gauges: GaugeChoice[]) {
 
 export const parseLabel = (gauge: Gauge) => {
     if (gauge.pool.symbol === "veBAL") return "veBAL";
+    if (gauge.pool.symbol === "veLIT") return "veLIT";
+    if (gauge.pool.symbol === "veUSH") return "veUSH";
 
     const networkStr = networkLabels[gauge.network] ? `${networkLabels[gauge.network]}-` : "";
     const weightStr =
@@ -85,7 +87,7 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         return { ...gauge, pool: { ...gauge.pool, tokens } };
     });
 
-    const chainOrder = [1, 42161, 137, 10, 100];
+    const chainOrder = [1, 42161, 137, 10, 100, 1101];
 
     if (chainOrder.length !== validNetworks.length) {
         throw Error("Chain order wrong length");
