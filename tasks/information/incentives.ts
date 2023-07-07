@@ -4,38 +4,42 @@ import { task, types } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 import * as path from "path";
 import { Phase2Deployed } from "scripts/deploySystem";
-
 import { ChefForwarder__factory } from "../../types/generated";
 import { config } from "../deploy/mainnet-config";
 import { getSigner } from "../utils";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
-import { fetchAuraProposals, isAuraBalProposal, isAuraEthProposal, Incentive } from "./hiddenhandApi";
 import {
-    calculateQuestAmounts,
-    calculateVotesAmounts,
-    getPlatformFee,
-    getTokenPrices,
+    fetchAuraProposals,
+    Incentive,
+    isARBAuraBalwstEthProposal,
+    isAuraBalProposal,
+    isAuraEthProposal,
+} from "./hiddenhandApi";
+import {
+    buildPaladinQuest,
+    getPaladinConf,
     PaladinQuest,
+    PaladinQuestDarkBoard,
+    PaladinQuestWardenScheduler,
 } from "./paladinApi";
 
 const auraTokenAddress = "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf";
-const balTokenAddress = "0xba100000625a3754423978a60c9317c58a424e3d";
 const chefForwarderAddress = "0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9";
 
 // Hidden hands
-const hhIncentiveVaultAddress = "0x9DDb2da7Dd76612e0df237B89AF2CF4413733212";
-const vlAuraIncentiveAddress = "0x642c59937A62cf7dc92F70Fd78A13cEe0aa2Bd9c";
-const veBalIncentiveAddress = "0x7Cdf753b45AB0729bcFe33DC12401E55d28308A9";
+const hhIncentiveVaultAddress = "0xE00fe722e5bE7ad45b1A16066E431E47Df476CeC";
+const vlAuraIncentiveAddress = "0xcbf242f20d183b4116c22dd5e441b9ae15b0d35a";
+const veBalIncentiveAddress = "0x45Bc37b18E73A42A4a826357a8348cDC042cCBBc";
 const auraEthVeBALId = "0xb355f196c7ab330d85a3a392623204f81c8f2d668baaeda4e78f87c9f50bef04";
 const auraBalVeBALId = "0xa2b574c32fbe12ce1e12ebb850253595ef7087671c213241076b924614822a20";
 const scale = BN.from(10).pow(18);
 
 // Paladin
-const darkQuestBoardAddress = "0x609FB23b9EA7CB3eDaF56DB5dAF07C8E94C155De";
 const auraBalStableGaugeAddress = "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242";
 const aura50Eth50GaugeAddress = "0x275dF57d2B23d53e20322b4bb71Bf1dCb21D0A00";
-const auraVoterProxyAddress = "0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2";
-const tetuBalLockerAddress = "0x9cC56Fa7734DA21aC88F6a816aF10C5b898596Ce";
+const wardenQuestSchedulerAddress = "0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47";
+
+// -------------------------------------------------------- //
 
 const truncateNumber = (amount: BN, decimals: number) => Number(utils.formatUnits(amount, decimals)).toFixed(0);
 
@@ -79,7 +83,7 @@ const txMeta = (transactions: Array<any>) => ({
     meta: {
         name: "Incentives",
         description: "",
-        txBuilderVersion: "1.13.3",
+        txBuilderVersion: "1.16.0",
         createdFromSafeAddress: "0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff",
         createdFromOwnerAddress: "",
         checksum: "0x6d8250468836cc9b24a5a2380ec1ceecece70ab3f66eed3e68bf2a4ca05d3d90",
@@ -117,7 +121,7 @@ const auraApprovalTx = (amount: BN, spender: string) => ({
         amount: amount.toString(),
     },
 });
-const depositERC20Tx = (incentive: Incentive) => {
+const depositIncentiveERC20Tx = (incentive: Incentive) => {
     console.log(
         `${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${utils.formatEther(incentive.amount)}`,
     );
@@ -127,26 +131,63 @@ const depositERC20Tx = (incentive: Incentive) => {
         data: null,
         contractMethod: {
             inputs: [
-                { internalType: "bytes32", name: "proposal", type: "bytes32" },
-                { internalType: "address", name: "token", type: "address" },
-                { internalType: "uint256", name: "amount", type: "uint256" },
+                { internalType: "bytes32", name: "_proposal", type: "bytes32" },
+                { internalType: "address", name: "_token", type: "address" },
+                { internalType: "uint256", name: "_amount", type: "uint256" },
+                { internalType: "uint256", name: "_maxTokensPerVote", type: "uint256" },
+                { internalType: "uint256", name: "_periods", type: "uint256" },
             ],
-            name: "depositBribeERC20",
+            name: "depositBribe",
             payable: false,
         },
         contractInputsValues: {
-            proposal: incentive.proposal.proposalHash,
-            token: auraTokenAddress,
-            amount: incentive.amount.toString(),
+            _proposal: incentive.proposal.proposalHash,
+            _token: auraTokenAddress,
+            _amount: incentive.amount.toString(),
+            _maxTokensPerVote: "0",
+            _periods: "1",
         },
     };
 };
-const createQuestTx = (quest: PaladinQuest) => {
+const createWardenSchedulerQuestTx = (quest: PaladinQuestWardenScheduler) => {
     console.log(
         `${quest.title} totalBudget: ${utils.formatEther(quest.totalBudget)} Fixed Reward: ${utils.formatEther(
             quest.rewardPerVote,
         )} AURA/veBAL`,
     );
+    return {
+        to: quest.to,
+        value: "0",
+        data: null,
+        contractMethod: {
+            inputs: [
+                { internalType: "uint256", name: "pid", type: "uint256" },
+                { internalType: "uint256", name: "objective", type: "uint256" },
+                { internalType: "uint256", name: "rewardPerVote", type: "uint256" },
+                { internalType: "uint256", name: "totalRewardAmount", type: "uint256" },
+                { internalType: "uint256", name: "feeAmount", type: "uint256" },
+                { internalType: "address[]", name: "blacklist", type: "address[]" },
+            ],
+            name: "createQuest",
+            payable: false,
+        },
+        contractInputsValues: {
+            pid: quest.pid,
+            objective: quest.objective.toString(),
+            rewardPerVote: quest.rewardPerVote.toString(),
+            totalRewardAmount: quest.totalRewardAmount.toString(),
+            feeAmount: quest.feeAmount.toString(),
+            blacklist: `["${quest.blacklist.join(`","`)}"]`,
+        },
+    };
+};
+const createDarkQuestBoardTx = (quest: PaladinQuestDarkBoard) => {
+    console.log(
+        `${quest.title} totalBudget: ${utils.formatEther(quest.totalBudget)} Fixed Reward: ${utils.formatEther(
+            quest.rewardPerVote,
+        )} AURA/veBAL`,
+    );
+
     return {
         to: quest.to,
         value: "0",
@@ -178,6 +219,30 @@ const createQuestTx = (quest: PaladinQuest) => {
     };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function generateIncentivesTxBuilderFile(
+    fileName: string,
+    quests: PaladinQuest[],
+    { veBALPrice, to },
+    createQuestFnTx: any,
+) {
+    /* -------------------------------------------------------
+     * 1.- Calculate amounts and prepare deposits (ids, scales)
+     * ----------------------------------------------------- */
+
+    const createQuestTxs = quests.filter(i => BN.from(i.totalRewardAmount).gt(0)).map(createQuestFnTx);
+    const totalDeposits = quests.map(q => q.totalBudget).reduce((prev, curr) => prev.add(curr), BN.from(0));
+    console.log(`Total Aura: ${utils.formatEther(totalDeposits)} calculated $/veBAL: ${veBALPrice}`);
+    /* -------------------------------------------------------
+     * 2.- Generate incentives tx
+     * ----------------------------------------------------- */
+    const incentivesTransactions = txMeta(
+        [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, to)).concat(createQuestTxs),
+    );
+    fs.writeFileSync(path.resolve(__dirname, `./${fileName}.json`), JSON.stringify(incentivesTransactions));
+    console.log(`Gnosis tx builder generated at ${__dirname}/${fileName}.json`);
+}
+
 task("info:chef:claim").setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
     await getChefClaimableRewards(hre);
 });
@@ -193,7 +258,7 @@ task("create:hh:incentives")
         const auraBalAmount = (await getChefClaimableRewards(hre)).valueOf();
         const hhAuraProposals = await fetchAuraProposals();
 
-        if (hhAuraProposals.length != 2) throw new Error("No proposals found");
+        if (hhAuraProposals.length < 2) throw new Error("No proposals found");
         const auraEthProposal = hhAuraProposals.find(isAuraEthProposal);
         const auraBalProposal = hhAuraProposals.find(isAuraBalProposal);
 
@@ -234,9 +299,9 @@ task("create:hh:incentives")
         const depositTsx = incentives
             .map(scaleIncentiveAmount)
             .filter(i => i.amount.gt(0))
-            .map(depositERC20Tx);
+            .map(depositIncentiveERC20Tx);
         const totalDeposits = depositTsx
-            .map(d => BN.from(d.contractInputsValues.amount))
+            .map(d => BN.from(d.contractInputsValues._amount))
             .reduce((a, b) => a.add(b), BN.from(0));
         console.log("   totalDeposits:", utils.formatEther(totalDeposits));
         /* -------------------------------------------------------
@@ -251,6 +316,55 @@ task("create:hh:incentives")
             JSON.stringify(incentivesTransactions),
         );
         console.log(`Gnosis tx builder generated at ${__dirname}/gnosis_tx_hh_incentives.json`);
+    });
+
+task("create:hh:arb:incentives", "Generates tx builder for a-55/45 auraBAL/wstETH")
+    .addOptionalParam(
+        "auraBalwstEthAmount",
+        "Amount of a-55/45 auraBAL/wstETH incentives, default is 7_500",
+        7_500,
+        types.int,
+    )
+    .setAction(async function (taskArgs: TaskArguments, __: HardhatRuntime) {
+        const { auraBalwstEthAmount } = taskArgs;
+        const hhAuraProposals = await fetchAuraProposals();
+
+        if (hhAuraProposals.length < 2) throw new Error("No proposals found");
+        const auraBalwstEthProposal = hhAuraProposals.find(isARBAuraBalwstEthProposal);
+
+        const incentives = [
+            {
+                title: "1. a-55/45 auraBAL/wstETH",
+                to: vlAuraIncentiveAddress,
+                proposal: auraBalwstEthProposal,
+                amount: BN.from(auraBalwstEthAmount),
+                ratio: 100,
+            },
+        ];
+        /* -------------------------------------------------------
+         * 1.- Calculate amounts and prepare deposits (ids, scales)
+         * ----------------------------------------------------- */
+
+        const depositTsx = incentives
+            .map(scaleIncentiveAmount)
+            .filter(i => i.amount.gt(0))
+            .map(depositIncentiveERC20Tx);
+        const totalDeposits = depositTsx
+            .map(d => BN.from(d.contractInputsValues._amount))
+            .reduce((a, b) => a.add(b), BN.from(0));
+        console.log("   totalDeposits:", utils.formatEther(totalDeposits));
+        /* -------------------------------------------------------
+         * 2.- Generate incentives tx
+         * ----------------------------------------------------- */
+
+        const incentivesTransactions = txMeta(
+            [].concat(auraApprovalTx(totalDeposits, hhIncentiveVaultAddress)).concat(depositTsx),
+        );
+        fs.writeFileSync(
+            path.resolve(__dirname, "./gnosis_tx_hh_arb_incentives.json"),
+            JSON.stringify(incentivesTransactions),
+        );
+        console.log(`Gnosis tx builder generated at ${__dirname}/gnosis_tx_hh_arb_incentives.json`);
     });
 
 /**
@@ -269,93 +383,63 @@ task("create:hh:incentives")
  */
 task("create:paladin:incentives")
     .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 40000", 40_000, types.int)
-    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 48_000", 0, types.int)
+    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 41_000", 41_000, types.int)
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
-        // --------------------- CONFIGURATIONS -------------- //
-        // Avoid vlAura, tetuBal to vote
-        const blacklist = [auraVoterProxyAddress, tetuBalLockerAddress];
-        const duration = 2; // 2 WEEKS
-        const calculateVeBalPrice = (balPrice: number) => {
-            const weeklyEmission = 121929.980212;
-            const totalVotes = 9580000;
-            const premium = 1.05;
-            const dollarEmission = balPrice * weeklyEmission;
-            const veBALPrice = (dollarEmission / totalVotes) * premium;
-            return Number(veBALPrice.toFixed(5));
-        };
-        // -------------------------------------------------------- //
-
         const signer = await getSigner(hre);
         const auraEthAmount = utils.parseEther(taskArgs.auraEthAmount.toString());
-        let auraBalAmount: BN;
-        if (taskArgs.auraBalAmount === 0) {
-            // No auraBalAmount provided, getting value from chef forwarder claimable rewards
-            auraBalAmount = utils.parseEther((await getChefClaimableRewards(hre)).toString());
-        } else {
-            auraBalAmount = utils.parseEther(taskArgs.auraBalAmount.toString());
-        }
+        const auraBalAmount: BN = utils.parseEther(taskArgs.auraBalAmount.toString());
 
-        const platformFee = await getPlatformFee(hre, signer); //Current value is 400
+        const paladinConf = await getPaladinConf(hre, signer);
+        const buildPaladinQuestFn = ({ title, totalBudget, gauge }): PaladinQuest =>
+            buildPaladinQuest({ title, totalBudget, gauge, ...paladinConf });
 
-        const prices = await getTokenPrices([balTokenAddress, auraTokenAddress]);
-        // const prices = await getTokenPricesMock([balTokenAddress, auraTokenAddress]);
-        const balPrice = prices.find(tp => tp.address === balTokenAddress).latestUSDPrice;
-        const auraPrice = prices.find(tp => tp.address === auraTokenAddress).latestUSDPrice;
-        const veBALPrice = calculateVeBalPrice(balPrice);
+        const auraWethQuest: PaladinQuest = buildPaladinQuestFn({
+            title: "1. aura/eth veBAL",
+            totalBudget: auraEthAmount,
+            gauge: aura50Eth50GaugeAddress,
+        });
+        const auraBalQuest: PaladinQuest = buildPaladinQuestFn({
+            title: "2. auraBAL  veBAL",
+            totalBudget: auraBalAmount,
+            gauge: auraBalStableGaugeAddress,
+        });
 
-        const auraEthQuestAmounts = calculateQuestAmounts(auraEthAmount, platformFee);
-        const auraEthVotesAmounts = calculateVotesAmounts(auraEthQuestAmounts.totalRewardAmount, auraPrice, veBALPrice);
+        const quests: Array<PaladinQuest> = [auraWethQuest, auraBalQuest];
+        // Generate the file
+        generateIncentivesTxBuilderFile("gnosis_tx_paladin_incentives", quests, paladinConf, createDarkQuestBoardTx);
+    });
 
-        const auraBalQuestAmounts = calculateQuestAmounts(auraBalAmount, platformFee);
-        const auraBalVotesAmounts = calculateVotesAmounts(auraBalQuestAmounts.totalRewardAmount, auraPrice, veBALPrice);
+task("create:scheduler:incentives")
+    .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 40000", 40_000, types.int)
+    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 41_000", 41_000, types.int)
+    .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+        const signer = await getSigner(hre);
+        const auraEthAmount = utils.parseEther(taskArgs.auraEthAmount.toString());
+        const auraBalAmount: BN = utils.parseEther(taskArgs.auraBalAmount.toString());
 
-        const quests: Array<PaladinQuest> = [
-            {
-                title: "1. aura/eth veBAL",
-                totalBudget: auraEthAmount,
-                to: darkQuestBoardAddress,
-                gauge: aura50Eth50GaugeAddress,
-                rewardToken: auraTokenAddress,
-                duration: duration,
-                objective: auraEthVotesAmounts.objective,
-                rewardPerVote: auraEthVotesAmounts.rewardPerVote,
-                totalRewardAmount: auraEthQuestAmounts.totalRewardAmount,
-                feeAmount: auraEthQuestAmounts.feeAmount,
-                blacklist: blacklist,
-            },
-            {
-                title: "2. auraBAL  veBAL",
-                totalBudget: auraBalAmount,
-                to: darkQuestBoardAddress,
-                gauge: auraBalStableGaugeAddress,
-                rewardToken: auraTokenAddress,
-                duration: duration,
-                objective: auraBalVotesAmounts.objective,
-                rewardPerVote: auraBalVotesAmounts.rewardPerVote,
-                totalRewardAmount: auraBalQuestAmounts.totalRewardAmount,
-                feeAmount: auraBalQuestAmounts.feeAmount,
-                blacklist: blacklist,
-            },
-        ];
-        // console.log(quests)
+        const paladinConf = await getPaladinConf(hre, signer);
+        const buildPaladinQuestFn = ({ title, totalBudget, pid }): PaladinQuest => {
+            const q = buildPaladinQuest({ title, totalBudget, pid, ...paladinConf });
+            return { ...q, to: wardenQuestSchedulerAddress };
+        };
 
-        /* -------------------------------------------------------
-         * 1.- Calculate amounts and prepare deposits (ids, scales)
-         * ----------------------------------------------------- */
+        const auraWethQuest: PaladinQuest = buildPaladinQuestFn({
+            title: "1. aura/eth veBAL",
+            totalBudget: auraEthAmount,
+            pid: 100,
+        });
+        const auraBalQuest: PaladinQuest = buildPaladinQuestFn({
+            title: "2. auraBAL  veBAL",
+            totalBudget: auraBalAmount,
+            pid: 101,
+        });
 
-        const createQuestTxs = quests.filter(i => BN.from(i.totalRewardAmount).gt(0)).map(createQuestTx);
-        const totalDeposits = BN.from(auraEthAmount.add(auraBalAmount));
-        console.log(`Total Aura: ${utils.formatEther(totalDeposits)} calculated $/veBAL: ${veBALPrice}`);
-        /* -------------------------------------------------------
-         * 2.- Generate incentives tx
-         * ----------------------------------------------------- */
-
-        const incentivesTransactions = txMeta(
-            [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, darkQuestBoardAddress)).concat(createQuestTxs),
+        const quests: Array<PaladinQuest> = [auraWethQuest, auraBalQuest];
+        // Generate the file
+        generateIncentivesTxBuilderFile(
+            "gnosis_tx_scheduler_incentives",
+            quests,
+            paladinConf,
+            createWardenSchedulerQuestTx,
         );
-        fs.writeFileSync(
-            path.resolve(__dirname, "./gnosis_tx_paladin_incentives.json"),
-            JSON.stringify(incentivesTransactions),
-        );
-        console.log(`Gnosis tx builder generated at ${__dirname}/gnosis_tx_paladin_incentives.json`);
     });
