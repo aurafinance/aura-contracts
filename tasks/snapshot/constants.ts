@@ -9,9 +9,9 @@ export const configs = {
     },
 };
 
-export const validNetworks = [1, 10, 42161, 137, 100];
+export const validNetworks = [1, 10, 42161, 137, 100, 1101];
 
-export const networkLabels = { 137: "p", 42161: "a", 10: "o", 100: "g" };
+export const networkLabels = { 137: "p", 42161: "a", 10: "o", 100: "g", 1101: "z" };
 
 export const symbolOverrides = {
     "0x9559aaa82d9649c7a7b220e7c461d2e74c9a3593": "StaFi rETH",
