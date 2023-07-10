@@ -191,8 +191,8 @@ const multisigs: MultisigConfig = {
     pauseGuardian: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
     incentivesMultisig: "0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff",
     defender: {
-        l1CoordinatorDistributor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
-        auraBalProxyOFTHarvestor: "0xfc3f4e28d914da71447d94829c48b1248c7c0b46",
+        l1CoordinatorDistributor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
+        auraBalProxyOFTHarvestor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
     },
 };
 
