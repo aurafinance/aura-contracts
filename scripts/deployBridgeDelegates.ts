@@ -88,7 +88,6 @@ export async function deployGnosisBridgeSender(
 export async function deployPolygonBridgeSender(
     hre: HardhatRuntimeEnvironment,
     deployer: Signer,
-    bridge: string,
     token: string,
     debug = false,
     waitForBlocks = 0,
@@ -97,7 +96,7 @@ export async function deployPolygonBridgeSender(
         hre,
         new PolygonBridgeSender__factory(deployer),
         "PolygonBridgeSender",
-        [bridge, token],
+        [token],
         {},
         debug,
         waitForBlocks,
