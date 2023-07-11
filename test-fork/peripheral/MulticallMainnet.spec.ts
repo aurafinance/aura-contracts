@@ -2,14 +2,23 @@ import { expect } from "chai";
 import hre, { network } from "hardhat";
 import { CanonicalPhase1Deployed, CanonicalPhase2Deployed } from "scripts/deploySidechain";
 import { Call3ValueStruct } from "types/generated/KeeperMulticall3";
+import { Call3Struct } from "types/generated/Multicall3";
 
 import { deployKeeperMulticall3 } from "../../scripts/deployPeripheral";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
-import { impersonateAccount, increaseTime, ONE_WEEK, ZERO_ADDRESS } from "../../test-utils";
+import { lzChainIds } from "../../tasks/deploy/sidechain-constants";
+import { chainIds } from "../../tasks/utils";
+import { impersonateAccount, increaseTime, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { Account } from "../../types/common";
-import { AuraBalProxyOFT__factory, Create2Factory__factory, KeeperMulticall3 } from "../../types/generated";
+import {
+    AuraBalProxyOFT__factory,
+    BridgeDelegateReceiver,
+    BridgeDelegateReceiver__factory,
+    Create2Factory__factory,
+    KeeperMulticall3,
+} from "../../types/generated";
 
 const ALCHEMY_API_KEY = process.env.NODE_URL;
 
@@ -23,7 +32,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
     let keeperMulticall3: KeeperMulticall3;
     const sidechainId = 110;
     const nativeFee = simpleToExactAmount(1);
-    const relayerAddress = "0xcC247CDe79624801169475C9Ba1f716dB3959B8f";
+    const relayerAddress = config.multisigs.defender.bridgeDelegateReceiverOwner;
 
     before(async () => {
         await network.provider.request({
@@ -32,7 +41,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
                 {
                     forking: {
                         jsonRpcUrl: ALCHEMY_API_KEY,
-                        blockNumber: 17541000,
+                        blockNumber: 17669300,
                     },
                 },
             ],
@@ -69,7 +78,6 @@ describe("KeeperMulticall3 - Mainnet", () => {
         await increaseTime(ONE_WEEK);
         await compounder.vault.connect(relayer.signer)["harvest(uint256)"](1);
     });
-
     it("auraBalProxyOFT.harvest via multicall", async () => {
         const encodedHarvest = AuraBalProxyOFT__factory.createInterface().encodeFunctionData("harvest", [[1], 1]);
         const encodedProcessClaimable = (c: { tokenAddress: string; srcChainId: number }) =>
@@ -119,5 +127,78 @@ describe("KeeperMulticall3 - Mainnet", () => {
         await expect(
             keeperMulticall3.connect(deployer.signer).aggregate3Funded([buildHarvestCall()]),
         ).to.be.revertedWith("!keeper");
+    });
+    describe("BridgeDelegateReceivers", async () => {
+        let bridgeDelegateArb: BridgeDelegateReceiver;
+        let bridgeDelegateOpt: BridgeDelegateReceiver;
+        before("setup", async () => {
+            const bridgeDelegateArbAddress = await sidechain.l1Coordinator.bridgeDelegates(
+                lzChainIds[chainIds.arbitrum],
+            );
+            const bridgeDelegateOptAddress = await sidechain.l1Coordinator.bridgeDelegates(
+                lzChainIds[chainIds.optimism],
+            );
+            bridgeDelegateArb = BridgeDelegateReceiver__factory.connect(bridgeDelegateArbAddress, deployer.signer);
+            bridgeDelegateOpt = BridgeDelegateReceiver__factory.connect(bridgeDelegateOptAddress, deployer.signer);
+        });
+
+        it("transfer ownership to multicall", async () => {
+            const bridgeDelegateArbOwner = await impersonateAccount(await bridgeDelegateArb.owner());
+            const bridgeDelegateOptOwner = await impersonateAccount(await bridgeDelegateOpt.owner());
+
+            await bridgeDelegateArb.connect(bridgeDelegateArbOwner.signer).transferOwnership(keeperMulticall3.address);
+            await bridgeDelegateOpt.connect(bridgeDelegateOptOwner.signer).transferOwnership(keeperMulticall3.address);
+
+            expect(await bridgeDelegateArb.owner(), "owner").to.be.eq(keeperMulticall3.address);
+            expect(await bridgeDelegateOpt.owner(), "owner").to.be.eq(keeperMulticall3.address);
+        });
+
+        it("settleFeeDebt on multiple chains", async () => {
+            const transferOwnerships: Call3Struct[] = [
+                {
+                    target: bridgeDelegateArb.address,
+                    allowFailure: false,
+                    callData: BridgeDelegateReceiver__factory.createInterface().encodeFunctionData("settleFeeDebt", [
+                        ZERO,
+                    ]),
+                },
+                {
+                    target: bridgeDelegateOpt.address,
+                    allowFailure: false,
+                    callData: BridgeDelegateReceiver__factory.createInterface().encodeFunctionData("settleFeeDebt", [
+                        ZERO,
+                    ]),
+                },
+            ];
+
+            hre.tracer.enabled = true;
+            await keeperMulticall3.aggregate3(transferOwnerships);
+            hre.tracer.enabled = false;
+        });
+
+        it("transfer ownership back to an oea", async () => {
+            const transferOwnerships: Call3Struct[] = [
+                {
+                    target: bridgeDelegateArb.address,
+                    allowFailure: false,
+                    callData: BridgeDelegateReceiver__factory.createInterface().encodeFunctionData(
+                        "transferOwnership",
+                        [relayerAddress],
+                    ),
+                },
+                {
+                    target: bridgeDelegateOpt.address,
+                    allowFailure: false,
+                    callData: BridgeDelegateReceiver__factory.createInterface().encodeFunctionData(
+                        "transferOwnership",
+                        [relayerAddress],
+                    ),
+                },
+            ];
+            await keeperMulticall3.aggregate3(transferOwnerships);
+
+            expect(await bridgeDelegateArb.owner(), "owner").to.be.eq(relayerAddress);
+            expect(await bridgeDelegateOpt.owner(), "owner").to.be.eq(relayerAddress);
+        });
     });
 });

@@ -321,7 +321,7 @@ describe("AuraBalProxyOFT", () => {
             await sidechain.auraBalVault.deposit(bridgeAmount.div(4), deployer.address);
 
             // Harvest and the process all claimable.
-            // Make a desposit and then withdraw to suffer a withdraw penalty which
+            // Make a deposit and then withdraw to suffer a withdraw penalty which
             // will make there be some harvestable rewards
             await cvxCrv.approve(l1.vaultDeployment.vault.address, ethers.constants.MaxUint256);
             await l1.vaultDeployment.vault.deposit(simpleToExactAmount(10), deployer.address);
