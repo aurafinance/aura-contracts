@@ -171,9 +171,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
                 },
             ];
 
-            hre.tracer.enabled = true;
             await keeperMulticall3.aggregate3(transferOwnerships);
-            hre.tracer.enabled = false;
         });
 
         it("transfer ownership back to an oea", async () => {
