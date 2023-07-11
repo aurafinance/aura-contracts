@@ -30,6 +30,7 @@ describe("BridgeDelegateSender", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -40,11 +41,15 @@ describe("BridgeDelegateSender", () => {
         testSetup = await sidechainTestSetup(hre, accounts);
         bridgeDelegateSender = testSetup.bridgeDelegates.bridgeDelegateSender as SimpleBridgeDelegateSender;
         sidechain = testSetup.l2.sidechain;
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     before("init contract", async () => {
         await setup();
     });
-
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like Ownable ", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};

@@ -52,6 +52,7 @@ describe("AuraOFT", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -74,11 +75,15 @@ describe("AuraOFT", () => {
         const cvxBalance = await cvxConnected.balanceOf(cvxDepositorAccount.address);
         await cvxConnected.transfer(alice.address, cvxBalance.div(2));
         await cvxConnected.transfer(deployer.address, cvxBalance.div(2));
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     before("init contract", async () => {
         await setup();
     });
-
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like Ownable ", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};

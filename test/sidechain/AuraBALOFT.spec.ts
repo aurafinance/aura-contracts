@@ -86,6 +86,7 @@ describe("AuraBalOFT", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -117,6 +118,8 @@ describe("AuraBalOFT", () => {
         const cvxCrvConnected = testSetup.l1.phase2.cvxCrv.connect(crvDepositorAccount.signer);
         await cvxCrvConnected.mint(deployer.address, simpleToExactAmount(100));
         await cvxCrvConnected.mint(alice.address, simpleToExactAmount(100));
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     async function forceHarvestRewards(amount = parseEther("10"), minOut = ZERO, signer = deployer.signer) {
         const { mocks, phase2 } = testSetup.l1;
@@ -284,6 +287,9 @@ describe("AuraBalOFT", () => {
             console.log(table([["Data", "Before", "After", "Equal"], ...testData.filter(t => !t[3])]));
         }
     }
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like Ownable ", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};

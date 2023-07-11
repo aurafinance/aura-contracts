@@ -26,8 +26,14 @@ describe("PoolManagerLite", () => {
     let deployer: Account;
     let dao: Account;
     let mocks: DeployL2MocksResult;
+    let idSnapShot: number;
 
     before(async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         accounts = await ethers.getSigners();
         const testSetup = await sidechainTestSetup(hre, accounts);
         deployer = testSetup.deployer;
@@ -38,8 +44,12 @@ describe("PoolManagerLite", () => {
 
         booster = testSetup.l2.sidechain.booster;
         poolManager = testSetup.l2.sidechain.poolManager;
-    });
 
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("@method addPool", async () => {
         let gauge: MockCurveGauge;
         let lptoken: MockERC20;
