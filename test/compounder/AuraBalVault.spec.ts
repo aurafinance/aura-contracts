@@ -58,6 +58,11 @@ describe("AuraBalVault", () => {
     /* -- Declare shared functions -- */
 
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
@@ -103,6 +108,8 @@ describe("AuraBalVault", () => {
         // Send some aura to mocked strategy to simulate harvest
         await increaseTime(ONE_WEEK.mul(156));
         await phase4.minter.connect(daoSigner).mint(deployerAddress, simpleToExactAmount(1000000));
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
 
     // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
@@ -135,9 +142,6 @@ describe("AuraBalVault", () => {
         expect(await phase2.cvx.balanceOf(strategy.address), " cvx balance").to.be.eq(0);
         return tx;
     }
-    before(async () => {
-        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
-    });
     after(async () => {
         await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });

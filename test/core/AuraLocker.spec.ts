@@ -93,6 +93,7 @@ describe("AuraLocker", () => {
     let aliceAddress: string;
     let bob: Signer;
     let bobAddress: string;
+    let idSnapShot: number;
 
     const boosterPoolId = 0;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -216,6 +217,11 @@ describe("AuraLocker", () => {
     };
 
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[5], accounts[6], accounts[7]);
         const distro = getMockDistro();
@@ -259,6 +265,8 @@ describe("AuraLocker", () => {
 
         tx = await cvx.connect(operatorAccount.signer).transfer(bobAddress, simpleToExactAmount(100));
         await tx.wait();
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     async function distributeRewardsFromBooster(): Promise<BN> {
         await booster.earmarkRewards(boosterPoolId);
