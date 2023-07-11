@@ -49,6 +49,7 @@ describe("L2Coordinator", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -67,11 +68,15 @@ describe("L2Coordinator", () => {
         // transfer LP tokens to accounts
         const balance = await l2mocks.bpt.balanceOf(deployer.address);
         await l2mocks.bpt.transfer(alice.address, balance.div(4));
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     before("init contract", async () => {
         await setup();
     });
-
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like Ownable ", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};

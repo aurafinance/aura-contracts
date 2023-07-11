@@ -1,10 +1,10 @@
 import { Speed } from "defender-relay-client";
 import { DefenderRelayProvider, DefenderRelaySigner } from "defender-relay-client/lib/ethers";
-
 import { Signer, Wallet } from "ethers";
-import { ethereumAddress, privateKey } from "../../test-utils/regex";
-import { impersonate } from "../../test-utils/fork";
 import { Account } from "types";
+
+import { impersonate } from "../../test-utils/fork";
+import { ethereumAddress, privateKey } from "../../test-utils/regex";
 import { getChain, getChainAddress, HardhatRuntime, resolveAddress } from "./networkAddressFactory";
 
 let signerInstance: Signer;

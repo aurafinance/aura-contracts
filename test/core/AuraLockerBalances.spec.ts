@@ -112,6 +112,7 @@ describe("AuraLockerBalances", () => {
     });
     after(async () => {
         await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     });
     const getGroupedData = (): EpochGroup[] => {
         const scale = simpleToExactAmount(1);
