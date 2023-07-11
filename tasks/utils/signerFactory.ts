@@ -25,7 +25,7 @@ export const getDefenderSigner = async (speed: Speed = "fast"): Promise<Signer> 
         apiSecret: process.env.DEFENDER_API_SECRET,
     };
     const provider = new DefenderRelayProvider(credentials);
-    const signer = new DefenderRelaySigner(credentials, provider, { speed });
+    const signer = new DefenderRelaySigner(credentials, provider as any, { speed });
     return signer;
 };
 
