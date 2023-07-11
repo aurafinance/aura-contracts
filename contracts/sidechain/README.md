@@ -158,7 +158,6 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | View                     | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://arbiscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | KeeperMulticall3         | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://arbiscan.io/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
 
-# <<<<<<< HEAD
 
 #### Optimism (10)
 
@@ -183,7 +182,6 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | BridgeSender             | [0x0451255563e2aca170b2552111837572e7a0bacd](https://optimistic.etherscan.io/address/0x0451255563e2aca170b2552111837572e7a0bacd) |
 | View                     | [](https://optimistic.etherscan.io/address/)                                                                                     |
 
-> > > > > > > a7c3a47 (feat: readme addresses)
 
 ### Gnosis (test deployment) (100)
 
