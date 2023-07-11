@@ -32,7 +32,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
     let keeperMulticall3: KeeperMulticall3;
     const sidechainId = 110;
     const nativeFee = simpleToExactAmount(1);
-    const relayerAddress = config.multisigs.defender.bridgeDelegateReceiverOwner;
+    const relayerAddress = "0xcC247CDe79624801169475C9Ba1f716dB3959B8f";
 
     before(async () => {
         await network.provider.request({
