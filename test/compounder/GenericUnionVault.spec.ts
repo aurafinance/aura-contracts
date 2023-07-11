@@ -52,6 +52,11 @@ describe("GenericUnionVault", () => {
     /* -- Declare shared functions -- */
 
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         accounts = await ethers.getSigners();
         deployer = accounts[0];
         deployerAddress = await deployer.getAddress();
@@ -95,10 +100,9 @@ describe("GenericUnionVault", () => {
         // Send some aura to mocked strategy to simulate harvest
         await increaseTime(ONE_WEEK.mul(156));
         await phase4.minter.connect(daoSigner).mint(strategyAddress, simpleToExactAmount(1000000));
-    };
-    before(async () => {
+
         idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
-    });
+    };
     after(async () => {
         await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });
