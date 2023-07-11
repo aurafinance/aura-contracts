@@ -314,6 +314,7 @@ const setupCanonicalTask = (deployer: Signer, network: HardhatRuntimeEnvironment
 };
 
 task("deploy:sidechain:config:L1:phase1")
+    .addParam("dryrun", "Should dry run")
     .addParam("wait", "Wait for blocks")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
@@ -322,6 +323,7 @@ task("deploy:sidechain:config:L1:phase1")
         // of the mainnet sidechain deployment
         const deployer = await getSigner(hre);
         const sidechainId = Number(tskArgs.sidechainid);
+        const sidechainConfig = sidechainConfigs[sidechainId];
 
         const { canonicalConfig, remote, sidechainLzChainId, canonical } = setupCanonicalTask(
             deployer,
@@ -329,15 +331,59 @@ task("deploy:sidechain:config:L1:phase1")
             sidechainId,
         );
 
-        await setTrustedRemoteCanonicalPhase1(
-            canonical,
-            remote,
-            sidechainLzChainId,
-            canonicalConfig.multisigs,
-            sidechainConfigs[sidechainId].bridging,
-            debug,
-            tskArgs.wait,
-        );
+        if (tskArgs.dryrun) {
+            console.log(
+                "AuraProxyOFT.setTrustedRemote:",
+                canonical.auraProxyOFT.address,
+                "Sidechain ID:",
+                sidechainLzChainId,
+                "Trusted remote:",
+                ethers.utils.solidityPack(
+                    ["address", "address"],
+                    [remote.auraOFT.address, canonical.auraProxyOFT.address],
+                ),
+            );
+
+            console.log(
+                "L1Coordinator.setTrustedRemote:",
+                canonical.l1Coordinator.address,
+                "Sidechain ID:",
+                sidechainLzChainId,
+                "Trusted remote:",
+                ethers.utils.solidityPack(
+                    ["address", "address"],
+                    [remote.l2Coordinator.address, canonical.l1Coordinator.address],
+                ),
+            );
+
+            console.log(
+                "L1Coordinator.setBridgeDelegate",
+                canonical.l1Coordinator.address,
+                "Sidechain ID:",
+                sidechainLzChainId,
+                "Bridge:",
+                sidechainConfig.bridging.l1Receiver,
+            );
+
+            console.log(
+                "L1Coordinator.setL2Coordinator",
+                canonical.l1Coordinator.address,
+                "Sidechain ID:",
+                sidechainLzChainId,
+                "L2Coordinator:",
+                remote.l2Coordinator.address,
+            );
+        } else {
+            await setTrustedRemoteCanonicalPhase1(
+                canonical,
+                remote,
+                sidechainLzChainId,
+                canonicalConfig.multisigs,
+                sidechainConfigs[sidechainId].bridging,
+                debug,
+                tskArgs.wait,
+            );
+        }
     });
 
 task("deploy:sidechain:config:L1:phase2")
