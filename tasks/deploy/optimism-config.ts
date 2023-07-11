@@ -67,7 +67,7 @@ export const getSidechain = (signer: Signer) => ({
 });
 
 export const getView = (signer: Signer) => ({
-    sidechainView: SidechainView__factory.connect(ZERO_ADDRESS, signer),
+    sidechainView: SidechainView__factory.connect("0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E", signer),
 });
 
 export const config: SidechainConfig = {
