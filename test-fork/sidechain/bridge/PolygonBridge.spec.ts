@@ -4,7 +4,7 @@ import { BigNumberish } from "ethers";
 import { deployPolygonBridgeSender } from "../../../scripts/deployBridgeDelegates";
 import { config as polygonConfig } from "../../../tasks/deploy/polygon-config";
 import { Account, ERC20, MockERC20__factory, PolygonBridgeSender } from "../../../types";
-import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../../test-utils";
+import { impersonateAccount, ZERO_ADDRESS } from "../../../test-utils";
 
 describe("PolygonBridgeSender", () => {
     const whaleAddress: string = "0xba12222222228d8ba445958a75a0704d566bf2c8";
