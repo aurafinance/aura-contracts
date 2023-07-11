@@ -171,7 +171,10 @@ describe("KeeperMulticall3 - Mainnet", () => {
                 },
             ];
 
-            await keeperMulticall3.aggregate3(transferOwnerships);
+            const tx = await keeperMulticall3.aggregate3(transferOwnerships);
+
+            await expect(tx).to.emit(bridgeDelegateArb, "SettleFeeDebt");
+            await expect(tx).to.emit(bridgeDelegateOpt, "SettleFeeDebt");
         });
 
         it("transfer ownership back to an oea", async () => {
