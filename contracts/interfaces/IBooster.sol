@@ -40,4 +40,6 @@ interface IBooster {
     function platformFee() external view returns (uint256);
 
     function FEE_DENOMINATOR() external view returns (uint256);
+
+    function voteGaugeWeight(address[] calldata _gauge, uint256[] calldata _weight) external returns (bool);
 }
