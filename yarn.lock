@@ -13,6 +13,7 @@ __metadata:
     "@codechecks/client": ^0.1.12
     "@commitlint/cli": ^14.1.0
     "@commitlint/config-conventional": ^14.1.0
+    "@eth-optimism/sdk": ^3.0.0
     "@ethersproject/abi": ^5.5.0
     "@ethersproject/abstract-signer": ^5.5.0
     "@ethersproject/bignumber": ^5.5.0
@@ -500,6 +501,91 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@eth-optimism/contracts-bedrock@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@eth-optimism/contracts-bedrock@npm:0.15.0"
+  dependencies:
+    "@eth-optimism/core-utils": ^0.12.1
+    "@openzeppelin/contracts": 4.7.3
+    "@openzeppelin/contracts-upgradeable": 4.7.3
+    ethers: ^5.7.0
+  checksum: 654bcac2bc88c9feb3aac032aa78b7a710c0148c1bec593e97772daf9f56fa6c471ba580062246342340e87e429acf253d4bd50cf25f13a8012a217cf96e540c
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/contracts@npm:0.6.0":
+  version: 0.6.0
+  resolution: "@eth-optimism/contracts@npm:0.6.0"
+  dependencies:
+    "@eth-optimism/core-utils": 0.12.0
+    "@ethersproject/abstract-provider": ^5.7.0
+    "@ethersproject/abstract-signer": ^5.7.0
+  peerDependencies:
+    ethers: ^5
+  checksum: 52e9a6cc6ad9bf3ab085d3be501fa4c89e48865baa8aee01aff39c2b007b69600304c7e8f8f4e00d67396e48a0dbfe3a260437efd3a4d7216424cece52639870
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/core-utils@npm:0.12.0":
+  version: 0.12.0
+  resolution: "@eth-optimism/core-utils@npm:0.12.0"
+  dependencies:
+    "@ethersproject/abi": ^5.7.0
+    "@ethersproject/abstract-provider": ^5.7.0
+    "@ethersproject/address": ^5.7.0
+    "@ethersproject/bignumber": ^5.7.0
+    "@ethersproject/bytes": ^5.7.0
+    "@ethersproject/constants": ^5.7.0
+    "@ethersproject/contracts": ^5.7.0
+    "@ethersproject/hash": ^5.7.0
+    "@ethersproject/keccak256": ^5.7.0
+    "@ethersproject/properties": ^5.7.0
+    "@ethersproject/providers": ^5.7.0
+    "@ethersproject/rlp": ^5.7.0
+    "@ethersproject/transactions": ^5.7.0
+    "@ethersproject/web": ^5.7.0
+    bufio: ^1.0.7
+    chai: ^4.3.4
+  checksum: 1c820107c44bdbb46becb1b00fd0dabb44f3ac8f54e6da7872a5a134411fad26f53b193225da55e79d6a8d7f0d01cc16a123db5d41ebaf02ca78360249a4b52a
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/core-utils@npm:0.12.1, @eth-optimism/core-utils@npm:^0.12.1":
+  version: 0.12.1
+  resolution: "@eth-optimism/core-utils@npm:0.12.1"
+  dependencies:
+    "@ethersproject/abi": ^5.7.0
+    "@ethersproject/abstract-provider": ^5.7.0
+    "@ethersproject/address": ^5.7.0
+    "@ethersproject/bignumber": ^5.7.0
+    "@ethersproject/bytes": ^5.7.0
+    "@ethersproject/constants": ^5.7.0
+    "@ethersproject/contracts": ^5.7.0
+    "@ethersproject/keccak256": ^5.7.0
+    "@ethersproject/properties": ^5.7.0
+    "@ethersproject/rlp": ^5.7.0
+    "@ethersproject/web": ^5.7.0
+    chai: ^4.3.4
+  checksum: c8fd0315ec50bce7f3e3f8e43fa3046d486f2a787a257051afc299de88fb540fe640e91ca34ebc57f107b44b528a75c686dbcb1ba65075e904ffba7e1c5b6e57
+  languageName: node
+  linkType: hard
+
+"@eth-optimism/sdk@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@eth-optimism/sdk@npm:3.0.0"
+  dependencies:
+    "@eth-optimism/contracts": 0.6.0
+    "@eth-optimism/contracts-bedrock": 0.15.0
+    "@eth-optimism/core-utils": 0.12.1
+    lodash: ^4.17.21
+    merkletreejs: ^0.2.27
+    rlp: ^2.2.7
+  peerDependencies:
+    ethers: ^5
+  checksum: aa0325ae27bbe97ddb7008efac8cefd09600326bcb883781dbe49b4b1911b3a0a8e2b684390ab6f3ace51d597d625acc3333f48678aab200abdb313bbd28a689
+  languageName: node
+  linkType: hard
+
 "@ethereum-waffle/chai@npm:^3.4.0":
   version: 3.4.3
   resolution: "@ethereum-waffle/chai@npm:3.4.3"
@@ -906,7 +992,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/contracts@npm:5.7.0":
+"@ethersproject/contracts@npm:5.7.0, @ethersproject/contracts@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/contracts@npm:5.7.0"
   dependencies:
@@ -1225,7 +1311,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/providers@npm:5.7.2, @ethersproject/providers@npm:^5.7.1, @ethersproject/providers@npm:^5.7.2":
+"@ethersproject/providers@npm:5.7.2, @ethersproject/providers@npm:^5.7.0, @ethersproject/providers@npm:^5.7.1, @ethersproject/providers@npm:^5.7.2":
   version: 5.7.2
   resolution: "@ethersproject/providers@npm:5.7.2"
   dependencies:
@@ -2041,6 +2127,20 @@ __metadata:
   version: 3.4.0
   resolution: "@openzeppelin/contracts-upgradeable@npm:3.4.0"
   checksum: a9305f4609dd0948bb810ac2fddbeca4ea590a945362c840c876016e3a736c9d0e4cb1d1e004aab7b444cd052385b969068b61891771537c5dfe44a4df081751
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts-upgradeable@npm:4.7.3":
+  version: 4.7.3
+  resolution: "@openzeppelin/contracts-upgradeable@npm:4.7.3"
+  checksum: c9ffb40cb847a975d440204fc6a811f43af960050242f707332b984d29bd16dc242ffa0935de61867aeb9e0357fadedb16b09b276deda5e9775582face831021
+  languageName: node
+  linkType: hard
+
+"@openzeppelin/contracts@npm:4.7.3":
+  version: 4.7.3
+  resolution: "@openzeppelin/contracts@npm:4.7.3"
+  checksum: 18382fcacf7cfd652f5dd0e70c08f08ea74eaa8ff11e9f9850639ada70198ae01a3f9493d89a52d724f2db394e9616bf6258017804612ba273167cf657fbb073
   languageName: node
   linkType: hard
 
@@ -4449,6 +4549,13 @@ __metadata:
     node-gyp: latest
     node-gyp-build: ^4.3.0
   checksum: dd107560947445280af7820c3d0534127b911577d85d537e1d7e0aa30fd634853cef8a994d6e8aed3d81388ab1a20257de776164afe6a6af8e78f5f17968ebd6
+  languageName: node
+  linkType: hard
+
+"bufio@npm:^1.0.7":
+  version: 1.2.0
+  resolution: "bufio@npm:1.2.0"
+  checksum: c5cc0009990ed62634ea7f8c07dcf92f1075231d3a34c4cdd2a3d0cfadef45f49b4277f4e41ce4eb0d2aecd9796c98ca034ca7c5fcb07a94469d8866c0da8e92
   languageName: node
   linkType: hard
 
@@ -7171,7 +7278,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.6.1, ethers@npm:^5.7.1":
+"ethers@npm:^5.6.1, ethers@npm:^5.7.0, ethers@npm:^5.7.1":
   version: 5.7.2
   resolution: "ethers@npm:5.7.2"
   dependencies:
@@ -10897,6 +11004,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"merkletreejs@npm:^0.2.27":
+  version: 0.2.32
+  resolution: "merkletreejs@npm:0.2.32"
+  dependencies:
+    bignumber.js: ^9.0.1
+    buffer-reverse: ^1.0.1
+    crypto-js: ^3.1.9-1
+    treeify: ^1.1.0
+    web3-utils: ^1.3.4
+  checksum: 041b235adde94de584fdf5ef60138baca8d6f16bb48b3b7f714b607eaa76e4207ed5fef501ee5967371c56c5876804c4ff6da4705707f8cc0362d5c1e0358425
+  languageName: node
+  linkType: hard
+
 "merkletreejs@npm:^0.2.31":
   version: 0.2.31
   resolution: "merkletreejs@npm:0.2.31"
@@ -13427,7 +13547,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rlp@npm:^2.0.0, rlp@npm:^2.2.1, rlp@npm:^2.2.2, rlp@npm:^2.2.3, rlp@npm:^2.2.4":
+"rlp@npm:^2.0.0, rlp@npm:^2.2.1, rlp@npm:^2.2.2, rlp@npm:^2.2.3, rlp@npm:^2.2.4, rlp@npm:^2.2.7":
   version: 2.2.7
   resolution: "rlp@npm:2.2.7"
   dependencies:

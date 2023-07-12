@@ -1,11 +1,11 @@
 import hre, { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { BigNumberish } from "ethers";
-import { deployGnosisBridgeSender } from "../../scripts/deployBridgeDelegates";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { config as gnosisConfig } from "../../tasks/deploy/gnosis-config";
-import { impersonateAccount, simpleToExactAmount } from "../../test-utils";
-import { Account, ERC20, MockERC20__factory, GnosisBridgeSender } from "../../types";
+import { deployGnosisBridgeSender } from "../../../scripts/deployBridgeDelegates";
+import { config as mainnetConfig } from "../../../tasks/deploy/mainnet-config";
+import { config as gnosisConfig } from "../../../tasks/deploy/gnosis-config";
+import { impersonateAccount, simpleToExactAmount } from "../../../test-utils";
+import { Account, ERC20, MockERC20__factory, GnosisBridgeSender } from "../../../types";
 
 describe("GnosisBridge", () => {
     const balOnGnoWhale: string = "0x458cD345B4C05e8DF39d0A07220feb4Ec19F5e6f";
