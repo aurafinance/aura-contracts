@@ -8,7 +8,7 @@ import {
     deployOptimismBridgeSender,
     deploySimpleBridgeReceiver,
     deploySimpleBridgeReceiver,
-    deploPolygonBridgeSender,
+    deployPolygonBridgeSender,
 } from "../../scripts/deployBridgeDelegates";
 import {
     deployAuraDistributor,
@@ -733,7 +733,7 @@ task("deploy:sidechain:L2:bridgeSender:polygon")
 
         const crv = sidechainConfig.extConfig.token;
 
-        const bridgeSender = await deploPolygonBridgeSender(hre, deployer, crv);
+        const bridgeSender = await deployPolygonBridgeSender(hre, deployer, crv);
 
         const result = { bridgeSender };
         logContracts(result as unknown as { [key: string]: { address: string } });

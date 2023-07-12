@@ -39,6 +39,7 @@ export const remoteChainMap = {
 
 export const lzChainIds = {
     [chainIds.mainnet]: 101,
+    [chainIds.polygon]: 109,
     [chainIds.arbitrum]: 110,
     [chainIds.optimism]: 111,
     [chainIds.goerli]: 10121,
