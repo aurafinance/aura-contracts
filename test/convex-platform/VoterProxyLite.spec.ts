@@ -19,7 +19,14 @@ describe("VoterProxyLite", () => {
 
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
+    let idSnapShot: number;
+
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         accounts = await ethers.getSigners();
         const testSetup = await sidechainTestSetup(hre, accounts);
         deployer = testSetup.deployer;
@@ -28,6 +35,7 @@ describe("VoterProxyLite", () => {
         sidechain = testSetup.l2.sidechain;
 
         voterProxyLite = sidechain.voterProxy;
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     async function boosterDepositIntoVoterProxy(gauge: string, amount: BigNumberish) {
         const operator = await voterProxyLite.operator();
@@ -43,6 +51,9 @@ describe("VoterProxyLite", () => {
     }
     before("init contract", async () => {
         await setup();
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });
     describe("constructor", async () => {
         it("should properly store valid arguments", async () => {

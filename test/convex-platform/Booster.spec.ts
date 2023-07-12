@@ -35,8 +35,14 @@ describe("Booster", () => {
 
     let alice: Signer;
     let aliceAddress: string;
+    let idSnapShot: number;
 
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[4], accounts[5], daoSigner);
         const distro = getMockDistro();
@@ -72,6 +78,7 @@ describe("Booster", () => {
 
         alice = accounts[1];
         aliceAddress = await alice.getAddress();
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
 
     before(async () => {

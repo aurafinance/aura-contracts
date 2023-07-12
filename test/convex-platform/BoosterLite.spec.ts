@@ -34,6 +34,7 @@ describe("BoosterLite", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
 
@@ -69,6 +70,9 @@ describe("BoosterLite", () => {
         const totalIncentive = lockIncentive.add(stakerIncentive).add(platformFee);
         return n.mul(totalIncentive).div(feeDenom);
     }
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("managing system revenue fees", async () => {
         before(async () => {
             await setup();

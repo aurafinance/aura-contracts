@@ -72,6 +72,7 @@ describe("AuraBalProxyOFT", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -98,9 +99,13 @@ describe("AuraBalProxyOFT", () => {
         await testSetup.l1.phase2.cvxCrv
             .connect(alice.signer)
             .approve(auraBalProxyOFT.address, ethers.constants.MaxUint256);
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
     before(async () => {
         await setup();
+    });
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
     });
     describe("behaviors", async () => {
         describe("should behave like Ownable", async () => {
@@ -321,7 +326,7 @@ describe("AuraBalProxyOFT", () => {
             await sidechain.auraBalVault.deposit(bridgeAmount.div(4), deployer.address);
 
             // Harvest and the process all claimable.
-            // Make a desposit and then withdraw to suffer a withdraw penalty which
+            // Make a deposit and then withdraw to suffer a withdraw penalty which
             // will make there be some harvestable rewards
             await cvxCrv.approve(l1.vaultDeployment.vault.address, ethers.constants.MaxUint256);
             await l1.vaultDeployment.vault.deposit(simpleToExactAmount(10), deployer.address);

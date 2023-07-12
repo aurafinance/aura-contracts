@@ -28,8 +28,14 @@ describe("BoosterLite", () => {
 
     // Sidechain Contracts
     let sidechain: SidechainDeployed;
+    let idSnapShot: number;
 
     const setup = async () => {
+        if (idSnapShot) {
+            await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
+            return;
+        }
         accounts = await ethers.getSigners();
         const testSetup = await sidechainTestSetup(hre, accounts);
         deployer = testSetup.deployer;
@@ -47,7 +53,12 @@ describe("BoosterLite", () => {
             const tx = await l2mocks.bpt.transfer(accountAddress, share);
             await tx.wait();
         }
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("constructor", async () => {
         before(async () => {
             await setup();

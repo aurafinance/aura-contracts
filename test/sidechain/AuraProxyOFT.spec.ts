@@ -34,6 +34,7 @@ describe("AuraProxyOFT", () => {
     const setup = async () => {
         if (idSnapShot) {
             await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+            idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
             return;
         }
         accounts = await ethers.getSigners();
@@ -55,7 +56,12 @@ describe("AuraProxyOFT", () => {
         await cvxConnected.transfer(alice.address, cvxBalance.div(4));
 
         await testSetup.l1.phase2.cvx.connect(alice.signer).approve(auraProxyOFT.address, ethers.constants.MaxUint256);
+
+        idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
+    after(async () => {
+        await hre.ethers.provider.send("evm_revert", [idSnapShot]);
+    });
     describe("behaviors", async () => {
         describe("should behave like Ownable", async () => {
             const ctx: Partial<OwnableBehaviourContext> = {};
