@@ -70,6 +70,8 @@ describe("GnosisBridge", () => {
         it("Should be able to set values", async () => {
             //Placeholder values while config is WIP
             await gnosisBridgeSender.setL1Receiver(deployer.address);
+            await gnosisBridgeSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await gnosisBridgeSender.authorizedKeepers(deployer.address)).eq(true);
             expect(await gnosisBridgeSender.l1Receiver()).eq(deployer.address);
             expect(await gnosisBridgeSender.bridge()).eq(gnosisConfig.bridging.nativeBridge);
             expect(await gnosisBridgeSender.crv()).eq(gnosisConfig.extConfig.token);
