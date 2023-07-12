@@ -50,8 +50,11 @@ describe("PolygonBridgeSender", () => {
         it("Should be able to set values", async () => {
             //Placeholder values while config is WIP
             await polygonBridgeSender.setL1Receiver(deployer.address);
+            await polygonBridgeSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await polygonBridgeSender.authorizedKeepers(deployer.address)).eq(true);
             expect(await polygonBridgeSender.l1Receiver()).eq(deployer.address);
             expect(await polygonBridgeSender.crv()).eq(polygonConfig.extConfig.token);
+            expect(await polygonBridgeSender.owner()).eq(deployer.address);
         });
     });
 

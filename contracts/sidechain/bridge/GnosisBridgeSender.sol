@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import { Ownable } from "@openzeppelin/contracts-0.8/access/Ownable.sol";
 import { BridgeDelegateSender } from "./BridgeDelegateSender.sol";
 import { IERC677 } from "../../interfaces/IERC677.sol";
 
@@ -37,7 +36,7 @@ contract GnosisBridgeSender is BridgeDelegateSender {
      * - The caller must be the owner of the contract.
      * @param _amount The amount of tokens to be sent
      */
-    function send(uint256 _amount) external override onlyOwner {
+    function send(uint256 _amount) external override onlyKeeper {
         require(l1Receiver != address(0), "L1ReceiverNotSet");
         bytes memory data = abi.encodePacked(address(l1Receiver));
         IERC677(crv).transferAndCall(bridge, _amount, data);
