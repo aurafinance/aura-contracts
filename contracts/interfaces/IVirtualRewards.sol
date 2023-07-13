@@ -10,6 +10,10 @@ interface IVirtualRewardFactory {
 }
 
 interface IVirtualRewards {
+    function periodFinish() external view returns (uint256);
+
+    function queuedRewards() external view returns (uint256);
+
     function queueNewRewards(uint256) external;
 
     function rewardToken() external view returns (address);
