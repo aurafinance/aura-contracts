@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
+import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
@@ -29,6 +30,9 @@ contract ChildGaugeVoteRewards is LzApp {
     // @dev The Booster contract address
     IBooster public immutable booster;
 
+    // @dev Extra reward distro contract
+    IStashRewardDistro public immutable stashRewardDistro;
+
     // @dev Distributor address
     address public distributor;
 
@@ -48,11 +52,13 @@ contract ChildGaugeVoteRewards is LzApp {
     constructor(
         address _aura,
         address _auraOFT,
-        address _booster
+        address _booster,
+        address _stashRewardDistro
     ) {
         aura = IERC20(_aura);
         auraOFT = IOFT(_auraOFT);
         booster = IBooster(_booster);
+        stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
 
         // Approve AuraOFT with AURA
         IERC20(_aura).safeApprove(_auraOFT, type(uint256).max);
@@ -98,13 +104,9 @@ contract ChildGaugeVoteRewards is LzApp {
             // Send pro rate AURA to this stash
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
 
-            // Get the pool ID and then get the stash address to send
-            // Aura to from the Booster pool info
+            // Fund the extra reward distro for the next 2 epochs
             uint256 pid = getPoolId[gauge];
-            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
-
-            // Store amount sent and send the AURA
-            aura.safeTransfer(poolInfo.stash, amountToSend);
+            stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
         }
     }
 
