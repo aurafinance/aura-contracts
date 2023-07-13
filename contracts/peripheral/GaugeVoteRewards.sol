@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
+import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
@@ -37,6 +38,9 @@ contract GaugeVoteRewards is LzApp {
     // @dev The Booster contract address
     IBooster public immutable booster;
 
+    // @dev Extra reward distro contract
+    IStashRewardDistro public immutable stashRewardDistro;
+
     // @dev LayerZero chain ID for this chain
     uint16 public immutable lzChainId;
 
@@ -62,6 +66,13 @@ contract GaugeVoteRewards is LzApp {
     mapping(address => uint256) public getPoolId;
 
     /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+
+    event SetDistributor(address distributor);
+    event SetRewardPerEpoch(uint256 rewardPerEpoch);
+
+    /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
 
@@ -69,11 +80,13 @@ contract GaugeVoteRewards is LzApp {
         address _aura,
         address _auraOFT,
         address _booster,
+        address _stashRewardDistro,
         uint16 _lzChainId
     ) {
         aura = IERC20(_aura);
         auraOFT = IOFT(_auraOFT);
         booster = IBooster(_booster);
+        stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
         lzChainId = _lzChainId;
 
         // Approve AuraOFT with AURA
@@ -95,16 +108,27 @@ contract GaugeVoteRewards is LzApp {
 
     function setDistributor(address _distributor) external onlyOwner {
         distributor = _distributor;
+        emit SetDistributor(_distributor);
     }
 
     function setRewardPerEpoch(uint256 _rewardPerEpoch) external onlyOwner {
         rewardPerEpoch = _rewardPerEpoch;
+        emit SetRewardPerEpoch(_rewardPerEpoch);
     }
 
-    function setPoolIds(uint256[] memory _poolIds, address[] memory _gauges) external onlyOwner {
+    function setPoolIds(uint256[] memory _poolIds) external {
         uint256 poolIdsLen = _poolIds.length;
         for (uint256 i = 0; i < poolIdsLen; i++) {
-            getPoolId[_gauges[i]] = _poolIds[i];
+            uint256 pid = _poolIds[i];
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+            getPoolId[poolInfo.gauge] = pid;
+        }
+    }
+
+    function setChildGaugeVoteRewards(uint16[] memory dstChainIds, address[] memory voteRewards) external onlyOwner {
+        uint256 dstChainIdsLen = dstChainIds.length;
+        for (uint256 i = 0; i < dstChainIdsLen; i++) {
+            getChildGaugeVoteRewards[dstChainIds[i]] = voteRewards[i];
         }
     }
 
@@ -120,14 +144,18 @@ contract GaugeVoteRewards is LzApp {
      * @return bool for success
      */
     function voteGaugeWeight(address[] calldata _gauge, uint256[] calldata _weight) external onlyOwner returns (bool) {
+        uint256 totalGaugeWeight = 0;
         // Loop through each gauge and store it's weight for this epoch
         for (uint256 i = 0; i < _gauge.length; i++) {
             address gauge = _gauge[i];
+            uint256 weight = _weight[i];
             // If the weight for this gauge for this epoch has already been set then revert
             require(getAmountToSendByEpoch[_getCurrentEpoch()][gauge] == 0, "stored amountToSend!=0");
-            uint256 amountToSend = rewardPerEpoch.mul(_weight[i]).div(TOTAL_WEIGHT_PER_EPOCH);
+            uint256 amountToSend = rewardPerEpoch.mul(weight).div(TOTAL_WEIGHT_PER_EPOCH);
+            totalGaugeWeight = totalGaugeWeight.add(weight);
             getAmountToSendByEpoch[_getCurrentEpoch()][gauge] = amountToSend;
         }
+
         // Forward the gauge vote to the booster
         return booster.voteGaugeWeight(_gauge, _weight);
     }
@@ -151,13 +179,9 @@ contract GaugeVoteRewards is LzApp {
 
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
 
-            // Get the pool ID and then get the stash address to send
-            // Aura to from the Booster pool info
+            // Fund the extra reward distro for the next 2 epochs
             uint256 pid = getPoolId[gauge];
-            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
-
-            // Send the AURA
-            aura.safeTransfer(poolInfo.stash, amountToSend);
+            stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
         }
     }
 
