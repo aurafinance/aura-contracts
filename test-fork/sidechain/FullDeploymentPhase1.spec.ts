@@ -514,6 +514,9 @@ describe("Full Deployment Phase 1", () => {
             // the L1Coordinator is notified about new fee debt
             await withMockMinter(async () => {
                 await sidechain.booster.earmarkRewards(0, ZERO_ADDRESS, {
+                    value: 0,
+                });
+                await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, {
                     value: NATIVE_FEE,
                 });
             });

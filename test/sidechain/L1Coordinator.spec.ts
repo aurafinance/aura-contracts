@@ -233,7 +233,8 @@ describe("L1Coordinator", () => {
             const coordinatorBalBefore = await testSetup.l2.mocks.token.balanceOf(
                 testSetup.bridgeDelegates.bridgeDelegateSender.address,
             );
-            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.connect(alice.signer).notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             const feeDebtAfter = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             feeDebt = feeDebtAfter.sub(feeDebtBefore);
             const coordinatorBalAfter = await testSetup.l2.mocks.token.balanceOf(
@@ -342,7 +343,8 @@ describe("L1Coordinator", () => {
             expect(await l1Coordinator.rewardMultiplier()).eq(5000);
         });
         it("distributeAura sends rewards to treasury", async () => {
-            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.connect(alice.signer).notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             const feeDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
             expect(feeDebt).gt(0);
 
@@ -392,7 +394,8 @@ describe("L1Coordinator", () => {
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
             it("fails if the chain does not have an L2 coordinator", async () => {
-                await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+                await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+                await sidechain.l2Coordinator.connect(alice.signer).notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
                 const feeDebtOf = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
                 expect(feeDebtOf).to.be.gt(ZERO);
                 // Make sure the L2 coordinator is not set.
@@ -438,7 +441,8 @@ describe("L1Coordinator", () => {
             await crv.transfer(l1Coordinator.address, simpleToExactAmount(10));
             await canonical.auraProxyOFT.connect(dao.signer).setUseCustomAdapterParams(false);
             await l1Coordinator.connect(dao.signer).setAdapterParams(L2_CHAIN_ID, selector, adapterParams);
-            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.connect(alice.signer).notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
                 value: NATIVE_FEE.mul(2),
             });
