@@ -6,23 +6,33 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { config } from "../deploy/polygon-config";
 import { ethers } from "ethers";
 
+import pos from "@maticnetwork/maticjs";
+
 task("sidechain:polygon:bridge")
     .addParam("txhash", "L2 TXN Hash of the bridge withdrawal")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const mainnetBridge = "0x2a3DD3EB832aF982ec71669E178424b10Dca2EDe";
-        const baseURL = "https://bridge-api.zkevm-rpc.com";
+        const deployer = await getSigner(hre);
+        const withdrawTxHash = tskArgs.txhash;
 
-        const axios = require("axios").create({
-            baseURL,
-        });
+        const polygonProvider = new ethers.providers.JsonRpcProvider(process.env.OPTIMISM_NODE_URL);
 
-        const merkleProofString = "/merkle-proof";
-        const getClaimsFromAcc = "/withdrawals/";
+        const options = {
+            network: "ethereum",
+            version: "v1",
+            maticProvider: polygonProvider,
+            parentProvider: deployer,
+        };
 
-        const bridges = await axios.get(getClaimsFromAcc + config.bridging.l2Sender, {
-            params: { limit: 100, offset: 0 },
-        });
-        console.log(bridges);
+        // console.log(Matic);
+
+        const maticClient = new pos.POSClient();
+        maticClient.init(options);
+        const event = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+        const tx = await maticClient.exitUtil.buildPayloadForExit(withdrawTxHash, event, false);
+
+        console.log(tx);
+
+        // console.log(pos)
 
         // const withdrawTxHash = tskArgs.txhash;
 
