@@ -22,7 +22,7 @@ contract ArbitrumBridgeSender is BridgeDelegateSender {
        Storage 
     ------------------------------------------------------------------- */
 
-    /// @dev The Gnosis bridge address
+    /// @dev The Arbitrum bridge address
     address public immutable gatewayRouter;
 
     /// @dev Mainnet CRV token address
@@ -33,7 +33,7 @@ contract ArbitrumBridgeSender is BridgeDelegateSender {
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Constructs the GnosisBridgeSender contract.
+     * @dev Constructs the ArbitrumBridgeSender contract.
      * @param _gatewayRouter The arbitrum gatewayRouter address.
      * @param _crv The L2 token address.
      * @param _l1Crv The L1 token address.
