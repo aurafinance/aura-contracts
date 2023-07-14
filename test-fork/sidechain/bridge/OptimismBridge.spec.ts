@@ -62,6 +62,8 @@ describe("OptimismBridge", () => {
         it("Should be able to set values", async () => {
             //Placeholder values while config is WIP
             await bridgeSender.setL1Receiver(deployer.address);
+            await bridgeSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await bridgeSender.authorizedKeepers(deployer.address)).eq(true);
             expect(await bridgeSender.l1Receiver()).eq(deployer.address);
             expect(await bridgeSender.l2StandardBridge()).eq(optimismConfig.bridging.nativeBridge);
             expect(await bridgeSender.crv()).eq(optimismConfig.extConfig.token);
