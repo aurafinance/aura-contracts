@@ -73,31 +73,31 @@ describe("ArbitrumBridge", () => {
     });
 
     // Case Not Working:
-    // describe("Bridging", () => {
-    //     it("Should be able to trigger a bridge request", async () => {
-    //         const amount = simpleToExactAmount(100);
-    //         await getBal(bridgeSender.address, amount);
-    //         const balanceBefore = await crv.balanceOf(bridgeSender.address);
-    //         const txn = await bridgeSender.send(balanceBefore.toString());
+    describe("Bridging", () => {
+        it("Should be able to trigger a bridge request", async () => {
+            const amount = simpleToExactAmount(100);
+            await getBal(bridgeSender.address, amount);
+            const balanceBefore = await crv.balanceOf(bridgeSender.address);
+            const txn = await bridgeSender.send(balanceBefore.toString());
 
-    //         //Everything from here should be a defender task
-    //         const receipt = await txn.wait();
+            //Everything from here should be a defender task
+            const receipt = await txn.wait();
 
-    //         let hasMessageSent = false;
+            let hasMessageSent = false;
 
-    //         let i;
-    //         for (i in receipt.logs) {
-    //             const log = receipt.logs[i];
-    //             try {
-    //                 if (log.address == arbitrumConfig.bridging.nativeBridge) {
-    //                     hasMessageSent = true;
-    //                 }
-    //             } catch {
-    //                 continue;
-    //             }
-    //         }
+            let i;
+            for (i in receipt.logs) {
+                const log = receipt.logs[i];
+                try {
+                    if (log.address == arbitrumConfig.bridging.nativeBridge) {
+                        hasMessageSent = true;
+                    }
+                } catch {
+                    continue;
+                }
+            }
 
-    //         expect(hasMessageSent).eq(true);
-    //     });
-    // });
+            expect(hasMessageSent).eq(true);
+        });
+    });
 });
