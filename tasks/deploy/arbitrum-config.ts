@@ -34,7 +34,7 @@ const extConfig: ExtSidechainConfig = {
     canonicalChainId: 101, // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     lzEndpoint: "0x3c2269811836af69497E5F486A85D7316753cf62", // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids#arbitrum
     minter: "0xc3ccacE87f6d3A81724075ADcb5ddd85a8A1bB68",
-    token: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8",
+    token: "0x040d1EdC9569d4Bab2D15287Dc5A4F10F56a56B8",
     create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     balancerVault: "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     gauges: [

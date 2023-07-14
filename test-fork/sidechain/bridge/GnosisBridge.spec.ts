@@ -17,12 +17,13 @@ describe("GnosisBridge", () => {
 
     let deployer: Account;
     let dao: Account;
+    let notAuth: Account;
 
     // Canonical chain Contracts
     let crv: ERC20;
 
     // Sender Contract
-    let gnosisBridgeSender: GnosisBridgeSender;
+    let bridgeSender: GnosisBridgeSender;
 
     //Data for testing
     let signData: string;
@@ -53,12 +54,13 @@ describe("GnosisBridge", () => {
 
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
+        notAuth = await impersonateAccount(await accounts[3].getAddress());
         dao = await impersonateAccount(mainnetConfig.multisigs.daoMultisig);
 
         // Deploy mocks
         crv = MockERC20__factory.connect(gnosisConfig.extConfig.token, deployer.signer);
 
-        gnosisBridgeSender = await deployGnosisBridgeSender(
+        bridgeSender = await deployGnosisBridgeSender(
             hre,
             deployer.signer,
             gnosisConfig.bridging.nativeBridge,
@@ -69,21 +71,28 @@ describe("GnosisBridge", () => {
     describe("Check configs", () => {
         it("Should be able to set values", async () => {
             //Placeholder values while config is WIP
-            await gnosisBridgeSender.setL1Receiver(deployer.address);
-            await gnosisBridgeSender.updateAuthorizedKeepers(deployer.address, true);
-            expect(await gnosisBridgeSender.authorizedKeepers(deployer.address)).eq(true);
-            expect(await gnosisBridgeSender.l1Receiver()).eq(deployer.address);
-            expect(await gnosisBridgeSender.bridge()).eq(gnosisConfig.bridging.nativeBridge);
-            expect(await gnosisBridgeSender.crv()).eq(gnosisConfig.extConfig.token);
+            await bridgeSender.setL1Receiver(deployer.address);
+            await bridgeSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await bridgeSender.authorizedKeepers(deployer.address)).eq(true);
+            expect(await bridgeSender.l1Receiver()).eq(deployer.address);
+            expect(await bridgeSender.bridge()).eq(gnosisConfig.bridging.nativeBridge);
+            expect(await bridgeSender.crv()).eq(gnosisConfig.extConfig.token);
+        });
+
+        it("should fail to send if not a keeper", async () => {
+            await expect(
+                bridgeSender.connect(notAuth.signer).send("1"),
+                "fails due to not being a keeper",
+            ).to.be.revertedWith("!keeper");
         });
     });
 
     describe("Bridging", () => {
         it("Should be able to trigger a request for signatures to bridge some bal", async () => {
             const amount = simpleToExactAmount(100);
-            await getBal(gnosisBridgeSender.address, amount);
-            const balanceBefore = await crv.balanceOf(gnosisBridgeSender.address);
-            const txn = await gnosisBridgeSender.send(balanceBefore.toString());
+            await getBal(bridgeSender.address, amount);
+            const balanceBefore = await crv.balanceOf(bridgeSender.address);
+            const txn = await bridgeSender.send(balanceBefore.toString());
 
             //Everything from here should be a defender task
             const receipt = await txn.wait();
