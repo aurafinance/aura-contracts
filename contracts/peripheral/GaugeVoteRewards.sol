@@ -144,6 +144,14 @@ contract GaugeVoteRewards is LzApp {
     }
 
     /* -------------------------------------------------------------------
+       View 
+    ------------------------------------------------------------------- */
+
+    function getCurrentEpoch() external view returns (uint256) {
+        return _getCurrentEpoch();
+    }
+
+    /* -------------------------------------------------------------------
        Core 
     ------------------------------------------------------------------- */
 
@@ -155,7 +163,6 @@ contract GaugeVoteRewards is LzApp {
      * @return bool for success
      */
     function voteGaugeWeight(address[] calldata _gauge, uint256[] calldata _weight) external onlyOwner returns (bool) {
-        uint256 totalGaugeWeight = 0;
         // Loop through each gauge and store it's weight for this epoch
         for (uint256 i = 0; i < _gauge.length; i++) {
             address gauge = _gauge[i];
@@ -163,7 +170,6 @@ contract GaugeVoteRewards is LzApp {
             // If the weight for this gauge for this epoch has already been set then revert
             require(getAmountToSendByEpoch[_getCurrentEpoch()][gauge] == 0, "stored amountToSend!=0");
             uint256 amountToSend = rewardPerEpoch.mul(weight).div(TOTAL_WEIGHT_PER_EPOCH);
-            totalGaugeWeight = totalGaugeWeight.add(weight);
             getAmountToSendByEpoch[_getCurrentEpoch()][gauge] = amountToSend;
         }
 
