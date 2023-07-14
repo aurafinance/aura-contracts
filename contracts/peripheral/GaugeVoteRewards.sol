@@ -81,13 +81,16 @@ contract GaugeVoteRewards is LzApp {
         address _auraOFT,
         address _booster,
         address _stashRewardDistro,
-        uint16 _lzChainId
+        uint16 _lzChainId,
+        address _lzEndpoint
     ) {
         aura = IERC20(_aura);
         auraOFT = IOFT(_auraOFT);
         booster = IBooster(_booster);
         stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
         lzChainId = _lzChainId;
+
+        _initializeLzApp(_lzEndpoint);
 
         // Approve AuraOFT with AURA
         IERC20(_aura).safeApprove(_auraOFT, type(uint256).max);
@@ -125,10 +128,18 @@ contract GaugeVoteRewards is LzApp {
         }
     }
 
-    function setChildGaugeVoteRewards(uint16[] memory dstChainIds, address[] memory voteRewards) external onlyOwner {
-        uint256 dstChainIdsLen = dstChainIds.length;
+    function setDstChainId(address[] memory _gauges, uint16[] memory _dstChainIds) external onlyOwner {
+        uint256 dstChainIdsLen = _dstChainIds.length;
         for (uint256 i = 0; i < dstChainIdsLen; i++) {
-            getChildGaugeVoteRewards[dstChainIds[i]] = voteRewards[i];
+            getDstChainId[_gauges[i]] = _dstChainIds[i];
+        }
+    }
+
+    function setChildGaugeVoteRewards(uint16[] memory _dstChainIds, address[] memory _voteRewards) external onlyOwner {
+        uint256 dstChainIdsLen = _dstChainIds.length;
+        require(dstChainIdsLen == _voteRewards.length, "!length");
+        for (uint256 i = 0; i < dstChainIdsLen; i++) {
+            getChildGaugeVoteRewards[_dstChainIds[i]] = _voteRewards[i];
         }
     }
 
