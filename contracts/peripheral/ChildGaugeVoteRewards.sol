@@ -81,10 +81,12 @@ contract ChildGaugeVoteRewards is LzApp {
         distributor = _distributor;
     }
 
-    function setPoolIds(uint256[] memory _poolIds, address[] memory _gauges) external onlyOwner {
+    function setPoolIds(uint256[] memory _poolIds) external {
         uint256 poolIdsLen = _poolIds.length;
         for (uint256 i = 0; i < poolIdsLen; i++) {
-            getPoolId[_gauges[i]] = _poolIds[i];
+            uint256 pid = _poolIds[i];
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+            getPoolId[poolInfo.gauge] = pid;
         }
     }
 

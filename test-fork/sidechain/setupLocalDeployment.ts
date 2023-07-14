@@ -29,7 +29,7 @@ import {
 } from "../../scripts/deployBridgeDelegates";
 import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
 
-interface TestSuiteDeployment {
+export interface TestSuiteDeployment {
     dao: Account;
     phase2: Phase2Deployed;
     phase6: Phase6Deployed;
