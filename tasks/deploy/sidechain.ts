@@ -6,9 +6,8 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import {
     deployArbitrumBridgeSender,
     deployOptimismBridgeSender,
-    deploySimpleBridgeReceiver,
-    deploySimpleBridgeReceiver,
     deployPolygonBridgeSender,
+    deploySimpleBridgeReceiver,
 } from "../../scripts/deployBridgeDelegates";
 import {
     deployAuraDistributor,
