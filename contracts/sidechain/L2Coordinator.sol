@@ -178,9 +178,7 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     function notifyFees(address _zroPaymentAddress) external payable nonReentrant {
         // Notify L1 chain of collected fees
         bytes memory payload = CCM.encodeFees(pendingNotifyFees);
-        bytes memory adapterParams = getAdapterParams[canonicalChainId][
-            keccak256("queueNewRewards(address,uint256,uint256,address)")
-        ];
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("notifyFees(address)")];
 
         // Reset pending fees
         pendingNotifyFees = 0;
@@ -188,9 +186,9 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
-            payable(msg.sender), // Refund address
+            payable(msg.sender), /////// Refund address
             _zroPaymentAddress, //////// ZRO payment address
-            adapterParams, ////// Adapter params
+            adapterParams, ///////////// Adapter params
             msg.value ////////////////// Native fee
         );
     }
