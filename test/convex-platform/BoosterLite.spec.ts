@@ -133,7 +133,8 @@ describe("BoosterLite", () => {
             await booster.connect(dao.signer).setTreasury(DEAD_ADDRESS);
 
             const feeDebtBefore = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
-            await booster.connect(alice).earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await booster.connect(alice).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
 
             // bals after
@@ -200,8 +201,9 @@ describe("BoosterLite", () => {
             const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
 
             // When earmarkRewards
-            const tx = await booster.earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const tx = await booster.earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
             await tx.wait();
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
 
             // Then sends
             const feeDebtAfter = await canonical.l1Coordinator.feeDebtOf(L2_CHAIN_ID);
@@ -287,7 +289,8 @@ describe("BoosterLite", () => {
         it("@method BaseRewardPool.processIdleRewards()", async () => {
             await l2mocks.minter.setRate(1000);
 
-            await booster.earmarkRewards(0, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await booster.earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             const crvRewards = BaseRewardPool__factory.connect(pool.crvRewards, alice);
 
             const queuedRewards = await crvRewards.queuedRewards();
