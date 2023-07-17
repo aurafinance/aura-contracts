@@ -31,18 +31,18 @@ const multisigs: SidechainMultisigConfig = {
 };
 
 const extConfig: ExtSidechainConfig = {
-    canonicalChainId: 109, // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
+    canonicalChainId: 101,
     lzEndpoint: "0x3c2269811836af69497E5F486A85D7316753cf62",
     minter: "0x47B489bf5836f83ABD928C316F8e39bC0587B020",
     token: "0x9a71012B13CA4d3D0Cdc72A177DF3ef03b0E76A3",
-    create2Factory: ZERO_ADDRESS,
+    create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     balancerVault: "0xba12222222228d8ba445958a75a0704d566bf2c8",
     gauges: [],
 };
 
 export const bridging: SidechainBridging = {
-    l1Receiver: "0x8bA9715a61220a8a65b50148562DE1d845fdf8e0",
-    l2Sender: "0x8bA9715a61220a8a65b50148562DE1d845fdf8e0",
+    l1Receiver: ZERO_ADDRESS,
+    l2Sender: ZERO_ADDRESS,
     nativeBridge: ZERO_ADDRESS,
 };
 
