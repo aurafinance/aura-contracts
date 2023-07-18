@@ -151,7 +151,8 @@ describe("L2Coordinator", () => {
             const bridgeDelegateBalanceBefore = await l2mocks.token.balanceOf(bridgeDelegate);
             // const amountOfFees = await toFeeAmount(mintrMintAmount);
             // When earmarkRewards
-            const tx = await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: NATIVE_FEE });
+            const tx = await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
             // It calls L2Coordinator.queueNewRewards()
             // No events
             // Then sends fees to L2 and increase l1 fee debt

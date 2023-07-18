@@ -41,6 +41,9 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     /// @dev Accumulated BAL rewards
     uint256 public accBalRewards;
 
+    /// @dev Pending fees to notify L1Coordinator
+    uint256 public pendingNotifyFees;
+
     /// @dev Accumulated AURA rewards
     uint256 public accAuraRewards;
 
@@ -149,43 +152,45 @@ contract L2Coordinator is NonblockingLzApp, CrossChainConfig, ReentrancyGuard {
     /**
      * @dev Called by the booster.earmarkRewards to register feeDebt with the L1
      *      and receive CVX tokens in return
-     * @param _originalSender Sender that initiated the Booster call
      * @param _fees Amount of CRV that was received as fees
      * @param _rewards Amount of CRV that was received by the reward contract
-     * @param _zroPaymentAddress The LayerZero ZRO payment address
      */
     function queueNewRewards(
-        address _originalSender,
+        address,
         uint256 _fees,
         uint256 _rewards,
-        address _zroPaymentAddress
+        address
     ) external payable nonReentrant {
         require(msg.sender == booster, "!booster");
         require(bridgeDelegate != address(0), "!bridgeDelegate");
 
         // Update accumulated BAL rewards with the latest rewards
         accBalRewards = accBalRewards.add(_rewards);
+        pendingNotifyFees = pendingNotifyFees.add(_fees);
 
         // Transfer reward token balance to bridge delegate
         uint256 balance = IERC20(balToken).balanceOf(address(this));
         IERC20(balToken).safeTransfer(bridgeDelegate, balance);
 
+        emit RewardAdded(balToken, _rewards);
+    }
+
+    function notifyFees(address _zroPaymentAddress) external payable nonReentrant {
         // Notify L1 chain of collected fees
-        bytes memory payload = CCM.encodeFees(_fees);
-        bytes memory adapterParams = getAdapterParams[canonicalChainId][
-            keccak256("queueNewRewards(address,uint256,uint256,address)")
-        ];
+        bytes memory payload = CCM.encodeFees(pendingNotifyFees);
+        bytes memory adapterParams = getAdapterParams[canonicalChainId][keccak256("notifyFees(address)")];
+
+        // Reset pending fees
+        pendingNotifyFees = 0;
 
         _lzSend(
             canonicalChainId, ////////// Parent chain ID
             payload, /////////////////// Payload
-            payable(_originalSender), // Refund address
-            _zroPaymentAddress, // ZRO payment address
-            adapterParams, ////// Adapter params
+            payable(msg.sender), /////// Refund address
+            _zroPaymentAddress, //////// ZRO payment address
+            adapterParams, ///////////// Adapter params
             msg.value ////////////////// Native fee
         );
-
-        emit RewardAdded(balToken, _rewards);
     }
 
     /* -------------------------------------------------------------------

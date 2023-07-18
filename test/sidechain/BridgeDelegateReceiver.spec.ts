@@ -112,7 +112,8 @@ describe("BridgeDelegateReceiver", () => {
             await sidechain.booster.deposit(pid, amount, stake);
             await increaseTime(60 * 60 * 24);
             // Send fees
-            await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: NATIVE_FEE });
+            await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, { value: 0 });
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
 
             const feeDebtAfter = await l1Coordinator.feeDebtOf(srcChainId);
             expect(feeDebtAfter, "feeDebt").to.be.gt(feeDebtBefore);

@@ -172,6 +172,9 @@ describe("Mint rate", () => {
     const earmarkRewards = async (amount: BigNumber, pid: number) => {
         await withMockMinter(amount, async () => {
             await sidechain.booster.earmarkRewards(pid, ZERO_ADDRESS, {
+                value: 0,
+            });
+            await sidechain.l2Coordinator.notifyFees(ZERO_ADDRESS, {
                 value: NATIVE_FEE,
             });
         });
@@ -233,8 +236,8 @@ describe("Mint rate", () => {
     };
 
     const getBpt = async (token: string, recipient: string, amount = simpleToExactAmount(250)) => {
-        const whale = sidechainConfig.whales[token];
-        if (!whale) throw new Error("No BPT whale found");
+        const whale = sidechainConfig.whales[token.toLowerCase()];
+        if (!whale) throw new Error("No BPT whale found for: " + token);
         const tokenWhaleSigner = await impersonateAccount(whale);
         const tokenContract = MockERC20__factory.connect(token, tokenWhaleSigner.signer);
         await tokenContract.transfer(recipient, amount);
