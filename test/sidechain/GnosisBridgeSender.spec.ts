@@ -89,9 +89,13 @@ describe("BridgeDelegateSender", () => {
     });
     describe("send tokens", async () => {
         it("fails if caller is not the owner", async () => {
-            await expect(bridgeDelegateSender.connect(alice.signer).send(ZERO), "!onlyOwner").to.be.revertedWith(
-                ERRORS.ONLY_OWNER,
+            await expect(bridgeDelegateSender.connect(alice.signer).send(ZERO), "!keeper").to.be.revertedWith(
+                ERRORS.ONLY_KEEPER,
             );
+        });
+        it("set keeper", async () => {
+            await bridgeDelegateSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await bridgeDelegateSender.authorizedKeepers(deployer.address)).eq(true);
         });
         it("fails to send tokens if l1Receiver is not set", async () => {
             expect(await bridgeDelegateSender.l1Receiver(), "l1Receiver").to.be.eq(ZERO_ADDRESS);

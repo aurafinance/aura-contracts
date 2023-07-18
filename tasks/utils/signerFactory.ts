@@ -57,11 +57,7 @@ class PolygonWallet extends Wallet {
     }
 }
 
-export const getSigner = async (
-    hre: HardhatRuntimeEnvironment = {} as any,
-    useCache = false,
-    key?: string,
-): Promise<Signer> => {
+export const getSigner = async (hre: HardhatRuntime = {} as any, useCache = false, key?: string): Promise<Signer> => {
     // If already initiated a signer, just return the singleton instance
     if (useCache && signerInstance) return signerInstance;
 
@@ -70,7 +66,7 @@ export const getSigner = async (
         if (!pk.match(privateKey)) {
             throw Error(`Invalid format of private key`);
         }
-        if (hre.network.config.chainId === chainIds.polygon) {
+        if ((hre as HardhatRuntimeEnvironment).network.config.chainId === chainIds.polygon) {
             console.log("Using PolygonWallet");
             const wallet = new PolygonWallet(pk, hre.ethers.provider);
             console.log(`Using signer ${await wallet.getAddress()} from private key`);
@@ -121,7 +117,7 @@ export const getSigner = async (
 };
 
 export const getSignerAccount = async (hre: HardhatRuntime = {}): Promise<Account> => {
-    const signer = await getSigner(hre as HardhatRuntimeEnvironment);
+    const signer = await getSigner(hre);
     return {
         signer,
         address: await signer.getAddress(),
