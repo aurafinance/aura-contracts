@@ -26,8 +26,8 @@ import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const multisigs: SidechainMultisigConfig = {
-    daoMultisig: ZERO_ADDRESS,
-    pauseGuardian: ZERO_ADDRESS,
+    daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
+    pauseGuardian: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
 };
 
 const extConfig: ExtSidechainConfig = {
@@ -47,27 +47,27 @@ export const bridging: SidechainBridging = {
 };
 
 export const getSidechain = (signer: Signer) => ({
-    voterProxy: VoterProxyLite__factory.connect(ZERO_ADDRESS, signer),
-    booster: BoosterLite__factory.connect(ZERO_ADDRESS, signer),
-    keeperMulticall3: KeeperMulticall3__factory.connect(ZERO_ADDRESS, signer),
-    boosterOwner: BoosterOwner__factory.connect(ZERO_ADDRESS, signer),
-    poolManager: PoolManagerLite__factory.connect(ZERO_ADDRESS, signer),
-    l2Coordinator: L2Coordinator__factory.connect(ZERO_ADDRESS, signer),
-    auraOFT: AuraOFT__factory.connect(ZERO_ADDRESS, signer),
-    auraBalOFT: AuraBalOFT__factory.connect(ZERO_ADDRESS, signer),
+    voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
+    booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
+    keeperMulticall3: KeeperMulticall3__factory.connect("0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd", signer),
+    boosterOwner: BoosterOwner__factory.connect("0x8B9DA502Cccb32dBF19Cd68E258e6Fd05e1B5eEe", signer),
+    poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
+    l2Coordinator: L2Coordinator__factory.connect("0x8b2970c237656d3895588B99a8bFe977D5618201", signer),
+    auraOFT: AuraOFT__factory.connect("0x1509706a6c66CA549ff0cB464de88231DDBe213B", signer),
+    auraBalOFT: AuraBalOFT__factory.connect("0x223738a747383d6F9f827d95964e4d8E8AC754cE", signer),
     factories: {
-        rewardFactory: RewardFactory__factory.connect(ZERO_ADDRESS, signer),
-        stashFactory: StashFactoryV2__factory.connect(ZERO_ADDRESS, signer),
-        tokenFactory: TokenFactory__factory.connect(ZERO_ADDRESS, signer),
-        proxyFactory: ProxyFactory__factory.connect(ZERO_ADDRESS, signer),
+        rewardFactory: RewardFactory__factory.connect("0xB292BE31649A0b079DBdb772FCf5c7a02a6E0144", signer),
+        stashFactory: StashFactoryV2__factory.connect("0x4DcE82F149649906d622eFCa613736a2015cbd1b", signer),
+        tokenFactory: TokenFactory__factory.connect("0x87299312C820607f1E7E4d0c6715CEB594306FE9", signer),
+        proxyFactory: ProxyFactory__factory.connect("0x731886426a3199b988194831031dfb993F25D961", signer),
     },
-    virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
-    auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
-    auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x05589CbbE1cC0357986DF6de4031B953819079c2", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
 });
 
 export const getView = (signer: Signer) => ({
-    sidechainView: SidechainView__factory.connect(ZERO_ADDRESS, signer),
+    sidechainView: SidechainView__factory.connect("0xea865D0dACf923c8d6254DE734f31294ca74C1dc", signer),
 });
 
 export const config: SidechainConfig = {

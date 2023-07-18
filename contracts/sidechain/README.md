@@ -181,6 +181,34 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | BridgeSender             | [0x0451255563e2aca170b2552111837572e7a0bacd](https://optimistic.etherscan.io/address/0x0451255563e2aca170b2552111837572e7a0bacd) |
 | View                     | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://optimistic.etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
 
+#### Polygon (137)
+
+| Contract                 | Address                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| create2Factory           | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://polygonscan.com/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator            | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://polygonscan.com/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| AuraOFT                  | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://polygonscan.com/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://polygonscan.com/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3         | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://polygonscan.com/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://polygonscan.com/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://polygonscan.com/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://polygonscan.com/address/0x731886426a3199b988194831031dfb993F25D961) |
+| RewardFactory            | [0xB292BE31649A0b079DBdb772FCf5c7a02a6E0144](https://polygonscan.com/address/0xB292BE31649A0b079DBdb772FCf5c7a02a6E0144) |
+| StashFactory             | [0x4DcE82F149649906d622eFCa613736a2015cbd1b](https://polygonscan.com/address/0x4DcE82F149649906d622eFCa613736a2015cbd1b) |
+| PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://polygonscan.com/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwner             | [0x8B9DA502Cccb32dBF19Cd68E258e6Fd05e1B5eEe](https://polygonscan.com/address/0x8B9DA502Cccb32dBF19Cd68E258e6Fd05e1B5eEe) |
+| ProtocolDAO              | [0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b](https://polygonscan.com/address/0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b) |
+| AuraBalOFT               | [0x223738a747383d6F9f827d95964e4d8E8AC754cE](https://polygonscan.com/address/0x223738a747383d6F9f827d95964e4d8E8AC754cE) |
+| AuraBalVault             | [0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9](https://polygonscan.com/address/0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9) |
+| AuraBalStrategy          | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://polygonscan.com/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
+| VirtualRewardsFactory    | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://polygonscan.com/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
+| ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://polygonscan.com/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
+| Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://polygonscan.com/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| RewardPoolDepositWrapper | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](https://polygonscan.com/address/0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146) |
+| BridgeSender             | [0x25e7C574c4016e09F608971F97c3B09A6cf4F669](https://polygonscan.com/address/0x25e7C574c4016e09F608971F97c3B09A6cf4F669) |
+| View                     | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
+| AuraViewHelper           | [0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b](https://polygonscan.com/address/0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b) |
+
 ### Gnosis (test deployment) (100)
 
 | Contract           | Address                                                                                                                |
