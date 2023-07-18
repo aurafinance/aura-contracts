@@ -29,7 +29,6 @@
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
-        "@maticnetwork/maticjs": "^3.6.1",
         "@types/lodash": "^4.14.185",
         "chalk": "^4.0.0",
         "convex-platform": "file:convex-platform/contracts",
