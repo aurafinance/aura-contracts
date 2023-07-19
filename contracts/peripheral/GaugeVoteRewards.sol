@@ -130,6 +130,7 @@ contract GaugeVoteRewards is LzApp {
 
     function setDstChainId(address[] memory _gauges, uint16[] memory _dstChainIds) external onlyOwner {
         uint256 dstChainIdsLen = _dstChainIds.length;
+        require(dstChainIdsLen == _gauges.length, "!length");
         for (uint256 i = 0; i < dstChainIdsLen; i++) {
             getDstChainId[_gauges[i]] = _dstChainIds[i];
         }

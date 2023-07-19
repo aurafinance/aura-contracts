@@ -7,7 +7,6 @@ import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
-import { AuraMath } from "../utils/AuraMath.sol";
 
 /**
  * @title   ChildGaugeVoteRewards
@@ -15,17 +14,13 @@ import { AuraMath } from "../utils/AuraMath.sol";
  */
 contract ChildGaugeVoteRewards is LzApp {
     using SafeERC20 for IERC20;
-    using AuraMath for uint256;
 
     /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
 
     // @dev Aura token address
-    IERC20 public immutable aura;
-
-    // @dev Aura OFT token
-    IOFT public immutable auraOFT;
+    address public immutable aura;
 
     // @dev The Booster contract address
     IBooster public immutable booster;
@@ -51,17 +46,15 @@ contract ChildGaugeVoteRewards is LzApp {
 
     constructor(
         address _aura,
-        address _auraOFT,
         address _booster,
-        address _stashRewardDistro
+        address _stashRewardDistro,
+        address _lzEndpoint
     ) {
-        aura = IERC20(_aura);
-        auraOFT = IOFT(_auraOFT);
+        aura = _aura;
         booster = IBooster(_booster);
         stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
 
-        // Approve AuraOFT with AURA
-        IERC20(_aura).safeApprove(_auraOFT, type(uint256).max);
+        _initializeLzApp(_lzEndpoint);
     }
 
     /* -------------------------------------------------------------------
@@ -99,7 +92,7 @@ contract ChildGaugeVoteRewards is LzApp {
      * @param _gauge Array of gauges
      * @param _epoch The epoch
      */
-    function processGaugeRewards(address[] calldata _gauge, uint256 _epoch) external onlyDistributor {
+    function processGaugeRewards(uint256 _epoch, address[] calldata _gauge) external onlyDistributor {
         for (uint256 i = 0; i < _gauge.length; i++) {
             address gauge = _gauge[i];
 
@@ -108,7 +101,7 @@ contract ChildGaugeVoteRewards is LzApp {
 
             // Fund the extra reward distro for the next 2 epochs
             uint256 pid = getPoolId[gauge];
-            stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
+            stashRewardDistro.fundPool(pid, aura, amountToSend, 2);
         }
     }
 
