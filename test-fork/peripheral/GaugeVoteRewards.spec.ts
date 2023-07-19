@@ -56,10 +56,10 @@ describe("GaugeVoteRewards", () => {
         stashRewardDistro = await new StashRewardDistro__factory(deployer.signer).deploy(phase6.booster.address);
 
         childGaugeVoteRewards = await new ChildGaugeVoteRewards__factory(deployer.signer).deploy(
-            phase2.cvx.address,
-            sidechain.auraProxyOFT.address,
+            ctx.sidechain.auraOFT.address,
             phase6.booster.address,
             stashRewardDistro.address,
+            ctx.l2LzEndpoint.address,
         );
 
         gaugeVoteRewards = await new GaugeVoteRewards__factory(deployer.signer).deploy(
@@ -84,10 +84,10 @@ describe("GaugeVoteRewards", () => {
             expect(await gaugeVoteRewards.lzEndpoint()).eq(ctx.l1LzEndpoint.address);
         });
         it("ChildGaugeVoteRewards has correct config", async () => {
-            expect(await childGaugeVoteRewards.aura()).eq(phase2.cvx.address);
-            expect(await childGaugeVoteRewards.auraOFT()).eq(sidechain.auraProxyOFT.address);
+            expect(await childGaugeVoteRewards.aura()).eq(ctx.sidechain.auraOFT.address);
             expect(await childGaugeVoteRewards.booster()).eq(phase6.booster.address);
             expect(await childGaugeVoteRewards.stashRewardDistro()).eq(stashRewardDistro.address);
+            expect(await childGaugeVoteRewards.lzEndpoint()).eq(ctx.l2LzEndpoint.address);
         });
     });
 
