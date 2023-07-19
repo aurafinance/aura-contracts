@@ -15,6 +15,7 @@ describe("OptimismBridge", () => {
     const withdrawTxHash: string = "0x90db8fc43d4182fb1804136cc183ab6f8fa42bcf80f01093d22976c0743f53a2";
 
     let deployer: Account;
+    let notAuth: Account;
 
     // Canonical chain Contracts
     let crv: ERC20;
@@ -45,6 +46,7 @@ describe("OptimismBridge", () => {
 
         const accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
+        notAuth = await impersonateAccount(await accounts[3].getAddress());
 
         // Deploy mocks
         crv = MockERC20__factory.connect(optimismConfig.extConfig.token, deployer.signer);
@@ -62,9 +64,18 @@ describe("OptimismBridge", () => {
         it("Should be able to set values", async () => {
             //Placeholder values while config is WIP
             await bridgeSender.setL1Receiver(deployer.address);
+            await bridgeSender.updateAuthorizedKeepers(deployer.address, true);
+            expect(await bridgeSender.authorizedKeepers(deployer.address)).eq(true);
             expect(await bridgeSender.l1Receiver()).eq(deployer.address);
             expect(await bridgeSender.l2StandardBridge()).eq(optimismConfig.bridging.nativeBridge);
             expect(await bridgeSender.crv()).eq(optimismConfig.extConfig.token);
+        });
+
+        it("should fail to send if not a keeper", async () => {
+            await expect(
+                bridgeSender.connect(notAuth.signer).send("1"),
+                "fails due to not being a keeper",
+            ).to.be.revertedWith("!keeper");
         });
     });
 

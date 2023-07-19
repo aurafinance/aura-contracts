@@ -1,11 +1,15 @@
+import { FeeData } from "@ethersproject/providers";
 import { Speed } from "defender-relay-client";
 import { DefenderRelayProvider, DefenderRelaySigner } from "defender-relay-client/lib/ethers";
-import { Signer, Wallet } from "ethers";
+import { BigNumber, Signer, Wallet } from "ethers";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import fetch from "node-fetch";
+import { simpleToExactAmount } from "../../test-utils/math";
 import { Account } from "types";
 
 import { impersonate } from "../../test-utils/fork";
 import { ethereumAddress, privateKey } from "../../test-utils/regex";
-import { getChain, getChainAddress, HardhatRuntime, resolveAddress } from "./networkAddressFactory";
+import { chainIds, getChain, getChainAddress, HardhatRuntime, resolveAddress } from "./networkAddressFactory";
 
 let signerInstance: Signer;
 
@@ -29,7 +33,31 @@ export const getDefenderSigner = async (speed: Speed = "fast"): Promise<Signer> 
     return signer;
 };
 
-export const getSigner = async (hre: HardhatRuntime = {}, useCache = false, key?: string): Promise<Signer> => {
+class PolygonWallet extends Wallet {
+    async getFeeData(): Promise<FeeData> {
+        const gasStationURL = "https://gasstation.polygon.technology/v2";
+        const data = await fetch(gasStationURL);
+        const json = await data.json();
+
+        const fallback = "400000000000"; // 40 gwei
+
+        const maxFeePerGas =
+            (json?.fast?.maxFee && simpleToExactAmount(json.fast.maxFee, 9)) || process.env.MAX_FEE_PER_GAS || fallback;
+        const maxPriorityFeePerGas =
+            (json?.fast?.maxPriorityFee && simpleToExactAmount(json.fast.maxPriorityFee, 9)) ||
+            process.env.MAX_PRIORITY_FEE_PER_GAS ||
+            fallback;
+        const gasPrice = process.env.GAS_PRICE || fallback;
+
+        return {
+            maxFeePerGas: BigNumber.from(maxFeePerGas),
+            maxPriorityFeePerGas: BigNumber.from(maxPriorityFeePerGas),
+            gasPrice: BigNumber.from(gasPrice),
+        };
+    }
+}
+
+export const getSigner = async (hre: HardhatRuntime = {} as any, useCache = false, key?: string): Promise<Signer> => {
     // If already initiated a signer, just return the singleton instance
     if (useCache && signerInstance) return signerInstance;
 
@@ -37,6 +65,12 @@ export const getSigner = async (hre: HardhatRuntime = {}, useCache = false, key?
     if (pk) {
         if (!pk.match(privateKey)) {
             throw Error(`Invalid format of private key`);
+        }
+        if ((hre as HardhatRuntimeEnvironment).network.config.chainId === chainIds.polygon) {
+            console.log("Using PolygonWallet");
+            const wallet = new PolygonWallet(pk, hre.ethers.provider);
+            console.log(`Using signer ${await wallet.getAddress()} from private key`);
+            return wallet;
         }
         const wallet = new Wallet(pk, hre.ethers.provider);
         console.log(`Using signer ${await wallet.getAddress()} from private key`);

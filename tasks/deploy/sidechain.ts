@@ -6,6 +6,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import {
     deployArbitrumBridgeSender,
     deployOptimismBridgeSender,
+    deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
 } from "../../scripts/deployBridgeDelegates";
 import {
@@ -719,4 +720,20 @@ task("sidechain:addresses")
         Object.keys(deployed).forEach(key => {
             console.log(`${key}:`.padEnd(30, " "), deployed[key]);
         });
+    });
+
+task("deploy:sidechain:L2:bridgeSender:polygon")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const crv = sidechainConfig.extConfig.token;
+
+        const bridgeSender = await deployPolygonBridgeSender(hre, deployer, crv);
+
+        const result = { bridgeSender };
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });

@@ -1,28 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { BridgeDelegateSender } from "./BridgeDelegateSender.sol";
-import { IERC677 } from "../../interfaces/IERC677.sol";
 
-contract GnosisBridgeSender is BridgeDelegateSender {
-    /* -------------------------------------------------------------------
-       Storage 
-    ------------------------------------------------------------------- */
+interface IPolygonBridge {
+    function withdraw(uint256 _amount) external;
+}
 
-    /// @dev The Gnosis bridge address
-    address public immutable bridge;
-
+contract PolygonBridgeSender is BridgeDelegateSender {
     /* -------------------------------------------------------------------
        Constructor 
     ------------------------------------------------------------------- */
 
     /**
-     * @dev Constructs the GnosisBridgeSender contract.
-     * @param _bridge The gnosis bridge address.
-     * @param _crv The ERC677 token address.
+     * @dev Constructs the PolygonBridgeSender contract.
+     * @param _crv The native token address.
      */
-    constructor(address _bridge, address _crv) {
-        bridge = _bridge;
+    constructor(address _crv) {
         crv = _crv;
     }
 
@@ -38,8 +34,7 @@ contract GnosisBridgeSender is BridgeDelegateSender {
      */
     function send(uint256 _amount) external override onlyKeeper {
         require(l1Receiver != address(0), "L1ReceiverNotSet");
-        bytes memory data = abi.encodePacked(address(l1Receiver));
-        IERC677(crv).transferAndCall(bridge, _amount, data);
+        IPolygonBridge(crv).withdraw(_amount);
         emit Send(l1Receiver, _amount);
     }
 }

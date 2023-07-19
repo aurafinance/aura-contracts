@@ -14,6 +14,7 @@ export interface OwnableBehaviourContext {
 export const ERRORS = {
     ONLY_OWNER: "Ownable: caller is not the owner",
     ZERO_ADDRESS: "Ownable: new owner is the zero address",
+    ONLY_KEEPER: "!keeper",
 };
 
 export function shouldBehaveLikeOwnable(_ctx: () => OwnableBehaviourContext): void {

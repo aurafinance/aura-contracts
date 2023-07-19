@@ -35,9 +35,12 @@ export const deployContract = async <T extends Contract>(
         console.log(
             `\nDeploying ${contractName} contract with hash ${contract.deployTransaction.hash} from ${
                 contract.deployTransaction.from
-            } with gas price ${contract.deployTransaction.gasPrice?.toNumber() || 0 / 1e9} Gwei`,
+            } with:\nmaxPriorityFeePerGas ${
+                (contract.deployTransaction.maxPriorityFeePerGas?.toNumber() || 0) / 1e9
+            } Gwei\nmaxFeePerGas ${(contract.deployTransaction.maxFeePerGas?.toNumber() || 0) / 1e9} Gwei`,
         );
     }
+
     const receipt = await contract.deployTransaction.wait(waitForBlocks);
     const txCost = receipt.gasUsed.mul(contract.deployTransaction.gasPrice || 0);
     const abiEncodedConstructorArgs = contract.interface.encodeDeploy(constructorArgs);

@@ -10,6 +10,8 @@ import {
     GnosisBridgeSender__factory,
     OptimismBridgeSender,
     OptimismBridgeSender__factory,
+    PolygonBridgeSender,
+    PolygonBridgeSender__factory,
     SidechainConfig,
     SimpleBridgeDelegateSender,
     SimpleBridgeDelegateSender__factory,
@@ -76,6 +78,25 @@ export async function deployGnosisBridgeSender(
         new GnosisBridgeSender__factory(deployer),
         "GnosisBridgeSender",
         [bridge, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return bridgeDelegate;
+}
+
+export async function deployPolygonBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<PolygonBridgeSender> {
+    const bridgeDelegate = await deployContract<PolygonBridgeSender>(
+        hre,
+        new PolygonBridgeSender__factory(deployer),
+        "PolygonBridgeSender",
+        [token],
         {},
         debug,
         waitForBlocks,
