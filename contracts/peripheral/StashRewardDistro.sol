@@ -67,7 +67,7 @@ contract StashRewardDistro is IStashRewardDistro {
         _queueRewards(_getCurrentEpoch(), _pid, _token);
     }
 
-    function queueRewards(uint256 _pid, address _token) external payable {
+    function queueRewards(uint256 _pid, address _token) external {
         _queueRewards(_getCurrentEpoch(), _pid, _token);
     }
 
@@ -75,7 +75,7 @@ contract StashRewardDistro is IStashRewardDistro {
         uint256 _pid,
         address _token,
         uint256 _epoch
-    ) external payable {
+    ) external {
         require(_epoch <= _getCurrentEpoch(), "!epoch");
         _queueRewards(_epoch, _pid, _token);
     }
