@@ -28,6 +28,7 @@ import { ZERO_ADDRESS } from "../../test-utils/constants";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
     pauseGuardian: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
+    defender: "0x64Cf0ad5e089488cDD0cab98b545f890b0939479",
 };
 
 const extConfig: ExtSidechainConfig = {
