@@ -24,8 +24,6 @@ abstract contract BridgeDelegateSender is KeeperRole {
 
     constructor() KeeperRole(msg.sender) {}
 
-    /* --------
-
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */

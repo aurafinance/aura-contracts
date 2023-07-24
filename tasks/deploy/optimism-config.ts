@@ -28,6 +28,7 @@ import { ZERO_ADDRESS } from "../../test-utils/constants";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
     pauseGuardian: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
+    defender: "0xFC3F4e28D914dA71447d94829C48b1248c7C0b46",
 };
 
 const extConfig: ExtSidechainConfig = {
@@ -42,7 +43,7 @@ const extConfig: ExtSidechainConfig = {
 
 export const bridging: SidechainBridging = {
     l1Receiver: "0x60421ffaa36f3a8e69c25887e575689f52b055f7",
-    l2Sender: "0x0451255563e2aca170b2552111837572e7a0bacd",
+    l2Sender: "0x25d03062D994e358a8A90B93a19beD1d989f5e3F",
     nativeBridge: "0x4200000000000000000000000000000000000010",
 };
 

@@ -27,6 +27,7 @@ import { sidechainNaming } from "./sidechain-naming";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
     pauseGuardian: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
+    defender: "0xFC3F4e28D914dA71447d94829C48b1248c7C0b46",
 };
 
 const extConfig: ExtSidechainConfig = {
@@ -46,7 +47,7 @@ const extConfig: ExtSidechainConfig = {
 
 export const bridging: SidechainBridging = {
     l1Receiver: "0x397A2D4d23C6fD1316cE25000820779006e80cD7",
-    l2Sender: "0x713E883C22fa543fb28cE96E0677aE347096fBe6",
+    l2Sender: "0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf",
     nativeBridge: "0x5288c571Fd7aD117beA99bF60FE0846C4E84F933",
 };
 

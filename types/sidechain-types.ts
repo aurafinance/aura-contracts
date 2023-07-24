@@ -24,6 +24,7 @@ export interface ExtSidechainConfig {
 export interface SidechainMultisigConfig {
     daoMultisig: string;
     pauseGuardian: string;
+    defender?: string;
 }
 
 export interface SidechainBridging {
@@ -31,7 +32,7 @@ export interface SidechainBridging {
     l2Sender: string;
     nativeBridge: string;
 }
-export type SidechainPhaseDeployed =  SidechainPhase1Deployed & SidechainPhase2Deployed;
+export type SidechainPhaseDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed;
 export interface SidechainConfig {
     chainId: number;
     whales?: { [key: string]: string };
@@ -39,6 +40,6 @@ export interface SidechainConfig {
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;
-    getSidechain?: (s: Signer) => SidechainPhaseDeployed ;
+    getSidechain?: (s: Signer) => SidechainPhaseDeployed;
     getView?: (s: Signer) => SidechainViewDeployed;
 }

@@ -154,7 +154,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://arbiscan.io/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
 | Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://arbiscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
 | RewardPoolDepositWrapper | [0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be](https://arbiscan.io/address/0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be) |
-| BridgeSender             | [0x713E883C22fa543fb28cE96E0677aE347096fBe6](https://arbiscan.io/address/0x713E883C22fa543fb28cE96E0677aE347096fBe6) |
+| BridgeSender             | [0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf](https://arbiscan.io/address/0x713E883C22fa543fb28cE96E0677aE347096fBe6) |
 | View                     | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://arbiscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | KeeperMulticall3         | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://arbiscan.io/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
 
