@@ -154,7 +154,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://arbiscan.io/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
 | Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://arbiscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
 | RewardPoolDepositWrapper | [0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be](https://arbiscan.io/address/0x6b02fEFd2F2e06f51E17b7d5b8B20D75fd6916be) |
-| BridgeSender             | [0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf](https://arbiscan.io/address/0x713E883C22fa543fb28cE96E0677aE347096fBe6) |
+| BridgeSender             | [0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf](https://arbiscan.io/address/0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf) |
 | View                     | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://arbiscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | KeeperMulticall3         | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://arbiscan.io/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
 
@@ -178,7 +178,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ClaimZap                 | [0x617963D46B882ecE880Ab18Bc232f513E91FDd47](https://optimistic.etherscan.io/address/0x617963D46B882ecE880Ab18Bc232f513E91FDd47) |
 | Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://optimistic.etherscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
 | RewardPoolDepositWrapper | [0x51b6e0ac6D6435650748513C71db453F96749fe1](https://optimistic.etherscan.io/address/0x51b6e0ac6D6435650748513C71db453F96749fe1) |
-| BridgeSender             | [0x0451255563e2aca170b2552111837572e7a0bacd](https://optimistic.etherscan.io/address/0x0451255563e2aca170b2552111837572e7a0bacd) |
+| BridgeSender             | [0x7E702E51142eb7658CE4cE734C9bDec74250f265](https://optimistic.etherscan.io/address/0x7E702E51142eb7658CE4cE734C9bDec74250f265) |
 | View                     | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://optimistic.etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
 
 #### Polygon (137)
