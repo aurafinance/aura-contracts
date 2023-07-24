@@ -199,7 +199,24 @@ task("deploy:sidechain:L2:bridgeSender:arbitrum")
         const crv = sidechainConfig.extConfig.token;
         const l1Crv = canonicalConfig.addresses.token;
 
-        const bridgeSender = await deployArbitrumBridgeSender(hre, deployer, gatewayRouter, crv, l1Crv);
+        const bridgeSender = await deployArbitrumBridgeSender(
+            hre,
+            deployer,
+            gatewayRouter,
+            crv,
+            l1Crv,
+            true,
+            tskArgs.wait,
+        );
+
+        let tx = await bridgeSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        await waitForTx(tx, tskArgs.wait);
+
+        tx = await bridgeSender.updateAuthorizedKeepers(sidechainConfig.multisigs.defender, true);
+        await waitForTx(tx, tskArgs.wait);
+
+        tx = await bridgeSender.transferOwnership(sidechainConfig.multisigs.daoMultisig);
+        await waitForTx(tx, tskArgs.wait);
 
         const result = { bridgeSender };
         logContracts(result as unknown as { [key: string]: { address: string } });
@@ -217,7 +234,24 @@ task("deploy:sidechain:L2:bridgeSender:optimism")
         const crv = sidechainConfig.extConfig.token;
         const l1Crv = canonicalConfig.addresses.token;
 
-        const bridgeSender = await deployOptimismBridgeSender(hre, deployer, standardBridge, crv, l1Crv);
+        const bridgeSender = await deployOptimismBridgeSender(
+            hre,
+            deployer,
+            standardBridge,
+            crv,
+            l1Crv,
+            true,
+            tskArgs.wait,
+        );
+
+        let tx = await bridgeSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        await waitForTx(tx, tskArgs.wait);
+
+        tx = await bridgeSender.updateAuthorizedKeepers(sidechainConfig.multisigs.defender, true);
+        await waitForTx(tx, tskArgs.wait);
+
+        tx = await bridgeSender.transferOwnership(sidechainConfig.multisigs.daoMultisig);
+        await waitForTx(tx, tskArgs.wait);
 
         const result = { bridgeSender };
         logContracts(result as unknown as { [key: string]: { address: string } });

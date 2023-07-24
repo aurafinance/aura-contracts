@@ -60,6 +60,7 @@ contract OptimismBridgeSender is BridgeDelegateSender {
      */
     function send(uint256 _amount) external override onlyKeeper {
         require(l1Receiver != address(0), "L1ReceiverNotSet");
+        IERC20(crv).safeApprove(l2StandardBridge, 0);
         IERC20(crv).safeApprove(l2StandardBridge, _amount);
         IL2StandardBridge(l2StandardBridge).withdrawTo(crv, l1Receiver, _amount, 0, bytes(""));
         emit Send(l1Receiver, _amount);
