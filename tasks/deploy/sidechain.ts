@@ -423,6 +423,7 @@ task("deploy:sidechain:config:L1:phase1")
 
 task("deploy:sidechain:config:L1:phase2")
     .addParam("wait", "Wait for blocks")
+    .addParam("dryrun", "Should dry run")
     .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         // NOTICE: This task can only be run for the first deployment, future deployments
@@ -437,14 +438,28 @@ task("deploy:sidechain:config:L1:phase2")
             sidechainId,
         );
 
-        await setTrustedRemoteCanonicalPhase2(
-            canonical,
-            remote,
-            sidechainLzChainId,
-            canonicalConfig.multisigs,
-            debug,
-            tskArgs.wait,
-        );
+        if (tskArgs.dryrun) {
+            console.log(
+                "AuraBalProxyOFT.setTrustedRemote:",
+                canonical.auraProxyOFT.address,
+                "Sidechain ID:",
+                sidechainLzChainId,
+                "Trusted remote:",
+                ethers.utils.solidityPack(
+                    ["address", "address"],
+                    [remote.auraBalOFT.address, canonical.auraBalProxyOFT.address],
+                ),
+            );
+        } else {
+            await setTrustedRemoteCanonicalPhase2(
+                canonical,
+                remote,
+                sidechainLzChainId,
+                canonicalConfig.multisigs,
+                debug,
+                tskArgs.wait,
+            );
+        }
     });
 
 /* ----------------------------------------------------------------------------
