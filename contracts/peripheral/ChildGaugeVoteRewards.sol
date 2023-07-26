@@ -19,26 +19,36 @@ contract ChildGaugeVoteRewards is LzApp {
        Storage 
     ------------------------------------------------------------------- */
 
-    // @dev Aura token address
+    /// @dev Aura token address
     address public immutable aura;
 
-    // @dev The Booster contract address
+    /// @dev The Booster contract address
     IBooster public immutable booster;
 
-    // @dev Extra reward distro contract
+    /// @dev Extra reward distro contract
     IStashRewardDistro public immutable stashRewardDistro;
 
-    // @dev Distributor address
+    /// @dev Distributor address
     address public distributor;
 
-    // @dev Epoch => Gauge => Amount to send
+    /// @dev Epoch => Gauge => Amount to send
     mapping(uint256 => mapping(address => uint256)) public getAmountToSendByEpoch;
 
-    // @dev Epoch => Gauge => Amount sent
+    /// @dev Epoch => Gauge => Amount sent
     mapping(uint256 => mapping(address => uint256)) public getAmountSentByEpoch;
 
-    // @dev Gauge => Pool ID
+    /// @dev Gauge => Pool ID
     mapping(address => uint256) public getPoolId;
+
+    /// @dev L1 Gauge => L2 Gauge
+    mapping(address => address) public getL2Gauge;
+
+    /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+
+    event SetL1Gauge(address l1Gauge, address l2Gauge);
+    event SetDistributor(address distributor);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -72,6 +82,7 @@ contract ChildGaugeVoteRewards is LzApp {
 
     function setDistributor(address _distributor) external onlyOwner {
         distributor = _distributor;
+        emit SetDistributor(_distributor);
     }
 
     function setPoolIds(uint256[] memory _poolIds) external {
@@ -81,6 +92,12 @@ contract ChildGaugeVoteRewards is LzApp {
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
             getPoolId[poolInfo.gauge] = pid;
         }
+    }
+
+    function setL1Guage(address _l1Gauge, address _l2Gauge) external onlyOwner {
+        require(getPoolId[_l2Gauge] != 0, "!gauge");
+        getL2Gauge[_l1Gauge] = _l2Gauge;
+        emit SetL1Gauge(_l1Gauge, _l2Gauge);
     }
 
     /* -------------------------------------------------------------------
@@ -136,7 +153,8 @@ contract ChildGaugeVoteRewards is LzApp {
             bytes memory payload = payloads[i];
 
             // Decode the single payload to get the gauge and amount to send
-            (address gauge, uint256 amountToSend) = abi.decode(payload, (address, uint256));
+            (address l1Gauge, uint256 amountToSend) = abi.decode(payload, (address, uint256));
+            address gauge = getL2Gauge[l1Gauge];
             getAmountToSendByEpoch[epoch][gauge] = amountToSend;
         }
     }

@@ -136,6 +136,11 @@ describe("GaugeVoteRewards", () => {
         });
     });
 
+    // TODO: set as no deposit gauges
+    // { "address": "0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d", "label": "veBAL" },
+    // { "address": "0x56124eb16441A1eF12A4CCAeAbDD3421281b795A", "label": "veLIT" },
+    // { "address": "0x5b79494824Bc256cD663648Ee1Aad251B32693A9", "label": "veUSH" },
+
     describe("voting", () => {
         it("can vote for underlying gauges", async () => {
             // Gauges and vote weights from last round based on the FORK_BLOCK
@@ -168,7 +173,7 @@ describe("GaugeVoteRewards", () => {
                 "0x95201B61EF19C867dA0D093DF20021e1a559452c",
                 "0xE41736b4e78be41Bd03EbAf8F86EA493C6e9EA96",
                 "0xcB2c2AF6c3E88b4a89aa2aae1D7C8120EEe9Ad0e",
-                "0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d",
+                "0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d", // veBAL
                 "0x21b2Ef3DC22B7bd4634205081c667e39742075E2",
                 "0x7F75ecd3cFd8cE8bf45f9639A226121ca8bBe4ff",
                 "0xc61e7E858b5a60122607f5C7DF223a53b01a1389",
@@ -213,17 +218,17 @@ describe("GaugeVoteRewards", () => {
                 129, 668, 118, 49, 54, 58, 62, 62, 104, 869, 235, 2027, 229, 1827,
             ];
 
-            await gaugeVoteRewards.voteGaugeWeight(gauges, weights);
+            const tx = await gaugeVoteRewards.voteGaugeWeight(gauges, weights);
+            const resp = await tx.wait();
+
+            console.log("Gas used:", resp.cumulativeGasUsed.toString());
 
             const epoch = await gaugeVoteRewards.getCurrentEpoch();
-            const rewardsPerEpoch = await gaugeVoteRewards.rewardPerEpoch();
-            const totalWeight = await gaugeVoteRewards.TOTAL_WEIGHT_PER_EPOCH();
 
             for (let i = 0; i < weights.length; i++) {
                 const weight = weights[i];
                 const gauge = gauges[i];
-                const amountToSend = rewardsPerEpoch.mul(weight).div(totalWeight);
-                expect(await gaugeVoteRewards.getAmountToSendByEpoch(epoch, gauge)).eq(amountToSend);
+                expect(await gaugeVoteRewards.getWeightByEpoch(epoch, gauge)).eq(weight);
             }
         });
     });
