@@ -9,11 +9,35 @@ import { IBooster } from "../interfaces/IBooster.sol";
 import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
 
+interface IStakelessGauge {
+    function getRecipient() external view returns (address);
+}
+
 /**
  * @title   GaugeVoteRewards
  * @author  Aura Finance
  * @notice  Distribute AURA rewards to each gauge that receives voting weight
  *          for a given epoch.
+ *
+ *          Gauges receiving votes fall into 3 categories that we need to deal with:
+ *          1.  Mainnet gauges with pools on Aura
+ *          2.  Sidechain gauges with pools on a sidechain Aura deployment
+ *          3.  Gauge that don't take deposits and are not supported by AURA eg veBAL
+ *
+ *          The process for setting up this contract is:
+ *          1.  setRewardPerEpoch(...)
+ *          2.  setIsNoDepositGauge(veBAL, veLIT, ...)
+ *          3.  setDstChainId([arbGauge, ...], 110)
+ *          4.  setDstChainId([optGauge, ...], 111)
+ *          5.  setDstChainId([polGauge, ...], 109)
+ *          6.  setPoolIds([0...poolLength])
+ *
+ *          The process for each voting epoch (2 weeks) is:
+ *          1.  voteGaugeWeight is called with the gauges and weights
+ *          2.  processGaugeRewards is called to distribute AURA to the reward distro
+ *              for each gauge
+ *          3.  processSidechainGaugeRewards sends AURA to sidechain ChildGaugeVoteRewards
+ *              along with a payload containing the gauges and amounts to send for the epoch
  */
 contract GaugeVoteRewards is LzApp {
     using SafeERC20 for IERC20;
@@ -78,6 +102,9 @@ contract GaugeVoteRewards is LzApp {
     event SetDistributor(address distributor);
     event SetRewardPerEpoch(uint256 rewardPerEpoch);
     event SetIsNoDepositGauge(address gauge, bool isNoDeposit);
+    event SetChildGaugeVoteRewards(uint16 dstChainId, address voteReward);
+    event ProcessGaugeRewards(address[] gauge, uint256 epoch);
+    event ProcessSidechainGaugeRewards(address[] gauges, uint256 epoch, uint16 dstChainId);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -131,19 +158,18 @@ contract GaugeVoteRewards is LzApp {
         emit SetIsNoDepositGauge(_gauge, _isNoDeposit);
     }
 
-    function setDstChainId(address[] memory _gauges, uint16[] memory _dstChainIds) external onlyOwner {
-        uint256 dstChainIdsLen = _dstChainIds.length;
-        require(dstChainIdsLen == _gauges.length, "!length");
-        for (uint256 i = 0; i < dstChainIdsLen; i++) {
-            getDstChainId[_gauges[i]] = _dstChainIds[i];
-        }
+    function setChildGaugeVoteRewards(uint16 _dstChainId, address _voteReward) external onlyOwner {
+        getChildGaugeVoteRewards[_dstChainId] = _voteReward;
+        emit SetChildGaugeVoteRewards(_dstChainId, _voteReward);
     }
 
-    function setChildGaugeVoteRewards(uint16[] memory _dstChainIds, address[] memory _voteRewards) external onlyOwner {
-        uint256 dstChainIdsLen = _dstChainIds.length;
-        require(dstChainIdsLen == _voteRewards.length, "!length");
-        for (uint256 i = 0; i < dstChainIdsLen; i++) {
-            getChildGaugeVoteRewards[_dstChainIds[i]] = _voteRewards[i];
+    function setDstChainId(address[] memory _gauges, uint16 _dstChainId) external onlyOwner {
+        // Local chain dstChainId will be set when the gauge is mapped
+        // using hte setPoolIds function which queries the booster
+        require(_dstChainId != lzChainId, "!localChain");
+
+        for (uint256 i = 0; i < _gauges.length; i++) {
+            getDstChainId[_gauges[i]] = _dstChainId;
         }
     }
 
@@ -153,6 +179,8 @@ contract GaugeVoteRewards is LzApp {
             uint256 pid = _poolIds[i];
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
             getPoolId[poolInfo.gauge] = pid;
+            // Set the dstChainId to be the local chain ID
+            if (getDstChainId[poolInfo.gauge] == 0) getDstChainId[poolInfo.gauge] = lzChainId;
         }
     }
 
@@ -180,7 +208,11 @@ contract GaugeVoteRewards is LzApp {
         uint256 totalDepositWeight = 0;
         uint256 epoch = _getCurrentEpoch();
 
-        // Loop through each gauge and store it's weight for this epoch
+        require(getTotalWeight[epoch] == 0, "already voted");
+
+        // Loop through each gauge and store it's weight for this epoch, while
+        // tracking totalWeights that is used for validation and totalDepositsWeight
+        // which is used later to calculate pro rata rewards
         for (uint256 i = 0; i < _gauge.length; i++) {
             address gauge = _gauge[i];
             uint256 weight = _weight[i];
@@ -191,12 +223,20 @@ contract GaugeVoteRewards is LzApp {
             // those special cases
             if (isNoDepositGauge[gauge]) continue;
 
+            // Check that a dstChainId has been configured for this gauge
+            // one must be configured before it can enter the reward system
+            require(getDstChainId[gauge] != 0, "!dstChainId");
+
             getWeightByEpoch[epoch][gauge] = weight;
             totalDepositWeight = totalDepositWeight.add(weight);
         }
 
         // Update the total weight for this epoch
-        getTotalWeight[epoch] = getTotalWeight[epoch].add(totalWeight);
+        getTotalWeight[epoch] = totalDepositWeight;
+
+        // Check that the total weight (inclusive of no deposit gauges)
+        // reaches 10,000 which is the total vote weight as defined in
+        // the GaugeController
         require(totalWeight == 10000, "!totalWeight");
 
         // Forward the gauge vote to the booster
@@ -213,12 +253,11 @@ contract GaugeVoteRewards is LzApp {
 
         for (uint256 i = 0; i < _gauge.length; i++) {
             address gauge = _gauge[i];
-            uint16 dstChainId = getDstChainId[gauge];
 
             // This is not a current chain gauge and should be processed by
             // processSidechainGaugeRewards instead this also covers cases
             // where a src chain has not been set for invalid gauges
-            require(dstChainId == lzChainId, "dstChainId!=lzChainId");
+            require(getDstChainId[gauge] == lzChainId, "dstChainId!=lzChainId");
 
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
 
@@ -226,6 +265,8 @@ contract GaugeVoteRewards is LzApp {
             uint256 pid = getPoolId[gauge];
             stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
         }
+
+        emit ProcessGaugeRewards(_gauge, _epoch);
     }
 
     /**
@@ -245,22 +286,28 @@ contract GaugeVoteRewards is LzApp {
         bytes memory _adapterParams,
         bytes memory _sendFromAdapterParams
     ) external payable onlyDistributor {
+        address childGaugeVoteRewards = getChildGaugeVoteRewards[_dstChainId];
+        require(childGaugeVoteRewards != address(0), "!childGaugeVoteReward");
+
         uint256 totalAmountToSend = 0;
         uint256 gaugesLen = _gauge.length;
         bytes[] memory payloads = new bytes[](gaugesLen);
 
         for (uint256 i = 0; i < gaugesLen; i++) {
             address gauge = _gauge[i];
-            uint16 dstChainId = getDstChainId[gauge];
 
             // Destination chains have to match
-            require(dstChainId == _dstChainId, "!dstChainId");
+            require(getDstChainId[gauge] == _dstChainId, "!dstChainId");
 
             // Send pro rata AURA to the sidechain
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
             totalAmountToSend = totalAmountToSend.add(amountToSend);
 
-            bytes memory gaugePayload = abi.encode(gauge, amountToSend);
+            // Now that the child gauge streamers are deprecated we can make
+            // the assumption that the stakeless gauges on mainnet will return
+            // the child chain gauge address when calling getRecipient
+            address dstGauge = IStakelessGauge(gauge).getRecipient();
+            bytes memory gaugePayload = abi.encode(dstGauge, amountToSend);
             payloads[i] = gaugePayload;
         }
 
@@ -278,12 +325,32 @@ contract GaugeVoteRewards is LzApp {
         auraOFT.sendFrom{ value: address(this).balance }(
             address(this),
             _dstChainId,
-            abi.encodePacked(getChildGaugeVoteRewards[_dstChainId]),
+            abi.encodePacked(childGaugeVoteRewards),
             totalAmountToSend,
             payable(msg.sender),
             _sendFromZroPaymentAddress,
             _sendFromAdapterParams
         );
+
+        emit ProcessSidechainGaugeRewards(_gauge, _epoch, _dstChainId);
+    }
+
+    /* -------------------------------------------------------------------
+       Utils 
+    ------------------------------------------------------------------- */
+
+    /**
+     * @dev Transfer ERC20
+     * @param _token The token address
+     * @param _to Address to transfer tokens to
+     * @param _amount Amount of tokens to send
+     */
+    function transferERC20(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        IERC20(_token).transfer(_to, _amount);
     }
 
     /* -------------------------------------------------------------------

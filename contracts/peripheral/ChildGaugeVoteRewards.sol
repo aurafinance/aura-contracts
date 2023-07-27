@@ -40,9 +40,6 @@ contract ChildGaugeVoteRewards is LzApp {
     /// @dev Gauge => Pool ID
     mapping(address => uint256) public getPoolId;
 
-    /// @dev L1 Gauge => L2 Gauge
-    mapping(address => address) public getL2Gauge;
-
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -92,12 +89,6 @@ contract ChildGaugeVoteRewards is LzApp {
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
             getPoolId[poolInfo.gauge] = pid;
         }
-    }
-
-    function setL1Guage(address _l1Gauge, address _l2Gauge) external onlyOwner {
-        require(getPoolId[_l2Gauge] != 0, "!gauge");
-        getL2Gauge[_l1Gauge] = _l2Gauge;
-        emit SetL1Gauge(_l1Gauge, _l2Gauge);
     }
 
     /* -------------------------------------------------------------------
@@ -153,8 +144,7 @@ contract ChildGaugeVoteRewards is LzApp {
             bytes memory payload = payloads[i];
 
             // Decode the single payload to get the gauge and amount to send
-            (address l1Gauge, uint256 amountToSend) = abi.decode(payload, (address, uint256));
-            address gauge = getL2Gauge[l1Gauge];
+            (address gauge, uint256 amountToSend) = abi.decode(payload, (address, uint256));
             getAmountToSendByEpoch[epoch][gauge] = amountToSend;
         }
     }
