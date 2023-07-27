@@ -41,6 +41,14 @@ contract StashRewardDistro is IStashRewardDistro {
     }
 
     /* -------------------------------------------------------------------
+       View 
+    ------------------------------------------------------------------- */
+
+    function getCurrentEpoch() external view returns (uint256) {
+        return _getCurrentEpoch();
+    }
+
+    /* -------------------------------------------------------------------
        Core
     ------------------------------------------------------------------- */
 
@@ -59,12 +67,11 @@ contract StashRewardDistro is IStashRewardDistro {
         uint256 epochAmount = rewardAmount.div(_periods);
         for (uint256 i = 0; i < _periods; i++) {
             getFunds[epoch][_pid][_token] = getFunds[epoch][_pid][_token].add(epochAmount);
-            emit Funded(epoch, _pid, _token, _amount);
+            emit Funded(epoch, _pid, _token, epochAmount);
             epoch++;
         }
 
-        // Queue rewards for the current epoch
-        _queueRewards(_getCurrentEpoch(), _pid, _token);
+        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
     }
 
     function queueRewards(uint256 _pid, address _token) external {

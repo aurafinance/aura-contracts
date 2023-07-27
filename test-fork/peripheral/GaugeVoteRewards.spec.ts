@@ -14,9 +14,10 @@ import { ChildGaugeVoteRewards } from "../../types/generated/ChildGaugeVoteRewar
 import { GaugeVoteRewards } from "../../types/generated/GaugeVoteRewards";
 import { StashRewardDistro } from "../../types/generated/StashRewardDistro";
 import { TestSuiteDeployment } from "../../test-fork/sidechain/setupForkDeployments";
+import { BigNumber } from "ethers";
 
-const L1_CHAIN_ID = 101;
-const L2_CHAIN_ID = 110;
+const L1_CHAIN_ID = 101; // Ethereum
+const L2_CHAIN_ID = 110; // Arbitrum
 const FORK_BLOCK = 17670930;
 
 const noDepositGauges = [
@@ -95,14 +96,16 @@ const gauges = [
 ];
 
 const dstChainGauges = {
-    ["137"]: [
+    ["109"]: [
+        // Polygon
         "0x47D7269829Ba9571D98Eb6DDc34e9C8f1A4C327f",
         "0x082AACfaf4db8AC0642CBED50df732D3C309E679", // 137
         "0xDd3b4161D2a4c609884E20Ed71b4e85BE44572E6", // 137
         "0x539D6eDbd16F2F069A06716416C3a6E98cC29DD0", // 137
         "0x16289F675Ca54312a8fCF99341e7439982888077", // 137
     ],
-    ["42161"]: [
+    ["110"]: [
+        // Arbitrum
         "0x54BeFB03BB58687cDE09cd082Bd78410e309D8C7", // 42161
         "0x8135d6AbFd42707A87A7b94c5CFA3529f9b432AD", // 42161
         "0x0EDF6cDd81BC3471C053341B7D8Dfd1Cb367AD93", // 42161
@@ -111,10 +114,12 @@ const dstChainGauges = {
         "0xDf464348c4EC2Bf0e5D6926b9f707c8e02301adf", // 42161
         "0x175407b4710b5A1cB67a37C76859F17fb2ff6672", // 42161
     ],
-    ["10"]: [
+    ["111"]: [
+        // Optimism
         "0xDaCD99029b4B94CD04fE364aAc370829621C1C64", // 10
     ],
-    ["100"]: [
+    ["145"]: [
+        // Gnosis
         "0x3B6A85B5e1e6205ebF4d4eabf147D10e8e4bf0A5", // 100
         "0xE41736b4e78be41Bd03EbAf8F86EA493C6e9EA96", // 100
         "0xcB2c2AF6c3E88b4a89aa2aae1D7C8120EEe9Ad0e", // 100
@@ -123,10 +128,15 @@ const dstChainGauges = {
         "0xc61e7E858b5a60122607f5C7DF223a53b01a1389", // 100
         "0xf8C85bd74FeE26831336B51A90587145391a27Ba", // 100
     ],
-    ["1101"]: [
+    ["158"]: [
+        // zkEVM
         "0xF7d515DC47d5BD57786494628ed766d6bF31cd39", // 1101
     ],
 };
+
+const notMainnetGauges = Object.values(dstChainGauges).reduce((acc, arr) => [...acc, ...arr], []);
+// Ethereum (101)
+dstChainGauges["101"] = gauges.filter(gauge => !notMainnetGauges.includes(gauge));
 
 const weights = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 108, 268, 138, 77, 104, 98, 38, 70, 48, 81, 105, 21, 140, 70, 70, 70, 35, 35,
@@ -187,6 +197,8 @@ describe("GaugeVoteRewards", () => {
         );
 
         await ctx.l1LzEndpoint.setDestLzEndpoint(childGaugeVoteRewards.address, ctx.l2LzEndpoint.address);
+        await gaugeVoteRewards.setTrustedRemoteAddress(L2_CHAIN_ID, childGaugeVoteRewards.address);
+        await childGaugeVoteRewards.setTrustedRemoteAddress(L1_CHAIN_ID, gaugeVoteRewards.address);
     });
 
     describe("config", () => {
@@ -222,7 +234,16 @@ describe("GaugeVoteRewards", () => {
     });
 
     describe("setup", () => {
-        it("can add pool ID to gauge mapping", async () => {
+        it("set distributor", async () => {
+            await gaugeVoteRewards.setDistributor(deployer.address);
+            expect(await gaugeVoteRewards.distributor()).eq(deployer.address);
+        });
+        it("1. set rewards per epoch", async () => {
+            const amount = simpleToExactAmount(180_000);
+            await gaugeVoteRewards.setRewardPerEpoch(amount);
+            expect(await gaugeVoteRewards.rewardPerEpoch()).eq(amount);
+        });
+        it("2. set pool IDs", async () => {
             const nGauges = await phase6.booster.poolLength();
             await gaugeVoteRewards.setPoolIds(0, nGauges);
 
@@ -241,33 +262,41 @@ describe("GaugeVoteRewards", () => {
                 expect(await gaugeVoteRewards.getDstChainId(poolInfo.gauge)).eq(L1_CHAIN_ID);
             }
         });
-        it("can add dst chain ID mapping", async () => {
+        it("3. set no deposit gauges", async () => {
+            for (const gauge of noDepositGauges) {
+                await gaugeVoteRewards.setIsNoDepositGauge(gauge, true);
+                expect(await gaugeVoteRewards.isNoDepositGauge(gauge)).eq(true);
+            }
+        });
+        it("4. set dst chain IDs", async () => {
             for (const dstChainId in dstChainGauges) {
+                if (dstChainId === "101") continue;
                 await gaugeVoteRewards.setDstChainId(dstChainGauges[dstChainId], dstChainId);
                 for (const gauge of dstChainGauges[dstChainId]) {
                     expect((await gaugeVoteRewards.getDstChainId(gauge)).toString()).eq(dstChainId);
                 }
             }
         });
-        it("can set reward per epoch", async () => {
-            const amount = simpleToExactAmount(10000);
-            await gaugeVoteRewards.setRewardPerEpoch(amount);
-            expect(await gaugeVoteRewards.rewardPerEpoch()).eq(amount);
-        });
-        it("can set child gauge vote rewards addresses", async () => {
+        it("5. set child gauge vote rewards", async () => {
             await gaugeVoteRewards.setChildGaugeVoteRewards(L2_CHAIN_ID, childGaugeVoteRewards.address);
             expect(await gaugeVoteRewards.getChildGaugeVoteRewards(L2_CHAIN_ID)).eq(childGaugeVoteRewards.address);
         });
+    });
+
+    describe("[DAO] setup", () => {
         it("set GaugeVoteRewards as voteManager", async () => {
             const dao = await impersonateAccount(config.multisigs.daoMultisig);
             await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(gaugeVoteRewards.address);
             expect(await phase6.booster.voteDelegate()).eq(gaugeVoteRewards.address);
         });
-        it("can set no deposit gauges", async () => {
-            for (const gauge of noDepositGauges) {
-                await gaugeVoteRewards.setIsNoDepositGauge(gauge, true);
-                expect(await gaugeVoteRewards.isNoDepositGauge(gauge)).eq(true);
-            }
+    });
+
+    describe("[TREASURY] funding", () => {
+        it("treasury funds 2 epochs", async () => {
+            const treasury = await impersonateAccount(config.multisigs.treasuryMultisig);
+            const rewardPerEpoch = await gaugeVoteRewards.rewardPerEpoch();
+            await phase2.cvx.connect(treasury.signer).transfer(gaugeVoteRewards.address, rewardPerEpoch.mul(2));
+            expect(await phase2.cvx.balanceOf(gaugeVoteRewards.address)).gte(rewardPerEpoch.mul(2));
         });
     });
 
@@ -283,24 +312,84 @@ describe("GaugeVoteRewards", () => {
 
             const epoch = await gaugeVoteRewards.getCurrentEpoch();
 
+            let sumOfDepositWeights = BigNumber.from(0);
+
             for (let i = 0; i < weights.length; i++) {
                 const weight = weights[i];
                 const gauge = gauges[i];
                 const isNoDepositGauge = await gaugeVoteRewards.isNoDepositGauge(gauge);
                 if (!isNoDepositGauge) {
+                    sumOfDepositWeights = BigNumber.from(weight).add(sumOfDepositWeights);
                     expect(await gaugeVoteRewards.getWeightByEpoch(epoch, gauge)).eq(weight);
                 }
             }
+
+            expect(await gaugeVoteRewards.getTotalWeight(epoch)).eq(sumOfDepositWeights);
         });
     });
 
     describe("process rewards mainnet", () => {
-        it("can process rewards");
-        it("rewards are queued over 2 periods");
+        it("can process rewards", async () => {
+            const voteRewardBalance = async () => phase2.cvx.balanceOf(gaugeVoteRewards.address);
+            const stashDistroBalance = async () => phase2.cvx.balanceOf(stashRewardDistro.address);
+
+            const epoch = await gaugeVoteRewards.getCurrentEpoch();
+            const gaugesWithVotes = dstChainGauges["101"].filter((g: any) => {
+                if (noDepositGauges.includes(g)) return false;
+                const idx = gauges.indexOf(g);
+                const weight = weights[idx];
+                return weight > 0;
+            });
+
+            const voteRewardBalance0 = await voteRewardBalance();
+            const stashDistroBalance0 = await stashDistroBalance();
+            await gaugeVoteRewards.processGaugeRewards(gaugesWithVotes, epoch);
+            const voteRewardBalance1 = await voteRewardBalance();
+            const stashDistroBalance1 = await stashDistroBalance();
+
+            expect(voteRewardBalance0.sub(voteRewardBalance1)).gt(0);
+            expect(stashDistroBalance1.sub(stashDistroBalance0)).gt(0);
+
+            for (const gauge of gaugesWithVotes) {
+                const distroEpoch = await stashRewardDistro.getCurrentEpoch();
+                const pid = await gaugeVoteRewards.getPoolId(gauge);
+                const funds = await stashRewardDistro.getFunds(distroEpoch, pid, phase2.cvx.address);
+                expect(funds).gt(0);
+            }
+        });
     });
 
     describe("process sidechain rewards", () => {
-        it("can process sidechain rewards");
-        it("rewards are queued over 2 periods");
+        it("can process sidechain rewards", async () => {
+            const epoch = await gaugeVoteRewards.getCurrentEpoch();
+            const gaugesWithVotes = dstChainGauges[L2_CHAIN_ID].filter((g: any) => {
+                if (noDepositGauges.includes(g)) return false;
+                const idx = gauges.indexOf(g);
+                const weight = weights[idx];
+                return weight > 0;
+            });
+            await gaugeVoteRewards.processSidechainGaugeRewards(
+                gaugesWithVotes,
+                epoch,
+                L2_CHAIN_ID,
+                "0x0000000000000000000000000000000000000000",
+                "0x0000000000000000000000000000000000000000",
+                [],
+                [],
+                { value: simpleToExactAmount(0.2) },
+            );
+            // TODO: check the AURA balances
+            // TODO: check getFunds
+        });
+    });
+
+    describe("first epoch", () => {
+        it("queue rewards for mainnet");
+        it("queue rewards for sidechain");
+    });
+
+    describe("second epoch", () => {
+        it("queue rewards for mainnet");
+        it("queue rewards for sidechain");
     });
 });
