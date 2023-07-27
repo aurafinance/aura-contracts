@@ -26,11 +26,12 @@ interface IStakelessGauge {
  *
  *          The process for setting up this contract is:
  *          1.  setRewardPerEpoch(...)
- *          2.  setIsNoDepositGauge(veBAL, veLIT, ...)
- *          3.  setDstChainId([arbGauge, ...], 110)
+ *          2.  setPoolIds([0...poolLength])
+ *          3.  setIsNoDepositGauge(veBAL, veLIT, ...)
+ *          4.  setDstChainId([arbGauge, ...], 110)
  *          4.  setDstChainId([optGauge, ...], 111)
- *          5.  setDstChainId([polGauge, ...], 109)
- *          6.  setPoolIds([0...poolLength])
+ *          4.  setDstChainId([polGauge, ...], 109)
+ *          5.  setChildGaugeVoteRewards(...)
  *
  *          The process for each voting epoch (2 weeks) is:
  *          1.  voteGaugeWeight is called with the gauges and weights
@@ -128,7 +129,10 @@ contract GaugeVoteRewards is LzApp {
 
         // Approve AuraOFT with AURA
         IERC20(_aura).safeApprove(_auraOFT, type(uint256).max);
+        IERC20(_aura).safeApprove(_stashRewardDistro, type(uint256).max);
     }
+
+    receive() external payable {}
 
     /* -------------------------------------------------------------------
        Modifiers 
@@ -255,12 +259,15 @@ contract GaugeVoteRewards is LzApp {
             // This is not a current chain gauge and should be processed by
             // processSidechainGaugeRewards instead this also covers cases
             // where a src chain has not been set for invalid gauges
+            require(!isNoDepositGauge[gauge], "noDepositGauge");
             require(getDstChainId[gauge] == lzChainId, "dstChainId!=lzChainId");
 
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
 
             // Fund the extra reward distro for the next 2 epochs
             uint256 pid = getPoolId[gauge];
+            require(pid != 0, "!poolId");
+
             stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
         }
 
