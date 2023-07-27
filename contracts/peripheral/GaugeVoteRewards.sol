@@ -173,12 +173,10 @@ contract GaugeVoteRewards is LzApp {
         }
     }
 
-    function setPoolIds(uint256[] memory _poolIds) external {
-        uint256 poolIdsLen = _poolIds.length;
-        for (uint256 i = 0; i < poolIdsLen; i++) {
-            uint256 pid = _poolIds[i];
-            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
-            getPoolId[poolInfo.gauge] = pid;
+    function setPoolIds(uint256 start, uint256 end) external {
+        for (uint256 i = start; i < end; i++) {
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
+            getPoolId[poolInfo.gauge] = i;
             // Set the dstChainId to be the local chain ID
             if (getDstChainId[poolInfo.gauge] == 0) getDstChainId[poolInfo.gauge] = lzChainId;
         }
