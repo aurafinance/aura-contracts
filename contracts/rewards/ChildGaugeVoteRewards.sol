@@ -55,7 +55,6 @@ contract ChildGaugeVoteRewards is LzApp {
        Events 
     ------------------------------------------------------------------- */
 
-    event SetL1Gauge(address l1Gauge, address l2Gauge);
     event SetDistributor(address distributor);
 
     /* -------------------------------------------------------------------
