@@ -32,7 +32,7 @@ describe("Sidechain", () => {
         const vault = await config.getAuraBalVault(deployer.signer);
         const canonical = await config.getSidechain(deployer.signer);
 
-        const viewDeployment = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer.signer);
+        const viewDeployment = await deployCanonicalView(hre, deployer.signer, ext, phase2, vault, canonical);
         canonicalView = viewDeployment.canonicalView;
     });
 

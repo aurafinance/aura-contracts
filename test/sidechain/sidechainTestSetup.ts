@@ -1,6 +1,5 @@
-import { Signer } from "ethers";
+import { ethers, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types/runtime";
-import { ZERO_ADDRESS } from "../../test-utils";
 
 import {
     deploySimpleBridgeReceiver,
@@ -11,12 +10,16 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
+    CanonicalPhase3Deployed,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
+    deployCanonicalPhase3,
     deploySidechainPhase1,
     deploySidechainPhase2,
+    deploySidechainPhase3,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
+    setTrustedRemoteCanonicalPhase3,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
 } from "../../scripts/deploySidechain";
@@ -31,28 +34,40 @@ import {
     deployPhase3,
     deployPhase4,
     deployPhase6,
+    deployPhase8,
     MultisigConfig,
     Phase2Deployed,
     Phase6Deployed,
+    Phase8Deployed,
 } from "../../scripts/deploySystem";
 import { deployVault, VaultDeployment } from "../../scripts/deployVault";
+import { simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import { impersonateAccount } from "../../test-utils/fork";
-import { Account, Create2Factory__factory, LZEndpointMock__factory, SidechainMultisigConfig } from "../../types";
+import {
+    Account,
+    Create2Factory__factory,
+    IGaugeController__factory,
+    LZEndpointMock__factory,
+    SidechainConfig,
+    SidechainMultisigConfig,
+    SidechainPhaseDeployed,
+} from "../../types";
 
 export type SidechainDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed;
-export type CanonicalPhaseDeployed = CanonicalPhase1Deployed & CanonicalPhase2Deployed;
+export type CanonicalPhaseDeployed = CanonicalPhase1Deployed & CanonicalPhase2Deployed & CanonicalPhase3Deployed;
 export interface L1TestSetup {
     mocks: DeployMocksResult;
     multisigs: MultisigConfig;
     phase2: Phase2Deployed;
     phase6: Phase6Deployed;
+    phase8: Phase8Deployed;
     canonical: CanonicalPhaseDeployed;
     vaultDeployment: VaultDeployment;
 }
 export interface L2TestSetup {
     mocks: DeployL2MocksResult;
     multisigs: SidechainMultisigConfig;
-    sidechain: SidechainDeployed;
+    sidechain: SidechainPhaseDeployed;
 }
 export interface SideChainTestSetup {
     deployer: Account;
@@ -64,6 +79,7 @@ export interface SideChainTestSetup {
 export const deployL1 = async (
     hre: HardhatRuntimeEnvironment,
     accounts: Signer[],
+    canonicalChainId = 111,
     debug = false,
     waitForBlocks = 0,
 ): Promise<L1TestSetup> => {
@@ -97,6 +113,8 @@ export const deployL1 = async (
         debug,
         waitForBlocks,
     );
+    const phase8 = await deployPhase8(hre, deployer.signer, phase6, l1Multisigs, debug, waitForBlocks);
+
     const vaultDeployment = await deployVault(
         {
             addresses: l1Mocks.addresses,
@@ -109,6 +127,10 @@ export const deployL1 = async (
         debug,
         waitForBlocks,
     );
+
+    // The great migration phase6 configuration
+    await shutdownSystem(dao, phase2, phase6);
+    await reAddPools(dao, deployer, l1Mocks, phase6);
 
     // deploy canonicalPhase
     const canonicalPhase1 = await deployCanonicalPhase1(
@@ -136,9 +158,25 @@ export const deployL1 = async (
         debug,
         waitForBlocks,
     );
-    const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
-    return { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, vaultDeployment, canonical };
+    const canonicalPhase3 = await deployCanonicalPhase3(
+        hre,
+        deployer.signer,
+        l1Multisigs,
+        l1Mocks.addresses,
+        phase2,
+        phase6,
+        canonicalPhase1,
+        canonicalChainId,
+        debug,
+        waitForBlocks,
+    );
+    await phase6.boosterOwner.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
+    // await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
+
+    const canonical = { ...canonicalPhase1, ...canonicalPhase2, ...canonicalPhase3 };
+
+    return { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, phase8, vaultDeployment, canonical };
 };
 export const deployL2 = async (
     hre: HardhatRuntimeEnvironment,
@@ -163,15 +201,13 @@ export const deployL2 = async (
     l2mocks.addresses.lzEndpoint = l2LzEndpoint.address;
 
     const bridging = { l2Sender: ZERO_ADDRESS, l1Receiver: ZERO_ADDRESS, nativeBridge: ZERO_ADDRESS };
+    const extSidechainConfig = { ...l2mocks.addresses, create2Factory: create2Factory.address };
     const sidechainPhase1 = await deploySidechainPhase1(
         hre,
         deployer.signer,
         l2mocks.namingConfig,
         l2Multisigs,
-        {
-            ...l2mocks.addresses,
-            create2Factory: create2Factory.address,
-        },
+        extSidechainConfig,
         bridging,
         l1.canonical,
         canonicalChainId,
@@ -181,25 +217,31 @@ export const deployL2 = async (
         deployer.signer,
         l2mocks.namingConfig,
         l2Multisigs,
-        {
-            ...l2mocks.addresses,
-            create2Factory: create2Factory.address,
-        },
+        extSidechainConfig,
         l1.canonical,
         sidechainPhase1,
         canonicalChainId,
     );
-    const sidechain = { ...sidechainPhase1, ...sidechainPhase2 };
+    const sidechainPhase3 = await deploySidechainPhase3(
+        hre,
+        deployer.signer,
+        extSidechainConfig,
+        l2Multisigs,
+        sidechainPhase1,
+    );
+    const sidechain = { ...sidechainPhase1, ...sidechainPhase2, ...sidechainPhase3 };
 
     // Mock L1 Endpoints  configuration
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraBalOFT.address, l2LzEndpoint.address);
+    await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.childGaugeVoteRewards.address, l2LzEndpoint.address);
 
     // Mock L12Endpoints  configuration
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.l1Coordinator.address, l1.mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.auraProxyOFT.address, l1.mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.auraBalProxyOFT.address, l1.mocks.lzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(l1.canonical.gaugeVoteRewards.address, l1.mocks.lzEndpoint.address);
 
     // Add Mock Gauge
     await sidechain.poolManager.connect(dao.signer)["addPool(address)"](l2mocks.gauge.address);
@@ -211,28 +253,17 @@ export const deployL2 = async (
         l1.canonical.auraProxyOFT = l1.canonical.auraProxyOFT.connect(dao.signer);
     }
 
-    await setTrustedRemoteCanonicalPhase1(
-        l1.canonical,
-        sidechain,
-        sidechainLzChainId,
-        {
-            ...l1Multisigs,
-            daoMultisig: dao.address,
-            defender: {
-                l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
-                auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
-            },
-        },
-        bridging,
-    );
-    await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId, {
+    const sidechainMultisigs = {
         ...l1Multisigs,
         daoMultisig: dao.address,
         defender: {
             l1CoordinatorDistributor: "0x0000000000000000000000000000000000000000",
             auraBalProxyOFTHarvestor: "0x0000000000000000000000000000000000000000",
         },
-    });
+    };
+    await setTrustedRemoteCanonicalPhase1(l1.canonical, sidechain, sidechainLzChainId, sidechainMultisigs, bridging);
+    await setTrustedRemoteCanonicalPhase2(l1.canonical, sidechain, sidechainLzChainId, sidechainMultisigs);
+    await setTrustedRemoteCanonicalPhase3(l1.canonical, sidechain, sidechainLzChainId, sidechainMultisigs);
 
     // Emulate DAO Settings - L1 Stuff
     await l1.phase6.booster.connect(dao.signer).setBridgeDelegate(l1.canonical.l1Coordinator.address);
@@ -245,11 +276,20 @@ export const deployL2 = async (
     sidechain.l2Coordinator = sidechain.l2Coordinator.connect(dao.signer);
     sidechain.auraOFT = sidechain.auraOFT.connect(dao.signer);
     sidechain.auraBalOFT = sidechain.auraBalOFT.connect(dao.signer);
+    await sidechain.childGaugeVoteRewards
+        .connect(dao.signer)
+        .setTrustedRemote(
+            canonicalChainId,
+            ethers.utils.solidityPack(
+                ["address", "address"],
+                [l1.canonical.gaugeVoteRewards.address, sidechain.childGaugeVoteRewards.address],
+            ),
+        );
 
     // Emulate DAO Settings - L1 Stuff
     const { bridgeDelegateSender } = await deploySimpleBridgeSender(
         hre,
-        { extConfig: l1.mocks.addresses } as any,
+        { extConfig: l1.mocks.addresses } as unknown as SidechainConfig,
         deployer.signer,
     );
     const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(
@@ -301,7 +341,8 @@ export const sidechainTestSetup = async (
     waitForBlocks = 0,
 ): Promise<SideChainTestSetup> => {
     const deployer = await impersonateAccount(await accounts[0].getAddress());
-    const l1Deployed = await deployL1(hre, accounts, debug, waitForBlocks);
+    const l1Deployed = await deployL1(hre, accounts, canonicalChainId, debug, waitForBlocks);
+    // configuration of l1 after full deployment
     await l1Deployed.vaultDeployment.vault.setHarvestPermissions(false);
     await l1Deployed.vaultDeployment.vault.transferOwnership(l1Deployed.canonical.auraBalProxyOFT.address);
 
@@ -321,4 +362,42 @@ export const sidechainTestSetup = async (
         l2: { ...l2Deployed.l2 },
         bridgeDelegates: { ...l2Deployed.bridgeDelegates },
     };
+};
+
+const shutdownSystem = async (dao: Account, phase2: Phase2Deployed, phase6: Phase6Deployed) => {
+    // shutdown pools
+    const poolLength = await phase2.booster.poolLength();
+    await Promise.all(
+        Array(poolLength.toNumber())
+            .fill(null)
+            .map(async (_, i) => {
+                const poolInfo = await phase2.booster.poolInfo(i);
+                if (!poolInfo.shutdown) {
+                    await phase2.poolManager.connect(dao.signer).shutdownPool(i);
+                    return { ...poolInfo, shutdown: true, pid: i };
+                }
+                return { ...poolInfo, pid: i };
+            }),
+    );
+    // shutdown system
+    await phase2.poolManagerSecondaryProxy.connect(dao.signer).shutdownSystem();
+    await phase2.boosterOwner.connect(dao.signer).shutdownSystem();
+    // update voterproxy operator
+    await phase2.voterProxy.connect(dao.signer).setOperator(phase6.booster.address);
+    // update Aura operator
+    await phase2.cvx.connect(dao.signer).updateOperator();
+};
+
+const reAddPools = async (dao: Account, deployer: Account, l1Mocks: DeployMocksResult, phase6: Phase6Deployed) => {
+    await phase6.poolManager.connect(dao.signer).setProtectPool(false);
+    const { gauges } = l1Mocks.addresses;
+    const gaugeLength = gauges.length;
+    const gaugeController = IGaugeController__factory.connect(l1Mocks.addresses.gaugeController, deployer.signer);
+    for (let i = 0; i < gaugeLength; i++) {
+        if (gaugeLength > 10) {
+            const weight = await gaugeController.get_gauge_weight(gauges[i]);
+            if (weight.lt(simpleToExactAmount(15000))) continue;
+        }
+        await phase6.poolManager["addPool(address)"](gauges[i]);
+    }
 };
