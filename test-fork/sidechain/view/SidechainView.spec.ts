@@ -30,10 +30,10 @@ describe("Sidechain", () => {
         const sidechainLzChainId = 101;
 
         const viewDeployment = await deploySidechainView(
-            sidechainLzChainId,
-            config.getSidechain(deployer.signer),
             hre,
             deployer.signer,
+            sidechainLzChainId,
+            config.getSidechain(deployer.signer),
         );
         sidechainView = viewDeployment.sidechainView;
     });

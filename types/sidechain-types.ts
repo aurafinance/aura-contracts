@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { SidechainPhase1Deployed, SidechainPhase2Deployed, SidechainViewDeployed } from "scripts/deploySidechain";
+import { SidechainPhase1Deployed, SidechainPhase2Deployed, SidechainViewDeployed ,SidechainPhase3Deployed } from "scripts/deploySidechain";
 
 export interface SidechainNaming {
     auraOftName: string;
@@ -31,7 +31,7 @@ export interface SidechainBridging {
     l2Sender: string;
     nativeBridge: string;
 }
-export type SidechainPhaseDeployed =  SidechainPhase1Deployed & SidechainPhase2Deployed;
+export type SidechainPhaseDeployed =  SidechainPhase1Deployed & SidechainPhase2Deployed & SidechainPhase3Deployed;
 export interface SidechainConfig {
     chainId: number;
     whales?: { [key: string]: string };

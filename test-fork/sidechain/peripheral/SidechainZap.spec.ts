@@ -133,10 +133,10 @@ describe("Sidechain", () => {
         crv = ERC20__factory.connect(sidechainConfig.extConfig.token, alice);
 
         const zapdeployment = await deploySidechainClaimZap(
-            result.sidechainConfig.extConfig,
-            result.sidechain,
             hre,
             deployer.signer,
+            result.sidechainConfig.extConfig,
+            result.sidechain,
         );
         sidechainClaimZap = zapdeployment.sidechainClaimZap;
     });

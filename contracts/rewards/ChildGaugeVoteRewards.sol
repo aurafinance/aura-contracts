@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
+import "hardhat/console.sol";
+
 import { LzApp } from "../layerzero/lzApp/LzApp.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
@@ -14,6 +16,15 @@ import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
  */
 contract ChildGaugeVoteRewards is LzApp {
     using SafeERC20 for IERC20;
+
+    /* -------------------------------------------------------------------
+       Types 
+    ------------------------------------------------------------------- */
+
+    struct Pid {
+        uint128 value;
+        bool isSet;
+    }
 
     /* -------------------------------------------------------------------
        Storage 
@@ -38,7 +49,7 @@ contract ChildGaugeVoteRewards is LzApp {
     mapping(uint256 => mapping(address => uint256)) public getAmountSentByEpoch;
 
     /// @dev Gauge => Pool ID
-    mapping(address => uint256) public getPoolId;
+    mapping(address => Pid) public getPoolId;
 
     /* -------------------------------------------------------------------
        Events 
@@ -54,14 +65,13 @@ contract ChildGaugeVoteRewards is LzApp {
     constructor(
         address _aura,
         address _booster,
-        address _stashRewardDistro,
-        address _lzEndpoint
+        address _stashRewardDistro
     ) {
         aura = _aura;
         booster = IBooster(_booster);
         stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
 
-        _initializeLzApp(_lzEndpoint);
+        IERC20(_aura).safeApprove(_stashRewardDistro, type(uint256).max);
     }
 
     /* -------------------------------------------------------------------
@@ -76,18 +86,24 @@ contract ChildGaugeVoteRewards is LzApp {
     /* -------------------------------------------------------------------
        Setters 
     ------------------------------------------------------------------- */
+    /**
+     * @notice Initializes the addresses
+     * @dev This function should only be called by the owner of the contract
+     * @param _lzEndpoint   LayerZero endpoint contract
+     */
+    function initialize(address _lzEndpoint) external onlyOwner {
+        _initializeLzApp(_lzEndpoint);
+    }
 
     function setDistributor(address _distributor) external onlyOwner {
         distributor = _distributor;
         emit SetDistributor(_distributor);
     }
 
-    function setPoolIds(uint256[] memory _poolIds) external {
-        uint256 poolIdsLen = _poolIds.length;
-        for (uint256 i = 0; i < poolIdsLen; i++) {
-            uint256 pid = _poolIds[i];
-            IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
-            getPoolId[poolInfo.gauge] = pid;
+    function setPoolIds(uint256 start, uint256 end) external {
+        for (uint256 i = start; i < end; i++) {
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
+            getPoolId[poolInfo.gauge] = Pid(uint128(i), true);
         }
     }
 
@@ -108,8 +124,10 @@ contract ChildGaugeVoteRewards is LzApp {
             uint256 amountToSend = _getAmountToSend(_epoch, gauge);
 
             // Fund the extra reward distro for the next 2 epochs
-            uint256 pid = getPoolId[gauge];
-            stashRewardDistro.fundPool(pid, aura, amountToSend, 2);
+            Pid memory pid = getPoolId[gauge];
+            require(pid.isSet, "!poolId");
+
+            stashRewardDistro.fundPool(uint256(pid.value), aura, amountToSend, 2);
         }
     }
 

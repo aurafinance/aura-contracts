@@ -1,16 +1,10 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import {
-    BoosterOwnerSecondary,
-    BoosterOwnerSecondary__factory,
-    ExtraRewardStashV3,
-    ExtraRewardStashV3__factory,
-    PoolManagerV4,
-    PoolManagerV4__factory,
-} from "../types";
-import { deployContract } from "../tasks/utils";
 import { config } from "../tasks/deploy/mainnet-config";
+import { deployContract } from "../tasks/utils";
+import { ExtraRewardStashV3, ExtraRewardStashV3__factory } from "../types";
+import { deployPhase8 } from "./deploySystem";
 
 export async function deployUpgrade01(
     hre: HardhatRuntimeEnvironment,
@@ -31,29 +25,9 @@ export async function deployUpgrade01(
         waitForBlocks,
     );
 
-    const poolManagerV4 = await deployContract<PoolManagerV4>(
-        hre,
-        new PoolManagerV4__factory(signer),
-        "PoolManagerV4",
-        [phase6.poolManagerSecondaryProxy.address, multisigs.daoMultisig],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
-    const boosterOwnerSecondary = await deployContract<BoosterOwnerSecondary>(
-        hre,
-        new BoosterOwnerSecondary__factory(signer),
-        "BoosterOwnerSecondary",
-        [multisigs.daoMultisig, phase6.boosterOwner.address, phase6.booster.address],
-        {},
-        debug,
-        waitForBlocks,
-    );
-
+    const phase8 = await deployPhase8(hre, signer, phase6, multisigs, debug, waitForBlocks);
     return {
         extraRewardStashV3,
-        boosterOwnerSecondary,
-        poolManagerV4,
+        ...phase8,
     };
 }
