@@ -29,7 +29,7 @@ import {
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import { sidechainNaming } from "./sidechain-naming";
-import { ZERO_ADDRESS } from "test-utils";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
