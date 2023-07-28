@@ -60,8 +60,6 @@ contract StashRewardDistro is IStashRewardDistro {
     ) external {
         // Keep 1 wei of the reward token for each period to faciliate
         // processing idle rewards if needed
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-
         uint256 rewardAmount = _amount - _periods;
 
         // Loop through n periods and assign rewards to each epoch

@@ -8,7 +8,6 @@ import {
     getTimestamp,
     impersonateAccount,
     increaseTime,
-    ONE_DAY,
     ONE_WEEK,
     simpleToExactAmount,
     ZERO,
@@ -17,7 +16,7 @@ import {
 import { Account, SidechainPhaseDeployed } from "../../types";
 import { ERC20, GaugeVoteRewards, StashRewardDistro } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
-import { CanonicalPhaseDeployed, SideChainTestSetup, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
+import { SideChainTestSetup, sidechainTestSetup } from "../sidechain/sidechainTestSetup";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
@@ -45,8 +44,7 @@ describe("GaugeVoteRewards", () => {
     let stashRewardDistro: StashRewardDistro;
     let testSetup: SideChainTestSetup;
     let sidechain: SidechainPhaseDeployed;
-    let canonical: CanonicalPhaseDeployed;
-    const poolIds = [0, 1];
+    const poolIds = [0, 1, 2];
     const canonicalGauges = [];
 
     let idSnapShot: number;
@@ -67,11 +65,11 @@ describe("GaugeVoteRewards", () => {
         testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
         cvx = testSetup.l1.phase2.cvx;
 
-        // Gauge to be mapped to L1
+        // Non deposit gauge ie veBal
         canonicalGauges.push(testSetup.l1.mocks.gauges[0].address);
         // Gauge to be mapped to L2
         canonicalGauges.push(testSetup.l1.mocks.gauges[1].address);
-        // Non deposit gauge ie veBal
+        // Gauge to be mapped to L1
         canonicalGauges.push(testSetup.l1.mocks.gauges[2].address);
 
         // Send some balances in order to test
@@ -81,15 +79,11 @@ describe("GaugeVoteRewards", () => {
         const cvxBalance = await cvxConnected.balanceOf(cvxDepositorAccount.address);
         await cvxConnected.transfer(deployer.address, cvxBalance);
 
-        // Not used yet
-
-        canonical = testSetup.l1.canonical;
         sidechain = testSetup.l2.sidechain;
 
         ({ gaugeVoteRewards, stashRewardDistro } = testSetup.l1.canonical);
         dao = await impersonateAccount(testSetup.l2.multisigs.daoMultisig);
         l2mocks = testSetup.l2.mocks;
-        // pool = await sidechain.booster.poolInfo(pid);
 
         // transfer LP tokens to accounts
         const balance = await l2mocks.bpt.balanceOf(deployer.address);
@@ -165,39 +159,54 @@ describe("GaugeVoteRewards", () => {
             expect(await gaugeVoteRewards.rewardPerEpoch(), "rewardPerEpoch").to.be.eq(rewardPerEpoch);
         });
         it("onlyOwner setIsNoDepositGauge", async () => {
-            const gauge = canonicalGauges[2];
+            const gauge = canonicalGauges[0];
             const tx = await gaugeVoteRewards.connect(dao.signer).setIsNoDepositGauge(gauge, true);
             await expect(tx).to.emit(gaugeVoteRewards, "SetIsNoDepositGauge").withArgs(gauge, true);
             expect(await gaugeVoteRewards.isNoDepositGauge(gauge), "isNoDepositGauge").to.be.eq(true);
         });
-        it("onlyOwner setDstChainId == lzChainId", async () => {
-            // Configure pid 0 to be on L1_CHAIN_ID
+        it("onlyOwner setDstChainId != lzChainId", async () => {
             // Configure pid 1 to be on L1_CHAIN_ID
             // Do not set any configuration to pid 2
             const lzChainId = await gaugeVoteRewards.lzChainId();
-            expect(L1_CHAIN_ID, "lzChainId").to.be.eq(lzChainId);
             expect(L2_CHAIN_ID, "lzChainId").to.not.be.eq(lzChainId);
-            const dstChainIds = [L1_CHAIN_ID, L2_CHAIN_ID];
-            const gauges = [canonicalGauges[0], canonicalGauges[1]];
+            const dstChainIds = [L2_CHAIN_ID];
+            const gauges = [canonicalGauges[1]];
 
             expect(gauges.length, "params").to.be.eq(dstChainIds.length);
             await gaugeVoteRewards.connect(dao.signer).setDstChainId(gauges, dstChainIds);
-            expect(await gaugeVoteRewards.getDstChainId(gauges[0]), "getDstChainId l1").to.be.eq(dstChainIds[0]);
-            expect(await gaugeVoteRewards.getDstChainId(gauges[1]), "getDstChainId l2").to.be.eq(dstChainIds[1]);
-            expect(await gaugeVoteRewards.getDstChainId(canonicalGauges[2]), "getDstChainId not set").to.be.eq(ZERO);
+            expect(await gaugeVoteRewards.getDstChainId(canonicalGauges[1]), "getDstChainId l2").to.be.eq(L2_CHAIN_ID);
+            expect(await gaugeVoteRewards.getDstChainId(canonicalGauges[0]), "getDstChainId not set").to.be.eq(ZERO);
         });
         it("onlyOwner can set child gauge vote rewards addresses", async () => {
             const dstChainIds = [123, L2_CHAIN_ID];
             const voteRewards = [DEAD_ADDRESS, sidechain.childGaugeVoteRewards.address];
-            await gaugeVoteRewards.connect(dao.signer).setChildGaugeVoteRewards(dstChainIds, voteRewards);
+
+            let tx = await gaugeVoteRewards
+                .connect(dao.signer)
+                .setChildGaugeVoteRewards(dstChainIds[0], voteRewards[0]);
+            await expect(tx)
+                .to.emit(gaugeVoteRewards, "SetChildGaugeVoteRewards")
+                .withArgs(dstChainIds[0], voteRewards[0]);
+
+            tx = await gaugeVoteRewards.connect(dao.signer).setChildGaugeVoteRewards(dstChainIds[1], voteRewards[1]);
+            await expect(tx)
+                .to.emit(gaugeVoteRewards, "SetChildGaugeVoteRewards")
+                .withArgs(dstChainIds[1], voteRewards[1]);
+
             expect(await gaugeVoteRewards.getChildGaugeVoteRewards(dstChainIds[0])).eq(voteRewards[0]);
             expect(await gaugeVoteRewards.getChildGaugeVoteRewards(dstChainIds[1])).eq(voteRewards[1]);
         });
-        it("anyone setPoolIds", async () => {
+        it("anyone setPoolIds and dst chain id", async () => {
             const poolLength = await testSetup.l1.phase6.booster.poolLength();
+            const gauges = [canonicalGauges[2], canonicalGauges[1], canonicalGauges[0]];
 
             expect(poolLength.gte(poolIds.length));
-            await gaugeVoteRewards.connect(alice.signer).setPoolIds(poolIds);
+            // Test
+            await gaugeVoteRewards.connect(alice.signer).setPoolIds(0, poolIds.length);
+
+            expect(await gaugeVoteRewards.getDstChainId(gauges[0]), "getDstChainId l1").to.be.eq(L1_CHAIN_ID);
+            expect(await gaugeVoteRewards.getDstChainId(gauges[1]), "getDstChainId l2").to.be.eq(L2_CHAIN_ID);
+            expect(await gaugeVoteRewards.getDstChainId(gauges[2]), "getDstChainId l1").to.be.eq(L1_CHAIN_ID);
 
             for (const poolId in poolIds) {
                 expect(
@@ -213,12 +222,12 @@ describe("GaugeVoteRewards", () => {
             expect(await cvx.balanceOf(gaugeVoteRewards.address), "GaugeVoteRewards cvx balance").to.be.gt(ZERO);
         });
         it("set votes gauge weights", async () => {
-            // canonicalGauges[2] is veBal non deposits , so its weight must be ignored.
-            const gauges = [canonicalGauges[0], canonicalGauges[1], canonicalGauges[2]];
+            // canonicalGauges[0] is veBal non deposits , so its weight must be ignored.
+            const gauges = [canonicalGauges[2], canonicalGauges[1], canonicalGauges[0]];
             const weights = [4_000, 4_000, 2_000];
             const epoch = await gaugeVoteRewards.getCurrentEpoch();
 
-            expect(await gaugeVoteRewards.isNoDepositGauge(canonicalGauges[2]), "veBal gauge").to.be.eq(true);
+            expect(await gaugeVoteRewards.isNoDepositGauge(canonicalGauges[0]), "veBal gauge").to.be.eq(true);
 
             // Test
             await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
@@ -232,7 +241,7 @@ describe("GaugeVoteRewards", () => {
         });
         it("process gauge rewards", async () => {
             const epoch = await gaugeVoteRewards.getCurrentEpoch();
-            const gauge = canonicalGauges[0];
+            const gauge = canonicalGauges[2];
             const dstChainId = await gaugeVoteRewards.getDstChainId(gauge);
             const weight = await gaugeVoteRewards.getWeightByEpoch(epoch, gauge);
             const rewardPerEpoch = await gaugeVoteRewards.rewardPerEpoch();
@@ -263,7 +272,7 @@ describe("GaugeVoteRewards", () => {
             // Current epoch should have been already queued
             const epoch0Funds = await stashRewardDistro.getFunds(epochDistro, pid, cvx.address);
             const epoch1Funds = await stashRewardDistro.getFunds(epochDistro.add(1), pid, cvx.address);
-            expect(epoch0Funds, "epoch0Funds").to.be.eq(ZERO);
+            expect(epoch0Funds, "epoch0Funds").to.be.eq(rewardAmountPerEpoch);
             expect(epoch1Funds, "epoch1Funds").to.be.eq(rewardAmountPerEpoch);
 
             const gaugeVoteRewardsCvxBalanceAfter = await cvx.balanceOf(gaugeVoteRewards.address);
@@ -350,10 +359,10 @@ describe("GaugeVoteRewards", () => {
                 );
             });
             it("setChildGaugeVoteRewards", async () => {
-                const dstChainIds = [L2_CHAIN_ID];
-                const voteRewards = [ZERO_ADDRESS];
+                const dstChainId = L2_CHAIN_ID;
+                const voteReward = ZERO_ADDRESS;
                 await expect(
-                    gaugeVoteRewards.connect(alice.signer).setChildGaugeVoteRewards(dstChainIds, voteRewards),
+                    gaugeVoteRewards.connect(alice.signer).setChildGaugeVoteRewards(dstChainId, voteReward),
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
         });
@@ -366,15 +375,8 @@ describe("GaugeVoteRewards", () => {
                 ).to.be.revertedWith("!length");
             });
             it("setChildGaugeVoteRewards", async () => {
-                const dstChainIds = [L2_CHAIN_ID];
-                const voteRewards = [];
-                await expect(
-                    gaugeVoteRewards.connect(dao.signer).setChildGaugeVoteRewards(dstChainIds, voteRewards),
-                ).to.be.revertedWith("!length");
-            });
-            it("setChildGaugeVoteRewards", async () => {
-                const dstChainIds = [await gaugeVoteRewards.lzChainId()];
-                const voteRewards = [sidechain.childGaugeVoteRewards.address];
+                const dstChainIds = await gaugeVoteRewards.lzChainId();
+                const voteRewards = sidechain.childGaugeVoteRewards.address;
                 await expect(
                     gaugeVoteRewards.connect(dao.signer).setChildGaugeVoteRewards(dstChainIds, voteRewards),
                 ).to.be.revertedWith("!dstChainId");
@@ -398,30 +400,26 @@ describe("GaugeVoteRewards", () => {
                     gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, dstChainIds),
                 ).to.be.revertedWith("!length");
             });
+            it("when current epoch has already votes", async () => {
+                const epoch = await gaugeVoteRewards.getCurrentEpoch();
+                // Each epoch is 2 week long
+                const gauges = [canonicalGauges[2], canonicalGauges[1]];
+                const weights = [5_000, 5_000];
+                expect(await gaugeVoteRewards.getTotalWeight(epoch), "totalWeight").to.be.gt(ZERO);
+
+                // Second time it should revert
+                await expect(gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights)).to.be.revertedWith(
+                    "already voted",
+                );
+            });
             it("when total weight is not 10_000", async () => {
                 const epochDuration = await gaugeVoteRewards.EPOCH_DURATION();
                 // Each epoch is 2 week long
                 await increaseTime(epochDuration);
-                const gauges = [canonicalGauges[0], canonicalGauges[1]];
+                const gauges = [canonicalGauges[2], canonicalGauges[1]];
                 const weights = [1_000, 1_000];
                 await expect(gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights)).to.be.revertedWith(
                     "!totalWeight",
-                );
-            });
-            it.skip("when current epoch has already votes", async () => {
-                // TODO- , THIS should fail ???
-                // TODO-  currently it inflates the value of getTotalWeight[epoch]
-                const epochDuration = await gaugeVoteRewards.EPOCH_DURATION();
-                // Each epoch is 2 week long
-                await increaseTime(epochDuration);
-                const gauges = [canonicalGauges[0], canonicalGauges[1]];
-                const weights = [5_000, 5_000];
-                // Call once
-                await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
-                // Second time it should revert
-
-                await expect(gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights)).to.be.revertedWith(
-                    "stored amountToSend!=0",
                 );
             });
         });
@@ -443,7 +441,7 @@ describe("GaugeVoteRewards", () => {
                 const totalWeight = await gaugeVoteRewards.getTotalWeight(epoch);
                 await expect(totalWeight, "totalWeight").to.be.eq(ZERO);
 
-                const gauges = [canonicalGauges[0]];
+                const gauges = [canonicalGauges[2]];
                 await expect(gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(gauges, epoch)).to.be
                     .reverted;
             });
@@ -463,32 +461,32 @@ describe("GaugeVoteRewards", () => {
             });
             it("when amount to send is zero", async () => {
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
-                const gauges = [canonicalGauges[0], canonicalGauges[1], canonicalGauges[2]];
+                const gauges = [canonicalGauges[2], canonicalGauges[1], canonicalGauges[0]];
                 const weights = [0, 8_000, 2_000];
 
                 await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
 
                 expect(
-                    await gaugeVoteRewards.getAmountToSendByEpoch(epoch, canonicalGauges[0]),
+                    await gaugeVoteRewards.getAmountToSendByEpoch(epoch, canonicalGauges[2]),
                     "amountToSend",
                 ).to.be.eq(ZERO);
 
-                // canonicalGauges[2]  has weight 0, therefore amount to send must be zero
+                // canonicalGauges[0]  has weight 0, therefore amount to send must be zero
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[0]], epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch),
                 ).to.be.revertedWith("amountToSend=0");
             });
             it("when gauge has already been processed", async () => {
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
-                const gauges = [canonicalGauges[0], canonicalGauges[1], canonicalGauges[2]];
+                const gauges = [canonicalGauges[2], canonicalGauges[1], canonicalGauges[0]];
                 const weights = [4_000, 4_000, 2_000];
 
                 await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
                 // Process first time ok
-                await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[0]], epoch);
+                await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch);
                 // reverts if  Processed
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[0]], epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch),
                 ).to.be.revertedWith("isProcessed");
             });
         });

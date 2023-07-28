@@ -163,13 +163,14 @@ contract GaugeVoteRewards is LzApp {
     }
 
     function setChildGaugeVoteRewards(uint16 _dstChainId, address _voteReward) external onlyOwner {
+        require(_dstChainId != lzChainId, "!dstChainId");
         getChildGaugeVoteRewards[_dstChainId] = _voteReward;
         emit SetChildGaugeVoteRewards(_dstChainId, _voteReward);
     }
 
     function setDstChainId(address[] memory _gauges, uint16 _dstChainId) external onlyOwner {
         // Local chain dstChainId will be set when the gauge is mapped
-        // using hte setPoolIds function which queries the booster
+        // using the setPoolIds function which queries the booster
         require(_dstChainId != lzChainId, "!localChain");
 
         for (uint256 i = 0; i < _gauges.length; i++) {
@@ -197,6 +198,7 @@ contract GaugeVoteRewards is LzApp {
     function getAmountToSendByEpoch(uint256 _epoch, address _gauge) external view returns (uint256) {
         return _getAmountToSend(_epoch, _gauge);
     }
+
     /* -------------------------------------------------------------------
        Core 
     ------------------------------------------------------------------- */
@@ -214,10 +216,9 @@ contract GaugeVoteRewards is LzApp {
         uint256 epoch = _getCurrentEpoch();
         uint256 gaugeLen = _gauge.length;
 
-
-        require(getTotalWeight[epoch] == 0, "already voted");
         require(rewardPerEpoch > 0, "!rewardPerEpoch");
         require(gaugeLen == _weight.length, "!length");
+        require(getTotalWeight[epoch] == 0, "already voted");
 
         // Loop through each gauge and store it's weight for this epoch, while
         // tracking totalWeights that is used for validation and totalDepositsWeight
