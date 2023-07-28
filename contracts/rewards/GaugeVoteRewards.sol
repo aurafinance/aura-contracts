@@ -45,6 +45,15 @@ contract GaugeVoteRewards is LzApp {
     using AuraMath for uint256;
 
     /* -------------------------------------------------------------------
+       Types 
+    ------------------------------------------------------------------- */
+
+    struct Pid {
+        uint128 value;
+        bool isSet;
+    }
+
+    /* -------------------------------------------------------------------
        Storage 
     ------------------------------------------------------------------- */
 
@@ -82,7 +91,7 @@ contract GaugeVoteRewards is LzApp {
     mapping(uint16 => address) public getChildGaugeVoteRewards;
 
     /// @dev Gauge => Pool ID
-    mapping(address => uint256) public getPoolId;
+    mapping(address => Pid) public getPoolId;
 
     /// @dev Epoch => Gauge => Weight
     mapping(uint256 => mapping(address => uint256)) public getWeightByEpoch;
@@ -181,7 +190,7 @@ contract GaugeVoteRewards is LzApp {
     function setPoolIds(uint256 start, uint256 end) external {
         for (uint256 i = start; i < end; i++) {
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
-            getPoolId[poolInfo.gauge] = i;
+            getPoolId[poolInfo.gauge] = Pid(uint128(i), true);
             // Set the dstChainId to be the local chain ID
             if (getDstChainId[poolInfo.gauge] == 0) getDstChainId[poolInfo.gauge] = lzChainId;
         }
@@ -258,7 +267,7 @@ contract GaugeVoteRewards is LzApp {
      * @param _gauge Array of gauges
      * @param _epoch The epoch
      */
-    function processGaugeRewards(address[] calldata _gauge, uint256 _epoch) external onlyDistributor {
+    function processGaugeRewards(uint256 _epoch, address[] calldata _gauge) external onlyDistributor {
         require(_epoch <= _getCurrentEpoch(), "!epoch");
 
         for (uint256 i = 0; i < _gauge.length; i++) {
@@ -270,13 +279,13 @@ contract GaugeVoteRewards is LzApp {
             require(!isNoDepositGauge[gauge], "noDepositGauge");
             require(getDstChainId[gauge] == lzChainId, "dstChainId!=lzChainId");
 
-            uint256 amountToSend = _accountAmountToSend(_epoch, gauge);
+            uint256 amountToSend = _calculateAmountToSend(_epoch, gauge);
 
             // Fund the extra reward distro for the next 2 epochs
-            uint256 pid = getPoolId[gauge];
-            require(pid != 0, "!poolId");
+            Pid memory pid = getPoolId[gauge];
+            require(pid.isSet, "!poolId");
 
-            stashRewardDistro.fundPool(pid, address(aura), amountToSend, 2);
+            stashRewardDistro.fundPool(uint256(pid.value), address(aura), amountToSend, 2);
         }
 
         emit ProcessGaugeRewards(_gauge, _epoch);
@@ -313,7 +322,7 @@ contract GaugeVoteRewards is LzApp {
             require(getDstChainId[gauge] == _dstChainId, "!dstChainId");
 
             // Send pro rata AURA to the sidechain
-            uint256 amountToSend = _accountAmountToSend(_epoch, gauge);
+            uint256 amountToSend = _calculateAmountToSend(_epoch, gauge);
             totalAmountToSend = totalAmountToSend.add(amountToSend);
 
             // Now that the child gauge streamers are deprecated we can make
@@ -377,7 +386,7 @@ contract GaugeVoteRewards is LzApp {
         return amountToSend;
     }
 
-    function _accountAmountToSend(uint256 _epoch, address _gauge) internal returns (uint256) {
+    function _calculateAmountToSend(uint256 _epoch, address _gauge) internal returns (uint256) {
         // Send pro rata AURA to the sidechain
         uint256 amountToSend = _getAmountToSend(_epoch, _gauge);
         require(amountToSend != 0, "amountToSend=0");

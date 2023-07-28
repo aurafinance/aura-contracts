@@ -259,7 +259,7 @@ describe("GaugeVoteRewards", () => {
             expect(await gaugeVoteRewards.lzChainId(), "dstChainId == lzChainId").to.be.eq(dstChainId);
 
             // Test
-            const tx = await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([gauge], epoch);
+            const tx = await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, [gauge]);
 
             const epochDistro = await stashRewardDistro.getCurrentEpoch();
             const rewardAmountPerEpoch = amountToSend.div(2).sub(1);
@@ -270,8 +270,8 @@ describe("GaugeVoteRewards", () => {
                 .to.emit(stashRewardDistro, "Funded")
                 .withArgs(epochDistro.add(1), pid, cvx.address, rewardAmountPerEpoch);
             // Current epoch should have been already queued
-            const epoch0Funds = await stashRewardDistro.getFunds(epochDistro, pid, cvx.address);
-            const epoch1Funds = await stashRewardDistro.getFunds(epochDistro.add(1), pid, cvx.address);
+            const epoch0Funds = await stashRewardDistro.getFunds(epochDistro, pid.value, cvx.address);
+            const epoch1Funds = await stashRewardDistro.getFunds(epochDistro.add(1), pid.value, cvx.address);
             expect(epoch0Funds, "epoch0Funds").to.be.eq(rewardAmountPerEpoch);
             expect(epoch1Funds, "epoch1Funds").to.be.eq(rewardAmountPerEpoch);
 
@@ -425,7 +425,7 @@ describe("GaugeVoteRewards", () => {
         });
         describe("process gauge rewards fails", () => {
             it("when caller is not distributor", async () => {
-                await expect(gaugeVoteRewards.connect(alice.signer).processGaugeRewards([], ZERO)).to.be.revertedWith(
+                await expect(gaugeVoteRewards.connect(alice.signer).processGaugeRewards(ZERO, [])).to.be.revertedWith(
                     "!distributor",
                 );
             });
@@ -433,30 +433,30 @@ describe("GaugeVoteRewards", () => {
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
                 const gauges = [];
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(gauges, epoch.add(1)),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch.add(1), gauges),
                 ).to.be.revertedWith("!epoch");
             });
             it("when there are no votes for the given gauge", async () => {
                 const epoch = (await gaugeVoteRewards.getCurrentEpoch()).sub(10);
                 const totalWeight = await gaugeVoteRewards.getTotalWeight(epoch);
-                await expect(totalWeight, "totalWeight").to.be.eq(ZERO);
+                expect(totalWeight, "totalWeight").to.be.eq(ZERO);
 
                 const gauges = [canonicalGauges[2]];
-                await expect(gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(gauges, epoch)).to.be
+                await expect(gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, gauges)).to.be
                     .reverted;
             });
             it("with a sidechain gauge", async () => {
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
                 const gauges = [canonicalGauges[1]];
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(gauges, epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, gauges),
                 ).to.be.revertedWith("dstChainId!=lzChainId");
             });
             it("with a gauge not mapped", async () => {
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
                 const gauges = [DEAD_ADDRESS];
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(gauges, epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, gauges),
                 ).to.be.revertedWith("dstChainId!=lzChainId");
             });
             it("when amount to send is zero", async () => {
@@ -473,7 +473,7 @@ describe("GaugeVoteRewards", () => {
 
                 // canonicalGauges[0]  has weight 0, therefore amount to send must be zero
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, [canonicalGauges[2]]),
                 ).to.be.revertedWith("amountToSend=0");
             });
             it("when gauge has already been processed", async () => {
@@ -483,10 +483,10 @@ describe("GaugeVoteRewards", () => {
 
                 await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
                 // Process first time ok
-                await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch);
+                await gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, [canonicalGauges[2]]);
                 // reverts if  Processed
                 await expect(
-                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards([canonicalGauges[2]], epoch),
+                    gaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, [canonicalGauges[2]]),
                 ).to.be.revertedWith("isProcessed");
             });
         });

@@ -6,7 +6,7 @@ import { config } from "../../tasks/deploy/mainnet-config";
 import { getSigner } from "../../tasks/utils";
 import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeployment";
 import { simpleToExactAmount, impersonateAccount } from "../../test-utils";
-import { Account } from "../../types";
+import { Account, IStakelessGauge__factory } from "../../types";
 import { ChildGaugeVoteRewards__factory } from "../../types/generated/factories/ChildGaugeVoteRewards__factory";
 import { GaugeVoteRewards__factory } from "../../types/generated/factories/GaugeVoteRewards__factory";
 import { StashRewardDistro__factory } from "../../types/generated/factories/StashRewardDistro__factory";
@@ -149,12 +149,12 @@ describe("GaugeVoteRewards", () => {
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
     let phase8: Phase8Deployed;
-    let sidechain: CanonicalPhase1Deployed & CanonicalPhase2Deployed;
     let ctx: TestSuiteDeployment;
 
     let gaugeVoteRewards: GaugeVoteRewards;
     let childGaugeVoteRewards: ChildGaugeVoteRewards;
     let stashRewardDistro: StashRewardDistro;
+    let childStashRewardDistro: StashRewardDistro;
 
     before(async () => {
         await hre.network.provider.request({
@@ -174,23 +174,25 @@ describe("GaugeVoteRewards", () => {
         phase2 = await config.getPhase2(deployer.signer);
         phase6 = await config.getPhase6(deployer.signer);
         phase8 = await config.getPhase8(deployer.signer);
-        sidechain = config.getSidechain(deployer.signer);
 
         ctx = await setupLocalDeployment(hre, config, deployer, L1_CHAIN_ID, L2_CHAIN_ID);
 
         stashRewardDistro = await new StashRewardDistro__factory(deployer.signer).deploy(phase6.booster.address);
+        childStashRewardDistro = await new StashRewardDistro__factory(deployer.signer).deploy(
+            ctx.sidechain.booster.address,
+        );
 
         childGaugeVoteRewards = await new ChildGaugeVoteRewards__factory(deployer.signer).deploy(
             ctx.sidechain.auraOFT.address,
-            phase6.booster.address,
-            stashRewardDistro.address,
+            ctx.sidechain.booster.address,
+            childStashRewardDistro.address,
         );
 
         await childGaugeVoteRewards.initialize(ctx.l2LzEndpoint.address);
 
         gaugeVoteRewards = await new GaugeVoteRewards__factory(deployer.signer).deploy(
             phase2.cvx.address,
-            sidechain.auraProxyOFT.address,
+            ctx.canonical.auraProxyOFT.address,
             phase6.booster.address,
             stashRewardDistro.address,
             L1_CHAIN_ID,
@@ -205,7 +207,7 @@ describe("GaugeVoteRewards", () => {
     describe("config", () => {
         it("GaugeVoteRewards has correct config", async () => {
             expect(await gaugeVoteRewards.aura()).eq(phase2.cvx.address);
-            expect(await gaugeVoteRewards.auraOFT()).eq(sidechain.auraProxyOFT.address);
+            expect(await gaugeVoteRewards.auraOFT()).eq(ctx.canonical.auraProxyOFT.address);
             expect(await gaugeVoteRewards.booster()).eq(phase6.booster.address);
             expect(await gaugeVoteRewards.stashRewardDistro()).eq(stashRewardDistro.address);
             expect(await gaugeVoteRewards.lzChainId()).eq(L1_CHAIN_ID);
@@ -213,8 +215,8 @@ describe("GaugeVoteRewards", () => {
         });
         it("ChildGaugeVoteRewards has correct config", async () => {
             expect(await childGaugeVoteRewards.aura()).eq(ctx.sidechain.auraOFT.address);
-            expect(await childGaugeVoteRewards.booster()).eq(phase6.booster.address);
-            expect(await childGaugeVoteRewards.stashRewardDistro()).eq(stashRewardDistro.address);
+            expect(await childGaugeVoteRewards.booster()).eq(ctx.sidechain.booster.address);
+            expect(await childGaugeVoteRewards.stashRewardDistro()).eq(childStashRewardDistro.address);
             expect(await childGaugeVoteRewards.lzEndpoint()).eq(ctx.l2LzEndpoint.address);
         });
     });
@@ -259,7 +261,9 @@ describe("GaugeVoteRewards", () => {
             for (let i = 0; i < Object.keys(uniqGaugeMap).length; i++) {
                 const poolInfo = await phase6.booster.poolInfo(i);
                 const expectedPid = uniqGaugeMap[poolInfo.gauge];
-                expect(await gaugeVoteRewards.getPoolId(poolInfo.gauge)).eq(expectedPid);
+                const pid = await gaugeVoteRewards.getPoolId(poolInfo.gauge);
+                expect(pid.isSet).eq(true);
+                expect(pid.value).eq(expectedPid);
                 expect(await gaugeVoteRewards.getDstChainId(poolInfo.gauge)).eq(L1_CHAIN_ID);
             }
         });
@@ -281,6 +285,49 @@ describe("GaugeVoteRewards", () => {
         it("5. set child gauge vote rewards", async () => {
             await gaugeVoteRewards.setChildGaugeVoteRewards(L2_CHAIN_ID, childGaugeVoteRewards.address);
             expect(await gaugeVoteRewards.getChildGaugeVoteRewards(L2_CHAIN_ID)).eq(childGaugeVoteRewards.address);
+        });
+    });
+
+    describe("setup child", () => {
+        it("set distributor", async () => {
+            await childGaugeVoteRewards.setDistributor(deployer.address);
+            expect(await childGaugeVoteRewards.distributor()).eq(deployer.address);
+        });
+        it("add pools", async () => {
+            // Because we are trying to test this cross chain but are only
+            // running the fork test on a single chain because we can have
+            // LZ relayers in our fork test.
+            //
+            // So we force add some pools to the sidechain booster so when
+            // we call getPoolIds on the childGaugeVoteReward it still works
+            // as expected
+            for (const g of dstChainGauges[L2_CHAIN_ID]) {
+                const stakelessGauge = IStakelessGauge__factory.connect(g, deployer.signer);
+                const poolManager = await impersonateAccount(await ctx.sidechain.booster.poolManager(), true);
+                await ctx.sidechain.booster
+                    .connect(poolManager.signer)
+                    .addPool("0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1", await stakelessGauge.getRecipient(), 3);
+            }
+        });
+        it("1. set pool IDs", async () => {
+            const nGauges = await ctx.sidechain.booster.poolLength();
+            await childGaugeVoteRewards.setPoolIds(0, nGauges);
+
+            // Some gauges will appear twice so loop through all the gauges and build
+            // a map of gauge to pid to use later to look up the latest pid for a gauge
+            const uniqGaugeMap = {};
+            for (let i = 0; i < nGauges.toNumber(); i++) {
+                const poolInfo = await ctx.sidechain.booster.poolInfo(i);
+                uniqGaugeMap[poolInfo.gauge] = i;
+            }
+
+            for (let i = 0; i < Object.keys(uniqGaugeMap).length; i++) {
+                const poolInfo = await ctx.sidechain.booster.poolInfo(i);
+                const expectedPid = uniqGaugeMap[poolInfo.gauge];
+                const pid = await childGaugeVoteRewards.getPoolId(poolInfo.gauge);
+                expect(pid.isSet).eq(true);
+                expect(pid.value).eq(expectedPid);
+            }
         });
     });
 
@@ -344,7 +391,7 @@ describe("GaugeVoteRewards", () => {
 
             const voteRewardBalance0 = await voteRewardBalance();
             const stashDistroBalance0 = await stashDistroBalance();
-            await gaugeVoteRewards.processGaugeRewards(gaugesWithVotes, epoch);
+            await gaugeVoteRewards.processGaugeRewards(epoch, gaugesWithVotes);
             const voteRewardBalance1 = await voteRewardBalance();
             const stashDistroBalance1 = await stashDistroBalance();
 
@@ -354,7 +401,7 @@ describe("GaugeVoteRewards", () => {
             for (const gauge of gaugesWithVotes) {
                 const distroEpoch = await stashRewardDistro.getCurrentEpoch();
                 const pid = await gaugeVoteRewards.getPoolId(gauge);
-                const funds = await stashRewardDistro.getFunds(distroEpoch, pid, phase2.cvx.address);
+                const funds = await stashRewardDistro.getFunds(distroEpoch, pid.value, phase2.cvx.address);
                 expect(funds).gt(0);
             }
         });
@@ -362,6 +409,10 @@ describe("GaugeVoteRewards", () => {
 
     describe("process sidechain rewards", () => {
         it("can process sidechain rewards", async () => {
+            const auraOftBalance = () => phase2.cvx.balanceOf(ctx.canonical.auraProxyOFT.address);
+            const voteRewardBalance = async () => phase2.cvx.balanceOf(gaugeVoteRewards.address);
+            const childRewardsBalance = async () => ctx.sidechain.auraOFT.balanceOf(childGaugeVoteRewards.address);
+
             const epoch = await gaugeVoteRewards.getCurrentEpoch();
             const gaugesWithVotes = dstChainGauges[L2_CHAIN_ID].filter((g: any) => {
                 if (noDepositGauges.includes(g)) return false;
@@ -369,6 +420,10 @@ describe("GaugeVoteRewards", () => {
                 const weight = weights[idx];
                 return weight > 0;
             });
+
+            const auraOftBalance0 = await auraOftBalance();
+            const voteRewardBalance0 = await voteRewardBalance();
+            const childRewardsBalance0 = await childRewardsBalance();
             await gaugeVoteRewards.processSidechainGaugeRewards(
                 gaugesWithVotes,
                 epoch,
@@ -379,8 +434,50 @@ describe("GaugeVoteRewards", () => {
                 [],
                 { value: simpleToExactAmount(0.2) },
             );
-            // TODO: check the AURA balances
-            // TODO: check getFunds
+            const auraOftBalance1 = await auraOftBalance();
+            const voteRewardBalance1 = await voteRewardBalance();
+            const childRewardsBalance1 = await childRewardsBalance();
+
+            expect(auraOftBalance1.sub(auraOftBalance0)).gt(0);
+            expect(voteRewardBalance0.sub(voteRewardBalance1)).gt(0);
+            expect(childRewardsBalance1.sub(childRewardsBalance0)).gt(0);
+        });
+        it("can process rewards from child rewards", async () => {
+            const childVoteRewardBalance = async () => ctx.sidechain.auraOFT.balanceOf(childGaugeVoteRewards.address);
+            const childStashDistroBalance = async () => ctx.sidechain.auraOFT.balanceOf(childStashRewardDistro.address);
+
+            const epoch = await gaugeVoteRewards.getCurrentEpoch();
+            const gaugesWithVotes = await Promise.all(
+                dstChainGauges[L2_CHAIN_ID].filter((g: any) => {
+                    if (noDepositGauges.includes(g)) return false;
+                    const idx = gauges.indexOf(g);
+                    const weight = weights[idx];
+                    return weight > 0;
+                }).map(async g => {
+                    const stakelessGauge = IStakelessGauge__factory.connect(g, deployer.signer);
+                    return stakelessGauge.getRecipient();
+                }),
+            );
+
+            const voteRewardBalance0 = await childVoteRewardBalance();
+            const stashDistroBalance0 = await childStashDistroBalance();
+            await childGaugeVoteRewards.processGaugeRewards(epoch, gaugesWithVotes);
+            const voteRewardBalance1 = await childVoteRewardBalance();
+            const stashDistroBalance1 = await childStashDistroBalance();
+
+            expect(voteRewardBalance0.sub(voteRewardBalance1)).gt(0);
+            expect(stashDistroBalance1.sub(stashDistroBalance0)).gt(0);
+
+            for (const gauge of gaugesWithVotes) {
+                const distroEpoch = await childStashRewardDistro.getCurrentEpoch();
+                const pid = await childGaugeVoteRewards.getPoolId(gauge);
+                const funds = await childStashRewardDistro.getFunds(
+                    distroEpoch,
+                    pid.value,
+                    ctx.sidechain.auraOFT.address,
+                );
+                expect(funds).gt(0);
+            }
         });
     });
 
