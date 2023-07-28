@@ -184,8 +184,9 @@ describe("GaugeVoteRewards", () => {
             ctx.sidechain.auraOFT.address,
             phase6.booster.address,
             stashRewardDistro.address,
-            ctx.l2LzEndpoint.address,
         );
+
+        await childGaugeVoteRewards.initialize(ctx.l2LzEndpoint.address);
 
         gaugeVoteRewards = await new GaugeVoteRewards__factory(deployer.signer).deploy(
             phase2.cvx.address,

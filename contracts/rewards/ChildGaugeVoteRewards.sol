@@ -54,14 +54,11 @@ contract ChildGaugeVoteRewards is LzApp {
     constructor(
         address _aura,
         address _booster,
-        address _stashRewardDistro,
-        address _lzEndpoint
+        address _stashRewardDistro
     ) {
         aura = _aura;
         booster = IBooster(_booster);
         stashRewardDistro = IStashRewardDistro(_stashRewardDistro);
-
-        _initializeLzApp(_lzEndpoint);
     }
 
     /* -------------------------------------------------------------------
@@ -76,6 +73,14 @@ contract ChildGaugeVoteRewards is LzApp {
     /* -------------------------------------------------------------------
        Setters 
     ------------------------------------------------------------------- */
+    /**
+     * @notice Initializes the addresses
+     * @dev This function should only be called by the owner of the contract
+     * @param _lzEndpoint   LayerZero endpoint contract
+     */
+    function initialize(address _lzEndpoint) external onlyOwner {
+        _initializeLzApp(_lzEndpoint);
+    }
 
     function setDistributor(address _distributor) external onlyOwner {
         distributor = _distributor;

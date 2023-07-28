@@ -4,7 +4,11 @@ import hre, { ethers } from "hardhat";
 import { config } from "../../tasks/deploy/mainnet-config";
 import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import { Account, AuraDistributor, ERC20, ERC20__factory } from "../../types";
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, deployAuraDistributor } from "../../scripts/deploySidechain";
+import {
+    CanonicalPhase1Deployed,
+    CanonicalPhase2Deployed,
+    deployCanonicalAuraDistributor,
+} from "../../scripts/deploySidechain";
 
 describe("AuraDistributor", () => {
     let dao: Account;
@@ -36,7 +40,13 @@ describe("AuraDistributor", () => {
 
         canonical = config.getSidechain(deployer.signer);
 
-        const result = await deployAuraDistributor(config.addresses, config.multisigs, canonical, hre, deployer.signer);
+        const result = await deployCanonicalAuraDistributor(
+            hre,
+            deployer.signer,
+            config.addresses,
+            config.multisigs,
+            canonical,
+        );
         auraDistributor = result.auraDistributor;
 
         balToken = ERC20__factory.connect(config.addresses.token, deployer.signer);
