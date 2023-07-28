@@ -1,20 +1,20 @@
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import hre from "hardhat";
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed } from "../../scripts/deploySidechain";
+
 import { Phase2Deployed, Phase6Deployed, Phase8Deployed } from "../../scripts/deploySystem";
 import { config } from "../../tasks/deploy/mainnet-config";
 import { getSigner } from "../../tasks/utils";
+import { TestSuiteDeployment } from "../../test-fork/sidechain/setupForkDeployments";
 import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeployment";
-import { simpleToExactAmount, impersonateAccount } from "../../test-utils";
+import { impersonateAccount, simpleToExactAmount } from "../../test-utils";
 import { Account, IStakelessGauge__factory } from "../../types";
+import { ChildGaugeVoteRewards } from "../../types/generated/ChildGaugeVoteRewards";
 import { ChildGaugeVoteRewards__factory } from "../../types/generated/factories/ChildGaugeVoteRewards__factory";
 import { GaugeVoteRewards__factory } from "../../types/generated/factories/GaugeVoteRewards__factory";
 import { StashRewardDistro__factory } from "../../types/generated/factories/StashRewardDistro__factory";
-import { ChildGaugeVoteRewards } from "../../types/generated/ChildGaugeVoteRewards";
 import { GaugeVoteRewards } from "../../types/generated/GaugeVoteRewards";
 import { StashRewardDistro } from "../../types/generated/StashRewardDistro";
-import { TestSuiteDeployment } from "../../test-fork/sidechain/setupForkDeployments";
-import { BigNumber } from "ethers";
 
 const L1_CHAIN_ID = 101; // Ethereum
 const L2_CHAIN_ID = 110; // Arbitrum
