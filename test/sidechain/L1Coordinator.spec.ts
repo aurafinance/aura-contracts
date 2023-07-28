@@ -72,7 +72,6 @@ describe("L1Coordinator", () => {
 
         await l1Coordinator.connect(dao.signer).setDistributor(deployer.address, true);
         // update Aura operator
-        await testSetup.l1.phase2.cvx.updateOperator();
         await crv.transfer(l1Coordinator.address, simpleToExactAmount(10));
 
         // dirty trick to get some cvx balance.
