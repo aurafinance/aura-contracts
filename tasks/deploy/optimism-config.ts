@@ -1,29 +1,31 @@
 import { Signer } from "ethers";
 import { chainIds } from "../../tasks/utils";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
+    AuraBalOFT__factory,
+    AuraBalVault__factory,
+    AuraOFT__factory,
     BoosterLite__factory,
     BoosterOwner__factory,
-    AuraOFT__factory,
+    ChildGaugeVoteRewards__factory,
+    ExtSidechainConfig,
+    KeeperMulticall3__factory,
     L2Coordinator__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
     RewardFactory__factory,
-    StashFactoryV2__factory,
-    TokenFactory__factory,
-    VoterProxyLite__factory,
-    VirtualRewardFactory__factory,
-    AuraBalVault__factory,
-    SimpleStrategy__factory,
-    AuraBalOFT__factory,
-    SidechainMultisigConfig,
-    ExtSidechainConfig,
-    SidechainConfig,
     SidechainBridging,
-    KeeperMulticall3__factory,
+    SidechainConfig,
+    SidechainMultisigConfig,
     SidechainView__factory,
+    SimpleStrategy__factory,
+    StashFactoryV2__factory,
+    StashRewardDistro__factory,
+    TokenFactory__factory,
+    VirtualRewardFactory__factory,
+    VoterProxyLite__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
@@ -65,6 +67,8 @@ export const getSidechain = (signer: Signer) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
+    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const getView = (signer: Signer) => ({

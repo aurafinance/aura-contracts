@@ -11,18 +11,21 @@ import {
     deploySimpleBridgeReceiver,
 } from "../../scripts/deployBridgeDelegates";
 import {
-    deployAuraDistributor,
+    deployCanonicalAuraDistributor,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
+    deployCanonicalPhase3,
     deployCanonicalView,
     deployCreate2Factory,
     deployKeeperMulticall3,
     deploySidechainClaimZap,
+    deploySidechainPeripherals,
     deploySidechainPhase1,
     deploySidechainPhase2,
     deploySidechainView,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
+    setTrustedRemoteCanonicalPhase3,
 } from "../../scripts/deploySidechain";
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { chainIds, waitForTx } from "../../tasks/utils";
@@ -143,6 +146,33 @@ task("deploy:sidechain:L1:phase2")
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
+task("deploy:sidechain:L1:phase3")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("wait", "wait for blocks")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const config = canonicalConfigs[hre.network.config.chainId];
+        lzChainIds[canonicalChainId], assert(config, `Config for chain ID ${hre.network.config.chainId} not found`);
+
+        const phase2 = await config.getPhase2(deployer);
+        const phase6 = await config.getPhase6(deployer);
+        const canonicalPhase1 = config.getSidechain(deployer);
+
+        const result = await deployCanonicalPhase3(
+            hre,
+            deployer,
+            config.multisigs,
+            config.addresses,
+            phase2,
+            phase6,
+            canonicalPhase1,
+            canonicalChainId,
+            debug,
+            tskArgs.wait,
+        );
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 /* ----------------------------------------------------------------------------
     Sidechain Deployment Tasks
 ---------------------------------------------------------------------------- */
@@ -448,6 +478,31 @@ task("deploy:sidechain:config:L1:phase2")
         );
     });
 
+task("deploy:sidechain:config:L1:phase3")
+    .addParam("wait", "Wait for blocks")
+    .addParam("sidechainid", "Remote standard chain ID, eg Eth Mainnet is 1")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        // NOTICE: This task can only be run for the first deployment, future deployments
+        // will have to be triggered via the protocol DAO which will be the owner
+        // of the mainnet sidechain deployment
+        const deployer = await getSigner(hre);
+        const sidechainId = Number(tskArgs.sidechainid);
+
+        const { canonicalConfig, canonical, remote, sidechainLzChainId } = setupCanonicalTask(
+            deployer,
+            hre.network,
+            sidechainId,
+        );
+
+        await setTrustedRemoteCanonicalPhase3(
+            canonical,
+            remote,
+            sidechainLzChainId,
+            canonicalConfig.multisigs,
+            debug,
+            tskArgs.wait,
+        );
+    });
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
@@ -461,12 +516,12 @@ task("deploy:sidechain:auraDistributor")
         const canonicalConfig = canonicalConfigs[canonicalId];
         const canonical = canonicalConfig.getSidechain(deployer);
 
-        const result = await deployAuraDistributor(
+        const result = await deployCanonicalAuraDistributor(
+            hre,
+            deployer,
             canonicalConfig.addresses,
             canonicalConfig.multisigs,
             canonical,
-            hre,
-            deployer,
             debug,
             tskArgs.wait,
         );
@@ -498,10 +553,10 @@ task("deploy:sidechain:zap")
         const { sidechain, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalId);
 
         const result = await deploySidechainClaimZap(
-            sidechainConfig.extConfig,
-            sidechain,
             hre,
             deployer,
+            sidechainConfig.extConfig,
+            sidechain,
             debug,
             tskArgs.wait,
         );
@@ -581,10 +636,10 @@ task("deploy:sidechain:L2:view")
         const remoteChainId = hre.network.config.chainId;
         const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
         const result = await deploySidechainView(
-            lzChainIds[remoteChainId],
-            sidechainConfig,
             hre,
             deployer,
+            lzChainIds[remoteChainId],
+            sidechainConfig,
             true,
             tskArgs.wait,
         );
@@ -602,8 +657,30 @@ task("deploy:sidechain:L1:view")
         const phase2 = await canonicalConfig.getPhase2(deployer);
         const canonical = canonicalConfig.getSidechain(deployer);
         const vault = await canonicalConfig.getAuraBalVault(deployer);
-        const result = await deployCanonicalView(ext, phase2, vault, canonical, hre, deployer, true, tskArgs.wait);
+        const result = await deployCanonicalView(hre, deployer, ext, phase2, vault, canonical, true, tskArgs.wait);
         console.log("canonicalView:", result.canonicalView.address);
+    });
+
+task("deploy:sidechain:L2:peripheral", "Deploys sidechain multicaller, claimzap and view")
+    .addParam("salt", "Create2 salt")
+    .addParam("wait", "Blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const remoteChainId = hre.network.config.chainId;
+        const sidechainConfig = sidechainConfigs[remoteChainId];
+        const sidechain = sidechainConfig.getSidechain(deployer);
+
+        const result = await deploySidechainPeripherals(
+            hre,
+            deployer,
+            sidechainConfig.extConfig,
+            sidechain,
+            lzChainIds[remoteChainId],
+            tskArgs.salt,
+            true,
+            tskArgs.wait,
+        );
+        console.log("sidechainView:", result.sidechainView.address);
     });
 
 task("sidechain:addresses")

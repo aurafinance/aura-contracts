@@ -24,10 +24,14 @@ import {
     BoosterOwnerLite__factory,
     CanonicalView,
     CanonicalView__factory,
+    ChildGaugeVoteRewards,
+    ChildGaugeVoteRewards__factory,
     Create2Factory,
     Create2Factory__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
+    GaugeVoteRewards,
+    GaugeVoteRewards__factory,
     KeeperMulticall3,
     KeeperMulticall3__factory,
     L1Coordinator,
@@ -48,6 +52,8 @@ import {
     SimpleStrategy__factory,
     StashFactoryV2,
     StashFactoryV2__factory,
+    StashRewardDistro,
+    StashRewardDistro__factory,
     TokenFactory,
     TokenFactory__factory,
     VirtualRewardFactory,
@@ -60,6 +66,7 @@ import {
     SidechainBridging,
     SidechainMultisigConfig,
     SidechainNaming,
+    SidechainPhaseDeployed,
 } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
 
@@ -68,6 +75,53 @@ const SALT = "berlin";
 export interface CanonicalPhase1Deployed {
     auraProxyOFT: AuraProxyOFT;
     l1Coordinator: L1Coordinator;
+}
+export interface CanonicalPhase2Deployed {
+    auraBalProxyOFT: AuraBalProxyOFT;
+}
+export interface CanonicalPhase3Deployed {
+    stashRewardDistro: StashRewardDistro;
+    gaugeVoteRewards: GaugeVoteRewards;
+}
+interface Factories {
+    rewardFactory: RewardFactory;
+    stashFactory: StashFactoryV2;
+    tokenFactory: TokenFactory;
+    proxyFactory: ProxyFactory;
+}
+
+export interface SidechainPhase1Deployed {
+    voterProxy: VoterProxyLite;
+    booster: BoosterLite;
+    keeperMulticall3: KeeperMulticall3;
+    boosterOwner: BoosterOwnerLite;
+    factories: Factories;
+    poolManager: PoolManagerLite;
+    l2Coordinator: L2Coordinator;
+    auraOFT: AuraOFT;
+}
+
+export interface SidechainPhase2Deployed {
+    auraBalOFT: AuraBalOFT;
+    virtualRewardFactory: VirtualRewardFactory;
+    auraBalVault: AuraBalVault;
+    auraBalStrategy: SimpleStrategy;
+}
+export interface SidechainPhase3Deployed {
+    stashRewardDistro: StashRewardDistro;
+    childGaugeVoteRewards: ChildGaugeVoteRewards;
+}
+export interface SidechainViewDeployed {
+    sidechainView: SidechainView;
+}
+
+export interface CanonicalViewDeployed {
+    canonicalView: CanonicalView;
+}
+export interface SidechainPeripheralsDeployed {
+    keeperMulticall3: KeeperMulticall3;
+    sidechainClaimZap: SidechainClaimZap;
+    sidechainView: SidechainView;
 }
 
 export async function deployCanonicalPhase1(
@@ -124,10 +178,6 @@ export async function deployCanonicalPhase1(
     return { auraProxyOFT, l1Coordinator };
 }
 
-export interface CanonicalPhase2Deployed {
-    auraBalProxyOFT: AuraBalProxyOFT;
-}
-
 export async function deployCanonicalPhase2(
     hre: HardhatRuntimeEnvironment,
     deployer: Signer,
@@ -171,40 +221,50 @@ export async function deployCanonicalPhase2(
 
     return { auraBalProxyOFT };
 }
+export async function deployCanonicalPhase3(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    extConfig: ExtSystemConfig,
+    phase2: Phase2Deployed,
+    phase6: Phase6Deployed,
+    canonicalPhase1: CanonicalPhase1Deployed,
+    canonicalLzChainId: number,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<CanonicalPhase3Deployed> {
+    const stashRewardDistro = await deployContract<StashRewardDistro>(
+        hre,
+        new StashRewardDistro__factory(signer),
+        "StashRewardDistro",
+        [phase6.booster.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
 
-interface Factories {
-    rewardFactory: RewardFactory;
-    stashFactory: StashFactoryV2;
-    tokenFactory: TokenFactory;
-    proxyFactory: ProxyFactory;
+    const gaugeVoteRewards = await deployContract<GaugeVoteRewards>(
+        hre,
+        new GaugeVoteRewards__factory(signer),
+        "GaugeVoteRewards",
+        [
+            phase2.cvx.address,
+            canonicalPhase1.auraProxyOFT.address,
+            phase6.booster.address,
+            stashRewardDistro.address,
+            canonicalLzChainId,
+            extConfig.lzEndpoint,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        stashRewardDistro,
+        gaugeVoteRewards,
+    };
 }
-
-export interface SidechainPhase1Deployed {
-    voterProxy: VoterProxyLite;
-    booster: BoosterLite;
-    keeperMulticall3: KeeperMulticall3;
-    boosterOwner: BoosterOwnerLite;
-    factories: Factories;
-    poolManager: PoolManagerLite;
-    l2Coordinator: L2Coordinator;
-    auraOFT: AuraOFT;
-}
-
-export interface SidechainPhase2Deployed {
-    auraBalOFT: AuraBalOFT;
-    virtualRewardFactory: VirtualRewardFactory;
-    auraBalVault: AuraBalVault;
-    auraBalStrategy: SimpleStrategy;
-}
-
-export interface SidechainViewDeployed {
-    sidechainView: SidechainView;
-}
-
-export interface CanonicalViewDeployed {
-    canonicalView: CanonicalView;
-}
-
 /**
  * Deploys the Sidechain system contracts.
  *  - Deploys with the same address across all chains the following contracts.
@@ -732,12 +792,32 @@ export async function setTrustedRemoteCanonicalPhase2(
     tx = await canonical.auraBalProxyOFT.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 }
+export async function setTrustedRemoteCanonicalPhase3(
+    canonical: CanonicalPhase3Deployed,
+    sidechain: SidechainPhase3Deployed,
+    sidechainLzChainId: number,
+    multisigs: MultisigConfig,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    let tx = await canonical.gaugeVoteRewards.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(
+            ["address", "address"],
+            [sidechain.childGaugeVoteRewards.address, canonical.gaugeVoteRewards.address],
+        ),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await canonical.gaugeVoteRewards.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+}
 
 export async function deploySidechainClaimZap(
-    extConfig: ExtSidechainConfig,
-    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    extConfig: ExtSidechainConfig,
+    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
     debug = false,
     waitForBlocks = 0,
     salt: string = SALT,
@@ -780,10 +860,10 @@ export async function deploySidechainClaimZap(
 }
 
 export async function deploySidechainView(
-    sidechainId: number,
-    sidechain: SidechainPhase1Deployed & SidechainPhase2Deployed,
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    sidechainId: number,
+    sidechain: SidechainPhaseDeployed,
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -809,12 +889,12 @@ export async function deploySidechainView(
 }
 
 export async function deployCanonicalView(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
     config: ExtSystemConfig,
     phase2: Phase2Deployed,
     aurabalVault: AuraBalVaultDeployed,
     canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
-    hre: HardhatRuntimeEnvironment,
-    signer: Signer,
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -873,12 +953,13 @@ export async function deployKeeperMulticall3(
     };
 }
 
-export async function deployAuraDistributor(
-    extConfig: ExtSystemConfig,
-    multisigs: MultisigConfig,
-    canonical: CanonicalPhase1Deployed & CanonicalPhase2Deployed,
+// Deployment on canonical chain
+export async function deployCanonicalAuraDistributor(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    extConfig: ExtSystemConfig,
+    multisigs: MultisigConfig,
+    canonical: CanonicalPhase1Deployed,
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -903,4 +984,124 @@ export async function deployAuraDistributor(
     return {
         auraDistributor,
     };
+}
+
+/**
+ *
+ * Deploys all sidechain peripherals in one go:
+ * - Multicall3
+ * - SidechainClaimZap
+ * - SidechainView
+ * @see deployKeeperMulticall3
+ * @see deploySidechainClaimZap
+ * @see deploySidechainView
+ * @export
+ * @param {HardhatRuntimeEnvironment} hre
+ * @param {Signer} signer
+ * @param {number} sidechainLzChainId
+ * @param {ExtSidechainConfig} extSidechainConfig
+ * @param {SidechainPhaseDeployed} sidechain
+ * @param {boolean} [debug=false]
+ * @param {number} [waitForBlocks=0]
+ * @param {*} [salt=SALT]
+ * @returns {SidechainPeripheralsDeployed}
+ */
+export async function deploySidechainPeripherals(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    extSidechainConfig: ExtSidechainConfig,
+    sidechain: SidechainPhaseDeployed,
+    sidechainLzChainId: number,
+    salt: string = SALT,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): Promise<SidechainPeripheralsDeployed> {
+    const { keeperMulticall3 } = await deployKeeperMulticall3(
+        hre,
+        signer,
+        extSidechainConfig,
+        SALT,
+        debug,
+        waitForBlocks,
+    );
+    const { sidechainClaimZap } = await deploySidechainClaimZap(
+        hre,
+        signer,
+        extSidechainConfig,
+        sidechain,
+        debug,
+        waitForBlocks,
+        salt,
+    );
+    const { sidechainView } = await deploySidechainView(
+        hre,
+        signer,
+        sidechainLzChainId,
+        sidechain,
+        debug,
+        waitForBlocks,
+    );
+
+    return { keeperMulticall3, sidechainClaimZap, sidechainView };
+}
+
+export async function deploySidechainPhase3(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    extConfig: ExtSidechainConfig,
+    multisigs: SidechainMultisigConfig,
+    sidechain: SidechainPhase1Deployed,
+    salt: string = SALT,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<SidechainPhase3Deployed> {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+    // stashRewardDistro
+    const stashRewardDistro = await deployContractWithCreate2<StashRewardDistro, StashRewardDistro__factory>(
+        hre,
+        create2Factory,
+        new StashRewardDistro__factory(signer),
+        "StashRewardDistro",
+        [sidechain.booster.address],
+        deployOptions,
+    );
+
+    // ChildGaugeVoteRewards
+    const childGaugeVoteRewardsTransferOwnership = ChildGaugeVoteRewards__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [multisigs.daoMultisig],
+    );
+    const childGaugeVoteRewardsInitialize = ChildGaugeVoteRewards__factory.createInterface().encodeFunctionData(
+        "initialize",
+        [extConfig.lzEndpoint],
+    );
+
+    const childGaugeVoteRewards = await deployContractWithCreate2<
+        ChildGaugeVoteRewards,
+        ChildGaugeVoteRewards__factory
+    >(
+        hre,
+        create2Factory,
+        new ChildGaugeVoteRewards__factory(signer),
+        "ChildGaugeVoteRewards",
+        [sidechain.auraOFT.address, sidechain.booster.address, stashRewardDistro.address],
+        deployOptionsWithCallbacks([childGaugeVoteRewardsInitialize, childGaugeVoteRewardsTransferOwnership]),
+    );
+
+    return { stashRewardDistro, childGaugeVoteRewards };
 }
