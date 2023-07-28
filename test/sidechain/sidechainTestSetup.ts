@@ -251,6 +251,7 @@ export const deployL2 = async (
     if (l1CoordinatorOwner.toLocaleLowerCase() === dao.address.toLocaleLowerCase()) {
         l1.canonical.l1Coordinator = l1.canonical.l1Coordinator.connect(dao.signer);
         l1.canonical.auraProxyOFT = l1.canonical.auraProxyOFT.connect(dao.signer);
+        l1.canonical.gaugeVoteRewards = l1.canonical.gaugeVoteRewards.connect(dao.signer);
     }
 
     const sidechainMultisigs = {
