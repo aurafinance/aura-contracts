@@ -5,6 +5,7 @@
 ## Security
 
 Smart contract security is a top priority for Aura, [see Security documentation](https://docs.aura.finance/aura/security) .
+Aura has partnered up with [@chainalysis](https://twitter.com/chainalysis) to adopt an [Incident Response Plan](https://vote.aura.finance/#/proposal/0x2fbb1422b9efea30fc91b714645ef9591a8291c896e5f0e70efdf43d9a322f05) for the protocol to add an extra layer of security, Aura will be able to deter hackers and have an asset recovery plan in potential events.
 
 If you have any feedback or concerns, reach out to `security@aura.finance`
 
