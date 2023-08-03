@@ -4,7 +4,7 @@ import { TaskArguments } from "hardhat/types";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { difference } from "lodash";
 
-const BASE_URL = "https://snapshot.mypinata.cloud/ipfs/";
+const BASE_URL = "https://snapshot.4everland.link/ipfs/";
 
 async function getChoicesFromIpfs(hash: string): Promise<string[]> {
     const resp = await fetch(`${BASE_URL}${hash}`);
