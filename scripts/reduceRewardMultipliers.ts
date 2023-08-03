@@ -76,4 +76,4 @@ async function main() {
     console.log(JSON.stringify(json, null, 2));
 }
 
-main();
+main().then(console.log).catch(console.error);
