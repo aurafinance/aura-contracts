@@ -45,8 +45,8 @@ const extConfig: ExtSidechainConfig = {
 };
 
 export const bridging: SidechainBridging = {
-    l1Receiver: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-    l2Sender: ZERO_ADDRESS,
+    l1Receiver: "0xac962acd42f93c6f26e1cf83271d2a53b208daa6",
+    l2Sender: "0x908c9D41183aDE493EFFC12bb9ad11a9333052bc",
     nativeBridge: "0xf6A78083ca3e2a662D6dd1703c939c8aCE2e268d",
 };
 
