@@ -210,28 +210,28 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | View                     | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
 | AuraViewHelper           | [0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b](https://polygonscan.com/address/0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b) |
 
-#### Optimism (100)
+#### Gnosis (100)
 
 | Contract                 | Address                                                                                                                |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| create2Factory           | [](https://gnosisscan.io/address/)                                                                                     |
-| L2Coordinator            | [](https://gnosisscan.io/address/)                                                                                     |
-| AuraOFT                  | [](https://gnosisscan.io/address/)                                                                                     |
-| BoosterLite              | [](https://gnosisscan.io/address/)                                                                                     |
-| KeeperMulticall3         | [](https://gnosisscan.io/address/)                                                                                     |
-| VoterProxyLite           | [](https://gnosisscan.io/address/)                                                                                     |
-| TokenFactory             | [](https://gnosisscan.io/address/)                                                                                     |
-| ProxyFactory             | [](https://gnosisscan.io/address/)                                                                                     |
-| RewardFactory            | [](https://gnosisscan.io/address/)                                                                                     |
-| StashFactory             | [](https://gnosisscan.io/address/)                                                                                     |
-| PoolManagerLite          | [](https://gnosisscan.io/address/)                                                                                     |
-| BoosterOwner             | [](https://gnosisscan.io/address/)                                                                                     |
-| ProtocolDAO              | [](https://gnosisscan.io/address/)                                                                                     |
-| ClaimZap                 | [](https://gnosisscan.io/address/)                                                                                     |
-| Treasury                 | [](https://gnosisscan.io/address/)                                                                                     |
-| RewardPoolDepositWrapper | [](https://gnosisscan.io/address/)                                                                                     |
+| create2Factory           | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://gnosisscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator            | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://gnosisscan.io/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| AuraOFT                  | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://gnosisscan.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://gnosisscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3         | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://gnosisscan.io/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://gnosisscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://gnosisscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://gnosisscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
+| RewardFactory            | [0x0F641b291Ba374Ec9B17a878c54B98005a0BAcaE](https://gnosisscan.io/address/0x0F641b291Ba374Ec9B17a878c54B98005a0BAcaE) |
+| StashFactory             | [0xaB9016380db2A2a564f8Ee0122e3Ed5776cA4c50](https://gnosisscan.io/address/0xaB9016380db2A2a564f8Ee0122e3Ed5776cA4c50) |
+| PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://gnosisscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwner             | [0xA9802dB57c6D9218CCfa5BeD6364dFd0CF25D985](https://gnosisscan.io/address/0xA9802dB57c6D9218CCfa5BeD6364dFd0CF25D985) |
+| ProtocolDAO              | [0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b](https://gnosisscan.io/address/0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b) |
+| ClaimZap                 | [0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8](https://gnosisscan.io/address/0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8) |
+| Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://gnosisscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| RewardPoolDepositWrapper | [0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76](https://gnosisscan.io/address/0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76) |
 | BridgeSender             | [0x908c9D41183aDE493EFFC12bb9ad11a9333052bc](https://gnosisscan.io/address/0x908c9D41183aDE493EFFC12bb9ad11a9333052bc) |
-| View                     | [](https://gnosisscan.io/address/)                                                                                     |
+| View                     | [0x421DbF836b903b15Ba09C40553AD305d22275482](https://gnosisscan.io/address/0x421DbF836b903b15Ba09C40553AD305d22275482) |
 
 ### Testnets
 

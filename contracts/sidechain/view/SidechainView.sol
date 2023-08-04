@@ -117,14 +117,18 @@ contract SidechainView {
     }
 
     function getAuraBalOftData() public view returns (AuraBalOftData memory auraBalOftData) {
-        IOFT oft = IOFT(auraBalOft);
-        auraBalOftData.circulatingSupply = oft.circulatingSupply();
-        auraBalOftData.totalSupply = oft.totalSupply();
-        auraBalOftData.paused = oft.paused();
-        auraBalOftData.auraBalStrategyAuraBalOFTBalance = IOFT(auraBalOft).balanceOf(auraBalStrategy);
-        auraBalOftData._address = auraBalOft;
-        auraBalOftData.lzEndpoint = ILZApp(auraBalOft).lzEndpoint();
-        auraBalOftData.trustedRemote = ILZApp(auraBalOft).trustedRemoteLookup(ILZApp(l2Coordinator).canonicalChainId());
+        if (auraBalOft != address(0)) {
+            IOFT oft = IOFT(auraBalOft);
+            auraBalOftData.circulatingSupply = oft.circulatingSupply();
+            auraBalOftData.totalSupply = oft.totalSupply();
+            auraBalOftData.paused = oft.paused();
+            auraBalOftData.auraBalStrategyAuraBalOFTBalance = IOFT(auraBalOft).balanceOf(auraBalStrategy);
+            auraBalOftData._address = auraBalOft;
+            auraBalOftData.lzEndpoint = ILZApp(auraBalOft).lzEndpoint();
+            auraBalOftData.trustedRemote = ILZApp(auraBalOft).trustedRemoteLookup(
+                ILZApp(l2Coordinator).canonicalChainId()
+            );
+        }
     }
 
     function getData() public view returns (SidechainInformation memory data) {

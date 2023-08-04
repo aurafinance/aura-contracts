@@ -588,7 +588,8 @@ task("deploy:sidechain:L2:view")
             true,
             tskArgs.wait,
         );
-        console.log("sidechainView:", result.sidechainView.address);
+
+        logContracts(result);
     });
 
 task("deploy:sidechain:L1:view")

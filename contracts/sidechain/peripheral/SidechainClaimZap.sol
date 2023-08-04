@@ -128,7 +128,9 @@ contract SidechainClaimZap {
         uint256 cvxCrvBalance;
         if (!options.useAllWalletFunds && _callOptions(options)) {
             cvxBalance = IERC20(cvx).balanceOf(msg.sender);
-            cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
+            if (cvxCrv != address(0)) {
+                cvxCrvBalance = IERC20(cvxCrv).balanceOf(msg.sender);
+            }
         }
 
         //claim from main curve LP pools
@@ -210,7 +212,7 @@ contract SidechainClaimZap {
         }
 
         //deposit to l2 compounder
-        if(options.useCompounder) {
+        if(options.useCompounder && compounder != address(0) && cvxCrv != address(0)) {
             (uint256 cvxCrvBalance, bool continued) = _checkBalanceAndPullToken(
                 cvxCrv,
                 removeCvxCrvBalance, 

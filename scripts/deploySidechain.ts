@@ -763,8 +763,8 @@ export async function deploySidechainClaimZap(
     const sidechainInitialize = SidechainClaimZap__factory.createInterface().encodeFunctionData("initialize", [
         await signer.getAddress(),
         sidechain.auraOFT.address,
-        sidechain.auraBalOFT.address,
-        sidechain.auraBalVault.address,
+        sidechain.auraBalOFT.address || ZERO_ADDRESS,
+        sidechain.auraBalVault.address || ZERO_ADDRESS,
     ]);
 
     const sidechainClaimZap = await deployContractWithCreate2<SidechainClaimZap, SidechainClaimZap__factory>(
@@ -795,8 +795,8 @@ export async function deploySidechainView(
             sidechainId,
             sidechain.l2Coordinator.address,
             sidechain.auraOFT.address,
-            sidechain.auraBalOFT.address,
-            sidechain.auraBalStrategy.address,
+            sidechain.auraBalOFT.address || ZERO_ADDRESS,
+            sidechain.auraBalStrategy.address || ZERO_ADDRESS,
         ],
         {},
         debug,
