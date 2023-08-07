@@ -127,6 +127,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | TestDistributeAura                | [0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7](https://etherscan.io/address/0xc9e61174B8751003f493D25c2Ef49794aB6b1aC7) |
 | BridgeDelegateReceiver (Arbitrum) | [0x397A2D4d23C6fD1316cE25000820779006e80cD7](https://etherscan.io/address/0x397A2D4d23C6fD1316cE25000820779006e80cD7) |
 | BridgeDelegateReceiver (Optimism) | [0x60421ffaa36f3a8e69c25887e575689f52b055f7](https://etherscan.io/address/0x60421ffaa36f3a8e69c25887e575689f52b055f7) |
+| BridgeDelegateReceiver (Gnosis)   | [0xac962acd42f93c6f26e1cf83271d2a53b208daa6](https://etherscan.io/address/0xac962acd42f93c6f26e1cf83271d2a53b208daa6) |
 | Sudo                              | [0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46](https://etherscan.io/address/0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46) |
 | View                              | [0x208024E643564fb4C990481eB4F9ec1957f64c11](https://etherscan.io/address/0x208024E643564fb4C990481eB4F9ec1957f64c11) |
 | AuraDistributor                   | [0x96D15D08538A17A03B0210FD1626D5f42bdba9a4](https://etherscan.io/address/0x96D15D08538A17A03B0210FD1626D5f42bdba9a4) |
@@ -209,6 +210,31 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | View                     | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
 | AuraViewHelper           | [0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b](https://polygonscan.com/address/0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b) |
 
+#### Gnosis (100)
+
+| Contract                 | Address                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| create2Factory           | [0x53C09096b1dC52e2Ef223b2969a714eE75Da364f](https://gnosisscan.io/address/0x53C09096b1dC52e2Ef223b2969a714eE75Da364f) |
+| L2Coordinator            | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://gnosisscan.io/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| AuraOFT                  | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://gnosisscan.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| BoosterLite              | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://gnosisscan.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3         | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://gnosisscan.io/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| VoterProxyLite           | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://gnosisscan.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| TokenFactory             | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://gnosisscan.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory             | [0x731886426a3199b988194831031dfb993F25D961](https://gnosisscan.io/address/0x731886426a3199b988194831031dfb993F25D961) |
+| RewardFactory            | [0x0F641b291Ba374Ec9B17a878c54B98005a0BAcaE](https://gnosisscan.io/address/0x0F641b291Ba374Ec9B17a878c54B98005a0BAcaE) |
+| StashFactory             | [0xaB9016380db2A2a564f8Ee0122e3Ed5776cA4c50](https://gnosisscan.io/address/0xaB9016380db2A2a564f8Ee0122e3Ed5776cA4c50) |
+| PoolManagerLite          | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://gnosisscan.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwner             | [0xA9802dB57c6D9218CCfa5BeD6364dFd0CF25D985](https://gnosisscan.io/address/0xA9802dB57c6D9218CCfa5BeD6364dFd0CF25D985) |
+| ProtocolDAO              | [0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b](https://gnosisscan.io/address/0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b) |
+| ClaimZap                 | [0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8](https://gnosisscan.io/address/0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8) |
+| Treasury                 | [0x57ACb721FcF3d900B480A90A55191CF8F37ad478](https://gnosisscan.io/address/0x57ACb721FcF3d900B480A90A55191CF8F37ad478) |
+| RewardPoolDepositWrapper | [0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76](https://gnosisscan.io/address/0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76) |
+| BridgeSender             | [0x908c9D41183aDE493EFFC12bb9ad11a9333052bc](https://gnosisscan.io/address/0x908c9D41183aDE493EFFC12bb9ad11a9333052bc) |
+| View                     | [0x421DbF836b903b15Ba09C40553AD305d22275482](https://gnosisscan.io/address/0x421DbF836b903b15Ba09C40553AD305d22275482) |
+
+### Testnets
+
 ### Gnosis (test deployment) (100)
 
 | Contract           | Address                                                                                                                |
@@ -229,8 +255,6 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | PoolManagerLite    | [0x1F85614f2C79056EC538C127f505f0d9109c6979](https://gnosisscan.io/address/0x1F85614f2C79056EC538C127f505f0d9109c6979) |
 | BoosterOwner       | [0xb2Ae2a8004359B30fa32a8b51AD822f2a5e06c41](https://gnosisscan.io/address/0xb2Ae2a8004359B30fa32a8b51AD822f2a5e06c41) |
 | ProtocolDAO        | [0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62](https://gnosisscan.io/address/0xD1A6e8cA5D4d6C1fA0CD1f6937A49D3f380DAc62) |
-
-### Testnets
 
 #### Goerli (5)
 
