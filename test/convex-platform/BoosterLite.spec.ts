@@ -316,7 +316,7 @@ describe("BoosterLite", () => {
         before(async () => {
             await setup();
         });
-        it("initialize fails if initialize is caller is not the owner", async () => {
+        it("initialize fails if caller is not the owner", async () => {
             await expect(
                 booster.connect(deployer.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "onlyOwner",
@@ -330,6 +330,58 @@ describe("BoosterLite", () => {
                 booster.connect(ownerAccount.signer).initialize(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
                 "only once",
             ).to.be.revertedWith("Only once");
+        });
+        it("setOwner fails if caller is not the owner", async () => {
+            await expect(booster.connect(deployer.signer).setOwner(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
+                "!auth",
+            );
+        });
+        it("setFeeManager fails if caller is not the owner", async () => {
+            await expect(booster.connect(deployer.signer).setFeeManager(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
+                "!auth",
+            );
+        });
+        it("setPoolManager fails if caller is not the pool manager", async () => {
+            await expect(booster.connect(deployer.signer).setPoolManager(ZERO_ADDRESS), "onlyOwner").to.be.revertedWith(
+                "!auth",
+            );
+        });
+        it("setFactories fails if caller is not the owner", async () => {
+            await expect(
+                booster.connect(deployer.signer).setFactories(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS),
+                "onlyOwner",
+            ).to.be.revertedWith("!auth");
+        });
+        it("setRewardContracts fails if caller is not the owner", async () => {
+            await expect(
+                booster.connect(deployer.signer).setRewardContracts(ZERO_ADDRESS),
+                "onlyOwner",
+            ).to.be.revertedWith("!auth");
+        });
+        it("setFees fails if caller is not the feeManager", async () => {
+            await expect(
+                booster.connect(deployer.signer).setFees(ZERO, ZERO, ZERO, ZERO),
+                "feeManager",
+            ).to.be.revertedWith("!auth");
+        });
+        it("setTreasury fails if caller is not the feeManager", async () => {
+            await expect(booster.connect(deployer.signer).setTreasury(ZERO_ADDRESS), "feeManager").to.be.revertedWith(
+                "!auth",
+            );
+        });
+        it("addPool fails if caller is not the poolManager", async () => {
+            await expect(
+                booster.connect(deployer.signer).addPool(ZERO_ADDRESS, ZERO_ADDRESS, ZERO),
+                "poolManager",
+            ).to.be.revertedWith("!add");
+        });
+        it("shutdownPool fails if caller is not the poolManager", async () => {
+            await expect(booster.connect(deployer.signer).shutdownPool(ZERO), "poolManager").to.be.revertedWith(
+                "!auth",
+            );
+        });
+        it("shutdownSystem fails if caller is not the owner", async () => {
+            await expect(booster.connect(deployer.signer).shutdownSystem(), "owner").to.be.revertedWith("!auth");
         });
     });
 });
