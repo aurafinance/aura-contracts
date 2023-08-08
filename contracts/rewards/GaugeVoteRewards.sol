@@ -399,7 +399,7 @@ contract GaugeVoteRewards is LzApp {
     }
 
     function _getCurrentEpoch() internal view returns (uint256) {
-        return block.timestamp.div(EPOCH_DURATION).mul(EPOCH_DURATION);
+        return block.timestamp.div(EPOCH_DURATION);
     }
 
     function _blockingLzReceive(
