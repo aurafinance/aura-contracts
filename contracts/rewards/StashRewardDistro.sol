@@ -121,7 +121,7 @@ contract StashRewardDistro is IStashRewardDistro {
 
         IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pid);
         IERC20(_token).safeTransfer(poolInfo.stash, amount);
-        booster.earmarkRewards(_pid);
+        // booster.earmarkRewards(_pid);
     }
 
     function _getCurrentEpoch() internal view returns (uint256) {
