@@ -32,7 +32,7 @@ const getCurrentEpoch = async () => {
     const timeStamp = await getTimestamp();
 
     const rewardsDuration = ONE_WEEK.mul(2);
-    return timeStamp.div(rewardsDuration).mul(rewardsDuration);
+    return timeStamp.div(rewardsDuration);
 };
 
 describe("ChildGaugeVoteRewards", () => {
