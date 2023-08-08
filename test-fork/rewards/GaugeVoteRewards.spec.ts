@@ -7,7 +7,7 @@ import { config } from "../../tasks/deploy/mainnet-config";
 import { getSigner } from "../../tasks/utils";
 import { TestSuiteDeployment } from "../../test-fork/sidechain/setupForkDeployments";
 import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeployment";
-import { impersonateAccount, simpleToExactAmount } from "../../test-utils";
+import { impersonateAccount, increaseTime, ONE_DAY, simpleToExactAmount } from "../../test-utils";
 import { Account, IStakelessGauge__factory } from "../../types";
 import { ChildGaugeVoteRewards } from "../../types/generated/ChildGaugeVoteRewards";
 import { ChildGaugeVoteRewards__factory } from "../../types/generated/factories/ChildGaugeVoteRewards__factory";
@@ -482,12 +482,95 @@ describe("GaugeVoteRewards", () => {
     });
 
     describe("first epoch", () => {
-        it("queue rewards for mainnet");
-        it("queue rewards for sidechain");
+        it("queue rewards for mainnet", async () => {
+            const gaugesWithVotes = dstChainGauges["101"].filter((g: any) => {
+                if (noDepositGauges.includes(g)) return false;
+                const idx = gauges.indexOf(g);
+                const weight = weights[idx];
+                return weight > 0;
+            });
+
+            const epoch = await stashRewardDistro.getCurrentEpoch();
+
+            for (const gauge of gaugesWithVotes) {
+                const pid = await gaugeVoteRewards.getPoolId(gauge);
+
+                if (pid.isSet === true) {
+                    const poolInfo = await phase6.booster.poolInfo(pid.value);
+                    const stash = poolInfo.stash;
+                    const startBalance = await phase2.cvx.balanceOf(stash);
+                    const startFunds = await stashRewardDistro.getFunds(epoch, pid.value, phase2.cvx.address);
+
+                    await stashRewardDistro.functions["queueRewards(uint256,address)"](
+                        pid.value.toString(),
+                        phase2.cvx.address,
+                    );
+
+                    const endBalance = await phase2.cvx.balanceOf(stash);
+
+                    expect(endBalance.sub(startBalance)).eq(startFunds);
+
+                    const endFunds = await stashRewardDistro.getFunds(epoch, pid.value, ctx.sidechain.auraOFT.address);
+
+                    console.log(startFunds.toString(), endFunds.toString());
+
+                    expect(endFunds).eq(0);
+                }
+            }
+        });
+        it("queue rewards for sidechain", async () => {
+            const gaugesWithVotes = await Promise.all(
+                dstChainGauges[L2_CHAIN_ID].filter((g: any) => {
+                    if (noDepositGauges.includes(g)) return false;
+                    const idx = gauges.indexOf(g);
+                    const weight = weights[idx];
+                    return weight > 0;
+                }).map(async g => {
+                    const stakelessGauge = IStakelessGauge__factory.connect(g, deployer.signer);
+                    return stakelessGauge.getRecipient();
+                }),
+            );
+
+            const epoch = await childStashRewardDistro.getCurrentEpoch();
+
+            for (const gauge of gaugesWithVotes) {
+                const pid = await childGaugeVoteRewards.getPoolId(gauge);
+
+                if (pid.isSet === true) {
+                    const poolInfo = await ctx.sidechain.booster.poolInfo(pid.value);
+                    const stash = poolInfo.stash;
+                    const startBalance = await ctx.sidechain.auraOFT.balanceOf(stash);
+                    const startFunds = await childStashRewardDistro.getFunds(
+                        epoch,
+                        pid.value,
+                        ctx.sidechain.auraOFT.address,
+                    );
+
+                    await childStashRewardDistro.functions["queueRewards(uint256,address)"](
+                        pid.value.toString(),
+                        ctx.sidechain.auraOFT.address,
+                    );
+
+                    const endBalance = await ctx.sidechain.auraOFT.balanceOf(stash);
+
+                    expect(endBalance.sub(startBalance)).eq(startFunds);
+
+                    const endFunds = await childStashRewardDistro.getFunds(
+                        epoch,
+                        pid.value,
+                        ctx.sidechain.auraOFT.address,
+                    );
+
+                    console.log(startFunds.toString(), endFunds.toString());
+
+                    expect(endFunds).eq(0);
+                }
+            }
+        });
     });
 
     describe("second epoch", () => {
-        it("queue rewards for mainnet");
-        it("queue rewards for sidechain");
+        it("queue rewards for mainnet", async () => {});
+        it("queue rewards for sidechain", async () => {});
     });
 });
