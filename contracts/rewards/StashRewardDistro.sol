@@ -3,11 +3,15 @@ pragma solidity 0.8.11;
 
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
-import { IBooster } from "../interfaces/IBooster.sol";
 import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 import { IVirtualRewards } from "../interfaces/IVirtualRewards.sol";
 import { IExtraRewardStash } from "../interfaces/IExtraRewardStash.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
+import { IBooster } from "../interfaces/IBooster.sol";
+
+interface IBoosterOrBoosterLite is IBooster {
+    function earmarkRewards(uint256, address) external;
+}
 
 contract StashRewardDistro is IStashRewardDistro {
     using AuraMath for uint256;
@@ -21,7 +25,7 @@ contract StashRewardDistro is IStashRewardDistro {
     uint256 public constant EPOCH_DURATION = 1 weeks;
 
     // @dev The booster address
-    IBooster public immutable booster;
+    IBoosterOrBoosterLite public immutable booster;
 
     // @dev Epoch => Pool ID => Token => Amount
     mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public getFunds;
@@ -37,7 +41,7 @@ contract StashRewardDistro is IStashRewardDistro {
     ------------------------------------------------------------------- */
 
     constructor(address _booster) {
-        booster = IBooster(_booster);
+        booster = IBoosterOrBoosterLite(_booster);
     }
 
     /* -------------------------------------------------------------------
@@ -63,7 +67,11 @@ contract StashRewardDistro is IStashRewardDistro {
         uint256 rewardAmount = _amount - _periods;
 
         // Loop through n periods and assign rewards to each epoch
-        uint256 epoch = _getCurrentEpoch();
+        // Add 1 to the epoch so it can only be queued for the next epoch which
+        // will be the next thursday. The process will be
+        // fundPool is called on tuesday and adds rewards to the next epoch which
+        // will start on thursday
+        uint256 epoch = _getCurrentEpoch().add(1);
         uint256 epochAmount = rewardAmount.div(_periods);
         for (uint256 i = 0; i < _periods; i++) {
             getFunds[epoch][_pid][_token] = getFunds[epoch][_pid][_token].add(epochAmount);
@@ -107,7 +115,7 @@ contract StashRewardDistro is IStashRewardDistro {
      */
     function processIdleRewards(uint256 _pid, address _token) external {
         // Get the stash and the extra rewards contract
-        IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pid);
+        IBoosterOrBoosterLite.PoolInfo memory poolInfo = booster.poolInfo(_pid);
         IExtraRewardStash stash = IExtraRewardStash(poolInfo.stash);
         (, address rewards, ) = stash.tokenInfo(_token);
 
@@ -121,7 +129,7 @@ contract StashRewardDistro is IStashRewardDistro {
         // Transfer 1 wei to the stash and call earmark to force a new
         // queue of rewards to start
         IERC20(_token).safeTransfer(address(stash), 1);
-        booster.earmarkRewards(_pid);
+        _earmarkRewards(_pid);
     }
 
     /* -------------------------------------------------------------------
@@ -137,12 +145,16 @@ contract StashRewardDistro is IStashRewardDistro {
         require(amount != 0, "!amount");
         getFunds[_epoch][_pid][_token] = 0;
 
-        IBooster.PoolInfo memory poolInfo = booster.poolInfo(_pid);
+        IBoosterOrBoosterLite.PoolInfo memory poolInfo = booster.poolInfo(_pid);
         IERC20(_token).safeTransfer(poolInfo.stash, amount);
-        booster.earmarkRewards(_pid);
+        _earmarkRewards(_pid);
     }
 
     function _getCurrentEpoch() internal view returns (uint256) {
         return block.timestamp.div(EPOCH_DURATION);
+    }
+
+    function _earmarkRewards(uint256 pid) internal virtual {
+        booster.earmarkRewards(pid);
     }
 }
