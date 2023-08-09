@@ -21,6 +21,8 @@ import {
     SidechainBridging,
     KeeperMulticall3__factory,
     SidechainView__factory,
+    StashRewardDistro__factory,
+    ChildGaugeVoteRewards__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -65,6 +67,8 @@ export const getSidechain = (signer: Signer) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect("0x05589CbbE1cC0357986DF6de4031B953819079c2", signer),
     auraBalVault: AuraBalVault__factory.connect("0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9", signer),
     auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
+    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const getView = (signer: Signer) => ({
