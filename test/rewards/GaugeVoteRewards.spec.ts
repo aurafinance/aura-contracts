@@ -272,13 +272,13 @@ describe("GaugeVoteRewards", () => {
             const rewardAmountPerEpoch = amountToSend.div(2).sub(1);
             await expect(tx)
                 .to.emit(stashRewardDistro, "Funded")
-                .withArgs(epochDistro, pid, cvx.address, rewardAmountPerEpoch);
+                .withArgs(epochDistro.add(1), pid, cvx.address, rewardAmountPerEpoch);
             await expect(tx)
                 .to.emit(stashRewardDistro, "Funded")
-                .withArgs(epochDistro.add(1), pid, cvx.address, rewardAmountPerEpoch);
+                .withArgs(epochDistro.add(2), pid, cvx.address, rewardAmountPerEpoch);
             // Current epoch should have been already queued
-            const epoch0Funds = await stashRewardDistro.getFunds(epochDistro, pid, cvx.address);
-            const epoch1Funds = await stashRewardDistro.getFunds(epochDistro.add(1), pid, cvx.address);
+            const epoch0Funds = await stashRewardDistro.getFunds(epochDistro.add(1), pid, cvx.address);
+            const epoch1Funds = await stashRewardDistro.getFunds(epochDistro.add(2), pid, cvx.address);
             expect(epoch0Funds, "epoch0Funds").to.be.eq(rewardAmountPerEpoch);
             expect(epoch1Funds, "epoch1Funds").to.be.eq(rewardAmountPerEpoch);
 
@@ -340,18 +340,19 @@ describe("GaugeVoteRewards", () => {
             const { value: pid } = await gaugeVoteRewards.getPoolId(gauge);
             const poolInfo = await testSetup.l1.phase6.booster.poolInfo(pid);
 
-            const funds = await stashRewardDistro.getFunds(epoch, pid, cvx.address);
+            const funds = await stashRewardDistro.getFunds(epoch.add(1), pid, cvx.address);
             const cvxBalanceBefore = await cvx.balanceOf(stashRewardDistro.address);
             const cvxStashBalanceBefore = await cvx.balanceOf(poolInfo.stash);
 
             expect(funds, "funds").to.be.gt(ZERO);
 
             // Test
+            await increaseTime(ONE_WEEK);
             await stashRewardDistro["queueRewards(uint256,address)"](pid, cvx.address);
             const cvxBalanceAfter = await cvx.balanceOf(stashRewardDistro.address);
             const cvxStashBalanceAfter = await cvx.balanceOf(poolInfo.stash);
 
-            expect(await stashRewardDistro.getFunds(epoch, pid, cvx.address), "funds").to.be.eq(ZERO);
+            expect(await stashRewardDistro.getFunds(epoch.add(1), pid, cvx.address), "funds").to.be.eq(ZERO);
             expect(cvxBalanceAfter, "cvxBalance").to.be.eq(cvxBalanceBefore.sub(funds));
             expect(cvxStashBalanceAfter, "cvxStashBalanceAfter").to.be.eq(cvxStashBalanceBefore.add(funds));
         });
