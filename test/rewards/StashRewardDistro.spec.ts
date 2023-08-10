@@ -7,8 +7,8 @@ import {
     getTimestamp,
     impersonateAccount,
     increaseTime,
+    increaseTimeTo,
     ONE_DAY,
-    ONE_HOUR,
     ONE_WEEK,
     simpleToExactAmount,
     ZERO,
@@ -168,13 +168,14 @@ describe("StashRewardDistro", () => {
 
             const tokenInfo = await stash.tokenInfo(cvx.address);
 
-            const funds = await stashRewardDistro.getFunds(epoch, pid, cvx.address);
+            const funds = await stashRewardDistro.getFunds(epoch.add(1), pid, cvx.address);
             const cvxBalanceBefore = await cvx.balanceOf(stashRewardDistro.address);
             const cvxStashBalanceBefore = await cvx.balanceOf(tokenInfo.stashToken);
 
             expect(funds, "funds").to.be.gt(ZERO);
 
             // Test
+            await increaseTime(ONE_WEEK);
             await stashRewardDistro["queueRewards(uint256,address)"](pid, cvx.address);
             const cvxBalanceAfter = await cvx.balanceOf(stashRewardDistro.address);
             const cvxStashBalanceAfter = await cvx.balanceOf(tokenInfo.stashToken);
@@ -184,12 +185,10 @@ describe("StashRewardDistro", () => {
             expect(cvxStashBalanceAfter, "cvxStashBalanceAfter").to.be.eq(cvxStashBalanceBefore.add(funds));
         });
         it("anyone can fund a pool that already has some funds", async () => {
-            await increaseTime(ONE_WEEK);
-
             const gauge = canonicalGauges[2];
             const { value: pid } = await gaugeVoteRewards.getPoolId(gauge);
             const epoch = await stashRewardDistro.getCurrentEpoch();
-            const fundsBefore = await stashRewardDistro.getFunds(epoch, pid, cvx.address);
+            const fundsBefore = await stashRewardDistro.getFunds(epoch.add(1), pid, cvx.address);
             const cvxBalanceBefore = await cvx.balanceOf(stashRewardDistro.address);
             expect(fundsBefore, "funds").to.be.gt(ZERO);
 
@@ -201,16 +200,18 @@ describe("StashRewardDistro", () => {
             // Test
             await cvx.connect(deployer.signer).approve(stashRewardDistro.address, amount.mul(3));
             const tx1 = await stashRewardDistro.fundPool(pid, cvx.address, amount, periods);
-            await expect(tx1).emit(stashRewardDistro, "Funded").withArgs(epoch, pid, cvx.address, amountPerPeriod);
             await expect(tx1)
                 .emit(stashRewardDistro, "Funded")
                 .withArgs(epoch.add(1), pid, cvx.address, amountPerPeriod);
             await expect(tx1)
                 .emit(stashRewardDistro, "Funded")
                 .withArgs(epoch.add(2), pid, cvx.address, amountPerPeriod);
+            await expect(tx1)
+                .emit(stashRewardDistro, "Funded")
+                .withArgs(epoch.add(3), pid, cvx.address, amountPerPeriod);
 
             // Verify
-            const fundsAfter = await stashRewardDistro.getFunds(epoch, pid, cvx.address);
+            const fundsAfter = await stashRewardDistro.getFunds(epoch.add(1), pid, cvx.address);
             const cvxBalanceAfter = await cvx.balanceOf(stashRewardDistro.address);
 
             expect(fundsAfter, "fundsAfter").to.be.eq(fundsBefore.add(amountPerPeriod));
@@ -218,33 +219,6 @@ describe("StashRewardDistro", () => {
         });
         it("queue rewards of a past epoch", async () => {
             await increaseTime(ONE_WEEK);
-
-            const gauge = canonicalGauges[2];
-            const epoch = (await stashRewardDistro.getCurrentEpoch()).sub(1);
-            const { value: pid } = await gaugeVoteRewards.getPoolId(gauge);
-            const poolInfo = await testSetup.l1.phase6.booster.poolInfo(pid);
-            const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer.signer);
-
-            const tokenInfo = await stash.tokenInfo(cvx.address);
-
-            const funds = await stashRewardDistro.getFunds(epoch, pid, cvx.address);
-            const cvxBalanceBefore = await cvx.balanceOf(stashRewardDistro.address);
-            const cvxStashBalanceBefore = await cvx.balanceOf(tokenInfo.stashToken);
-
-            expect(funds, "funds").to.be.gt(ZERO);
-
-            // Test
-            await stashRewardDistro["queueRewards(uint256,address,uint256)"](pid, cvx.address, epoch);
-            const cvxBalanceAfter = await cvx.balanceOf(stashRewardDistro.address);
-            const cvxStashBalanceAfter = await cvx.balanceOf(tokenInfo.stashToken);
-
-            expect(await stashRewardDistro.getFunds(epoch, pid, cvx.address), "funds").to.be.eq(ZERO);
-            expect(cvxBalanceAfter, "cvxBalance").to.be.eq(cvxBalanceBefore.sub(funds));
-            expect(cvxStashBalanceAfter, "cvxStashBalanceAfter").to.be.eq(cvxStashBalanceBefore.add(funds));
-        });
-        it("queue rewards for current epoch", async () => {
-            // Increasing the time during the same epoch will queue the reward without starting a new period
-            await increaseTime(ONE_DAY.mul(6));
 
             const gauge = canonicalGauges[2];
             const epoch = await stashRewardDistro.getCurrentEpoch();
@@ -272,18 +246,26 @@ describe("StashRewardDistro", () => {
         it("processIdleRewards", async () => {
             const gauge = canonicalGauges[2];
             const { value: pid } = await gaugeVoteRewards.getPoolId(gauge);
-            await increaseTime(ONE_DAY.add(ONE_HOUR));
 
             const poolInfo = await testSetup.l1.phase6.booster.poolInfo(pid);
             const stash = ExtraRewardStashV3__factory.connect(poolInfo.stash, deployer.signer);
             const tokenInfo = await stash.tokenInfo(cvx.address);
             const rewards = VirtualBalanceRewardPool__factory.connect(tokenInfo.rewardAddress, deployer.signer);
+
+            // Send some rewards that get queued
+            const rewardRate = await rewards.rewardRate();
             const periodFinish = await rewards.periodFinish();
+            await increaseTime(ONE_DAY);
+            const elapsedTime = (await getTimestamp()).sub(periodFinish.sub(ONE_WEEK));
+            await cvx.transfer(stash.address, rewardRate.mul(elapsedTime));
+            await testSetup.l1.phase6.booster.earmarkRewards(pid);
+
             const queuedRewards = await rewards.queuedRewards();
+            await increaseTimeTo(periodFinish.add(1));
             const now = await getTimestamp();
             // Given that
             expect(periodFinish, "periodFinish").to.be.lt(now);
-            expect(queuedRewards, "periodFinish").to.be.gt(ZERO);
+            expect(queuedRewards, "queueRewards").to.be.gt(ZERO);
 
             // Test
             const tx = await stashRewardDistro.processIdleRewards(pid, cvx.address);
