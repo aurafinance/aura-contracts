@@ -18,10 +18,6 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
     let info = {};
     let killed_info = {};
 
-    /*
-     * Gather information related to sidechain aura pools
-     */
-
     const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
 
     const providers = [
@@ -32,7 +28,59 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
     ];
 
     const names = ["arbitrum", "optimism", "polygon", "gnosis"];
-    const gaugeInterface = ["function is_killed() external view returns(bool)"];
+    const gaugeInterface = [
+        "function is_killed() external view returns(bool)",
+        "function getRecipient() external view returns(address)",
+    ];
+
+    /*
+     * Gather information related to gauges on balancer
+     */
+
+    const gaugControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
+    const gaugeControllerAbi = [
+        "function gauges(uint arg0) external view returns(address)",
+        "function n_gauges() external view returns(int128)",
+    ];
+
+    const gaugeControllerContract = new ethers.Contract(gaugControllerAddress, gaugeControllerAbi);
+
+    const n_gauges = Number(await gaugeControllerContract.connect(deployer).n_gauges());
+
+    const all_gauge_info = {};
+    const is_gauge_killed = {};
+
+    for (let i = 0; i < n_gauges; i++) {
+        const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
+        const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
+        const isKilled = await gaugeContract.connect(deployer).is_killed();
+
+        let isMainnet = true;
+        let recipient = gaugeAddress;
+        try {
+            recipient = await gaugeContract.connect(deployer).getRecipient();
+            isMainnet = false;
+        } catch (e) {
+            // console.log(e);
+        }
+
+        all_gauge_info[i] = {
+            gaugeAddress: gaugeAddress,
+            isKilled: isKilled,
+            isMainnet: isMainnet,
+            recipient: recipient,
+        };
+
+        is_gauge_killed[recipient] = isKilled;
+
+        console.log(i, n_gauges);
+    }
+
+    fs.writeFileSync("all_gauge_info.json", JSON.stringify(all_gauge_info));
+
+    /*
+     * Gather information related to sidechain aura pools
+     */
 
     for (let p = 0; p < providers.length; p++) {
         const customProvider = new ethers.providers.JsonRpcProvider(providers[p]);
@@ -48,9 +96,8 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
         for (let i = 0; i < Number(poolLength); i++) {
             console.log(name, i, poolLength);
             const poolInfo = await booster.poolInfo(i);
+            const isKilled = is_gauge_killed[poolInfo.gauge];
 
-            const gaugeContract = new ethers.Contract(poolInfo.gauge, gaugeInterface);
-            const isKilled = await gaugeContract.connect(customProvider).is_killed();
             info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
             if (isKilled) {
