@@ -88,41 +88,4 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
     console.log(killed_info);
     fs.writeFileSync("killed_info.json", JSON.stringify(killed_info));
     fs.writeFileSync("all_info.json", JSON.stringify(info));
-
-    /*
-     * Gather information related to gauges on balancer
-     */
-
-    // const gaugControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
-    // const gaugeControllerAbi = [
-    //     "function gauges(uint arg0) external view returns(address)",
-    //     "function n_gauges() external view returns(int128)",
-    // ];
-
-    // const gaugeInterface = [
-    //     "function is_killed() external view returns(bool)",
-    //     "function getRecipient() external view returns(address)",
-    // ];
-
-    // const gaugeControllerContract = new ethers.Contract(gaugControllerAddress, gaugeControllerAbi);
-
-    // // const n_gauges = Number(await gaugeControllerContract.connect(deployer).n_gauges());
-
-    // const n_gauges = 2;
-    // for (let i = 0; i < n_gauges; i++) {
-    //     const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
-    //     const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
-    //     const isKilled = await gaugeContract.connect(deployer).is_killed();
-
-    //     let isMainnet = true;
-    //     let recipient;
-    //     try {
-    //         recipient = await gaugeContract.getRecipient();
-    //         isMainnet = false;
-    //     } catch {
-    //         recipient = gaugeAddress;
-    //     }
-
-    //     console.log(gaugeAddress, isKilled, isMainnet, recipient);
-    // }
 });
