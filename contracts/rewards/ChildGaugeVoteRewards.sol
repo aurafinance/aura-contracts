@@ -129,6 +129,24 @@ contract ChildGaugeVoteRewards is LzApp {
     }
 
     /* -------------------------------------------------------------------
+       Utils 
+    ------------------------------------------------------------------- */
+
+    /**
+     * @dev Transfer ERC20
+     * @param _token The token address
+     * @param _to Address to transfer tokens to
+     * @param _amount Amount of tokens to send
+     */
+    function transferERC20(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) external onlyOwner {
+        IERC20(_token).safeTransfer(_to, _amount);
+    }
+
+    /* -------------------------------------------------------------------
        Internal 
     ------------------------------------------------------------------- */
 

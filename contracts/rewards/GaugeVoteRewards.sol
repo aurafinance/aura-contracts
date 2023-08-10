@@ -120,6 +120,14 @@ contract GaugeVoteRewards is LzApp {
        Constructor 
     ------------------------------------------------------------------- */
 
+    /**
+     * @param _aura Aura token
+     * @param _auraOFT Aura Proxy OFT token
+     * @param _booster Booster contract
+     * @param _stashRewardDistro Stash reward distro
+     * @param _lzChainId LayerZero chain ID
+     * @param _lzEndpoint LayerZero endpoint
+     */
     constructor(
         address _aura,
         address _auraOFT,
@@ -156,27 +164,52 @@ contract GaugeVoteRewards is LzApp {
        Setters 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Set distributor who can process rewards
+     * @param _distributor The distributor account
+     */
     function setDistributor(address _distributor) external onlyOwner {
         distributor = _distributor;
         emit SetDistributor(_distributor);
     }
 
+    /**
+     * @dev Set number of rewards per epoch
+     * @param _rewardPerEpoch Reward per epoch
+     */
     function setRewardPerEpoch(uint256 _rewardPerEpoch) external onlyOwner {
         rewardPerEpoch = _rewardPerEpoch;
         emit SetRewardPerEpoch(_rewardPerEpoch);
     }
 
+    /**
+     * @dev Set if a gauge does not take deposits eg veBAL, veLIT etc
+     * @param _gauge Gauge address
+     * @param _isNoDeposit If it is a no deposit gauge
+     */
     function setIsNoDepositGauge(address _gauge, bool _isNoDeposit) external onlyOwner {
         isNoDepositGauge[_gauge] = _isNoDeposit;
         emit SetIsNoDepositGauge(_gauge, _isNoDeposit);
     }
 
+    /**
+     * @dev   Set child gauge vote rewards
+     * @dev   This is the contract on the sidechain that AURA is sent to
+     *        which then gets sent to the ChildStashRewardDistro
+     * @param _dstChainId The dst chain ID
+     * @param _voteReward The vote reward contract on the sidechain
+     */
     function setChildGaugeVoteRewards(uint16 _dstChainId, address _voteReward) external onlyOwner {
         require(_dstChainId != lzChainId, "!dstChainId");
         getChildGaugeVoteRewards[_dstChainId] = _voteReward;
         emit SetChildGaugeVoteRewards(_dstChainId, _voteReward);
     }
 
+    /**
+     * @dev Set the dst chain ID
+     * @param _gauges The gauge addresses
+     * @param _dstChainId The dst chain ID
+     */
     function setDstChainId(address[] memory _gauges, uint16 _dstChainId) external onlyOwner {
         // Local chain dstChainId will be set when the gauge is mapped
         // using the setPoolIds function which queries the booster
@@ -187,6 +220,11 @@ contract GaugeVoteRewards is LzApp {
         }
     }
 
+    /**
+     * @dev Loop through the booster pools and configure each one
+     * @param start The start index
+     * @param end The end index
+     */
     function setPoolIds(uint256 start, uint256 end) external {
         for (uint256 i = start; i < end; i++) {
             IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
@@ -200,10 +238,19 @@ contract GaugeVoteRewards is LzApp {
        View 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Get the current epoch
+     */
     function getCurrentEpoch() external view returns (uint256) {
         return _getCurrentEpoch();
     }
 
+    /**
+     * @dev Get amount to send for each gauge by epoch
+     * @param _epoch Epoch
+     * @param _gauge The gauge address
+     * @return Amount to send
+     */
     function getAmountToSendByEpoch(uint256 _epoch, address _gauge) external view returns (uint256) {
         return _getAmountToSend(_epoch, _gauge);
     }

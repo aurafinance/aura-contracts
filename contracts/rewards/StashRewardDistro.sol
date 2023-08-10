@@ -13,6 +13,10 @@ interface IBoosterOrBoosterLite is IBooster {
     function earmarkRewards(uint256, address) external;
 }
 
+/**
+ * @title   StashRewardDistro
+ * @author  Aura Finance
+ */
 contract StashRewardDistro is IStashRewardDistro {
     using AuraMath for uint256;
     using SafeERC20 for IERC20;
@@ -40,6 +44,9 @@ contract StashRewardDistro is IStashRewardDistro {
        Constructor 
     ------------------------------------------------------------------- */
 
+    /**
+     * @param _booster The booster
+     */
     constructor(address _booster) {
         booster = IBoosterOrBoosterLite(_booster);
     }
@@ -48,6 +55,9 @@ contract StashRewardDistro is IStashRewardDistro {
        View 
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev Get the current epoch
+     */
     function getCurrentEpoch() external view returns (uint256) {
         return _getCurrentEpoch();
     }
@@ -56,6 +66,15 @@ contract StashRewardDistro is IStashRewardDistro {
        Core
     ------------------------------------------------------------------- */
 
+    /**
+     * @dev  Fund a pool for the next epoch. Epochs are 1 week in length and run
+     *       Thursday to Thursday
+     * @param _pid Pool ID
+     * @param _token Token address
+     * @param _amount Amount of the token to fund in total
+     * @param _periods Number of periods to fund
+     *                 _amount is split evenly between the number of periods
+     */
     function fundPool(
         uint256 _pid,
         address _token,
