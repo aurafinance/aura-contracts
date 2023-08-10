@@ -17,6 +17,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
     const deployer = await getSigner(hre);
     let info = {};
     let killed_info = {};
+    let killed_but_live_info = {};
 
     const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
 
@@ -92,6 +93,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
 
         info[name] = {};
         killed_info[name] = {};
+        killed_but_live_info[name] = {};
 
         for (let i = 0; i < Number(poolLength); i++) {
             console.log(name, i, poolLength);
@@ -102,6 +104,15 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
 
             if (isKilled) {
                 killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                if (!poolInfo.shutdown) {
+                    killed_but_live_info[name][i] = {
+                        pid: i,
+                        gauge: poolInfo.gauge,
+                        isKilled: isKilled,
+                        isShutdown: poolInfo.shutdown,
+                    };
+                }
             }
         }
     }
@@ -117,6 +128,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
 
     info[name] = {};
     killed_info[name] = {};
+    killed_but_live_info[name] = {};
 
     for (let i = 0; i < Number(poolLength); i++) {
         console.log(name, i, poolLength);
@@ -128,11 +140,23 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
 
         if (isKilled) {
             killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+            if (!poolInfo.shutdown) {
+                killed_but_live_info[name][i] = {
+                    pid: i,
+                    gauge: poolInfo.gauge,
+                    isKilled: isKilled,
+                    isShutdown: poolInfo.shutdown,
+                };
+            }
         }
     }
 
     console.log(info);
     console.log(killed_info);
+    console.log(killed_but_live_info);
+
+    fs.writeFileSync("killed_but_live_info.json", JSON.stringify(killed_but_live_info));
     fs.writeFileSync("killed_info.json", JSON.stringify(killed_info));
     fs.writeFileSync("all_info.json", JSON.stringify(info));
 });
