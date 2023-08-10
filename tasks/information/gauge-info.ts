@@ -15,9 +15,9 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
     hre: HardhatRuntimeEnvironment,
 ) {
     const deployer = await getSigner(hre);
-    let info = {};
-    let killed_info = {};
-    let killed_but_live_info = {};
+    const info = {};
+    const killed_info = {};
+    const killed_but_live_info = {};
 
     const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
 
