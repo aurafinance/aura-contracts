@@ -195,7 +195,8 @@ yarn task timeTravel --duration 69420 --network forking
 | KeeperMulticall3                | [0x817F426B5a79599464488eCCf82c3F54b9330E15](https://etherscan.io/address/0x817F426B5a79599464488eCCf82c3F54b9330E15) |
 | WardenQuestScheduler            | [0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47](https://etherscan.io/address/0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47) |
 | stashRewardDistro               | [0x2e82aF65f423DC1090d6D11c68BD6A8c9Ee6d4C1](https://etherscan.io/address/0x2e82aF65f423DC1090d6D11c68BD6A8c9Ee6d4C1) |
-| gaugeVoteRewards                | [0x82b5612db33B9CEe01c0440bF8521B8eb98A00D4](https://etherscan.io/address/0x82b5612db33B9CEe01c0440bF8521B8eb98A00D4) |
+| gaugeVoteRewards                | [0x54231C588b698dc9B91303C95c85F050DA35189B](https://etherscan.io/address/0x54231C588b698dc9B91303C95c85F050DA35189B) |
+| stashRewardDistro               | [0x74D2e022d38f630309a9024c4c993A3F72241298](https://etherscan.io/address/0x74D2e022d38f630309a9024c4c993A3F72241298) |
 
 ### Arbitrum (42161)
 

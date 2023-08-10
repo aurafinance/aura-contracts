@@ -158,6 +158,8 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | BridgeSender             | [0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf](https://arbiscan.io/address/0xdE386aeDEC27521daF1f8a49C03aDa7C158455Bf) |
 | View                     | [0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083](https://arbiscan.io/address/0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083) |
 | KeeperMulticall3         | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://arbiscan.io/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
+| ChildStashRewardDistro   | [0xEEDA9b5b9B18c5F6b77e96dfE076Cd46B7Af9701](https://arbiscan.io/address/0xEEDA9b5b9B18c5F6b77e96dfE076Cd46B7Af9701) |
+| ChildGaugeVoteRewards    | [0xeE19eA4b56a3350CFb6fC1B746972809Fde238a6](https://arbiscan.io/address/0xeE19eA4b56a3350CFb6fC1B746972809Fde238a6) |
 
 #### Optimism (10)
 
@@ -181,6 +183,8 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | RewardPoolDepositWrapper | [0x51b6e0ac6D6435650748513C71db453F96749fe1](https://optimistic.etherscan.io/address/0x51b6e0ac6D6435650748513C71db453F96749fe1) |
 | BridgeSender             | [0x7E702E51142eb7658CE4cE734C9bDec74250f265](https://optimistic.etherscan.io/address/0x7E702E51142eb7658CE4cE734C9bDec74250f265) |
 | View                     | [0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E](https://optimistic.etherscan.io/address/0xFa6B857cC17740A946c9eb85C1a6896f2e0Be98E) |
+| ChildStashRewardDistro   | [0x7372EcE4C18bEABc19981A53b557be90dcBd2b66](https://optimistic.etherscan.io/address/0x7372EcE4C18bEABc19981A53b557be90dcBd2b66) |
+| ChildGaugeVoteRewards    | [0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d](https://optimistic.etherscan.io/address/0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d) |
 
 #### Polygon (137)
 
@@ -209,6 +213,8 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | BridgeSender             | [0x25e7C574c4016e09F608971F97c3B09A6cf4F669](https://polygonscan.com/address/0x25e7C574c4016e09F608971F97c3B09A6cf4F669) |
 | View                     | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
 | AuraViewHelper           | [0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b](https://polygonscan.com/address/0x9e4CBe2EaFf2FA727bC805E6CbBf2ff01DdB812b) |
+| ChildStashRewardDistro   | [0x7E702E51142eb7658CE4cE734C9bDec74250f265](https://polygonscan.com/address/0x7E702E51142eb7658CE4cE734C9bDec74250f265) |
+| ChildGaugeVoteRewards    | [0x3eB33F9a2479Af1f98297834861fb4e053A0215f](https://polygonscan.com/address/0x3eB33F9a2479Af1f98297834861fb4e053A0215f) |
 
 #### Gnosis (100)
 
@@ -232,6 +238,8 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | RewardPoolDepositWrapper | [0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76](https://gnosisscan.io/address/0x0Fec3d212BcC29eF3E505B555D7a7343DF0B7F76) |
 | BridgeSender             | [0x908c9D41183aDE493EFFC12bb9ad11a9333052bc](https://gnosisscan.io/address/0x908c9D41183aDE493EFFC12bb9ad11a9333052bc) |
 | View                     | [0x421DbF836b903b15Ba09C40553AD305d22275482](https://gnosisscan.io/address/0x421DbF836b903b15Ba09C40553AD305d22275482) |
+| ChildStashRewardDistro   | [0x1beC8fd56166ba66AFb6D449e61b717fc9b482C0](https://gnosisscan.io/address/0x1beC8fd56166ba66AFb6D449e61b717fc9b482C0) |
+| ChildGaugeVoteRewards    | [0xafAC0E3E5eeD2376bb52F0Ff743a3E8a5A2b016c](https://gnosisscan.io/address/0xafAC0E3E5eeD2376bb52F0Ff743a3E8a5A2b016c) |
 
 ### Testnets
 
