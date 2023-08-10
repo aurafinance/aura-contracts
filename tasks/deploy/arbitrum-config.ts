@@ -8,6 +8,7 @@ import {
     BoosterLite__factory,
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
+    ChildStashRewardDistro__factory,
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
@@ -78,6 +79,11 @@ export const getSidechain = (signer: Signer) => ({
 
 export const getView = (signer: Signer) => ({
     sidechainView: SidechainView__factory.connect("0x0a6bcB3a0C03aB2Bc8A058ee02ed11D50b494083", signer),
+});
+
+export const getChildGaugeVoteRewards = (signer: Signer) => ({
+    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xeE19eA4b56a3350CFb6fC1B746972809Fde238a6", signer),
+    stashRewardDistro: ChildStashRewardDistro__factory.connect("0xEEDA9b5b9B18c5F6b77e96dfE076Cd46B7Af9701", signer),
 });
 
 export const config: SidechainConfig = {

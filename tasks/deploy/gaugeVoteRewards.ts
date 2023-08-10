@@ -59,7 +59,6 @@ task("deploy:mainnet:gaugeVoteRewards")
         const poolLength = await phase6.booster.poolLength();
         let tx = await gaugeVoteRewards.setPoolIds(0, poolLength);
         await waitForTx(tx, DEBUG, taskArgs.wait);
-        await waitForTx(tx, DEBUG, taskArgs.wait);
         await logTxDetails(tx, "setPoolIds");
 
         for (const gauge of noDepositGauges) {
@@ -73,11 +72,10 @@ task("deploy:mainnet:gaugeVoteRewards")
 
 task("deploy:sidechain:gaugeVoteRewards")
     .addParam("wait", "Wait blocks")
-    .addParam("sidechainid", "Sidechain ID")
     .setAction(async function (taskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
 
-        const config = sidechainConfigs[lzChainIds[hre.network.config.chainId]];
+        const config = sidechainConfigs[hre.network.config.chainId];
         const sidechain = config.getSidechain(deployer);
         const gaugeVoteRewardsContracts = mainnetConfig.getGaugeVoteRewards(deployer);
 

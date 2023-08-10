@@ -23,6 +23,7 @@ import {
     SidechainView__factory,
     StashRewardDistro__factory,
     ChildGaugeVoteRewards__factory,
+    ChildStashRewardDistro__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -73,6 +74,11 @@ export const getSidechain = (signer: Signer) => ({
 
 export const getView = (signer: Signer) => ({
     sidechainView: SidechainView__factory.connect("0xea865D0dACf923c8d6254DE734f31294ca74C1dc", signer),
+});
+
+export const getChildGaugeVoteRewards = (signer: Signer) => ({
+    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x3eB33F9a2479Af1f98297834861fb4e053A0215f", signer),
+    stashRewardDistro: ChildStashRewardDistro__factory.connect("0x7E702E51142eb7658CE4cE734C9bDec74250f265", signer),
 });
 
 export const config: SidechainConfig = {

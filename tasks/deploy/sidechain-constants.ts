@@ -46,6 +46,8 @@ export const lzChainIds = {
     [chainIds.gnosis]: 145,
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.optimism]: 111,
+    // For fork mode
+    [chainIds.hardhat]: 110,
 };
 
 export const canonicalConfigs = {
