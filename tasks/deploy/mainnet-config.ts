@@ -443,6 +443,11 @@ export const getCanonicalView = (signer: Signer) => ({
     canonicalView: CanonicalView__factory.connect("0xbC4990b6607F456477d07c4Dd80FB35258ac0B57", signer),
 });
 
+export const getGaugeVoteRewards = (signer: Signer) => ({
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
+    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
+});
+
 export const config = {
     chainId: chainIds.mainnet,
     whales,
@@ -464,4 +469,5 @@ export const config = {
     getSidechain,
     getCanonicalView,
     getAuraMining,
+    getGaugeVoteRewards,
 };
