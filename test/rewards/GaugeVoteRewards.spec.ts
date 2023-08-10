@@ -453,6 +453,7 @@ describe("GaugeVoteRewards", () => {
                 // Each epoch is 2 week long
                 const gauges = [canonicalGauges[2], stakelessGauges[0]];
                 const weights = [5_000, 5_000];
+                await gaugeVoteRewards.connect(dao.signer).voteGaugeWeight(gauges, weights);
                 expect(await gaugeVoteRewards.getTotalWeight(epoch), "totalWeight").to.be.gt(ZERO);
 
                 // Second time it should revert
