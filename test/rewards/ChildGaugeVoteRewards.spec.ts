@@ -271,7 +271,7 @@ describe("ChildGaugeVoteRewards", () => {
                 // Test
                 const tx = await childGaugeVoteRewards.connect(distributor.signer).processGaugeRewards(epoch, [gauge]);
 
-                const epochDistro = await stashRewardDistro.getCurrentEpoch();
+                const epochDistro = (await stashRewardDistro.getCurrentEpoch()).add(1);
                 const rewardAmountPerEpoch = amountToSend.div(2).sub(1);
                 await expect(tx)
                     .to.emit(stashRewardDistro, "Funded")
