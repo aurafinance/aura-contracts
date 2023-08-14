@@ -1,6 +1,8 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import hre from "hardhat";
+import * as path from "path";
+import * as fs from "fs";
 
 import { Phase2Deployed, Phase6Deployed, Phase8Deployed } from "../../scripts/deploySystem";
 import { config } from "../../tasks/deploy/mainnet-config";
@@ -10,6 +12,7 @@ import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeploy
 import { getTimestamp, impersonateAccount, increaseTimeTo, ONE_DAY, simpleToExactAmount } from "../../test-utils";
 import {
     Account,
+    BaseRewardPool__factory,
     Booster,
     BoosterLite,
     ChildStashRewardDistro,
@@ -341,6 +344,51 @@ describe("GaugeVoteRewards", () => {
                     .connect(ctx.dao.signer)
                     .setStashExtraReward(pid.value, phase2.cvx.address);
             }
+        });
+        it("7. claim rewards for existing LPs", async () => {
+            const p = path.resolve(__dirname, "../../data/account-rewards-earned-1690290158.json");
+            const f = fs.readFileSync(p, "utf8");
+            const data = JSON.parse(f);
+
+            const minBal = simpleToExactAmount(5);
+
+            const accountsWithMinBal = [];
+
+            for (const pid in data.pools) {
+                const { accounts } = data.pools[pid];
+                for (const acc in accounts) {
+                    const account = accounts[acc];
+                    if (simpleToExactAmount(account.bal).gt(minBal)) {
+                        accountsWithMinBal.push({ ...account, pid, address: acc });
+                    }
+                }
+            }
+
+            await Promise.all(
+                accountsWithMinBal.map(async acc => {
+                    const poolInfo = await phase6.booster.poolInfo(acc.pid);
+                    const pool = BaseRewardPool__factory.connect(poolInfo.crvRewards, deployer.signer);
+                    const tx = await pool["getReward(address,bool)"](acc.address, true);
+                    const r = await tx.wait();
+                    return {
+                        cumulativeGasUsed: r.cumulativeGasUsed,
+                    };
+                }),
+            );
+        });
+        it("8. update all booster pool reward rate to 0.5", async () => {
+            const nGauges = await phase6.booster.poolLength();
+
+            for (let i = 0; i < nGauges.toNumber(); i++) {
+                const poolInfo = await phase6.booster.poolInfo(i);
+                // Set the reward multiplier to 50%
+                await phase6.booster.setRewardMultiplier(poolInfo.crvRewards, 5000);
+                expect(await phase6.booster.getRewardMultipliers(poolInfo.crvRewards)).eq(5000);
+            }
+        });
+        it("9. set L1Coordinator reward rate to 0.5", async () => {
+            await ctx.canonical.l1Coordinator.connect(ctx.dao.signer).setRewardMultiplier(5000);
+            expect(await ctx.canonical.l1Coordinator.rewardMultiplier()).eq(5000);
         });
     });
 
