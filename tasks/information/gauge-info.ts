@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import * as fs from "fs";
+import * as path from "path";
 import { getSigner } from "../utils";
 
 import { task } from "hardhat/config";
@@ -10,102 +11,144 @@ import { Phase6Deployed } from "scripts/deploySystem";
 import { config as mainnetConfig } from "../deploy/mainnet-config";
 import { BoosterLite, BoosterLite__factory } from "../../types";
 
-task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the booster").setAction(async function (
-    tskArgs: TaskArguments,
-    hre: HardhatRuntimeEnvironment,
-) {
-    const deployer = await getSigner(hre);
-    const info = {};
-    const killed_info = {};
-    const killed_but_live_info = {};
+task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the booster")
+    .addParam("safedata", "Generate Safe TX Builder Data")
+    .addParam("savelogs", "save logs to file system")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const generateSafeData = Boolean(tskArgs.safedata);
+        const generateLogs = Boolean(tskArgs.savelogs);
 
-    const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
+        const info = {};
+        const killed_info = {};
+        const killed_but_live_info = {};
+        const killed_but_live_lists = {};
 
-    const providers = [
-        process.env.ARBITRUM_NODE_URL,
-        process.env.OPTIMISM_NODE_URL,
-        process.env.POLYGON_NODE_URL,
-        process.env.GNOSIS_NODE_URL,
-    ];
+        const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
 
-    const names = ["arbitrum", "optimism", "polygon", "gnosis"];
-    const gaugeInterface = [
-        "function is_killed() external view returns(bool)",
-        "function getRecipient() external view returns(address)",
-    ];
+        const providers = [
+            process.env.ARBITRUM_NODE_URL,
+            process.env.OPTIMISM_NODE_URL,
+            process.env.POLYGON_NODE_URL,
+            process.env.GNOSIS_NODE_URL,
+        ];
 
-    /*
-     * Gather information related to gauges on balancer
-     */
+        const names = ["arbitrum", "optimism", "polygon", "gnosis"];
+        const gaugeInterface = [
+            "function is_killed() external view returns(bool)",
+            "function getRecipient() external view returns(address)",
+        ];
 
-    const gaugControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
-    const gaugeControllerAbi = [
-        "function gauges(uint arg0) external view returns(address)",
-        "function n_gauges() external view returns(int128)",
-    ];
+        /*
+         * Gather information related to gauges on balancer
+         */
 
-    const gaugeControllerContract = new ethers.Contract(gaugControllerAddress, gaugeControllerAbi);
+        const gaugControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
+        const gaugeControllerAbi = [
+            "function gauges(uint arg0) external view returns(address)",
+            "function n_gauges() external view returns(int128)",
+        ];
 
-    const n_gauges = Number(await gaugeControllerContract.connect(deployer).n_gauges());
+        const gaugeControllerContract = new ethers.Contract(gaugControllerAddress, gaugeControllerAbi);
 
-    const all_gauge_info = {};
-    const is_gauge_killed = {};
+        const n_gauges = Number(await gaugeControllerContract.connect(deployer).n_gauges());
 
-    for (let i = 0; i < n_gauges; i++) {
-        const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
-        const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
-        const isKilled = await gaugeContract.connect(deployer).is_killed();
+        const all_gauge_info = {};
+        const is_gauge_killed = {};
 
-        let isMainnet = true;
-        let recipient = gaugeAddress;
-        try {
-            recipient = await gaugeContract.connect(deployer).getRecipient();
-            isMainnet = false;
-        } catch (e) {
-            // console.log(e);
+        for (let i = 0; i < n_gauges; i++) {
+            const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
+            const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
+            const isKilled = await gaugeContract.connect(deployer).is_killed();
+
+            let isMainnet = true;
+            let recipient = gaugeAddress;
+            try {
+                recipient = await gaugeContract.connect(deployer).getRecipient();
+                isMainnet = false;
+            } catch (e) {
+                // console.log(e);
+            }
+
+            all_gauge_info[i] = {
+                gaugeAddress: gaugeAddress,
+                isKilled: isKilled,
+                isMainnet: isMainnet,
+                recipient: recipient,
+            };
+
+            is_gauge_killed[recipient] = isKilled;
+
+            console.log(i, n_gauges);
         }
 
-        all_gauge_info[i] = {
-            gaugeAddress: gaugeAddress,
-            isKilled: isKilled,
-            isMainnet: isMainnet,
-            recipient: recipient,
-        };
+        /*
+         * Gather information related to sidechain aura pools
+         */
 
-        is_gauge_killed[recipient] = isKilled;
+        for (let p = 0; p < providers.length; p++) {
+            const customProvider = new ethers.providers.JsonRpcProvider(providers[p]);
+            const name = names[p];
 
-        console.log(i, n_gauges);
-    }
+            const booster: BoosterLite = BoosterLite__factory.connect(boosterLite, customProvider);
 
-    fs.writeFileSync("all_gauge_info.json", JSON.stringify(all_gauge_info));
+            const poolLength = await booster.poolLength();
 
-    /*
-     * Gather information related to sidechain aura pools
-     */
+            info[name] = {};
+            killed_info[name] = {};
+            killed_but_live_info[name] = {};
+            killed_but_live_lists[name] = [];
 
-    for (let p = 0; p < providers.length; p++) {
-        const customProvider = new ethers.providers.JsonRpcProvider(providers[p]);
-        const name = names[p];
+            for (let i = 0; i < Number(poolLength); i++) {
+                console.log(name, i, poolLength);
+                const poolInfo = await booster.poolInfo(i);
+                const isKilled = is_gauge_killed[poolInfo.gauge];
 
-        const booster: BoosterLite = BoosterLite__factory.connect(boosterLite, customProvider);
+                info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
-        const poolLength = await booster.poolLength();
+                if (isKilled) {
+                    killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                    if (!poolInfo.shutdown) {
+                        killed_but_live_lists[name].push(i);
+                        killed_but_live_info[name][i] = {
+                            pid: i,
+                            gauge: poolInfo.gauge,
+                            isKilled: isKilled,
+                            isShutdown: poolInfo.shutdown,
+                        };
+                    }
+                }
+            }
+        }
+
+        /*
+         * Gather information related to mainnet aura pools
+         */
+
+        const phase6: Phase6Deployed = await mainnetConfig.getPhase6(deployer);
+
+        const poolLength = await phase6.booster.poolLength();
+        const name = "mainnet";
 
         info[name] = {};
         killed_info[name] = {};
         killed_but_live_info[name] = {};
+        killed_but_live_lists[name] = [];
 
         for (let i = 0; i < Number(poolLength); i++) {
             console.log(name, i, poolLength);
-            const poolInfo = await booster.poolInfo(i);
-            const isKilled = is_gauge_killed[poolInfo.gauge];
+            const poolInfo = await phase6.booster.poolInfo(i);
 
+            const gaugeContract = new ethers.Contract(poolInfo.gauge, gaugeInterface);
+            const isKilled = await gaugeContract.connect(deployer).is_killed();
             info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
             if (isKilled) {
                 killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
                 if (!poolInfo.shutdown) {
+                    killed_but_live_lists[name].push(i);
                     killed_but_live_info[name][i] = {
                         pid: i,
                         gauge: poolInfo.gauge,
@@ -115,48 +158,88 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
                 }
             }
         }
-    }
 
-    /*
-     * Gather information related to mainnet aura pools
-     */
+        console.log(info);
+        console.log(killed_info);
+        console.log(killed_but_live_info);
 
-    const phase6: Phase6Deployed = await mainnetConfig.getPhase6(deployer);
+        /*
+         * Generate Safe TX Json
+         */
+        if (generateLogs) {
+            fs.writeFileSync(
+                path.resolve(__dirname, "./killed_but_live_info.json"),
+                JSON.stringify(killed_but_live_info),
+            );
 
-    const poolLength = await phase6.booster.poolLength();
-    const name = "mainnet";
+            fs.writeFileSync(path.resolve(__dirname, "./killed_info.json"), JSON.stringify(killed_info));
 
-    info[name] = {};
-    killed_info[name] = {};
-    killed_but_live_info[name] = {};
+            fs.writeFileSync(path.resolve(__dirname, "./all_info.json"), JSON.stringify(info));
 
-    for (let i = 0; i < Number(poolLength); i++) {
-        console.log(name, i, poolLength);
-        const poolInfo = await phase6.booster.poolInfo(i);
+            fs.writeFileSync(path.resolve(__dirname, "./all_gauge_info.json"), JSON.stringify(all_gauge_info));
+        }
 
-        const gaugeContract = new ethers.Contract(poolInfo.gauge, gaugeInterface);
-        const isKilled = await gaugeContract.connect(deployer).is_killed();
-        info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+        /*
+         * Generate Safe TX Json
+         */
+        if (generateSafeData) {
+            names.push("mainnet");
+            const mainnetPoolManager = "0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54";
+            const sidechainPoolManager = "0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71";
 
-        if (isKilled) {
-            killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+            for (let n in names) {
+                const name = names[n];
+                let poolManager = sidechainPoolManager;
 
-            if (!poolInfo.shutdown) {
-                killed_but_live_info[name][i] = {
-                    pid: i,
-                    gauge: poolInfo.gauge,
-                    isKilled: isKilled,
-                    isShutdown: poolInfo.shutdown,
-                };
+                if (name === "mainnet") {
+                    poolManager = mainnetPoolManager;
+                }
+
+                const poolsToKill = killed_but_live_lists[name];
+
+                const shutdownDeadPoolsTransactions = poolsToKill.map(pool =>
+                    shutdownPool(poolManager, pool.toString()),
+                );
+                const shutdownDeadPoolsTransaction = txMeta(shutdownDeadPoolsTransactions);
+                fs.writeFileSync(
+                    path.resolve(__dirname, "./" + name + "_shutdown.json"),
+                    JSON.stringify(shutdownDeadPoolsTransaction),
+                );
             }
         }
-    }
+    });
 
-    console.log(info);
-    console.log(killed_info);
-    console.log(killed_but_live_info);
+const txMeta = (transactions: Array<any>) => ({
+    version: "1.0",
+    chainId: "1",
+    createdAt: Date.now(),
+    meta: {
+        name: "Shutdown",
+        description: "",
+        txBuilderVersion: "1.11.1",
+        createdFromSafeAddress: "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        createdFromOwnerAddress: "",
+        checksum: "0x535dc9a33e2c5aa0b638ad6a1d80b5278dc00b69d52110b5d4c2b268c40f698b",
+    },
+    transactions,
+});
 
-    fs.writeFileSync("killed_but_live_info.json", JSON.stringify(killed_but_live_info));
-    fs.writeFileSync("killed_info.json", JSON.stringify(killed_info));
-    fs.writeFileSync("all_info.json", JSON.stringify(info));
+const shutdownPool = (to: string, pid: string) => ({
+    to: to,
+    value: "0",
+    data: null,
+    contractMethod: {
+        inputs: [
+            {
+                internalType: "uint256",
+                name: "_pid",
+                type: "uint256",
+            },
+        ],
+        name: "shutdownPool",
+        payable: false,
+    },
+    contractInputsValues: {
+        _pid: pid,
+    },
 });
