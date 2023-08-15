@@ -17,29 +17,33 @@ import chalk from "chalk";
 import { time } from "console";
 
 import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
+import { addDefaultLocalNetwork, L2ToL1MessageStatus, L2ToL1MessageWriter, L2TransactionReceipt } from "@arbitrum/sdk";
 import { SendEvent } from "types/generated/SimpleBridgeDelegateSender";
+import { StaticJsonRpcProvider } from "@ethersproject/providers";
+
+export type Provider = StaticJsonRpcProvider;
 
 task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
     const deployer = await getSigner(hre);
 
     const providers = [
-        process.env.ARBITRUM_NODE_URL,
+        // process.env.ARBITRUM_NODE_URL,
         // process.env.OPTIMISM_NODE_URL,
-        // process.env.POLYGON_NODE_URL,
+        process.env.POLYGON_NODE_URL,
         // process.env.GNOSIS_NODE_URL,
     ];
 
     const names = [
-        "arbitrum",
+        // "arbitrum",
         // "optimism",
-        // "polygon",
+        "polygon",
         //  "gnosis"
     ];
 
     const chainIds = [
-        42161,
+        // 42161,
         // 10,
-        // 137,
+        137,
         // 100
     ];
 
@@ -65,6 +69,8 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
 
             if (names[n] == "optimism") {
                 status = await getOptimismStatus(customProvider, event, deployer);
+            } else if (names[n] == "arbitrum") {
+                status = await getArbitrumStatus(customProvider, event, deployer, status);
             }
 
             let eventData = {
@@ -84,6 +90,30 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
         console.log(allBridges);
     }
 });
+async function getArbitrumStatus(
+    customProvider: ethers.providers.JsonRpcProvider,
+    event: SendEvent,
+    deployer: ethers.Signer,
+    status: any,
+) {
+    const receipt = await customProvider.getTransactionReceipt(event.transactionHash);
+    const l2Receipt = new L2TransactionReceipt(receipt);
+
+    const messages = await l2Receipt.getL2ToL1Messages(deployer);
+    const l2ToL1Msg = messages[0];
+    const messageStatus = await l2ToL1Msg.status(customProvider);
+    let newStatus;
+
+    if (messageStatus === L2ToL1MessageStatus.EXECUTED) {
+        newStatus = "Withdraw Successful";
+    } else if (messageStatus === L2ToL1MessageStatus.UNCONFIRMED) {
+        newStatus = "Ready to Withdraw";
+    } else if (messageStatus === L2ToL1MessageStatus.CONFIRMED) {
+        newStatus = "In 7 day wait period";
+    }
+    return newStatus;
+}
+
 async function getOptimismStatus(
     customProvider: ethers.providers.JsonRpcProvider,
     event: SendEvent,
