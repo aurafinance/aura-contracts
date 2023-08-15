@@ -16,29 +16,35 @@ import { fullScale } from "../../test-utils/constants";
 import chalk from "chalk";
 import { time } from "console";
 
+import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
+import { SendEvent } from "types/generated/SimpleBridgeDelegateSender";
+
 task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
     const deployer = await getSigner(hre);
 
     const providers = [
         process.env.ARBITRUM_NODE_URL,
-        process.env.OPTIMISM_NODE_URL,
-        process.env.POLYGON_NODE_URL,
+        // process.env.OPTIMISM_NODE_URL,
+        // process.env.POLYGON_NODE_URL,
         // process.env.GNOSIS_NODE_URL,
     ];
 
     const names = [
         "arbitrum",
-        "optimism",
-        "polygon",
+        // "optimism",
+        // "polygon",
         //  "gnosis"
     ];
 
     const chainIds = [
-        42161, 10, 137,
+        42161,
+        // 10,
+        // 137,
         // 100
     ];
 
     const data = {};
+    const allBridges = [];
 
     for (const n in names) {
         data[names[n]] = [];
@@ -55,17 +61,60 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
             const event = events[e];
 
             const timestamp = (await customProvider.getBlock(event.blockNumber)).timestamp;
+            let status;
 
-            data[names[n]].push({
+            if (names[n] == "optimism") {
+                status = await getOptimismStatus(customProvider, event, deployer);
+            }
+
+            let eventData = {
+                chain: names[n],
                 txn: event.transactionHash,
                 block: event.blockNumber,
                 timestamp: timestamp,
                 to: event.args.to,
                 amount: Number(event.args.amount) / 1e18,
-                status: "sent",
-            });
+                status: status,
+            };
+
+            data[names[n]].push(eventData);
+            allBridges.push(eventData);
         }
 
-        console.log(data);
+        console.log(allBridges);
     }
 });
+async function getOptimismStatus(
+    customProvider: ethers.providers.JsonRpcProvider,
+    event: SendEvent,
+    deployer: ethers.Signer,
+) {
+    const receipt = await customProvider.getTransactionReceipt(event.transactionHash);
+
+    const CCM = new CrossChainMessenger({
+        l1ChainId: 1,
+        l1SignerOrProvider: deployer,
+        l2ChainId: 10,
+        l2SignerOrProvider: process.env.OPTIMISM_NODE_URL,
+        bedrock: true,
+    });
+
+    const message = await CCM.toCrossChainMessage(receipt);
+    const status = await CCM.getMessageStatus(message);
+
+    let newStatus;
+
+    if (status == MessageStatus.STATE_ROOT_NOT_PUBLISHED) {
+        newStatus = "State root not yet published";
+    } else if (status == MessageStatus.READY_TO_PROVE) {
+        newStatus = "Ready to Prove";
+    } else if (status == MessageStatus.IN_CHALLENGE_PERIOD) {
+        newStatus = "In 7 day dispute period";
+    } else if (status == MessageStatus.READY_FOR_RELAY) {
+        newStatus = "Ready to Withdraw";
+    } else if (status == MessageStatus.RELAYED) {
+        newStatus = "Withdraw Successful";
+    }
+
+    return newStatus;
+}
