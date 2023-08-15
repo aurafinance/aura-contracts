@@ -30,22 +30,22 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
     const providers = [
         // process.env.ARBITRUM_NODE_URL,
         // process.env.OPTIMISM_NODE_URL,
-        process.env.POLYGON_NODE_URL,
-        // process.env.GNOSIS_NODE_URL,
+        // process.env.POLYGON_NODE_URL,
+        process.env.GNOSIS_NODE_URL,
     ];
 
     const names = [
         // "arbitrum",
         // "optimism",
-        "polygon",
-        //  "gnosis"
+        // "polygon",
+        "gnosis",
     ];
 
     const chainIds = [
         // 42161,
         // 10,
-        137,
-        // 100
+        // 137,
+        100,
     ];
 
     const data = {};
@@ -74,6 +74,8 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
                 status = await getArbitrumStatus(customProvider, event, deployer);
             } else if (names[n] == "polygon") {
                 status = await getPolygonStatus(event, deployer);
+            } else if (names[n] == "gnosis") {
+                status = await getGnosisStatus(customProvider, event, deployer);
             }
 
             let eventData = {
@@ -93,6 +95,59 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
         console.log(allBridges);
     }
 });
+async function getGnosisStatus(
+    customProvider: ethers.providers.JsonRpcProvider,
+    event: SendEvent,
+    deployer: ethers.Signer,
+) {
+    const withdrawTxHash = event.transactionHash;
+
+    const ambAddress: string = "0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59";
+    const ambHelper: string = "0x7d94ece17e81355326e3359115D4B02411825EdD";
+    const ambOnEth: string = "0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e";
+
+    const receipt = await customProvider.getTransactionReceipt(withdrawTxHash);
+
+    let signData;
+
+    //Get the requested data
+    let i;
+    for (i in receipt.logs) {
+        const log = receipt.logs[i];
+        if (log.address == ambAddress) {
+            const iface = new ethers.utils.Interface([
+                "event UserRequestForSignature(bytes32 indexed messageId, bytes encodedData)",
+            ]);
+            signData = iface.parseLog(log).args.encodedData;
+        }
+    }
+
+    // look up signatures on gnosis chain
+    const gnosisAbi = ["function getSignatures(bytes calldata _message) external view returns(bytes memory)"];
+    const gnosisSmartContract = new ethers.Contract(ambHelper, gnosisAbi);
+
+    const signatures = await gnosisSmartContract.connect(customProvider).getSignatures(signData);
+
+    //send withdraw tx on mainnet
+    const mainnetAbi = ["function executeSignatures(bytes _data, bytes _signatures) external"];
+    const mainnetSmartContract = new ethers.Contract(ambOnEth, mainnetAbi);
+
+    let newStatus = "Unknown";
+    newStatus = mainnetSmartContract
+        .connect(deployer)
+        .staticcall.executeSignatures(signData, signatures)
+        .then(
+            results => {
+                return "Ready to Withdraw";
+            },
+            error => {
+                return "Unknown: Likely Withdraw Successful";
+            },
+        );
+
+    return newStatus;
+}
+
 async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
     const mainnetBridge = "0xA0c68C638235ee32657e8f720a23ceC1bFc77C77";
     const baseURL = "https://proof-generator.polygon.technology/api/v1/matic/exit-payload/";
@@ -107,7 +162,7 @@ async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
         params: { limit: 100, offset: 0 },
     });
 
-    let newStatus;
+    let newStatus = "unknown";
 
     if (withdrawalData.data.message == "Payload generation success") {
         const proof = withdrawalData.data.result;
@@ -115,23 +170,20 @@ async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
 
         const bridgeContract = new ethers.Contract(mainnetBridge, abi);
 
-        bridgeContract
+        newStatus = bridgeContract
             .connect(deployer)
             .callStatic.exit(proof)
             .then(
                 results => {
-                    newStatus = "Ready to Withdraw";
+                    return "Ready to Withdraw";
                 },
                 error => {
                     let specifics = error["error"];
                     specifics = specifics.toString().split("\n");
 
                     for (const i in specifics) {
-                        console.log(specifics[i], specifics[i].includes("EXIT_ALREADY_PROCESSED"));
-
                         if (specifics[i].includes("EXIT_ALREADY_PROCESSED") == true) {
-                            newStatus = "Withdraw Successful";
-                            console.log("");
+                            return "Withdraw Successful";
                         }
                     }
                 },
