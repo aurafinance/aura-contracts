@@ -449,6 +449,7 @@ describe("GaugeVoteRewards", () => {
                 ).to.be.revertedWith("!length");
             });
             it("when current epoch has already votes", async () => {
+                await increaseTime(ONE_WEEK.mul(2));
                 const epoch = await gaugeVoteRewards.getCurrentEpoch();
                 // Each epoch is 2 week long
                 const gauges = [canonicalGauges[2], stakelessGauges[0]];
