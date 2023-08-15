@@ -28,28 +28,19 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
     const deployer = await getSigner(hre);
 
     const providers = [
-        // process.env.ARBITRUM_NODE_URL,
-        // process.env.OPTIMISM_NODE_URL,
-        // process.env.POLYGON_NODE_URL,
+        process.env.ARBITRUM_NODE_URL,
+        process.env.OPTIMISM_NODE_URL,
+        process.env.POLYGON_NODE_URL,
         process.env.GNOSIS_NODE_URL,
     ];
 
-    const names = [
-        // "arbitrum",
-        // "optimism",
-        // "polygon",
-        "gnosis",
-    ];
+    const names = ["arbitrum", "optimism", "polygon", "gnosis"];
 
-    const chainIds = [
-        // 42161,
-        // 10,
-        // 137,
-        100,
-    ];
+    const chainIds = [42161, 10, 137, 100];
 
     const data = {};
     const allBridges = [];
+    const rows = [[["Network"], ["TX"], ["Time"], ["Amount"], ["Status"]]];
 
     for (const n in names) {
         data[names[n]] = [];
@@ -90,10 +81,18 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
 
             data[names[n]].push(eventData);
             allBridges.push(eventData);
-        }
 
-        console.log(allBridges);
+            rows.push([
+                [eventData.chain],
+                [eventData.txn],
+                [eventData.timestamp],
+                [eventData.amount],
+                [eventData.status],
+            ]);
+        }
     }
+
+    console.log(table(rows));
 });
 async function getGnosisStatus(
     customProvider: ethers.providers.JsonRpcProvider,
