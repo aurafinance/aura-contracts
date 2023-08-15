@@ -187,7 +187,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
             const mainnetPoolManager = "0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54";
             const sidechainPoolManager = "0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71";
 
-            for (let n in names) {
+            for (const n in names) {
                 const name = names[n];
                 let poolManager = sidechainPoolManager;
 
