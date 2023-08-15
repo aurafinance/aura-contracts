@@ -1,28 +1,76 @@
 /* eslint-disable no-await-in-loop */
 import { ethers } from "ethers";
-import { JsonRpcProvider } from "@ethersproject/providers";
-import assert from "assert";
-import { BigNumber } from "ethers";
-import { formatEther } from "ethers/lib/utils";
 import { table } from "table";
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import { ERC20__factory, SimpleBridgeDelegateSender__factory } from "../../types";
 
-import { SidechainViewDeployed, CanonicalViewDeployed } from "../../scripts/deploySidechain";
-import { canonicalChains, canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
-import { chainIds, getSigner } from "../utils";
-import { fullScale } from "../../test-utils/constants";
-import chalk from "chalk";
-import { time } from "console";
+import { canonicalConfigs, sidechainConfigs } from "../deploy/sidechain-constants";
+import { getSigner } from "../utils";
 
 import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
-import { addDefaultLocalNetwork, L2ToL1MessageStatus, L2ToL1MessageWriter, L2TransactionReceipt } from "@arbitrum/sdk";
+import { L2ToL1MessageStatus, L2TransactionReceipt } from "@arbitrum/sdk";
 import { SendEvent } from "types/generated/SimpleBridgeDelegateSender";
-import { StaticJsonRpcProvider } from "@ethersproject/providers";
 import _axios from "axios";
+import { SignerOrProvider } from "@arbitrum/sdk/dist/lib/dataEntities/signerOrProvider";
 
-export type Provider = StaticJsonRpcProvider;
+task("sidechain:metrics:balances").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+    const deployer = await getSigner(hre);
+
+    const mainnetConfig = canonicalConfigs[1];
+
+    const providers = [
+        process.env.ARBITRUM_NODE_URL,
+        process.env.OPTIMISM_NODE_URL,
+        process.env.POLYGON_NODE_URL,
+        process.env.GNOSIS_NODE_URL,
+    ];
+
+    const names = ["arbitrum", "optimism", "polygon", "gnosis"];
+
+    const chainIds = [42161, 10, 137, 100];
+
+    const data = {};
+    const rows = [[["Contract"], ["Address"], ["Chain"], ["Bal Balance"]]];
+
+    const tokenMainnet = mainnetConfig.addresses.token;
+    const tokenMainnetContract = ERC20__factory.connect(tokenMainnet, deployer);
+
+    const l1Coordinator = mainnetConfig.getSidechain(deployer).l1Coordinator.address;
+    rows.push([
+        ["L1 Coordinator"],
+        [l1Coordinator],
+        ["mainnet"],
+        [((await tokenMainnetContract.balanceOf(l1Coordinator)).toNumber() / 1e18).toString()],
+    ]);
+
+    for (const n in names) {
+        data[names[n]] = [];
+        const customProvider = new ethers.providers.JsonRpcProvider(providers[n]);
+        const config = sidechainConfigs[chainIds[n]];
+        const token = config.extConfig.token;
+
+        const tokenContract = ERC20__factory.connect(token, customProvider);
+
+        const senderBalance = await tokenContract.balanceOf(config.bridging.l2Sender);
+        const receiverBalance = await tokenMainnetContract.balanceOf(config.bridging.l1Receiver);
+
+        rows.push([
+            [names[n] + " L2 Sender"],
+            [config.bridging.l2Sender],
+            [names[n]],
+            [(senderBalance.toNumber() / 1e18).toString()],
+        ]);
+        rows.push([
+            [names[n] + " L1 Receiver"],
+            [config.bridging.l1Receiver],
+            ["Mainnet"],
+            [(receiverBalance.toNumber() / 1e18).toString()],
+        ]);
+    }
+
+    console.log(table(rows));
+});
 
 task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
     const deployer = await getSigner(hre);
@@ -50,8 +98,8 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
 
         const l2SenderContract = SimpleBridgeDelegateSender__factory.connect(l2sender, customProvider);
 
-        let eventFilter = l2SenderContract.filters.Send();
-        let events = await l2SenderContract.queryFilter(eventFilter);
+        const eventFilter = l2SenderContract.filters.Send();
+        const events = await l2SenderContract.queryFilter(eventFilter);
 
         for (const e in events) {
             const event = events[e];
@@ -62,14 +110,15 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
             if (names[n] == "optimism") {
                 status = await getOptimismStatus(customProvider, event, deployer);
             } else if (names[n] == "arbitrum") {
-                status = await getArbitrumStatus(customProvider, event, deployer);
+                const sidechainSigner = new ethers.Wallet(process.env.PRIVATE_KEY, customProvider);
+                status = await getArbitrumStatus(sidechainSigner, event, deployer);
             } else if (names[n] == "polygon") {
                 status = await getPolygonStatus(event, deployer);
             } else if (names[n] == "gnosis") {
                 status = await getGnosisStatus(customProvider, event, deployer);
             }
 
-            let eventData = {
+            const eventData = {
                 chain: names[n],
                 txn: event.transactionHash,
                 block: event.blockNumber,
@@ -137,9 +186,13 @@ async function getGnosisStatus(
         .staticcall.executeSignatures(signData, signatures)
         .then(
             results => {
+                results;
+
                 return "Ready to Withdraw";
             },
             error => {
+                error;
+
                 return "Unknown: Likely Withdraw Successful";
             },
         );
@@ -169,11 +222,13 @@ async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
 
         const bridgeContract = new ethers.Contract(mainnetBridge, abi);
 
-        newStatus = bridgeContract
+        newStatus = await bridgeContract
             .connect(deployer)
             .callStatic.exit(proof)
             .then(
                 results => {
+                    results;
+
                     return "Ready to Withdraw";
                 },
                 error => {
@@ -194,17 +249,15 @@ async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
     return newStatus;
 }
 
-async function getArbitrumStatus(
-    customProvider: ethers.providers.JsonRpcProvider,
-    event: SendEvent,
-    deployer: ethers.Signer,
-) {
-    const receipt = await customProvider.getTransactionReceipt(event.transactionHash);
+async function getArbitrumStatus(customProvider: ethers.Wallet, event: SendEvent, deployer: ethers.Signer) {
+    const receipt = await customProvider.provider.getTransactionReceipt(event.transactionHash);
     const l2Receipt = new L2TransactionReceipt(receipt);
 
-    const messages = await l2Receipt.getL2ToL1Messages(deployer);
+    const messages = await l2Receipt.getL2ToL1Messages(deployer as SignerOrProvider);
     const l2ToL1Msg = messages[0];
-    const messageStatus = await l2ToL1Msg.status(customProvider);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const messageStatus = await l2ToL1Msg.status(customProvider.provider as ethers.providers.Provider);
     let newStatus;
 
     if (messageStatus === L2ToL1MessageStatus.EXECUTED) {

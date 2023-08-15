@@ -5,10 +5,23 @@ __metadata:
   version: 5
   cacheKey: 8
 
+"@arbitrum/sdk@npm:^3.1.8":
+  version: 3.1.8
+  resolution: "@arbitrum/sdk@npm:3.1.8"
+  dependencies:
+    "@ethersproject/address": ^5.0.8
+    "@ethersproject/bignumber": ^5.1.1
+    "@ethersproject/bytes": ^5.0.8
+    ethers: ^5.1.0
+  checksum: e64b6dff3dfe6bc135441dc89b78692a1d331eb4ad01e8e165bc602832f96ca2620a6275f00c317831b4de1f9b2e204c4acae44a92d0ae6119f78160bbc1ea35
+  languageName: node
+  linkType: hard
+
 "@aurafinance/aura-contracts@workspace:.":
   version: 0.0.0-use.local
   resolution: "@aurafinance/aura-contracts@workspace:."
   dependencies:
+    "@arbitrum/sdk": ^3.1.8
     "@balancer-labs/balancer-js": ^1.0.1
     "@codechecks/client": ^0.1.12
     "@commitlint/cli": ^14.1.0
@@ -814,7 +827,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/address@npm:5.7.0, @ethersproject/address@npm:^5.7.0":
+"@ethersproject/address@npm:5.7.0, @ethersproject/address@npm:^5.0.8, @ethersproject/address@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/address@npm:5.7.0"
   dependencies:
@@ -898,7 +911,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/bignumber@npm:5.7.0, @ethersproject/bignumber@npm:^5.7.0":
+"@ethersproject/bignumber@npm:5.7.0, @ethersproject/bignumber@npm:^5.1.1, @ethersproject/bignumber@npm:^5.7.0":
   version: 5.7.0
   resolution: "@ethersproject/bignumber@npm:5.7.0"
   dependencies:
@@ -5422,7 +5435,6 @@ __metadata:
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
     "@openzeppelin/contracts-upgradeable-0.6": "npm:@openzeppelin/contracts-upgradeable@3.4.0"
-  checksum: e58ae9095f263fe52298e6a793a48ff844e4c89cba38fb96862883d41ee658ba43c8dd2d3af217900ed1c9cb9a80a5542d502621a88799b2808a04eb2b51772b
   languageName: node
   linkType: hard
 
@@ -7278,7 +7290,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ethers@npm:^5.6.1, ethers@npm:^5.7.0, ethers@npm:^5.7.1":
+"ethers@npm:^5.1.0, ethers@npm:^5.6.1, ethers@npm:^5.7.0, ethers@npm:^5.7.1":
   version: 5.7.2
   resolution: "ethers@npm:5.7.2"
   dependencies:
