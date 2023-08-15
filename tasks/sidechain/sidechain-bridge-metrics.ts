@@ -20,6 +20,7 @@ import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
 import { addDefaultLocalNetwork, L2ToL1MessageStatus, L2ToL1MessageWriter, L2TransactionReceipt } from "@arbitrum/sdk";
 import { SendEvent } from "types/generated/SimpleBridgeDelegateSender";
 import { StaticJsonRpcProvider } from "@ethersproject/providers";
+import _axios from "axios";
 
 export type Provider = StaticJsonRpcProvider;
 
@@ -70,7 +71,9 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
             if (names[n] == "optimism") {
                 status = await getOptimismStatus(customProvider, event, deployer);
             } else if (names[n] == "arbitrum") {
-                status = await getArbitrumStatus(customProvider, event, deployer, status);
+                status = await getArbitrumStatus(customProvider, event, deployer);
+            } else if (names[n] == "polygon") {
+                status = await getPolygonStatus(event, deployer);
             }
 
             let eventData = {
@@ -90,11 +93,60 @@ task("sidechain:metrics:bridge").setAction(async function (tskArgs: TaskArgument
         console.log(allBridges);
     }
 });
+async function getPolygonStatus(event: SendEvent, deployer: ethers.Signer) {
+    const mainnetBridge = "0xA0c68C638235ee32657e8f720a23ceC1bFc77C77";
+    const baseURL = "https://proof-generator.polygon.technology/api/v1/matic/exit-payload/";
+    const eventSig = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    const eventSignature = "?eventSignature=";
+
+    const axios = _axios.create({
+        baseURL,
+    });
+
+    const withdrawalData = await axios.get(event.transactionHash + eventSignature + eventSig, {
+        params: { limit: 100, offset: 0 },
+    });
+
+    let newStatus;
+
+    if (withdrawalData.data.message == "Payload generation success") {
+        const proof = withdrawalData.data.result;
+        const abi = ["function exit(bytes inputData)"];
+
+        const bridgeContract = new ethers.Contract(mainnetBridge, abi);
+
+        bridgeContract
+            .connect(deployer)
+            .callStatic.exit(proof)
+            .then(
+                results => {
+                    newStatus = "Ready to Withdraw";
+                },
+                error => {
+                    let specifics = error["error"];
+                    specifics = specifics.toString().split("\n");
+
+                    for (const i in specifics) {
+                        console.log(specifics[i], specifics[i].includes("EXIT_ALREADY_PROCESSED"));
+
+                        if (specifics[i].includes("EXIT_ALREADY_PROCESSED") == true) {
+                            newStatus = "Withdraw Successful";
+                            console.log("");
+                        }
+                    }
+                },
+            );
+    } else {
+        newStatus = "Unknown - Likely in 3 Hour Wait Period";
+    }
+
+    return newStatus;
+}
+
 async function getArbitrumStatus(
     customProvider: ethers.providers.JsonRpcProvider,
     event: SendEvent,
     deployer: ethers.Signer,
-    status: any,
 ) {
     const receipt = await customProvider.getTransactionReceipt(event.transactionHash);
     const l2Receipt = new L2TransactionReceipt(receipt);
