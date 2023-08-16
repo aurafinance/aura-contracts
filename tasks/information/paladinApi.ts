@@ -129,20 +129,32 @@ export const buildPaladinQuest = ({
     auraPrice,
     veBALPrice,
 }): PaladinQuest => {
-    const questAmounts = calculateQuestAmounts(totalBudget, platformFee);
-    const votesAmounts = calculateVotesAmounts(questAmounts.totalRewardAmount, auraPrice, veBALPrice);
+    const UNIT = BN.from("1000000000000000000");
+    const MAX_BPS = BN.from(10000);
+    let { totalRewardAmount, feeAmount } = calculateQuestAmounts(totalBudget, platformFee);
+    const { objective, rewardPerVote } = calculateVotesAmounts(totalRewardAmount, auraPrice, veBALPrice);
+    const rewardPerPeriod = objective.mul(rewardPerVote).div(UNIT);
+    // Adjust figures
+    totalRewardAmount = rewardPerPeriod.mul(duration);
+    feeAmount = totalRewardAmount.mul(platformFee).div(MAX_BPS);
+    const totalBudgetAdjusted = feeAmount.add(totalRewardAmount);
+
+    if (!totalRewardAmount.eq(rewardPerPeriod.mul(duration))) throw Error("IncorrectTotalRewardAmount");
+    if (!totalRewardAmount.mul(platformFee).div(MAX_BPS).eq(feeAmount)) throw Error("IncorrectFeeAmount");
+    if (!totalBudgetAdjusted.lte(totalBudget)) throw Error("IncorrectAdjustedCalculations");
+
     return {
         title,
-        totalBudget,
+        totalBudget: totalBudgetAdjusted,
         to,
         gauge,
         pid,
         rewardToken,
         duration,
-        objective: votesAmounts.objective,
-        rewardPerVote: votesAmounts.rewardPerVote,
-        totalRewardAmount: questAmounts.totalRewardAmount,
-        feeAmount: questAmounts.feeAmount,
+        objective: objective,
+        rewardPerVote: rewardPerVote,
+        totalRewardAmount: totalRewardAmount,
+        feeAmount: feeAmount,
         blacklist,
     };
 };
@@ -156,10 +168,13 @@ const getQuestDefaults = () => {
 
 const calculateVeBalPrice = (balPrice: number) => {
     const weeklyEmission = 121929.980212;
-    const totalVotes = 9300000;
+    const totalVotes = 8508395;
     const premium = 1.05;
     const dollarEmission = balPrice * weeklyEmission;
     const veBALPrice = (dollarEmission / totalVotes) * premium;
+    console.log(
+        `Calculate veBal: weeklyEmission [${weeklyEmission}] totalVotes [${totalVotes}] balPrice [${balPrice}] veBALPrice [${veBALPrice}]`,
+    );
     return Number(veBALPrice.toFixed(5));
 };
 
@@ -172,6 +187,10 @@ export const getPaladinConf = async (hre: HardhatRuntime, signer: ethers.Signer)
     const auraPrice = prices.find(tp => tp.address === auraTokenAddress).latestUSDPrice;
     const veBALPrice = calculateVeBalPrice(balPrice);
     const paladinConf = { ...getQuestDefaults(), platformFee, auraPrice, veBALPrice };
+
+    console.log(
+        `Prices: aura [${auraPrice.toString()}], bal [${balPrice.toString()}], veBAL [${veBALPrice.toString()}]`,
+    );
 
     return paladinConf;
 };
