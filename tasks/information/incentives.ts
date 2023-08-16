@@ -172,12 +172,12 @@ const createWardenSchedulerQuestTx = (quest: PaladinQuestWardenScheduler) => {
             payable: false,
         },
         contractInputsValues: {
-            pid: quest.pid,
+            pid: quest.pid.toString(),
             objective: quest.objective.toString(),
             rewardPerVote: quest.rewardPerVote.toString(),
             totalRewardAmount: quest.totalRewardAmount.toString(),
             feeAmount: quest.feeAmount.toString(),
-            blacklist: `["${quest.blacklist.join(`","`)}"]`,
+            blacklist: `[${quest.blacklist.join(`,`)}]`,
         },
     };
 };
@@ -369,21 +369,22 @@ task("create:hh:arb:incentives", "Generates tx builder for a-55/45 auraBAL/wstET
 
 /**
  * Generates Transaction Builder file to create paladin quest incentives
+ * @deprecated @see create:scheduler:incentives
  * Example :
  *   Input
- *       `yarn task:fork create:paladin:incentives  --aura-eth-amount 40000 --aura-bal-amount 48000`
+ *       `yarn task:fork create:paladin:incentives  --aura-eth-amount 40000 --aura-bal-amount 40000`
  *   Output
  *       Token BAL, latestUSDPrice: 5.233117611442983836400985490558274
  *       Token AURA, latestUSDPrice: 1.711854385136804862443685518169823
  *       1. aura/eth veBAL totalBudget: 40000.0 Fixed Reward: 0.0428 AURA/veBAL
- *       2. auraBAL  veBAL totalBudget: 48000.0 Fixed Reward: 0.0428 AURA/veBAL
+ *       2. auraBAL  veBAL totalBudget: 40000.0 Fixed Reward: 0.0428 AURA/veBAL
  *       Total Aura: 88000.0 calculated $/veBAL: 0.07325
  *       Gnosis tx builder generated at .../tasks/information/gnosis_tx_paladin_incentives.json
  *
  */
 task("create:paladin:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 40000", 40_000, types.int)
-    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 41_000", 41_000, types.int)
+    .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 30_000", 30_000, types.int)
+    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 40_000", 40_000, types.int)
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
         const auraEthAmount = utils.parseEther(taskArgs.auraEthAmount.toString());
@@ -409,9 +410,23 @@ task("create:paladin:incentives")
         generateIncentivesTxBuilderFile("gnosis_tx_paladin_incentives", quests, paladinConf, createDarkQuestBoardTx);
     });
 
+/**
+ * Generates Transaction Builder file to create paladin quest incentives via the aura scheduler
+ * Example :
+ *   Input
+ *       `yarn task:fork create:scheduler:incentives  --aura-eth-amount 30000 --aura-bal-amount 40000`
+ *   Output
+ *       Token BAL, latestUSDPrice: 5.233117611442983836400985490558274
+ *       Token AURA, latestUSDPrice: 1.711854385136804862443685518169823
+ *       1. aura/eth veBAL totalBudget: 30000.0 Fixed Reward: 0.0518 AURA/veBAL
+ *       2. auraBAL  veBAL totalBudget: 40000.0 Fixed Reward: 0.0518 AURA/veBAL
+ *       Total Aura: 70000.0 calculated $/veBAL: 0.06135
+ *       Safe tx builder generated at .../tasks/information/gnosis_tx_scheduler_incentives.json
+ *
+ */
 task("create:scheduler:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 40000", 40_000, types.int)
-    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 41_000", 41_000, types.int)
+    .addOptionalParam("auraEthAmount", "Amount of aura/eth incentive, default is 30_000", 30_000, types.int)
+    .addOptionalParam("auraBalAmount", "Amount of auraBal incentive, suggested is 40_000", 40_000, types.int)
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
         const auraEthAmount = utils.parseEther(taskArgs.auraEthAmount.toString());
@@ -439,7 +454,7 @@ task("create:scheduler:incentives")
         generateIncentivesTxBuilderFile(
             "gnosis_tx_scheduler_incentives",
             quests,
-            paladinConf,
+            { ...paladinConf, to: wardenQuestSchedulerAddress },
             createWardenSchedulerQuestTx,
         );
     });
