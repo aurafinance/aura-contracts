@@ -124,7 +124,6 @@
     { "address": "0x790DE8ABE859f399023BCe73B5FE5C4870cD816A", "label": "p-ComposableStable jEUR/agEUR" },
     { "address": "0x16289F675Ca54312a8fCF99341e7439982888077", "label": "p-ComposableStable jEUR/PAR" },
     { "address": "0x31F99c542CbE456FcbBe99D4bf849Af4D7fB5405", "label": "p-ComposableStable tetuQi/QI" },
-    { "address": "0x455f20c54b5712a84454468c7831f7c431aeEB1C", "label": "p-ComposableStable BRZ/jBRL" },
     { "address": "0x539D6eDbd16F2F069A06716416C3a6E98cC29DD0", "label": "p-80/20 LUCHA/WMATIC" },
     { "address": "0x6f06b425e1bc11FC486C308c22e503d188525F06", "label": "p-ComposableStable bb-a-WMATIC/fxTruMATIC" },
     { "address": "0x24E8787B4AC5325Fd082BC30b9fe7eb2F01304c7", "label": "p-ComposableStable stMATIC/bb-a-WMATIC" },
