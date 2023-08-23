@@ -1,10 +1,13 @@
 import hre from "hardhat";
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import { formatEther, formatUnits, parseEther, parseUnits } from "ethers/lib/utils";
 import * as fs from "fs";
 import * as path from "path";
 import { BaseRewardPool__factory } from "../types";
 import { config } from "../tasks/deploy/mainnet-config";
+import { getSigner } from "../tasks/utils";
+import { chunk } from "lodash";
+import { sleep } from "../test-utils/time";
 
 const p = path.resolve(__dirname, "./auraEarned.json");
 const f = fs.readFileSync(p, "utf8");
@@ -14,6 +17,10 @@ const minBal = parseEther("5");
 
 const accountsWithMinBal = [];
 const accountsWithoutMinBal = [];
+
+const MULT_ABI = JSON.parse(
+    `[{"constant":true,"inputs":[],"name":"getCurrentBlockTimestamp","outputs":[{"name":"timestamp","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"components":[{"name":"target","type":"address"},{"name":"callData","type":"bytes"}],"name":"calls","type":"tuple[]"}],"name":"aggregate","outputs":[{"name":"blockNumber","type":"uint256"},{"name":"returnData","type":"bytes[]"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"getLastBlockHash","outputs":[{"name":"blockHash","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"addr","type":"address"}],"name":"getEthBalance","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getCurrentBlockDifficulty","outputs":[{"name":"difficulty","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getCurrentBlockGasLimit","outputs":[{"name":"gaslimit","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"getCurrentBlockCoinbase","outputs":[{"name":"coinbase","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"blockNumber","type":"uint256"}],"name":"getBlockHash","outputs":[{"name":"blockHash","type":"bytes32"}],"payable":false,"stateMutability":"view","type":"function"}]`,
+);
 
 for (const pid in data.pools) {
     const { accounts } = data.pools[pid];
@@ -31,6 +38,42 @@ const sumAccountsAura = (accounts: { aura: string }[]) =>
     accounts.reduce((acc, next) => acc.add(parseEther(next.aura)), BigNumber.from(0));
 
 async function main() {
+    const signer = await getSigner(hre);
+    const multicall = new ethers.Contract("0xeefba1e63905ef1d7acba5a8513c70307c1ce441", MULT_ABI, signer);
+
+    const phase6 = await config.getPhase6(signer);
+    const booster = phase6.booster;
+
+    // accountsWithMinBal.map(async acc => {
+    console.log(`Accounts to claim: ${accountsWithMinBal.length}`);
+
+    const chunks = chunk(accountsWithMinBal, 50);
+
+    for (const c of chunks.slice(1)) {
+        console.log("processing chunk");
+        const res = [] as any;
+        for (let i = 0; i < c.length; i++) {
+            const acc = c[i];
+            const poolInfo = await booster.poolInfo(acc.pid);
+            const pool = new ethers.Contract(
+                poolInfo.crvRewards,
+                ["function getReward(address,bool) external returns(bool)"],
+                signer,
+            );
+            const calldata = pool.interface.encodeFunctionData("getReward", [acc.address, false]);
+            const target = pool.address;
+
+            res.push([target, calldata]);
+            await sleep(1000);
+        }
+
+        const tx = await multicall.aggregate(res);
+        const reciept = await tx.wait(3);
+        console.log("Processeed using:", reciept.cumulativeGasUsed);
+    }
+}
+
+async function main0() {
     await hre.network.provider.request({
         method: "hardhat_reset",
         params: [
