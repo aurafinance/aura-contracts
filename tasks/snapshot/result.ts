@@ -75,6 +75,12 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             const [, power] = await gaugeController.vote_user_slopes(voterProxyAddress, gauge.address);
             gaugesWithExistingWeights.push({ address: gauge.address, label: parseLabel(gauge), existingWeight: power });
         }
+        for (let i = 0; i < successfulGauges.length; i++) {
+            const gauge = successfulGauges[i];
+            if (gaugesWithExistingWeights.find(r => r.address.toLowerCase() === gauge.address.toLowerCase())) continue;
+            const [, power] = await gaugeController.vote_user_slopes(voterProxyAddress, gauge.address);
+            gaugesWithExistingWeights.push({ address: gauge.address, label: gauge.choice, existingWeight: power });
+        }
 
         // ----------------------------------------------------------
         // Get New Votes
