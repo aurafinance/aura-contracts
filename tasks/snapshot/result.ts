@@ -38,6 +38,19 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             return;
         }
 
+        let choices = [] as string[];
+        let scores = [] as number[];
+        for (let i = 0; i < proposal.choices.length; i++) {
+            const score = proposal.scores[i];
+            const percentage = score / proposal.scores_total;
+            if (percentage >= 0.002) {
+                choices.push(proposal.choices[i]);
+                scores.push(proposal.scores[i]);
+            }
+        }
+        proposal.choices = choices;
+        proposal.scores = scores;
+
         // ----------------------------------------------------------
         // Get Gauge Weight Votes
         // ----------------------------------------------------------
@@ -55,9 +68,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             results.push({ choice, score, percentage, address: resp?.address });
         }
 
-        const successfulGauges = results
-            .filter(({ percentage }) => percentage > 0.002)
-            .sort((a, b) => b.percentage - a.percentage);
+        const successfulGauges = results.sort((a, b) => b.percentage - a.percentage);
 
         // ----------------------------------------------------------
         // Get Existing Votes
