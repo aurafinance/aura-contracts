@@ -38,6 +38,18 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             return;
         }
 
+        for (let i = 0; i < proposal.choices.length; i++) {
+            if (
+                proposal.choices[i] === "a-ComposableStable DUSD/bb-a-USD" ||
+                proposal.choices[i] === "p-ComposableStable bb-am-usd/DUSD"
+            ) {
+                const idx = proposal.choices.findIndex((x: string) => x === "ComposableStable DUSD/bb-a-USD");
+                proposal.scores[idx] += proposal.scores[i];
+                proposal.scores[i] = 0;
+                console.log(`[*] Forward ${proposal.choices[i]} votes to ${proposal.choices[idx]}`);
+            }
+        }
+
         let choices = [] as string[];
         let scores = [] as number[];
         for (let i = 0; i < proposal.choices.length; i++) {
