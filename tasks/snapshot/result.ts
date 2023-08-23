@@ -51,11 +51,52 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         proposal.choices = choices;
         proposal.scores = scores;
 
+        const gaugeList = getGaugeChoices();
+
+        for (let i = 0; i < proposal.choices.length; i++) {
+            const choice = proposal.choices[i];
+            const resp = gaugeList.find((gauge: GaugeChoice) => gauge.label === choice);
+
+            if (resp.label === "ComposableStable R/bb-s-DAI") {
+                console.log("[*] Move R/bb-s-DAI votes to R/DAI");
+                const rDaiIndex = proposal.choices.findIndex((x: string) => x === "ComposableStable R/DAI");
+                proposal.scores[rDaiIndex] += proposal.scores[i];
+                proposal.scores[i] = 0;
+            } else if (resp.label === "ComposableStable ETHx/bb-a-WETH") {
+                console.log("[*] ETHx keep core pool incentives ($2700/$12000) and refund the rest");
+                proposal.scores[i] = (proposal.scores[i] * 2700) / 12000;
+            } else if (resp.label === "a-ComposableStable bb-USD+/DOLA") {
+                console.log("[*] Move half bb-USD+/DOLA votes to INV/DOLA and refund the other half");
+                const invDolaIndex = proposal.choices.findIndex((x: string) => x === "50/50 INV/DOLA");
+                proposal.scores[invDolaIndex] += proposal.scores[i] / 2;
+                proposal.scores[i] = 0;
+            } else if (resp.label === "ComposableStable bb-g-USDC/bb-g-DAI") {
+                console.log("[*] Refund bb-g-USDC/bb-g-DAI");
+                proposal.scores[i] = 0;
+            } else if (resp.label === "ComposableStable qETH/bb-a-WETH") {
+                console.log("[*] Refund qETH/bb-a-WETH");
+                proposal.scores[i] = 0;
+            } else if (resp.label === "a-ComposableStable DOLA/bb-a-USD") {
+                console.log("[*] Send votes from DOLA/bb-a-USD to INV/DOLA");
+                const invDolaIndex = proposal.choices.findIndex((x: string) => x === "50/50 INV/DOLA");
+                proposal.scores[invDolaIndex] += proposal.scores[i];
+                proposal.scores[i] = 0;
+            } else if (resp.label === "a-ComposableStable bb-DAI+/bb-USD+") {
+                console.log("[*] No incentives for bb-DAI+ so just zero out");
+                proposal.scores[i] = 0;
+            } else if (resp.label === "ComposableStable GHO/bb-a-USD") {
+                console.log("[*] Keep 50% of GHO votes on GHO/3POOL and send 50% to GHO/LUSD");
+                const ghoLusdIndex = proposal.choices.findIndex((x: string) => x === "ComposableStable GHO/LUSD");
+                const newScore = proposal.scores[i] / 2;
+                proposal.scores[ghoLusdIndex] += newScore;
+                proposal.scores[i] = newScore;
+            }
+        }
+
         // ----------------------------------------------------------
         // Get Gauge Weight Votes
         // ----------------------------------------------------------
         console.log("Parsing vote results...");
-        const gaugeList = getGaugeChoices();
 
         const results: { choice: string; score: number; percentage: number; address: string }[] = [];
 
