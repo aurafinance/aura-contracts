@@ -73,8 +73,8 @@ export const getSidechain = (signer: Signer) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect("0x05589CbbE1cC0357986DF6de4031B953819079c2", signer),
     auraBalVault: AuraBalVault__factory.connect("0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9", signer),
     auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
-    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
-    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xEEDA9b5b9B18c5F6b77e96dfE076Cd46B7Af9701", signer),
+    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xeE19eA4b56a3350CFb6fC1B746972809Fde238a6", signer),
 });
 
 export const getView = (signer: Signer) => ({
