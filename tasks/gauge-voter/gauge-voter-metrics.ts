@@ -72,8 +72,9 @@ task("gauge:voter:metrics:mainnet").setAction(async function (tskArgs: TaskArgum
                 }
 
                 //Query Gauge Voter
-                const weight = await gaugeVoteRewards.getWeightByEpoch(i, gauge);
-                const isProcessed = await gaugeVoteRewards.isProcessed(i, gauge);
+                const epoch = Math.floor((i - (i % 2)) / 2);
+                const weight = await gaugeVoteRewards.getWeightByEpoch(epoch, gauge);
+                const isProcessed = await gaugeVoteRewards.isProcessed(epoch, gauge);
                 const noDepositGauge = await gaugeVoteRewards.isNoDepositGauge(gauge);
 
                 const poolData = {
@@ -117,7 +118,8 @@ task("gauge:voter:metrics:mainnet").setAction(async function (tskArgs: TaskArgum
     mainnetMetaRows.push([["Pools Not Set"], [poolNotSet]]);
 
     for (let i = startEpoch; i <= currentEpoch; i++) {
-        const totalWeight = await gaugeVoteRewards.getTotalWeight(i);
+        const epoch = Math.floor((i - (i % 2)) / 2);
+        const totalWeight = await gaugeVoteRewards.getTotalWeight(epoch);
         epochStats[i] = {
             epoch: i,
             totalWeight: totalWeight,
@@ -249,17 +251,17 @@ task("gauge:voter:metrics:sidechain").setAction(async function (
                         }
 
                         //Query Gauge Voter
-
-                        const amountToSendByEpoch = await gaugeVoteRewards.getAmountToSendByEpoch(i, gauge);
-                        const amountToBeSentByEpoch = await gaugeVoteRewards.getAmountToSendByEpoch(i, gauge);
+                        const epoch = Math.floor((i - (i % 2)) / 2);
+                        const amountToSendByEpoch = await gaugeVoteRewards.getAmountToSendByEpoch(epoch, gauge);
+                        const amountToBeSentByEpoch = await gaugeVoteRewards.getAmountToSendByEpoch(epoch, gauge);
 
                         epochSentTotals[i] += Number(amountToBeSentByEpoch);
                         epochSendTotals[i] += Number(amountToSendByEpoch);
 
                         //Query Gauge Voter
                         const mainnetGauge = recipientToGauge[gauge];
-                        const weight = await mainnetGaugeVoteRewards.getWeightByEpoch(i, mainnetGauge);
-                        const isProcessed = await mainnetGaugeVoteRewards.isProcessed(i, mainnetGauge);
+                        const weight = await mainnetGaugeVoteRewards.getWeightByEpoch(epoch, mainnetGauge);
+                        const isProcessed = await mainnetGaugeVoteRewards.isProcessed(epoch, mainnetGauge);
                         const noDepositGauge = await mainnetGaugeVoteRewards.isNoDepositGauge(mainnetGauge);
 
                         const data = {
