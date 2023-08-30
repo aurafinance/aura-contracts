@@ -12,6 +12,8 @@ import {
     ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
+    ForwarderHandler,
+    ForwarderHandler__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
     VirtualRewardFactory,
@@ -30,7 +32,7 @@ interface VaultConfig {
 export interface VaultDeployment {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    bbusdHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler;
     auraRewards: VirtualBalanceRewardPool;
     virtualRewardFactory: VirtualRewardFactory;
 }
@@ -55,7 +57,7 @@ export async function deployFeeForwarder(
     return { feeForwarder };
 }
 
-export async function deployBBUSDHandlerV3(
+export async function deployFeeTokenHandlerV4(
     config: VaultConfig,
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
@@ -63,10 +65,10 @@ export async function deployBBUSDHandlerV3(
     waitForBlocks = 0,
 ) {
     const compounder = await config.getAuraBalVault(signer);
-    const bbusdHandler = await deployContract<BalancerSwapsHandler>(
+    const feeTokenHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
-        "BBUSDHandlerv3",
+        "USDCHandlerV1",
         [
             config.addresses.feeToken,
             compounder.strategy.address,
@@ -81,9 +83,19 @@ export async function deployBBUSDHandlerV3(
         debug,
         waitForBlocks,
     );
-
+    const bbausdV3Address = "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016"; // @deprecated bbausdV3
+    const forwarderHandler = await deployContract<ForwarderHandler>(
+        hre,
+        new ForwarderHandler__factory(signer),
+        "BBUSDHandlerV4",
+        [bbausdV3Address],
+        {},
+        debug,
+        waitForBlocks,
+    );
     return {
-        bbusdHandler,
+        feeTokenHandler,
+        forwarderHandler,
     };
 }
 
@@ -139,10 +151,10 @@ export async function deployVault(
         waitForBlocks,
     );
 
-    const bbusdHandler = await deployContract<BalancerSwapsHandler>(
+    const feeTokenHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
-        "BBUSDHandlerv3",
+        "USDCHandlerV1",
         [
             config.addresses.feeToken,
             strategy.address,
@@ -161,7 +173,7 @@ export async function deployVault(
     let tx = await vault.setStrategy(strategy.address);
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await strategy.addRewardToken(config.addresses.feeToken, bbusdHandler.address);
+    tx = await strategy.addRewardToken(config.addresses.feeToken, feeTokenHandler.address);
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await vault.addExtraReward(phase2.cvx.address);
@@ -170,8 +182,8 @@ export async function deployVault(
     tx = await strategy.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
-    if ((await feeToken.allowance(bbusdHandler.address, config.addresses.balancerVault)).eq(ZERO)) {
-        tx = await bbusdHandler.setApprovals();
+    if ((await feeToken.allowance(feeTokenHandler.address, config.addresses.balancerVault)).eq(ZERO)) {
+        tx = await feeTokenHandler.setApprovals();
         await waitForTx(tx, debug, waitForBlocks);
     }
 
@@ -181,7 +193,7 @@ export async function deployVault(
     return {
         vault,
         strategy,
-        bbusdHandler,
+        feeTokenHandler,
         auraRewards,
         virtualRewardFactory,
     };

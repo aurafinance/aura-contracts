@@ -59,7 +59,7 @@ describe("BalancerSwapsHandler", () => {
             false,
         );
 
-        rewardHandler = result.bbusdHandler;
+        rewardHandler = result.feeTokenHandler;
         strategy = result.strategy;
 
         owner = { signer: deployer, address: await deployer.getAddress() };

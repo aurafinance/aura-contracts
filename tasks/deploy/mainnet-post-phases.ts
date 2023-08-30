@@ -13,7 +13,7 @@ import {
 } from "../../scripts/deployPeripheral";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
-import { deployBBUSDHandlerV3, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
+import { deployFeeTokenHandlerV4, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { waitForTx } from "../../tasks/utils";
 import { simpleToExactAmount } from "../../test-utils/math";
 import {
@@ -167,7 +167,7 @@ task("deploy:vault")
             throw Error(`Config for network ${hre.network.name} not found`);
         }
 
-        const { vault, strategy, bbusdHandler, auraRewards } = await deployVault(
+        const { vault, strategy, feeTokenHandler, auraRewards } = await deployVault(
             conf,
             hre,
             deployer,
@@ -177,7 +177,7 @@ task("deploy:vault")
 
         console.log("Vault:", vault.address);
         console.log("Strategy:", strategy.address);
-        console.log("BBUSD Handler:", bbusdHandler.address);
+        console.log("USDC Handler:", feeTokenHandler.address);
         console.log("AuraRewards:", auraRewards.address);
     });
 
@@ -309,12 +309,13 @@ task("deploy:mainnet:veBalGrant")
         console.log("VeBalGrant:", result.veBalGrant.address);
     });
 
-task("deploy:mainnet:bbusdHandlerV3")
+task("deploy:mainnet:feeTokenHandlerV4")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-        const result = await deployBBUSDHandlerV3(config, hre, deployer, debug, tskArgs.wait);
-        console.log("Handler:", result.bbusdHandler.address);
+        const result = await deployFeeTokenHandlerV4(config, hre, deployer, debug, tskArgs.wait);
+        console.log("FeeToken Handler:", result.feeTokenHandler.address);
+        console.log("Forwarder Handler:", result.forwarderHandler.address);
     });
 
 task("deploy:mainnet:wardenQuestScheduler")
