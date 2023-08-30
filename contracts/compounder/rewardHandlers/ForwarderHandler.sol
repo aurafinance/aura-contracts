@@ -30,8 +30,6 @@ contract ForwarderHandler is IRewardHandler {
         _;
     }
 
-    receive() external payable {}
-
     function setPendingOwner(address _po) external onlyOwner {
         pendingOwner = _po;
     }
