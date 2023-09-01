@@ -46,6 +46,8 @@ export const parseLabel = (gauge: Gauge) => {
     if (gauge.pool.symbol === "veLIT") return "veLIT";
     if (gauge.pool.symbol === "veUSH") return "veUSH";
 
+    if (symbolOverrides[gauge.address.toLowerCase()]) return symbolOverrides[gauge.address.toLowerCase()];
+
     const networkStr = networkLabels[gauge.network] ? `${networkLabels[gauge.network]}-` : "";
     const weightStr =
         gauge.pool.poolType === "Weighted"

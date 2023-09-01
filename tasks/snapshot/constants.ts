@@ -15,6 +15,7 @@ export const networkLabels = { 137: "p", 42161: "a", 10: "o", 100: "g", 1101: "z
 
 export const symbolOverrides = {
     "0x9559aaa82d9649c7a7b220e7c461d2e74c9a3593": "StaFi rETH",
+    "0xd103dd49b8051a09b399a52e9a8ab629392de2fb": "p-Gyroe WMATIC/stMATIC",
 };
 
 export const priorityGuagesAddresses = [
@@ -73,4 +74,6 @@ export const removedGauges = [
     "0xecF0a26a290cbf3DDBAB7eC5Fb44Ef5A294cAc18",
     "0x8204b749B808818DEb7957DbD030ceEA44D1FE18",
     "0xacE0D479040231e3c6b17479cFd4444182d521d4",
+    // Duplicate gauges
+    "0x455f20c54b5712a84454468c7831f7c431aeEB1C",
 ].map(x => x.toLowerCase());
