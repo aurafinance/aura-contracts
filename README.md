@@ -132,7 +132,7 @@ yarn task timeTravel --duration 69420 --network forking
 ### Ethereum Mainnet (1)
 
 | Contract                        | Address                                                                                                               |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --- |
 | voterProxy                      | [0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2](https://etherscan.io/address/0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2) |
 | aura                            | [0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF](https://etherscan.io/address/0xC0c293ce456fF0ED870ADd98a0828Dd4d2903DBF) |
 | minter                          | [0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707](https://etherscan.io/address/0x59A5ccD34943CD0AdCf5ce703EE9F06889E13707) |
@@ -185,7 +185,7 @@ yarn task timeTravel --duration 69420 --network forking
 | VirtualRewardsFactory           | [0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3](https://etherscan.io/address/0x64E2dF8E5463f8c14e1c28C9782f7B4B6062b2c3) |
 | auraBalVault                    | [0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6](https://etherscan.io/address/0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6) |
 | auraBalVault Strategy           | [0x7372EcE4C18bEABc19981A53b557be90dcBd2b66](https://etherscan.io/address/0x7372EcE4C18bEABc19981A53b557be90dcBd2b66) |
-| auraBalVault BBUSDHandler (v3)  | [0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC](https://etherscan.io/address/0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC) |
+| auraBalVault USDC Handler (v1)  | [0xA2930d1e21a26fde6ed861f303205536A98381eD](https://etherscan.io/address/0xA2930d1e21a26fde6ed861f303205536A98381eD) |
 | auraBalVault VirtualRewards     | [0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147](https://etherscan.io/address/0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147) |
 | auraClaimZapV3                  | [0x5b2364fD757E262253423373E4D57C5c011Ad7F4](https://etherscan.io/address/0x5b2364fD757E262253423373E4D57C5c011Ad7F4) |
 | auraBalStaker                   | [0xa3fCaFCa8150636C3B736A16Cd73d49cC8A7E10E](https://etherscan.io/address/0xa3fCaFCa8150636C3B736A16Cd73d49cC8A7E10E) |
@@ -194,9 +194,9 @@ yarn task timeTravel --duration 69420 --network forking
 | auraViewHelpers                 | [0x129bBda5087e132983e7c20ae1F761333D40c229](https://etherscan.io/address/0x129bBda5087e132983e7c20ae1F761333D40c229) |
 | KeeperMulticall3                | [0x817F426B5a79599464488eCCf82c3F54b9330E15](https://etherscan.io/address/0x817F426B5a79599464488eCCf82c3F54b9330E15) |
 | WardenQuestScheduler            | [0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47](https://etherscan.io/address/0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47) |
-| stashRewardDistro               | [0x2e82aF65f423DC1090d6D11c68BD6A8c9Ee6d4C1](https://etherscan.io/address/0x2e82aF65f423DC1090d6D11c68BD6A8c9Ee6d4C1) |
 | gaugeVoteRewards                | [0x54231C588b698dc9B91303C95c85F050DA35189B](https://etherscan.io/address/0x54231C588b698dc9B91303C95c85F050DA35189B) |
-| stashRewardDistro               | [0x74D2e022d38f630309a9024c4c993A3F72241298](https://etherscan.io/address/0x74D2e022d38f630309a9024c4c993A3F72241298) |
+| stashRewardDistro               | [0x74D2e022d38f630309a9024c4c993A3F72241298](https://etherscan.io/address/0x74D2e022d38f630309a9024c4c993A3F72241298) |     |
+| Forwarder Handler               | [0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1](https://etherscan.io/address/0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1) |
 
 ### Arbitrum (42161)
 
@@ -281,10 +281,11 @@ yarn task timeTravel --duration 69420 --network forking
 
 ### Ethereum Mainnet (2) @deprecated
 
-| auraBalVault BBUSDHandler (v2) | [0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d](https://etherscan.io/address/0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d) |
 | extraRewardStashV3 | [0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98](https://etherscan.io/address/0x37C3EBfD4b0cF66DF19a413e92dd21E556915F98) |
 | poolManager | [0xB58Eb197c35157E6F3351718C4C387D284562BE5](https://etherscan.io/address/0xB58Eb197c35157E6F3351718C4C387D284562BE5) |
 | gaugeMigrator | [0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B](https://etherscan.io/address/0x7954bcDce86e86BeE7b1dEff48c3a0b9BCCe578B) |
+| auraBalVault BBUSDHandler (v2) | [0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d](https://etherscan.io/address/0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d) |
+| auraBalVault BBUSDHandler (v3) | [0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC](https://etherscan.io/address/0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC) |
 
 ### Goerli (5) @deprecated
 

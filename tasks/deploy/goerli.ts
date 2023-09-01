@@ -209,7 +209,7 @@ task("deploy:goerli:vault")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
 
-        const { vault, strategy, bbusdHandler, auraRewards } = await deployVault(
+        const { vault, strategy, feeTokenHandler, auraRewards } = await deployVault(
             config,
             hre,
             deployer,
@@ -219,7 +219,7 @@ task("deploy:goerli:vault")
 
         console.log("Vault:", vault.address);
         console.log("Strategy:", strategy.address);
-        console.log("BBUSD Handler:", bbusdHandler.address);
+        console.log("BBUSD Handler:", feeTokenHandler.address);
         console.log("AuraRewards:", auraRewards.address);
     });
 

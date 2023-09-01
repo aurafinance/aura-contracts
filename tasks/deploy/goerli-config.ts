@@ -214,14 +214,14 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    bbusdHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler;
     auraRewards: VirtualBalanceRewardPool;
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0x0E69F37f5009c174537277BA956A13663AAAa814", deployer),
     strategy: AuraBalStrategy__factory.connect("0x098810A74E7682fD650439E2b7440519cf4B022A", deployer),
-    bbusdHandler: BalancerSwapsHandler__factory.connect("0xb30a0c7ac99D61650A528AbB31A46470C55f4834", deployer),
+    feeTokenHandler: BalancerSwapsHandler__factory.connect("0xb30a0c7ac99D61650A528AbB31A46470C55f4834", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0x6fE74EA452b21698bbC27617b2B23FB797393094", deployer),
 });
 

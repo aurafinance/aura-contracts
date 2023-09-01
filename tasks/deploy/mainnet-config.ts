@@ -148,9 +148,10 @@ const addresses: ExtSystemConfig = {
     keeper: "0xc3f4D7b4EF10Dfe1dFfc4Ac2EC4D3Ee29CBF67aE",
     staBAL3: "0x06df3b2bbb68adc8b0e302443692037ed9f91b42", //  Balancer USD Stable Pool (staBAL3)
     staBAL3Whale: "0x4086e3e1e99a563989a9390facff553a4f29b6ee",
-    // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2", @deprecated
-    // feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44", @deprecated
-    feeToken: "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016",
+    // feeToken: "0x7B50775383d3D6f0215A8F290f2C9e2eEBBEceb2", @deprecated bbausdV1
+    // feeToken: "0xA13a9247ea42D743238089903570127DdA72fE44", @deprecated bbausdV2
+    // feeToken: "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016", @deprecated bbausdV3
+    feeToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", //USDC
     feeTokenWhale: "0x3a3eE61F7c6e1994a2001762250A5E17B2061b6d",
     ldo: "0x5a98fcbea516cf06857215779fd812ca3bef1b32",
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
@@ -159,18 +160,8 @@ const addresses: ExtSystemConfig = {
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
     feeTokenHandlerPath: {
-        poolIds: [
-            "0xfebb0bbf162e64fb9d0dfe186e517d84c395f016000000000000000000000502",
-            "0xa1697f9af0875b63ddc472d6eebada8c1fab85680000000000000000000004f9",
-            "0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7",
-            "0x08775ccb6674d6bdceb0797c364c2653ed84f3840002000000000000000004f0",
-        ],
-        assetsIn: [
-            "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016",
-            "0xA1697F9Af0875B63DdC472d6EeBADa8C1fAB8568",
-            "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-            "0x79c58f70905F734641735BC61e45c19dD9Ad60bC",
-        ],
+        poolIds: ["0x96646936b91d6b9d7d0c47c496afbf3d6ec7b6f8000200000000000000000019"],
+        assetsIn: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
     },
     lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
     sidechain: {
@@ -415,14 +406,14 @@ const getAuraMining = async (deployer: Signer) => ({
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    bbusdHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler;
     auraRewards: VirtualBalanceRewardPool;
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
-    bbusdHandler: BalancerSwapsHandler__factory.connect("0x1bAB8Bcb00B0Fd63D4e28249ad54f6e6329b7fCC", deployer),
+    feeTokenHandler: BalancerSwapsHandler__factory.connect("0xA2930d1e21a26fde6ed861f303205536A98381eD", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 

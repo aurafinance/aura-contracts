@@ -1,27 +1,16 @@
-import hre, { network } from "hardhat";
+import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
 import { expect } from "chai";
-import { parseEther } from "ethers/lib/utils";
 import { BigNumber, BigNumberish, ethers } from "ethers";
+import { parseEther } from "ethers/lib/utils";
+import hre, { network } from "hardhat";
+import { JoinPoolRequestStruct } from "types/generated/IBalancerHelpers";
+import { BatchSwapStepStruct, FundManagementStruct } from "types/generated/MockBalancerVault";
 
-import {
-    Account,
-    IBalancerVault,
-    MockERC20__factory,
-    IBalancerVault__factory,
-    IERC20,
-    IERC20__factory,
-    AuraBalVault,
-    AuraBalStrategy,
-    IBalancerHelpers__factory,
-    IBalancerHelpers,
-    FeeForwarder,
-    BalancerSwapsHandler,
-    BalancerSwapsHandler__factory,
-    VirtualBalanceRewardPool,
-    VirtualBalanceRewardPool__factory,
-} from "../../types";
-import { BN, simpleToExactAmount } from "../../test-utils/math";
 import { Phase2Deployed, Phase6Deployed } from "../../scripts/deploySystem";
+import { deployFeeTokenHandlerV4 } from "../../scripts/deployVault";
+import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
+import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
+import { deployContract } from "../../tasks/utils";
 import {
     assertBNClosePercent,
     getTimestamp,
@@ -30,13 +19,25 @@ import {
     impersonateAndTransfer,
     increaseTime,
 } from "../../test-utils";
-import { ZERO_ADDRESS, DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO } from "../../test-utils/constants";
-import { config as mainnetConfig } from "../../tasks/deploy/mainnet-config";
-import { config as goerliConfig } from "../../tasks/deploy/goerli-config";
-import { deployContract } from "../../tasks/utils";
-import { WeightedPoolEncoder } from "@balancer-labs/balancer-js";
-import { JoinPoolRequestStruct } from "types/generated/IBalancerHelpers";
-import { BatchSwapStepStruct, FundManagementStruct } from "types/generated/MockBalancerVault";
+import { DEAD_ADDRESS, ONE_DAY, ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
+import { BN, simpleToExactAmount } from "../../test-utils/math";
+import {
+    Account,
+    AuraBalStrategy,
+    AuraBalVault,
+    BalancerSwapsHandler,
+    BalancerSwapsHandler__factory,
+    FeeForwarder,
+    IBalancerHelpers,
+    IBalancerHelpers__factory,
+    IBalancerVault,
+    IBalancerVault__factory,
+    IERC20,
+    IERC20__factory,
+    MockERC20__factory,
+    VirtualBalanceRewardPool,
+    VirtualBalanceRewardPool__factory,
+} from "../../types";
 
 // Constants
 const DEPOSIT_AMOUNT = simpleToExactAmount(10);
@@ -46,7 +47,7 @@ const testConfigs = {
         forkBlock: 16892370,
         auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
         auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
-        bbaUsdWhale: "0x43b650399F2E4D6f03503f44042fabA8F7D73470",
+        feeTokenWhale: "0x0A59649758aa4d66E25f08Dd01271e891fe52199",
         config: mainnetConfig,
         deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     },
@@ -54,7 +55,7 @@ const testConfigs = {
         forkBlock: 8572175,
         auraBalWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
         auraWhale: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
-        bbaUsdWhale: "0xE0a171587b1Cae546E069A943EDa96916F5EE977",
+        feeTokenWhale: "0xE0a171587b1Cae546E069A943EDa96916F5EE977",
         config: goerliConfig,
         deployer: "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
     },
@@ -69,7 +70,7 @@ describe("AuraBalVault", () => {
     let feeForwarder: FeeForwarder;
     let vault: AuraBalVault;
     let strategy: AuraBalStrategy;
-    let bbusdHandler: BalancerSwapsHandler;
+    let feeTokenHandler: BalancerSwapsHandler;
     let auraRewards: VirtualBalanceRewardPool;
 
     let dao: Account;
@@ -98,8 +99,8 @@ describe("AuraBalVault", () => {
     const getAura = async (to: string, amount: BigNumberish) =>
         impersonateAndTransfer(phase2.cvx.address, testConfig.auraWhale, to, amount);
 
-    const getBBaUSD = async (to: string, amount: BigNumberish) =>
-        impersonateAndTransfer(config.addresses.feeToken, testConfig.bbaUsdWhale, to, amount);
+    const getFeeToken = async (to: string, amount: BigNumberish) =>
+        impersonateAndTransfer(config.addresses.feeToken, testConfig.feeTokenWhale, to, amount);
 
     const SLIPPAGE_OUTPUT_SWAP = 9900;
     const SLIPPAGE_OUTPUT_SCALE = 10000;
@@ -108,12 +109,12 @@ describe("AuraBalVault", () => {
 
     const applySwapSlippage = (amount: BigNumber): BigNumber => applySlippage(amount, SLIPPAGE_OUTPUT_SWAP);
 
-    async function getBbaUsdToWethAmount(
+    async function getFeeTokenToWethAmount(
         bVault: IBalancerVault,
         sender: string,
         amount: BigNumberish,
     ): Promise<BigNumber> {
-        const swapPath = await bbusdHandler.getSwapPath();
+        const swapPath = await feeTokenHandler.getSwapPath();
         const length = swapPath.poolIds.length;
         const swaps: BatchSwapStepStruct[] = [];
         const assets: string[] = [];
@@ -199,7 +200,7 @@ describe("AuraBalVault", () => {
         if (feeTokenEarned.add(strategyFeeTokenBalance).gt(ZERO)) {
             // Edge Case it should not happen
             console.log("No Fee Token earned");
-            minAmountFeeTokenWeth = await getBbaUsdToWethAmount(
+            minAmountFeeTokenWeth = await getFeeTokenToWethAmount(
                 bVault,
                 strategy.address,
                 feeTokenEarned.add(strategyFeeTokenBalance),
@@ -216,12 +217,12 @@ describe("AuraBalVault", () => {
 
         return applySwapSlippage(minAmountAuraBal);
     }
-    // Force a reward harvest by transferring BAL, BBaUSD and Aura tokens directly
+    // Force a reward harvest by transferring BAL, FeeToken and Aura tokens directly
     // to the reward contract the contract will then swap it for
     // auraBAL and queue it for rewards
     async function forceHarvestRewards(amount = parseEther("10"), signer = dao.signer) {
         await getBal(strategy.address, amount);
-        await getBBaUSD(strategy.address, amount);
+        await getFeeToken(strategy.address, amount.div(simpleToExactAmount(1, 12))); // USDC 6 decimals
         await getAura(strategy.address, amount);
         const crv = MockERC20__factory.connect(config.addresses.token, signer);
         const feeToken = MockERC20__factory.connect(config.addresses.feeToken, signer);
@@ -299,8 +300,12 @@ describe("AuraBalVault", () => {
 
             vault = result.vault;
             strategy = result.strategy;
-            bbusdHandler = result.bbusdHandler;
+            feeTokenHandler = result.feeTokenHandler;
             auraRewards = result.auraRewards;
+
+            ({ feeTokenHandler } = await deployFeeTokenHandlerV4(config, hre, deployer.signer));
+            await strategy.addRewardToken(feeToken.address, feeTokenHandler.address);
+            await feeTokenHandler.setApprovals();
         });
         it("update booster platform to vault", async () => {
             expect(await phase6.booster.treasury()).not.eq(vault.address);
@@ -315,9 +320,9 @@ describe("AuraBalVault", () => {
             await expect(vault.setStrategy(DEAD_ADDRESS)).to.be.revertedWith("Strategy already set");
         });
         it("check reward tokens", async () => {
-            expect(await strategy.totalRewardTokens()).eq(1);
-            expect(await strategy.rewardTokens(0)).eq(config.addresses.feeToken);
-            expect(await strategy.rewardHandlers(config.addresses.feeToken)).eq(bbusdHandler.address);
+            expect(await strategy.totalRewardTokens()).eq(2);
+            expect(await strategy.rewardTokens(1)).eq(config.addresses.feeToken);
+            expect(await strategy.rewardHandlers(config.addresses.feeToken)).eq(feeTokenHandler.address);
         });
         it("set harvester", async () => {
             expect(await vault.authorizedHarvesters(dao.address)).eq(false);
@@ -356,12 +361,12 @@ describe("AuraBalVault", () => {
             expect(await strategy.BAL_TOKEN()).eq(balToken.address);
             expect(await strategy.BAL_ETH_POOL_TOKEN()).eq(balWethBptToken.address);
         });
-        it("check bbusd handler is configured correctly", async () => {
-            expect(await bbusdHandler.owner()).eq(deployer.address);
-            expect(await bbusdHandler.pendingOwner()).eq(ZERO_ADDRESS);
-            expect(await bbusdHandler.token()).eq(config.addresses.feeToken);
-            expect(await bbusdHandler.strategy()).eq(strategy.address);
-            expect(await bbusdHandler.balVault()).eq(config.addresses.balancerVault);
+        it("check feeToken handler is configured correctly", async () => {
+            expect(await feeTokenHandler.owner()).eq(deployer.address);
+            expect(await feeTokenHandler.pendingOwner()).eq(ZERO_ADDRESS);
+            expect(await feeTokenHandler.token()).eq(config.addresses.feeToken);
+            expect(await feeTokenHandler.strategy()).eq(strategy.address);
+            expect(await feeTokenHandler.balVault()).eq(config.addresses.balancerVault);
         });
         it("check AURA virtual share pool is configured correctly", async () => {
             expect(await auraRewards.deposits()).eq(vault.address);
@@ -389,8 +394,8 @@ describe("AuraBalVault", () => {
             await expect(connectedStrat.addRewardToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
             await expect(connectedStrat.updateRewardToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith(OWNER_ERROR);
         });
-        it("BBUSDHandler", async () => {
-            const connectedHandler = bbusdHandler.connect(account.signer);
+        it("FeeTokenHandler", async () => {
+            const connectedHandler = feeTokenHandler.connect(account.signer);
             await expect(connectedHandler.setPendingOwner(ZERO_ADDRESS)).to.be.revertedWith("owner only");
             await expect(connectedHandler.applyPendingOwner()).to.be.revertedWith("owner only");
             await expect(connectedHandler.rescueToken(ZERO_ADDRESS, ZERO_ADDRESS)).to.be.revertedWith("owner only");
@@ -745,7 +750,7 @@ describe("AuraBalVault", () => {
             handler = await deployContract<BalancerSwapsHandler>(
                 hre,
                 new BalancerSwapsHandler__factory(deployer.signer),
-                "BBUSDHandlerv3",
+                "USDCHandlerV1",
                 [
                     config.addresses.feeToken,
                     strategyAddress,
@@ -764,7 +769,7 @@ describe("AuraBalVault", () => {
         });
         it("fund handler with bbUSD", async () => {
             const amount = simpleToExactAmount(100);
-            await getBBaUSD(handler.address, amount);
+            await getFeeToken(handler.address, amount);
             expect(await feeToken.balanceOf(handler.address)).gt(0);
         });
         it("sell bbUSD for WETH", async () => {
