@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import hre, { network } from "hardhat";
+import { network } from "hardhat";
 
 import { Phase6Deployed, Phase8Deployed } from "../../scripts/deploySystem";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
