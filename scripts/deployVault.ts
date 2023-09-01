@@ -93,6 +93,9 @@ export async function deployFeeTokenHandlerV4(
         debug,
         waitForBlocks,
     );
+    const tx = await feeTokenHandler.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+
     return {
         feeTokenHandler,
         forwarderHandler,

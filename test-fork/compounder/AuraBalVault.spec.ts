@@ -44,7 +44,7 @@ const DEPOSIT_AMOUNT = simpleToExactAmount(10);
 
 const testConfigs = {
     mainnet: {
-        forkBlock: 16892370, // - enable after [BIP-408]
+        forkBlock: 16892370,
         auraBalWhale: "0xcaab2680d81df6b3e2ece585bb45cee97bf30cd7",
         auraWhale: "0xc9Cea7A3984CefD7a8D2A0405999CB62e8d206DC",
         feeTokenWhale: "0x0A59649758aa4d66E25f08Dd01271e891fe52199",
@@ -303,7 +303,6 @@ describe("AuraBalVault", () => {
             feeTokenHandler = result.feeTokenHandler;
             auraRewards = result.auraRewards;
 
-            // Remove after after [BIP-408]
             ({ feeTokenHandler } = await deployFeeTokenHandlerV4(config, hre, deployer.signer));
             await strategy.addRewardToken(feeToken.address, feeTokenHandler.address);
             await feeTokenHandler.setApprovals();
