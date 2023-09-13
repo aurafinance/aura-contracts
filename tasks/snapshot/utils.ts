@@ -135,7 +135,7 @@ export const parseLabel = (gauge: Gauge) => {
         return [networkStr, tokenStr].join("");
     }
 
-    return [networkStr, weightStr, " ", tokenStr].filter(Boolean).join("").trim();
+    return networkStr + [weightStr, tokenStr].filter(Boolean).join(" ").trim();
 };
 
 export const sortGaugeList = (gaugeList: Gauge[]) => {
