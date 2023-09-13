@@ -24,7 +24,7 @@ const gaugeFormatRow = (gauge: any) => ({ address: gauge.address, label: parseLa
 
 task("snapshot:generate").setAction(async function (_: TaskArguments, hre: HardhatRuntime) {
     const signer = await getSigner(hre);
-    const gaugeSnapshot = getGaugeSnapshot();
+    const gaugeSnapshot = await getGaugeSnapshot();
 
     const validNetworkGauges = gaugeSnapshot
         .filter(gaugeFilterNetworks)
@@ -68,6 +68,9 @@ task("snapshot:validate").setAction(async function (_: TaskArguments, hre: Hardh
 
     const count = Number((await gaugeController.n_gauges()).toString());
 
+    console.log("GaugeController gauges: ", count);
+    console.log("Validating gauges choices...");
+    let nCount = 0;
     for (let i = 0; i < count; i++) {
         const addr = await gaugeController.gauges(i);
         const gauge = new Contract(addr, ["function is_killed() external view returns (bool)"], signer);
@@ -77,7 +80,9 @@ task("snapshot:validate").setAction(async function (_: TaskArguments, hre: Hardh
         const found = gauges.find((g: GaugeChoice) => compareAddresses(addr, g.address));
         const isRemoved = removedGauges.find(g => compareAddresses(g, addr));
         if (!found && !isRemoved) {
+            nCount++;
             console.log("Missing:", i, addr);
         }
     }
+    console.log(`Validation complete missing ${nCount} gauges`);
 });

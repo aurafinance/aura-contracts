@@ -1,3 +1,5 @@
+import { chainIds } from "../../tasks/utils";
+
 export const configs = {
     main: {
         hub: "https://hub.snapshot.org",
@@ -9,9 +11,26 @@ export const configs = {
     },
 };
 
-export const validNetworks = [1, 10, 42161, 137, 100, 1101];
+export const validNetworks = [
+    chainIds.mainnet,
+    chainIds.base,
+    chainIds.optimism,
+    chainIds.avalanche,
+    chainIds.zkevm,
+    chainIds.gnosis,
+    chainIds.polygon,
+    chainIds.arbitrum,
+];
 
-export const networkLabels = { 137: "p", 42161: "a", 10: "o", 100: "g", 1101: "z" };
+export const networkLabels = {
+    [chainIds.base]: "b",
+    [chainIds.optimism]: "o",
+    [chainIds.avalanche]: "av",
+    [chainIds.zkevm]: "z",
+    [chainIds.gnosis]: "g",
+    [chainIds.polygon]: "p",
+    [chainIds.arbitrum]: "a",
+};
 
 export const symbolOverrides = {
     "0x9559aaa82d9649c7a7b220e7c461d2e74c9a3593": "StaFi rETH",
