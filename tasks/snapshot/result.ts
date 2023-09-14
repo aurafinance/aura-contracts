@@ -65,7 +65,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // ----------------------------------------------------------
 
         console.log("Getting existing vote weights...");
-        const gaugeSnapshot = getGaugeSnapshot();
+        const gaugeSnapshot = await getGaugeSnapshot();
         const voterProxyAddress = "0xaF52695E1bB01A16D33D7194C28C42b10e0Dbec2";
         const gaugeControllerAddress = "0xc128468b7ce63ea702c1f104d55a2566b13d3abd";
         const gaugeController = IGaugeController__factory.connect(gaugeControllerAddress, signer);
