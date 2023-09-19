@@ -1,3 +1,5 @@
+import { chainIds } from "../../tasks/utils";
+
 export const configs = {
     main: {
         hub: "https://hub.snapshot.org",
@@ -9,9 +11,26 @@ export const configs = {
     },
 };
 
-export const validNetworks = [1, 10, 42161, 137, 100, 1101];
+export const validNetworks = [
+    chainIds.mainnet,
+    chainIds.base,
+    chainIds.optimism,
+    chainIds.avalanche,
+    chainIds.zkevm,
+    chainIds.gnosis,
+    chainIds.polygon,
+    chainIds.arbitrum,
+];
 
-export const networkLabels = { 137: "p", 42161: "a", 10: "o", 100: "g", 1101: "z" };
+export const networkLabels = {
+    [chainIds.base]: "b",
+    [chainIds.optimism]: "o",
+    [chainIds.avalanche]: "av",
+    [chainIds.zkevm]: "z",
+    [chainIds.gnosis]: "g",
+    [chainIds.polygon]: "p",
+    [chainIds.arbitrum]: "a",
+};
 
 export const symbolOverrides = {
     "0x9559aaa82d9649c7a7b220e7c461d2e74c9a3593": "StaFi rETH",
@@ -43,6 +62,7 @@ export const months = [
 export const removedGauges = [
     "0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2", // sdBAL
     "0xcF5938cA6d9F19C73010c7493e19c02AcFA8d24D", // tetuBAL
+    "0xd1177e2157a7fd6a0484b79f8e50e8a9305f8063", // tetuBAL
     // Removed but not killed yet 17th Jul 2023
     // https://forum.balancer.fi/t/bip-356-kill-affected-csp-and-weighted-pool-gauges/4971
     "0xA2a9Ebd6f4dEA4802083F2C8D08066A4e695e64B",

@@ -153,6 +153,9 @@ export const resolveToken = (
 };
 
 export const chainIds = {
+    base: 84531,
+    avalanche: 43114,
+    zkevm: 1101,
     optimism: 10,
     goerli: 5,
     hardhat: 31337,

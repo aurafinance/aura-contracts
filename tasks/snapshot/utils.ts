@@ -1,5 +1,8 @@
+import { getAddress } from "ethers/lib/utils";
 import * as fs from "fs";
+import request, { gql } from "graphql-request";
 import * as path from "path";
+import { chainIds } from "../../tasks/utils";
 import { networkLabels, priorityGuagesAddresses, symbolOverrides, validNetworks } from "./constants";
 
 export interface Gauge {
@@ -25,10 +28,81 @@ export const compareAddresses = (a: string, b: string): boolean => {
     return a.toLowerCase() === b.toLowerCase();
 };
 
-export function getGaugeSnapshot() {
-    // https://raw.githubusercontent.com/balancer/frontend-v2/develop/src/data/voting-gauges.json
-    const savePath = path.resolve(__dirname, "./gauge_snapshot.json");
-    return JSON.parse(fs.readFileSync(savePath, "utf-8"));
+export async function getGaugeSnapshot() {
+    const balanceApiUrl = "https://api-v3.balancer.fi/";
+    const query = gql`
+        query VeBalGetVotingList {
+            veBalGetVotingList {
+                id
+                address
+                chain
+                type
+                symbol
+                gauge {
+                    address
+                    isKilled
+                    relativeWeightCap
+                    addedTimestamp
+                }
+                tokens {
+                    address
+                    logoURI
+                    symbol
+                    weight
+                }
+            }
+        }
+    `;
+
+    const nameToChainId = (name: string): number => {
+        switch (name) {
+            case "MAINNET":
+                return chainIds.mainnet;
+            case "BASE":
+                return chainIds.base;
+            case "OPTIMISM":
+                return chainIds.optimism;
+            case "AVALANCHE":
+                return chainIds.avalanche;
+            case "ZKEVM":
+                return chainIds.zkevm;
+            case "GNOSIS":
+                return chainIds.gnosis;
+            case "POLYGON":
+                return chainIds.polygon;
+            case "ARBITRUM":
+                return chainIds.arbitrum;
+        }
+    };
+
+    const resp = await request(balanceApiUrl, query);
+    const data = resp.veBalGetVotingList.map((row: any) => ({
+        address: row.gauge.address,
+        network: nameToChainId(row.chain),
+        isKilled: row.gauge.isKilled,
+        addedTimestamp: row.gauge.addedTimestamp,
+        relativeWeightCap: row.gauge.relativeWeightCap,
+        pool: {
+            id: row.id,
+            address: row.address,
+            poolType:
+                row.type === "UNKNOWN"
+                    ? ""
+                    : row.type
+                          .toLowerCase()
+                          .split("_")
+                          .map((str: string) => str.charAt(0).toUpperCase() + str.slice(1))
+                          .join(""),
+            symbol: row.symbol,
+            tokens: row.tokens.map((token: any) => ({
+                address: token.address,
+                weight: token.weight,
+                symbol: token.symbol,
+            })),
+        },
+    }));
+
+    return data;
 }
 
 export function getGaugeChoices(): Array<GaugeChoice> {
@@ -42,9 +116,9 @@ export function saveGaugeChoices(gauges: GaugeChoice[]) {
 }
 
 export const parseLabel = (gauge: Gauge) => {
-    if (gauge.pool.symbol === "veBAL") return "veBAL";
-    if (gauge.pool.symbol === "veLIT") return "veLIT";
-    if (gauge.pool.symbol === "veUSH") return "veUSH";
+    if (getAddress(gauge.address) === getAddress("0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d")) return "veBAL";
+    if (getAddress(gauge.address) === getAddress("0x56124eb16441A1eF12A4CCAeAbDD3421281b795A")) return "veLIT";
+    if (getAddress(gauge.address) === getAddress("0x5b79494824Bc256cD663648Ee1Aad251B32693A9")) return "veUSH";
 
     if (symbolOverrides[gauge.address.toLowerCase()]) return symbolOverrides[gauge.address.toLowerCase()];
 
@@ -61,12 +135,12 @@ export const parseLabel = (gauge: Gauge) => {
         return [networkStr, tokenStr].join("");
     }
 
-    return [networkStr, weightStr, " ", tokenStr].join("");
+    return networkStr + [weightStr, tokenStr].filter(Boolean).join(" ").trim();
 };
 
 export const sortGaugeList = (gaugeList: Gauge[]) => {
     const gauges = gaugeList.map(gauge => {
-        if (gauge.address === "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242") {
+        if (getAddress(gauge.address) === getAddress("0x0312AA8D0BA4a1969Fddb382235870bF55f7f242")) {
             // auraBAL gauge
             return { ...gauge, pool: { ...gauge.pool, tokens: [gauge.pool.tokens[1], gauge.pool.tokens[0]] } };
         }
@@ -89,7 +163,16 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         return { ...gauge, pool: { ...gauge.pool, tokens } };
     });
 
-    const chainOrder = [1, 42161, 137, 10, 100, 1101];
+    const chainOrder = [
+        chainIds.mainnet,
+        chainIds.arbitrum,
+        chainIds.polygon,
+        chainIds.optimism,
+        chainIds.gnosis,
+        chainIds.zkevm,
+        chainIds.base,
+        chainIds.avalanche,
+    ];
 
     if (chainOrder.length !== validNetworks.length) {
         throw Error("Chain order wrong length");
