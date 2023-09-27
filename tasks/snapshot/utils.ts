@@ -151,7 +151,7 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         }
 
         // Deal with WETH 50/50 pools
-        const hasWeth = gauge.pool.tokens.some(token => token.symbol === "WETH");
+        const hasWeth = gauge.pool.tokens.some(token => token.symbol.toUpperCase() === "WETH");
         const is5050 = gauge.pool.tokens.filter(token => token.weight === "0.5").length == 2;
         if (hasWeth && is5050) {
             const tokens = gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1));
@@ -179,7 +179,10 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
     }
 
     const networkOrder = chainOrder.reduce((acc, chainId) => {
-        return [...acc, ...gauges.filter(g => g.network === chainId)];
+        const _gauges = gauges
+            .filter(g => g.network === chainId)
+            .sort((a: Gauge, b: Gauge) => parseLabel(a).localeCompare(parseLabel(b)));
+        return [...acc, ..._gauges];
     }, []);
 
     const priorityGuages = priorityGuagesAddresses.map(addr =>
