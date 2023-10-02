@@ -1,17 +1,17 @@
 import assert from "assert";
 import { getContractAddress } from "ethers/lib/utils";
 import * as fs from "fs";
+import * as path from "path";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
-import * as path from "path";
-import { GaugesDetails, getGaugesDetails } from "../../tasks/information/balancerApi";
+import { getGaugePid, getGaugeRewardTokens } from "../utils/auraApi";
+import { GaugesDetails, getGaugesDetails } from "../utils/balancerApi";
 
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Signer, ethers } from "ethers";
 import { GaugeVoteRewards } from "types";
 import { canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
 import { chainIds, getSigner } from "../utils";
-import { getGaugePid, getGaugeRewardTokens } from "./auraApi";
 
 type SafeTxCreation = {
     chainId?: string;
