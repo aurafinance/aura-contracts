@@ -27,6 +27,7 @@ import {
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { Provider } from "@ethersproject/providers";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
@@ -50,7 +51,7 @@ export const bridging: SidechainBridging = {
     nativeBridge: ZERO_ADDRESS,
 };
 
-export const getSidechain = (signer: Signer) => ({
+export const getSidechain = (signer: Signer | Provider) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
     booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
     keeperMulticall3: KeeperMulticall3__factory.connect("0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd", signer),

@@ -30,6 +30,7 @@ import {
 import { config as goerliConfig } from "./goerli-config";
 import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { Provider } from "@ethersproject/providers";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x30019eB135532bDdF2Da17659101cc000C73c8e4", // Aura deployer EOA
@@ -56,7 +57,7 @@ export const bridging: SidechainBridging = {
     nativeBridge: "0x0000000000000000000000000000000000000000",
 };
 
-export const getSidechain = (signer: Signer) => ({
+export const getSidechain = (signer: Signer | Provider) => ({
     voterProxy: VoterProxyLite__factory.connect("0x2B89339C923595b8e6Cc7bc87c83dbbd53f1FEb4", signer),
     booster: BoosterLite__factory.connect("0x852aD2fdE4cFEAd5c420F6f8027Dc14f877947C6", signer),
     keeperMulticall3: KeeperMulticall3__factory.connect("0x0000000000000000000000000000000000000000", signer),

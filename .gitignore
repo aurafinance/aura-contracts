@@ -32,3 +32,5 @@ tasks/shutdown/shutdown_all_system.json
 types/generated/**/*
 _flat
 .temp/peripheral/grants/~VeBalGrant.sol
+
+tasks/utils/**.json
