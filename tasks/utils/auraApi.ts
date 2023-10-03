@@ -12,7 +12,7 @@ type GaugeRewardToken = {
     rewardData: [{ token: { id: string } }];
 };
 
-const SIDECHAIN_URI = " https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance";
+const SIDECHAIN_URI = "https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance";
 const subgraphUrls = {
     [chainIds.mainnet]: `https://graph.data.aura.finance/subgraphs/name/aura/aura-mainnet-v2-1`,
     [chainIds.arbitrum]: `${SIDECHAIN_URI}-arbitrum`,
@@ -20,8 +20,8 @@ const subgraphUrls = {
     [chainIds.optimism]: `${SIDECHAIN_URI}-optimism`,
     [chainIds.polygon]: `${SIDECHAIN_URI}-polygon`,
 };
-export async function getGaugePid(gaugeAddresses: string[]): Promise<GaugePid[]> {
-    const endpoint = "https://graph.data.aura.finance/subgraphs/name/aura/aura-mainnet-v2-1";
+export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
+    const endpoint = subgraphUrls[chainId];
     const query = gql`
         query GetGaugePid($gaugeAddresses: [String!]!) {
             gauges(where: { id_in: $gaugeAddresses }) {
