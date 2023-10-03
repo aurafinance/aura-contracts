@@ -607,5 +607,3 @@ task("protocol:add-pool")
             fs.writeFileSync(filePath, JSON.stringify(safeTx, null, 4));
         }
     });
-
-// yarn task protocol:add-pool  --network mainnet  --voting true --gauges "0x79ef6103a513951a3b25743db509e267685726b7","0x4532fba326d853a03644758b8b7438374f6780dc","0xee01c0d9c0439c94d314a6ecae0490989750746c"
