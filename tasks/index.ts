@@ -1,5 +1,6 @@
 import "./deploy";
 import "./information";
+import "./protocol";
 import "./timeTravel";
 import "./snapshot";
 import "./shutdown";
