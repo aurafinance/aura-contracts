@@ -238,6 +238,10 @@ const getSidechain = (
 export const getCanonicalView = (signer: Signer) => ({
     canonicalView: CanonicalView__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
+export const getGaugeVoteRewards = (signer: Signer) => ({
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x0000000000000000000000000000000000000000", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0x0000000000000000000000000000000000000000", signer),
+});
 
 export const config = {
     chainId: chainIds.goerli,
@@ -254,4 +258,5 @@ export const config = {
     getAuraBalVault,
     getSidechain,
     getCanonicalView,
+    getGaugeVoteRewards,
 };

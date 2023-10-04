@@ -1,3 +1,4 @@
+import { Provider } from "@ethersproject/providers";
 import { Signer } from "ethers";
 import {
     SidechainPhase1Deployed,
@@ -47,6 +48,6 @@ export interface SidechainConfig {
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;
-    getSidechain?: (s: Signer) => SidechainPhaseDeployed;
+    getSidechain?: (s: Signer|Provider) => SidechainPhaseDeployed;
     getView?: (s: Signer) => SidechainViewDeployed;
 }

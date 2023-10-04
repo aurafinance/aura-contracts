@@ -8,6 +8,14 @@ import { IGaugeController__factory } from "../../types/generated";
 import { configs } from "./constants";
 import { GaugeChoice, getGaugeChoices, getGaugeSnapshot, parseLabel } from "./utils";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface Vote {
+    gauge: GaugeChoice;
+    voteDelta: number;
+    voteWeight: number;
+    percentage: number;
+}
+
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
     .addOptionalParam("debug", "Debug mode", "false")
@@ -103,13 +111,6 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // gauges that have decreased in vote weight have to be sent first
         // ----------------------------------------------------------
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        interface Vote {
-            gauge: GaugeChoice;
-            voteDelta: number;
-            voteWeight: number;
-            percentage: number;
-        }
         let votes: Vote[] = [];
         for (const gauge of gaugesWithExistingWeights) {
             const idx = successfulGauges.findIndex(g => gauge.address === g.address);
@@ -134,7 +135,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Processing
         // ----------------------------------------------------------
 
-        console.log("Successfull gauge votes");
+        console.log("Successful gauge votes");
         const tableData = [
             ["Gauge", "voteDelta", "percentage", "address", "weight"],
             ...votes.map(({ gauge, voteDelta, voteWeight, percentage }) => [
