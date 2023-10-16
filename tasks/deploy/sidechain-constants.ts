@@ -6,6 +6,7 @@ import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as arbitrumConfig } from "./arbitrum-config";
 import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
+import { config as baseConfig } from "./base-config";
 
 export const sideChains = [
     chainIds.optimism,
@@ -17,6 +18,7 @@ export const sideChains = [
     chainIds.goerli,
     // For fork mode
     chainIds.hardhat,
+    chainIds.base,
 ];
 
 export const canonicalChains = [
@@ -30,6 +32,7 @@ export const remoteChainMap = {
     [chainIds.goerli]: chainIds.arbitrumGoerli,
     [chainIds.arbitrum]: chainIds.mainnet,
     [chainIds.optimism]: chainIds.mainnet,
+    [chainIds.base]: chainIds.mainnet,
     [chainIds.arbitrumGoerli]: chainIds.goerli,
     [chainIds.polygon]: chainIds.mainnet,
     [chainIds.gnosis]: chainIds.mainnet,
@@ -46,6 +49,7 @@ export const lzChainIds = {
     [chainIds.gnosis]: 145,
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.optimism]: 111,
+    [chainIds.base]: 184,
     // For fork mode
     [chainIds.hardhat]: 110,
 };
@@ -63,6 +67,7 @@ export const sidechainConfigs = {
     [chainIds.arbitrum]: arbitrumConfig,
     [chainIds.optimism]: optimismConfig,
     [chainIds.polygon]: polygonConfig,
+    [chainIds.base]: baseConfig,
     // For fork mode
     [chainIds.hardhat]: arbitrumConfig,
 };

@@ -242,6 +242,29 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ChildStashRewardDistro   | [0x1beC8fd56166ba66AFb6D449e61b717fc9b482C0](https://gnosisscan.io/address/0x1beC8fd56166ba66AFb6D449e61b717fc9b482C0) |
 | ChildGaugeVoteRewards    | [0xafAC0E3E5eeD2376bb52F0Ff743a3E8a5A2b016c](https://gnosisscan.io/address/0xafAC0E3E5eeD2376bb52F0Ff743a3E8a5A2b016c) |
 
+#### Base ()
+
+| Contract          | Address                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| voterProxy        | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://basescan.org/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| booster           | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://basescan.org/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| keeperMulticall3  | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://basescan.org/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| boosterOwner      | [0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc](https://basescan.org/address/0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc) |
+| poolManager       | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://basescan.org/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| l2Coordinator     | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://basescan.org/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| auraOFT           | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://basescan.org/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| rewardFactory     | [0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0](https://basescan.org/address/0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0) |
+| stashFactory      | [0x60D6439631CC6f60ED15c07783B4c7848F87c84c](https://basescan.org/address/0x60D6439631CC6f60ED15c07783B4c7848F87c84c) |
+| tokenFactory      | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://basescan.org/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| proxyFactory      | [0x731886426a3199b988194831031dfb993F25D961](https://basescan.org/address/0x731886426a3199b988194831031dfb993F25D961) |
+| sidechainView     | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://basescan.org/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1) |
+| keeperMulticall3  | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://basescan.org/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
+| ClaimZap          | [0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d](https://basescan.org/address/0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d) |
+| gaugeVoteRewards  | [0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF](https://basescan.org/address/0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF) |
+| stashRewardDistro | [0xeccD03D4cC029f341EAA1c208cFe14dc6862C67C](https://basescan.org/address/0xeccD03D4cC029f341EAA1c208cFe14dc6862C67C) |
+| rewardDepositor   | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://basescan.org/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
+| AuraViewHelper    | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](https://basescan.org/address/0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146) |
+
 ### Testnets
 
 ### Gnosis (test deployment) (100)
