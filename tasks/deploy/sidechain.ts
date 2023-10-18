@@ -620,9 +620,7 @@ task("deploy:sidechain:safe")
             ZERO_ADDRESS, // paymentReceiver
         ]);
 
-        const tx = await safeFactory.createProxyWithNonce(singleton, initializer, salt, {
-            gasPrice: 500000000000,
-        });
+        const tx = await safeFactory.createProxyWithNonce(singleton, initializer, salt);
         const resp = await waitForTx(tx, debug, tskArgs.wait);
         const address = ethers.utils.defaultAbiCoder.decode(["address", "address"], resp.events[1].data)[0];
 
