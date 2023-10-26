@@ -1,5 +1,12 @@
 [
     {
+        "id": "0xff9462865c92786f0ae51ddb7697986fc2838caef5e7431b62fdecb52429e350",
+        "title": "Gauge Weight for Week of 26th October 2023",
+        "start": 1698285600,
+        "end": 1698717600,
+        "snapshot": 18433506
+    },
+    {
         "id": "0xe30594232fac9923f6890c19300837513e7b9988ec8e7d8de64039e7986618f9",
         "title": "Gauge Weight for Week of 12th October 2023",
         "start": 1697076000,
