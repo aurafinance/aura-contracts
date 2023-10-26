@@ -10,6 +10,7 @@ import { getSigner } from "../utils";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import {
     fetchAuraProposals,
+    getHiddenHandConf,
     Incentive,
     isARBAuraBalwstEthProposal,
     isAuraBalProposal,
@@ -22,6 +23,7 @@ import {
     PaladinQuestDarkBoard,
     PaladinQuestWardenScheduler,
 } from "./paladinApi";
+import { buildSafeTx } from "../../tasks/protocol";
 
 const auraTokenAddress = "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf";
 const chefForwarderAddress = "0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9";
@@ -33,6 +35,8 @@ const veBalIncentiveAddress = "0x45Bc37b18E73A42A4a826357a8348cDC042cCBBc";
 const auraEthVeBALId = "0xb355f196c7ab330d85a3a392623204f81c8f2d668baaeda4e78f87c9f50bef04";
 const auraBalVeBALId = "0xa2b574c32fbe12ce1e12ebb850253595ef7087671c213241076b924614822a20";
 const scale = BN.from(10).pow(18);
+// With precision of only 4 decimals
+const fractionToBN = (fraction: number) => scale.mul((fraction * 1000).toString().split(".")[0]).div(1000);
 
 // Paladin
 const auraBalStableGaugeAddress = "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242";
@@ -123,7 +127,9 @@ const auraApprovalTx = (amount: BN, spender: string) => ({
 });
 const depositIncentiveERC20Tx = (incentive: Incentive) => {
     console.log(
-        `${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${utils.formatEther(incentive.amount)}`,
+        `${incentive.title} hash: ${incentive.proposal.proposalHash} amount: ${utils.formatEther(
+            incentive.amount,
+        )} maxTokensPerVote: ${utils.formatEther(incentive.maxTokensPerVote ?? 0)}`,
     );
     return {
         to: incentive.to,
@@ -144,8 +150,8 @@ const depositIncentiveERC20Tx = (incentive: Incentive) => {
             _proposal: incentive.proposal.proposalHash,
             _token: auraTokenAddress,
             _amount: incentive.amount.toString(),
-            _maxTokensPerVote: "0",
-            _periods: "1",
+            _maxTokensPerVote: incentive.maxTokensPerVote ? incentive.maxTokensPerVote.toString() : "0",
+            _periods: incentive.periods.toString(),
         },
     };
 };
@@ -236,9 +242,13 @@ function generateIncentivesTxBuilderFile(
     /* -------------------------------------------------------
      * 2.- Generate incentives tx
      * ----------------------------------------------------- */
-    const incentivesTransactions = txMeta(
-        [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, to)).concat(createQuestTxs),
-    );
+    const txMetadata = {
+        name: "Incentives",
+        description: "Incentives",
+        createdFromSafeAddress: "0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff",
+    };
+    const txs = [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, to)).concat(createQuestTxs);
+    const incentivesTransactions = buildSafeTx(txMetadata)(txs);
     fs.writeFileSync(path.resolve(__dirname, `./${fileName}.json`), JSON.stringify(incentivesTransactions));
     console.log(`Gnosis tx builder generated at ${__dirname}/${fileName}.json`);
 }
@@ -248,27 +258,45 @@ task("info:chef:claim").setAction(async function (taskArgs: TaskArguments, hre: 
 });
 
 task("create:hh:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 30000", 30_000, types.int)
-    .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 100", 100, types.int)
-    .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 25", 25, types.int)
-    .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 0", 0, types.int)
-    .addOptionalParam("auraBalVeBalRatio", "VeBal ratio, default is 75", 75, types.int)
-    .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
+    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 30_000", 30_000, types.int)
+    .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 50", 50, types.int)
+    .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 50", 50, types.int)
+    .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 50", 50, types.int)
+    .addOptionalParam("auraBalVeBalRatio", "VeBal ratio, default is 50", 50, types.int)
+    .addOptionalParam(
+        "auraBalwstEthAmount",
+        "Amount of a-55/45 auraBAL/wstETH incentives, default is 7_500",
+        7_500,
+        types.int,
+    )
+    .setAction(async function (taskArgs: TaskArguments, __hre: HardhatRuntime) {
         const { auraEthAmount, auraEthVlRatio, auraBalVlRatio, auraEthVeBalRatio, auraBalVeBalRatio } = taskArgs;
-        const auraBalAmount = (await getChefClaimableRewards(hre)).valueOf();
+        const { auraBalwstEthAmount } = taskArgs;
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // const chefClaimableRewards = (await getChefClaimableRewards(hre)).valueOf();
+        const auraBalAmount = BN.from(40000);
+        // if(auraBalAmount.gt(chefClaimableRewards)) throw Error("auraBalAmount gt chefClaimable amount")
         const hhAuraProposals = await fetchAuraProposals();
 
-        if (hhAuraProposals.length < 2) throw new Error("No proposals found");
+        if (hhAuraProposals.length < 3) throw new Error("No proposals found");
         const auraEthProposal = hhAuraProposals.find(isAuraEthProposal);
         const auraBalProposal = hhAuraProposals.find(isAuraBalProposal);
+        const auraBalwstEthProposal = hhAuraProposals.find(isARBAuraBalwstEthProposal);
 
-        const incentives = [
+        const conf = await getHiddenHandConf();
+
+        const veBalMaxTokensPerVote = fractionToBN(conf.veBALPrice / conf.auraPrice);
+        console.log(" veBalMaxTokensPerVote:", veBalMaxTokensPerVote.toString());
+        const incentives: Incentive[] = [
             {
                 title: "1. aura/eth vlAURA",
                 to: vlAuraIncentiveAddress,
                 proposal: auraEthProposal,
                 amount: BN.from(auraEthAmount),
                 ratio: auraEthVlRatio,
+                maxTokensPerVote: BN.from(0),
+                periods: 1,
             },
             {
                 title: "2. auraBAL  vlAURA",
@@ -276,6 +304,8 @@ task("create:hh:incentives")
                 proposal: auraBalProposal,
                 amount: BN.from(auraBalAmount),
                 ratio: auraBalVlRatio,
+                maxTokensPerVote: BN.from(0),
+                periods: 1,
             },
             {
                 title: "3. aura/eth veBAL ",
@@ -283,6 +313,8 @@ task("create:hh:incentives")
                 proposal: { ...auraEthProposal, proposalHash: auraEthVeBALId },
                 amount: BN.from(auraEthAmount),
                 ratio: auraEthVeBalRatio,
+                maxTokensPerVote: veBalMaxTokensPerVote,
+                periods: 2,
             },
             {
                 title: "4. auraBAL  veBAL ",
@@ -290,6 +322,16 @@ task("create:hh:incentives")
                 proposal: { ...auraBalProposal, proposalHash: auraBalVeBALId },
                 amount: BN.from(auraBalAmount),
                 ratio: auraBalVeBalRatio,
+                maxTokensPerVote: veBalMaxTokensPerVote,
+                periods: 2,
+            },
+            {
+                title: "5. a-55/45 auraBAL/wstETH vlAURA",
+                to: vlAuraIncentiveAddress,
+                proposal: auraBalwstEthProposal,
+                amount: BN.from(auraBalwstEthAmount),
+                ratio: 100,
+                periods: 1,
             },
         ];
         /* -------------------------------------------------------
@@ -307,13 +349,12 @@ task("create:hh:incentives")
         /* -------------------------------------------------------
          * 2.- Generate incentives tx
          * ----------------------------------------------------- */
-
         const incentivesTransactions = txMeta(
             [].concat(chefClaimTx).concat(auraApprovalTx(totalDeposits, hhIncentiveVaultAddress)).concat(depositTsx),
         );
         fs.writeFileSync(
             path.resolve(__dirname, "./gnosis_tx_hh_incentives.json"),
-            JSON.stringify(incentivesTransactions),
+            JSON.stringify(incentivesTransactions, null, 4),
         );
         console.log(`Gnosis tx builder generated at ${__dirname}/gnosis_tx_hh_incentives.json`);
     });
@@ -339,6 +380,7 @@ task("create:hh:arb:incentives", "Generates tx builder for a-55/45 auraBAL/wstET
                 proposal: auraBalwstEthProposal,
                 amount: BN.from(auraBalwstEthAmount),
                 ratio: 100,
+                periods: 1,
             },
         ];
         /* -------------------------------------------------------

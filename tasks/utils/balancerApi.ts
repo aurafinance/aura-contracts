@@ -140,8 +140,8 @@ export async function getGaugesDetails(gaugeAddresses: string[]): Promise<Gauges
 }
 export const calculateVeBalPrice = (balPrice: number) => {
     const weeklyEmission = 121929.980212;
-    const totalVotes = 7941045;
-    const premium = 1.05;
+    const totalVotes = 7900000;
+    const premium = 0.8;
     const dollarEmission = balPrice * weeklyEmission;
     const veBALPrice = (dollarEmission / totalVotes) * premium;
     console.log(

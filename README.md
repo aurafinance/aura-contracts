@@ -139,6 +139,9 @@ yarn task timeTravel --duration 69420 --network forking
 
 ## Notes
 
+### Warnings
+
 -   auraBAL and vlAURA reward contracts are not on the 4626 standard
 
--   StashToken contracts are not ERC20 compliant. `convex-platform/contracts/contracts/StashToken.sol`
+-   StashToken contracts are not ERC20 compliant. `convex-platform/contracts/contracts/StashToken.sol` it is designed to interact only with VirtualBalanceRewardPool and ExtraRewardStashV3.
+    Any `extraRewards` is distributed by a VirtualBalanceRewardPool, which is linked to a StashToken, the StashToken wraps the `extraReward` as a `baseToken`.

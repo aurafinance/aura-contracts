@@ -355,6 +355,7 @@ async function addPoolToMainnet(
                 gauge => {
                     const gaugeChoice = gaugeList.find(gc => gc.address.toLowerCase() === gauge.address.toLowerCase());
                     tableInfo[gauge.address] = {
+                        ...{ label: gauge.address, address: gauge.address },
                         ...gaugeChoice,
                         ...defaultTableInfo,
                         setIsNoDepositGauge: true,
@@ -365,6 +366,7 @@ async function addPoolToMainnet(
             ...(await asyncFilter<GaugesDetails>(depositGauges, isDestChainIdNotSet(gaugeVoteRewards))).map(gauge => {
                 const gaugeChoice = gaugeList.find(gc => gc.address.toLowerCase() === gauge.address.toLowerCase());
                 tableInfo[gauge.address] = {
+                    ...{ label: gauge.address, address: gauge.address },
                     ...gaugeChoice,
                     ...defaultTableInfo,
                     setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain),
@@ -392,7 +394,6 @@ async function addPoolToMainnet(
         ],
         ...Object.keys(tableInfo).map(k => {
             const info = tableInfo[k];
-
             return [
                 info.label,
                 info.address,
@@ -460,7 +461,12 @@ async function addPoolToSidechain(
         const txPerPool = [];
         const gaugeList = getGaugeChoices();
         const gaugeChoice = gaugeList.find(gc => gc.address.toLowerCase() === gauge.address.toLowerCase());
-        tableInfo[gauge.address] = { ...gaugeChoice, recipient: gauge.rootGauge.recipient, ...defaultTableInfo };
+        tableInfo[gauge.address] = {
+            ...{ label: gauge.address, address: gauge.address },
+            ...gaugeChoice,
+            recipient: gauge.rootGauge.recipient,
+            ...defaultTableInfo,
+        };
 
         const gaugeExist = await booster.gaugeMap(gauge.rootGauge.recipient);
         if (gaugeExist) {
@@ -530,7 +536,6 @@ async function addPoolToSidechain(
         [`${chainName} Gauge`, "Root address", "Recipient address", "addPool", "setStashExtraReward"],
         ...Object.keys(tableInfo).map(k => {
             const info = tableInfo[k];
-
             return [
                 info.label,
                 info.address,
