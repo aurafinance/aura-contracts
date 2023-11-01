@@ -23,24 +23,40 @@ type SafeTxCreation = {
     description?: string;
     createdFromSafeAddress?: string;
 };
+type SafeTxFile = {
+    version: string;
+    chainId: string;
+    createdAt: number;
+    meta: {
+        name: string;
+        description: string;
+        txBuilderVersion: string;
+        createdFromSafeAddress: string;
+        createdFromOwnerAddress: string;
+        checksum: string;
+    };
+    transactions: any[];
+};
 /* ---------------------------------------------------------------
      * Tx Builder  
     --------------------------------------------------------------- */
 
-export const buildSafeTx = (params: SafeTxCreation) => (transactions: Array<any>) => ({
-    version: "1.0",
-    chainId: params.chainId ?? "1",
-    createdAt: Date.now(),
-    meta: {
-        name: params.name ?? "Transactions Batch",
-        description: params.description ?? "",
-        txBuilderVersion: "1.16.2",
-        createdFromSafeAddress: params.createdFromSafeAddress ?? "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
-        createdFromOwnerAddress: "",
-        checksum: "",
-    },
-    transactions,
-});
+export const buildSafeTx =
+    (params: SafeTxCreation) =>
+    (transactions: Array<any>): SafeTxFile => ({
+        version: "1.0",
+        chainId: params.chainId ?? "1",
+        createdAt: Date.now(),
+        meta: {
+            name: params.name ?? "Transactions Batch",
+            description: params.description ?? "",
+            txBuilderVersion: "1.16.2",
+            createdFromSafeAddress: params.createdFromSafeAddress ?? "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+            createdFromOwnerAddress: "",
+            checksum: "",
+        },
+        transactions,
+    });
 
 const addPool = (poolManager: string, gauge: string) => ({
     to: poolManager,
@@ -179,7 +195,15 @@ const setDstChainId = (gaugeVoteRewards: string, gauges: string[], dstChainId: n
         _dstChainId: `${dstChainId}`,
     },
 });
-const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis"];
+function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
+    if (safeTx.transactions.length > 0) {
+        const filePath = path.resolve(__dirname, `./${fileName}.json`);
+        console.log("File generated", filePath);
+        fs.writeFileSync(filePath, JSON.stringify(safeTx, null, 4));
+    }
+}
+
+const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base"];
 const opAddress = "0x4200000000000000000000000000000000000042";
 
 /* ---------------------------------------------------------------
@@ -428,6 +452,7 @@ async function addPoolToSidechain(
     // process.env.OPTIMISM_NODE_URL,
     // process.env.POLYGON_NODE_URL,
     // process.env.GNOSIS_NODE_URL,
+    // process.env.BASE_NODE_URL,
     const REMOTE_NODE_URL = `${chainName.toUpperCase()}_NODE_URL`;
     const remoteNodeUrl = process.env[`${REMOTE_NODE_URL}`];
     assert(remoteNodeUrl.length > 0, `${REMOTE_NODE_URL} not set`);
@@ -560,14 +585,14 @@ task("protocol:add-pool")
     .addParam("gauges", "String with gauges to add separated by `,`")
     .addOptionalParam(
         "voting",
-        "If it is voting mode, setIsNotDepositGauge, setDstChainId, setExtraRewards",
+        "If it is voting mode, setIsNoDepositGauge, setDstChainId, setExtraRewards",
         false,
         types.boolean,
     )
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         // Only runs on mainnet, sidechain data is gathered via JSON providers
-        const chainId = 1;
+        const chainId = chainIds.mainnet;
 
         const gauges = tskArgs.gauges.split(",");
         assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
@@ -585,7 +610,7 @@ task("protocol:add-pool")
             .filter(s => s !== "");
         // Generate Files
         if (gaugesChains.includes("Ethereum") || tskArgs.voting) {
-            // Pass all gauges without filter to mainnet, to verify if setIsNotDepositGauge, setDstChainId is needed.
+            // Pass all gauges without filter to mainnet, to verify if setIsNoDepositGauge, setDstChainId is needed.
             const { fileName, safeTx } = await addPoolToMainnet(
                 deployer,
                 "Ethereum",
@@ -593,9 +618,7 @@ task("protocol:add-pool")
                 gaugesDetails,
                 tskArgs.voting,
             );
-            const filePath = path.resolve(__dirname, `./${fileName}.json`);
-            console.log("File generated", filePath);
-            fs.writeFileSync(filePath, JSON.stringify(safeTx, null, 4));
+            writeSafeTxFile(safeTx, fileName);
         }
         const sideChains = gaugesChains.filter(chain => chain !== "Ethereum");
         for (let i = 0; i < sideChains.length; i++) {
@@ -607,8 +630,38 @@ task("protocol:add-pool")
                 gaugesToProcess,
                 tskArgs.voting,
             );
-            const filePath = path.resolve(__dirname, `./${fileName}.json`);
-            console.log("File generated", filePath);
-            fs.writeFileSync(filePath, JSON.stringify(safeTx, null, 4));
+            writeSafeTxFile(safeTx, fileName);
         }
+    });
+
+task("protocol:gaugeVoter-setIsNoDepositGauge")
+    .addParam("gauges", "String with gauges to add separated by `,`")
+    .addOptionalParam("value", "Prepare txs to invoke GaugeVoter.setIsNoDepositGauge(value)", false, types.boolean)
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        // Only runs on mainnet, sidechain data is gathered via JSON providers
+        const chainId = chainIds.mainnet;
+
+        const gauges = tskArgs.gauges.split(",");
+        assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
+
+        const fileName = `gnosis_tx_Ethereum-setIsNoDepositGauge`;
+        const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
+        if (gaugesDetails.length != gauges.length) {
+            console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
+        }
+        const canonicalConfig = canonicalConfigs[chainId];
+        const { gaugeVoteRewards } = canonicalConfig.getGaugeVoteRewards(deployer);
+
+        const transactions = gaugesDetails.map(gauge =>
+            setIsNoDepositGauge(gaugeVoteRewards.address, gauge.address, tskArgs.value),
+        );
+        const safeTx = buildSafeTx({
+            chainId: `${chainId}`,
+            name: "setIsNoDepositGauge",
+            description: "setIsNoDepositGauge ",
+            createdFromSafeAddress: canonicalConfig.multisigs.daoMultisig,
+        })(transactions);
+
+        writeSafeTxFile(safeTx, fileName);
     });
