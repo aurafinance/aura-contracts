@@ -19,6 +19,7 @@ const subgraphUrls = {
     [chainIds.gnosis]: `${SIDECHAIN_URI}-gnosis-chain`,
     [chainIds.optimism]: `${SIDECHAIN_URI}-optimism`,
     [chainIds.polygon]: `${SIDECHAIN_URI}-polygon`,
+    [chainIds.base]: `${SIDECHAIN_URI}-base`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
     const endpoint = subgraphUrls[chainId];
