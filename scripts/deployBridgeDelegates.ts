@@ -15,6 +15,8 @@ import {
     SidechainConfig,
     SimpleBridgeDelegateSender,
     SimpleBridgeDelegateSender__factory,
+    ZkevmBridgeSender,
+    ZkevmBridgeSender__factory,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
@@ -140,6 +142,27 @@ export async function deployOptimismBridgeSender(
         new OptimismBridgeSender__factory(deployer),
         "OptimismBridgeSender",
         [standardBridge, token, l1Token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return bridgeDelegate;
+}
+
+export async function deployZkevmBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    standardBridge: string,
+    token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<ZkevmBridgeSender> {
+    const bridgeDelegate = await deployContract<ZkevmBridgeSender>(
+        hre,
+        new ZkevmBridgeSender__factory(deployer),
+        "ZkevmBridgeSender",
+        [standardBridge, token],
         {},
         debug,
         waitForBlocks,

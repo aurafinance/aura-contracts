@@ -9,6 +9,7 @@ import {
     deployOptimismBridgeSender,
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
+    deployZkevmBridgeSender,
 } from "../../scripts/deployBridgeDelegates";
 import {
     deployCanonicalAuraDistributor,
@@ -865,6 +866,29 @@ task("deploy:sidechain:L2:bridgeSender:gnosis")
             true,
             tskArgs.wait,
         );
+
+        logContracts({ delegate });
+    });
+
+task("deploy:sidechain:L2:bridgeSender:zkevm")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const delegate = await deployZkevmBridgeSender(
+            hre,
+            deployer,
+            sidechainConfig.bridging.nativeBridge,
+            sidechainConfig.extConfig.token,
+            true,
+            tskArgs.wait,
+        );
+
+        const tx = await delegate.setL1Receiver(await deployer.getAddress());
+        await waitForTx(tx, true, tskArgs.wait);
 
         logContracts({ delegate });
     });
