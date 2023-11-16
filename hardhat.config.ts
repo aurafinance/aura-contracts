@@ -80,6 +80,10 @@ const config: HardhatUserConfig = {
             chainId: chainIds.base,
             url: process.env.NODE_URL || "",
         },
+        zkevm: {
+            chainId: chainIds.zkevm,
+            url: process.env.NODE_URL || "",
+        },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
@@ -107,6 +111,16 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: process.env.ETHERSCAN_KEY,
+        customChains: [
+            {
+                network: "zkevm",
+                chainId: 1101,
+                urls: {
+                    apiURL: "https://api-zkevm.polygonscan.com/api",
+                    browserURL: "https://zkevm.polygonscan.com",
+                },
+            },
+        ],
     },
     mocha: {
         timeout: 480000, // 8 min timeout
