@@ -19,6 +19,7 @@ import {
     BoosterHelper,
     BoosterHelper__factory,
     Booster,
+    BoosterLite,
 } from "../types";
 import { ExtSystemConfig } from "./deploySystem";
 
@@ -136,8 +137,8 @@ export async function deployKeeperMulticall3(
 export async function deployBoosterHelper(
     hre: HardhatRuntimeEnvironment,
     deployer: Signer,
-    config: ExtSystemConfig,
-    deployment: { booster: Booster },
+    config: { token: string },
+    deployment: { booster: Booster | BoosterLite },
     debug = false,
     waitForBlocks = 0,
 ) {

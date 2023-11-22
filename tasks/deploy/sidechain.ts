@@ -3,6 +3,7 @@ import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
+import { deployBoosterHelper } from "../../scripts/deployPeripheral";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
@@ -891,4 +892,23 @@ task("deploy:sidechain:L2:bridgeSender:zkevm")
         await waitForTx(tx, true, tskArgs.wait);
 
         logContracts({ delegate });
+    });
+
+task("deploy:sidechain:L2:boosterHelper")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { canonicalConfig, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const result = await deployBoosterHelper(
+            hre,
+            deployer,
+            { token: canonicalConfig.addresses.token },
+            { booster: sidechainConfig.getSidechain(deployer).booster },
+            true,
+            tskArgs.wait,
+        );
+        console.log("BoosterHelper:", result.boosterHelper.address);
     });

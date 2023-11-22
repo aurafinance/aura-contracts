@@ -35,7 +35,7 @@ describe("BoosterHelper", () => {
 
         signer = keeper;
         booster = Booster__factory.connect(boosterAddress, signer);
-        ({ boosterHelper } = await deployBoosterHelper(hre, deployer, config.addresses, { booster }));
+        ({ boosterHelper } = await deployBoosterHelper(hre, deployer, { token: config.addresses.token }, { booster }));
     };
     const start = 57;
 
