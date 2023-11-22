@@ -16,6 +16,9 @@ import {
     KeeperMulticall3__factory,
     VeBalGrant,
     VeBalGrant__factory,
+    BoosterHelper,
+    BoosterHelper__factory,
+    Booster,
 } from "../types";
 import { ExtSystemConfig } from "./deploySystem";
 
@@ -129,4 +132,25 @@ export async function deployKeeperMulticall3(
         waitForBlocks,
     );
     return { keeperMulticall3 };
+}
+export async function deployBoosterHelper(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    config: ExtSystemConfig,
+    deployment: { booster: Booster },
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const { token } = config;
+    const { booster } = deployment;
+    const boosterHelper = await deployContract<BoosterHelper>(
+        hre,
+        new BoosterHelper__factory(deployer),
+        "BoosterHelper",
+        [booster.address, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return { boosterHelper };
 }

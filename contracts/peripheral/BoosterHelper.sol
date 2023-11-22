@@ -6,6 +6,18 @@ import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC
 import { IBooster } from "../interfaces/IBooster.sol";
 import { IRewardStaking } from "../interfaces/IRewardStaking.sol";
 
+interface IBaseRewardPool {
+    function lastTimeRewardApplicable() external view returns (uint256);
+
+    function periodFinish() external view returns (uint256);
+
+    function queuedRewards() external view returns (uint256);
+
+    function extraRewards(uint256) external view returns (address);
+
+    function extraRewardsLength() external view returns (uint256);
+}
+
 /**
  * @title   BoosterHelper
  * @author  AuraFinance
@@ -27,6 +39,10 @@ contract BoosterHelper {
         crv = _crv;
     }
 
+    /**
+     * @notice Invoke earmarkRewards for each pool id.
+     * @param _pids Array of pool ids
+     */
     function earmarkRewards(uint256[] memory _pids) external returns (uint256) {
         uint256 len = _pids.length;
         require(len > 0, "!pids");
@@ -53,5 +69,153 @@ contract BoosterHelper {
             IRewardStaking baseRewardPool = IRewardStaking(poolInfo.crvRewards);
             baseRewardPool.processIdleRewards();
         }
+    }
+
+    /**
+     * @notice Invoke processIdleRewards for each pool address.
+     * It is useful to process base pools and virtual pools.
+     * @param _pools Array of pool addresses
+     */
+    function processIdleRewardsByAddress(address[] memory _pools) external {
+        uint256 len = _pools.length;
+        require(len > 0, "!pools");
+
+        for (uint256 i = 0; i < len; i++) {
+            IRewardStaking baseRewardPool = IRewardStaking(_pools[i]);
+            baseRewardPool.processIdleRewards();
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // External  Views
+    // ----------------------------------------------------------------
+
+    /**
+     * @dev Loop through the booster pools and retrieve expired pools.
+     * @param start The start pid to look up
+     * @param daysToExpiration Number of days before period ends to be considred expired.
+     */
+    function getExpiredPoolIds(uint256 start, uint256 daysToExpiration) external view returns (uint256[] memory) {
+        uint256 end = booster.poolLength();
+        uint256[] memory pids = new uint256[](end - start);
+        uint256 idx = 0;
+        for (uint256 i = start; i < end; i++) {
+            if (_isExpiredWithoutQueuedRewards(i, daysToExpiration)) {
+                pids[idx++] = i;
+            }
+        }
+        return _sliceArray(pids, idx);
+    }
+
+    /**
+     * @dev Loop through the booster pools and retrieve the expired pools with idle rewards.
+     * @param start The start pid
+     */
+    function getIdlePoolIds(uint256 start) external view returns (uint256[] memory) {
+        uint256 end = booster.poolLength();
+        uint256[] memory pids = new uint256[](end - start);
+        uint256 idx = 0;
+        for (uint256 i = start; i < end; i++) {
+            if (_isExpiredWithQueuedRewards(i)) {
+                pids[idx++] = i;
+            }
+        }
+        return _sliceArray(pids, idx);
+    }
+
+    /**
+     * @dev Loop through the booster pools (base and virtual) and retrieve the expired ones with idle rewards.
+     * @param start The start pid
+     */
+    function getIdleBaseAndVirtualPools(uint256 start) external view returns (address[] memory) {
+        uint256 end = booster.poolLength();
+        // Create array with extra room for virtual pools
+        address[] memory idlePools = new address[]((end - start) * 2);
+        uint256 idx = 0;
+        for (uint256 i = start; i < end; i++) {
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
+            address[] memory virtualRewardPools = _getVirtualRewardPools(poolInfo.crvRewards);
+            uint256 virtualRewardPoolsLength = virtualRewardPools.length;
+            for (uint256 j = 0; j < virtualRewardPoolsLength; j++) {
+                address virtualRewardPool = virtualRewardPools[j];
+                if (_isExpiredWithQueuedRewards(virtualRewardPool)) {
+                    idlePools[idx++] = virtualRewardPool;
+                }
+            }
+            // Evaluate base reward pools
+            if (_isExpiredWithQueuedRewards(poolInfo.crvRewards)) {
+                idlePools[idx++] = poolInfo.crvRewards;
+            }
+        }
+        return _sliceArray(idlePools, idx);
+    }
+
+    // ----------------------------------------------------------------
+    // Internal
+    // ----------------------------------------------------------------
+
+    /// @dev evaluates if a given pool (by pid) is expired or about to expired if daysToExpiration > 0
+    function _isExpiredWithoutQueuedRewards(uint256 pid, uint256 daysToExpiration) internal view returns (bool) {
+        IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+        // Ignore shutdown pools early
+        if (poolInfo.shutdown) return false;
+
+        IBaseRewardPool baseRewardPool = IBaseRewardPool(poolInfo.crvRewards);
+        if (baseRewardPool.queuedRewards() > 0) return false;
+
+        // If it is expired return the value
+        uint256 periodFinish = baseRewardPool.periodFinish();
+        if (block.timestamp > periodFinish) return true;
+
+        //If it is not expired yet, evaluate if it is about to expire
+        uint256 lastTimeRewardApplicable = baseRewardPool.lastTimeRewardApplicable();
+        uint256 daysToNextEarmark = (periodFinish - lastTimeRewardApplicable) / 86400;
+
+        return daysToNextEarmark <= daysToExpiration;
+    }
+
+    /// @dev evaluates if a given pool (by pid) is expired with queued rewards.
+    function _isExpiredWithQueuedRewards(uint256 pid) internal view returns (bool) {
+        IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+        // Ignore shutdown pools early
+        if (poolInfo.shutdown) return false;
+
+        return _isExpiredWithQueuedRewards(poolInfo.crvRewards);
+    }
+
+    /// @dev evaluates if a given pool (by address) is expired with queued rewards.
+    function _isExpiredWithQueuedRewards(address crvRewards) internal view returns (bool) {
+        IBaseRewardPool baseRewardPool = IBaseRewardPool(crvRewards);
+        if (baseRewardPool.queuedRewards() == 0) return false;
+
+        return (block.timestamp > baseRewardPool.periodFinish());
+    }
+
+    /// @dev gets all virtual pools linked to a base reward pool.
+    function _getVirtualRewardPools(address crvRewards) internal view returns (address[] memory) {
+        IBaseRewardPool baseRewardPool = IBaseRewardPool(crvRewards);
+
+        uint256 extraRewardsLength = baseRewardPool.extraRewardsLength();
+        address[] memory virtualBalanceRewardPools = new address[](extraRewardsLength);
+        for (uint256 i = 0; i < extraRewardsLength; i++) {
+            virtualBalanceRewardPools[i] = baseRewardPool.extraRewards(i);
+        }
+        return virtualBalanceRewardPools;
+    }
+
+    function _sliceArray(uint256[] memory _arr, uint256 length) internal pure returns (uint256[] memory) {
+        uint256[] memory arr = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            arr[i] = _arr[i];
+        }
+        return arr;
+    }
+
+    function _sliceArray(address[] memory _arr, uint256 length) internal pure returns (address[] memory) {
+        address[] memory arr = new address[](length);
+        for (uint256 i = 0; i < length; i++) {
+            arr[i] = _arr[i];
+        }
+        return arr;
     }
 }
