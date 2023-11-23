@@ -112,4 +112,6 @@ task("deploy:sidechain:gaugeVoteRewards")
             lzChainIds[chainIds.mainnet],
             gaugeVoteRewardsContracts.gaugeVoteRewards.address,
         );
+
+        logContracts({ childStashRewardDistro, childGaugeVoteRewards });
     });
