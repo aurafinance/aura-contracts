@@ -54,6 +54,7 @@ contract ChildGaugeVoteRewards is LzApp {
     ------------------------------------------------------------------- */
 
     event SetDistributor(address distributor);
+    event AmountToSendByEpoch(uint256 indexed epoch, address gauge, uint256 amount);
 
     /* -------------------------------------------------------------------
        Constructor 
@@ -179,6 +180,7 @@ contract ChildGaugeVoteRewards is LzApp {
             // Decode the single payload to get the gauge and amount to send
             (address gauge, uint256 amountToSend) = abi.decode(payload, (address, uint256));
             getAmountToSendByEpoch[epoch][gauge] = amountToSend;
+            emit AmountToSendByEpoch(epoch, gauge, amountToSend);
         }
     }
 }

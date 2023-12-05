@@ -3,12 +3,14 @@ import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
+import { deployBoosterHelper } from "../../scripts/deployPeripheral";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
     deployOptimismBridgeSender,
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
+    deployZkevmBridgeSender,
 } from "../../scripts/deployBridgeDelegates";
 import {
     deployCanonicalAuraDistributor,
@@ -582,7 +584,7 @@ task("deploy:sidechain:safe")
         //     "0x2BE293361aEA6136a42036Ef68FF248fC379b4f8",
         //     "0x3dB7FCD09cF12df1b8978ddf66F8bbF9f039eDd8",
         //     "0x71df067D1d2dF5291278b7C660Fd37d9b6272b4C",
-        //     "0xC02ad7b9a9121fc849196E844DC869D2250DF3A6",
+        //     "0x88330a9852eefcAb7336e9fbdD6D89935C944218",
         //     "0xB65c1Ab1bF106F86a363dC10230a4AF11cCD063E",
         //     "0x4Ab5E3F0b2d1604dD2002CfEcA6163802D74c6Cb",
         //     "0x337F8f3316E1326B3188E534913F759460bd57CB",
@@ -591,9 +593,9 @@ task("deploy:sidechain:safe")
         // Protocol DAO
         const addresses = [
             "0x2BE293361aEA6136a42036Ef68FF248fC379b4f8",
-            "0x82621E3a9584013B166f6939677Df67793530C7B",
+            "0x327Db4C2e4918920533a05f0f6aa9eDfB717bB41",
             "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
-            "0x512fce9B07Ce64590849115EE6B32fd40eC0f5F3",
+            "0x7c2eA10D3e5922ba3bBBafa39Dc0677353D2AF17",
             "0xF01Cc7154e255D20489E091a5aEA10Bc136696a8",
             "0x6429602699fEC6D205e0b9531C7f33476BA11Fb0",
             "0x6c97fd6eCCa478E2163920eC9bdb68873a4c3B43",
@@ -867,4 +869,46 @@ task("deploy:sidechain:L2:bridgeSender:gnosis")
         );
 
         logContracts({ delegate });
+    });
+
+task("deploy:sidechain:L2:bridgeSender:zkevm")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const delegate = await deployZkevmBridgeSender(
+            hre,
+            deployer,
+            sidechainConfig.bridging.nativeBridge,
+            sidechainConfig.extConfig.token,
+            true,
+            tskArgs.wait,
+        );
+
+        const tx = await delegate.setL1Receiver(await deployer.getAddress());
+        await waitForTx(tx, true, tskArgs.wait);
+
+        logContracts({ delegate });
+    });
+
+task("deploy:sidechain:L2:boosterHelper")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { canonicalConfig, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const result = await deployBoosterHelper(
+            hre,
+            deployer,
+            { token: canonicalConfig.addresses.token },
+            { booster: sidechainConfig.getSidechain(deployer).booster },
+            true,
+            tskArgs.wait,
+        );
+        console.log("BoosterHelper:", result.boosterHelper.address);
     });

@@ -265,6 +265,29 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | rewardDepositor   | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://basescan.org/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
 | AuraViewHelper    | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](https://basescan.org/address/0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146) |
 
+### zkevm (1101)
+
+| Contract               | Address                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| VoterProxyLite         | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://zkevm.polygonscan.com/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| AuraOFT                | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://zkevm.polygonscan.com/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| L2Coordinator          | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://zkevm.polygonscan.com/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| BoosterLite            | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://zkevm.polygonscan.com/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3       | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://zkevm.polygonscan.com/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| RewardFactory          | [0x252a18D569149CB9fd144d35842d2BEe596B3a63](https://zkevm.polygonscan.com/address/0x252a18D569149CB9fd144d35842d2BEe596B3a63) |
+| TokenFactory           | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://zkevm.polygonscan.com/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory           | [0x731886426a3199b988194831031dfb993F25D961](https://zkevm.polygonscan.com/address/0x731886426a3199b988194831031dfb993F25D961) |
+| StashFactory           | [0xa1FfACb9bb1852997d2A5931659A56272DC858F4](https://zkevm.polygonscan.com/address/0xa1FfACb9bb1852997d2A5931659A56272DC858F4) |
+| ExtraRewardStashV3     | [0xffa4587C1b2e373469Ab6A8Fe0cE4DBdb10282D5](https://zkevm.polygonscan.com/address/0xffa4587C1b2e373469Ab6A8Fe0cE4DBdb10282D5) |
+| PoolManagerLite        | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://zkevm.polygonscan.com/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwnerLite       | [0xA7CD8430249AE45C343b569Bb8F1c6ABc9A32794](https://zkevm.polygonscan.com/address/0xA7CD8430249AE45C343b569Bb8F1c6ABc9A32794) |
+| SidechainView          | [0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF](https://zkevm.polygonscan.com/address/0xb4c68ea0c1A5fFF3736CBFb402AfBB4AD88608DF) |
+| SidechainClaimZap      | [0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8](https://zkevm.polygonscan.com/address/0x4EA38a5739D467F7f84c06155ee2Ad745E5328E8) |
+| ChildStashRewardDistro | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://zkevm.polygonscan.com/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
+| ChildGaugeVoteRewards  | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](https://zkevm.polygonscan.com/address/0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146) |
+| RewardDepositWrapper   | [0xbDDAC3069F4E26F4e4F445926c8Eeb9DCB68c26B](https://zkevm.polygonscan.com/address/0xbDDAC3069F4E26F4e4F445926c8Eeb9DCB68c26B) |
+| AuraViewHelper         | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://zkevm.polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
+
 ### Testnets
 
 ### Gnosis (test deployment) (100)

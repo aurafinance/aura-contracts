@@ -7,6 +7,7 @@ import { config as arbitrumConfig } from "./arbitrum-config";
 import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
 import { config as baseConfig } from "./base-config";
+import { config as zkevmConfig } from "./zkevm-config";
 
 export const sideChains = [
     chainIds.optimism,
@@ -14,6 +15,7 @@ export const sideChains = [
     chainIds.arbitrumGoerli,
     chainIds.polygon,
     chainIds.gnosis,
+    chainIds.zkevm,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
     // For fork mode
@@ -36,6 +38,7 @@ export const remoteChainMap = {
     [chainIds.arbitrumGoerli]: chainIds.goerli,
     [chainIds.polygon]: chainIds.mainnet,
     [chainIds.gnosis]: chainIds.mainnet,
+    [chainIds.zkevm]: chainIds.mainnet,
     // For fork mode
     [chainIds.hardhat]: chainIds.mainnet,
 };
@@ -50,6 +53,7 @@ export const lzChainIds = {
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.optimism]: 111,
     [chainIds.base]: 184,
+    [chainIds.zkevm]: 158,
     // For fork mode
     [chainIds.hardhat]: 110,
 };
@@ -68,6 +72,7 @@ export const sidechainConfigs = {
     [chainIds.optimism]: optimismConfig,
     [chainIds.polygon]: polygonConfig,
     [chainIds.base]: baseConfig,
+    [chainIds.zkevm]: zkevmConfig,
     // For fork mode
     [chainIds.hardhat]: arbitrumConfig,
 };
