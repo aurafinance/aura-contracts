@@ -74,5 +74,5 @@ export const sidechainConfigs = {
     [chainIds.base]: baseConfig,
     [chainIds.zkevm]: zkevmConfig,
     // For fork mode
-    [chainIds.hardhat]: arbitrumConfig,
+    [chainIds.hardhat]: zkevmConfig,
 };

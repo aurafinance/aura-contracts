@@ -129,6 +129,8 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | BridgeDelegateReceiver (Optimism) | [0x60421ffaa36f3a8e69c25887e575689f52b055f7](https://etherscan.io/address/0x60421ffaa36f3a8e69c25887e575689f52b055f7) |
 | BridgeDelegateReceiver (Gnosis)   | [0xac962acd42f93c6f26e1cf83271d2a53b208daa6](https://etherscan.io/address/0xac962acd42f93c6f26e1cf83271d2a53b208daa6) |
 | BridgeDelegateReceiver (Polygon)  | [0x25e7C574c4016e09F608971F97c3B09A6cf4F669](https://etherscan.io/address/0x25e7C574c4016e09F608971F97c3B09A6cf4F669) |
+| BridgeDelegateReceiver (Base)     | [0x7eB87C3a4eabDaD158781d0dbB7Ab3589B9C2B4C](https://etherscan.io/address/0x7eB87C3a4eabDaD158781d0dbB7Ab3589B9C2B4C) |
+| BridgeDelegateReceiver (ZkEvm)    | [0xBcF3B107a5ECDD8Efb70a74f44b827a1F7108c48](https://etherscan.io/address/0xBcF3B107a5ECDD8Efb70a74f44b827a1F7108c48) |
 | Sudo                              | [0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46](https://etherscan.io/address/0xb370Ebd7ded0c87b4509FF6f13F07B7F1693Bf46) |
 | View                              | [0x208024E643564fb4C990481eB4F9ec1957f64c11](https://etherscan.io/address/0x208024E643564fb4C990481eB4F9ec1957f64c11) |
 | AuraDistributor                   | [0x96D15D08538A17A03B0210FD1626D5f42bdba9a4](https://etherscan.io/address/0x96D15D08538A17A03B0210FD1626D5f42bdba9a4) |

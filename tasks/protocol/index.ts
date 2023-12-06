@@ -419,8 +419,8 @@ async function addPoolToMainnet(
         ...Object.keys(tableInfo).map(k => {
             const info = tableInfo[k];
             return [
-                info.label,
-                info.address,
+                info.label ?? k,
+                info.address ?? k,
                 formatBool(info.addPool),
                 formatBool(info.setRewardMultiplier),
                 formatBool(info.setStashExtraReward),

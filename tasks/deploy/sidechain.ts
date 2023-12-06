@@ -3,7 +3,6 @@ import { ethers, Signer } from "ethers";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { deployBoosterHelper } from "../../scripts/deployPeripheral";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
@@ -12,6 +11,7 @@ import {
     deploySimpleBridgeReceiver,
     deployZkevmBridgeSender,
 } from "../../scripts/deployBridgeDelegates";
+import { deployBoosterHelper, deployPayableMulticall } from "../../scripts/deployPeripheral";
 import {
     deployCanonicalAuraDistributor,
     deployCanonicalPhase1,
@@ -32,12 +32,14 @@ import {
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { chainIds, waitForTx } from "../../tasks/utils";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
+import { impersonateAccount } from "../../test-utils/fork";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
     AuraOFT__factory,
     BoosterLite__factory,
     BoosterOwnerLite__factory,
+    Create2Factory__factory,
     ExtraRewardStashV3__factory,
     L2Coordinator__factory,
     PoolManagerLite__factory,
@@ -544,6 +546,20 @@ task("deploy:sidechain:keeperMulticall3")
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
+task("deploy:sidechain:payableMulticall")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+
+        const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
+        const owner = await impersonateAccount("0xb07d2d6a03f2d4878dc1680f8581e871dae47494");
+        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, owner.signer);
+        await create2Factory.updateDeployer(await deployer.getAddress(), true);
+
+        const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT);
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 
 task("deploy:sidechain:zap")
     .addParam("wait", "Wait for blocks")
@@ -900,12 +916,12 @@ task("deploy:sidechain:L2:boosterHelper")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const canonicalChainId = Number(tskArgs.canonicalchainid);
-        const { canonicalConfig, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
 
         const result = await deployBoosterHelper(
             hre,
             deployer,
-            { token: canonicalConfig.addresses.token },
+            { token: sidechainConfig.extConfig.token },
             { booster: sidechainConfig.getSidechain(deployer).booster },
             true,
             tskArgs.wait,
