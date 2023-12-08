@@ -42,14 +42,14 @@ describe("BoosterHelper", () => {
     it("get expired pools", async () => {
         await setup(18613470);
         const daysToExpiration = 0;
-        const expiredPoolIdsBN = await boosterHelper.getExpiredPoolIds(start, daysToExpiration);
-        const expiredPoolIds = expiredPoolIdsBN.map(bn => bn.toNumber());
+        const expiredPools = await boosterHelper.getExpiredPools(start, daysToExpiration);
+        const expiredPoolIds = expiredPools.map(poolInfo => poolInfo.pid).map(bn => bn.toNumber());
 
         // Expected result https://etherscan.io/tx/0x0191e2bee45b4df9d12b849fac71a82b50faf5aeb33f2fdfcc7a47c097ed82de
         // 111,132,146,97
         // Automation will need to verify if the given pid has claimable tokens on the gauge.
         // IE const claimableTokens = await gauge.claimable_tokens(voterProxyAddress);
-        expect(expiredPoolIds.length).to.be.eq(30);
+        expect(expiredPools.length).to.be.eq(30);
 
         expect(expiredPoolIds.includes(97)).to.be.true;
         expect(expiredPoolIds.includes(111)).to.be.true;
@@ -63,8 +63,8 @@ describe("BoosterHelper", () => {
         await boosterHelper.earmarkRewards([97, 111, 132]);
 
         // Search for the missing pool
-        const expiredPoolIdsAfterBN = await boosterHelper.getExpiredPoolIds(140, daysToExpiration);
-        const expiredPoolIdsAfter = expiredPoolIdsAfterBN.map(bn => bn.toNumber());
+        const expiredPoolsAfter = await boosterHelper.getExpiredPools(140, daysToExpiration);
+        const expiredPoolIdsAfter = expiredPoolsAfter.map(poolInfo => poolInfo.pid).map(bn => bn.toNumber());
 
         expect(expiredPoolIdsAfter.includes(146)).to.be.true;
         // Processed

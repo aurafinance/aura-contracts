@@ -1,32 +1,23 @@
 import { expect } from "chai";
-import { network } from "hardhat";
+import hre, { network } from "hardhat";
 
-import { Phase6Deployed, Phase8Deployed } from "../../scripts/deploySystem";
+import { Phase6Deployed } from "../../scripts/deploySystem";
+import { deployFeeTokenHandlerV4 } from "../../scripts/deployVault";
 import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config";
-import { BN, impersonateAccount, increaseTime } from "../../test-utils";
-import { ONE_WEEK, ZERO_ADDRESS } from "../../test-utils/constants";
-import {
-    Account,
-    BalancerSwapsHandler,
-    ERC20,
-    ERC20__factory,
-    ForwarderHandler,
-    ForwarderHandler__factory,
-} from "../../types";
+import { anyValue, impersonateAccount } from "../../test-utils";
+import { Account, BalancerSwapsHandler, ERC20, ERC20__factory } from "../../types";
 
-const FORK_BLOCK = 18033877;
+const FORK_BLOCK = 18718390;
 
 describe("FeeToken (USDC) Handler V4", () => {
     let dao: Account;
     let deployer: Account;
     let phase6: Phase6Deployed;
-    let phase8: Phase8Deployed;
     let feeTokenHandler: BalancerSwapsHandler;
-    let oldFeeToken: ERC20;
-    let forwarderHandler: ForwarderHandler;
+    let feeToken: ERC20;
+    let wethToken: ERC20;
     let compounder: AuraBalVaultDeployed;
-    let newFeeTokenAddress: string;
-    let oldFeeTokenAddress: string;
+    let feeTokenAddress: string;
     let deployerAddress: string;
 
     /* -------------------------------------------------------------------------
@@ -51,14 +42,11 @@ describe("FeeToken (USDC) Handler V4", () => {
         deployer = await impersonateAccount(deployerAddress);
 
         phase6 = await config.getPhase6(dao.signer);
-        phase8 = await config.getPhase8(dao.signer);
-
         compounder = await config.getAuraBalVault?.(dao.signer);
+        feeTokenAddress = config.addresses.feeToken;
 
-        newFeeTokenAddress = config.addresses.feeToken;
-        oldFeeTokenAddress = "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016";
-
-        oldFeeToken = ERC20__factory.connect(oldFeeTokenAddress, dao.signer);
+        feeToken = ERC20__factory.connect(feeTokenAddress, dao.signer);
+        wethToken = ERC20__factory.connect("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", dao.signer);
     });
 
     /* -------------------------------------------------------------------------
@@ -66,14 +54,8 @@ describe("FeeToken (USDC) Handler V4", () => {
      * ----------------------------------------------------------------------- */
 
     describe("Deployment", () => {
-        // vault extra rewards
-        // feeToken claim
         it("Handlers", async () => {
-            ({ feeTokenHandler } = await config.getAuraBalVault(dao.signer));
-            forwarderHandler = ForwarderHandler__factory.connect(
-                "0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1",
-                deployer.signer,
-            );
+            ({ feeTokenHandler } = await deployFeeTokenHandlerV4(config, hre, deployer.signer, false, 0));
         });
     });
 
@@ -81,49 +63,19 @@ describe("FeeToken (USDC) Handler V4", () => {
         it("Handler has correct values - USDC", async () => {
             expect(await feeTokenHandler.strategy()).eq(compounder.strategy.address);
             expect(await feeTokenHandler.WETH_TOKEN()).eq(config.addresses.weth);
-            expect(await feeTokenHandler.token()).eq(newFeeTokenAddress);
+            expect(await feeTokenHandler.token()).eq(feeTokenAddress);
             expect(await feeTokenHandler.balVault()).eq(config.addresses.balancerVault);
-        });
-        it("Handler has correct values - BBAUSD", async () => {
-            expect(await forwarderHandler.token()).eq(oldFeeTokenAddress);
         });
     });
 
     describe("Multisig Prepare Compounder", () => {
-        it("Update old token and handler", async () => {
-            expect(await compounder.strategy.rewardHandlers(oldFeeTokenAddress)).eq(ZERO_ADDRESS);
-            await compounder.strategy.updateRewardToken(oldFeeTokenAddress, forwarderHandler.address);
-            expect(await compounder.strategy.rewardHandlers(oldFeeTokenAddress)).eq(forwarderHandler.address);
-        });
-        it("Add new handler", async () => {
-            await compounder.strategy.addRewardToken(newFeeTokenAddress, feeTokenHandler.address);
-            expect(await compounder.strategy.rewardHandlers(newFeeTokenAddress)).eq(feeTokenHandler.address);
-        });
-        it("Add new fee token to the booster", async () => {
-            await phase8.boosterOwnerSecondary.setFeeInfo(newFeeTokenAddress, config.addresses.feeDistribution);
-            const usdcFeeToken = await phase6.booster.feeTokens(newFeeTokenAddress);
-            const bbusdFeeToken = await phase6.booster.feeTokens(oldFeeTokenAddress);
-            expect(usdcFeeToken.active, "New Fee token active").to.be.eq(true);
-            expect(usdcFeeToken.distro, "Fee token distributor").to.be.eq(bbusdFeeToken.distro);
-            expect(usdcFeeToken.rewards, "New Fee token active").to.not.be.eq(bbusdFeeToken.rewards);
+        it("Update fee token handler", async () => {
+            await compounder.strategy.updateRewardToken(feeTokenAddress, feeTokenHandler.address);
+            expect(await compounder.strategy.rewardHandlers(feeTokenAddress)).eq(feeTokenHandler.address);
         });
     });
 
     describe("Normal Vault Operations", () => {
-        let oldFeeTokenBobBalanceBefore: BN;
-        before("before", async () => {
-            oldFeeTokenBobBalanceBefore = await oldFeeToken.balanceOf(await forwarderHandler.owner());
-        });
-        it("wait some time and earmark fees - usdc", async () => {
-            await increaseTime(ONE_WEEK);
-            await phase6.feeCollector.claimFees([newFeeTokenAddress], 4);
-            // await phase6.booster.earmarkFees(newFeeTokenAddress);
-        });
-        it("wait some time and earmark fees - bbausd", async () => {
-            await increaseTime(ONE_WEEK);
-            await phase6.booster.earmarkFees(oldFeeTokenAddress);
-        });
-
         it("harvest", async () => {
             const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
             const harvester = await impersonateAccount(keeperAddress);
@@ -131,18 +83,35 @@ describe("FeeToken (USDC) Handler V4", () => {
             const stakedBalanceBefore = await phase6.cvxCrvRewards.balanceOf(compounder.strategy.address);
             const totalUnderlyingBefore = await compounder.vault.totalUnderlying();
 
-            await compounder.vault.connect(harvester.signer)["harvest(uint256)"](0);
+            // Test
+            const tx = await compounder.vault.connect(harvester.signer)["harvest(uint256)"](0);
 
             const stakedBalanceAfter = await phase6.cvxCrvRewards.balanceOf(compounder.strategy.address);
             const totalUnderlyingAfter = await compounder.vault.totalUnderlying();
 
             expect(totalUnderlyingAfter).gt(totalUnderlyingBefore);
             expect(stakedBalanceAfter).gt(stakedBalanceBefore);
-        });
-        it("forwarded bbausd to address", async () => {
-            // eoa will unwrap bbausd and manually send it back to the strategy
-            const oldFeeTokenBobBalanceAfter = await oldFeeToken.balanceOf(await forwarderHandler.owner());
-            expect(oldFeeTokenBobBalanceAfter, "FeeToken sent").gt(oldFeeTokenBobBalanceBefore);
+            // Verify USDC was sold with the new strategy
+            const usdcVirtualPoolAddress = "0x27921a5CC29B11176817bbF5D6bAD83830f71555";
+            const balancerVaultAddress = "0xBA12222222228d8Ba445958a75a0704d566BF2C8";
+            // USDC from virtual pool => strategy => feeTokenHandler => vault
+            // WETH vault => feeTokenHandler => strategy
+
+            await expect(tx)
+                .to.emit(feeToken, "Transfer")
+                .withArgs(usdcVirtualPoolAddress, compounder.strategy.address, anyValue);
+            await expect(tx)
+                .to.emit(feeToken, "Transfer")
+                .withArgs(compounder.strategy.address, feeTokenHandler.address, anyValue);
+            await expect(tx)
+                .to.emit(feeToken, "Transfer")
+                .withArgs(feeTokenHandler.address, balancerVaultAddress, anyValue);
+            await expect(tx)
+                .to.emit(wethToken, "Transfer")
+                .withArgs(balancerVaultAddress, feeTokenHandler.address, anyValue);
+            await expect(tx)
+                .to.emit(wethToken, "Transfer")
+                .withArgs(feeTokenHandler.address, compounder.strategy.address, anyValue);
         });
     });
 });

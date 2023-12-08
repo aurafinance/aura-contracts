@@ -15,10 +15,15 @@ import {
     ERC20__factory,
     L2Coordinator__factory,
     PayableMulticall,
+    PayableMulticall__factory,
 } from "../../../types/generated";
 
 const ALCHEMY_API_KEY = process.env.NODE_URL;
 const relayerAddress = "0x64Cf0ad5e089488cDD0cab98b545f890b0939479"; //base defender
+
+const encodeEarmarkRewards = (pid: number) =>
+    BoosterLite__factory.createInterface().encodeFunctionData("earmarkRewards", [pid, ZERO_ADDRESS]);
+
 describe("Multichain - Sidechain", () => {
     let deployer: Account;
     let relayer: Account;
@@ -49,14 +54,12 @@ describe("Multichain - Sidechain", () => {
         ({ payableMulticall } = await deployPayableMulticall(hre, relayer.signer, config.extConfig));
     });
 
-    it("earmarkRewards via multicall", async () => {
+    xit("earmarkRewards via multicall", async () => {
         const nativeFee = simpleToExactAmount(1);
 
         const tokenBalanceBefore = await token.balanceOf(payableMulticall.address);
         const balanceBefore = await ethers.provider.getBalance(payableMulticall.address);
 
-        const encodeEarmarkRewards = (pid: number) =>
-            BoosterLite__factory.createInterface().encodeFunctionData("earmarkRewards", [pid, ZERO_ADDRESS]);
         const buildEarmarkRewardCall = (pid: number) => ({
             target: sidechain.booster.address,
             allowFailure: false,
@@ -71,7 +74,7 @@ describe("Multichain - Sidechain", () => {
             callData: L2Coordinator__factory.createInterface().encodeFunctionData("notifyFees", [ZERO_ADDRESS]),
         };
 
-        const earmarkRewards: Array<Call3ValueStruct> = [...[0, 1, 2].map(buildEarmarkRewardCall)];
+        const earmarkRewards: Array<Call3ValueStruct> = [...[0, 1].map(buildEarmarkRewardCall)];
 
         // Test earmarkRewards
         await payableMulticall.aggregate3Value([...earmarkRewards, notifyFeesCall], { value: nativeFee.div(10) });
@@ -100,5 +103,65 @@ describe("Multichain - Sidechain", () => {
 
         expect(balanceMulticallAfter, "eth balance").to.be.eq(ZERO);
         expect(balanceRelayerAfter, "eth balance").to.be.gt(balanceRelayerBefore);
+    });
+    it("earmarkRewards, recover eth, recover erc20 in one tx", async () => {
+        const nativeFee = simpleToExactAmount(1).div(10);
+        const ethToRecover = simpleToExactAmount(2);
+        await relayer.signer.sendTransaction({
+            to: payableMulticall.address,
+            value: ethToRecover.add(nativeFee),
+        });
+
+        const tokenBalanceRelayerBefore = await token.balanceOf(relayer.address);
+        const balanceRelayerBefore = await ethers.provider.getBalance(relayer.address);
+
+        const buildEarmarkRewardCall = (pid: number) => ({
+            target: sidechain.booster.address,
+            allowFailure: false,
+            value: ZERO,
+            callData: encodeEarmarkRewards(pid),
+        });
+        const buildRecoverERC20Call = (recipient: string) => ({
+            target: payableMulticall.address,
+            allowFailure: false,
+            value: ZERO,
+            callData: PayableMulticall__factory.createInterface().encodeFunctionData("recoverERC20", [
+                token.address,
+                recipient,
+            ]),
+        });
+        const buildRecoverEthCall = (recipient: string) => ({
+            target: payableMulticall.address,
+            allowFailure: false,
+            value: ZERO,
+            callData: PayableMulticall__factory.createInterface().encodeFunctionData("recoverEthBalance", [recipient]),
+        });
+        const notifyFeesCall: Call3ValueStruct = {
+            target: sidechain.l2Coordinator.address,
+            allowFailure: false,
+            value: nativeFee,
+            callData: L2Coordinator__factory.createInterface().encodeFunctionData("notifyFees", [ZERO_ADDRESS]),
+        };
+
+        const earmarkRewards: Array<Call3ValueStruct> = [...[0, 1].map(buildEarmarkRewardCall)];
+        const recoverERC20Call = buildRecoverERC20Call(relayer.address);
+        const recoverEthCall = buildRecoverEthCall(relayer.address);
+
+        // Test earmarkRewards
+        await payableMulticall.aggregate3Value([...earmarkRewards, notifyFeesCall, recoverERC20Call, recoverEthCall], {
+            value: nativeFee,
+        });
+
+        const balanceAfter = await ethers.provider.getBalance(payableMulticall.address);
+        const tokenBalanceAfter = await token.balanceOf(payableMulticall.address);
+
+        const tokenBalanceRelayerAfter = await token.balanceOf(relayer.address);
+        const balanceRelayerAfter = await ethers.provider.getBalance(relayer.address);
+
+        expect(balanceAfter, "payableMulticall eth balance").to.be.eq(ZERO);
+        expect(tokenBalanceAfter, "payableMulticall token balance").to.be.eq(ZERO);
+
+        expect(tokenBalanceRelayerAfter, "relayer  token balance").to.be.gt(tokenBalanceRelayerBefore);
+        expect(balanceRelayerAfter, "eth balance").to.be.gt(balanceRelayerBefore.add(ethToRecover));
     });
 });

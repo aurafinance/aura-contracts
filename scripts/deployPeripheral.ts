@@ -176,7 +176,6 @@ export async function deployBoosterHelper(
 ) {
     const { token } = config;
     const { booster } = deployment;
-    console.log("🚀 ~ file: deployPeripheral.ts:152 ~ [booster.address, token]:", [booster.address, token]);
     const boosterHelper = await deployContract<BoosterHelper>(
         hre,
         new BoosterHelper__factory(deployer),

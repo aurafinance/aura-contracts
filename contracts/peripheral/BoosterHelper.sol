@@ -26,6 +26,15 @@ interface IBaseRewardPool {
  */
 contract BoosterHelper {
     using SafeERC20 for IERC20;
+    struct PoolInfo {
+        uint256 pid;
+        address lptoken;
+        address token;
+        address gauge;
+        address crvRewards;
+        address stash;
+        bool shutdown;
+    }
 
     IBooster public immutable booster;
     address public immutable crv;
@@ -42,6 +51,7 @@ contract BoosterHelper {
     /**
      * @notice Invoke earmarkRewards for each pool id.
      * @param _pids Array of pool ids
+     * @return amount of crv received as incentive
      */
     function earmarkRewards(uint256[] memory _pids) external returns (uint256) {
         uint256 len = _pids.length;
@@ -94,14 +104,24 @@ contract BoosterHelper {
      * @dev Loop through the booster pools and retrieve expired pools.
      * @param start The start pid to look up
      * @param daysToExpiration Number of days before period ends to be considred expired.
+     * @return expired poolIds.
      */
-    function getExpiredPoolIds(uint256 start, uint256 daysToExpiration) external view returns (uint256[] memory) {
+    function getExpiredPools(uint256 start, uint256 daysToExpiration) external view returns (PoolInfo[] memory) {
         uint256 end = booster.poolLength();
-        uint256[] memory pids = new uint256[](end - start);
+        PoolInfo[] memory pids = new PoolInfo[](end - start);
         uint256 idx = 0;
         for (uint256 i = start; i < end; i++) {
-            if (_isExpiredWithoutQueuedRewards(i, daysToExpiration)) {
-                pids[idx++] = i;
+            IBooster.PoolInfo memory poolInfo = booster.poolInfo(i);
+            if (_isExpiredWithoutQueuedRewards(poolInfo, daysToExpiration)) {
+                pids[idx++] = PoolInfo({
+                    pid: i,
+                    lptoken: poolInfo.lptoken,
+                    token: poolInfo.token,
+                    gauge: poolInfo.gauge,
+                    crvRewards: poolInfo.crvRewards,
+                    stash: poolInfo.stash,
+                    shutdown: poolInfo.shutdown
+                });
             }
         }
         return _sliceArray(pids, idx);
@@ -110,6 +130,7 @@ contract BoosterHelper {
     /**
      * @dev Loop through the booster pools and retrieve the expired pools with idle rewards.
      * @param start The start pid
+     * @return idle poolIds.
      */
     function getIdlePoolIds(uint256 start) external view returns (uint256[] memory) {
         uint256 end = booster.poolLength();
@@ -126,6 +147,7 @@ contract BoosterHelper {
     /**
      * @dev Loop through the booster pools (base and virtual) and retrieve the expired ones with idle rewards.
      * @param start The start pid
+     * @return idle pool addresses.
      */
     function getIdleBaseAndVirtualPools(uint256 start) external view returns (address[] memory) {
         uint256 end = booster.poolLength();
@@ -155,8 +177,11 @@ contract BoosterHelper {
     // ----------------------------------------------------------------
 
     /// @dev evaluates if a given pool (by pid) is expired or about to expired if daysToExpiration > 0
-    function _isExpiredWithoutQueuedRewards(uint256 pid, uint256 daysToExpiration) internal view returns (bool) {
-        IBooster.PoolInfo memory poolInfo = booster.poolInfo(pid);
+    function _isExpiredWithoutQueuedRewards(IBooster.PoolInfo memory poolInfo, uint256 daysToExpiration)
+        internal
+        view
+        returns (bool)
+    {
         // Ignore shutdown pools early
         if (poolInfo.shutdown) return false;
 
@@ -201,6 +226,14 @@ contract BoosterHelper {
             virtualBalanceRewardPools[i] = baseRewardPool.extraRewards(i);
         }
         return virtualBalanceRewardPools;
+    }
+
+    function _sliceArray(PoolInfo[] memory _arr, uint256 length) internal pure returns (PoolInfo[] memory) {
+        PoolInfo[] memory arr = new PoolInfo[](length);
+        for (uint256 i = 0; i < length; i++) {
+            arr[i] = _arr[i];
+        }
+        return arr;
     }
 
     function _sliceArray(uint256[] memory _arr, uint256 length) internal pure returns (uint256[] memory) {
