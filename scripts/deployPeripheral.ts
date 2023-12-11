@@ -2,7 +2,7 @@ import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
-import { deployContract } from "../tasks/utils";
+import { deployContract, deployContractWithCreate2 } from "../tasks/utils";
 import {
     AuraBalStaker,
     AuraBalStaker__factory,
@@ -14,14 +14,19 @@ import {
     FeeScheduler__factory,
     KeeperMulticall3,
     KeeperMulticall3__factory,
+    PayableMulticall,
+    PayableMulticall__factory,
     VeBalGrant,
     VeBalGrant__factory,
     BoosterHelper,
     BoosterHelper__factory,
     Booster,
     BoosterLite,
+    ExtSidechainConfig,
+    Create2Factory__factory,
 } from "../types";
 import { ExtSystemConfig } from "./deploySystem";
+const SALT = "berlin";
 
 export async function deployAuraBalStaker(
     hre: HardhatRuntimeEnvironment,
@@ -133,6 +138,33 @@ export async function deployKeeperMulticall3(
         waitForBlocks,
     );
     return { keeperMulticall3 };
+}
+export async function deployPayableMulticall(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    extConfig: ExtSidechainConfig,
+    salt: string = SALT,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+    const payableMulticall = await deployContractWithCreate2<PayableMulticall, PayableMulticall__factory>(
+        hre,
+        create2Factory,
+        new PayableMulticall__factory(signer),
+        "PayableMulticall",
+        [],
+        deployOptions,
+    );
+
+    return { payableMulticall };
 }
 export async function deployBoosterHelper(
     hre: HardhatRuntimeEnvironment,

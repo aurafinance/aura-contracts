@@ -160,8 +160,11 @@ const addresses: ExtSystemConfig = {
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
     feeTokenHandlerPath: {
-        poolIds: ["0x96646936b91d6b9d7d0c47c496afbf3d6ec7b6f8000200000000000000000019"],
-        assetsIn: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"],
+        poolIds: [
+            "0x79c58f70905f734641735bc61e45c19dd9ad60bc0000000000000000000004e7",
+            "0x08775ccb6674d6bdceb0797c364c2653ed84f3840002000000000000000004f0",
+        ],
+        assetsIn: ["0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "0x79c58f70905F734641735BC61e45c19dD9Ad60bC"],
     },
     lzEndpoint: "0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675",
     sidechain: {

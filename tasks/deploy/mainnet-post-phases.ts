@@ -315,7 +315,6 @@ task("deploy:mainnet:feeTokenHandlerV4")
         const deployer = await getSigner(hre);
         const result = await deployFeeTokenHandlerV4(config, hre, deployer, debug, tskArgs.wait);
         console.log("FeeToken Handler:", result.feeTokenHandler.address);
-        console.log("Forwarder Handler:", result.forwarderHandler.address);
     });
 
 task("deploy:mainnet:wardenQuestScheduler")

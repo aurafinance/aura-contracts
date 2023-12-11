@@ -1,5 +1,6 @@
 import { Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import { AuraBalVaultDeployed } from "../tasks/deploy/mainnet-config";
 import { deployContract, waitForTx } from "../tasks/utils";
 import { ZERO } from "../test-utils/constants";
 import {
@@ -12,15 +13,12 @@ import {
     ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
-    ForwarderHandler,
-    ForwarderHandler__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
     VirtualRewardFactory,
     VirtualRewardFactory__factory,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
-import { AuraBalVaultDeployed } from "../tasks/deploy/mainnet-config";
 
 interface VaultConfig {
     addresses: ExtSystemConfig;
@@ -68,7 +66,7 @@ export async function deployFeeTokenHandlerV4(
     const feeTokenHandler = await deployContract<BalancerSwapsHandler>(
         hre,
         new BalancerSwapsHandler__factory(signer),
-        "USDCHandlerV1",
+        "USDCHandlerV2",
         [
             config.addresses.feeToken,
             compounder.strategy.address,
@@ -83,22 +81,11 @@ export async function deployFeeTokenHandlerV4(
         debug,
         waitForBlocks,
     );
-    const bbausdV3Address = "0xfeBb0bbf162E64fb9D0dfe186E517d84C395f016"; // @deprecated bbausdV3
-    const forwarderHandler = await deployContract<ForwarderHandler>(
-        hre,
-        new ForwarderHandler__factory(signer),
-        "BBUSDHandlerV4",
-        [bbausdV3Address],
-        {},
-        debug,
-        waitForBlocks,
-    );
     const tx = await feeTokenHandler.setApprovals();
     await waitForTx(tx, debug, waitForBlocks);
 
     return {
         feeTokenHandler,
-        forwarderHandler,
     };
 }
 

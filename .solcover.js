@@ -20,6 +20,7 @@ module.exports = {
         "peripheral/RewardPoolDepositWrapper.sol",
         "peripheral/KeeperRole.sol",
         "peripheral/KeeperMulticall3.sol",
+        "peripheral/PayableMulticall.sol",
         "peripheral/Multicall3.sol",
         "peripheral/WardenQuestScheduler.sol",
         "peripheral/grants/AuraArbBalGrant.sol",
