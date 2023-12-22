@@ -87,7 +87,12 @@ export async function getTokenPricesMock(tokenAddresses: string[]): Promise<Toke
         },
     ];
 }
-
+function normalizeChainName(gauge: GaugesDetails): GaugesDetails {
+    if (gauge.rootGauge && gauge.rootGauge.chain === "PolygonZkEvm") {
+        gauge.rootGauge.chain = "ZkEvm";
+    }
+    return gauge;
+}
 export async function getGaugesDetails(gaugeAddresses: string[]): Promise<GaugesDetails[]> {
     const endpoint = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-gauges";
     const query = gql`
@@ -132,7 +137,7 @@ export async function getGaugesDetails(gaugeAddresses: string[]): Promise<Gauges
             });
         }
 
-        return response.gauges;
+        return response.gauges.map(normalizeChainName);
     } catch (error) {
         console.error("GraphQL request error:", error);
         return [];

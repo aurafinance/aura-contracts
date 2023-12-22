@@ -203,7 +203,7 @@ function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
     }
 }
 
-const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base"];
+const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm"];
 const opAddress = "0x4200000000000000000000000000000000000042";
 
 /* ---------------------------------------------------------------
@@ -225,7 +225,10 @@ const isDestChainIdNotSet = (gaugeVoteRewards: GaugeVoteRewards) => async (gauge
     0 === (await gaugeVoteRewards.getDstChainId(gauge.address));
 const isNoDepositGaugeNotSet = (gaugeVoteRewards: GaugeVoteRewards) => async (gauge: GaugesDetails) =>
     (await gaugeVoteRewards.isNoDepositGauge(gauge.address)) === false;
-const chainNameToLzChainId = (chainName: string) => lzChainIds[chainIds[chainName.toLowerCase()]];
+const chainNameToLzChainId = (chainName: string) => {
+    chainName === "PolygonZkEvm" ? "zkevm" : chainName;
+    return lzChainIds[chainIds[chainName.toLowerCase()]];
+};
 
 async function addPoolToMainnet(
     deployer: Signer,
