@@ -552,11 +552,8 @@ task("deploy:sidechain:payableMulticall")
         const deployer = await getSigner(hre);
 
         const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
-        const owner = await impersonateAccount("0xb07d2d6a03f2d4878dc1680f8581e871dae47494");
-        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, owner.signer);
-        await create2Factory.updateDeployer(await deployer.getAddress(), true);
 
-        const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT);
+        const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT, true, tskArgs.wait);
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });

@@ -6,3 +6,4 @@ import "./mainnet-post-phases";
 import "./sidechain";
 import "./polygon-config";
 import "./gaugeVoteRewards";
+import "./sepolia";

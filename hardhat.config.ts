@@ -58,6 +58,10 @@ const config: HardhatUserConfig = {
             gasPrice: 3000000000,
             chainId: chainIds.goerli,
         },
+        sepolia: {
+            url: process.env.NODE_URL || "",
+            chainId: chainIds.sepolia,
+        },
         arbitrum: {
             chainId: chainIds.arbitrum,
             url: process.env.NODE_URL || "",

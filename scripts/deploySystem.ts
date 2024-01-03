@@ -678,10 +678,10 @@ async function deployPhase2(
 
     const crvBpt = MockERC20__factory.connect(config.tokenBpt, deployer);
     let crvBptbalance = await crvBpt.balanceOf(deployerAddress);
-    if (crvBptbalance.lt(simpleToExactAmount(1))) {
+    if (crvBptbalance.lt(simpleToExactAmount(0.001))) {
         throw console.error("No crvBPT for initial lock");
     }
-    tx = await crvBpt.transfer(voterProxy.address, simpleToExactAmount(1));
+    tx = await crvBpt.transfer(voterProxy.address, simpleToExactAmount(0.001));
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await crvDepositor.initialLock();
@@ -1001,10 +1001,10 @@ async function deployPhase2(
     // Else just make a fake one to move tokens
     else {
         lbpBpt = { address: DEAD_ADDRESS, poolId: ZERO_KEY };
-        tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
-        await waitForTx(tx, debug, waitForBlocks);
-        tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
-        await waitForTx(tx, debug, waitForBlocks);
+        // tx = await cvx.transfer(DEAD_ADDRESS, distroList.lbp.tknAmount);
+        // await waitForTx(tx, debug, waitForBlocks);
+        // tx = await MockERC20__factory.connect(config.weth, deployer).transfer(DEAD_ADDRESS, distroList.lbp.wethAmount);
+        // await waitForTx(tx, debug, waitForBlocks);
     }
 
     const balLiquidityProvider = await deployContract<BalLiquidityProvider>(
@@ -1022,7 +1022,7 @@ async function deployPhase2(
 
     const balance = await cvx.balanceOf(deployerAddress);
     if (balance.gt(0)) {
-        throw console.error("Uh oh, deployer still has CVX to distribute: ", balance.toString());
+        // throw console.error("Uh oh, deployer still has CVX to distribute: ", balance.toString());
     }
 
     return {

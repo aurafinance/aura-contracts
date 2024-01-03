@@ -153,6 +153,7 @@ export const resolveToken = (
 };
 
 export const chainIds = {
+    sepolia: 11155111,
     base: 8453,
     avalanche: 43114,
     zkevm: 1101,
