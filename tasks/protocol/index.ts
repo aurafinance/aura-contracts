@@ -613,9 +613,6 @@ task("protocol:add-pool")
             console.warn(
                 `WARNING Gauges are missing ${gauges.map(g => g.toLowerCase()).filter(g => !gds.includes(g))}`,
             );
-            console.log("========");
-            // console.log(gds)
-            // return
         }
 
         const gaugesChains = gaugesDetails
