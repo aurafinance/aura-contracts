@@ -217,7 +217,12 @@ const formatDstChainId = (str: string) => {
 };
 
 const onlySupportedChains = (chainName: string): boolean => gaugeTypesSupported.includes(chainName);
-const chainNameFromGaugeDetails = (gauge: GaugesDetails): string => gauge.rootGauge?.chain ?? gauge.type.name;
+const chainNameFromGaugeDetails = (gauge: GaugesDetails): string => {
+    if (gauge.rootGauge) {
+        return gauge.rootGauge.chain === "PolygonZkEvm" ? "ZkEvm" : gauge.rootGauge.chain;
+    }
+    return gauge.type.name;
+};
 const asyncFilter = async <T>(arr: Array<T>, predicate: (arg: T) => Promise<boolean>) =>
     Promise.all(arr.map(predicate)).then(results => arr.filter((_v, index) => results[index]));
 const onlyDifferent = (prev: string, curr: string): string => (prev.includes(curr) ? prev : `${prev},${curr}`);
@@ -597,12 +602,17 @@ task("protocol:add-pool")
         // Only runs on mainnet, sidechain data is gathered via JSON providers
         const chainId = chainIds.mainnet;
 
-        const gauges = tskArgs.gauges.split(",");
+        const gauges: Array<string> = tskArgs.gauges.split(",");
         assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
 
         const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
         if (gaugesDetails.length != gauges.length) {
             console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
+            const gds = gaugesDetails.map(gd => gd.address.toLowerCase());
+
+            console.warn(
+                `WARNING Gauges are missing ${gauges.map(g => g.toLowerCase()).filter(g => !gds.includes(g))}`,
+            );
         }
 
         const gaugesChains = gaugesDetails
