@@ -416,7 +416,7 @@ export interface AuraBalVaultDeployed {
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
-    feeTokenHandler: BalancerSwapsHandler__factory.connect("0xA2930d1e21a26fde6ed861f303205536A98381eD", deployer),
+    feeTokenHandler: BalancerSwapsHandler__factory.connect("0x3eA03278c46145024519Ab5c58dd2e848Ad42683", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 
