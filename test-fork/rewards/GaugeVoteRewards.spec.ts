@@ -1,22 +1,25 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
+import * as fs from "fs";
 import hre from "hardhat";
 import * as path from "path";
-import * as fs from "fs";
 
 import { Phase2Deployed, Phase6Deployed, Phase8Deployed } from "../../scripts/deploySystem";
-import { config } from "../../tasks/deploy/mainnet-config";
 import { config as arbitrumConfig } from "../../tasks/deploy/arbitrum-config";
+import { config } from "../../tasks/deploy/mainnet-config";
 import { getSigner } from "../../tasks/utils";
-import { setupForkDeployment, TestSuiteDeployment } from "../../test-fork/sidechain/setupForkDeployments";
+import { TestSuiteDeployment, setupForkDeployment } from "../../test-fork/sidechain/setupForkDeployments";
 import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeployment";
 import {
+    DEAD_ADDRESS,
+    ONE_DAY,
+    ONE_WEEK,
+    ZERO,
+    ZERO_ADDRESS,
     getTimestamp,
     impersonateAccount,
     increaseTime,
     increaseTimeTo,
-    ONE_DAY,
-    ONE_WEEK,
     simpleToExactAmount,
 } from "../../test-utils";
 import {
@@ -31,16 +34,22 @@ import {
     IStakelessGauge__factory,
 } from "../../types";
 import { ChildGaugeVoteRewards } from "../../types/generated/ChildGaugeVoteRewards";
+import { GaugeVoteRewards } from "../../types/generated/GaugeVoteRewards";
+import { StashRewardDistro } from "../../types/generated/StashRewardDistro";
 import { ChildGaugeVoteRewards__factory } from "../../types/generated/factories/ChildGaugeVoteRewards__factory";
 import { GaugeVoteRewards__factory } from "../../types/generated/factories/GaugeVoteRewards__factory";
 import { StashRewardDistro__factory } from "../../types/generated/factories/StashRewardDistro__factory";
-import { GaugeVoteRewards } from "../../types/generated/GaugeVoteRewards";
-import { StashRewardDistro } from "../../types/generated/StashRewardDistro";
 
 const L1_CHAIN_ID = 101; // Ethereum
 const L2_CHAIN_ID = 110; // Arbitrum
-const AFTER_DEPLOYMENT = true;
-const FORK_BLOCK = AFTER_DEPLOYMENT ? 17913543 : 17670930;
+
+const VERSION_STATUS = {
+    // blocks
+    V1_BEFORE: 17670930,
+    V1_DEPLOYED: 17913543, // 18975313
+    V2_BEFORE: 19062280,
+};
+const FORK_BLOCK = VERSION_STATUS.V2_BEFORE;
 
 const noDepositGauges = [
     "0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d",
@@ -117,7 +126,7 @@ const gauges = [
     "0x6F3b31296FD2457eba6Dca3BED65ec79e06c1295",
 ];
 
-const resetGauges = [
+const resetGaugesV1 = [
     "0x9e3f4FB69058244066801404e50889592d33cA11",
     "0x3B6A85B5e1e6205ebF4d4eabf147D10e8e4bf0A5",
     "0x1d157Cf1F1339864A3C291D1Bbe786d6Ee682434",
@@ -187,6 +196,109 @@ const resetGauges = [
     "0x78a54C8F4eAba82e45cBC20B9454a83CB296e09E",
 ];
 
+const resetGaugesV2 = [
+    "0xa4c104ab9116a84714c081e0ed6d750221e4c756",
+    "0x956074628a64a316086f7125074a8a52d3306321",
+    "0x7fc115bf013844d6ef988837f7ae6398af153532",
+    "0x2c2179abce3413e27bda6917f60ae37f96d01826",
+    "0x17748aa07a6a1be2ace8bcc546919c006b40de34",
+    "0xd758454bdf4df7ad85f7538dc9742648ef8e6d0a",
+    "0x1b8c2c972c67f4a5b43c2ebe07e64fcb88acee87",
+    "0xbc02ef87f4e15ef78a571f3b2adcc726fee70d8b",
+    "0x183d73da7adc5011ec3c46e33bb50271e59ec976",
+    "0x49f530b45ae792cdf5cbd5d25c5a9b9e59c6c3b8",
+    "0xa1d5b81d0024809faa278ab72fe3d2fb467dd28b",
+    "0xd103dd49b8051a09b399a52e9a8ab629392de2fb",
+    "0x2d02bf5ea195dc09854e18e7d2857a16bf376963",
+    "0x6be156504cda8ee38169be96bcf53aeab4377c1a",
+    "0x15c84754c7445d0df6c613f1490ca07654347c1b",
+    "0x25869f277f474fa9459f40f5d4cb0d6a8ab41967",
+    "0xa9659365461380e8a6b30a50d421c1f5fcd8a8bc",
+    "0xc592c33e51a764b94db0702d8baf4035ed577aed",
+    "0x1e916950a659da9813ee34479bff04c732e03deb",
+    "0x2d42910d826e5500579d121596e98a6eb33c0a1b",
+    "0x56c0626e6e3931af90ebb679a321225180d4b32b",
+    "0x6a58e7c904ecf991a3183d28fc73be90732b7a30",
+    "0x82bcad0c8f51d88ec339141f0d8953bc25cc3d8c",
+    "0xa5893cf81150aa61a0b33950c1b13c5251c19a10",
+    "0x5622821a3b993f062ff691478bbb7d551c167321",
+    "0xa86e8e8cfae8c9847fa9381d4631c13c7b3466bd",
+    "0x9965713498c74aee49cef80b2195461f188f24f8",
+    "0x00b9bcd17cb049739d25fd7f826caa2e23b05620",
+    "0x78a54c8f4eaba82e45cbc20b9454a83cb296e09e",
+    "0x4d4264aebf65bb1727bb5438e0b2aaf86186da50",
+    "0x539d6edbd16f2f069a06716416c3a6e98cc29dd0",
+    "0xa8d974288fe44acc329d7d7a179707d27ec4dd1c",
+    "0x46804462f147ff96e9cafb20ca35a3b2600656df",
+    "0x42a3290a65ca16adaf161c6ffafdbe0913a169f4",
+    "0x16289f675ca54312a8fcf99341e7439982888077",
+    "0x53fa0546f307317daa82371e94e8dcd5cad3345f",
+    "0x70754ab20c63cc65ea12206cf28342723d731ac6",
+    "0x057e7b14dc461f071958e0bbf42b5597564d4e6c",
+    "0x27fd581e9d0b2690c2f808cd40f7fe667714b575",
+    "0xc2d343e2c9498e905f53c818b88eb8064b42d036",
+    "0x21c377cbb2beddd8534308e5cdfebe35fdf817e8",
+    "0x255912af1ba318527edc69b4d56152d8c133288e",
+    "0xe9b5f4d892df284a15ec90a58bd4385e57964f18",
+    "0x5b006e53df539773e109dbbf392deff6e87e2781",
+    "0xc4b6cc9a444337b1cb8cbbdd9de4d983f609c391",
+    "0xceb17d5c8ef8556ed0424a4bebc35a5d562d96e2",
+    "0x2617724db92a8dbd4eba7e24615ba369133ff684",
+    "0xdacd99029b4b94cd04fe364aac370829621c1c64",
+    "0x91ceeb8d46428c5b8d76debc8156992e45d2d63f",
+    "0x47c56a900295df5224ec5e6751dc31eb900321d5",
+    "0x2041f8a758a0266e1b9272fcd4b1f1c37b67d5da",
+    "0x05266a0d5ac04e44d394b8a8a2d0935d8809692b",
+    "0x64fced4684f4b065e6b900c4e99a0cbacc5e5fe1",
+    "0x85d6840eab7473b60f10d1a3e2452243eb702c97",
+    "0x41a8243656bcf628ac92189558f70d371dd08b4e",
+    "0x3c8502e60ebd1e036e1d3906fc34e9616218b6e5",
+    "0x2e6cd45581002c894cac692dce4a30632125ef99",
+    "0x6661136537dfdca26eea05c8500502d7d5796e5e",
+    "0x9e5b7e6b61529571e98c8f16d07794ea99a7a930",
+    "0x730a168cf6f501cf302b803ffc57ff3040f378bf",
+    "0x175407b4710b5a1cb67a37c76859f17fb2ff6672",
+    "0x0edf6cdd81bc3471c053341b7d8dfd1cb367ad93",
+    "0x20d03f9d0304744891881e6ac1d45b996e7f39b5",
+    "0xf7b0751fea697cf1a541a5f57d11058a8fb794ee",
+    "0x8e486dbacb74c00dd31e489da93d99bbebe36cd5",
+    "0x99e2fafd901645fb611f6d56476af8ad25263ea5",
+    "0xa1dde34d48868f9e0901592f2a97e20f76004059",
+    "0xeff145872582721e1b33931d61c3fe9c1ca66690",
+    "0xf22bbdad6b3dd9314bdf97724df32b09ff95c216",
+    "0x9aaaf6757be9e115895429ef6b81e05dcb951646",
+    "0xdf54d2dd06f8be3b0c4ffc157be54ec9cca91f3c",
+    "0xbf65b3fa6c208762ed74e82d4aefcddfd0323648",
+    "0x0312aa8d0ba4a1969fddb382235870bf55f7f242",
+    "0xee01c0d9c0439c94d314a6ecae0490989750746c",
+    "0x895e415ce9936c1dca0a0859b0ea92e05bc966ae",
+    "0x10a361766e64d7983a97202ac3a0f4cee06eb717",
+    "0x6a2c2d4502335638d2c2f40f0171253fb2c2db88",
+    "0x93ae6971f03ce890fa4e9274ab441477b84dae5f",
+    "0xb1af0d75aeea1c13c450ffc7e12083072daf41eb",
+    "0x0021e01b9fab840567a8291b864ff783894eabc6",
+    "0xbb1a15dfd849bc5a6f33c002999c8953afa626ad",
+    "0x346f1d4f98f055bb0791465923e27a10f1082912",
+    "0xb66e8d615f8109ca52d47d9cb65fc4edcf9c1342",
+    "0xf8c85bd74fee26831336b51a90587145391a27ba",
+    "0x1461c4a373d27977f0d343ba33c22870c89f9df0",
+    "0xb6d101874b975083c76598542946fe047f059066",
+    "0x132296d1dfd10ba55b565c4cfe49d350617a2a2b",
+    "0x8135d6abfd42707a87a7b94c5cfa3529f9b432ad",
+    "0x62a82fe26e21a8807599374cac8024fae342ef83",
+    "0x8f44a8cfb7fe682295fa663348060533732f437c",
+    "0x5c0f23a5c1be65fa710d385814a7fd1bda480b1c",
+    "0x8c596e8d1b3be04a6caa1b1152b51c495f799a16",
+    "0xcc6a23446f6388d78f3037bd55f2eb820352d982",
+    "0x671ed21480acf63b0ab7297b901505f5bccafa9b",
+    "0xc859bf9d7b8c557bbd229565124c2c09269f3aef",
+    "0xb17f2f3de17d5013e7cc8ceb4ec2be02c6cc1501",
+    "0x329caebb9be5144c5727347f64f8b3a3b109ec57",
+    "0xf6a7ad46b00300344c7d4739c0518db70e722dc4",
+    "0xf17f1e67bc384e43b4acf69cc032ad086f15f262",
+    "0x79ef6103a513951a3b25743db509e267685726b7",
+];
+
 const dstChainGauges = {
     ["109"]: [
         // Polygon
@@ -236,26 +348,31 @@ const weights = [
     58, 62, 62, 104, 869, 235, 2027, 229, 1827,
 ];
 
-const l1GaugesWithVotes = dstChainGauges[L1_CHAIN_ID].filter((g: any) => {
+const hasGaugeWeight = (g: string) => {
     if (noDepositGauges.includes(g)) return false;
     const idx = gauges.indexOf(g);
     const weight = weights[idx];
     return weight > 0;
-});
+};
+const l1GaugesWithVotes = dstChainGauges[L1_CHAIN_ID].filter(hasGaugeWeight);
 
-const l2GaugesWithVotes = dstChainGauges[L2_CHAIN_ID].filter((g: any) => {
-    if (noDepositGauges.includes(g)) return false;
-    const idx = gauges.indexOf(g);
-    const weight = weights[idx];
-    return weight > 0;
-});
+const l2GaugesWithVotes = dstChainGauges[L2_CHAIN_ID].filter(hasGaugeWeight);
 
-const itBeforeDeployment = AFTER_DEPLOYMENT ? it.skip : it;
+// @deprecate
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const itBeforeV1Deployment = FORK_BLOCK === VERSION_STATUS.V1_BEFORE ? it : it.skip;
+const itAfterV1Deployment = FORK_BLOCK === VERSION_STATUS.V1_DEPLOYED ? it : it.skip;
+const itBeforeV2Deployment = FORK_BLOCK === VERSION_STATUS.V2_BEFORE ? it : it.skip;
 
-const describeBeforeDeployment = AFTER_DEPLOYMENT ? describe.skip : describe;
+// @deprecate
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const describeBeforeV1Deployment = FORK_BLOCK === VERSION_STATUS.V1_BEFORE ? describe : describe.skip;
+const describeBeforeV2Deployment = FORK_BLOCK === VERSION_STATUS.V2_BEFORE ? describe : describe.skip;
 
 describe("GaugeVoteRewards", () => {
     let deployer: Account;
+    let owner: Account;
+
     let phase2: Phase2Deployed;
     let phase6: Phase6Deployed;
     let phase8: Phase8Deployed;
@@ -308,7 +425,7 @@ describe("GaugeVoteRewards", () => {
         phase6 = await config.getPhase6(deployer.signer);
         phase8 = await config.getPhase8(deployer.signer);
 
-        if (AFTER_DEPLOYMENT) {
+        if (FORK_BLOCK === VERSION_STATUS.V1_DEPLOYED) {
             ctx = await setupForkDeployment(hre, config, arbitrumConfig, deployer, L2_CHAIN_ID);
 
             const voteRewards = config.getGaugeVoteRewards(deployer.signer);
@@ -345,6 +462,10 @@ describe("GaugeVoteRewards", () => {
             await gaugeVoteRewards.setTrustedRemoteAddress(L2_CHAIN_ID, childGaugeVoteRewards.address);
             await childGaugeVoteRewards.setTrustedRemoteAddress(L1_CHAIN_ID, gaugeVoteRewards.address);
         }
+
+        // Make sure dao is the owner
+        owner = await impersonateAccount(await gaugeVoteRewards.owner());
+        await gaugeVoteRewards.connect(owner.signer).transferOwnership(ctx.dao.address);
     });
 
     describe("config", () => {
@@ -356,7 +477,7 @@ describe("GaugeVoteRewards", () => {
             expect(await gaugeVoteRewards.lzChainId()).eq(L1_CHAIN_ID);
             expect(await gaugeVoteRewards.lzEndpoint()).eq(ctx.l1LzEndpoint.address);
         });
-        itBeforeDeployment("ChildGaugeVoteRewards has correct config", async () => {
+        itBeforeV2Deployment("ChildGaugeVoteRewards has correct config", async () => {
             expect(await childGaugeVoteRewards.aura()).eq(ctx.sidechain.auraOFT.address);
             expect(await childGaugeVoteRewards.booster()).eq(ctx.sidechain.booster.address);
             expect(await childGaugeVoteRewards.stashRewardDistro()).eq(childStashRewardDistro.address);
@@ -374,7 +495,7 @@ describe("GaugeVoteRewards", () => {
             await expect(g.setRewardPerEpoch(0)).to.be.revertedWith(errorMsg);
             await expect(g.voteGaugeWeight([], [])).to.be.revertedWith(errorMsg);
         });
-        itBeforeDeployment("child cannot call protected functions as non owner", async () => {
+        itBeforeV2Deployment("child cannot call protected functions as non owner", async () => {
             const errorMsg = "Ownable: caller is not the owner";
             const signer = (await hre.ethers.getSigners()).pop();
 
@@ -384,16 +505,17 @@ describe("GaugeVoteRewards", () => {
     });
 
     describe("setup", () => {
-        itBeforeDeployment("set distributor", async () => {
-            await gaugeVoteRewards.setDistributor(ctx.dao.address);
+        it("set distributor", async () => {
+            // Always set the distributor
+            await gaugeVoteRewards.connect(ctx.dao.signer).setDistributor(ctx.dao.address);
             expect(await gaugeVoteRewards.distributor()).eq(ctx.dao.address);
         });
-        itBeforeDeployment("1. set rewards per epoch", async () => {
+        itBeforeV2Deployment("1. set rewards per epoch", async () => {
             const amount = simpleToExactAmount(180_000);
-            await gaugeVoteRewards.setRewardPerEpoch(amount);
+            await gaugeVoteRewards.connect(ctx.dao.signer).setRewardPerEpoch(amount);
             expect(await gaugeVoteRewards.rewardPerEpoch()).eq(amount);
         });
-        itBeforeDeployment("2. set pool IDs", async () => {
+        itBeforeV2Deployment("2. set pool IDs", async () => {
             const nGauges = await phase6.booster.poolLength();
             await gaugeVoteRewards.setPoolIds(0, nGauges);
 
@@ -414,23 +536,25 @@ describe("GaugeVoteRewards", () => {
                 expect(await gaugeVoteRewards.getDstChainId(poolInfo.gauge)).eq(L1_CHAIN_ID);
             }
         });
-        itBeforeDeployment("3. set no deposit gauges", async () => {
+        itBeforeV2Deployment("3. set no deposit gauges", async () => {
             for (const gauge of noDepositGauges) {
-                await gaugeVoteRewards.setIsNoDepositGauge(gauge, true);
+                await gaugeVoteRewards.connect(ctx.dao.signer).setIsNoDepositGauge(gauge, true);
                 expect(await gaugeVoteRewards.isNoDepositGauge(gauge)).eq(true);
             }
         });
         it("4. set dst chain IDs", async () => {
             for (const dstChainId in dstChainGauges) {
                 if (dstChainId === L1_CHAIN_ID.toString()) continue;
-                await gaugeVoteRewards.setDstChainId(dstChainGauges[dstChainId], dstChainId);
+                await gaugeVoteRewards.connect(ctx.dao.signer).setDstChainId(dstChainGauges[dstChainId], dstChainId);
                 for (const gauge of dstChainGauges[dstChainId]) {
                     expect((await gaugeVoteRewards.getDstChainId(gauge)).toString()).eq(dstChainId);
                 }
             }
         });
-        itBeforeDeployment("5. set child gauge vote rewards", async () => {
-            await gaugeVoteRewards.setChildGaugeVoteRewards(L2_CHAIN_ID, childGaugeVoteRewards.address);
+        itBeforeV2Deployment("5. set child gauge vote rewards", async () => {
+            await gaugeVoteRewards
+                .connect(ctx.dao.signer)
+                .setChildGaugeVoteRewards(L2_CHAIN_ID, childGaugeVoteRewards.address);
             expect(await gaugeVoteRewards.getChildGaugeVoteRewards(L2_CHAIN_ID)).eq(childGaugeVoteRewards.address);
         });
         it("6. add aura as extra reward", async () => {
@@ -474,7 +598,7 @@ describe("GaugeVoteRewards", () => {
                 }),
             );
         });
-        it("8. update all booster pool reward rate to 0.4", async () => {
+        itAfterV1Deployment("8. update all booster pool reward rate to 0.4", async () => {
             const nGauges = await phase6.booster.poolLength();
 
             for (let i = 0; i < nGauges.toNumber(); i++) {
@@ -490,7 +614,7 @@ describe("GaugeVoteRewards", () => {
         });
     });
 
-    describeBeforeDeployment("setup child", () => {
+    describeBeforeV2Deployment("setup child", () => {
         it("set distributor", async () => {
             await childGaugeVoteRewards.setDistributor(deployer.address);
             expect(await childGaugeVoteRewards.distributor()).eq(deployer.address);
@@ -542,6 +666,20 @@ describe("GaugeVoteRewards", () => {
     });
 
     describe("[TREASURY] funding", () => {
+        itBeforeV2Deployment("recover funding from V1", async () => {
+            const voteRewardsV1 = config.getGaugeVoteRewards(deployer.signer);
+            const balanceBefore = await phase2.cvx.balanceOf(voteRewardsV1.gaugeVoteRewards.address);
+            const treasuryBalanceBefore = await phase2.cvx.balanceOf(config.multisigs.treasuryMultisig);
+            expect(balanceBefore).gte(ZERO);
+            await voteRewardsV1.gaugeVoteRewards
+                .connect(ctx.dao.signer)
+                .transferERC20(phase2.cvx.address, config.multisigs.treasuryMultisig, balanceBefore);
+
+            const balanceAfter = await phase2.cvx.balanceOf(voteRewardsV1.gaugeVoteRewards.address);
+            const treasuryBalanceAfter = await phase2.cvx.balanceOf(config.multisigs.treasuryMultisig);
+            expect(balanceAfter).eq(ZERO);
+            expect(treasuryBalanceAfter.sub(treasuryBalanceBefore)).eq(balanceBefore);
+        });
         it("treasury funds 2 epochs", async () => {
             const treasury = await impersonateAccount(config.multisigs.treasuryMultisig);
             const rewardPerEpoch = await gaugeVoteRewards.rewardPerEpoch();
@@ -552,7 +690,8 @@ describe("GaugeVoteRewards", () => {
 
     describe("voting", () => {
         it("can vote for underlying gauges", async () => {
-            if (AFTER_DEPLOYMENT) {
+            if (FORK_BLOCK >= VERSION_STATUS.V1_DEPLOYED) {
+                const resetGauges = FORK_BLOCK === VERSION_STATUS.V1_DEPLOYED ? resetGaugesV1 : resetGaugesV2;
                 // Move along so we can cast a vote without getting the
                 // voting too often error from the gauge controller
                 // Resetting the previous gauge votes so we don't run into
@@ -569,7 +708,7 @@ describe("GaugeVoteRewards", () => {
             const noDepositGaugesInVote = gauges.find(g => noDepositGauges.includes(g));
             expect(noDepositGaugesInVote.length, "No noDepositGauges in vote").gt(0);
 
-            const tx = await gaugeVoteRewards.voteGaugeWeight(gauges, weights);
+            const tx = await gaugeVoteRewards.connect(ctx.dao.signer).voteGaugeWeight(gauges, weights);
             const resp = await tx.wait();
 
             console.log("Gas used:", resp.cumulativeGasUsed.toString());
@@ -617,7 +756,7 @@ describe("GaugeVoteRewards", () => {
         });
     });
 
-    describeBeforeDeployment("process sidechain rewards", () => {
+    describeBeforeV2Deployment("process sidechain rewards", () => {
         it("can process sidechain rewards", async () => {
             const auraOftBalance = () => phase2.cvx.balanceOf(ctx.canonical.auraProxyOFT.address);
             const voteRewardBalance = async () => phase2.cvx.balanceOf(gaugeVoteRewards.address);
@@ -634,8 +773,8 @@ describe("GaugeVoteRewards", () => {
                     l2GaugesWithVotes,
                     epoch,
                     L2_CHAIN_ID,
-                    "0x0000000000000000000000000000000000000000",
-                    "0x0000000000000000000000000000000000000000",
+                    ZERO_ADDRESS,
+                    ZERO_ADDRESS,
                     [],
                     [],
                     { value: simpleToExactAmount(0.2) },
@@ -698,7 +837,10 @@ describe("GaugeVoteRewards", () => {
         const tokenInfo = await stash.tokenInfo(cvx.address);
 
         const getFunds = () => distro.getFunds(epoch, pid.value, cvx.address);
-        const getStashAuraBalance = () => cvx.balanceOf(tokenInfo.stashToken);
+        const getStashAuraBalance = () =>
+            FORK_BLOCK === VERSION_STATUS.V1_DEPLOYED
+                ? cvx.balanceOf(tokenInfo.stashToken)
+                : cvx.balanceOf(poolInfo.stash);
 
         const funds0 = await getFunds();
         const stashAuraBalance0 = await getStashAuraBalance();
