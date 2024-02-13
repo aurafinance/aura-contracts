@@ -274,9 +274,10 @@ task("create:hh:incentives")
         const { auraBalwstEthAmount } = taskArgs;
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        // const chefClaimableRewards = (await getChefClaimableRewards(hre)).valueOf();
+        const chefClaimableRewards = (await getChefClaimableRewards(__hre)).valueOf();
         const auraBalAmount = BN.from(40000);
-        // if(auraBalAmount.gt(chefClaimableRewards)) throw Error("auraBalAmount gt chefClaimable amount")
+        if (auraBalAmount.add(BN.from(auraBalwstEthAmount)).gt(chefClaimableRewards))
+            throw Error("auraBalAmount gt chefClaimable amount");
         const hhAuraProposals = await fetchAuraProposals();
 
         if (hhAuraProposals.length < 3) throw new Error("No proposals found");

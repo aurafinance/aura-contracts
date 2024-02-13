@@ -26,14 +26,18 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
 
         const boosterLite = "0x98Ef32edd24e2c92525E59afc4475C1242a30184";
 
+        // Index of providers and names must match.
         const providers = [
             process.env.ARBITRUM_NODE_URL,
             process.env.OPTIMISM_NODE_URL,
             process.env.POLYGON_NODE_URL,
             process.env.GNOSIS_NODE_URL,
+            process.env.BASE_NODE_URL,
+            process.env.ZKEVM_NODE_URL,
         ];
 
-        const names = ["arbitrum", "optimism", "polygon", "gnosis"];
+        const names = ["arbitrum", "optimism", "polygon", "gnosis", "base", "zkevm"];
+
         const gaugeInterface = [
             "function is_killed() external view returns(bool)",
             "function getRecipient() external view returns(address)",
@@ -98,27 +102,37 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
             killed_info[name] = {};
             killed_but_live_info[name] = {};
             killed_but_live_lists[name] = [];
+            try {
+                for (let i = 0; i < Number(poolLength); i++) {
+                    if (name === "gnosis") {
+                        // Avoid  Too many queued requests error
+                        await new Promise(resolve => setTimeout(resolve, 4000));
+                    }
 
-            for (let i = 0; i < Number(poolLength); i++) {
-                console.log(name, i, poolLength);
-                const poolInfo = await booster.poolInfo(i);
-                const isKilled = is_gauge_killed[poolInfo.gauge];
+                    console.log(name, i, Number(poolLength));
+                    const poolInfo = await booster.poolInfo(i);
+                    const isKilled = is_gauge_killed[poolInfo.gauge];
 
-                info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+                    info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
-                if (isKilled) {
-                    killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+                    if (isKilled) {
+                        killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
 
-                    if (!poolInfo.shutdown) {
-                        killed_but_live_lists[name].push(i);
-                        killed_but_live_info[name][i] = {
-                            pid: i,
-                            gauge: poolInfo.gauge,
-                            isKilled: isKilled,
-                            isShutdown: poolInfo.shutdown,
-                        };
+                        if (!poolInfo.shutdown) {
+                            killed_but_live_lists[name].push(i);
+                            killed_but_live_info[name][i] = {
+                                pid: i,
+                                gauge: poolInfo.gauge,
+                                isKilled: isKilled,
+                                isShutdown: poolInfo.shutdown,
+                            };
+                        }
                     }
                 }
+            } catch (error) {
+                console.log("--------------", name, "--------------");
+                console.log(name, "error", error);
+                console.log("--------------", name, "--------------");
             }
         }
 
@@ -169,14 +183,14 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
         if (generateLogs) {
             fs.writeFileSync(
                 path.resolve(__dirname, "./killed_but_live_info.json"),
-                JSON.stringify(killed_but_live_info),
+                JSON.stringify(killed_but_live_info, null, 4),
             );
 
-            fs.writeFileSync(path.resolve(__dirname, "./killed_info.json"), JSON.stringify(killed_info));
+            fs.writeFileSync(path.resolve(__dirname, "./killed_info.json"), JSON.stringify(killed_info, null, 4));
 
-            fs.writeFileSync(path.resolve(__dirname, "./all_info.json"), JSON.stringify(info));
+            fs.writeFileSync(path.resolve(__dirname, "./all_info.json"), JSON.stringify(info, null, 4));
 
-            fs.writeFileSync(path.resolve(__dirname, "./all_gauge_info.json"), JSON.stringify(all_gauge_info));
+            fs.writeFileSync(path.resolve(__dirname, "./all_gauge_info.json"), JSON.stringify(all_gauge_info, null, 4));
         }
 
         /*
@@ -184,7 +198,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
          */
         if (generateSafeData) {
             names.push("mainnet");
-            const mainnetPoolManager = "0xa72932Aea1392b0Da9eDc34178dA2B29EcE2de54";
+            const mainnetPoolManager = "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64";
             const sidechainPoolManager = "0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71";
 
             for (const n in names) {
@@ -203,7 +217,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
                 const shutdownDeadPoolsTransaction = txMeta(shutdownDeadPoolsTransactions);
                 fs.writeFileSync(
                     path.resolve(__dirname, "./" + name + "_shutdown.json"),
-                    JSON.stringify(shutdownDeadPoolsTransaction),
+                    JSON.stringify(shutdownDeadPoolsTransaction, null, 4),
                 );
             }
         }
