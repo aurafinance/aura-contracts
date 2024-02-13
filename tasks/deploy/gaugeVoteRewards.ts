@@ -72,25 +72,6 @@ task("deploy:mainnet:gaugeVoteRewards")
         }
 
         logContracts({ stashRewardDistro, gaugeVoteRewards });
-
-        // GaugeVoteRewards.setRewardPerEpoch(76500000000000000000000)
-    });
-
-task("deploy:sidechain:create2Factor")
-    .addParam("wait", "wait for blocks")
-    .setAction(async function (tskArgs: TaskArguments, hre) {
-        const deployer = await getSigner(hre);
-        const waitForBlocks = tskArgs.wait;
-
-        const nonce = await deployer.getTransactionCount();
-        console.log("NonceS:", nonce);
-
-        const phase = await deployCreate2Factory(hre, deployer, DEBUG, waitForBlocks);
-
-        const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
-        await waitForTx(tx, DEBUG);
-
-        logContracts(phase as unknown as { [key: string]: { address: string } });
     });
 
 task("deploy:sidechain:gaugeVoteRewards")
