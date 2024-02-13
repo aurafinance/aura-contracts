@@ -99,9 +99,6 @@ task("deploy:sidechain:gaugeVoteRewards")
         const deployer = await getSigner(hre);
         const waitForBlocks = taskArgs.wait;
 
-        const nonce = await deployer.getTransactionCount();
-        console.log("NonceS:", nonce);
-
         // Setup create 2 options
         const salt = "v2"; //Change salt between versions.
         const create2Options = { amount: 0, salt, callbacks: [] };
@@ -122,6 +119,7 @@ task("deploy:sidechain:gaugeVoteRewards")
         const deployerAddress = await deployer.getAddress();
         const config = sidechainConfigs[hre.network.config.chainId];
         const sidechain = config.getSidechain(deployer);
+        const gaugeVoteRewardsContracts = mainnetConfig.getGaugeVoteRewards(deployer);
 
         const create2Factory = Create2Factory__factory.connect(config.extConfig.create2Factory, deployer);
 
@@ -161,10 +159,10 @@ task("deploy:sidechain:gaugeVoteRewards")
         await waitForTx(tx, DEBUG, taskArgs.wait);
         await logTxDetails(tx, "setPoolIds");
 
-        // await childGaugeVoteRewards.setTrustedRemoteAddress(
-        //     lzChainIds[chainIds.mainnet],
-        //     gaugeVoteRewardsContracts.gaugeVoteRewards.address,
-        // );
+        await childGaugeVoteRewards.setTrustedRemoteAddress(
+            lzChainIds[chainIds.mainnet],
+            gaugeVoteRewardsContracts.gaugeVoteRewards.address,
+        );
 
         logContracts({ childStashRewardDistro, childGaugeVoteRewards });
     });
