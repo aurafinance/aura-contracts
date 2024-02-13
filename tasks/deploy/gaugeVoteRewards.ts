@@ -1,6 +1,5 @@
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
-import { deployCreate2Factory } from "../../scripts/deploySidechain";
 import { deployContract, logTxDetails, waitForTx } from "../../tasks/utils";
 import {
     ChildGaugeVoteRewards,
