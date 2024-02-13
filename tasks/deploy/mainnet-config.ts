@@ -438,8 +438,8 @@ export const getCanonicalView = (signer: Signer) => ({
 });
 
 export const getGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x54231C588b698dc9B91303C95c85F050DA35189B", signer),
-    stashRewardDistro: StashRewardDistro__factory.connect("0x74D2e022d38f630309a9024c4c993A3F72241298", signer),
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
+    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config = {

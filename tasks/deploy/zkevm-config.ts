@@ -84,8 +84,8 @@ export const getView = (signer: Signer) => ({
 });
 
 export const getChildGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xce66e8300dc1d1f5b0e46e9145fdf680a7e41146", signer),
-    stashRewardDistro: ChildStashRewardDistro__factory.connect("0xa9952C914D86f896c53Bf17125c4104Cc058008E", signer),
+    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
+    stashRewardDistro: ChildStashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config: SidechainConfig = {
