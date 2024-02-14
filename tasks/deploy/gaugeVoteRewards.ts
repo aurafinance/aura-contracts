@@ -123,15 +123,11 @@ task("configure:mainnet:gaugeVoteRewards")
         await waitForTx(tx, DEBUG, waitForBlocks);
         await logTxDetails(tx, "setDistributor");
 
-        // --------- CAN BE DONE LATER ------------- //
-        // tx  = await gaugeVoteRewards.setDstChainId()
-        // await waitForTx(tx, DEBUG, waitForBlocks);
-        // await logTxDetails(tx, "setDstChainId");
-
-        // tx  = await gaugeVoteRewards.transferOwnerShip("0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0") // Aura Protocol Multisig
-        // await waitForTx(tx, DEBUG, waitForBlocks);
-        // await logTxDetails(tx, "transferOwnerShip");
+        tx = await gaugeVoteRewards.transferOwnership("0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0"); // Aura Protocol Multisig
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "transferOwnership");
     });
+
 task("deploy:sidechain:gaugeVoteRewards")
     .addParam("wait", "Wait blocks")
     .setAction(async function (taskArgs: TaskArguments, hre) {
@@ -209,10 +205,9 @@ task("deploy:sidechain:gaugeVoteRewards")
         await waitForTx(tx, DEBUG, taskArgs.wait);
         await logTxDetails(tx, `setDistributor(${sidechain.keeperMulticall3.address})`);
 
-        console.log("config.multisigs.daoMultisig", config.multisigs.daoMultisig);
-        // tx  = await childGaugeVoteRewards.transferOwnerShip(config.multisigs.daoMultisig) // Aura Protocol Multisig
-        // await waitForTx(tx, DEBUG, waitForBlocks);
-        // await logTxDetails(tx, "transferOwnerShip");
+        tx = await childGaugeVoteRewards.transferOwnership(config.multisigs.daoMultisig); // Aura Protocol Multisig
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "transferOwnership");
 
         logContracts({ childStashRewardDistro, childGaugeVoteRewards });
     });
