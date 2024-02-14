@@ -122,6 +122,9 @@ const config: HardhatUserConfig = {
             },
         ],
     },
+    sourcify: {
+        enabled: false,
+    },
     mocha: {
         timeout: 480000, // 8 min timeout
     },

@@ -29,7 +29,7 @@
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
-        "@nomicfoundation/hardhat-verify": "^1.1.1",
+        "@nomicfoundation/hardhat-verify": "^2.0.4",
         "@types/lodash": "^4.14.185",
         "chalk": "^4.0.0",
         "convex-platform": "file:convex-platform/contracts",

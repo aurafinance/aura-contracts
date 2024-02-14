@@ -429,8 +429,8 @@ const getSidechain = (
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
-    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, deployer),
-    gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, deployer),
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
@@ -438,8 +438,8 @@ export const getCanonicalView = (signer: Signer) => ({
 });
 
 export const getGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
-    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", signer),
 });
 
 export const config = {
