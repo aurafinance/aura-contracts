@@ -388,6 +388,15 @@ const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
 const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
     masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
     siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
+    // Other siphon tokens deployed
+    // 0x71061C238Ea7736d3709E801d61e09423E4be4ad
+    // 0xa348a39a98418DD78B242E2fD7B14e18aC080e75
+    // 0xbB7A6Ec509D42177C100273b4cd785816daF8e4f
+    // 0xc9307D63B3709F537D2158F43199a69682Ff0967
+
+    // AIP-63
+    // 0xFEDa1CdA61C7F066d19B774599a2DE6e516129E8 // SiphonToken
+    // 0x7253584f04fC34C9979C570a170dc70D00A0ccF8 // ChefForwarder
 });
 
 const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({

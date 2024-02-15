@@ -92,7 +92,7 @@ task("configure:mainnet:gaugeVoteRewards")
                 sidechainConfigs[chainId].getSidechain(deployer).childGaugeVoteRewards.address;
             const tx = await gaugeVoteRewards.setChildGaugeVoteRewards(lzChainId, childGaugeVoteRewardsAddress);
             await waitForTx(tx, DEBUG, waitForBlocks);
-            await logTxDetails(tx, `setChildGaugeVoteRewards(${chainId})`);
+            await logTxDetails(tx, `setChildGaugeVoteRewards(${lzChainId},${childGaugeVoteRewardsAddress})`);
         };
         const setTrustedRemoteAddress = async (chainId: number) => {
             const lzChainId = lzChainIds[chainId];
@@ -101,7 +101,7 @@ task("configure:mainnet:gaugeVoteRewards")
                 sidechainConfigs[chainId].getSidechain(deployer).childGaugeVoteRewards.address;
             const tx = await gaugeVoteRewards.setTrustedRemoteAddress(lzChainId, childGaugeVoteRewardsAddress);
             await waitForTx(tx, DEBUG, waitForBlocks);
-            await logTxDetails(tx, `setTrustedRemoteAddress(${chainId})`);
+            await logTxDetails(tx, `setTrustedRemoteAddress(${lzChainId},${childGaugeVoteRewardsAddress})`);
         };
         // --------- setChildGaugeVoteRewards ------------- //
         await setChildGaugeVoteRewards(chainIds.arbitrum);

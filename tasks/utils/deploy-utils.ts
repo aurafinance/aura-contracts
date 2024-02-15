@@ -58,7 +58,7 @@ export const deployContract = async <T extends Contract>(
 };
 
 export const deployContractWithCreate2 = async <T extends Contract, F extends ContractFactory>(
-    _: HardhatRuntimeEnvironment,
+    hre: HardhatRuntimeEnvironment,
     create2Factory: Create2Factory,
     contractFactory: F,
     contractName: string,
@@ -116,7 +116,13 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
         );
         console.log(`ABI encoded args: ${abiEncodedConstructorArgs.slice(2)}`);
     }
-
+    // Verify the contract on Etherscan if not local network
+    if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
+        await hre.run("verify:verify", {
+            address: contract.address,
+            constructorArguments: [...constructorArgs],
+        });
+    }
     return contract;
 };
 
