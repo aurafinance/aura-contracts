@@ -28,7 +28,7 @@ const nonCirculatingAddresses = [
     "0x196bda3808A7Af322AaD6384103C1E6Adb40AFa7", // Ecosystem
     "0x3BC0Cb287f74504347D50fe3aDA6d90214E6F512", // Ecosystem
     "0x54231C588b698dc9B91303C95c85F050DA35189B", // GaugeVoteRewards
-    "", // GaugeVoteRewardsII
+    "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", // GaugeVoteRewards
     "0x45EB1A004373b1D8457134A2C04a42d69D287724", // AuraAirdrop
 ];
 function jsonToCsv(data: any[]) {
