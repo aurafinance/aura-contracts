@@ -249,19 +249,19 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
 });
 
 task("deploy:mainnet:crvDepositorWrapperForwarder")
-    .addParam("forwardTo", "The forward to address, ie, stash address")
+    .addParam("pid", "The forward to address, ie, stash address")
     .setAction(async function (taskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
+        const { stashRewardDistro } = config.getGaugeVoteRewards(deployer);
 
         const { crvDepositorWrapperForwarder } = await deployCrvDepositorWrapperForwarder(
             hre,
             deployer,
-            phase2,
+            { ...phase2, stashRewardDistro, pid: Number.parseInt(taskArgs.pid) },
             config.addresses,
-            taskArgs.forwardTo,
             true,
-            3,
+            1,
         );
         logContracts({ crvDepositorWrapperForwarder });
     });

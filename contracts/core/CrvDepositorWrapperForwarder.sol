@@ -7,6 +7,7 @@ import { IBalancerVault } from "../interfaces/balancer/IBalancerCore.sol";
 import { ICrvDepositorWrapper } from "../interfaces/ICrvDepositorWrapper.sol";
 import { ICrvDepositor } from "../interfaces/ICrvDepositor.sol";
 import { BalInvestor } from "./BalInvestor.sol";
+import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 
 /**
  * @title   CrvDepositorWrapperForwarder
@@ -16,10 +17,21 @@ import { BalInvestor } from "./BalInvestor.sol";
 contract CrvDepositorWrapperForwarder is ICrvDepositorWrapper, BalInvestor {
     using SafeERC20 for IERC20;
 
+    /// @dev CrvDepositor
     address public immutable crvDeposit;
-    address public immutable cvxCrv;
-    address public immutable forwardTo;
 
+    /// @dev cvxCrv token
+    address public immutable cvxCrv;
+
+    /// @dev Extra reward distro contract
+    address public immutable stashRewardDistro;
+
+    /// @dev Poold id where the cvxCrv is forwarder.
+    uint256 public immutable pid;
+
+    /* -------------------------------------------------------------------
+       Constructor 
+    ------------------------------------------------------------------- */
     constructor(
         address _crvDeposit,
         IBalancerVault _balancerVault,
@@ -27,16 +39,19 @@ contract CrvDepositorWrapperForwarder is ICrvDepositorWrapper, BalInvestor {
         address _weth,
         bytes32 _balETHPoolId,
         address _cvxCrv,
-        address _forwardTo
+        address _stashRewardDistro,
+        uint256 _pid
     ) BalInvestor(_balancerVault, _bal, _weth, _balETHPoolId) {
         crvDeposit = _crvDeposit;
-        forwardTo = _forwardTo;
+        stashRewardDistro = _stashRewardDistro;
         cvxCrv = _cvxCrv;
+        pid = _pid;
     }
 
     function setApprovals() external {
         _setApprovals();
-        require(IERC20(BALANCER_POOL_TOKEN).approve(crvDeposit, type(uint256).max), "!approval");
+        IERC20(BALANCER_POOL_TOKEN).safeApprove(crvDeposit, type(uint256).max);
+        IERC20(cvxCrv).safeApprove(stashRewardDistro, type(uint256).max);
     }
 
     /**
@@ -71,7 +86,7 @@ contract CrvDepositorWrapperForwarder is ICrvDepositorWrapper, BalInvestor {
         // Transfer cvxCrv to a given address, ie to a stash
         uint256 cvxCrvBal = IERC20(cvxCrv).balanceOf(address(this));
         if (cvxCrvBal > 0) {
-            IERC20(cvxCrv).safeTransfer(forwardTo, cvxCrvBal);
+            IStashRewardDistro(stashRewardDistro).fundPool(pid, cvxCrv, cvxCrvBal, 1);
         }
     }
 }

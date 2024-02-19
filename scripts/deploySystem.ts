@@ -91,6 +91,7 @@ import {
     SiphonToken__factory,
     StashFactoryV2,
     StashFactoryV2__factory,
+    StashRewardDistro,
     TempBooster,
     TempBooster__factory,
     TokenFactory,
@@ -1681,13 +1682,12 @@ async function deployPhase8(
 async function deployCrvDepositorWrapperForwarder(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
-    phase2: Phase2Deployed,
+    phase2Extended: Phase2Deployed & { stashRewardDistro: StashRewardDistro; pid: number },
     config: ExtSystemConfig,
-    forwardTo: string,
     debug = false,
     waitForBlocks = 0,
 ): Promise<{ crvDepositorWrapperForwarder: CrvDepositorWrapperForwarder }> {
-    const { crvDepositor, cvxCrv } = phase2;
+    const { crvDepositor, cvxCrv, stashRewardDistro, pid } = phase2Extended;
 
     const crvDepositorWrapperForwarder = await deployContract<CrvDepositorWrapperForwarder>(
         hre,
@@ -1700,7 +1700,8 @@ async function deployCrvDepositorWrapperForwarder(
             config.weth,
             config.balancerPoolId,
             cvxCrv.address,
-            forwardTo,
+            stashRewardDistro.address,
+            pid,
         ],
         {},
         debug,
