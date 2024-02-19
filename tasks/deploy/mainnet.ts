@@ -4,6 +4,7 @@ import { TaskArguments } from "hardhat/types";
 import { logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
 import {
+    deployCrvDepositorWrapperForwarder,
     deployPhase1,
     deployPhase2,
     deployPhase3,
@@ -246,3 +247,21 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     tx = await masterChefRewardHook.transferOwnership(protocolMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 });
+
+task("deploy:mainnet:crvDepositorWrapperForwarder")
+    .addParam("forwardTo", "The forward to address, ie, stash address")
+    .setAction(async function (taskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+
+        const { crvDepositorWrapperForwarder } = await deployCrvDepositorWrapperForwarder(
+            hre,
+            deployer,
+            phase2,
+            config.addresses,
+            taskArgs.forwardTo,
+            true,
+            3,
+        );
+        logContracts({ crvDepositorWrapperForwarder });
+    });

@@ -47,6 +47,8 @@ import {
     CrvDepositor__factory,
     CrvDepositorWrapper,
     CrvDepositorWrapper__factory,
+    CrvDepositorWrapperForwarder,
+    CrvDepositorWrapperForwarder__factory,
     CrvDepositorWrapperWithFee,
     CrvDepositorWrapperWithFee__factory,
     CvxCrvToken,
@@ -1675,6 +1677,39 @@ async function deployPhase8(
         poolManagerV4,
     };
 }
+
+async function deployCrvDepositorWrapperForwarder(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    phase2: Phase2Deployed,
+    config: ExtSystemConfig,
+    forwardTo: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ crvDepositorWrapperForwarder: CrvDepositorWrapperForwarder }> {
+    const { crvDepositor, cvxCrv } = phase2;
+
+    const crvDepositorWrapperForwarder = await deployContract<CrvDepositorWrapperForwarder>(
+        hre,
+        new CrvDepositorWrapperForwarder__factory(signer),
+        "CrvDepositorWrapperForwarder",
+        [
+            crvDepositor.address,
+            config.balancerVault,
+            config.token,
+            config.weth,
+            config.balancerPoolId,
+            cvxCrv.address,
+            forwardTo,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return {
+        crvDepositorWrapperForwarder,
+    };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1691,6 +1726,7 @@ export {
     SystemDeployed,
     Phase4Deployed,
     deployTempBooster,
+    deployCrvDepositorWrapperForwarder,
     deployPhase5,
     Phase5Deployed,
     deployPhase6,
