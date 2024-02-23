@@ -51,7 +51,6 @@ export const lzChainIds = {
     [chainIds.goerli]: 10121,
     [chainIds.gnosis]: 145,
     [chainIds.arbitrumGoerli]: 10143,
-    [chainIds.optimism]: 111,
     [chainIds.base]: 184,
     [chainIds.zkevm]: 158,
     // For fork mode

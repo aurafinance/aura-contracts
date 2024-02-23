@@ -28,6 +28,7 @@ const nonCirculatingAddresses = [
     "0x196bda3808A7Af322AaD6384103C1E6Adb40AFa7", // Ecosystem
     "0x3BC0Cb287f74504347D50fe3aDA6d90214E6F512", // Ecosystem
     "0x54231C588b698dc9B91303C95c85F050DA35189B", // GaugeVoteRewards
+    "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", // GaugeVoteRewards
     "0x45EB1A004373b1D8457134A2C04a42d69D287724", // AuraAirdrop
 ];
 function jsonToCsv(data: any[]) {
@@ -56,7 +57,7 @@ task("info:aura:supply-circulation", "Gets weekly total supply vs total circulat
     const phase2 = await config.getPhase2(signer);
     const blocks: Array<BlockRange> = await dater.getEvery(
         "weeks", // Period, required. Valid value: years, quarters, months, weeks, days, hours, minutes
-        "2023-11-30T10:00:00Z", // Start date, required. 2022-06-09T10:46:00Z <== Aura first Mint
+        "2024-01-11T07:00:00Z", // Start date, required. 2022-06-09T10:46:00Z <== Aura first Mint
         new Date(), // End date, required.
         1, // Duration, optional, integer. By default 1.
         true, // Block after, optional. Search for the nearest block before or after the given date. By default true.
