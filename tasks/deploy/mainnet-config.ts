@@ -388,6 +388,15 @@ const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
 const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
     masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
     siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
+    // Other siphon tokens deployed
+    // 0x71061C238Ea7736d3709E801d61e09423E4be4ad
+    // 0xa348a39a98418DD78B242E2fD7B14e18aC080e75
+    // 0xbB7A6Ec509D42177C100273b4cd785816daF8e4f
+    // 0xc9307D63B3709F537D2158F43199a69682Ff0967
+
+    // AIP-63
+    // 0xFEDa1CdA61C7F066d19B774599a2DE6e516129E8 // SiphonToken
+    // 0x7253584f04fC34C9979C570a170dc70D00A0ccF8 // ChefForwarder
 });
 
 const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
@@ -429,8 +438,8 @@ const getSidechain = (
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
-    stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, deployer),
-    gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, deployer),
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
@@ -438,8 +447,8 @@ export const getCanonicalView = (signer: Signer) => ({
 });
 
 export const getGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x54231C588b698dc9B91303C95c85F050DA35189B", signer),
-    stashRewardDistro: StashRewardDistro__factory.connect("0x74D2e022d38f630309a9024c4c993A3F72241298", signer),
+    gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", signer),
 });
 
 export const config = {

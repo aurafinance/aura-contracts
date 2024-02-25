@@ -1,16 +1,20 @@
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
-import { logContracts } from "../utils/deploy-utils";
-import { chainIds, getSigner } from "../utils";
 import { deployContract, logTxDetails, waitForTx } from "../../tasks/utils";
-import { config as mainnetConfig } from "../deploy/mainnet-config";
 import {
+    ChildGaugeVoteRewards,
     ChildGaugeVoteRewards__factory,
+    ChildStashRewardDistro,
     ChildStashRewardDistro__factory,
+    Create2Factory__factory,
     GaugeVoteRewards__factory,
     StashRewardDistro__factory,
 } from "../../types";
+import { config as mainnetConfig } from "../deploy/mainnet-config";
+import { chainIds, getSigner } from "../utils";
+import { deployContractWithCreate2, logContracts } from "../utils/deploy-utils";
 import { lzChainIds, sidechainConfigs } from "./sidechain-constants";
+import { BN } from "../../test-utils/math";
 
 const DEBUG = true;
 
@@ -70,33 +74,115 @@ task("deploy:mainnet:gaugeVoteRewards")
         logContracts({ stashRewardDistro, gaugeVoteRewards });
     });
 
+task("configure:mainnet:gaugeVoteRewards")
+    .addParam("wait", "Wait blocks")
+    .setAction(async function (taskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const waitForBlocks = taskArgs.wait;
+
+        const { gaugeVoteRewards } = mainnetConfig.getGaugeVoteRewards(deployer);
+        let tx = await gaugeVoteRewards.setRewardPerEpoch(BN.from("76500000000000000000000"));
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "setRewardPerEpoch");
+
+        const setChildGaugeVoteRewards = async (chainId: number) => {
+            const lzChainId = lzChainIds[chainId];
+
+            const childGaugeVoteRewardsAddress =
+                sidechainConfigs[chainId].getSidechain(deployer).childGaugeVoteRewards.address;
+            const tx = await gaugeVoteRewards.setChildGaugeVoteRewards(lzChainId, childGaugeVoteRewardsAddress);
+            await waitForTx(tx, DEBUG, waitForBlocks);
+            await logTxDetails(tx, `setChildGaugeVoteRewards(${lzChainId},${childGaugeVoteRewardsAddress})`);
+        };
+        const setTrustedRemoteAddress = async (chainId: number) => {
+            const lzChainId = lzChainIds[chainId];
+
+            const childGaugeVoteRewardsAddress =
+                sidechainConfigs[chainId].getSidechain(deployer).childGaugeVoteRewards.address;
+            const tx = await gaugeVoteRewards.setTrustedRemoteAddress(lzChainId, childGaugeVoteRewardsAddress);
+            await waitForTx(tx, DEBUG, waitForBlocks);
+            await logTxDetails(tx, `setTrustedRemoteAddress(${lzChainId},${childGaugeVoteRewardsAddress})`);
+        };
+        // --------- setChildGaugeVoteRewards ------------- //
+        await setChildGaugeVoteRewards(chainIds.arbitrum);
+        await setChildGaugeVoteRewards(chainIds.optimism);
+        await setChildGaugeVoteRewards(chainIds.base);
+        await setChildGaugeVoteRewards(chainIds.gnosis);
+        await setChildGaugeVoteRewards(chainIds.polygon);
+        await setChildGaugeVoteRewards(chainIds.zkevm);
+
+        // --------- setTrustedRemoteAddress ------------- //
+        await setTrustedRemoteAddress(chainIds.arbitrum);
+        await setTrustedRemoteAddress(chainIds.optimism);
+        await setTrustedRemoteAddress(chainIds.base);
+        await setTrustedRemoteAddress(chainIds.gnosis);
+        await setTrustedRemoteAddress(chainIds.polygon);
+        await setTrustedRemoteAddress(chainIds.zkevm);
+
+        tx = await gaugeVoteRewards.setDistributor("0x817F426B5a79599464488eCCf82c3F54b9330E15"); // KeeperMulticall3
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "setDistributor");
+
+        tx = await gaugeVoteRewards.transferOwnership("0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0"); // Aura Protocol Multisig
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "transferOwnership");
+    });
+
 task("deploy:sidechain:gaugeVoteRewards")
     .addParam("wait", "Wait blocks")
     .setAction(async function (taskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
+        const waitForBlocks = taskArgs.wait;
 
+        // Setup create 2 options
+        const salt = "v2"; //Change salt between versions.
+        const create2Options = { amount: 0, salt, callbacks: [] };
+        const deployOptions = {
+            overrides: {},
+            create2Options,
+            debug: DEBUG,
+            waitForBlocks,
+        };
+        const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+            ...deployOptions,
+            create2Options: {
+                ...create2Options,
+                callbacks: [...callbacks],
+            },
+        });
+
+        const deployerAddress = await deployer.getAddress();
         const config = sidechainConfigs[hre.network.config.chainId];
         const sidechain = config.getSidechain(deployer);
         const gaugeVoteRewardsContracts = mainnetConfig.getGaugeVoteRewards(deployer);
 
-        const childStashRewardDistro = await deployContract(
+        const create2Factory = Create2Factory__factory.connect(config.extConfig.create2Factory, deployer);
+
+        const childStashRewardDistro = await deployContractWithCreate2<
+            ChildStashRewardDistro,
+            ChildStashRewardDistro__factory
+        >(
             hre,
+            create2Factory,
             new ChildStashRewardDistro__factory(deployer),
             "ChildStashRewardDistro",
             [sidechain.booster.address],
-            {},
-            DEBUG,
-            taskArgs.wait,
+            deployOptionsWithCallbacks([]),
         );
 
-        const childGaugeVoteRewards = await deployContract(
+        const childGaugeVoteRewardsTransferOwnership =
+            ChildGaugeVoteRewards__factory.createInterface().encodeFunctionData("transferOwnership", [deployerAddress]);
+
+        const childGaugeVoteRewards = await deployContractWithCreate2<
+            ChildGaugeVoteRewards,
+            ChildGaugeVoteRewards__factory
+        >(
             hre,
+            create2Factory,
             new ChildGaugeVoteRewards__factory(deployer),
             "ChildGaugeVoteRewards",
             [sidechain.auraOFT.address, sidechain.booster.address, childStashRewardDistro.address],
-            {},
-            DEBUG,
-            taskArgs.wait,
+            deployOptionsWithCallbacks([childGaugeVoteRewardsTransferOwnership]),
         );
 
         let tx = await childGaugeVoteRewards.initialize(config.extConfig.lzEndpoint);
@@ -106,12 +192,22 @@ task("deploy:sidechain:gaugeVoteRewards")
         const poolLength = await sidechain.booster.poolLength();
         tx = await childGaugeVoteRewards.setPoolIds(0, poolLength);
         await waitForTx(tx, DEBUG, taskArgs.wait);
-        await logTxDetails(tx, "setPoolIds");
+        await logTxDetails(tx, `setPoolIds(0,${poolLength.toNumber()})`);
 
-        await childGaugeVoteRewards.setTrustedRemoteAddress(
+        tx = await childGaugeVoteRewards.setTrustedRemoteAddress(
             lzChainIds[chainIds.mainnet],
             gaugeVoteRewardsContracts.gaugeVoteRewards.address,
         );
+        await waitForTx(tx, DEBUG, taskArgs.wait);
+        await logTxDetails(tx, "setTrustedRemoteAddress(mainnet)");
+
+        tx = await childGaugeVoteRewards.setDistributor(sidechain.keeperMulticall3.address);
+        await waitForTx(tx, DEBUG, taskArgs.wait);
+        await logTxDetails(tx, `setDistributor(${sidechain.keeperMulticall3.address})`);
+
+        tx = await childGaugeVoteRewards.transferOwnership(config.multisigs.daoMultisig); // Aura Protocol Multisig
+        await waitForTx(tx, DEBUG, waitForBlocks);
+        await logTxDetails(tx, "transferOwnership");
 
         logContracts({ childStashRewardDistro, childGaugeVoteRewards });
     });

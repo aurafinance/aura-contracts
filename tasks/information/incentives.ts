@@ -258,15 +258,15 @@ task("info:chef:claim").setAction(async function (taskArgs: TaskArguments, hre: 
 });
 
 task("create:hh:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 30_000", 30_000, types.int)
-    .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 50", 0, types.int)
-    .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 50", 0, types.int)
-    .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 50", 100, types.int)
-    .addOptionalParam("auraBalVeBalRatio", "VeBal ratio, default is 50", 100, types.int)
+    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 25_500", 25_500, types.int)
+    .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 0", 0, types.int)
+    .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 0", 0, types.int)
+    .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 100", 100, types.int)
+    .addOptionalParam("auraBalVeBalRatio", "VeBal ratio, default is 100", 100, types.int)
     .addOptionalParam(
         "auraBalwstEthAmount",
-        "Amount of a-55/45 auraBAL/wstETH incentives, default is 7_500",
-        7_500,
+        "Amount of a-55/45 auraBAL/wstETH incentives, default is 6_825",
+        6_825,
         types.int,
     )
     .setAction(async function (taskArgs: TaskArguments, __hre: HardhatRuntime) {
@@ -275,7 +275,7 @@ task("create:hh:incentives")
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const chefClaimableRewards = (await getChefClaimableRewards(__hre)).valueOf();
-        const auraBalAmount = BN.from(40000);
+        const auraBalAmount = BN.from(36400);
         if (auraBalAmount.add(BN.from(auraBalwstEthAmount)).gt(chefClaimableRewards))
             throw Error("auraBalAmount gt chefClaimable amount");
         const hhAuraProposals = await fetchAuraProposals();

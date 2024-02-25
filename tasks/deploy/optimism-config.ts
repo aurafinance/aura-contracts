@@ -69,8 +69,8 @@ export const getSidechain = (signer: Signer | Provider) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
-    stashRewardDistro: StashRewardDistro__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", signer),
-    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d", signer),
+    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
 });
 
 export const getView = (signer: Signer) => ({
@@ -78,8 +78,8 @@ export const getView = (signer: Signer) => ({
 });
 
 export const getChildGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xC4eF943b7c2f6b387b37689f1e9fa6ecB738845d", signer),
-    stashRewardDistro: ChildStashRewardDistro__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", signer),
+    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
+    stashRewardDistro: ChildStashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
 });
 
 export const config: SidechainConfig = {
