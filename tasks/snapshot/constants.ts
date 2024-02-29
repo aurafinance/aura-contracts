@@ -66,4 +66,8 @@ export const removedGauges = [
     "0xf6a814ed60653cb0e36da247b01e6309318328d4", // tetuBAL
     // Duplicate gauges
     "0x455f20c54b5712a84454468c7831f7c431aeEB1C",
+    // rETH migration 29 feb 2024
+    "0x00b9bcd17cb049739d25fd7f826caa2e23b05620",
+    "0x49f530b45ae792cdf5cbd5d25c5a9b9e59c6c3b8",
+    "0x56c0626e6e3931af90ebb679a321225180d4b32b",
 ].map(x => x.toLowerCase());
