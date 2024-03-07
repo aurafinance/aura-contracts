@@ -8,6 +8,8 @@ import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
 import { config as baseConfig } from "./base-config";
 import { config as zkevmConfig } from "./zkevm-config";
+import { config as blastSidechainConfig } from "./blast-config";
+import { SidechainConfig } from "types";
 
 export const sideChains = [
     chainIds.optimism,
@@ -16,6 +18,7 @@ export const sideChains = [
     chainIds.polygon,
     chainIds.gnosis,
     chainIds.zkevm,
+    chainIds.blast,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
     // For fork mode
@@ -39,6 +42,7 @@ export const remoteChainMap = {
     [chainIds.polygon]: chainIds.mainnet,
     [chainIds.gnosis]: chainIds.mainnet,
     [chainIds.zkevm]: chainIds.mainnet,
+    [chainIds.blast]: chainIds.mainnet,
     // For fork mode
     [chainIds.hardhat]: chainIds.mainnet,
 };
@@ -53,8 +57,9 @@ export const lzChainIds = {
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.base]: 184,
     [chainIds.zkevm]: 158,
+    [chainIds.blast]: 243,
     // For fork mode
-    [chainIds.hardhat]: 110,
+    [chainIds.hardhat]: 243,
 };
 
 export const canonicalConfigs = {
@@ -65,6 +70,7 @@ export const canonicalConfigs = {
 };
 
 export const sidechainConfigs = {
+    [chainIds.blast]: blastSidechainConfig as SidechainConfig,
     [chainIds.goerli]: goerliSidechainConfig,
     [chainIds.gnosis]: gnosisConfig,
     [chainIds.arbitrum]: arbitrumConfig,
@@ -73,5 +79,5 @@ export const sidechainConfigs = {
     [chainIds.base]: baseConfig,
     [chainIds.zkevm]: zkevmConfig,
     // For fork mode
-    [chainIds.hardhat]: zkevmConfig,
+    [chainIds.hardhat]: blastSidechainConfig as SidechainConfig,
 };
