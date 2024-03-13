@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x83d53485cabece2ef140e80fc0a89a06cc14872faa96eb0143faf3810c326ad0",
+        "title": "Gauge Weight for Week of 29th February 2024",
+        "start": 1709172000,
+        "end": 1709604000,
+        "snapshot": 19333058
+    },
+    {
         "id": "0xef7597ae863c4e02865152bfc0187c5e0db4c81198b3ae7118f3ea850fe445e5",
         "title": "Gauge Weight for Week of 1st February 2024",
         "start": 1706752800,
@@ -294,3 +301,4 @@
         "snapshot": 15010750
     }
 ]
+
