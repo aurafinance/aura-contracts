@@ -80,6 +80,10 @@ const config: HardhatUserConfig = {
             chainId: chainIds.base,
             url: process.env.NODE_URL || "",
         },
+        avax: {
+            chainId: chainIds.avalanche,
+            url: process.env.NODE_URL || "",
+        },
         zkevm: {
             chainId: chainIds.zkevm,
             url: process.env.NODE_URL || "",

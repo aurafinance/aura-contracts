@@ -1,0 +1,12 @@
+Deploying BridgeDelegateReceiver contract with hash 0xfd7fb85cca66bb6411a246c629fbb9727a555d76a2627f1643f8d717dd56286a from 0x30019eB135532bDdF2Da17659101cc000C73c8e4 with:
+maxPriorityFeePerGas 2.5 Gwei
+maxFeePerGas 46.125981204 Gwei
+
+Deployed BridgeDelegateReceiver to 0x80b1116FC9f5334bC8D6502e59DC4c42Ce98aB8D in block 19524977, using 628812 gas costing 0.0 ETH
+ABI encoded args: 000000000000000000000000aa54f3b282805822419265208e669d12372a3811000000000000000000000000000000000000000000000000000000000000006a
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~ SYSTEM DEPLOYMENT ~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+bridgeDelegateReceiver: 0x80b1116FC9f5334bC8D6502e59DC4c42Ce98aB8D

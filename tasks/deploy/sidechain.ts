@@ -6,6 +6,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
+    deployOftBridgeSender,
     deployOptimismBridgeSender,
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
@@ -613,7 +614,7 @@ task("deploy:sidechain:safe")
             "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
             "0x7c2eA10D3e5922ba3bBBafa39Dc0677353D2AF17",
             "0xF01Cc7154e255D20489E091a5aEA10Bc136696a8",
-            "0x6429602699fEC6D205e0b9531C7f33476BA11Fb0",
+            "0x5ECbaf07907e0cd0F87317A331EEa621D23db792",
             "0x6c97fd6eCCa478E2163920eC9bdb68873a4c3B43",
         ];
 
@@ -927,4 +928,26 @@ task("deploy:sidechain:L2:boosterHelper")
             tskArgs.wait,
         );
         console.log("BoosterHelper:", result.boosterHelper.address);
+    });
+
+task("deploy:sidechain:L2:bridgeSender:oft")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const { bridgeDelegateSender } = await deployOftBridgeSender(
+            hre,
+            sidechainConfig,
+            deployer,
+            true,
+            tskArgs.wait,
+        );
+
+        let tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        await waitForTx(tx, tskArgs.wait);
+
+        logContracts({ bridgeDelegateSender });
     });

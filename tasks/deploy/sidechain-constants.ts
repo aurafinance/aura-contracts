@@ -8,6 +8,7 @@ import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
 import { config as baseConfig } from "./base-config";
 import { config as zkevmConfig } from "./zkevm-config";
+import { config as avaxConfig } from "./avax-config";
 
 export const sideChains = [
     chainIds.optimism,
@@ -16,6 +17,7 @@ export const sideChains = [
     chainIds.polygon,
     chainIds.gnosis,
     chainIds.zkevm,
+    chainIds.avalanche,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
     // For fork mode
@@ -39,6 +41,7 @@ export const remoteChainMap = {
     [chainIds.polygon]: chainIds.mainnet,
     [chainIds.gnosis]: chainIds.mainnet,
     [chainIds.zkevm]: chainIds.mainnet,
+    [chainIds.avalanche]: chainIds.mainnet,
     // For fork mode
     [chainIds.hardhat]: chainIds.mainnet,
 };
@@ -53,8 +56,9 @@ export const lzChainIds = {
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.base]: 184,
     [chainIds.zkevm]: 158,
+    [chainIds.avalanche]: 106,
     // For fork mode
-    [chainIds.hardhat]: 110,
+    [chainIds.hardhat]: 106,
 };
 
 export const canonicalConfigs = {
@@ -72,6 +76,7 @@ export const sidechainConfigs = {
     [chainIds.polygon]: polygonConfig,
     [chainIds.base]: baseConfig,
     [chainIds.zkevm]: zkevmConfig,
+    [chainIds.avalanche]: avaxConfig,
     // For fork mode
-    [chainIds.hardhat]: zkevmConfig,
+    [chainIds.hardhat]: avaxConfig,
 };
