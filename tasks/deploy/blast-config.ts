@@ -66,7 +66,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
 });
 
 export const config: Omit<SidechainConfig, "getView" | "whales" | "bridging"> = {
-    chainId: chainIds.arbitrum,
+    chainId: chainIds.blast,
     multisigs,
     naming: sidechainNaming,
     extConfig,
