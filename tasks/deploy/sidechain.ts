@@ -992,8 +992,8 @@ task("deploy:sidechain:L2:auraOFT")
         tx = await auraOFT.setAdapterParams(canonicalLzChainId, lockSelector, adapterParams);
         await waitForTx(tx, debug, tskArgs.wait);
 
-        // tx = await auraOFT.transferOwnership(sidechainConfig.multisigs.daoMultisig);
-        // await waitForTx(tx, debug, tskArgs.wait);
+        tx = await auraOFT.transferOwnership(sidechainConfig.multisigs.daoMultisig);
+        await waitForTx(tx, debug, tskArgs.wait);
 
         logContracts({ auraOFT });
     });
