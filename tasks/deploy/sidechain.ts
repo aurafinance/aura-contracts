@@ -25,6 +25,7 @@ import {
     deploySidechainPeripherals,
     deploySidechainPhase1,
     deploySidechainPhase2,
+    deploySidechainPhase3,
     deploySidechainView,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
@@ -33,14 +34,12 @@ import {
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { chainIds, waitForTx } from "../../tasks/utils";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { impersonateAccount } from "../../test-utils/fork";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
     AuraOFT__factory,
     BoosterLite__factory,
     BoosterOwnerLite__factory,
-    Create2Factory__factory,
     ExtraRewardStashV3__factory,
     L2Coordinator__factory,
     PoolManagerLite__factory,
@@ -361,7 +360,34 @@ task("deploy:sidechain:L2:phase2")
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
+task("deploy:sidechain:L2:phase3")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const canonicalChainLzId = lzChainIds[canonicalChainId];
 
+        if (!canonicalChainLzId) throw Error("Canonical LZ chain ID not found");
+
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId, tskArgs.force);
+
+        const sidechainPhase1 = sidechainConfig.getSidechain(deployer);
+
+        const result = await deploySidechainPhase3(
+            hre,
+            deployer,
+            sidechainConfig.extConfig,
+            sidechainConfig.multisigs,
+            sidechainPhase1,
+            SALT,
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 /* ----------------------------------------------------------------------------
     Canonical Configuration Tasks
 ---------------------------------------------------------------------------- */
@@ -553,9 +579,6 @@ task("deploy:sidechain:payableMulticall")
         const deployer = await getSigner(hre);
 
         const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
-        const owner = await impersonateAccount("0xb07d2d6a03f2d4878dc1680f8581e871dae47494");
-        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, owner.signer);
-        await create2Factory.updateDeployer(await deployer.getAddress(), true);
 
         const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT);
 
@@ -697,7 +720,7 @@ task("deploy:sidechain:L2:peripheral", "Deploys sidechain multicaller, claimzap 
             true,
             tskArgs.wait,
         );
-        console.log("sidechainView:", result.sidechainView.address);
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("sidechain:addresses")
@@ -927,7 +950,7 @@ task("deploy:sidechain:L2:boosterHelper")
             true,
             tskArgs.wait,
         );
-        console.log("BoosterHelper:", result.boosterHelper.address);
+        logContracts(result);
     });
 
 task("deploy:sidechain:L2:bridgeSender:oft")

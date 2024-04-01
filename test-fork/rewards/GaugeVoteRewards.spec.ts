@@ -11,7 +11,6 @@ import { getSigner } from "../../tasks/utils";
 import { TestSuiteDeployment, setupForkDeployment } from "../../test-fork/sidechain/setupForkDeployments";
 import { setupLocalDeployment } from "../../test-fork/sidechain/setupLocalDeployment";
 import {
-    DEAD_ADDRESS,
     ONE_DAY,
     ONE_WEEK,
     ZERO,
@@ -464,8 +463,12 @@ describe("GaugeVoteRewards", () => {
         }
 
         // Make sure dao is the owner
-        owner = await impersonateAccount(await gaugeVoteRewards.owner());
-        await gaugeVoteRewards.connect(owner.signer).transferOwnership(ctx.dao.address);
+        const gaugeVoterRewardsOwner = await gaugeVoteRewards.owner();
+        if (gaugeVoterRewardsOwner !== ctx.dao.address) {
+            console.log("Owner is not ms protocol", gaugeVoterRewardsOwner);
+            owner = await impersonateAccount(gaugeVoterRewardsOwner);
+            await gaugeVoteRewards.connect(owner.signer).transferOwnership(ctx.dao.address);
+        }
     });
 
     describe("config", () => {

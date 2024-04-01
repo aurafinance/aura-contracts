@@ -203,7 +203,7 @@ function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
     }
 }
 
-const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm"];
+const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm", "Avalanche"];
 const opAddress = "0x4200000000000000000000000000000000000042";
 
 /* ---------------------------------------------------------------
@@ -461,6 +461,8 @@ async function addPoolToSidechain(
     // process.env.POLYGON_NODE_URL,
     // process.env.GNOSIS_NODE_URL,
     // process.env.BASE_NODE_URL,
+    // process.env.ZKEVM_NODE_URL,
+    // process.env.AVALANCHE_NODE_URL,
     const REMOTE_NODE_URL = `${chainName.toUpperCase()}_NODE_URL`;
     const remoteNodeUrl = process.env[`${REMOTE_NODE_URL}`];
     assert(remoteNodeUrl.length > 0, `${REMOTE_NODE_URL} not set`);

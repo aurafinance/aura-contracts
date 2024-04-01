@@ -275,9 +275,8 @@ task("create:hh:incentives")
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const chefClaimableRewards = (await getChefClaimableRewards(__hre)).valueOf();
-        const auraBalAmount = BN.from(36400);
-        if (auraBalAmount.add(BN.from(auraBalwstEthAmount)).gt(chefClaimableRewards))
-            throw Error("auraBalAmount gt chefClaimable amount");
+        const maxAuraBalAmount = 43225 < chefClaimableRewards ? 43225 : chefClaimableRewards;
+        const auraBalAmount = BN.from(maxAuraBalAmount - auraBalwstEthAmount);
         const hhAuraProposals = await fetchAuraProposals();
 
         if (hhAuraProposals.length < 3) throw new Error("No proposals found");

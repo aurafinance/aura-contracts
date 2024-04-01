@@ -29,7 +29,7 @@
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
-        "@nomicfoundation/hardhat-verify": "^2.0.4",
+        "@nomicfoundation/hardhat-verify": "2.0.5",
         "@types/lodash": "^4.14.185",
         "chalk": "^4.0.0",
         "convex-platform": "file:convex-platform/contracts",
@@ -43,8 +43,8 @@
     "devDependencies": {
         "@balancer-labs/balancer-js": "^1.0.1",
         "@codechecks/client": "^0.1.12",
-        "@commitlint/cli": "^14.1.0",
-        "@commitlint/config-conventional": "^14.1.0",
+        "@commitlint/cli": "^19.2.1",
+        "@commitlint/config-conventional": "^19.1.0",
         "@eth-optimism/sdk": "^3.0.0",
         "@ethersproject/abi": "^5.5.0",
         "@ethersproject/abstract-signer": "^5.5.0",
@@ -65,7 +65,7 @@
         "@typescript-eslint/eslint-plugin": "^5.4.0",
         "@typescript-eslint/parser": "^5.4.0",
         "chai": "^4.3.4",
-        "commitizen": "^4.2.4",
+        "commitizen": "^4.3.0",
         "cross-env": "^7.0.3",
         "cz-conventional-changelog": "^3.3.0",
         "defender-relay-client": "^1.26.1",

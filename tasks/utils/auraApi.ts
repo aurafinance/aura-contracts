@@ -21,6 +21,7 @@ const subgraphUrls = {
     [chainIds.polygon]: `${SIDECHAIN_URI}-polygon`,
     [chainIds.base]: `${SIDECHAIN_URI}-base`,
     [chainIds.zkevm]: `GENERATE_YOUR_OWN_KEY_ID`,
+    [chainIds.avalanche]: `GENERATE_YOUR_OWN_KEY_ID`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
     const endpoint = subgraphUrls[chainId];
