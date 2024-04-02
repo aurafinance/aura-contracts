@@ -17,6 +17,8 @@ import {
     SimpleBridgeDelegateSender__factory,
     ZkevmBridgeSender,
     ZkevmBridgeSender__factory,
+    OftBridgeSender__factory,
+    OftBridgeSender,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
@@ -169,4 +171,24 @@ export async function deployZkevmBridgeSender(
     );
 
     return bridgeDelegate;
+}
+
+export async function deployOftBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    config: SidechainConfig,
+    deployer: Signer,
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): Promise<{ bridgeDelegateSender: OftBridgeSender }> {
+    const bridgeDelegateSender = await deployContract<OftBridgeSender>(
+        hre,
+        new OftBridgeSender__factory(deployer),
+        "OftBridgeDelegateSender",
+        [config.extConfig.token, config.extConfig.canonicalChainId],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return { bridgeDelegateSender };
 }

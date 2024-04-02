@@ -18,6 +18,8 @@ import {
     AuraOFT__factory,
     AuraProxyOFT,
     AuraProxyOFT__factory,
+    AuraViewHelpersLite,
+    AuraViewHelpersLite__factory,
     BoosterLite,
     BoosterLite__factory,
     BoosterOwnerLite,
@@ -44,6 +46,8 @@ import {
     ProxyFactory__factory,
     RewardFactory,
     RewardFactory__factory,
+    RewardPoolDepositWrapper,
+    RewardPoolDepositWrapper__factory,
     SidechainClaimZap,
     SidechainClaimZap__factory,
     SidechainView,
@@ -122,6 +126,7 @@ export interface SidechainPeripheralsDeployed {
     keeperMulticall3: KeeperMulticall3;
     sidechainClaimZap: SidechainClaimZap;
     sidechainView: SidechainView;
+    rewardDepositWrapper: RewardPoolDepositWrapper;
 }
 
 export async function deployCanonicalPhase1(
@@ -855,6 +860,10 @@ export async function deploySidechainClaimZap(
         [],
         deployOptionsWithCallbacks([sidechainInitialize]),
     );
+    if ((await sidechainClaimZap.cvxCrv()) !== ZERO_ADDRESS) {
+        const tx = await sidechainClaimZap.setApprovals();
+        await waitForTx(tx, debug, waitForBlocks);
+    }
 
     return { sidechainClaimZap };
 }
@@ -882,9 +891,18 @@ export async function deploySidechainView(
         debug,
         waitForBlocks,
     );
-
+    const auraViewHelpers = await deployContract<AuraViewHelpersLite>(
+        hre,
+        new AuraViewHelpersLite__factory(signer),
+        "AuraViewHelpersLite",
+        [],
+        {},
+        debug,
+        waitForBlocks,
+    );
     return {
         sidechainView,
+        auraViewHelpers,
     };
 }
 
@@ -1042,7 +1060,22 @@ export async function deploySidechainPeripherals(
         waitForBlocks,
     );
 
-    return { keeperMulticall3, sidechainClaimZap, sidechainView };
+    const rewardDepositWrapper = await deployContract<RewardPoolDepositWrapper>(
+        hre,
+        new RewardPoolDepositWrapper__factory(signer),
+        "RewardPoolDepositWrapper",
+        [extSidechainConfig.balancerVault],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return {
+        keeperMulticall3,
+        sidechainClaimZap,
+        sidechainView,
+        rewardDepositWrapper,
+    };
 }
 
 export async function deploySidechainPhase3(

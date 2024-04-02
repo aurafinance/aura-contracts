@@ -244,7 +244,7 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ChildStashRewardDistro   | [0xcA85e2cE206b48ee28A87b0a06f9519ABE627451](https://gnosisscan.io/address/0xcA85e2cE206b48ee28A87b0a06f9519ABE627451) |
 | ChildGaugeVoteRewards    | [0x2863582272A424234FcE76d97099AcBd432acC01](https://gnosisscan.io/address/0x2863582272A424234FcE76d97099AcBd432acC01) |
 
-#### Base ()
+#### Base (8453)
 
 | Contract          | Address                                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -289,6 +289,29 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 | ChildGaugeVoteRewards  | [0x2863582272A424234FcE76d97099AcBd432acC01](https://zkevm.polygonscan.com/address/0x2863582272A424234FcE76d97099AcBd432acC01) |
 | RewardDepositWrapper   | [0xbDDAC3069F4E26F4e4F445926c8Eeb9DCB68c26B](https://zkevm.polygonscan.com/address/0xbDDAC3069F4E26F4e4F445926c8Eeb9DCB68c26B) |
 | AuraViewHelper         | [0xea865D0dACf923c8d6254DE734f31294ca74C1dc](https://zkevm.polygonscan.com/address/0xea865D0dACf923c8d6254DE734f31294ca74C1dc) |
+
+### Avalanche (43114)
+
+| Contract               | Address                                                                                                               |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| VoterProxyLite         | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://snowtrace.io/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| AuraOFT                | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://snowtrace.io/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| L2Coordinator          | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://snowtrace.io/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| BoosterLite            | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://snowtrace.io/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| KeeperMulticall3       | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://snowtrace.io/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| RewardFactory          | [0xcc92694A8b2367BC6A0D6c2349C30B7D8F1d3c0E](https://snowtrace.io/address/0xcc92694A8b2367BC6A0D6c2349C30B7D8F1d3c0E) |
+| TokenFactory           | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://snowtrace.io/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| ProxyFactory           | [0x731886426a3199b988194831031dfb993F25D961](https://snowtrace.io/address/0x731886426a3199b988194831031dfb993F25D961) |
+| StashFactory           | [0x1fd645458F6CD8EB95d161d9A38EaBE5dAB1900b](https://snowtrace.io/address/0x1fd645458F6CD8EB95d161d9A38EaBE5dAB1900b) |
+| ExtraRewardStashV3     | [0x623CdC77DBADE480060C1cF22053514bCf785898](https://snowtrace.io/address/0x623CdC77DBADE480060C1cF22053514bCf785898) |
+| PoolManagerLite        | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://snowtrace.io/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| BoosterOwnerLite       | [0x8034fbC6246Caa37d2Af084b2fB0ea4a211B6F8d](https://snowtrace.io/address/0x8034fbC6246Caa37d2Af084b2fB0ea4a211B6F8d) |
+| SidechainView          | [0x739B0c838E47A28877cAEF270DF0407FE5C62502](https://snowtrace.io/address/0x739B0c838E47A28877cAEF270DF0407FE5C62502) |
+| SidechainClaimZap      | [0x6907d13cB2af4661a491562187F3BEaBa4C2a017](https://snowtrace.io/address/0x6907d13cB2af4661a491562187F3BEaBa4C2a017) |
+| ChildStashRewardDistro | [0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3](https://snowtrace.io/address/0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3) |
+| ChildGaugeVoteRewards  | [0xCbdcd817a93E733d48086C7c068c82c5a123DC4e](https://snowtrace.io/address/0xCbdcd817a93E733d48086C7c068c82c5a123DC4e) |
+| RewardDepositWrapper   | [0xA2930d1e21a26fde6ed861f303205536A98381eD](https://snowtrace.io/address/0xA2930d1e21a26fde6ed861f303205536A98381eD) |
+| AuraViewHelper         | [0x5073Dc4072B23bEB465f012D1be324bC0eBc119D](https://snowtrace.io/address/0x5073Dc4072B23bEB465f012D1be324bC0eBc119D) |
 
 ### Testnets
 

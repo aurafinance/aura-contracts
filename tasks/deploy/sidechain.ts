@@ -7,6 +7,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
+    deployOftBridgeSender,
     deployOptimismBridgeSender,
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
@@ -25,6 +26,7 @@ import {
     deploySidechainPeripherals,
     deploySidechainPhase1,
     deploySidechainPhase2,
+    deploySidechainPhase3,
     deploySidechainView,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
@@ -33,7 +35,6 @@ import {
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { chainIds, waitForTx } from "../../tasks/utils";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
-import { impersonateAccount } from "../../test-utils/fork";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
@@ -362,7 +363,34 @@ task("deploy:sidechain:L2:phase2")
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
+task("deploy:sidechain:L2:phase3")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("force", "Ignore invalid chain IDs for testing", false, types.boolean)
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const canonicalChainLzId = lzChainIds[canonicalChainId];
 
+        if (!canonicalChainLzId) throw Error("Canonical LZ chain ID not found");
+
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId, tskArgs.force);
+
+        const sidechainPhase1 = sidechainConfig.getSidechain(deployer);
+
+        const result = await deploySidechainPhase3(
+            hre,
+            deployer,
+            sidechainConfig.extConfig,
+            sidechainConfig.multisigs,
+            sidechainPhase1,
+            SALT,
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
 /* ----------------------------------------------------------------------------
     Canonical Configuration Tasks
 ---------------------------------------------------------------------------- */
@@ -554,9 +582,6 @@ task("deploy:sidechain:payableMulticall")
         const deployer = await getSigner(hre);
 
         const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
-        const owner = await impersonateAccount("0xb07d2d6a03f2d4878dc1680f8581e871dae47494");
-        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, owner.signer);
-        await create2Factory.updateDeployer(await deployer.getAddress(), true);
 
         const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT);
 
@@ -615,7 +640,7 @@ task("deploy:sidechain:safe")
             "0x30019eB135532bDdF2Da17659101cc000C73c8e4",
             "0x7c2eA10D3e5922ba3bBBafa39Dc0677353D2AF17",
             "0xF01Cc7154e255D20489E091a5aEA10Bc136696a8",
-            "0x6429602699fEC6D205e0b9531C7f33476BA11Fb0",
+            "0x5ECbaf07907e0cd0F87317A331EEa621D23db792",
             "0x6c97fd6eCCa478E2163920eC9bdb68873a4c3B43",
         ];
 
@@ -698,7 +723,7 @@ task("deploy:sidechain:L2:peripheral", "Deploys sidechain multicaller, claimzap 
             true,
             tskArgs.wait,
         );
-        console.log("sidechainView:", result.sidechainView.address);
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
 task("sidechain:addresses")
@@ -928,7 +953,29 @@ task("deploy:sidechain:L2:boosterHelper")
             true,
             tskArgs.wait,
         );
-        console.log("BoosterHelper:", result.boosterHelper.address);
+        logContracts(result);
+    });
+
+task("deploy:sidechain:L2:bridgeSender:oft")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const { bridgeDelegateSender } = await deployOftBridgeSender(
+            hre,
+            sidechainConfig,
+            deployer,
+            true,
+            tskArgs.wait,
+        );
+
+        const tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        await waitForTx(tx, tskArgs.wait);
+
+        logContracts({ bridgeDelegateSender });
     });
 
 task("deploy:sidechain:L2:auraOFT")

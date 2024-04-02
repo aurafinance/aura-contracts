@@ -50,7 +50,6 @@ describe("CrvDepositorWrapperForwarder", () => {
     const pid = 0;
 
     before(async () => {
-        hre.tracer.enabled = false;
         accounts = await ethers.getSigners();
 
         deployer = accounts[0];
