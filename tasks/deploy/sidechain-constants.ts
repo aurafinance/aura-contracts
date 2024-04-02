@@ -1,14 +1,16 @@
+import { SidechainConfig } from "types";
 import { chainIds } from "../../tasks/utils/networkAddressFactory";
-import { config as goerliConfig } from "./goerli-config";
-import { config as mainnetConfig } from "./mainnet-config";
-import { config as gnosisConfig } from "./gnosis-config";
-import { config as goerliSidechainConfig } from "./goerliSidechain-config";
 import { config as arbitrumConfig } from "./arbitrum-config";
+import { config as avaxConfig } from "./avax-config";
+import { config as baseConfig } from "./base-config";
+import { config as blastSidechainConfig } from "./blast-config";
+import { config as gnosisConfig } from "./gnosis-config";
+import { config as goerliConfig } from "./goerli-config";
+import { config as goerliSidechainConfig } from "./goerliSidechain-config";
+import { config as mainnetConfig } from "./mainnet-config";
 import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
-import { config as baseConfig } from "./base-config";
 import { config as zkevmConfig } from "./zkevm-config";
-import { config as avaxConfig } from "./avax-config";
 
 export const sideChains = [
     chainIds.optimism,
@@ -17,6 +19,7 @@ export const sideChains = [
     chainIds.polygon,
     chainIds.gnosis,
     chainIds.zkevm,
+    chainIds.blast,
     chainIds.avalanche,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
@@ -41,6 +44,7 @@ export const remoteChainMap = {
     [chainIds.polygon]: chainIds.mainnet,
     [chainIds.gnosis]: chainIds.mainnet,
     [chainIds.zkevm]: chainIds.mainnet,
+    [chainIds.blast]: chainIds.mainnet,
     [chainIds.avalanche]: chainIds.mainnet,
     // For fork mode
     [chainIds.hardhat]: chainIds.mainnet,
@@ -56,6 +60,7 @@ export const lzChainIds = {
     [chainIds.arbitrumGoerli]: 10143,
     [chainIds.base]: 184,
     [chainIds.zkevm]: 158,
+    [chainIds.blast]: 243,
     [chainIds.avalanche]: 106,
     // For fork mode
     [chainIds.hardhat]: 106,
@@ -69,6 +74,7 @@ export const canonicalConfigs = {
 };
 
 export const sidechainConfigs = {
+    [chainIds.blast]: blastSidechainConfig as SidechainConfig,
     [chainIds.goerli]: goerliSidechainConfig,
     [chainIds.gnosis]: gnosisConfig,
     [chainIds.arbitrum]: arbitrumConfig,

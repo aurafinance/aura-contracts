@@ -88,6 +88,10 @@ const config: HardhatUserConfig = {
             chainId: chainIds.zkevm,
             url: process.env.NODE_URL || "",
         },
+        blast: {
+            chainId: chainIds.blast,
+            url: process.env.NODE_URL || "",
+        },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
@@ -122,6 +126,14 @@ const config: HardhatUserConfig = {
                 urls: {
                     apiURL: "https://api-zkevm.polygonscan.com/api",
                     browserURL: "https://zkevm.polygonscan.com",
+                },
+            },
+            {
+                network: "blast",
+                chainId: chainIds.blast,
+                urls: {
+                    apiURL: "https://api.blastscan.io/api",
+                    browserURL: "https://blastscan.io",
                 },
             },
         ],

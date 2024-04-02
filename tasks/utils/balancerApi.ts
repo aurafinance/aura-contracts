@@ -97,7 +97,7 @@ export async function getGaugesDetails(gaugeAddresses: string[]): Promise<Gauges
     const endpoint = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-gauges";
     const query = gql`
         query GetGaugesDetails($gaugeAddresses: [String!]!) {
-            gauges(where: { address_in: $gaugeAddresses }) {
+            gauges(first: 200, where: { address_in: $gaugeAddresses }) {
                 id
                 address
                 type {

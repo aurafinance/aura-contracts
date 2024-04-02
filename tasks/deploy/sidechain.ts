@@ -1,5 +1,6 @@
 import { assert } from "chai";
 import { ethers, Signer } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
@@ -37,9 +38,11 @@ import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
+    AuraOFT,
     AuraOFT__factory,
     BoosterLite__factory,
     BoosterOwnerLite__factory,
+    Create2Factory__factory,
     ExtraRewardStashV3__factory,
     L2Coordinator__factory,
     PoolManagerLite__factory,
@@ -51,7 +54,7 @@ import {
     VirtualRewardFactory__factory,
     VoterProxyLite__factory,
 } from "../../types";
-import { computeCreate2Address, logContracts } from "../utils/deploy-utils";
+import { computeCreate2Address, deployContractWithCreate2, logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils/signerFactory";
 import { config as gnosisSidechainConfig } from "./gnosis-config";
 import { config as goerliSidechainConfig } from "./goerliSidechain-config";
@@ -969,8 +972,75 @@ task("deploy:sidechain:L2:bridgeSender:oft")
             tskArgs.wait,
         );
 
-        let tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        const tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
         await waitForTx(tx, tskArgs.wait);
 
         logContracts({ bridgeDelegateSender });
+    });
+
+task("deploy:sidechain:L2:auraOFT")
+    .addParam("wait", "How many blocks to wait")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const deployerAddress = await deployer.getAddress();
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { canonical, sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId, false);
+
+        const canonicalLzChainId = lzChainIds[canonicalChainId];
+
+        const create2Options = { amount: 0, salt: SALT, callbacks: [] };
+        const deployOptions = {
+            overrides: {},
+            create2Options,
+            debug,
+            waitForBlocks: tskArgs.wait,
+        };
+        const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+            ...deployOptions,
+            create2Options: {
+                ...create2Options,
+                callbacks: [...callbacks],
+            },
+        });
+
+        const create2Factory = Create2Factory__factory.connect(sidechainConfig.extConfig.create2Factory, deployer);
+
+        const auraOFTInitialize = AuraOFT__factory.createInterface().encodeFunctionData("initialize", [
+            sidechainConfig.extConfig.lzEndpoint,
+            sidechainConfig.multisigs.pauseGuardian,
+        ]);
+
+        const auraOFTTransferOwnership = AuraOFT__factory.createInterface().encodeFunctionData("transferOwnership", [
+            deployerAddress,
+        ]);
+
+        const auraOFT = await deployContractWithCreate2<AuraOFT, AuraOFT__factory>(
+            hre,
+            create2Factory,
+            new AuraOFT__factory(deployer),
+            "AuraOFT",
+            [
+                sidechainConfig.naming.auraOftName,
+                sidechainConfig.naming.auraOftSymbol,
+                sidechainConfig.extConfig.canonicalChainId,
+            ],
+            deployOptionsWithCallbacks([auraOFTInitialize, auraOFTTransferOwnership]),
+        );
+
+        let tx = await auraOFT.setTrustedRemote(
+            canonicalLzChainId,
+            ethers.utils.solidityPack(["address", "address"], [canonical.auraProxyOFT.address, auraOFT.address]),
+        );
+        await waitForTx(tx, debug, tskArgs.wait);
+
+        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 600_000]);
+        const lockSelector = ethers.utils.keccak256(toUtf8Bytes("lock(address,uint256,address)"));
+        tx = await auraOFT.setAdapterParams(canonicalLzChainId, lockSelector, adapterParams);
+        await waitForTx(tx, debug, tskArgs.wait);
+
+        tx = await auraOFT.transferOwnership(sidechainConfig.multisigs.daoMultisig);
+        await waitForTx(tx, debug, tskArgs.wait);
+
+        logContracts({ auraOFT });
     });
