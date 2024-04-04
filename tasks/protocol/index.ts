@@ -289,6 +289,12 @@ async function addPoolToMainnet(
         tableInfo[gauge.address] = { ...gaugeChoice, ...defaultTableInfo };
 
         // Verify the pool should be added or not
+        if (!gauge.liquidityGauge) {
+            invalidGauges.push(gauge.address);
+            console.warn(`WARNING ${chainName}  setIsNoDepositGauge[${gauge.address}]`);
+            tableInfo[gauge.address].setIsNoDepositGauge = true;
+            continue;
+        }
         if (gauge.liquidityGauge.isKilled) {
             invalidGauges.push(gauge.address);
             console.warn(`WARNING ${chainName} Gauge is killed ${gauge.address}`);
