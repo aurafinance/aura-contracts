@@ -7,7 +7,7 @@ import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 import {
     deployArbitrumBridgeSender,
     deployGnosisBridgeSender,
-    deployOftBridgeSender,
+    deployOftWithFeeBridgeSender,
     deployOptimismBridgeSender,
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
@@ -964,7 +964,7 @@ task("deploy:sidechain:L2:bridgeSender:oft")
         const canonicalChainId = Number(tskArgs.canonicalchainid);
         const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
 
-        const { bridgeDelegateSender } = await deployOftBridgeSender(
+        const { bridgeDelegateSender } = await deployOftWithFeeBridgeSender(
             hre,
             sidechainConfig,
             deployer,
