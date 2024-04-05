@@ -17,8 +17,8 @@ import {
     SimpleBridgeDelegateSender__factory,
     ZkevmBridgeSender,
     ZkevmBridgeSender__factory,
-    OftBridgeSender__factory,
-    OftBridgeSender,
+    OftWithFeeBridgeSender__factory,
+    OftWithFeeBridgeSender,
 } from "../types";
 import { deployContract } from "../tasks/utils";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
@@ -173,16 +173,16 @@ export async function deployZkevmBridgeSender(
     return bridgeDelegate;
 }
 
-export async function deployOftBridgeSender(
+export async function deployOftWithFeeBridgeSender(
     hre: HardhatRuntimeEnvironment,
     config: SidechainConfig,
     deployer: Signer,
     debug: boolean = false,
     waitForBlocks: number = 0,
-): Promise<{ bridgeDelegateSender: OftBridgeSender }> {
-    const bridgeDelegateSender = await deployContract<OftBridgeSender>(
+): Promise<{ bridgeDelegateSender: OftWithFeeBridgeSender }> {
+    const bridgeDelegateSender = await deployContract<OftWithFeeBridgeSender>(
         hre,
-        new OftBridgeSender__factory(deployer),
+        new OftWithFeeBridgeSender__factory(deployer),
         "OftBridgeDelegateSender",
         [config.extConfig.token, config.extConfig.canonicalChainId],
         {},
