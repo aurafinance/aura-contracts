@@ -4,7 +4,8 @@ import hre, { network } from "hardhat";
 import { deployBoosterHelper } from "../../scripts/deployPeripheral";
 import { config } from "../../tasks/deploy/mainnet-config";
 import { impersonate } from "../../test-utils";
-import { Booster, BoosterHelper, Booster__factory } from "../../types/generated";
+import { Booster, BoosterHelper, Booster__factory, Create2Factory__factory } from "../../types/generated";
+import { ExtSidechainConfig } from "types";
 
 const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
 const boosterAddress = "0xA57b8d98dAE62B26Ec3bcC4a365338157060B234";
@@ -34,8 +35,14 @@ describe("BoosterHelper", () => {
         keeper = await impersonate(keeperAddress);
 
         signer = keeper;
+        const create2Factory = await new Create2Factory__factory(signer).deploy();
         booster = Booster__factory.connect(boosterAddress, signer);
-        ({ boosterHelper } = await deployBoosterHelper(hre, deployer, { token: config.addresses.token }, { booster }));
+        ({ boosterHelper } = await deployBoosterHelper(
+            hre,
+            deployer,
+            { token: config.addresses.token, create2Factory: create2Factory.address } as ExtSidechainConfig,
+            { booster },
+        ));
     };
     const start = 57;
 

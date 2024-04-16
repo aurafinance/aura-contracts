@@ -26,6 +26,8 @@ import {
     KeeperMulticall3__factory,
     ChildGaugeVoteRewards__factory,
     StashRewardDistro__factory,
+    BoosterHelper__factory,
+    PayableMulticall__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import { sidechainNaming } from "./sidechain-naming";
@@ -77,6 +79,8 @@ export const getSidechain = (signer: Signer | Provider) => ({
     auraBalStrategy: SimpleStrategy__factory.connect("0x0d418EA619EbF42Bf9b69f4f2d26Ac690B322285", signer),
     stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
+    boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
+    payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
 });
 
 export const config: SidechainConfig = {

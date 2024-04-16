@@ -5,6 +5,7 @@ import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
     AuraOFT__factory,
+    BoosterHelper__factory,
     BoosterLite__factory,
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
@@ -12,6 +13,7 @@ import {
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
+    PayableMulticall__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
     RewardFactory__factory,
@@ -32,7 +34,7 @@ import { Provider } from "@ethersproject/providers";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x5B8f57a643fa655309aB8c7eb658Fed2b2D731c3",
     pauseGuardian: "0x5B8f57a643fa655309aB8c7eb658Fed2b2D731c3",
-    defender: "0x0000000000000000000000000000000000000000",
+    defender: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd",
 };
 
 const extConfig: ExtSidechainConfig = {
@@ -71,6 +73,8 @@ export const getSidechain = (signer: Signer | Provider) => ({
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
+    boosterHelper: BoosterHelper__factory.connect("0x138f951c141C2F34c1001258cD95DfeEaC26bb8A", signer),
+    payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
 });
 
 export const getView = (signer: Signer) => ({
