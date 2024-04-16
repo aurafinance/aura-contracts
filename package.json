@@ -34,8 +34,8 @@
         "chalk": "^4.0.0",
         "convex-platform": "file:convex-platform/contracts",
         "dayjs": "^1.11.7",
-        "graphql": "^16.5.0",
-        "graphql-request": "^4.3.0",
+        "graphql": "^16.8.1",
+        "graphql-request": "^6.1.0",
         "lodash": "^4.17.21",
         "node-fetch": "2",
         "table": "^6.8.0"

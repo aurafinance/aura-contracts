@@ -29,8 +29,8 @@ export const compareAddresses = (a: string, b: string): boolean => {
 };
 
 export async function getGaugeSnapshot() {
-    // const balanceApiUrl = "https://api-v3.balancer.fi/";
-    const balanceApiUrl = "https://api-v3-workaround.stellate.sh/";
+    const balanceApiUrl = "https://api-v3.balancer.fi/";
+    // const balanceApiUrl = "https://api-v3-workaround.stellate.sh/";
     const query = gql`
         query VeBalGetVotingList {
             veBalGetVotingList {

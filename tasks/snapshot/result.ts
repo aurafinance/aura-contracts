@@ -23,7 +23,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         const signer = await getSigner(hre);
 
         const query = gql`
-            query Proposal($proposal: String) {
+            query Proposal($proposal: String!) {
                 proposal(id: $proposal) {
                     id
                     scores_total
