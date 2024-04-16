@@ -38,7 +38,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         const config = configs.main;
         const proposalId = taskArgs.proposal;
         const debug = taskArgs.debug === "true";
-        const data = await request(`${config.hub}/graphql`, query, { proposal: proposalId });
+        const data = (await request(`${config.hub}/graphql`, query, { proposal: proposalId })) as any;
         const proposal = data.proposal;
         if (proposal.scores_state !== "final" && !debug) {
             console.log("Scores not final");

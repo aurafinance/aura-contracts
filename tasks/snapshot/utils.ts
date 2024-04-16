@@ -76,7 +76,7 @@ export async function getGaugeSnapshot() {
         }
     };
 
-    const resp = await request(balanceApiUrl, query);
+    const resp = (await request(balanceApiUrl, query)) as any;
     const data = resp.veBalGetVotingList.map((row: any) => ({
         address: row.gauge.address,
         network: nameToChainId(row.chain),
