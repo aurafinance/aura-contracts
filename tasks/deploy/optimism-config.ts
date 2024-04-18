@@ -5,6 +5,7 @@ import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
     AuraOFT__factory,
+    BoosterHelper__factory,
     BoosterLite__factory,
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
@@ -12,6 +13,7 @@ import {
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
+    PayableMulticall__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
     RewardFactory__factory,
@@ -71,6 +73,8 @@ export const getSidechain = (signer: Signer | Provider) => ({
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
+    boosterHelper: BoosterHelper__factory.connect("0x5C90ee408e1Fc2cfe9D17cd784f5307E6b877A66", signer),
+    payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
 });
 
 export const getView = (signer: Signer) => ({

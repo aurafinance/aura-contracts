@@ -294,10 +294,10 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     booster: Booster__factory.connect("0x7818A1DA7BD1E64c199029E86Ba244a9798eEE10", deployer),
     boosterOwner: BoosterOwner__factory.connect("0xFa838Af70314135159b309bf27f1DbF1F954eC34", deployer),
     factories: {
-        rewardFactory: RewardFactory__factory.connect("0x45aaD11F2FA2C215bc9686eb6f06D46E0474F356", deployer),
-        stashFactory: StashFactoryV2__factory.connect("0x95171c9Ef5cA540A6d3502e9547fcFE022458Eb5", deployer),
-        tokenFactory: TokenFactory__factory.connect("0xb6CE51DEE8BD4A2Fd11c01205414dc26f0b453AC", deployer),
-        proxyFactory: ProxyFactory__factory.connect("0x7eD9003C6003EaCe1e8C3ae99F0Bb19894377b0F", deployer),
+        rewardFactory: RewardFactory__factory.connect("0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA", deployer),
+        stashFactory: StashFactoryV2__factory.connect("0x54da426EFBB93fbaB5CF81bef03F9B9F00A3E915", deployer),
+        tokenFactory: TokenFactory__factory.connect("0x3eC040DbF7D953216F4C89A2e665d5073445f5Ba", deployer),
+        proxyFactory: ProxyFactory__factory.connect("0xf5E2cFde016bd55BEF42a5A4bAad7E21cd39720d", deployer),
     },
     arbitratorVault: ArbitratorVault__factory.connect("0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40", deployer),
     cvxCrv: CvxCrvToken__factory.connect("0x616e8BfA43F920657B3497DBf40D6b1A02D4608d", deployer),
@@ -365,6 +365,7 @@ const getTempBooster = async (deployer: Signer): Promise<TempBooster> =>
 const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
     booster: Booster__factory.connect("0xA57b8d98dAE62B26Ec3bcC4a365338157060B234", deployer),
     boosterOwner: BoosterOwner__factory.connect("0x228a142081b456a9fF803d004504955032989f04", deployer),
+    // New version 0x26F470E4b777ea4cD09f550D3E904D707df6763D
     boosterHelper: BoosterHelper__factory.connect("0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0", deployer),
     feeCollector: ClaimFeesHelper__factory.connect("0xAf824c80aA77Ae7F379DA3Dc05fea0dC1941c200", deployer),
     factories: {

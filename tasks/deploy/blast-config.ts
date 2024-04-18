@@ -5,6 +5,7 @@ import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
     AuraOFT__factory,
+    BoosterHelper__factory,
     BoosterLite__factory,
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
@@ -63,6 +64,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
     stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
+    boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config: Omit<SidechainConfig, "getView" | "whales" | "bridging"> = {

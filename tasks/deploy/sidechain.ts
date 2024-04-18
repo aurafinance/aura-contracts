@@ -583,7 +583,7 @@ task("deploy:sidechain:payableMulticall")
 
         const sidechainConfig = sidechainConfigs[hre.network.config.chainId];
 
-        const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT);
+        const result = await deployPayableMulticall(hre, deployer, sidechainConfig.extConfig, SALT, true, tskArgs.wait);
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
@@ -936,7 +936,6 @@ task("deploy:sidechain:L2:bridgeSender:zkevm")
 
         logContracts({ delegate });
     });
-
 task("deploy:sidechain:L2:boosterHelper")
     .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
     .addParam("wait", "How many blocks to wait")
@@ -948,8 +947,9 @@ task("deploy:sidechain:L2:boosterHelper")
         const result = await deployBoosterHelper(
             hre,
             deployer,
-            { token: sidechainConfig.extConfig.token },
+            sidechainConfig.extConfig,
             { booster: sidechainConfig.getSidechain(deployer).booster },
+            SALT,
             true,
             tskArgs.wait,
         );
@@ -972,8 +972,37 @@ task("deploy:sidechain:L2:bridgeSender:oft")
             tskArgs.wait,
         );
 
-        const tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
+        let tx = await bridgeDelegateSender.setL1Receiver("0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4");
+        // let tx = await bridgeDelegateSender.setL1Receiver(sidechainConfig.bridging.l1Receiver);
         await waitForTx(tx, tskArgs.wait);
+
+        tx = await bridgeDelegateSender.updateAuthorizedKeepers(sidechainConfig.multisigs.defender, true);
+        await waitForTx(tx, tskArgs.wait);
+
+        // Avalanche <> Mainnet adapter params
+        const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 210000]);
+        tx = await bridgeDelegateSender.setAdapterParams(adapterParams);
+
+        // console.log("🚀 ~ sidechainConfig.chainId",sidechainConfig.chainId);
+        // console.log("🚀 ~ updateAuthorizedKeepers- defender", sidechainConfig.multisigs.defender)
+
+        // const owner  = await bridgeDelegateSender.owner()
+        // Test that it sends BAL
+        // hre.tracer.enabled = true
+
+        // const balHolder =  await impersonateAccount("0xFE5200De605AdCB6306F4CDed77f9A8D9FD47127")
+        // const balToken = ERC20__factory.connect("0xE15bCB9E0EA69e6aB9FA080c4c4A5632896298C3", balHolder.signer)
+        // const amount =  ethers.BigNumber.from("1000000000000000").mul('1000000') //simpleToExactAmount(10);
+        // tx = await balToken.transfer("0x8DC3DCf72C128DE56e3A2adb7E6919E2bF73e80B", amount)
+        // console.log("🚀 ~  balToken.transfef")
+        // await waitForTx(tx, tskArgs.wait);
+        // hre.tracer.enabled = true
+        tx = await bridgeDelegateSender.updateAuthorizedKeepers(await deployer.getAddress(), true);
+        await waitForTx(tx, tskArgs.wait);
+
+        // tx= await bridgeDelegateSender.sendFrom(amount, amount, {value: ethers.BigNumber.from("100000000000000000").mul('100')})
+        // console.log("🚀 ~  bridgeDelegateSender.sendFrom")
+        // await waitForTx(tx, tskArgs.wait);
 
         logContracts({ bridgeDelegateSender });
     });

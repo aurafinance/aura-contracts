@@ -29,13 +29,13 @@
         "export-sol": "sh ./copy-to-public-repo.sh"
     },
     "dependencies": {
-        "@nomicfoundation/hardhat-verify": "2.0.5",
+        "@nomicfoundation/hardhat-verify": "^2.0.5",
         "@types/lodash": "^4.14.185",
         "chalk": "^4.0.0",
         "convex-platform": "file:convex-platform/contracts",
         "dayjs": "^1.11.7",
-        "graphql": "^16.5.0",
-        "graphql-request": "^4.3.0",
+        "graphql": "^16.8.1",
+        "graphql-request": "^6.1.0",
         "lodash": "^4.17.21",
         "node-fetch": "2",
         "table": "^6.8.0"
@@ -76,7 +76,7 @@
         "ethereum-waffle": "^3.4.0",
         "ethers": "^5.5.1",
         "fs-extra": "^10.0.0",
-        "hardhat": "^2.19.5",
+        "hardhat": "^2.22.2",
         "hardhat-gas-reporter": "^1.0.10",
         "hardhat-tracer": "^1.2.1",
         "husky": "^7.0.4",

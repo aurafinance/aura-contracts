@@ -29,8 +29,8 @@ export const compareAddresses = (a: string, b: string): boolean => {
 };
 
 export async function getGaugeSnapshot() {
-    // const balanceApiUrl = "https://api-v3.balancer.fi/";
-    const balanceApiUrl = "https://api-v3-workaround.stellate.sh/";
+    const balanceApiUrl = "https://api-v3.balancer.fi/";
+    // const balanceApiUrl = "https://api-v3-workaround.stellate.sh/";
     const query = gql`
         query VeBalGetVotingList {
             veBalGetVotingList {
@@ -76,7 +76,7 @@ export async function getGaugeSnapshot() {
         }
     };
 
-    const resp = await request(balanceApiUrl, query);
+    const resp = (await request(balanceApiUrl, query)) as any;
     const data = resp.veBalGetVotingList.map((row: any) => ({
         address: row.gauge.address,
         network: nameToChainId(row.chain),

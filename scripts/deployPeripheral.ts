@@ -168,22 +168,32 @@ export async function deployPayableMulticall(
 }
 export async function deployBoosterHelper(
     hre: HardhatRuntimeEnvironment,
-    deployer: Signer,
-    config: { token: string },
+    signer: Signer,
+    extConfig: ExtSidechainConfig,
     deployment: { booster: Booster | BoosterLite },
-    debug = false,
+    salt: string = SALT,
+    debug = true,
     waitForBlocks = 0,
 ) {
-    const { token } = config;
+    const { token, create2Factory } = extConfig;
     const { booster } = deployment;
-    const boosterHelper = await deployContract<BoosterHelper>(
-        hre,
-        new BoosterHelper__factory(deployer),
-        "BoosterHelper",
-        [booster.address, token],
-        {},
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
         debug,
         waitForBlocks,
+    };
+    const create2FactoryInts = Create2Factory__factory.connect(create2Factory, signer);
+
+    const boosterHelper = await deployContractWithCreate2<BoosterHelper, BoosterHelper__factory>(
+        hre,
+        create2FactoryInts,
+        new BoosterHelper__factory(signer),
+        "BoosterHelper",
+        [booster.address, token],
+        deployOptions,
     );
+
     return { boosterHelper };
 }
