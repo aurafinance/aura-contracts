@@ -12,16 +12,18 @@ type GaugeRewardToken = {
     rewardData: [{ token: { id: string } }];
 };
 
-const SIDECHAIN_URI = "https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance";
+const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/cae76ab408ca/1xhub-ltd";
 const subgraphUrls = {
+    // TODO update url once the subgraph is deployed on AWS
     [chainIds.mainnet]: `https://graph.data.aura.finance/subgraphs/name/aura/aura-mainnet-v2-1`,
-    [chainIds.arbitrum]: `${SIDECHAIN_URI}-arbitrum`,
-    [chainIds.gnosis]: `${SIDECHAIN_URI}-gnosis-chain`,
-    [chainIds.optimism]: `${SIDECHAIN_URI}-optimism`,
-    [chainIds.polygon]: `${SIDECHAIN_URI}-polygon`,
-    [chainIds.base]: `${SIDECHAIN_URI}-base`,
-    [chainIds.zkevm]: `https://api.studio.thegraph.com/query/69982/aura-finance-zkevm/version/latest`,
-    [chainIds.avalanche]: `GENERATE_YOUR_OWN_KEY_ID`,
+    [chainIds.arbitrum]: `${SIDECHAIN_URI}/aura-finance-arbitrum/api`,
+    // TODO update url once the subgraph is deployed on AWS
+    [chainIds.gnosis]: `https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance-gnosis-chain`,
+    [chainIds.optimism]: `${SIDECHAIN_URI}/aura-finance-optimism/api`,
+    [chainIds.polygon]: `${SIDECHAIN_URI}/aura-finance-polygon/api`,
+    [chainIds.base]: `${SIDECHAIN_URI}/aura-finance-base/api`,
+    [chainIds.zkevm]: `${SIDECHAIN_URI}/aura-finance-zkevm/api`,
+    [chainIds.avalanche]: `${SIDECHAIN_URI}/aura-finance-avalanche/api`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
     const endpoint = subgraphUrls[chainId];
