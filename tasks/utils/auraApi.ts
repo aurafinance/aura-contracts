@@ -12,10 +12,9 @@ type GaugeRewardToken = {
     rewardData: [{ token: { id: string } }];
 };
 
-const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/cae76ab408ca/1xhub-ltd";
+const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/36b05229a1f6/1xhub-ltd";
 const subgraphUrls = {
-    // TODO update url once the subgraph is deployed on AWS
-    [chainIds.mainnet]: `https://graph.data.aura.finance/subgraphs/name/aura/aura-mainnet-v2-1`,
+    [chainIds.mainnet]: `${SIDECHAIN_URI}/aura-finance-mainnet/api`,
     [chainIds.arbitrum]: `${SIDECHAIN_URI}/aura-finance-arbitrum/api`,
     // TODO update url once the subgraph is deployed on AWS
     [chainIds.gnosis]: `https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance-gnosis-chain`,
