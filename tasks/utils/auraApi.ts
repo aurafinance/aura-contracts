@@ -16,8 +16,7 @@ const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/36b05229a1f6/1xhub-ltd"
 const subgraphUrls = {
     [chainIds.mainnet]: `${SIDECHAIN_URI}/aura-finance-mainnet/api`,
     [chainIds.arbitrum]: `${SIDECHAIN_URI}/aura-finance-arbitrum/api`,
-    // TODO update url once the subgraph is deployed on AWS
-    [chainIds.gnosis]: `https://api.thegraph.com/subgraphs/name/aurafinance/aura-finance-gnosis-chain`,
+    [chainIds.gnosis]: `${SIDECHAIN_URI}/aura-finance-gnosis/api`,
     [chainIds.optimism]: `${SIDECHAIN_URI}/aura-finance-optimism/api`,
     [chainIds.polygon]: `${SIDECHAIN_URI}/aura-finance-polygon/api`,
     [chainIds.base]: `${SIDECHAIN_URI}/aura-finance-base/api`,
