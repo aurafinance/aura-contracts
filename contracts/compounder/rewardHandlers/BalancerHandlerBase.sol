@@ -7,10 +7,10 @@ import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.
 import { IRewardHandler } from "../../interfaces/balancer/IRewardHandler.sol";
 
 /**
- * @title   HandlerBase
+ * @title   BalancerHandlerBase
  * @author  llama.airforce
  */
-contract HandlerBase is IRewardHandler {
+contract BalancerHandlerBase is IRewardHandler {
     using SafeERC20 for IERC20;
     address public owner;
     address public pendingOwner;
@@ -18,15 +18,18 @@ contract HandlerBase is IRewardHandler {
     address public immutable strategy;
 
     address public immutable WETH_TOKEN;
+    IBalancerVault public immutable balVault;
 
     constructor(
         address _token,
         address _strategy,
+        address _balVault,
         address _wethToken
     ) {
         token = _token;
         strategy = _strategy;
         owner = msg.sender;
+        balVault = IBalancerVault(_balVault);
         WETH_TOKEN = _wethToken;
     }
 
@@ -44,6 +47,16 @@ contract HandlerBase is IRewardHandler {
         require(_token != token, "not allowed");
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_to, _balance);
+    }
+
+    function _createSwapFunds() internal view returns (IBalancerVault.FundManagement memory) {
+        return
+            IBalancerVault.FundManagement({
+                sender: address(this),
+                fromInternalBalance: false,
+                recipient: payable(address(this)),
+                toInternalBalance: false
+            });
     }
 
     function sell() external virtual onlyStrategy {}

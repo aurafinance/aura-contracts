@@ -4,13 +4,13 @@ pragma solidity 0.8.11;
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
-import { HandlerBase } from "./HandlerBase.sol";
+import { BalancerHandlerBase } from "./BalancerHandlerBase.sol";
 
 /**
  * @title   BBUSDHandlerv2
  * @author  llama.airforce
  */
-contract BBUSDHandlerv2 is HandlerBase {
+contract BBUSDHandlerv2 is BalancerHandlerBase {
     using SafeERC20 for IERC20;
 
     address private constant BBUSD_TOKEN = 0xA13a9247ea42D743238089903570127DdA72fE44;
@@ -24,7 +24,7 @@ contract BBUSDHandlerv2 is HandlerBase {
         address _strategy,
         address _balVault,
         address _wethToken
-    ) HandlerBase(_token, _strategy, _balVault, _wethToken) {}
+    ) BalancerHandlerBase(_token, _strategy, _balVault, _wethToken) {}
 
     /// @notice Swap bb-USD for WETH on Balancer via wstEth
     /// @param _amount - amount to swap

@@ -13,7 +13,7 @@ import {
 } from "../../scripts/deployPeripheral";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
-import { deployFeeTokenHandlerV4, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
+import { deployFeeTokenHandlerV5, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { waitForTx } from "../../tasks/utils";
 import { simpleToExactAmount } from "../../test-utils/math";
 import {
@@ -309,11 +309,11 @@ task("deploy:mainnet:veBalGrant")
         console.log("VeBalGrant:", result.veBalGrant.address);
     });
 
-task("deploy:mainnet:feeTokenHandlerV4")
+task("deploy:mainnet:feeTokenHandlerV5")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
-        const result = await deployFeeTokenHandlerV4(config, hre, deployer, debug, tskArgs.wait);
+        const result = await deployFeeTokenHandlerV5(config, hre, deployer, debug, tskArgs.wait);
         console.log("FeeToken Handler:", result.feeTokenHandler.address);
     });
 

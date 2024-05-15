@@ -157,6 +157,7 @@ const addresses: ExtSystemConfig = {
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    uniswapV3Router: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
     feeTokenHandlerPath: {
