@@ -97,7 +97,6 @@ describe("FeeToken (USDC) Handler V5", () => {
             expect(totalUnderlyingAfter).gt(totalUnderlyingBefore);
             expect(stakedBalanceAfter).gt(stakedBalanceBefore);
             // Verify USDC was sold with the new strategy
-
             // USDC from virtual pool => strategy => feeTokenHandler => vault
             // WETH vault => feeTokenHandler => strategy
 

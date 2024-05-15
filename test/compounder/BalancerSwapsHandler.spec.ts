@@ -97,7 +97,7 @@ describe("BalancerSwapsHandler", () => {
     describe("constructor", async () => {
         it("should properly store constructor arguments", async () => {
             const swapPath = await rewardHandler.getSwapPath();
-
+            expect(await rewardHandler.balVault(), "balVault").to.eq(mocks.addresses.balancerVault);
             expect(swapPath.poolIds.toString(), "swap path poolIds").to.eq(
                 mocks.addresses.feeTokenHandlerPath.poolIds.toString(),
             );
