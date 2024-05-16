@@ -32,7 +32,7 @@ interface VaultConfig {
 export interface VaultDeployment {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    feeTokenHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler | UniswapRouterHandler;
     auraRewards: VirtualBalanceRewardPool;
     virtualRewardFactory: VirtualRewardFactory;
 }

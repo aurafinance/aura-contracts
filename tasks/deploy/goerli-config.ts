@@ -53,6 +53,7 @@ import {
     CanonicalView__factory,
     GaugeVoteRewards__factory,
     StashRewardDistro__factory,
+    UniswapRouterHandler,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -214,7 +215,7 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    feeTokenHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler | UniswapRouterHandler;
     auraRewards: VirtualBalanceRewardPool;
 }
 
