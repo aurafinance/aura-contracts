@@ -66,6 +66,8 @@ import {
     AuraMining__factory,
     GaugeVoteRewards__factory,
     StashRewardDistro__factory,
+    UniswapRouterHandler__factory,
+    UniswapRouterHandler,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -157,6 +159,7 @@ const addresses: ExtSystemConfig = {
     ldoWhale: "0x09f82ccd6bae2aebe46ba7dd2cf08d87355ac430",
     stEthGaugeLdoDepositor: "0x86F6c353A0965eB069cD7f4f91C1aFEf8C725551",
     uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    uniswapV3Router: "0xE592427A0AEce92De3Edee1F18E0157C05861564",
     sushiswapRouter: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F",
     auraBalGauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
     feeTokenHandlerPath: {
@@ -419,14 +422,14 @@ const getAuraMining = async (deployer: Signer) => ({
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    feeTokenHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler | UniswapRouterHandler;
     auraRewards: VirtualBalanceRewardPool;
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
-    feeTokenHandler: BalancerSwapsHandler__factory.connect("0x3eA03278c46145024519Ab5c58dd2e848Ad42683", deployer),
+    feeTokenHandler: UniswapRouterHandler__factory.connect("0x2C2ae4c9f6d3aA9069a5779838F06CAE52Ea76EC", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 

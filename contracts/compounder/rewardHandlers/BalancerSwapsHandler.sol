@@ -4,9 +4,9 @@ pragma solidity 0.8.11;
 import { SafeERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { IBalancerVault, IAsset } from "../../interfaces/balancer/IBalancerCore.sol";
-import { HandlerBase } from "./HandlerBase.sol";
+import { BalancerHandlerBase } from "./BalancerHandlerBase.sol";
 
-contract BalancerSwapsHandler is HandlerBase {
+contract BalancerSwapsHandler is BalancerHandlerBase {
     using SafeERC20 for IERC20;
 
     // ----------------------------------------------------------------
@@ -25,7 +25,7 @@ contract BalancerSwapsHandler is HandlerBase {
         address _balVault,
         address _wethToken,
         SwapPath memory _swapPath
-    ) HandlerBase(_token, _strategy, _balVault, _wethToken) {
+    ) BalancerHandlerBase(_token, _strategy, _balVault, _wethToken) {
         swapPath = _swapPath;
     }
 
