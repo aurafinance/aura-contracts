@@ -66,6 +66,8 @@ import {
     AuraMining__factory,
     GaugeVoteRewards__factory,
     StashRewardDistro__factory,
+    UniswapRouterHandler__factory,
+    UniswapRouterHandler,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -420,14 +422,14 @@ const getAuraMining = async (deployer: Signer) => ({
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    feeTokenHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler | UniswapRouterHandler;
     auraRewards: VirtualBalanceRewardPool;
 }
 
 const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
-    feeTokenHandler: BalancerSwapsHandler__factory.connect("0x3eA03278c46145024519Ab5c58dd2e848Ad42683", deployer),
+    feeTokenHandler: UniswapRouterHandler__factory.connect("0x2C2ae4c9f6d3aA9069a5779838F06CAE52Ea76EC", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 

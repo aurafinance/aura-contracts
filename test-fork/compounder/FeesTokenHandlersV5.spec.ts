@@ -7,7 +7,9 @@ import { AuraBalVaultDeployed, config } from "../../tasks/deploy/mainnet-config"
 import { anyValue, BN, impersonateAccount } from "../../test-utils";
 import { Account, ERC20, ERC20__factory, UniswapRouterHandler } from "../../types";
 
-const FORK_BLOCK = 19859570;
+const BLOCK_BEFORE: number = 19859570;
+const BLOCK_AFTER: number = 19882305;
+const BLOCK_TEST: number = BLOCK_AFTER;
 
 describe("FeeToken (USDC) Handler V5", () => {
     let dao: Account;
@@ -19,7 +21,7 @@ describe("FeeToken (USDC) Handler V5", () => {
     let compounder: AuraBalVaultDeployed;
     let feeTokenAddress: string;
     let deployerAddress: string;
-    const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
+    const keeperAddress = config.multisigs.defender.auraBalProxyOFTHarvestor;
     const usdcVirtualPoolAddress = "0x27921a5CC29B11176817bbF5D6bAD83830f71555";
     const usdcUniswapV3PoolAddress = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640";
     /* -------------------------------------------------------------------------
@@ -33,7 +35,7 @@ describe("FeeToken (USDC) Handler V5", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: FORK_BLOCK,
+                        blockNumber: BLOCK_TEST,
                     },
                 },
             ],
@@ -48,7 +50,7 @@ describe("FeeToken (USDC) Handler V5", () => {
         feeTokenAddress = config.addresses.feeToken;
 
         feeToken = ERC20__factory.connect(feeTokenAddress, dao.signer);
-        wethToken = ERC20__factory.connect("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", dao.signer);
+        wethToken = ERC20__factory.connect(config.addresses.weth, dao.signer);
     });
 
     /* -------------------------------------------------------------------------
@@ -57,7 +59,12 @@ describe("FeeToken (USDC) Handler V5", () => {
 
     describe("Deployment", () => {
         it("Handlers", async () => {
-            ({ feeTokenHandler } = await deployFeeTokenHandlerV5(config, hre, deployer.signer, false, 0));
+            if (BLOCK_TEST === BLOCK_BEFORE) {
+                ({ feeTokenHandler } = await deployFeeTokenHandlerV5(config, hre, deployer.signer, false, 0));
+            } else {
+                // eslint-disable-next-line no-unsafe-optional-chaining
+                feeTokenHandler = (await config.getAuraBalVault?.(dao.signer)).feeTokenHandler as UniswapRouterHandler;
+            }
         });
     });
 
@@ -73,6 +80,7 @@ describe("FeeToken (USDC) Handler V5", () => {
     describe("Multisig Prepare Compounder", () => {
         it("Update fee token handler", async () => {
             await compounder.strategy.updateRewardToken(feeTokenAddress, feeTokenHandler.address);
+            await feeTokenHandler.setApprovals();
             expect(await compounder.strategy.rewardHandlers(feeTokenAddress)).eq(feeTokenHandler.address);
         });
     });
