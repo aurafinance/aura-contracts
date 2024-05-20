@@ -45,7 +45,6 @@ export function shouldBehaveLikeHandlerBase(_ctx: () => HandlerBaseBehaviourCont
                 expect(await rewardHandler.token(), "token").to.eq(token.address);
                 expect(await rewardHandler.strategy(), "strategy").to.eq(strategy.address);
                 expect(await rewardHandler.WETH_TOKEN(), "WETH_TOKEN").to.eq(ctx.addresses.weth);
-                expect(await rewardHandler.balVault(), "balVault").to.eq(ctx.addresses.balancerVault);
             });
         });
         describe("set new owner", async () => {

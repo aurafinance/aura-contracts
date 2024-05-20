@@ -98,7 +98,7 @@ describe("AuraBalVault", () => {
         vault = result.vault;
         strategy = result.strategy;
         auraRewards = result.auraRewards;
-        feeTokenHandler = result.feeTokenHandler;
+        feeTokenHandler = result.feeTokenHandler as BalancerSwapsHandler;
 
         // Send crvCvx to account, so it can make deposits
         const crvDepositorAccount = await impersonateAccount(phase2.crvDepositor.address);

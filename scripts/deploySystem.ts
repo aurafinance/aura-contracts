@@ -171,6 +171,7 @@ interface ExtSystemConfig {
     ldoWhale?: string;
     stEthGaugeLdoDepositor?: string;
     uniswapRouter?: string;
+    uniswapV3Router?: string;
     sushiswapRouter?: string;
     auraBalGauge?: string;
     lzEndpoint?: string;

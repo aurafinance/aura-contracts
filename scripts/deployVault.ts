@@ -13,6 +13,8 @@ import {
     ERC20__factory,
     FeeForwarder,
     FeeForwarder__factory,
+    UniswapRouterHandler,
+    UniswapRouterHandler__factory,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
     VirtualRewardFactory,
@@ -30,7 +32,7 @@ interface VaultConfig {
 export interface VaultDeployment {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
-    feeTokenHandler: BalancerSwapsHandler;
+    feeTokenHandler: BalancerSwapsHandler | UniswapRouterHandler;
     auraRewards: VirtualBalanceRewardPool;
     virtualRewardFactory: VirtualRewardFactory;
 }
@@ -88,7 +90,37 @@ export async function deployFeeTokenHandlerV4(
         feeTokenHandler,
     };
 }
+export async function deployFeeTokenHandlerV5(
+    config: VaultConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const compounder = await config.getAuraBalVault(signer);
+    const poolFee = 500;
+    const feeTokenHandler = await deployContract<UniswapRouterHandler>(
+        hre,
+        new UniswapRouterHandler__factory(signer),
+        "USDCHandlerV3",
+        [
+            config.addresses.feeToken,
+            compounder.strategy.address,
+            config.addresses.weth,
+            config.addresses.uniswapV3Router,
+            poolFee,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    const tx = await feeTokenHandler.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
 
+    return {
+        feeTokenHandler,
+    };
+}
 export async function deployVault(
     config: VaultConfig,
     hre: HardhatRuntimeEnvironment,
