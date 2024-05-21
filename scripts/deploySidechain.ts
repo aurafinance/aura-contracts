@@ -297,7 +297,7 @@ export async function deployCanonicalPhase4(
         hre,
         new L1PoolManagerProxy__factory(signer),
         "L1PoolManagerProxy",
-        [canonicalLzChainId, extConfig.lzEndpoint],
+        [canonicalLzChainId, extConfig.lzEndpoint, extConfig.gaugeController],
         {},
         debug,
         waitForBlocks,
@@ -1217,7 +1217,7 @@ export async function deploySidechainPhase4(
         create2Factory,
         new L2PoolManagerProxy__factory(signer),
         "L2PoolManagerProxy",
-        [sidechain.booster.address],
+        [],
         deployOptionsWithCallbacks([l2PoolManagerProxyInitialize, l2PoolManagerProxyTransferOwnership]),
     );
 
