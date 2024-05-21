@@ -5,6 +5,7 @@ import {
     SidechainPhase2Deployed,
     SidechainViewDeployed,
     SidechainPhase3Deployed,
+    SidechainPhase4Deployed,
 } from "scripts/deploySidechain";
 
 export interface SidechainNaming {
@@ -39,7 +40,7 @@ export interface SidechainBridging {
     nativeBridge: string;
 }
 
-export type SidechainPhaseDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed & SidechainPhase3Deployed;
+export type SidechainPhaseDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed & SidechainPhase3Deployed& SidechainPhase4Deployed;
 
 export interface SidechainConfig {
     chainId: number;

@@ -11,17 +11,22 @@ import {
     CanonicalPhase1Deployed,
     CanonicalPhase2Deployed,
     CanonicalPhase3Deployed,
+    CanonicalPhase4Deployed,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCanonicalPhase3,
+    deployCanonicalPhase4,
     deploySidechainPhase1,
     deploySidechainPhase2,
     deploySidechainPhase3,
+    deploySidechainPhase4,
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
     setTrustedRemoteCanonicalPhase3,
     SidechainPhase1Deployed,
     SidechainPhase2Deployed,
+    SidechainPhase3Deployed,
+    SidechainPhase4Deployed,
 } from "../../scripts/deploySidechain";
 import {
     DeployL2MocksResult,
@@ -53,8 +58,15 @@ import {
     SidechainPhaseDeployed,
 } from "../../types";
 
-export type SidechainDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed;
-export type CanonicalPhaseDeployed = CanonicalPhase1Deployed & CanonicalPhase2Deployed & CanonicalPhase3Deployed;
+export type SidechainDeployed = SidechainPhase1Deployed &
+    SidechainPhase2Deployed &
+    SidechainPhase3Deployed &
+    SidechainPhase4Deployed;
+
+export type CanonicalPhaseDeployed = CanonicalPhase1Deployed &
+    CanonicalPhase2Deployed &
+    CanonicalPhase3Deployed &
+    CanonicalPhase4Deployed;
 export interface L1TestSetup {
     mocks: DeployMocksResult;
     multisigs: MultisigConfig;
@@ -171,10 +183,20 @@ export const deployL1 = async (
         debug,
         waitForBlocks,
     );
+    const canonicalPhase4 = await deployCanonicalPhase4(
+        hre,
+        deployer.signer,
+        l1Multisigs,
+        l1Mocks.addresses,
+        canonicalChainId,
+        debug,
+        waitForBlocks,
+    );
+
     await phase6.boosterOwner.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
     // await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
 
-    const canonical = { ...canonicalPhase1, ...canonicalPhase2, ...canonicalPhase3 };
+    const canonical = { ...canonicalPhase1, ...canonicalPhase2, ...canonicalPhase3, ...canonicalPhase4 };
 
     return { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, phase8, vaultDeployment, canonical };
 };
@@ -229,19 +251,28 @@ export const deployL2 = async (
         l2Multisigs,
         sidechainPhase1,
     );
-    const sidechain = { ...sidechainPhase1, ...sidechainPhase2, ...sidechainPhase3 };
+    const sidechainPhase4 = await deploySidechainPhase4(
+        hre,
+        deployer.signer,
+        extSidechainConfig,
+        l2Multisigs,
+        sidechainPhase1,
+    );
+    const sidechain = { ...sidechainPhase1, ...sidechainPhase2, ...sidechainPhase3, ...sidechainPhase4 };
 
     // Mock L1 Endpoints  configuration
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2Coordinator.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraOFT.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.auraBalOFT.address, l2LzEndpoint.address);
     await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.childGaugeVoteRewards.address, l2LzEndpoint.address);
+    await l1.mocks.lzEndpoint.setDestLzEndpoint(sidechain.l2PoolManagerProxy.address, l2LzEndpoint.address);
 
     // Mock L12Endpoints  configuration
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.l1Coordinator.address, l1.mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.auraProxyOFT.address, l1.mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.auraBalProxyOFT.address, l1.mocks.lzEndpoint.address);
     await l2LzEndpoint.setDestLzEndpoint(l1.canonical.gaugeVoteRewards.address, l1.mocks.lzEndpoint.address);
+    await l2LzEndpoint.setDestLzEndpoint(l1.canonical.l1PoolManagerProxy.address, l1.mocks.lzEndpoint.address);
 
     // Add Mock Gauge
     await sidechain.poolManager.connect(dao.signer)["addPool(address)"](l2mocks.gauge.address);

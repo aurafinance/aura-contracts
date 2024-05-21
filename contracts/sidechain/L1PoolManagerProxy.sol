@@ -13,8 +13,6 @@ contract L1PoolManagerProxy is LzApp {
     /// @dev Indicates if add pool is protected or not.
     bool public protectAddPool;
 
-    /// @dev Chain ID => ChildGaugeVoteRewards
-    mapping(uint16 => address) public getChildGaugeVoteRewards;
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */

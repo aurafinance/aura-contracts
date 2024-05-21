@@ -38,8 +38,12 @@ import {
     KeeperMulticall3__factory,
     L1Coordinator,
     L1Coordinator__factory,
+    L1PoolManagerProxy,
+    L1PoolManagerProxy__factory,
     L2Coordinator,
     L2Coordinator__factory,
+    L2PoolManagerProxy,
+    L2PoolManagerProxy__factory,
     PoolManagerLite,
     PoolManagerLite__factory,
     ProxyFactory,
@@ -87,6 +91,10 @@ export interface CanonicalPhase3Deployed {
     stashRewardDistro: StashRewardDistro;
     gaugeVoteRewards: GaugeVoteRewards;
 }
+export interface CanonicalPhase4Deployed {
+    l1PoolManagerProxy: L1PoolManagerProxy;
+}
+
 interface Factories {
     rewardFactory: RewardFactory;
     stashFactory: StashFactoryV2;
@@ -115,6 +123,10 @@ export interface SidechainPhase3Deployed {
     stashRewardDistro: StashRewardDistro;
     childGaugeVoteRewards: ChildGaugeVoteRewards;
 }
+export interface SidechainPhase4Deployed {
+    l2PoolManagerProxy: L2PoolManagerProxy;
+}
+
 export interface SidechainViewDeployed {
     sidechainView: SidechainView;
 }
@@ -269,6 +281,32 @@ export async function deployCanonicalPhase3(
         stashRewardDistro,
         gaugeVoteRewards,
     };
+}
+export async function deployCanonicalPhase4(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    extConfig: ExtSystemConfig,
+    canonicalLzChainId: number,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<CanonicalPhase4Deployed> {
+    //  Protocol DAO : l1PoolManagerProxy.setTrustedRemote(L2_CHAIN_ID, [l2PoolManagerProxy.address, l1PoolManagerProxy.address]);
+
+    const l1PoolManagerProxy = await deployContract<L1PoolManagerProxy>(
+        hre,
+        new L1PoolManagerProxy__factory(signer),
+        "L1PoolManagerProxy",
+        [canonicalLzChainId, extConfig.lzEndpoint],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    const tx = await l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { l1PoolManagerProxy };
 }
 /**
  * Deploys the Sidechain system contracts.
@@ -1137,4 +1175,51 @@ export async function deploySidechainPhase3(
     );
 
     return { stashRewardDistro, childGaugeVoteRewards };
+}
+export async function deploySidechainPhase4(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    extConfig: ExtSidechainConfig,
+    multisigs: SidechainMultisigConfig,
+    sidechain: SidechainPhase1Deployed,
+    salt: string = SALT,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<SidechainPhase4Deployed> {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const l2PoolManagerProxyTransferOwnership = L2PoolManagerProxy__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [multisigs.daoMultisig],
+    );
+    const l2PoolManagerProxyInitialize = L2PoolManagerProxy__factory.createInterface().encodeFunctionData(
+        "initialize",
+        [extConfig.lzEndpoint, sidechain.poolManager.address],
+    );
+
+    const l2PoolManagerProxy = await deployContractWithCreate2<L2PoolManagerProxy, L2PoolManagerProxy__factory>(
+        hre,
+        create2Factory,
+        new L2PoolManagerProxy__factory(signer),
+        "L2PoolManagerProxy",
+        [sidechain.booster.address],
+        deployOptionsWithCallbacks([l2PoolManagerProxyInitialize, l2PoolManagerProxyTransferOwnership]),
+    );
+
+    return { l2PoolManagerProxy };
 }
