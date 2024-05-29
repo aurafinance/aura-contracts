@@ -136,7 +136,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Processing
         // ----------------------------------------------------------
 
-        if (taskArgs.format === "csv") {
+        if (taskArgs.format === "safe") {
             console.log("Successful gauge votes");
             const tableData = [
                 ["Gauge", "voteDelta", "percentage", "address", "weight"],
