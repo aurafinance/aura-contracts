@@ -19,6 +19,7 @@ interface Vote {
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addParam("proposal", "The proposal ID of the snapshot")
     .addOptionalParam("debug", "Debug mode", "false")
+    .addOptionalParam("format", "Output format: safe | csv, safe by default", "safe")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
 
@@ -135,22 +136,33 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Processing
         // ----------------------------------------------------------
 
-        console.log("Successful gauge votes");
-        const tableData = [
-            ["Gauge", "voteDelta", "percentage", "address", "weight"],
-            ...votes.map(({ gauge, voteDelta, voteWeight, percentage }) => [
-                gauge.label,
-                voteDelta,
-                (percentage * 100).toFixed(2) + "%",
-                gauge.address,
-                voteWeight,
-            ]),
-        ];
-        console.log(table(tableData));
+        if (taskArgs.format === "csv") {
+            console.log("Successful gauge votes");
+            const tableData = [
+                ["Gauge", "voteDelta", "percentage", "address", "weight"],
+                ...votes.map(({ gauge, voteDelta, voteWeight, percentage }) => [
+                    gauge.label,
+                    voteDelta,
+                    (percentage * 100).toFixed(2) + "%",
+                    gauge.address,
+                    voteWeight,
+                ]),
+            ];
+            console.log(table(tableData));
 
-        console.log(`Order,Gauge,Address,Weight`);
-        for (let i = 0; i < votes.length; i++) {
-            const vote = votes[i];
-            console.log(`${i},${vote.gauge.label},${vote.gauge.address},${vote.voteWeight}`);
+            console.log("\n\nGauge Labels");
+            console.log(JSON.stringify(tableData.slice(1).map(x => x[0])));
+
+            console.log("\n\nGauge Addresses");
+            console.log(JSON.stringify(votes.map(v => v.gauge.address)));
+
+            console.log("\n\nVote weights");
+            console.log(JSON.stringify(votes.map(v => v.voteWeight)));
+        } else {
+            console.log(`Order,Gauge,Address,Weight`);
+            for (let i = 0; i < votes.length; i++) {
+                const vote = votes[i];
+                console.log(`${i},${vote.gauge.label},${vote.gauge.address},${vote.voteWeight}`);
+            }
         }
     });
