@@ -4,33 +4,7 @@ pragma solidity 0.8.11;
 import { LzApp } from "../layerzero/lzApp/LzApp.sol";
 import { IStakelessGauge } from "../interfaces/balancer/IStakelessGauge.sol";
 import { IStakelessGaugeCheckpointer } from "../interfaces/balancer/IStakelessGaugeCheckpointer.sol";
-
-interface IGaugeController {
-    function get_gauge_weight(address _gauge) external view returns (uint256);
-
-    function vote_user_slopes(address, address)
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256
-        ); //slope,power,end
-
-    function vote_for_gauge_weights(address, uint256) external;
-
-    function add_gauge(
-        address,
-        int128,
-        uint256
-    ) external;
-
-    function gauges(uint256) external view returns (address);
-
-    function checkpoint_gauge(address) external;
-
-    function n_gauges() external view returns (uint256);
-}
+import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeController.sol";
 
 contract L1PoolManagerProxy is LzApp {
     /// @dev LayerZero chain ID for this chain
@@ -79,7 +53,7 @@ contract L1PoolManagerProxy is LzApp {
 
         require(IStakelessGaugeCheckpointer(gaugeCheckpointer).hasGauge(gaugeType, _gauge), "!checkpointer");
         //check that the pool as weight
-        uint256 weight = IGaugeController(gaugeController).get_gauge_weight(_gauge);
+        uint256 weight = IBalGaugeController(gaugeController).get_gauge_weight(_gauge);
         require(weight > 0, "must have weight");
         _;
     }

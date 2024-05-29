@@ -2,18 +2,7 @@
 pragma solidity 0.8.11;
 
 import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
-
-interface IPoolManager {
-    function setOperator(address _operator) external;
-
-    function addPool(address _gauge) external returns (bool);
-
-    function shutdownPool(uint256 _pid) external returns (bool);
-
-    function shutdownSystem() external;
-
-    function isShutdown() external view returns (bool);
-}
+import { IPoolManagerLite } from "contracts/sidechain/interfaces/IPoolManagerLite.sol";
 
 /**
  * @title   L2PoolManagerProxy
@@ -52,7 +41,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
      */
     function setPoolManagerOperator(address _operator) external onlyOwner {
         require(address(0) != _operator, "!_operator");
-        IPoolManager(poolManager).setOperator(_operator);
+        IPoolManagerLite(poolManager).setOperator(_operator);
     }
 
     /**
@@ -68,18 +57,18 @@ contract L2PoolManagerProxy is NonblockingLzApp {
      * @param _pid The pool id.
      */
     function shutdownPool(uint256 _pid) external onlyOwner returns (bool) {
-        return IPoolManager(poolManager).shutdownPool(_pid);
+        return IPoolManagerLite(poolManager).shutdownPool(_pid);
     }
 
     /**
      * @notice Shutdows the system, it is not reversible.
      */
     function shutdownSystem() external onlyOwner {
-        IPoolManager(poolManager).shutdownSystem();
+        IPoolManagerLite(poolManager).shutdownSystem();
     }
 
     function _addPool(address _gauge) internal returns (bool) {
-        return IPoolManager(poolManager).addPool(_gauge);
+        return IPoolManagerLite(poolManager).addPool(_gauge);
     }
 
     function _setPoolManager(address _poolManager) internal {
@@ -88,7 +77,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     }
 
     function isShutdown() external view returns (bool) {
-        return IPoolManager(poolManager).isShutdown();
+        return IPoolManagerLite(poolManager).isShutdown();
     }
 
     /* -------------------------------------------------------------------
