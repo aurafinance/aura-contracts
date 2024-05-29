@@ -13,6 +13,8 @@ export interface SidechainNaming {
     auraBalOftName: string;
     auraBalOftSymbol: string;
     tokenFactoryNamePostfix: string;
+    vlCvxName: string;
+    vlCvxSymbol: string;
 }
 
 export interface ExtSidechainConfig {

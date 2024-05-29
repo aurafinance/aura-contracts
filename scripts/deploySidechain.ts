@@ -14,6 +14,8 @@ import {
     AuraBalVault__factory,
     AuraDistributor,
     AuraDistributor__factory,
+    AuraLocker,
+    AuraLocker__factory,
     AuraOFT,
     AuraOFT__factory,
     AuraProxyOFT,
@@ -1137,4 +1139,48 @@ export async function deploySidechainPhase3(
     );
 
     return { stashRewardDistro, childGaugeVoteRewards };
+}
+
+export async function deploySidechainAuraLocker(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    naming: SidechainNaming,
+    extConfig: ExtSidechainConfig,
+    sidechain: SidechainPhase1Deployed,
+    debug = false,
+    waitForBlocks = 0,
+    salt: string = SALT,
+): Promise<{ cvxLocker: AuraLocker }> {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const cvxLocker = await deployContractWithCreate2<AuraLocker, AuraLocker__factory>(
+        hre,
+        create2Factory,
+        new AuraLocker__factory(signer),
+        "AuraLocker",
+        [naming.vlCvxName, naming.vlCvxSymbol, sidechain.auraOFT.address, ZERO_ADDRESS, ZERO_ADDRESS],
+        deployOptionsWithCallbacks([]),
+    );
+    if ((await cvxLocker.cvxCrv()) !== ZERO_ADDRESS) {
+        const tx = await cvxLocker.setApprovals();
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+
+    return { cvxLocker };
 }

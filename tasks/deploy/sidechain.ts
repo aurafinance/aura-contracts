@@ -22,6 +22,7 @@ import {
     deployCanonicalView,
     deployCreate2Factory,
     deployKeeperMulticall3,
+    deploySidechainAuraLocker,
     deploySidechainClaimZap,
     deploySidechainPeripherals,
     deploySidechainPhase1,
@@ -1072,4 +1073,24 @@ task("deploy:sidechain:L2:auraOFT")
         await waitForTx(tx, debug, tskArgs.wait);
 
         logContracts({ auraOFT });
+    });
+task("deploy:sidechain:L2:vlAura")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+        const sidechainPhase1 = sidechainConfig.getSidechain(deployer);
+        const result = await deploySidechainAuraLocker(
+            hre,
+            deployer,
+            sidechainConfig.naming,
+            sidechainConfig.extConfig,
+            sidechainPhase1,
+            debug,
+            tskArgs.wait,
+            SALT,
+        );
+        logContracts(result);
     });
