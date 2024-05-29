@@ -48,6 +48,6 @@ export interface SidechainConfig {
     naming: SidechainNaming;
     extConfig: ExtSidechainConfig;
     bridging: SidechainBridging;
-    getSidechain?: (s: Signer|Provider) => SidechainPhaseDeployed;
-    getView?: (s: Signer) => SidechainViewDeployed;
+    getSidechain?: (s: Signer | Provider) => SidechainPhaseDeployed;
+    getView?: (s: Signer | Provider) => SidechainViewDeployed;
 }
