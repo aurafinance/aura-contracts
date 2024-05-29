@@ -6,6 +6,14 @@ import { IStakelessGauge } from "../interfaces/balancer/IStakelessGauge.sol";
 import { IStakelessGaugeCheckpointer } from "../interfaces/balancer/IStakelessGaugeCheckpointer.sol";
 import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeController.sol";
 
+/**
+ * @title   L1PoolManagerProxy
+ * @author  AuraFinance
+ * @dev Allows to permitionless add pools on any supported sidechain.
+ *      1.  Owner must configure gaugeTypes mapping (lzChainId => balancer gauge type)
+ *      2.  User most provide a root gauge address and the layer zero chain id, with enought
+ *          native fee to be able to add a pool on the destination chain.
+ */
 contract L1PoolManagerProxy is LzApp {
     /// @dev LayerZero chain ID for this chain
     uint16 public immutable lzChainId;
@@ -15,7 +23,7 @@ contract L1PoolManagerProxy is LzApp {
     address public immutable gaugeCheckpointer;
     /// @dev Indicates if add pool is protected or not.
     bool public protectAddPool;
-    /// @dev _lzChainId => gauge type
+    /// @dev lzChainId => gauge type
     mapping(uint16 => string) public gaugeTypes;
     /* -------------------------------------------------------------------
        Events 

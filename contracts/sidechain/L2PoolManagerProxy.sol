@@ -7,7 +7,7 @@ import { IPoolManagerLite } from "contracts/sidechain/interfaces/IPoolManagerLit
 /**
  * @title   L2PoolManagerProxy
  * @author  AuraFinance
- * @dev     Given a root gauge on L1PoolManager it adds a gauge recipient on PoolManagerLite
+ * @dev     Given a root gauge on L1PoolManagerProxy it adds a gauge recipient on PoolManagerLite
  */
 contract L2PoolManagerProxy is NonblockingLzApp {
     /* -------------------------------------------------------------------

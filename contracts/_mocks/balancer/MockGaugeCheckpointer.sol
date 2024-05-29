@@ -21,8 +21,7 @@ contract MockGaugeCheckpointer is IStakelessGaugeCheckpointer {
     function removeGauges(string memory gaugeType, IStakelessGauge[] calldata _gauges) external override {}
 
     function hasGauge(string memory gaugeType, address gauge) external view override returns (bool) {
-        // TODO
-        return bytes(gauges[gauge]).length == bytes(gaugeType).length;
+        return _compareStrings(gauges[gauge], gaugeType);
     }
 
     function getTotalGauges(string memory gaugeType) external view override returns (uint256) {}
@@ -70,4 +69,8 @@ contract MockGaugeCheckpointer is IStakelessGaugeCheckpointer {
     {}
 
     function isValidGaugeType(string memory gaugeType) external view override returns (bool) {}
+
+    function _compareStrings(string memory a, string memory b) internal pure returns (bool) {
+        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    }
 }
