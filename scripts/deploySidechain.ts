@@ -1144,6 +1144,7 @@ export async function deploySidechainPhase3(
 export async function deploySidechainAuraLocker(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    multisigs: MultisigConfig,
     naming: SidechainNaming,
     extConfig: ExtSidechainConfig,
     sidechain: SidechainPhase1Deployed,
@@ -1169,13 +1170,16 @@ export async function deploySidechainAuraLocker(
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
 
+    const cvxLockerTransferOwnership = AuraLocker__factory.createInterface().encodeFunctionData("transferOwnership", [
+        multisigs.daoMultisig,
+    ]);
     const cvxLocker = await deployContractWithCreate2<AuraLocker, AuraLocker__factory>(
         hre,
         create2Factory,
         new AuraLocker__factory(signer),
         "AuraLocker",
         [naming.vlCvxName, naming.vlCvxSymbol, sidechain.auraOFT.address, ZERO_ADDRESS, ZERO_ADDRESS],
-        deployOptionsWithCallbacks([]),
+        deployOptionsWithCallbacks([cvxLockerTransferOwnership]),
     );
     if ((await cvxLocker.cvxCrv()) !== ZERO_ADDRESS) {
         const tx = await cvxLocker.setApprovals();

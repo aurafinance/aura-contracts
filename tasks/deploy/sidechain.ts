@@ -1085,6 +1085,7 @@ task("deploy:sidechain:L2:vlAura")
         const result = await deploySidechainAuraLocker(
             hre,
             deployer,
+            sidechainConfig.multisigs,
             sidechainConfig.naming,
             sidechainConfig.extConfig,
             sidechainPhase1,
