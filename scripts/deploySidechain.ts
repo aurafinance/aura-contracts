@@ -3,6 +3,8 @@ import { toUtf8Bytes } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 
+import { lzChainIds } from "../tasks/deploy/sidechain-constants";
+import { chainIds } from "../tasks/utils";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
@@ -292,18 +294,38 @@ export async function deployCanonicalPhase4(
     waitForBlocks = 0,
 ): Promise<CanonicalPhase4Deployed> {
     //  Protocol DAO : l1PoolManagerProxy.setTrustedRemote(L2_CHAIN_ID, [l2PoolManagerProxy.address, l1PoolManagerProxy.address]);
-
+    //  Protocol DAO : l1PoolManagerProxy.setGaugeTypes(LZ_CHAIN_ID, BALANCER_GAUGE_TYPE);
     const l1PoolManagerProxy = await deployContract<L1PoolManagerProxy>(
         hre,
         new L1PoolManagerProxy__factory(signer),
         "L1PoolManagerProxy",
-        [canonicalLzChainId, extConfig.lzEndpoint, extConfig.gaugeController],
+        [canonicalLzChainId, extConfig.lzEndpoint, extConfig.gaugeController, extConfig.gaugeCheckpointer],
         {},
         debug,
         waitForBlocks,
     );
+    let tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.arbitrum], "Arbitrum");
+    await waitForTx(tx, debug, waitForBlocks);
 
-    const tx = await l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.avalanche], "Avalanche");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.gnosis], "Gnosis");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.optimism], "Optimism");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.base], "Base");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.polygon], "Polygon");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.zkevm], "Zkevm");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
     return { l1PoolManagerProxy };

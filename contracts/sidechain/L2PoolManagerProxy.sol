@@ -26,8 +26,6 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     ------------------------------------------------------------------- */
     /// @dev The poolManager address
     address public poolManager;
-    /// @dev Indicates if add pool is protected or not.
-    bool public protectAddPool;
 
     /* -------------------------------------------------------------------
        Events 
@@ -49,13 +47,6 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     }
 
     /**
-     * @notice set if addPool is only callable by owner
-     */
-    function setProtectPool(bool _protectAddPool) external onlyOwner {
-        protectAddPool = _protectAddPool;
-    }
-
-    /**
      * @notice sets the poolManager operator.
      * @dev Usefull to reset pool manager operator value.
      */
@@ -68,7 +59,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
      * @notice Adds new pool.
      * @param _gauge The gauge address.
      */
-    function addPool(address _gauge) external returns (bool) {
+    function addPool(address _gauge) external onlyOwner returns (bool) {
         return _addPool(_gauge);
     }
 
@@ -88,9 +79,6 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     }
 
     function _addPool(address _gauge) internal returns (bool) {
-        if (protectAddPool) {
-            require(msg.sender == owner(), "!auth");
-        }
         return IPoolManager(poolManager).addPool(_gauge);
     }
 
@@ -109,7 +97,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
 
     /**
      * @dev Override the default lzReceive function logic
-     *  Called by  L1PoolManager.addPool
+     *  Called by  L1PoolManager.addPool, allows
      */
     function _nonblockingLzReceive(
         uint16, /** _srcChainId */

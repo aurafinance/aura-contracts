@@ -19,6 +19,8 @@ import {
     MockERC20__factory,
     MockFeeDistributor,
     MockFeeDistributor__factory,
+    MockGaugeCheckpointer,
+    MockGaugeCheckpointer__factory,
     MockVoting,
     MockVoting__factory,
     MockWalletChecker,
@@ -222,7 +224,14 @@ async function deployMocks(
         {},
         false,
     );
-
+    const gaugeCheckpointer = await deployContract<MockGaugeCheckpointer>(
+        hre,
+        new MockGaugeCheckpointer__factory(deployer),
+        "MockGaugeCheckpointer",
+        [],
+        {},
+        false,
+    );
     const gauges: MockCurveGauge[] = [];
 
     for (let i = 0; i < 3; i++) {
@@ -303,6 +312,7 @@ async function deployMocks(
             votingEscrow: votingEscrow.address,
             feeDistribution: feeDistro.address,
             gaugeController: voting.address,
+            gaugeCheckpointer: gaugeCheckpointer.address,
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),

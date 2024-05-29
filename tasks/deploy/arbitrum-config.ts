@@ -30,7 +30,7 @@ import {
     VoterProxyLite__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
-import { ZERO_ADDRESS } from "test-utils";
+import { ZERO_ADDRESS } from "../../test-utils";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",

@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 
-import { impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
+import { DEAD_ADDRESS, impersonateAccount, simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import { Account } from "../../types";
 import {
     L1PoolManagerProxy,
@@ -22,7 +22,7 @@ import {
     sidechainTestSetup,
 } from "./sidechainTestSetup";
 
-describe("L1PoolManagerProxy", () => {
+describe("L2PoolManagerProxy", () => {
     /* -- Declare shared variables -- */
     let accounts: Signer[];
     let deployer: Account;
@@ -109,7 +109,7 @@ describe("L1PoolManagerProxy", () => {
                     await setup();
                     ctx.owner = dao;
                     ctx.anotherAccount = alice;
-                    ctx.ownable = l1PoolManagerProxy;
+                    ctx.ownable = l2PoolManagerProxy;
                     return ctx as OwnableBehaviourContext;
                 };
             });
@@ -122,9 +122,9 @@ describe("L1PoolManagerProxy", () => {
         });
 
         it("should properly store valid arguments", async () => {
-            expect(await l1PoolManagerProxy.lzChainId(), "lzChainId").to.eq(L1_CHAIN_ID);
-            expect(await l1PoolManagerProxy.protectAddPool(), "protectAddPool").to.eq(true);
-            expect(await l1PoolManagerProxy.owner(), "owner").to.eq(dao.address);
+            expect(await l2PoolManagerProxy.poolManager(), "poolManager").to.eq(sidechain.poolManager.address);
+            expect(await l2PoolManagerProxy.lzEndpoint(), "lzEndpoint").to.eq(testSetup.l2.mocks.addresses.lzEndpoint);
+            expect(await l2PoolManagerProxy.owner(), "owner").to.eq(dao.address);
         });
     });
     describe("configuration ", async () => {
@@ -159,6 +159,14 @@ describe("L1PoolManagerProxy", () => {
             const trustedRemote = await l2PoolManagerProxy.trustedRemoteLookup(L1_CHAIN_ID);
             expect(trustedRemote, "trustedRemote").to.be.eq(expectedTrustedRemote);
         });
+        it("DAO - setPoolManager on l2PoolManagerProxy", async () => {
+            await l2PoolManagerProxy.connect(dao.signer).setPoolManager(DEAD_ADDRESS);
+            expect(await l2PoolManagerProxy.poolManager(), "poolManager").to.be.eq(DEAD_ADDRESS);
+
+            const tx = await l2PoolManagerProxy.connect(dao.signer).setPoolManager(sidechain.poolManager.address);
+            await expect(tx).to.emit(l2PoolManagerProxy, "PoolManagerUpdated").withArgs(sidechain.poolManager.address);
+            expect(await l2PoolManagerProxy.poolManager(), "poolManager").to.be.eq(sidechain.poolManager.address);
+        });
         it("DAO - updates sidechain poolManager ", async () => {
             expect(await sidechain.poolManager.operator(), "operator DAO").to.be.eq(dao.address);
 
@@ -168,16 +176,12 @@ describe("L1PoolManagerProxy", () => {
                 l2PoolManagerProxy.address,
             );
         });
-        it("DAO - setProtectPool on l1PoolManagerProxy", async () => {
-            const expectedprotectAddPool = true;
-            //   When  config is set.
-            await l1PoolManagerProxy.connect(dao.signer).setProtectPool(expectedprotectAddPool);
+        it("DAO - setPoolManagerOperator on l2PoolManagerProxy", async () => {
+            await l2PoolManagerProxy.connect(dao.signer).setPoolManagerOperator(l2PoolManagerProxy.address);
 
-            const protectAddPool = await l1PoolManagerProxy.protectAddPool();
-            expect(protectAddPool, "protectAddPool").to.be.eq(expectedprotectAddPool);
+            expect(await sidechain.poolManager.operator(), "poolManager operator").to.be.eq(l2PoolManagerProxy.address);
         });
     });
-
     describe("addPool", async () => {
         it("from mainnet to sidechain add pool", async () => {
             const { rootGauge, sidechainGauge } = await deploySidechainGauge("mock", 1);
@@ -196,18 +200,59 @@ describe("L1PoolManagerProxy", () => {
                 .withArgs(L2_CHAIN_ID, rootGauge.address, sidechainGauge.address);
             await expect(tx).to.emit(sidechain.booster, "PoolAdded");
         });
+        it("DAO - directly on sidechain", async () => {
+            const { sidechainGauge } = await deploySidechainGauge("mockL2", 1);
+            const tx = await l2PoolManagerProxy.connect(dao.signer).addPool(sidechainGauge.address);
+            await expect(tx).to.emit(sidechain.booster, "PoolAdded");
+        });
     });
     describe("edge cases", () => {
         describe("configurations", async () => {
-            it("fails to protected pool, caller is not owner", async () => {
+            it("fails to initialize if caller is not owner", async () => {
                 await expect(
-                    l1PoolManagerProxy.connect(deployer.signer).setProtectPool(false),
+                    l2PoolManagerProxy.connect(deployer.signer).initialize(DEAD_ADDRESS, DEAD_ADDRESS),
                     "onlyOwner",
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
-            it("fails setGaugeType, caller is not owner", async () => {
+            it("fails to setPoolManager if caller is not owner", async () => {
                 await expect(
-                    l1PoolManagerProxy.connect(deployer.signer).setGaugeType(L2_CHAIN_ID, L2_BALANCER_GAUGE_TYPE),
+                    l2PoolManagerProxy.connect(deployer.signer).setPoolManager(DEAD_ADDRESS),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails setPoolManager, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).setPoolManager(DEAD_ADDRESS),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails setPoolManagerOperator, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).setPoolManagerOperator(DEAD_ADDRESS),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails setPoolManagerOperator, ZERO_ADDRESS", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(dao.signer).setPoolManagerOperator(ZERO_ADDRESS),
+                    "!_operator",
+                ).to.be.revertedWith("!_operator");
+            });
+            it("fails addPool, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).addPool(DEAD_ADDRESS),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails shutdownSystem, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).shutdownSystem(),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
+            it("fails shutdownPool, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).shutdownPool(0),
                     "onlyOwner",
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
@@ -280,6 +325,32 @@ describe("L1PoolManagerProxy", () => {
                 await expect(tx).to.emit(sidechain.l2PoolManagerProxy, "MessageFailed");
                 await expect(tx).to.not.emit(sidechain.booster, "PoolAdded");
             });
+        });
+    });
+    describe("shutdownPool system", () => {
+        it("shutdownSystem reverts if not called by operator", async () => {
+            const failedTx = l2PoolManagerProxy.connect(alice.signer).shutdownSystem();
+            await expect(failedTx).to.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("shutdownPool reverts if not called by operator", async () => {
+            const failedTx = l2PoolManagerProxy.connect(alice.signer).shutdownPool(0);
+            await expect(failedTx).to.revertedWith(ERRORS.ONLY_OWNER);
+        });
+        it("shutdownPool pid 0", async () => {
+            const pid = 0;
+            expect((await sidechain.booster.poolInfo(pid)).shutdown).to.equal(false);
+            await l2PoolManagerProxy.connect(dao.signer).shutdownPool(pid);
+            expect((await sidechain.booster.poolInfo(pid)).shutdown).to.equal(true);
+        });
+        it("shutdownSystem the full system", async () => {
+            await l2PoolManagerProxy.connect(dao.signer).shutdownSystem();
+            expect(await l2PoolManagerProxy.isShutdown()).to.equal(true);
+        });
+        it("reverts if already shutdown and try to add pool", async () => {
+            const { sidechainGauge } = await deploySidechainGauge("mockRevert", 1);
+            await expect(
+                l2PoolManagerProxy.connect(dao.signer)["addPool(address)"](sidechainGauge.address),
+            ).to.revertedWith("shutdown");
         });
     });
 });

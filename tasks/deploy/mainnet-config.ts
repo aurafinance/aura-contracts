@@ -85,6 +85,7 @@ const addresses: ExtSystemConfig = {
     // feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9", // @deprecated
     feeDistribution: "0xD3cf852898b21fc233251427c2DC93d3d604F3BB",
     gaugeController: "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD",
+    gaugeCheckpointer: "0x0c8f71d19f87c0bd1b9bad2484ecc3388d5dbb98",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
     gauges: [

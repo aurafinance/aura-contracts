@@ -148,6 +148,7 @@ interface ExtSystemConfig {
     votingEscrow: string;
     feeDistribution: string;
     gaugeController: string;
+    gaugeCheckpointer?: string;
     voteOwnership?: string;
     voteParameter?: string;
     gauges?: string[];
