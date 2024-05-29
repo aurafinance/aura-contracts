@@ -81,7 +81,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
 });
 
-export const getView = (signer: Signer) => ({
+export const getView = (signer: Signer | Provider) => ({
     sidechainView: SidechainView__factory.connect("0x421DbF836b903b15Ba09C40553AD305d22275482", signer),
 });
 

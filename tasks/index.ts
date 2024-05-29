@@ -6,3 +6,4 @@ import "./snapshot";
 import "./shutdown";
 import "./sidechain";
 import "./gauge-voter";
+import "./contract-status";
