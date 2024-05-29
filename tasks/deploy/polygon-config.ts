@@ -26,6 +26,7 @@ import {
     ChildStashRewardDistro__factory,
     BoosterHelper__factory,
     PayableMulticall__factory,
+    AuraLocker__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -71,6 +72,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect("0x05589CbbE1cC0357986DF6de4031B953819079c2", signer),
     auraBalVault: AuraBalVault__factory.connect("0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9", signer),
     auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
+    cvxLocker: AuraLocker__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
     boosterHelper: BoosterHelper__factory.connect("0x49589fD9F088C2d3Cd85E97917ED74CF33b1b385", signer),

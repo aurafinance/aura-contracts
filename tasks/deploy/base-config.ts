@@ -4,6 +4,7 @@ import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
+    AuraLocker__factory,
     AuraOFT__factory,
     BoosterHelper__factory,
     BoosterLite__factory,
@@ -76,6 +77,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    cvxLocker: AuraLocker__factory.connect("0x9e1f4190f1a8Fe0cD57421533deCB57F9980922e", signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
     boosterHelper: BoosterHelper__factory.connect("0x4E91AE9c7D5B8898a21d55A9a629B7B04588E534", signer),

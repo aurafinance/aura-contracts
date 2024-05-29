@@ -1144,7 +1144,7 @@ export async function deploySidechainPhase3(
 export async function deploySidechainAuraLocker(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
-    multisigs: MultisigConfig,
+    multisigs: SidechainMultisigConfig,
     naming: SidechainNaming,
     extConfig: ExtSidechainConfig,
     sidechain: SidechainPhase1Deployed,
