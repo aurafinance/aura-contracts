@@ -1,5 +1,6 @@
 import axios from "axios";
 import { task } from "hardhat/config";
+import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 import { chainIds } from "../utils";
@@ -47,15 +48,6 @@ const chainsToCheck = [
 ] as const;
 type ChainToCheck = typeof chainsToCheck[number];
 
-const multiCalls: Record<ChainToCheck, string> = {
-    [chainIds.arbitrum]: "0x5C97f09506d60B90a817EB547ea4F03Ae990E798".toLowerCase(),
-    [chainIds.optimism]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-    [chainIds.polygon]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-    [chainIds.gnosis]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-    [chainIds.base]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-    [chainIds.zkevm]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-    [chainIds.avalanche]: "0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd".toLowerCase(),
-};
 const chainConfigs: Record<ChainToCheck, SidechainConfig> = {
     [chainIds.arbitrum]: arbitrum,
     [chainIds.optimism]: optimism,
@@ -75,6 +67,15 @@ const chainNames: Record<ChainToCheck, string> = {
     [chainIds.avalanche]: "🔺 Avalanche",
 };
 const blockExplorer: Record<ChainToCheck, string> = {
+    [chainIds.arbitrum]: "arbiscan.io",
+    [chainIds.optimism]: "optimistic.etherscan.io",
+    [chainIds.polygon]: "polygonscan.com",
+    [chainIds.gnosis]: "gnosisscan.io",
+    [chainIds.base]: "basescan.org",
+    [chainIds.zkevm]: "zkevm.polygonscan.com",
+    [chainIds.avalanche]: "snowtrace.io",
+};
+const blockExplorerApi: Record<ChainToCheck, string> = {
     [chainIds.arbitrum]: "api.arbiscan.io",
     [chainIds.optimism]: "api-optimistic.etherscan.io",
     [chainIds.polygon]: "api.polygonscan.com",
@@ -100,7 +101,7 @@ async function checkChain(chainId: ChainToCheck) {
     const provider = providers[chainId];
     const config = chainConfigs[chainId];
     const multisig = config.multisigs.daoMultisig.toLowerCase();
-    const multiCall = multiCalls[chainId];
+    // const multiCall = multiCalls[chainId];
     const sideChain = config.getSidechain(provider);
     const view = config.getView(provider);
     // const childGauge = config.getChildGaugeVoteRewards!(provider);
@@ -108,12 +109,14 @@ async function checkChain(chainId: ChainToCheck) {
     const factories = sideChain.factories;
     delete (sideChain as any)?.factories;
 
-    // main loop, for each contracts
-    for (const [name, contract] of Object.entries({ ...sideChain, ...factories, ...view })) {
-        // checking that, this item is indeed a contract object
-        if (typeof contract !== "object" || name === "interface" || name === "provider" || !("address" in contract))
-            continue;
+    const contracts = Object.entries({ ...sideChain, ...factories, ...view }).filter(
+        ([name, contract]) =>
+            // checking that, this item is indeed a contract object
+            typeof contract === "object" && name !== "interface" && name !== "provider" && "address" in contract,
+    ) as [string, BaseContract][];
 
+    // main loop, for each contracts
+    for (const [name, contract] of contracts) {
         // checking if the contract is deployed, i.e. address is not 0x00...00
         if (contract.address === ZERO_ADDRESS) {
             console.log(`\t• ${name} ${_("not deployed")(warn)}`);
@@ -128,9 +131,9 @@ async function checkChain(chainId: ChainToCheck) {
                 const ownerFn = "owner" in contract ? "owner" : "operator";
                 const owner = await (contract as any)[ownerFn]().then((o: string) => o.toLowerCase());
                 const isMultisig = owner === multisig;
-                const isMultiCall = owner === multiCall;
+                const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
                 if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
-                else if (isMultiCall) console.log(_("\t\t✅ owned by multicall")(ok));
+                else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
                 else console.log(_(`\t\t❌ owner: ${owner}`)(error));
             } catch {
                 console.log(_("\t\t• unable to get owner")(warn));
@@ -141,16 +144,35 @@ async function checkChain(chainId: ChainToCheck) {
 
         // checking the verification status on block explorer
         const response = await axios.get(
-            `https://${blockExplorer[chainId]}/api?module=contract&action=getabi&address=${contract.address}`,
+            `https://${blockExplorerApi[chainId]}/api?module=contract&action=getabi&address=${contract.address}`,
         );
         const result = response.data;
-        if (result.result === "Max rate limit reached, please use API Key for higher rate limit") {
+        if (
+            result.result === "Max rate limit reached, please use API Key for higher rate limit" ||
+            response.status !== 200
+        ) {
             console.log(_("\t\t• unable to check verification status, rate limit reached")(warn));
         } else if (result.result === "Contract source code not verified") {
             console.log(_("\t\t❌ not verified on block explorer")(error));
         } else {
             console.log(_("\t\t✅ verified on block explorer")(ok));
         }
+
+        // checking contract tag on block explorer
+        const response2 = await axios.get(`https://${blockExplorer[chainId]}/address/${contract.address}`, {
+            responseType: "document",
+            headers: {
+                // faking browser user agent: some explorers prevent scraping by checking user agent
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+            },
+        });
+        const result2 = response2.data as string;
+        if (result2.includes("https://aura.finance")) {
+            console.log(_("\t\t✅ tagged on block explorer")(ok));
+        } else {
+            console.log(_("\t\t❌ not tagged on block explorer")(error));
+        }
+
         await new Promise(resolve => setTimeout(resolve, 5_000)); // sleep 5 seconds to avoid being rate limited
     }
 }
