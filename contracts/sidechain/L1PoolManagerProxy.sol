@@ -9,7 +9,7 @@ import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeCont
 /**
  * @title   L1PoolManagerProxy
  * @author  AuraFinance
- * @dev Allows to permitionless add pools on any supported sidechain.
+ * @dev Allows to permissionless add pools on any supported sidechain.
  *      1.  Owner must configure gaugeTypes mapping (lzChainId => balancer gauge type)
  *      2.  User most provide a root gauge address and the layer zero chain id, with enought
  *          native fee to be able to add a pool on the destination chain.
