@@ -126,7 +126,7 @@ async function checkChain(chainId: ChainToCheck) {
         // checking the ownership
         console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
         const owned = "owner" in contract || "operator" in contract;
-        if (owned) {
+        if (owned && contract.address !== sideChain.keeperMulticall3.address) {
             try {
                 const ownerFn = "owner" in contract ? "owner" : "operator";
                 const owner = await (contract as any)[ownerFn]().then((o: string) => o.toLowerCase());
