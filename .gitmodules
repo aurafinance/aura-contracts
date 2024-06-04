@@ -1,3 +1,4 @@
 [submodule "convex-platform"]
 	path = convex-platform
 	url = https://github.com/aurafinance/convex-platform
+	branch = feat/feeManager

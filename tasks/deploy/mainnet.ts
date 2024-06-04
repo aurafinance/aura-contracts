@@ -4,7 +4,7 @@ import { TaskArguments } from "hardhat/types";
 import { logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
 import {
-    deployCrvDepositorWrapperForwarder,
+    deployCrvDepositorWrapperForwarderV2,
     deployPhase1,
     deployPhase2,
     deployPhase3,
@@ -248,14 +248,14 @@ task("mainnet:siphon").setAction(async function (_: TaskArguments, hre) {
     await waitForTx(tx, debug, waitForBlocks);
 });
 
-task("deploy:mainnet:crvDepositorWrapperForwarder")
+task("deploy:mainnet:crvDepositorWrapperForwarderV2")
     .addParam("pid", "The forward to address, ie, stash address")
     .setAction(async function (taskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
         const { stashRewardDistro } = config.getGaugeVoteRewards(deployer);
 
-        const { crvDepositorWrapperForwarder } = await deployCrvDepositorWrapperForwarder(
+        const { crvDepositorWrapperForwarderV2 } = await deployCrvDepositorWrapperForwarderV2(
             hre,
             deployer,
             { ...phase2, stashRewardDistro, pid: Number.parseInt(taskArgs.pid) },
@@ -263,5 +263,5 @@ task("deploy:mainnet:crvDepositorWrapperForwarder")
             true,
             1,
         );
-        logContracts({ crvDepositorWrapperForwarder });
+        logContracts({ crvDepositorWrapperForwarderV2 });
     });
