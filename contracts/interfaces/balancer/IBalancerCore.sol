@@ -150,6 +150,15 @@ interface IBalancerPool {
     function totalSupply() external view returns (uint256);
 
     function balanceOf(address account) external view returns (uint256);
+
+    function getAmplificationParameter()
+        external
+        view
+        returns (
+            uint256,
+            bool,
+            uint256
+        );
 }
 
 interface ILBPFactory {

@@ -50,7 +50,7 @@ contract MockBalancerVault {
         bytes32, /* poolId */
         address sender,
         address recipient,
-        IBalancerVault.ExitPoolRequest memory request
+        IBalancerVault.ExitPoolRequest memory /* request */
     ) external payable {
         uint256 amount = MockBalancerPoolToken(poolToken).balanceOf(msg.sender);
         uint256 price = MockBalancerPoolToken(poolToken).price();
@@ -65,17 +65,9 @@ contract MockBalancerVault {
         uint256, /* limit */
         uint256 /* deadline */
     ) external returns (uint256 amountCalculated) {
-        require(address(singleSwap.assetOut) == tokenA || address(singleSwap.assetOut) == tokenB, "!token");
+        IERC20(address(singleSwap.assetIn)).transferFrom(funds.sender, address(this), singleSwap.amount);
+        IERC20(address(singleSwap.assetOut)).transfer(funds.recipient, singleSwap.amount);
 
-        if (address(singleSwap.assetOut) == tokenA) {
-            // send tokenA
-            IERC20(tokenB).transferFrom(funds.sender, address(this), singleSwap.amount);
-            IERC20(tokenA).transfer(funds.recipient, singleSwap.amount);
-        } else if (address(singleSwap.assetOut) == tokenB) {
-            // send tokenB
-            IERC20(tokenA).transferFrom(funds.sender, address(this), singleSwap.amount);
-            IERC20(tokenB).transfer(funds.recipient, singleSwap.amount);
-        }
         return singleSwap.amount;
     }
 
@@ -95,5 +87,25 @@ contract MockBalancerVault {
 
         IERC20(assetIn).transferFrom(funds.sender, address(this), amount);
         IERC20(assetOut).transfer(funds.recipient, amount);
+    }
+
+    function getPoolTokens(bytes32 poolId)
+        external
+        view
+        returns (
+            address[] memory tokens,
+            uint256[] memory balances,
+            uint256 lastChangeBlock
+        )
+    {
+        tokens = new address[](2);
+        balances = new uint256[](2);
+        tokens[0] = tokenA;
+        tokens[1] = tokenB;
+
+        balances[0] = IERC20(tokenA).balanceOf(address(this));
+        balances[1] = IERC20(tokenB).balanceOf(address(this));
+
+        lastChangeBlock = block.timestamp;
     }
 }

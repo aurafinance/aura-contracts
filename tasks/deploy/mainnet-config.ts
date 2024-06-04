@@ -304,6 +304,7 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     },
     arbitratorVault: ArbitratorVault__factory.connect("0x5d208cD54f5132f2BD0c1F1e8d8c864Bb6BEdc40", deployer),
     cvxCrv: CvxCrvToken__factory.connect("0x616e8BfA43F920657B3497DBf40D6b1A02D4608d", deployer),
+
     cvxCrvBpt: {
         poolId: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd000200000000000000000249",
         address: "0x3dd0843a028c86e0b760b1a76929d1c5ef93a2dd",
