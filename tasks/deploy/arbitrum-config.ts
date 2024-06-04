@@ -1,7 +1,7 @@
 import { Provider } from "@ethersproject/providers";
 import { Signer } from "ethers";
 import { chainIds } from "../../tasks/utils";
-import { ZERO_ADDRESS } from "../../test-utils";
+import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
