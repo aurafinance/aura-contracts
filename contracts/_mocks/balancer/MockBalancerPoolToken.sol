@@ -46,4 +46,16 @@ contract MockBalancerPoolToken is ERC20("MockBPT", "MockBPT") {
         results[0] = price;
         return results;
     }
+
+    function getAmplificationParameter()
+        external
+        pure
+        returns (
+            uint256,
+            bool,
+            uint256
+        )
+    {
+        return (5000, true, 1);
+    }
 }

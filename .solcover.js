@@ -37,6 +37,7 @@ module.exports = {
         "sidechain/OptimismBridgeSender.sol",
         "sidechain/TestDistributeAura.sol",
         "sidechain/peripheral/SidechainClaimZap.sol",
+        "contracts/utils/balancer",
     ],
     configureYulOptimizer: true,
 };
