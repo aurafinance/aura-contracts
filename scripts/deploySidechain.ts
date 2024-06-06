@@ -1181,10 +1181,6 @@ export async function deploySidechainAuraLocker(
         [naming.vlCvxName, naming.vlCvxSymbol, sidechain.auraOFT.address, ZERO_ADDRESS, ZERO_ADDRESS],
         deployOptionsWithCallbacks([cvxLockerTransferOwnership]),
     );
-    if ((await cvxLocker.cvxCrv()) !== ZERO_ADDRESS) {
-        const tx = await cvxLocker.setApprovals();
-        await waitForTx(tx, debug, waitForBlocks);
-    }
 
     return { cvxLocker };
 }

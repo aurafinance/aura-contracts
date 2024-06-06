@@ -1,6 +1,5 @@
 import { Signer } from "ethers";
 import { chainIds } from "../../tasks/utils";
-import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
@@ -67,16 +66,16 @@ export const getSidechain = (signer: Signer | Provider) => ({
     poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
     l2Coordinator: L2Coordinator__factory.connect("0x8b2970c237656d3895588B99a8bFe977D5618201", signer),
     auraOFT: AuraOFT__factory.connect("0x1509706a6c66CA549ff0cB464de88231DDBe213B", signer),
-    auraBalOFT: AuraBalOFT__factory.connect(ZERO_ADDRESS, signer),
+    auraBalOFT: AuraBalOFT__factory.connect("0x223738a747383d6F9f827d95964e4d8E8AC754cE", signer),
     factories: {
         rewardFactory: RewardFactory__factory.connect("0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0", signer),
         stashFactory: StashFactoryV2__factory.connect("0x60D6439631CC6f60ED15c07783B4c7848F87c84c", signer),
         tokenFactory: TokenFactory__factory.connect("0x87299312C820607f1E7E4d0c6715CEB594306FE9", signer),
         proxyFactory: ProxyFactory__factory.connect("0x731886426a3199b988194831031dfb993F25D961", signer),
     },
-    virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
-    auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
-    auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    virtualRewardFactory: VirtualRewardFactory__factory.connect("0x05589CbbE1cC0357986DF6de4031B953819079c2", signer),
+    auraBalVault: AuraBalVault__factory.connect("0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9", signer),
+    auraBalStrategy: SimpleStrategy__factory.connect("0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb", signer),
     cvxLocker: AuraLocker__factory.connect("0x9e1f4190f1a8Fe0cD57421533deCB57F9980922e", signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),

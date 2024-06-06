@@ -1,3 +1,7 @@
 {
-    "auraLocker (vlAURA)": "0x9e1f4190f1a8Fe0cD57421533deCB57F9980922e"
+    "auraLocker (vlAURA)": "0x9e1f4190f1a8Fe0cD57421533deCB57F9980922e",
+    "auraBalOFT": "0x223738a747383d6F9f827d95964e4d8E8AC754cE",
+    "virtualRewardFactory": "0x05589CbbE1cC0357986DF6de4031B953819079c2",
+    "auraBalVault": "0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9",
+    "auraBalStrategy": "0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb"
 }
