@@ -35,6 +35,9 @@ export const networkLabels = {
 export const symbolOverrides = {
     "0x9559aaa82d9649c7a7b220e7c461d2e74c9a3593": "StaFi rETH",
     "0xd103dd49b8051a09b399a52e9a8ab629392de2fb": "p-Gyroe WMATIC/stMATIC",
+    "0xa2f8bd6b95a0cb9094206075504cd0ed1cc717be": "Gyroe GHO/USDC (0xa2)",
+    "0x80aef246f9926b52622f4e74cdc7acb5c4344ffe": "Gyroe GHO/USDC (0x80)",
+    "0xa4daa3498677d655e359b0fc83ebdbd8dbf76a50": "a-ComposableStable StaFi rETH/WETH",
 };
 
 export const priorityGuagesAddresses = [
