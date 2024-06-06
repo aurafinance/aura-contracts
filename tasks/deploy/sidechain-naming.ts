@@ -6,4 +6,6 @@ export const sidechainNaming: SidechainNaming = {
     auraBalOftName: "Aura BAL",
     auraBalOftSymbol: "auraBAL",
     tokenFactoryNamePostfix: " Aura Deposit",
+    vlCvxName: "Vote Locked Aura",
+    vlCvxSymbol: "vlAURA",
 };
