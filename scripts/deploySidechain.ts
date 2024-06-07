@@ -16,6 +16,8 @@ import {
     AuraBalVault__factory,
     AuraDistributor,
     AuraDistributor__factory,
+    AuraLocker,
+    AuraLocker__factory,
     AuraOFT,
     AuraOFT__factory,
     AuraProxyOFT,
@@ -1244,4 +1246,48 @@ export async function deploySidechainPhase4(
     );
 
     return { l2PoolManagerProxy };
+}
+
+export async function deploySidechainAuraLocker(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: SidechainMultisigConfig,
+    naming: SidechainNaming,
+    extConfig: ExtSidechainConfig,
+    sidechain: SidechainPhase1Deployed,
+    debug = false,
+    waitForBlocks = 0,
+    salt: string = SALT,
+): Promise<{ cvxLocker: AuraLocker }> {
+    const create2Options = { amount: 0, salt, callbacks: [] };
+    const deployOptions = {
+        overrides: {},
+        create2Options,
+        debug,
+        waitForBlocks,
+    };
+
+    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
+        ...deployOptions,
+        create2Options: {
+            ...create2Options,
+            callbacks: [...callbacks],
+        },
+    });
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const cvxLockerTransferOwnership = AuraLocker__factory.createInterface().encodeFunctionData("transferOwnership", [
+        multisigs.daoMultisig,
+    ]);
+    const cvxLocker = await deployContractWithCreate2<AuraLocker, AuraLocker__factory>(
+        hre,
+        create2Factory,
+        new AuraLocker__factory(signer),
+        "AuraLocker",
+        [naming.vlCvxName, naming.vlCvxSymbol, sidechain.auraOFT.address, ZERO_ADDRESS, ZERO_ADDRESS],
+        deployOptionsWithCallbacks([cvxLockerTransferOwnership]),
+    );
+
+    return { cvxLocker };
 }

@@ -49,6 +49,8 @@ import {
     CrvDepositorWrapper__factory,
     CrvDepositorWrapperForwarder,
     CrvDepositorWrapperForwarder__factory,
+    CrvDepositorWrapperForwarderV2,
+    CrvDepositorWrapperForwarderV2__factory,
     CrvDepositorWrapperWithFee,
     CrvDepositorWrapperWithFee__factory,
     CvxCrvToken,
@@ -1713,6 +1715,38 @@ async function deployCrvDepositorWrapperForwarder(
         crvDepositorWrapperForwarder,
     };
 }
+async function deployCrvDepositorWrapperForwarderV2(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    phase2Extended: Phase2Deployed & { stashRewardDistro: StashRewardDistro; pid: number },
+    config: ExtSystemConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ crvDepositorWrapperForwarderV2: CrvDepositorWrapperForwarderV2 }> {
+    const { cvxCrv, stashRewardDistro, pid, cvxCrvBpt } = phase2Extended;
+
+    const crvDepositorWrapperForwarderV2 = await deployContract<CrvDepositorWrapperForwarderV2>(
+        hre,
+        new CrvDepositorWrapperForwarderV2__factory(signer),
+        "CrvDepositorWrapperForwarderV2",
+        [
+            config.balancerVault,
+            config.token,
+            config.weth,
+            config.balancerPoolId,
+            cvxCrv.address,
+            cvxCrvBpt.poolId,
+            stashRewardDistro.address,
+            pid,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    return {
+        crvDepositorWrapperForwarderV2,
+    };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1730,6 +1764,7 @@ export {
     Phase4Deployed,
     deployTempBooster,
     deployCrvDepositorWrapperForwarder,
+    deployCrvDepositorWrapperForwarderV2,
     deployPhase5,
     Phase5Deployed,
     deployPhase6,

@@ -4,6 +4,7 @@ import { ZERO_ADDRESS } from "../../test-utils/constants";
 import {
     AuraBalOFT__factory,
     AuraBalVault__factory,
+    AuraLocker__factory,
     AuraOFT__factory,
     BoosterHelper__factory,
     BoosterLite__factory,
@@ -72,6 +73,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    cvxLocker: AuraLocker__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
     boosterHelper: BoosterHelper__factory.connect("0x138f951c141C2F34c1001258cD95DfeEaC26bb8A", signer),
@@ -79,7 +81,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
 });
 
-export const getView = (signer: Signer) => ({
+export const getView = (signer: Signer | Provider) => ({
     sidechainView: SidechainView__factory.connect("0x739B0c838E47A28877cAEF270DF0407FE5C62502", signer),
 });
 

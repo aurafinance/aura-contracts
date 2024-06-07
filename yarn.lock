@@ -10,6 +10,7 @@ __metadata:
   resolution: "@aurafinance/aura-contracts@workspace:."
   dependencies:
     "@balancer-labs/balancer-js": ^1.0.1
+    "@balancer-labs/v2-solidity-utils": ^4.0.0
     "@codechecks/client": ^0.1.12
     "@commitlint/cli": ^19.2.1
     "@commitlint/config-conventional": ^19.1.0
@@ -116,6 +117,22 @@ __metadata:
     "@ethersproject/constants": ^5.4.0
     "@ethersproject/contracts": ^5.4.0
   checksum: b459bdfb0bc11ea9008473ecbe710885c75056797db5c986c84587892f3aa29ba260458a03c16250452a203ccfd126489bbde982db39b9deffe62ae3ab3683bd
+  languageName: node
+  linkType: hard
+
+"@balancer-labs/v2-interfaces@npm:0.4.0":
+  version: 0.4.0
+  resolution: "@balancer-labs/v2-interfaces@npm:0.4.0"
+  checksum: dd774a51c1020bbfc4dadb5e0ba948f47bcc6f9f3631bc14044058e409da8c207770d78af78e7a272774a4f7230c466a27a722fb01e440a1bf17af04140fef95
+  languageName: node
+  linkType: hard
+
+"@balancer-labs/v2-solidity-utils@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "@balancer-labs/v2-solidity-utils@npm:4.0.0"
+  dependencies:
+    "@balancer-labs/v2-interfaces": 0.4.0
+  checksum: 476440a435488511372e6252a1595e04ca9f93544d16bf56a7fd3117643cfb150f904455edb1e62b00ce9b110c19f9ba5b9b411de6cb8089876fe5a3617bda7f
   languageName: node
   linkType: hard
 

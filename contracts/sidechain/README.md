@@ -246,26 +246,30 @@ yarn task sidechhain:test:lock-aura --wait <WAIT_N_BLOCKS> --amount <AMOUNT_TO_L
 
 #### Base (8453)
 
-| Contract          | Address                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
-| voterProxy        | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://basescan.org/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
-| booster           | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://basescan.org/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
-| keeperMulticall3  | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://basescan.org/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
-| boosterOwner      | [0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc](https://basescan.org/address/0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc) |
-| poolManager       | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://basescan.org/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
-| l2Coordinator     | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://basescan.org/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
-| auraOFT           | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://basescan.org/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
-| rewardFactory     | [0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0](https://basescan.org/address/0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0) |
-| stashFactory      | [0x60D6439631CC6f60ED15c07783B4c7848F87c84c](https://basescan.org/address/0x60D6439631CC6f60ED15c07783B4c7848F87c84c) |
-| tokenFactory      | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://basescan.org/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
-| proxyFactory      | [0x731886426a3199b988194831031dfb993F25D961](https://basescan.org/address/0x731886426a3199b988194831031dfb993F25D961) |
-| sidechainView     | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://basescan.org/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1  |
-| keeperMulticall3  | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://basescan.org/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
-| ClaimZap          | [0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d](https://basescan.org/address/0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d) |
-| stashRewardDistro | [0xcA85e2cE206b48ee28A87b0a06f9519ABE627451](https://basescan.org/address/0xcA85e2cE206b48ee28A87b0a06f9519ABE627451) |
-| gaugeVoteRewards  | [0x2863582272A424234FcE76d97099AcBd432acC01](https://basescan.org/address/0x2863582272A424234FcE76d97099AcBd432acC01) |
-| rewardDepositor   | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://basescan.org/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
-| AuraViewHelper    | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](https://basescan.org/address/0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146) |
+| Contract              | Address                                                                                                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| voterProxy            | [0xC181Edc719480bd089b94647c2Dc504e2700a2B0](https://basescan.org/address/0xC181Edc719480bd089b94647c2Dc504e2700a2B0) |
+| booster               | [0x98Ef32edd24e2c92525E59afc4475C1242a30184](https://basescan.org/address/0x98Ef32edd24e2c92525E59afc4475C1242a30184) |
+| keeperMulticall3      | [0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd](https://basescan.org/address/0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd) |
+| boosterOwner          | [0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc](https://basescan.org/address/0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc) |
+| poolManager           | [0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71](https://basescan.org/address/0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71) |
+| l2Coordinator         | [0x8b2970c237656d3895588B99a8bFe977D5618201](https://basescan.org/address/0x8b2970c237656d3895588B99a8bFe977D5618201) |
+| auraOFT               | [0x1509706a6c66CA549ff0cB464de88231DDBe213B](https://basescan.org/address/0x1509706a6c66CA549ff0cB464de88231DDBe213B) |
+| rewardFactory         | [0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0](https://basescan.org/address/0x334Df252CC0C44C37Ba85DbeAa9c230C3f22f6b0) |
+| stashFactory          | [0x60D6439631CC6f60ED15c07783B4c7848F87c84c](https://basescan.org/address/0x60D6439631CC6f60ED15c07783B4c7848F87c84c) |
+| tokenFactory          | [0x87299312C820607f1E7E4d0c6715CEB594306FE9](https://basescan.org/address/0x87299312C820607f1E7E4d0c6715CEB594306FE9) |
+| proxyFactory          | [0x731886426a3199b988194831031dfb993F25D961](https://basescan.org/address/0x731886426a3199b988194831031dfb993F25D961) |
+| sidechainView         | [0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1](https://basescan.org/address/0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1  |
+| keeperMulticall3      | [0x5C97f09506d60B90a817EB547ea4F03Ae990E798](https://basescan.org/address/0x5C97f09506d60B90a817EB547ea4F03Ae990E798) |
+| AuraBalOFT            | [0x223738a747383d6F9f827d95964e4d8E8AC754cE](https://basescan.org/address/0x223738a747383d6F9f827d95964e4d8E8AC754cE) |
+| AuraBalVault          | [0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9](https://basescan.org/address/0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9) |
+| AuraBalStrategy       | [0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb](https://basescan.org/address/0x4B5D2848678Db574Fbc2d2f629143d969a4f41Cb) |
+| VirtualRewardsFactory | [0x05589CbbE1cC0357986DF6de4031B953819079c2](https://basescan.org/address/0x05589CbbE1cC0357986DF6de4031B953819079c2) |
+| ClaimZap              | [0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d](https://basescan.org/address/0x5a5094e2a2a4c1B48a6630138a3b1076eC00B10d) |
+| stashRewardDistro     | [0xcA85e2cE206b48ee28A87b0a06f9519ABE627451](https://basescan.org/address/0xcA85e2cE206b48ee28A87b0a06f9519ABE627451) |
+| gaugeVoteRewards      | [0x2863582272A424234FcE76d97099AcBd432acC01](https://basescan.org/address/0x2863582272A424234FcE76d97099AcBd432acC01) |
+| rewardDepositor       | [0xa9952C914D86f896c53Bf17125c4104Cc058008E](https://basescan.org/address/0xa9952C914D86f896c53Bf17125c4104Cc058008E) |
+| AuraViewHelper        | [0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146](0xcE66E8300dC1d1F5b0e46E9145fDf680a7E41146)                              |
 
 ### zkevm (1101)
 
