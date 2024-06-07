@@ -34,6 +34,7 @@ import {
     setTrustedRemoteCanonicalPhase1,
     setTrustedRemoteCanonicalPhase2,
     setTrustedRemoteCanonicalPhase3,
+    setTrustedRemoteCanonicalPhase4,
 } from "../../scripts/deploySidechain";
 import { deploySidechainMocks } from "../../scripts/deploySidechainMocks";
 import { chainIds, waitForTx } from "../../tasks/utils";
@@ -195,7 +196,6 @@ task("deploy:sidechain:L1:phase4")
         const result = await deployCanonicalPhase4(
             hre,
             deployer,
-            config.multisigs,
             config.addresses,
             canonicalChainId,
             debug,
@@ -447,8 +447,8 @@ task("deploy:sidechain:L2:phase4")
 ---------------------------------------------------------------------------- */
 
 const setupCanonicalTask = (deployer: Signer, network: HardhatRuntimeEnvironment["network"], sidechainId: number) => {
-    assert(canonicalChains.includes(network.config.chainId), "Must be canonical chain");
-    assert(sideChains.includes(sidechainId), "Must be sidechain chain");
+    assert(canonicalChains.includes(network.config.chainId), `Must be canonical chain ${network.config.chainId}`);
+    assert(sideChains.includes(sidechainId), `Must be sidechain chain ${sidechainId}`);
 
     const canonicalConfig = canonicalConfigs[network.config.chainId];
     assert(canonicalConfig, `Local config for chain ID ${network.config.chainId} not found`);
@@ -588,13 +588,48 @@ task("deploy:sidechain:config:L1:phase3")
             tskArgs.wait,
         );
     });
+
+task("deploy:sidechain:config:L1:phase4")
+    .addParam("wait", "Wait for blocks")
+    .addOptionalParam<string>(
+        "sidechainids",
+        "Remote standard chain ID, separated by ',', eg Eth Base,Optimism is 8453,10",
+        "8453,43114,1101,10,42161,137,100",
+    )
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        // NOTICE: This task can only be run for the first deployment, future deployments
+        // will have to be triggered via the protocol DAO which will be the owner
+        // of the mainnet sidechain deployment
+        const deployer = await getSigner(hre);
+        const sidechainIds: string[] = (tskArgs.sidechainids as string).split(",");
+        for (let i = 0; i < sidechainIds.length; i++) {
+            const sidechainId = Number(sidechainIds[i]);
+            const transferOwnership = i == sidechainIds.length - 1;
+
+            const { canonicalConfig, canonical, remote, sidechainLzChainId } = setupCanonicalTask(
+                deployer,
+                hre.network,
+                sidechainId,
+            );
+
+            await setTrustedRemoteCanonicalPhase4(
+                canonical,
+                remote,
+                sidechainLzChainId,
+                canonicalConfig.multisigs,
+                transferOwnership,
+                debug,
+                tskArgs.wait,
+            );
+        }
+    });
 /* ----------------------------------------------------------------------------
     Helper Tasks
 ---------------------------------------------------------------------------- */
 
 task("deploy:sidechain:auraDistributor")
     .addParam("wait", "Wait for blocks")
-    .addParam("canonicalchainid", "Wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const canonicalId = Number(tskArgs.canonicalchainid);

@@ -78,7 +78,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
     boosterHelper: BoosterHelper__factory.connect("0x138f951c141C2F34c1001258cD95DfeEaC26bb8A", signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
-    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect("0x4963c9d5DED5CA0e0ac05dCEA19Da2cc48772e99", signer),
 });
 
 export const getView = (signer: Signer | Provider) => ({

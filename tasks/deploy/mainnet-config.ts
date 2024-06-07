@@ -51,7 +51,6 @@ import {
     FeeForwarder__factory,
     AuraBalVault__factory,
     AuraBalStrategy__factory,
-    BalancerSwapsHandler__factory,
     AuraBalVault,
     AuraBalStrategy,
     BalancerSwapsHandler,
@@ -68,11 +67,12 @@ import {
     StashRewardDistro__factory,
     UniswapRouterHandler__factory,
     UniswapRouterHandler,
+    L1PoolManagerProxy__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, CanonicalPhase3Deployed } from "scripts/deploySidechain";
+import { CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { parseEther } from "ethers/lib/utils";
 import { chainIds } from "../../tasks/utils";
 
@@ -438,14 +438,13 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
-const getSidechain = (
-    deployer: Signer,
-): CanonicalPhase1Deployed & CanonicalPhase2Deployed & CanonicalPhase3Deployed => ({
+const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect(ZERO_ADDRESS, deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({

@@ -186,13 +186,12 @@ export const deployL1 = async (
     const canonicalPhase4 = await deployCanonicalPhase4(
         hre,
         deployer.signer,
-        l1Multisigs,
         l1Mocks.addresses,
         canonicalChainId,
         debug,
         waitForBlocks,
     );
-
+    await canonicalPhase4.l1PoolManagerProxy.transferOwnership(l1Multisigs.daoMultisig);
     await phase6.boosterOwner.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
     // await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
 

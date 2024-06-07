@@ -81,6 +81,7 @@ import {
     SidechainPhaseDeployed,
 } from "../types/sidechain-types";
 import { ExtSystemConfig, MultisigConfig, Phase2Deployed, Phase6Deployed } from "./deploySystem";
+import assert from "assert";
 
 const SALT = "berlin";
 
@@ -98,6 +99,10 @@ export interface CanonicalPhase3Deployed {
 export interface CanonicalPhase4Deployed {
     l1PoolManagerProxy: L1PoolManagerProxy;
 }
+export type CanonicalPhaseDeployed = CanonicalPhase1Deployed &
+    CanonicalPhase2Deployed &
+    CanonicalPhase3Deployed &
+    CanonicalPhase4Deployed;
 
 interface Factories {
     rewardFactory: RewardFactory;
@@ -289,12 +294,12 @@ export async function deployCanonicalPhase3(
 export async function deployCanonicalPhase4(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
-    multisigs: MultisigConfig,
     extConfig: ExtSystemConfig,
     canonicalLzChainId: number,
     debug = false,
     waitForBlocks = 0,
 ): Promise<CanonicalPhase4Deployed> {
+    //  Deployer: l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
     //  Protocol DAO : l1PoolManagerProxy.setTrustedRemote(L2_CHAIN_ID, [l2PoolManagerProxy.address, l1PoolManagerProxy.address]);
     //  Protocol DAO : l1PoolManagerProxy.setGaugeTypes(LZ_CHAIN_ID, BALANCER_GAUGE_TYPE);
     const l1PoolManagerProxy = await deployContract<L1PoolManagerProxy>(
@@ -325,9 +330,6 @@ export async function deployCanonicalPhase4(
     await waitForTx(tx, debug, waitForBlocks);
 
     tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.zkevm], "Zkevm");
-    await waitForTx(tx, debug, waitForBlocks);
-
-    tx = await l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
     return { l1PoolManagerProxy };
@@ -879,7 +881,33 @@ export async function setTrustedRemoteCanonicalPhase3(
     tx = await canonical.gaugeVoteRewards.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 }
+export async function setTrustedRemoteCanonicalPhase4(
+    canonical: CanonicalPhase4Deployed,
+    sidechain: SidechainPhase4Deployed,
+    sidechainLzChainId: number,
+    multisigs: MultisigConfig,
+    transferOwnership = false,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    assert(canonical.l1PoolManagerProxy.address !== ZERO_ADDRESS, "l1PoolManagerProxy.address cannot be ZERO_ADDRESS");
+    assert(sidechain.l2PoolManagerProxy.address !== ZERO_ADDRESS, "l2PoolManagerProxy.address cannot be ZERO_ADDRESS");
 
+    const remotePath = [sidechain.l2PoolManagerProxy.address, canonical.l1PoolManagerProxy.address];
+    console.log(`\n~~~~~~~~~~~~~~~~~~~~~~~~~~~`);
+    console.log(`~~~~ l1PoolManagerProxy.setTrustedRemote(${sidechainLzChainId}, ${remotePath}) ~~~~\n`);
+
+    const tx = await canonical.l1PoolManagerProxy.setTrustedRemote(
+        sidechainLzChainId,
+        ethers.utils.solidityPack(["address", "address"], remotePath),
+    );
+    await waitForTx(tx, debug, waitForBlocks);
+
+    if (transferOwnership) {
+        const tx = await canonical.l1PoolManagerProxy.transferOwnership(multisigs.daoMultisig);
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+}
 export async function deploySidechainClaimZap(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,

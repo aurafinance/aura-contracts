@@ -32,7 +32,6 @@ import {
     VoterProxyLite__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
-import { ZERO_ADDRESS } from "../../test-utils";
 
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
@@ -84,7 +83,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
     boosterHelper: BoosterHelper__factory.connect("0x33543500d44Bb9182C807eD08ee6FA9d457B4c42", signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
-    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect("0x4963c9d5DED5CA0e0ac05dCEA19Da2cc48772e99", signer),
 });
 
 export const getView = (signer: Signer | Provider) => ({
