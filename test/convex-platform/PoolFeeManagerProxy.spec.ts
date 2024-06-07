@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { ethers } from "hardhat";
 import { Account } from "types";
-import { deployMocks, DeployMocksResult } from "../../scripts/deployMocks";
+import { DeployMocksResult } from "../../scripts/deployMocks";
 import { deployPhase9 } from "../../scripts/deploySystem";
 import { deployContract } from "../../tasks/utils";
 import { DEAD_ADDRESS, impersonateAccount, ZERO, ZERO_ADDRESS } from "../../test-utils";
