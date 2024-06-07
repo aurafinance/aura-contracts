@@ -675,16 +675,21 @@ task("deploy:sidechain:safe")
 
 task("deploy:sidechain:L2:view")
     .addParam("wait", "Blocks to wait")
+    .addOptionalParam("debug", "Debug", "true")
+    .addOptionalParam<string>("salt", "Create 2 Salt")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const remoteChainId = hre.network.config.chainId;
-        const sidechainConfig = sidechainConfigs[remoteChainId].getSidechain(deployer);
+        const sidechainConfig = sidechainConfigs[remoteChainId];
+        const sidechain = sidechainConfig.getSidechain(deployer);
         const result = await deploySidechainView(
             hre,
             deployer,
+            sidechainConfig.extConfig,
             lzChainIds[remoteChainId],
-            sidechainConfig,
-            true,
+            sidechain,
+            tskArgs.salt,
+            tskArgs.debug,
             tskArgs.wait,
         );
 

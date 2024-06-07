@@ -3,7 +3,12 @@ import { toUtf8Bytes } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { AuraBalVaultDeployed } from "tasks/deploy/mainnet-config";
 
-import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils/deploy-utils";
+import {
+    create2OptionsWithCallbacks,
+    deployContract,
+    deployContractWithCreate2,
+    waitForTx,
+} from "../tasks/utils/deploy-utils";
 import { ZERO_ADDRESS } from "../test-utils/constants";
 import {
     AuraBalOFT,
@@ -336,20 +341,9 @@ export async function deploySidechainPhase1(
     //         Deployer: keeperMulticall3.transferOwnership(protocolDAO.address)
     // -----------------------------
 
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
-        ...deployOptions,
-        create2Options: {
-            ...create2Options,
-            callbacks: [...callbacks],
-        },
-    });
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const deployOptions = deployOptionsWithCallbacks([]);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
     const voterProxyInitialize = VoterProxyLite__factory.createInterface().encodeFunctionData("initialize", [
@@ -616,20 +610,9 @@ export async function deploySidechainPhase2(
     //         Protocol DAO : auraBalOFT.setTrustedRemote(L1_CHAIN_ID, [auraBalProxyOFT.address, auraBalOFT.address]);
     // -----------------------------
 
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
-        ...deployOptions,
-        create2Options: {
-            ...create2Options,
-            callbacks: [...callbacks],
-        },
-    });
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const deployOptions = deployOptionsWithCallbacks([]);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
 
@@ -829,21 +812,8 @@ export async function deploySidechainClaimZap(
     waitForBlocks = 0,
     salt: string = SALT,
 ): Promise<{ sidechainClaimZap: SidechainClaimZap }> {
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-
-    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
-        ...deployOptions,
-        create2Options: {
-            ...create2Options,
-            callbacks: [...callbacks],
-        },
-    });
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
 
@@ -873,13 +843,21 @@ export async function deploySidechainClaimZap(
 export async function deploySidechainView(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    extConfig: ExtSidechainConfig,
     sidechainId: number,
     sidechain: SidechainPhaseDeployed,
+    salt: string = SALT,
     debug = false,
     waitForBlocks = 0,
 ) {
-    const sidechainView = await deployContract<SidechainView>(
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
+    const sidechainView = await deployContractWithCreate2<SidechainView, SidechainView__factory>(
         hre,
+        create2Factory,
         new SidechainView__factory(signer),
         "SidechainView",
         [
@@ -889,19 +867,17 @@ export async function deploySidechainView(
             sidechain.auraBalOFT.address || ZERO_ADDRESS,
             sidechain.auraBalStrategy.address || ZERO_ADDRESS,
         ],
-        {},
-        debug,
-        waitForBlocks,
+        deployOptionsWithCallbacks(),
     );
-    const auraViewHelpers = await deployContract<AuraViewHelpersLite>(
+    const auraViewHelpers = await deployContractWithCreate2<AuraViewHelpersLite, AuraViewHelpersLite__factory>(
         hre,
+        create2Factory,
         new AuraViewHelpersLite__factory(signer),
         "AuraViewHelpersLite",
         [],
-        {},
-        debug,
-        waitForBlocks,
+        deployOptionsWithCallbacks(),
     );
+
     return {
         sidechainView,
         auraViewHelpers,
@@ -949,13 +925,9 @@ export async function deployKeeperMulticall3(
     debug: boolean = false,
     waitForBlocks: number = 0,
 ) {
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const deployOptions = deployOptionsWithCallbacks([]);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
 
@@ -1056,8 +1028,10 @@ export async function deploySidechainPeripherals(
     const { sidechainView } = await deploySidechainView(
         hre,
         signer,
+        extSidechainConfig,
         sidechainLzChainId,
         sidechain,
+        salt,
         debug,
         waitForBlocks,
     );
@@ -1090,20 +1064,9 @@ export async function deploySidechainPhase3(
     debug = false,
     waitForBlocks = 0,
 ): Promise<SidechainPhase3Deployed> {
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
-        ...deployOptions,
-        create2Options: {
-            ...create2Options,
-            callbacks: [...callbacks],
-        },
-    });
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const deployOptions = deployOptionsWithCallbacks([]);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
     // stashRewardDistro
@@ -1152,21 +1115,8 @@ export async function deploySidechainAuraLocker(
     waitForBlocks = 0,
     salt: string = SALT,
 ): Promise<{ cvxLocker: AuraLocker }> {
-    const create2Options = { amount: 0, salt, callbacks: [] };
-    const deployOptions = {
-        overrides: {},
-        create2Options,
-        debug,
-        waitForBlocks,
-    };
-
-    const deployOptionsWithCallbacks = (callbacks: string[]) => ({
-        ...deployOptions,
-        create2Options: {
-            ...create2Options,
-            callbacks: [...callbacks],
-        },
-    });
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
 
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
 

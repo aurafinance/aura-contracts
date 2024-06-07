@@ -58,6 +58,27 @@ contract AuraViewHelpersLite {
         uint256[] extraRewardsEarned;
     }
 
+    struct Locker {
+        uint256 epoch;
+        uint256 totalSupply;
+        uint256 lockedSupply;
+        RewardsData rewardsData;
+    }
+
+    struct LockerAccount {
+        address addr;
+        uint256 total;
+        uint256 unlockable;
+        uint256 locked;
+        uint256 nextUnlockIndex;
+        uint128 rewardPerTokenPaid;
+        uint128 rewards;
+        address delegate;
+        uint256 votes;
+        AuraLocker.LockedBalance[] lockData;
+        AuraLocker.EarnedData[] claimableRewards;
+    }
+
     struct RewardsData {
         uint256 periodFinish;
         uint256 lastUpdateTime;
@@ -121,6 +142,55 @@ contract AuraViewHelpersLite {
             balance: balance,
             balanceOfUnderlying: balanceOfUnderlying,
             extraRewardsEarned: extraRewardsEarned
+        });
+    }
+
+    function getLocker(address _locker) external view returns (Locker memory locker) {
+        AuraLocker auraLocker = AuraLocker(_locker);
+        address rewardToken = auraLocker.cvxCrv();
+        (uint32 periodFinish, uint32 lastUpdateTime, uint96 rewardRate, uint96 rewardPerTokenStored) = auraLocker
+            .rewardData(rewardToken);
+
+        RewardsData memory rewardsData = RewardsData({
+            rewardRate: uint256(rewardRate),
+            rewardPerTokenStored: uint256(rewardPerTokenStored),
+            periodFinish: uint256(periodFinish),
+            lastUpdateTime: uint256(lastUpdateTime),
+            queuedRewards: auraLocker.queuedRewards(rewardToken)
+        });
+
+        locker = Locker({
+            epoch: auraLocker.epochCount(),
+            totalSupply: auraLocker.totalSupply(),
+            lockedSupply: auraLocker.lockedSupply(),
+            rewardsData: rewardsData
+        });
+    }
+
+    function getLockerAccount(address _locker, address _account)
+        external
+        view
+        returns (LockerAccount memory lockerAccount)
+    {
+        AuraLocker auraLocker = AuraLocker(_locker);
+        address cvxCrv = auraLocker.cvxCrv();
+        (, uint112 nextUnlockIndex) = auraLocker.balances(_account);
+        (uint128 rewardPerTokenPaid, uint128 rewards) = auraLocker.userData(cvxCrv, _account);
+        (uint256 total, uint256 unlockable, uint256 locked, AuraLocker.LockedBalance[] memory lockData) = auraLocker
+            .lockedBalances(_account);
+
+        lockerAccount = LockerAccount({
+            addr: _account,
+            total: total,
+            unlockable: unlockable,
+            locked: locked,
+            lockData: lockData,
+            nextUnlockIndex: uint256(nextUnlockIndex),
+            rewardPerTokenPaid: rewardPerTokenPaid,
+            rewards: rewards,
+            delegate: auraLocker.delegates(_account),
+            votes: auraLocker.balanceOf(_account),
+            claimableRewards: auraLocker.claimableRewards(_account)
         });
     }
 

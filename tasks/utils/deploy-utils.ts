@@ -20,7 +20,6 @@ interface DeployCreate2Options {
     debug?: boolean;
     waitForBlocks?: number | undefined;
 }
-
 export const deployContract = async <T extends Contract>(
     _: HardhatRuntimeEnvironment,
     contractFactory: ContractFactory,
@@ -55,6 +54,24 @@ export const deployContract = async <T extends Contract>(
     }
 
     return contract;
+};
+
+export const create2OptionsWithCallbacks = (
+    salt: string,
+    callbacks: string[],
+    debug: boolean = false,
+    waitForBlocks: number = 0,
+): DeployCreate2Options => {
+    return {
+        overrides: {},
+        create2Options: {
+            amount: 0,
+            salt,
+            callbacks: [...callbacks],
+        },
+        debug,
+        waitForBlocks,
+    };
 };
 
 export const deployContractWithCreate2 = async <T extends Contract, F extends ContractFactory>(
