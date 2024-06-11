@@ -73,6 +73,8 @@ import {
     MockERC20,
     MockERC20__factory,
     MockWalletChecker__factory,
+    PoolFeeManagerProxy,
+    PoolFeeManagerProxy__factory,
     PoolManagerProxy,
     PoolManagerProxy__factory,
     PoolManagerSecondaryProxy,
@@ -300,6 +302,9 @@ interface Phase7Deployed {
 interface Phase8Deployed {
     poolManagerV4: PoolManagerV4;
     boosterOwnerSecondary: BoosterOwnerSecondary;
+}
+interface Phase9Deployed {
+    poolFeeManagerProxy: PoolFeeManagerProxy;
 }
 
 export function getPoolAddress(utils: any, receipt: ContractReceipt): string {
@@ -1611,6 +1616,9 @@ async function deployPhase6(
     };
 }
 
+// -----------------------------
+// 7   Deploys MasterChefRewardHook and SiphonToken
+// -----------------------------
 async function deployPhase7(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
@@ -1648,6 +1656,9 @@ async function deployPhase7(
     return { masterChefRewardHook, siphonToken };
 }
 
+// -----------------------------
+// 8   Deploys PoolManagerV4, BoosterOwnerSecondary
+// -----------------------------
 async function deployPhase8(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
@@ -1681,7 +1692,46 @@ async function deployPhase8(
         poolManagerV4,
     };
 }
+/**
+ *   9   Upgrades to PoolFeeManagerProxy
+ *   DAO Txs to execute
+ *
+ *   9.1.- PoolManagerV4.connect(Multisig).setOperator(poolFeeManagerProxy)
+ *
+ *   9.2.- Change the fee manager from Ms to V5
+ *   BoosterOwnerSecondary.connect(Multisig).setFeeManager(poolFeeManagerProxy)
+ *       |- BoosterOwner.connect(BoosterOwnerSecondary).setFeeManager(poolFeeManagerProxy)
+ *       |- Booster.connect(BoosterOwner).setFeeManager(poolFeeManagerProxy)
+ *
+ *   To Revert the changes.
+ *   PoolFeeManagerProxy.connect(poolFeeManagerProxy).setPoolManager(poolManagerV4) => Not able to change
+ *   BoosterOwnerSecondary.connect(Multisig).setFeeManager(Multisig)
+ */
+async function deployPhase9(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    phase8: Phase6Deployed & Phase8Deployed,
+    multisigs: MultisigConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<Phase9Deployed> {
+    const poolFeeManagerProxy = await deployContract<PoolFeeManagerProxy>(
+        hre,
+        new PoolFeeManagerProxy__factory(signer),
+        "PoolFeeManagerProxy",
+        [phase8.poolManagerV4.address, phase8.booster.address, await signer.getAddress()],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    let tx = await poolFeeManagerProxy.setDefaultRewardMultiplier(4000);
+    await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await poolFeeManagerProxy.setOperator(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { poolFeeManagerProxy };
+}
 async function deployCrvDepositorWrapperForwarder(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
@@ -1772,5 +1822,7 @@ export {
     Phase7Deployed,
     deployPhase8,
     Phase8Deployed,
+    deployPhase9,
+    Phase9Deployed,
     PoolsSnapshot,
 };
