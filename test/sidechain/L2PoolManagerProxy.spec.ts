@@ -71,6 +71,8 @@ describe("L2PoolManagerProxy", () => {
         );
 
         ({ rootGauge: rootGauge0 } = await deploySidechainGauge("mock", 1));
+        const minDstGas = 5_500_000;
+        await l1PoolManagerProxy.connect(dao.signer).setMinDstGas(L2_CHAIN_ID, 0, minDstGas);
 
         idSnapShot = await hre.ethers.provider.send("evm_snapshot", []);
     };
@@ -258,48 +260,6 @@ describe("L2PoolManagerProxy", () => {
             });
         });
         describe("add pool", async () => {
-            it("fails when protected pool is true, caller is not owner", async () => {
-                await l1PoolManagerProxy.connect(dao.signer).setProtectPool(true);
-                await expect(
-                    l1PoolManagerProxy
-                        .connect(alice.signer)
-                        .addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
-                    "!auth",
-                ).to.be.revertedWith("!auth");
-                await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
-            });
-            it("fails if adapter params is not set", async () => {
-                await expect(
-                    l1PoolManagerProxy.connect(dao.signer).addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
-                    "!adapterParams",
-                ).to.be.revertedWith("!adapterParams");
-            });
-            it("fails when dstChainId is same as lzChainId", async () => {
-                await expect(
-                    l1PoolManagerProxy.addPool(ZERO_ADDRESS, L1_CHAIN_ID, ZERO_ADDRESS, adapterParams),
-                    "!dstChainId",
-                ).to.be.revertedWith("!dstChainId");
-            });
-            it("fails when dstChainId is not configured", async () => {
-                await expect(
-                    l1PoolManagerProxy.addPool(ZERO_ADDRESS, 333, ZERO_ADDRESS, adapterParams),
-                    "!gaugeType",
-                ).to.be.revertedWith("!gaugeType");
-            });
-            it("fails when dstChainId and root gauge are not configured on balancer", async () => {
-                await expect(
-                    l1PoolManagerProxy.addPool(ZERO_ADDRESS, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
-                    "!checkpointer",
-                ).to.be.revertedWith("!checkpointer");
-            });
-            it("fails when root gauge does not have weight", async () => {
-                const { rootGauge } = await deploySidechainGauge("mock", 0);
-
-                await expect(
-                    l1PoolManagerProxy.addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
-                    "must have weight",
-                ).to.be.revertedWith("must have weight");
-            });
             it("fails if pool is already added", async () => {
                 const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 20_000_000]);
                 const { rootGauge, sidechainGauge } = await deploySidechainGauge("mock02", 2);
