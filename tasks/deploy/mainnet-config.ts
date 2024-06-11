@@ -7,6 +7,7 @@ import {
     Phase6Deployed,
     Phase7Deployed,
     Phase8Deployed,
+    Phase9Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -68,6 +69,7 @@ import {
     UniswapRouterHandler__factory,
     UniswapRouterHandler,
     L1PoolManagerProxy__factory,
+    PoolFeeManagerProxy__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -145,6 +147,7 @@ const addresses: ExtSystemConfig = {
     },
     balancerGaugeFactory: "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65",
     balancerHelpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
+    create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
@@ -412,7 +415,9 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
         deployer,
     ),
 });
-
+const getPhase9 = async (deployer: Signer): Promise<Phase9Deployed> => ({
+    poolFeeManagerProxy: PoolFeeManagerProxy__factory.connect("0xD0521C061958324D06b8915FFDAc3DB22C8Bd687", deployer),
+});
 const getFeeForwarder = async (deployer: Signer) => ({
     feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
 });
@@ -444,7 +449,7 @@ const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
-    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect(ZERO_ADDRESS, deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0x59Ad4f1731cdF4589913f6fCED9B2fF6c8E293A6", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
@@ -471,6 +476,7 @@ export const config = {
     getPhase6,
     getPhase7,
     getPhase8,
+    getPhase9,
     getFeeForwarder,
     getAuraBalVault,
     getAuraClaimZapV3,

@@ -188,12 +188,18 @@ export const deployL1 = async (
         deployer.signer,
         l1Mocks.addresses,
         canonicalChainId,
+        "salt",
         debug,
         waitForBlocks,
     );
+
+    // Simulate current state of deployment
     await canonicalPhase4.l1PoolManagerProxy.transferOwnership(l1Multisigs.daoMultisig);
-    await phase6.boosterOwner.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
-    // await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
+    await phase6.boosterOwner.connect(dao.signer).transferOwnership(phase8.boosterOwnerSecondary.address);
+    await phase8.boosterOwnerSecondary.connect(dao.signer).acceptOwnershipBoosterOwner();
+    await phase8.boosterOwnerSecondary.connect(dao.signer).setVoteDelegate(canonicalPhase3.gaugeVoteRewards.address);
+    await phase6.poolManagerSecondaryProxy.connect(dao.signer).setOperator(phase8.poolManagerV4.address);
+    await phase6.poolManagerSecondaryProxy.connect(dao.signer).setOwner(phase8.poolManagerV4.address);
 
     const canonical = { ...canonicalPhase1, ...canonicalPhase2, ...canonicalPhase3, ...canonicalPhase4 };
 

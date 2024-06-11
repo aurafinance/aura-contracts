@@ -86,6 +86,7 @@ const config: HardhatUserConfig = {
         },
         zkevm: {
             chainId: chainIds.zkevm,
+            gasPrice: 200000000,
             url: process.env.NODE_URL || "",
         },
         blast: {

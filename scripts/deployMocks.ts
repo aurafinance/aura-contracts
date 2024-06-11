@@ -3,6 +3,8 @@ import { parseEther } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract } from "../tasks/utils";
 import {
+    Create2Factory,
+    Create2Factory__factory,
     LZEndpointMock,
     LZEndpointMock__factory,
     MockBalancerPoolToken,
@@ -278,6 +280,16 @@ async function deployMocks(
         {},
         debug,
     );
+    const create2Factory = await deployContract<Create2Factory>(
+        hre,
+        new Create2Factory__factory(signer),
+        "Create2Factory",
+        [],
+        {},
+        debug,
+    );
+
+    await create2Factory.updateDeployer(await signer.getAddress(), true);
 
     // -----------------------------
     // 2 Sidechain
@@ -327,6 +339,7 @@ async function deployMocks(
             },
             balancerPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",
+            create2Factory: create2Factory.address,
             weth: weth.address,
             wethWhale: deployerAddress,
             uniswapRouter: ZERO_ADDRESS,

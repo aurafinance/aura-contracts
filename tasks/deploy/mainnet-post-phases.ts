@@ -11,7 +11,7 @@ import {
     deployFeeScheduler,
     deployVeBalGrant,
 } from "../../scripts/deployPeripheral";
-import { Phase2Deployed } from "../../scripts/deploySystem";
+import { deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 import { deployFeeTokenHandlerV5, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { waitForTx } from "../../tasks/utils";
@@ -33,12 +33,14 @@ import {
     UniswapMigrator__factory,
 } from "../../types/generated";
 import { getSigner } from "../utils";
-import { deployContract } from "../utils/deploy-utils";
+import { deployContract, logContracts } from "../utils/deploy-utils";
 import { config as goerliConfig } from "./goerli-config";
 import { config } from "./mainnet-config";
 
+// Configs
 const waitForBlocks = 2;
 const debug = true;
+const SALT = "3333";
 
 function getPoolAddress(utils: any, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
@@ -338,4 +340,24 @@ task("deploy:mainnet:keeperMulticall3")
         const deployer = await getSigner(hre);
         const result = await deployKeeperMulticall3(hre, deployer, tskArgs.owner, tskArgs.wait);
         console.log("KeeperMulticall3:", result.keeperMulticall3.address);
+    });
+
+task("deploy:mainnet:poolFeeManagerProxy")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase6 = await config.getPhase6(deployer);
+        const phase8 = await config.getPhase8(deployer);
+        const result = await deployPhase9(
+            hre,
+            deployer,
+            config.addresses,
+            { ...phase6, ...phase8 },
+            config.multisigs,
+            SALT,
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
     });
