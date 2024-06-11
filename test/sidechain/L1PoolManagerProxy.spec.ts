@@ -147,6 +147,14 @@ describe("L1PoolManagerProxy", () => {
             const gaugeType = await l1PoolManagerProxy.gaugeTypes(L2_CHAIN_ID);
             expect(gaugeType, "gaugeType").to.be.eq(L2_BALANCER_GAUGE_TYPE);
         });
+        it("DAO - sets minDestination gas on l1PoolManagerProxy", async () => {
+            //   When  config is set.
+            const minDstGas = 5_500_000;
+            await l1PoolManagerProxy.connect(dao.signer).setMinDstGas(L2_CHAIN_ID, 0, minDstGas);
+            // No events
+            const minDstGasLookup = await l1PoolManagerProxy.minDstGasLookup(L2_CHAIN_ID, 0);
+            expect(minDstGasLookup, "minDstGas").to.be.eq(minDstGas);
+        });
         it("DAO - sets setTrustedRemoteAddress on l2PoolManagerProxy", async () => {
             const expectedTrustedRemote = (
                 l1PoolManagerProxy.address + l2PoolManagerProxy.address.slice(2)
@@ -189,7 +197,7 @@ describe("L1PoolManagerProxy", () => {
                 .connect(deployer.signer)
                 .addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
                     value: NATIVE_FEE,
-                    gasLimit: 30_000_000,
+                    gasLimit: 5_500_000,
                 });
             await expect(tx)
                 .to.emit(l1PoolManagerProxy, "AddSidechainPool")
@@ -227,7 +235,7 @@ describe("L1PoolManagerProxy", () => {
                 await expect(
                     l1PoolManagerProxy.connect(dao.signer).addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
                     "!adapterParams",
-                ).to.be.revertedWith("!adapterParams");
+                ).to.be.revertedWith("LzApp: invalid adapterParams");
             });
             it("fails when dstChainId is same as lzChainId", async () => {
                 await expect(

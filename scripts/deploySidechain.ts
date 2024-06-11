@@ -891,10 +891,14 @@ export async function setTrustedRemoteCanonicalPhase4(
     console.log(`\n~~~~~~~~~~~~~~~~~~~~~~~~~~~`);
     console.log(`~~~~ l1PoolManagerProxy.setTrustedRemote(${sidechainLzChainId}, ${remotePath}) ~~~~\n`);
 
-    const tx = await canonical.l1PoolManagerProxy.setTrustedRemote(
+    let tx = await canonical.l1PoolManagerProxy.setTrustedRemote(
         sidechainLzChainId,
         ethers.utils.solidityPack(["address", "address"], remotePath),
     );
+    await waitForTx(tx, debug, waitForBlocks);
+    const msgType = await canonical.l1PoolManagerProxy.PT_SEND();
+
+    tx = await canonical.l1PoolManagerProxy.setMinDstGas(sidechainLzChainId, msgType, 5_500_000); //Min Gas to Add a pool on L2
     await waitForTx(tx, debug, waitForBlocks);
 
     if (transferOwnership) {

@@ -15,6 +15,10 @@ import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeCont
  *          native fee to be able to add a pool on the destination chain.
  */
 contract L1PoolManagerProxy is LzApp {
+    uint256 public constant NO_EXTRA_GAS = 0;
+    // packet type
+    uint16 public constant PT_SEND = 0;
+
     /// @dev LayerZero chain ID for this chain
     uint16 public immutable lzChainId;
     /// @dev Gauge controller address
@@ -87,7 +91,7 @@ contract L1PoolManagerProxy is LzApp {
 
     /**
      * @notice Send a message to add a pool on a sidechain.
-     * @dev Set adapterParams correctly per dstChainId to provide enough has to
+     * @dev Set adapterParams correctly per dstChainId to provide enough gas to
      * add a pool on the destination chain.
      *
      * @param _gauge              The root gauge address.
@@ -105,8 +109,7 @@ contract L1PoolManagerProxy is LzApp {
         if (protectAddPool) {
             require(msg.sender == owner(), "!auth");
         }
-
-        require(_adapterParams.length > 0, "!adapterParams");
+        _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
 
         address dstGauge = IStakelessGauge(_gauge).getRecipient();
         require(dstGauge != address(0), "!dstGauge");
@@ -121,6 +124,15 @@ contract L1PoolManagerProxy is LzApp {
         );
         emit AddSidechainPool(_dstChainId, _gauge, dstGauge);
         return true;
+    }
+
+    function _checkAdapterParams(
+        uint16 _dstChainId,
+        uint16 _pkType,
+        bytes memory _adapterParams,
+        uint256 _extraGas
+    ) internal view {
+        _checkGasLimit(_dstChainId, _pkType, _adapterParams, _extraGas);
     }
 
     function _blockingLzReceive(
