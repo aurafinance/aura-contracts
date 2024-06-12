@@ -11,7 +11,6 @@ import {
     MockERC20__factory,
     MockGaugeCheckpointer,
     MockGaugeCheckpointer__factory,
-    MockStakelessGauge,
     MockStakelessGauge__factory,
 } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
@@ -36,7 +35,6 @@ describe("L2PoolManagerProxy", () => {
     let testSetup: SideChainTestSetup;
     let sidechain: SidechainDeployed;
     let canonical: CanonicalPhaseDeployed;
-    let rootGauge0: MockStakelessGauge;
 
     let idSnapShot: number;
 
@@ -70,7 +68,6 @@ describe("L2PoolManagerProxy", () => {
             deployer.signer,
         );
 
-        ({ rootGauge: rootGauge0 } = await deploySidechainGauge("mock", 1));
         const minDstGas = 5_500_000;
         await l1PoolManagerProxy.connect(dao.signer).setMinDstGas(L2_CHAIN_ID, 0, minDstGas);
 

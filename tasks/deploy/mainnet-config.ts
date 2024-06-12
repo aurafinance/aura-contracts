@@ -449,7 +449,7 @@ const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
-    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0x59Ad4f1731cdF4589913f6fCED9B2fF6c8E293A6", deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0xCAf20AeA17144D9D672CA5c508597f04Dc96Cf4C", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
