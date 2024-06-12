@@ -244,6 +244,12 @@ describe("L2PoolManagerProxy", () => {
                     "onlyOwner",
                 ).to.be.revertedWith(ERRORS.ONLY_OWNER);
             });
+            it("fails setLzAddPoolEnabled, caller is not owner", async () => {
+                await expect(
+                    l2PoolManagerProxy.connect(deployer.signer).setLzAddPoolEnabled(false),
+                    "onlyOwner",
+                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
+            });
             it("fails shutdownSystem, caller is not owner", async () => {
                 await expect(
                     l2PoolManagerProxy.connect(deployer.signer).shutdownSystem(),
@@ -282,6 +288,23 @@ describe("L2PoolManagerProxy", () => {
                     .withArgs(L2_CHAIN_ID, rootGauge.address, sidechainGauge.address);
                 await expect(tx).to.emit(sidechain.l2PoolManagerProxy, "MessageFailed");
                 await expect(tx).to.not.emit(sidechain.booster, "PoolAdded");
+            });
+            it("fails if lz add pool is not enabled", async () => {
+                const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 20_000_000]);
+                const { rootGauge } = await deploySidechainGauge("mock04", 2);
+
+                // Given that lz add pool is not enable
+                await l2PoolManagerProxy.connect(dao.signer).setLzAddPoolEnabled(false);
+
+                const tx = await l1PoolManagerProxy
+                    .connect(dao.signer)
+                    .addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
+                        value: NATIVE_FEE,
+                        gasLimit: 30_000_000,
+                    });
+
+                await expect(tx).to.not.emit(sidechain.booster, "PoolAdded");
+                await expect(tx).to.emit(sidechain.l2PoolManagerProxy, "MessageFailed");
             });
         });
     });

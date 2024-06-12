@@ -16,6 +16,9 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     /// @dev The poolManager address
     address public poolManager;
 
+    /// @dev Indicates if add pool via LZ is enabled or not.
+    bool public isLzAddPoolEnabled;
+
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -29,6 +32,11 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     function initialize(address _lzEndpoint, address _poolManager) external onlyOwner {
         _initializeLzApp(_lzEndpoint);
         _setPoolManager(_poolManager);
+        isLzAddPoolEnabled = true;
+    }
+
+    function setLzAddPoolEnabled(bool _isLzAddPoolEnabled) external onlyOwner {
+        isLzAddPoolEnabled = _isLzAddPoolEnabled;
     }
 
     function setPoolManager(address _poolManager) external onlyOwner {
@@ -95,6 +103,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         bytes memory _payload
     ) internal virtual override {
         address gauge = abi.decode(_payload, (address));
+        require(isLzAddPoolEnabled, "!isLzAddPoolEnabled");
         require(_addPool(gauge), "!addPool");
     }
 }

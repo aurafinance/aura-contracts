@@ -444,26 +444,6 @@ task("deploy:sidechain:L2:phase4")
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
-task("deploy:sidechain:L2:config:phase4")
-    .addParam("wait", "wait for blocks")
-    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
-    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
-        const deployer = await getSigner(hre);
-        const canonicalChainId = Number(tskArgs.canonicalchainid);
-        const canonicalChainLzId = lzChainIds[canonicalChainId];
-
-        if (!canonicalChainLzId) throw Error("Canonical LZ chain ID not found");
-
-        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId, tskArgs.force);
-
-        const sidechainPhase = sidechainConfig.getSidechain(deployer);
-        console.log(`setTrustedRemoteAddress(${canonicalChainLzId},"0xCAf20AeA17144D9D672CA5c508597f04Dc96Cf4C")`);
-
-        sidechainPhase.l2PoolManagerProxy.setTrustedRemoteAddress(
-            canonicalChainLzId,
-            "0xCAf20AeA17144D9D672CA5c508597f04Dc96Cf4C",
-        );
-    });
 /* ----------------------------------------------------------------------------
     Canonical Configuration Tasks
 ---------------------------------------------------------------------------- */
