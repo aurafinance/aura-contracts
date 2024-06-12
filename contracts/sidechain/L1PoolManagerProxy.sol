@@ -5,6 +5,7 @@ import { LzApp } from "../layerzero/lzApp/LzApp.sol";
 import { IStakelessGauge } from "../interfaces/balancer/IStakelessGauge.sol";
 import { IStakelessGaugeCheckpointer } from "../interfaces/balancer/IStakelessGaugeCheckpointer.sol";
 import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeController.sol";
+import { KeeperRole } from "../peripheral/KeeperRole.sol";
 
 /**
  * @title   L1PoolManagerProxy
@@ -14,7 +15,7 @@ import { IBalGaugeController } from "contracts/interfaces/balancer/IBalGaugeCont
  *      2.  User most provide a root gauge address and the layer zero chain id, with enought
  *          native fee to be able to add a pool on the destination chain.
  */
-contract L1PoolManagerProxy is LzApp {
+contract L1PoolManagerProxy is LzApp, KeeperRole {
     uint256 public constant NO_EXTRA_GAS = 0;
     // packet type
     uint16 public constant PT_SEND = 0;
@@ -49,7 +50,7 @@ contract L1PoolManagerProxy is LzApp {
         address _lzEndpoint,
         address _gaugeController,
         address _gaugeCheckpointer
-    ) {
+    ) KeeperRole(msg.sender) {
         lzChainId = _lzChainId;
         _initializeLzApp(_lzEndpoint);
         protectAddPool = true;
@@ -107,7 +108,7 @@ contract L1PoolManagerProxy is LzApp {
         bytes memory _adapterParams
     ) external payable withValidRootGauge(_dstChainId, _gauge) returns (bool) {
         if (protectAddPool) {
-            require(msg.sender == owner(), "!auth");
+            require(authorizedKeepers[msg.sender], "!keeper");
         }
         _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
 

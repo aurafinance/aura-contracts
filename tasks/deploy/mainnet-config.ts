@@ -196,6 +196,7 @@ const multisigs: MultisigConfig = {
     defender: {
         l1CoordinatorDistributor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
         auraBalProxyOFTHarvestor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
+        l1PoolManagerProxyKeeper: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
     },
 };
 

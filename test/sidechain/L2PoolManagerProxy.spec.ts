@@ -63,6 +63,7 @@ describe("L2PoolManagerProxy", () => {
         l2PoolManagerProxy = sidechain.l2PoolManagerProxy;
 
         dao = await impersonateAccount(testSetup.l1.multisigs.daoMultisig);
+        await l1PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(dao.address, true);
         gaugeCheckPointer = MockGaugeCheckpointer__factory.connect(
             testSetup.l1.mocks.addresses.gaugeCheckpointer,
             deployer.signer,

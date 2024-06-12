@@ -186,6 +186,7 @@ export const deployL1 = async (
     const canonicalPhase4 = await deployCanonicalPhase4(
         hre,
         deployer.signer,
+        l1Multisigs,
         l1Mocks.addresses,
         canonicalChainId,
         "salt",

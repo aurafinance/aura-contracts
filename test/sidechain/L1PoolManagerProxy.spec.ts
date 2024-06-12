@@ -28,6 +28,7 @@ describe("L1PoolManagerProxy", () => {
     let deployer: Account;
     let alice: Account;
     let dao: Account;
+    let keeper: Account;
 
     let gaugeCheckPointer: MockGaugeCheckpointer;
     // Testing contract
@@ -56,6 +57,7 @@ describe("L1PoolManagerProxy", () => {
         accounts = await ethers.getSigners();
         deployer = await impersonateAccount(await accounts[0].getAddress());
         alice = await impersonateAccount(await accounts[1].getAddress());
+        keeper = await impersonateAccount(await accounts[7].getAddress());
 
         // Deploy test contract.
         testSetup = await sidechainTestSetup(hre, accounts, L1_CHAIN_ID, L2_CHAIN_ID);
@@ -128,6 +130,13 @@ describe("L1PoolManagerProxy", () => {
         });
     });
     describe("configuration ", async () => {
+        it("DAO - sets keeper on l1PoolManagerProxy", async () => {
+            //   When  config is set.
+            await l1PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(keeper.address, true);
+            // No events
+            const authorizedKeepers = await l1PoolManagerProxy.authorizedKeepers(keeper.address);
+            expect(authorizedKeepers, "authorizedKeepers").to.be.eq(true);
+        });
         it("DAO - sets setTrustedRemoteAddress on l1PoolManagerProxy", async () => {
             const expectedTrustedRemote = (
                 l2PoolManagerProxy.address + l1PoolManagerProxy.address.slice(2)
@@ -221,19 +230,21 @@ describe("L1PoolManagerProxy", () => {
             });
         });
         describe("add pool", async () => {
-            it("fails when protected pool is true, caller is not owner", async () => {
+            it("fails when protected pool is true, caller is not keeper", async () => {
                 await l1PoolManagerProxy.connect(dao.signer).setProtectPool(true);
                 await expect(
                     l1PoolManagerProxy
                         .connect(alice.signer)
                         .addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
-                    "!auth",
-                ).to.be.revertedWith("!auth");
+                    "!keeper",
+                ).to.be.revertedWith("!keeper");
                 await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
             });
             it("fails if adapter params is not set", async () => {
                 await expect(
-                    l1PoolManagerProxy.connect(dao.signer).addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
+                    l1PoolManagerProxy
+                        .connect(keeper.signer)
+                        .addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
                     "!adapterParams",
                 ).to.be.revertedWith("LzApp: invalid adapterParams");
             });

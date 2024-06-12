@@ -118,6 +118,11 @@ async function getMockMultisigs(
         daoMultisig: await daoSigner.getAddress(),
         sudoMultisig: await daoSigner.getAddress(),
         pauseGuardian: await daoSigner.getAddress(),
+        defender: {
+            l1CoordinatorDistributor: ZERO_ADDRESS,
+            auraBalProxyOFTHarvestor: ZERO_ADDRESS,
+            l1PoolManagerProxyKeeper: ZERO_ADDRESS,
+        },
     };
 }
 
