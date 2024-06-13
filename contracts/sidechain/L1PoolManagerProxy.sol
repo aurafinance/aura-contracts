@@ -58,19 +58,6 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
         gaugeCheckpointer = _gaugeCheckpointer;
     }
 
-    modifier withValidRootGauge(uint16 _dstChainId, address _gauge) {
-        //check the destination chain is correct.
-        string memory gaugeType = gaugeTypes[_dstChainId];
-        require(_dstChainId != lzChainId, "!dstChainId");
-        require(bytes(gaugeType).length > 0, "!gaugeType");
-
-        require(IStakelessGaugeCheckpointer(gaugeCheckpointer).hasGauge(gaugeType, _gauge), "!checkpointer");
-        //check that the pool as weight
-        uint256 weight = IBalGaugeController(gaugeController).get_gauge_weight(_gauge);
-        require(weight > 0, "must have weight");
-        _;
-    }
-
     receive() external payable {}
 
     /**
@@ -106,25 +93,69 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
         uint16 _dstChainId,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) external payable withValidRootGauge(_dstChainId, _gauge) returns (bool) {
+    ) external payable returns (bool) {
         if (protectAddPool) {
             require(authorizedKeepers[msg.sender], "!keeper");
         }
-        _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
+        address[] memory gauges = new address[](1);
+        gauges[0] = _gauge;
+        return _addPools(gauges, _dstChainId, _zroPaymentAddress, _adapterParams);
+    }
 
-        address dstGauge = IStakelessGauge(_gauge).getRecipient();
-        require(dstGauge != address(0), "!dstGauge");
+    function addPools(
+        address[] calldata _gauges,
+        uint16 _dstChainId,
+        address _zroPaymentAddress,
+        bytes memory _adapterParams
+    ) external payable returns (bool) {
+        if (protectAddPool) {
+            require(authorizedKeepers[msg.sender], "!keeper");
+        }
+        return _addPools(_gauges, _dstChainId, _zroPaymentAddress, _adapterParams);
+    }
+
+    function _addPools(
+        address[] memory _gauges,
+        uint16 _dstChainId,
+        address _zroPaymentAddress,
+        bytes memory _adapterParams
+    ) internal returns (bool) {
+        _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
+        uint256 gaugesLen = _gauges.length;
+        address[] memory dstGauges = new address[](gaugesLen);
+
+        for (uint256 i = 0; i < gaugesLen; i++) {
+            address gauge = _gauges[i];
+            _checkValidRootGauge(_dstChainId, gauge);
+
+            address dstGauge = IStakelessGauge(gauge).getRecipient();
+            require(dstGauge != address(0), "!dstGauge");
+            dstGauges[i] = dstGauge;
+            emit AddSidechainPool(_dstChainId, gauge, dstGauge);
+        }
 
         _lzSend(
             _dstChainId, ///////////// Destination chain (L2 chain)
-            abi.encode(dstGauge), ///////////////// Payload encode
+            abi.encode(dstGauges), ///////////////// Payload encode
             payable(msg.sender), // Refund address
             _zroPaymentAddress, ////// ZRO payment address
             _adapterParams, ////////// Adapter params
             msg.value //////////////// Native fee
         );
-        emit AddSidechainPool(_dstChainId, _gauge, dstGauge);
+
         return true;
+    }
+
+    function _checkValidRootGauge(uint16 _dstChainId, address _gauge) internal view {
+        //check the destination chain is correct.
+        string memory gaugeType = gaugeTypes[_dstChainId];
+        require(_dstChainId != lzChainId, "!dstChainId");
+        require(bytes(gaugeType).length > 0, "!gaugeType");
+
+        require(IStakelessGaugeCheckpointer(gaugeCheckpointer).hasGauge(gaugeType, _gauge), "!checkpointer");
+        //check that the pool as weight
+        uint256 weight = IBalGaugeController(gaugeController).get_gauge_weight(_gauge);
+        require(weight > 0, "must have weight");
     }
 
     function _checkAdapterParams(

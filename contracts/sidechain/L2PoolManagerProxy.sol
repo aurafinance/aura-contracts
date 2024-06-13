@@ -16,9 +16,6 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     /// @dev The poolManager address
     address public poolManager;
 
-    /// @dev Indicates if add pool via LZ is enabled or not.
-    bool public isLzAddPoolEnabled;
-
     /* -------------------------------------------------------------------
        Events 
     ------------------------------------------------------------------- */
@@ -32,11 +29,6 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     function initialize(address _lzEndpoint, address _poolManager) external onlyOwner {
         _initializeLzApp(_lzEndpoint);
         _setPoolManager(_poolManager);
-        isLzAddPoolEnabled = true;
-    }
-
-    function setLzAddPoolEnabled(bool _isLzAddPoolEnabled) external onlyOwner {
-        isLzAddPoolEnabled = _isLzAddPoolEnabled;
     }
 
     function setPoolManager(address _poolManager) external onlyOwner {
@@ -53,7 +45,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
     }
 
     /**
-     * @notice Adds new pool.
+     * @notice Adds new pool directly on L2.
      * @param _gauge The gauge address.
      */
     function addPool(address _gauge) external onlyOwner returns (bool) {
@@ -94,7 +86,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
 
     /**
      * @dev Override the default lzReceive function logic
-     *  Called by  L1PoolManager.addPool, allows
+     *  Called by  L1PoolManager.addPool
      */
     function _nonblockingLzReceive(
         uint16, /** _srcChainId */
@@ -102,8 +94,10 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         uint64,
         bytes memory _payload
     ) internal virtual override {
-        address gauge = abi.decode(_payload, (address));
-        require(isLzAddPoolEnabled, "!isLzAddPoolEnabled");
-        require(_addPool(gauge), "!addPool");
+        address[] memory gauges = abi.decode(_payload, (address[]));
+        uint256 payloadsLen = gauges.length;
+        for (uint256 i = 0; i < payloadsLen; i++) {
+            require(_addPool(gauges[i]), "!addPool");
+        }
     }
 }
