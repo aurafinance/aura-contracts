@@ -196,7 +196,7 @@ const multisigs: MultisigConfig = {
     defender: {
         l1CoordinatorDistributor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
         auraBalProxyOFTHarvestor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
-        l1PoolManagerProxyKeeper: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
+        l1PoolManagerProxyKeeper: "0x327Db4C2e4918920533a05f0f6aa9eDfB717bB41",
     },
 };
 
@@ -450,7 +450,7 @@ const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
-    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0xCAf20AeA17144D9D672CA5c508597f04Dc96Cf4C", deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0x68c995FD08721295f01eDE5836E7AfC7a683f211", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({

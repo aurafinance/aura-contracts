@@ -260,6 +260,8 @@ export const deployL2 = async (
     const sidechainPhase4 = await deploySidechainPhase4(
         hre,
         deployer.signer,
+        l1.canonical,
+        canonicalChainId,
         extSidechainConfig,
         l2Multisigs,
         sidechainPhase1,

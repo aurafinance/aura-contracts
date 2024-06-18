@@ -427,13 +427,20 @@ task("deploy:sidechain:L2:phase4")
 
         if (!canonicalChainLzId) throw Error("Canonical LZ chain ID not found");
 
-        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId, tskArgs.force);
+        const { canonical, sidechainConfig } = sidechainTaskSetup(
+            deployer,
+            hre.network,
+            canonicalChainId,
+            tskArgs.force,
+        );
 
         const sidechainPhase1 = sidechainConfig.getSidechain(deployer);
 
         const result = await deploySidechainPhase4(
             hre,
             deployer,
+            canonical,
+            canonicalChainLzId,
             sidechainConfig.extConfig,
             sidechainConfig.multisigs,
             sidechainPhase1,
@@ -441,7 +448,6 @@ task("deploy:sidechain:L2:phase4")
             debug,
             tskArgs.wait,
         );
-
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 /* ----------------------------------------------------------------------------

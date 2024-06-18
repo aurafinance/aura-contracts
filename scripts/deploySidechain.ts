@@ -1214,6 +1214,8 @@ export async function deploySidechainPhase3(
 export async function deploySidechainPhase4(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    canonical: CanonicalPhaseDeployed,
+    canonicalChainLzId: number,
     extConfig: ExtSidechainConfig,
     multisigs: SidechainMultisigConfig,
     sidechain: SidechainPhase1Deployed,
@@ -1234,6 +1236,10 @@ export async function deploySidechainPhase4(
         "initialize",
         [extConfig.lzEndpoint, sidechain.poolManager.address],
     );
+    const l2PoolManagerProxySetTrustedRemoteAddress = L2PoolManagerProxy__factory.createInterface().encodeFunctionData(
+        "setTrustedRemoteAddress",
+        [canonicalChainLzId, canonical.l1PoolManagerProxy.address],
+    );
 
     const l2PoolManagerProxy = await deployContractWithCreate2<L2PoolManagerProxy, L2PoolManagerProxy__factory>(
         hre,
@@ -1241,7 +1247,11 @@ export async function deploySidechainPhase4(
         new L2PoolManagerProxy__factory(signer),
         "L2PoolManagerProxy",
         [],
-        deployOptionsWithCallbacks([l2PoolManagerProxyInitialize, l2PoolManagerProxyTransferOwnership]),
+        deployOptionsWithCallbacks([
+            l2PoolManagerProxyInitialize,
+            l2PoolManagerProxySetTrustedRemoteAddress,
+            l2PoolManagerProxyTransferOwnership,
+        ]),
     );
 
     return { l2PoolManagerProxy };
