@@ -140,6 +140,14 @@ const config: HardhatUserConfig = {
                     browserURL: "https://blastscan.io",
                 },
             },
+            {
+                network: "fraxtal",
+                chainId: chainIds.fraxtal,
+                urls: {
+                    apiURL: "https://api.fraxscan.com/api",
+                    browserURL: "https://fraxscan.com",
+                },
+            },
         ],
     },
     sourcify: {

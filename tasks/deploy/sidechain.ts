@@ -716,8 +716,8 @@ task("deploy:sidechain:L1:view")
     });
 
 task("deploy:sidechain:L2:peripheral", "Deploys sidechain multicaller, claimzap and view")
-    .addParam("salt", "Create2 salt")
     .addParam("wait", "Blocks to wait")
+    .addOptionalParam<string>("salt", "Create 2 Salt")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const remoteChainId = hre.network.config.chainId;

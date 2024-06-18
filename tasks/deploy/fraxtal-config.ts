@@ -33,8 +33,8 @@ import { sidechainNaming } from "./sidechain-naming";
 import { Provider } from "@ethersproject/providers";
 
 const multisigs: SidechainMultisigConfig = {
-    daoMultisig: "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4",
-    pauseGuardian: "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4",
+    daoMultisig: "0x49Bd2Af2d8CF5D607c9580446A1373F55e7BB07f",
+    pauseGuardian: "0x49Bd2Af2d8CF5D607c9580446A1373F55e7BB07f",
     defender: "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4",
 };
 
@@ -53,19 +53,18 @@ export const bridging: SidechainBridging = {
     l2Sender: ZERO_ADDRESS, //TODO
     nativeBridge: ZERO_ADDRESS,
 };
-
 export const getSidechain = (signer: Signer | Provider) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
     booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
     keeperMulticall3: KeeperMulticall3__factory.connect("0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd", signer),
-    boosterOwner: BoosterOwner__factory.connect("0x8034fbC6246Caa37d2Af084b2fB0ea4a211B6F8d", signer), //
+    boosterOwner: BoosterOwner__factory.connect("0x04798C9B4546d90A97F687188d346D170298703c", signer),
     poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
     l2Coordinator: L2Coordinator__factory.connect("0x8b2970c237656d3895588B99a8bFe977D5618201", signer),
     auraOFT: AuraOFT__factory.connect("0x1509706a6c66CA549ff0cB464de88231DDBe213B", signer),
     auraBalOFT: AuraBalOFT__factory.connect(ZERO_ADDRESS, signer),
     factories: {
-        rewardFactory: RewardFactory__factory.connect("0xcc92694A8b2367BC6A0D6c2349C30B7D8F1d3c0E", signer), //
-        stashFactory: StashFactoryV2__factory.connect("0x1fd645458F6CD8EB95d161d9A38EaBE5dAB1900b", signer), //
+        rewardFactory: RewardFactory__factory.connect("0xc24Fa5948a2A356b6A7E20D08E7A5EdC3697B7AC", signer),
+        stashFactory: StashFactoryV2__factory.connect("0x919EEb7D8e73bD4E9addc1E81Fd1Ae799f0eFeE6", signer),
         tokenFactory: TokenFactory__factory.connect("0x87299312C820607f1E7E4d0c6715CEB594306FE9", signer),
         proxyFactory: ProxyFactory__factory.connect("0x731886426a3199b988194831031dfb993F25D961", signer),
     },
@@ -73,19 +72,19 @@ export const getSidechain = (signer: Signer | Provider) => ({
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
     cvxLocker: AuraLocker__factory.connect(ZERO_ADDRESS, signer),
-    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer), //
-    stashRewardDistro: StashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer), //
-    boosterHelper: BoosterHelper__factory.connect("0x138f951c141C2F34c1001258cD95DfeEaC26bb8A", signer), //
+    childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer),
+    stashRewardDistro: StashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
+    boosterHelper: BoosterHelper__factory.connect("0x84Df326E6B809810386B2560BAe2c8400E5e29e9", signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
 });
 
 export const getView = (signer: Signer | Provider) => ({
-    sidechainView: SidechainView__factory.connect("0x739B0c838E47A28877cAEF270DF0407FE5C62502", signer), //
+    sidechainView: SidechainView__factory.connect("0xA07d668CcF6c49B4A921eAd33eB075AFF843d6Ff", signer),
 });
 
 export const getChildGaugeVoteRewards = (signer: Signer) => ({
-    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer), //
-    stashRewardDistro: ChildStashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer), //
+    gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer),
+    stashRewardDistro: ChildStashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
 });
 
 export const config: SidechainConfig = {
