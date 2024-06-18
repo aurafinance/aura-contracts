@@ -92,6 +92,10 @@ const config: HardhatUserConfig = {
             chainId: chainIds.blast,
             url: process.env.NODE_URL || "",
         },
+        fraxtal: {
+            chainId: chainIds.fraxtal,
+            url: process.env.NODE_URL || "",
+        },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },

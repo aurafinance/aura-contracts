@@ -39,7 +39,7 @@ const multisigs: SidechainMultisigConfig = {
 };
 
 const extConfig: ExtSidechainConfig = {
-    canonicalChainId: 101, // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
+    canonicalChainId: 101, // https://docs.layerzero.network/v1/developers/evm/technical-reference/mainnet/mainnet-addresses
     lzEndpoint: "0x9740FF91F1985D8d2B71494aE1A2f723bb3Ed9E4",
     minter: "0x475D18169BE8a89357A9ee3Ab00ca386d20fA229",
     token: "0x120ef59b80774f02211563834d8e3b72cb1649d6",

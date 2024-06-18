@@ -12,6 +12,7 @@ import {
     deployPolygonBridgeSender,
     deploySimpleBridgeReceiver,
     deployZkevmBridgeSender,
+    deployFraxtalBridgeSender,
 } from "../../scripts/deployBridgeDelegates";
 import { deployBoosterHelper, deployPayableMulticall } from "../../scripts/deployPeripheral";
 import {
@@ -220,7 +221,11 @@ task("deploy:sidechain:create2Factory")
 
         const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
 
-        const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
+        let tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
+        await waitForTx(tx, debug);
+
+        // TODO - REMOVE
+        tx = await phase.create2Factory.updateDeployer("0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4", true);
         await waitForTx(tx, debug);
 
         logContracts(phase as unknown as { [key: string]: { address: string } });
@@ -929,6 +934,28 @@ task("deploy:sidechain:L2:bridgeSender:zkevm")
         const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
 
         const delegate = await deployZkevmBridgeSender(
+            hre,
+            deployer,
+            sidechainConfig.bridging.nativeBridge,
+            sidechainConfig.extConfig.token,
+            true,
+            tskArgs.wait,
+        );
+
+        const tx = await delegate.setL1Receiver(await deployer.getAddress());
+        await waitForTx(tx, true, tskArgs.wait);
+
+        logContracts({ delegate });
+    });
+task("deploy:sidechain:L2:bridgeSender:fraxtal")
+    .addParam("wait", "wait for blocks")
+    .addParam("canonicalchainid", "Canonical chain ID, eg Eth Mainnet is 1")
+    .setAction(async (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) => {
+        const deployer = await getSigner(hre);
+        const canonicalChainId = Number(tskArgs.canonicalchainid);
+        const { sidechainConfig } = sidechainTaskSetup(deployer, hre.network, canonicalChainId);
+
+        const delegate = await deployFraxtalBridgeSender(
             hre,
             deployer,
             sidechainConfig.bridging.nativeBridge,

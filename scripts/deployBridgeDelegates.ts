@@ -17,6 +17,8 @@ import {
     SimpleBridgeDelegateSender__factory,
     ZkevmBridgeSender,
     ZkevmBridgeSender__factory,
+    // FraxtalridgeSender,
+    // FraxtalBridgeSender__factory,
     OftWithFeeBridgeSender__factory,
     OftWithFeeBridgeSender,
 } from "../types";
@@ -160,6 +162,27 @@ export async function deployZkevmBridgeSender(
     debug = false,
     waitForBlocks = 0,
 ): Promise<ZkevmBridgeSender> {
+    const bridgeDelegate = await deployContract<ZkevmBridgeSender>(
+        hre,
+        new ZkevmBridgeSender__factory(deployer),
+        "ZkevmBridgeSender",
+        [standardBridge, token],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    return bridgeDelegate;
+}
+export async function deployFraxtalBridgeSender(
+    hre: HardhatRuntimeEnvironment,
+    deployer: Signer,
+    standardBridge: string,
+    token: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<ZkevmBridgeSender> {
+    // TODO
     const bridgeDelegate = await deployContract<ZkevmBridgeSender>(
         hre,
         new ZkevmBridgeSender__factory(deployer),
