@@ -51,7 +51,7 @@ const extConfig: ExtSidechainConfig = {
 export const bridging: SidechainBridging = {
     l1Receiver: ZERO_ADDRESS, //TODO
     l2Sender: ZERO_ADDRESS, //TODO
-    nativeBridge: ZERO_ADDRESS,
+    nativeBridge: "0x4200000000000000000000000000000000000010",
 };
 export const getSidechain = (signer: Signer | Provider) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
