@@ -99,7 +99,16 @@ task("deploy:sidechain:L1:bridgeReceiver")
 
         const canonical = config.getSidechain(deployer);
 
-        const result = await deploySimpleBridgeReceiver(hre, canonical, sidechainId, deployer, true, tskArgs.wait);
+        const result = await deploySimpleBridgeReceiver(
+            hre,
+            config.addresses,
+            canonical,
+            sidechainId,
+            deployer,
+            tskArgs.sidechainid,
+            debug,
+            tskArgs.wait,
+        );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
@@ -283,7 +292,7 @@ task("deploy:sidechain:L2:bridgeSender:optimism")
             standardBridge,
             crv,
             l1Crv,
-            true,
+            debug,
             tskArgs.wait,
         );
 

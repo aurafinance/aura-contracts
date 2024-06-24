@@ -17,13 +17,13 @@ import {
     SimpleBridgeDelegateSender__factory,
     ZkevmBridgeSender,
     ZkevmBridgeSender__factory,
-    // FraxtalridgeSender,
-    // FraxtalBridgeSender__factory,
     OftWithFeeBridgeSender__factory,
     OftWithFeeBridgeSender,
+    Create2Factory__factory,
 } from "../types";
-import { deployContract } from "../tasks/utils";
+import { create2OptionsWithCallbacks, deployContract, deployContractWithCreate2 } from "../tasks/utils";
 import { CanonicalPhase1Deployed } from "./deploySidechain";
+import { ExtSystemConfig } from "./deploySystem";
 
 export interface SimplyBridgeDelegateDeployed {
     bridgeDelegateSender: BridgeDelegateSender;
@@ -52,20 +52,34 @@ export async function deploySimpleBridgeSender(
 
 export async function deploySimpleBridgeReceiver(
     hre: HardhatRuntimeEnvironment,
+    extConfig: ExtSystemConfig,
     canonical: CanonicalPhase1Deployed,
     srcChainId: number,
     deployer: Signer,
+    salt: string,
     debug: boolean = false,
     waitForBlocks: number = 0,
 ): Promise<{ bridgeDelegateReceiver: BridgeDelegateReceiver }> {
-    const bridgeDelegateReceiver = await deployContract<BridgeDelegateReceiver>(
+    const deployerAddress = await deployer.getAddress();
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, deployer);
+
+    const transferOwnership = BridgeDelegateReceiver__factory.createInterface().encodeFunctionData(
+        "transferOwnership",
+        [deployerAddress],
+    );
+
+    const bridgeDelegateReceiver = await deployContractWithCreate2<
+        BridgeDelegateReceiver,
+        BridgeDelegateReceiver__factory
+    >(
         hre,
+        create2Factory,
         new BridgeDelegateReceiver__factory(deployer),
         "BridgeDelegateReceiver",
         [canonical.l1Coordinator.address, srcChainId],
-        {},
-        debug,
-        waitForBlocks,
+        deployOptionsWithCallbacks([transferOwnership]),
     );
 
     return { bridgeDelegateReceiver };

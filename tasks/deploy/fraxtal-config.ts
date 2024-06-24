@@ -49,14 +49,14 @@ const extConfig: ExtSidechainConfig = {
 };
 
 export const bridging: SidechainBridging = {
-    l1Receiver: ZERO_ADDRESS, //TODO
-    l2Sender: ZERO_ADDRESS, //TODO
+    l1Receiver: "0x81bA0309E9e0BBabF7F552DBFD40f1818f3fca08",
+    l2Sender: "0xaFE81f85cFfAea7D5e677C523d406c61150b9E96",
     nativeBridge: "0x4200000000000000000000000000000000000010",
 };
 export const getSidechain = (signer: Signer | Provider) => ({
     voterProxy: VoterProxyLite__factory.connect("0xC181Edc719480bd089b94647c2Dc504e2700a2B0", signer),
     booster: BoosterLite__factory.connect("0x98Ef32edd24e2c92525E59afc4475C1242a30184", signer),
-    keeperMulticall3: KeeperMulticall3__factory.connect("0x37aA9Ad9744D0686df1C7053225e700ce13e31Dd", signer),
+    keeperMulticall3: KeeperMulticall3__factory.connect("0x5a739082832Ff535413ceBFb2468b8d6B9F22C68", signer),
     boosterOwner: BoosterOwner__factory.connect("0x04798C9B4546d90A97F687188d346D170298703c", signer),
     poolManager: PoolManagerLite__factory.connect("0xf24074a1A6ad620aDC14745F9cc1fB1e7BA6CA71", signer),
     l2Coordinator: L2Coordinator__factory.connect("0x8b2970c237656d3895588B99a8bFe977D5618201", signer),

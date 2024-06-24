@@ -144,6 +144,7 @@ const addresses: ExtSystemConfig = {
     },
     balancerGaugeFactory: "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65",
     balancerHelpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
+    create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
