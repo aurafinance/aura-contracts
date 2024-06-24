@@ -67,7 +67,7 @@ export const create2OptionsWithCallbacks = (
         create2Options: {
             amount: 0,
             salt,
-            callbacks: [...callbacks],
+            callbacks,
         },
         debug,
         waitForBlocks,
@@ -90,7 +90,10 @@ export const deployContractWithCreate2 = async <T extends Contract, F extends Co
     const { overrides, create2Options, debug, waitForBlocks } = options;
 
     const salt = create2Options?.salt ?? contractName;
-    if (debug) console.log("deployContractWithCreate2", contractName, "salt", salt);
+    if (debug) {
+        console.log("deployContractWithCreate2:", contractName, "salt", salt, "waitForBlocks", waitForBlocks);
+        console.log("deployContractWithCreate2: constructorArgs", constructorArgs);
+    }
 
     const create2DeployerAddress = create2Factory.address;
     const unsignedTx = contractFactory.getDeployTransaction(...constructorArgs, overrides ?? {});

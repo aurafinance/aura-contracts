@@ -7,6 +7,7 @@ import {
     Phase6Deployed,
     Phase7Deployed,
     Phase8Deployed,
+    Phase9Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -51,7 +52,6 @@ import {
     FeeForwarder__factory,
     AuraBalVault__factory,
     AuraBalStrategy__factory,
-    BalancerSwapsHandler__factory,
     AuraBalVault,
     AuraBalStrategy,
     BalancerSwapsHandler,
@@ -68,11 +68,13 @@ import {
     StashRewardDistro__factory,
     UniswapRouterHandler__factory,
     UniswapRouterHandler,
+    L1PoolManagerProxy__factory,
+    PoolFeeManagerProxy__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, CanonicalPhase3Deployed } from "scripts/deploySidechain";
+import { CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { parseEther } from "ethers/lib/utils";
 import { chainIds } from "../../tasks/utils";
 
@@ -85,6 +87,7 @@ const addresses: ExtSystemConfig = {
     // feeDistribution: "0x26743984e3357eFC59f2fd6C1aFDC310335a61c9", // @deprecated
     feeDistribution: "0xD3cf852898b21fc233251427c2DC93d3d604F3BB",
     gaugeController: "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD",
+    gaugeCheckpointer: "0x0c8f71d19f87c0bd1b9bad2484ecc3388d5dbb98",
     voteOwnership: ZERO_ADDRESS,
     voteParameter: ZERO_ADDRESS,
     gauges: [
@@ -144,6 +147,7 @@ const addresses: ExtSystemConfig = {
     },
     balancerGaugeFactory: "0xf1665E19bc105BE4EDD3739F88315cC699cc5b65",
     balancerHelpers: "0x5aDDCCa35b7A0D07C74063c48700C8590E87864E",
+    create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
     weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     wethWhale: "0xC564EE9f21Ed8A2d8E7e76c085740d5e4c5FaFbE",
     treasury: "0x10A19e7eE7d7F8a52822f6817de8ea18204F2e4f",
@@ -192,6 +196,7 @@ const multisigs: MultisigConfig = {
     defender: {
         l1CoordinatorDistributor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
         auraBalProxyOFTHarvestor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
+        l1PoolManagerProxyKeeper: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
     },
 };
 
@@ -411,7 +416,9 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
         deployer,
     ),
 });
-
+const getPhase9 = async (deployer: Signer): Promise<Phase9Deployed> => ({
+    poolFeeManagerProxy: PoolFeeManagerProxy__factory.connect("0xD0521C061958324D06b8915FFDAc3DB22C8Bd687", deployer),
+});
 const getFeeForwarder = async (deployer: Signer) => ({
     feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
 });
@@ -437,14 +444,13 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
 const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
     AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
 
-const getSidechain = (
-    deployer: Signer,
-): CanonicalPhase1Deployed & CanonicalPhase2Deployed & CanonicalPhase3Deployed => ({
+const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0xCAf20AeA17144D9D672CA5c508597f04Dc96Cf4C", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
@@ -471,6 +477,7 @@ export const config = {
     getPhase6,
     getPhase7,
     getPhase8,
+    getPhase9,
     getFeeForwarder,
     getAuraBalVault,
     getAuraClaimZapV3,

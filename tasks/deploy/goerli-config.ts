@@ -54,11 +54,12 @@ import {
     GaugeVoteRewards__factory,
     StashRewardDistro__factory,
     UniswapRouterHandler,
+    L1PoolManagerProxy__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
 import { getMockDistro } from "../../scripts/deployMocks";
-import { CanonicalPhase1Deployed, CanonicalPhase2Deployed, CanonicalPhase3Deployed } from "scripts/deploySidechain";
+import { CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { chainIds } from "../../tasks/utils";
 import { parseEther } from "ethers/lib/utils";
 
@@ -226,14 +227,13 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
     auraRewards: VirtualBalanceRewardPool__factory.connect("0x6fE74EA452b21698bbC27617b2B23FB797393094", deployer),
 });
 
-const getSidechain = (
-    deployer: Signer,
-): CanonicalPhase1Deployed & CanonicalPhase2Deployed & CanonicalPhase3Deployed => ({
+const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0x9838f48ae18C32D3aa25a81BC862eDA67C273146", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0x51493Dfb75f35fDEAD2B5bFa6904b59aaD9A37a8", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0x76A383895103bde55987cEF54dbA7a2A57B72B73", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, deployer),
+    l1PoolManagerProxy: L1PoolManagerProxy__factory.connect(ZERO_ADDRESS, deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
