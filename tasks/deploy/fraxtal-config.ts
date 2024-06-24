@@ -79,7 +79,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
 });
 
 export const getView = (signer: Signer | Provider) => ({
-    sidechainView: SidechainView__factory.connect("0xA07d668CcF6c49B4A921eAd33eB075AFF843d6Ff", signer),
+    sidechainView: SidechainView__factory.connect("0x1BA3DBd572B1b7aa3445Fa51492bfc644C67ad0F", signer),
 });
 
 export const getChildGaugeVoteRewards = (signer: Signer) => ({
