@@ -9,10 +9,10 @@ import { Account, ERC20, MockERC20__factory, OptimismBridgeSender } from "../../
 import { CrossChainMessenger, MessageStatus } from "@eth-optimism/sdk";
 
 describe("FraxtalBridge", () => {
-    const ethBlockNumber: number = 17612600;
+    const ethBlockNumber: number = 6029526;
 
     const crossDomainMessanger: string = "0x4200000000000000000000000000000000000007";
-    const withdrawTxHash: string = "0x90db8fc43d4182fb1804136cc183ab6f8fa42bcf80f01093d22976c0743f53a2";
+    const withdrawTxHash: string = "0x9d70f867ee6169e7fb24637a2c654e893cede412518704ab87f6cc01d492529b";
 
     let deployer: Account;
     let notAuth: Account;
@@ -28,7 +28,9 @@ describe("FraxtalBridge", () => {
      * --------------------------------------------------------------------- */
 
     async function getBal(to: string, amount: BigNumberish) {
-        const tokenWhaleSigner = await impersonateAccount(fraxtalConfig.extConfig.balancerVault);
+        // const tokenWhaleSigner = await impersonateAccount(fraxtalConfig.extConfig.balancerVault);
+        // https://fraxscan.com/token/0x2FC7447F6cF71f9aa9E7FF8814B37E55b268Ec91#balances
+        const tokenWhaleSigner = await impersonateAccount("0x9098b50ee2d9E4c3C69928A691DA3b192b4C9673"); // fraxtal BAL holder
         await crv.connect(tokenWhaleSigner.signer).transfer(to, amount);
     }
 
@@ -81,7 +83,7 @@ describe("FraxtalBridge", () => {
 
     describe("Bridging", () => {
         it("Should be able to trigger a request for signatures to bridge some bal", async () => {
-            const amount = simpleToExactAmount(100);
+            const amount = simpleToExactAmount(0.2);
             await getBal(bridgeSender.address, amount);
             const balanceBefore = await crv.balanceOf(bridgeSender.address);
             const txn = await bridgeSender.send(balanceBefore.toString());
