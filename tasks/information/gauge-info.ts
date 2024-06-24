@@ -34,9 +34,11 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
             process.env.GNOSIS_NODE_URL,
             process.env.BASE_NODE_URL,
             process.env.ZKEVM_NODE_URL,
+            process.env.AVALANCHE_NODE_URL,
+            process.env.FRAXTAL_NODE_URL,
         ];
 
-        const names = ["arbitrum", "optimism", "polygon", "gnosis", "base", "zkevm"];
+        const names = ["arbitrum", "optimism", "polygon", "gnosis", "base", "zkevm", "avalanche", "fraxtal"];
 
         const gaugeInterface = [
             "function is_killed() external view returns(bool)",

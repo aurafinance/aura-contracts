@@ -11,6 +11,7 @@ import { config as mainnetConfig } from "./mainnet-config";
 import { config as optimismConfig } from "./optimism-config";
 import { config as polygonConfig } from "./polygon-config";
 import { config as zkevmConfig } from "./zkevm-config";
+import { config as fraxtalConfig } from "./fraxtal-config";
 
 export const sideChains = [
     chainIds.optimism,
@@ -20,12 +21,13 @@ export const sideChains = [
     chainIds.gnosis,
     chainIds.zkevm,
     chainIds.blast,
+    chainIds.base,
     chainIds.avalanche,
+    chainIds.fraxtal,
     // Goerli is just use as a sidechain for testing
     chainIds.goerli,
     // For fork mode
     chainIds.hardhat,
-    chainIds.base,
 ];
 
 export const canonicalChains = [
@@ -46,6 +48,7 @@ export const remoteChainMap = {
     [chainIds.zkevm]: chainIds.mainnet,
     [chainIds.blast]: chainIds.mainnet,
     [chainIds.avalanche]: chainIds.mainnet,
+    [chainIds.fraxtal]: chainIds.mainnet,
     // For fork mode
     [chainIds.hardhat]: chainIds.mainnet,
 };
@@ -62,6 +65,7 @@ export const lzChainIds = {
     [chainIds.zkevm]: 158,
     [chainIds.blast]: 243,
     [chainIds.avalanche]: 106,
+    [chainIds.fraxtal]: 255,
     // For fork mode
     [chainIds.hardhat]: 106,
 };
@@ -83,6 +87,7 @@ export const sidechainConfigs = {
     [chainIds.base]: baseConfig,
     [chainIds.zkevm]: zkevmConfig,
     [chainIds.avalanche]: avaxConfig,
+    [chainIds.fraxtal]: fraxtalConfig,
     // For fork mode
-    [chainIds.hardhat]: avaxConfig,
+    [chainIds.hardhat]: fraxtalConfig,
 };

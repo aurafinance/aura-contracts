@@ -1066,9 +1066,9 @@ export async function deploySidechainPhase3(
 ): Promise<SidechainPhase3Deployed> {
     const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
         create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
-    const deployOptions = deployOptionsWithCallbacks([]);
-
+    const deployOptions = deployOptionsWithCallbacks();
     const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+
     // stashRewardDistro
     const stashRewardDistro = await deployContractWithCreate2<StashRewardDistro, StashRewardDistro__factory>(
         hre,
@@ -1088,7 +1088,10 @@ export async function deploySidechainPhase3(
         "initialize",
         [extConfig.lzEndpoint],
     );
-
+    const childGaugeVoteRewardsSetDistributor = ChildGaugeVoteRewards__factory.createInterface().encodeFunctionData(
+        "setDistributor",
+        [multisigs.defender],
+    );
     const childGaugeVoteRewards = await deployContractWithCreate2<
         ChildGaugeVoteRewards,
         ChildGaugeVoteRewards__factory
@@ -1098,7 +1101,11 @@ export async function deploySidechainPhase3(
         new ChildGaugeVoteRewards__factory(signer),
         "ChildGaugeVoteRewards",
         [sidechain.auraOFT.address, sidechain.booster.address, stashRewardDistro.address],
-        deployOptionsWithCallbacks([childGaugeVoteRewardsInitialize, childGaugeVoteRewardsTransferOwnership]),
+        deployOptionsWithCallbacks([
+            childGaugeVoteRewardsInitialize,
+            childGaugeVoteRewardsSetDistributor,
+            childGaugeVoteRewardsTransferOwnership,
+        ]),
     );
 
     return { stashRewardDistro, childGaugeVoteRewards };

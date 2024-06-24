@@ -162,6 +162,7 @@ interface ExtSystemConfig {
     balancerPoolOwner?: string;
     balancerGaugeFactory?: string;
     balancerHelpers?: string;
+    create2Factory?: string;
     weth: string;
     wethWhale?: string;
     treasury?: string;
