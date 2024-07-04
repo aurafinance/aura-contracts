@@ -38,7 +38,7 @@ export interface TokenPrice {
 const debug = false;
 
 export async function getTokenPrices(tokenAddresses: string[]): Promise<TokenPrice[]> {
-    const endpoint = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2";
+    const endpoint = "https://api.studio.thegraph.com/query/75376/balancer-v2/version/latest";
     const query = gql`
         query GetTokenPrice($tokenAddresses: [String!]!) {
             tokens(where: { address_in: $tokenAddresses }) {
