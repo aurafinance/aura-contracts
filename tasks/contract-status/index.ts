@@ -88,7 +88,7 @@ const blockExplorerApi: Record<ChainToCheck, string> = {
     [chainIds.base]: "api.basescan.org",
     [chainIds.zkevm]: "api-zkevm.polygonscan.com",
     [chainIds.avalanche]: "api.routescan.io/v2/network/mainnet/evm/43114/etherscan",
-    [chainIds.fraxtal]: "api.fraxscan.com/api",
+    [chainIds.fraxtal]: "api.fraxscan.com",
 };
 const providers: Record<ChainToCheck, JsonRpcProvider> = {
     [chainIds.arbitrum]: new JsonRpcProvider(process.env.ARBITRUM_NODE_URL, chainIds.arbitrum),
