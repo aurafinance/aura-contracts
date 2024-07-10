@@ -30,6 +30,7 @@ async function getMockMultisigs(daoSigner: Signer): Promise<SidechainMultisigCon
     return {
         daoMultisig: await daoSigner.getAddress(),
         pauseGuardian: await daoSigner.getAddress(),
+        defender: await daoSigner.getAddress(),
     };
 }
 
