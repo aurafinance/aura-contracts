@@ -205,6 +205,7 @@ function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
 
 const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm", "Avalanche"]; // TODO Fraxtal
 const opAddress = "0x4200000000000000000000000000000000000042";
+const arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
 /* ---------------------------------------------------------------
      * Helpers 
@@ -490,7 +491,20 @@ async function addPoolToSidechain(
     const initialNonce = await jsonProvider.getTransactionCount(factories.proxyFactory.address);
     const allTxPerPool = [];
     const invalidGauges = [];
-    const extraRewards = chainId === chainIds.optimism && voting ? [auraOFT.address, opAddress] : [auraOFT.address];
+    let extraRewards = [];
+    if (voting) {
+        switch (chainId) {
+            case chainIds.optimism:
+                extraRewards = [auraOFT.address, opAddress];
+                break;
+            case chainIds.arbitrum:
+                extraRewards = [auraOFT.address, arbAddress];
+                break;
+            default:
+                extraRewards = [auraOFT.address];
+        }
+    }
+
     let addPools = 0;
     const tableInfo = {};
     const defaultTableInfo = {
