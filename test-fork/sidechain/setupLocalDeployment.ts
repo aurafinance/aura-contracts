@@ -129,7 +129,14 @@ export const setupLocalDeployment = async (
     const canonical = { ...canonicalPhase1, ...canonicalPhase2 };
 
     const { bridgeDelegateSender } = await deploySimpleBridgeSender(hre, sidechainConfig, deployer.signer);
-    const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer);
+    const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(
+        hre,
+        config.addresses,
+        canonical,
+        L2_CHAIN_ID,
+        deployer.signer,
+        "test",
+    );
 
     sidechainConfig.bridging.l1Receiver = bridgeDelegateReceiver.address;
     sidechainConfig.bridging.l2Sender = bridgeDelegateSender.address;
