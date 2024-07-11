@@ -31,7 +31,7 @@ export const networkLabels = {
     [chainIds.gnosis]: "g",
     [chainIds.polygon]: "p",
     [chainIds.arbitrum]: "a",
-    // [chainIds.fraxtal]: "f",
+    [chainIds.fraxtal]: "f",
 };
 
 export const symbolOverrides = {
