@@ -13,13 +13,14 @@ export const configs = {
 
 export const validNetworks = [
     chainIds.mainnet,
-    chainIds.base,
-    chainIds.optimism,
-    chainIds.avalanche,
-    chainIds.zkevm,
-    chainIds.gnosis,
-    chainIds.polygon,
     chainIds.arbitrum,
+    chainIds.avalanche,
+    chainIds.base,
+    chainIds.fraxtal,
+    chainIds.gnosis,
+    chainIds.optimism,
+    chainIds.polygon,
+    chainIds.zkevm,
 ];
 
 export const networkLabels = {
@@ -30,6 +31,7 @@ export const networkLabels = {
     [chainIds.gnosis]: "g",
     [chainIds.polygon]: "p",
     [chainIds.arbitrum]: "a",
+    [chainIds.fraxtal]: "f",
 };
 
 export const symbolOverrides = {

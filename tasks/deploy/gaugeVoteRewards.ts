@@ -110,6 +110,8 @@ task("configure:mainnet:gaugeVoteRewards")
         await setChildGaugeVoteRewards(chainIds.gnosis);
         await setChildGaugeVoteRewards(chainIds.polygon);
         await setChildGaugeVoteRewards(chainIds.zkevm);
+        await setChildGaugeVoteRewards(chainIds.avalanche);
+        await setChildGaugeVoteRewards(chainIds.fraxtal);
 
         // --------- setTrustedRemoteAddress ------------- //
         await setTrustedRemoteAddress(chainIds.arbitrum);
@@ -118,6 +120,8 @@ task("configure:mainnet:gaugeVoteRewards")
         await setTrustedRemoteAddress(chainIds.gnosis);
         await setTrustedRemoteAddress(chainIds.polygon);
         await setTrustedRemoteAddress(chainIds.zkevm);
+        await setTrustedRemoteAddress(chainIds.avalanche);
+        await setTrustedRemoteAddress(chainIds.fraxtal);
 
         tx = await gaugeVoteRewards.setDistributor("0x817F426B5a79599464488eCCf82c3F54b9330E15"); // KeeperMulticall3
         await waitForTx(tx, DEBUG, waitForBlocks);
