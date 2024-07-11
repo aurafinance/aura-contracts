@@ -4,7 +4,7 @@ import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
 import { chainIds } from "../utils";
-import { SidechainConfig } from "types";
+import { BridgeDelegateSender__factory, SidechainConfig } from "../../types";
 import { config as base } from "../deploy/base-config";
 import { config as zkevm } from "../deploy/zkevm-config";
 import { config as gnosis } from "../deploy/gnosis-config";
@@ -111,12 +111,12 @@ async function checkChain(chainId: ChainToCheck) {
     // const multiCall = multiCalls[chainId];
     const sideChain = config.getSidechain(provider);
     const view = config.getView(provider);
-    // const childGauge = config.getChildGaugeVoteRewards!(provider);
+    const bridging = config.bridging;
 
     const factories = sideChain.factories;
     delete (sideChain as any)?.factories;
-
-    const contracts = Object.entries({ ...sideChain, ...factories, ...view }).filter(
+    const l2Sender = BridgeDelegateSender__factory.connect(bridging.l2Sender, provider);
+    const contracts = Object.entries({ ...sideChain, ...factories, ...view, l2Sender }).filter(
         ([name, contract]) =>
             // checking that, this item is indeed a contract object
             typeof contract === "object" && name !== "interface" && name !== "provider" && "address" in contract,
@@ -133,7 +133,7 @@ async function checkChain(chainId: ChainToCheck) {
         // checking the ownership
         console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
         const owned = "owner" in contract || "operator" in contract;
-        if (owned && contract.address !== sideChain.keeperMulticall3.address) {
+        if (owned && contract.address) {
             try {
                 const ownerFn = "owner" in contract ? "owner" : "operator";
                 const owner = await (contract as any)[ownerFn]().then((o: string) => o.toLowerCase());
@@ -141,6 +141,8 @@ async function checkChain(chainId: ChainToCheck) {
                 const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
                 if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
                 else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
+                else if (contract.address === sideChain.keeperMulticall3.address)
+                    console.log(_(`\t\t✅ owned by ${owner}`)(ok));
                 else console.log(_(`\t\t❌ owner: ${owner}`)(error));
             } catch {
                 console.log(_("\t\t• unable to get owner")(warn));

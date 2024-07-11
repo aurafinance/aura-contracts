@@ -229,11 +229,7 @@ task("deploy:sidechain:create2Factory")
 
         const phase = await deployCreate2Factory(hre, deployer, debug, waitForBlocks);
 
-        let tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
-        await waitForTx(tx, debug);
-
-        // TODO - REMOVE
-        tx = await phase.create2Factory.updateDeployer("0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4", true);
+        const tx = await phase.create2Factory.updateDeployer(await deployer.getAddress(), true);
         await waitForTx(tx, debug);
 
         logContracts(phase as unknown as { [key: string]: { address: string } });

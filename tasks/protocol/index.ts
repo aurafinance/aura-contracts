@@ -203,7 +203,17 @@ function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
     }
 }
 
-const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm", "Avalanche"]; // TODO Fraxtal
+const gaugeTypesSupported = [
+    "Ethereum",
+    "Polygon",
+    "Arbitrum",
+    "Optimism",
+    "Gnosis",
+    "Base",
+    "ZkEvm",
+    "Avalanche",
+    "Fraxtal",
+];
 const opAddress = "0x4200000000000000000000000000000000000042";
 const arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 

@@ -16,7 +16,7 @@ export const validNetworks = [
     chainIds.arbitrum,
     chainIds.avalanche,
     chainIds.base,
-    // chainIds.fraxtal, // TODO
+    chainIds.fraxtal,
     chainIds.gnosis,
     chainIds.optimism,
     chainIds.polygon,
