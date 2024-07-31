@@ -3,7 +3,6 @@ import { task } from "hardhat/config";
 import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
-import { chainIds } from "../utils";
 import { BridgeDelegateSender__factory, SidechainConfig } from "../../types";
 import { config as base } from "../deploy/base-config";
 import { config as zkevm } from "../deploy/zkevm-config";
@@ -13,6 +12,8 @@ import { config as polygon } from "../deploy/polygon-config";
 import { config as arbitrum } from "../deploy/arbitrum-config";
 import { config as optimism } from "../deploy/optimism-config";
 import { config as fraxtal } from "../deploy/fraxtal-config";
+import { chainIds } from "../utils";
+import { blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -38,19 +39,7 @@ const warn = "#ffa012";
 const error = "#ff2600";
 const ok = "#55ff00";
 
-const chainsToCheck = [
-    chainIds.arbitrum,
-    chainIds.optimism,
-    chainIds.polygon,
-    chainIds.gnosis,
-    chainIds.base,
-    chainIds.zkevm,
-    chainIds.avalanche,
-    chainIds.fraxtal,
-] as const;
-type ChainToCheck = typeof chainsToCheck[number];
-
-const chainConfigs: Record<ChainToCheck, SidechainConfig> = {
+const chainConfigs: Record<SupportedChains, SidechainConfig> = {
     [chainIds.arbitrum]: arbitrum,
     [chainIds.optimism]: optimism,
     [chainIds.polygon]: polygon,
@@ -60,7 +49,7 @@ const chainConfigs: Record<ChainToCheck, SidechainConfig> = {
     [chainIds.avalanche]: avalanche,
     [chainIds.fraxtal]: fraxtal,
 };
-const chainNames: Record<ChainToCheck, string> = {
+const chainNames: Record<SupportedChains, string> = {
     [chainIds.arbitrum]: "🔵 Arbitrum",
     [chainIds.optimism]: "🔴 Optimism",
     [chainIds.polygon]: "🟣 Polygon",
@@ -70,27 +59,8 @@ const chainNames: Record<ChainToCheck, string> = {
     [chainIds.avalanche]: "🔺 Avalanche",
     [chainIds.fraxtal]: "🔳 Fraxtal",
 };
-const blockExplorer: Record<ChainToCheck, string> = {
-    [chainIds.arbitrum]: "arbiscan.io",
-    [chainIds.optimism]: "optimistic.etherscan.io",
-    [chainIds.polygon]: "polygonscan.com",
-    [chainIds.gnosis]: "gnosisscan.io",
-    [chainIds.base]: "basescan.org",
-    [chainIds.zkevm]: "zkevm.polygonscan.com",
-    [chainIds.avalanche]: "snowtrace.io",
-    [chainIds.fraxtal]: "fraxscan.com",
-};
-const blockExplorerApi: Record<ChainToCheck, string> = {
-    [chainIds.arbitrum]: "api.arbiscan.io",
-    [chainIds.optimism]: "api-optimistic.etherscan.io",
-    [chainIds.polygon]: "api.polygonscan.com",
-    [chainIds.gnosis]: "api.gnosisscan.io",
-    [chainIds.base]: "api.basescan.org",
-    [chainIds.zkevm]: "api-zkevm.polygonscan.com",
-    [chainIds.avalanche]: "api.routescan.io/v2/network/mainnet/evm/43114/etherscan",
-    [chainIds.fraxtal]: "api.fraxscan.com",
-};
-const providers: Record<ChainToCheck, JsonRpcProvider> = {
+
+const providers: Record<SupportedChains, JsonRpcProvider> = {
     [chainIds.arbitrum]: new JsonRpcProvider(process.env.ARBITRUM_NODE_URL, chainIds.arbitrum),
     [chainIds.optimism]: new JsonRpcProvider(process.env.OPTIMISM_NODE_URL, chainIds.optimism),
     [chainIds.polygon]: new JsonRpcProvider(process.env.POLYGON_NODE_URL, chainIds.polygon),
@@ -101,7 +71,7 @@ const providers: Record<ChainToCheck, JsonRpcProvider> = {
     [chainIds.fraxtal]: new JsonRpcProvider(process.env.FRAXTAL_NODE_URL, chainIds.fraxtal),
 };
 
-async function checkChain(chainId: ChainToCheck) {
+async function checkChain(chainId: SupportedChains) {
     console.log(`\n\n${chainNames[chainId]}`);
 
     // initialize provider and needed values
@@ -187,7 +157,8 @@ async function checkChain(chainId: ChainToCheck) {
 }
 
 task("contract-status").setAction(async () => {
-    for (const chainId of chainsToCheck) {
+    for (const chainId of supportedChains) {
+        if (chainIds.mainnet === chainId) continue;
         await checkChain(chainId);
     }
     console.log("\n");

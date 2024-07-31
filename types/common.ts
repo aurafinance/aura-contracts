@@ -18,3 +18,7 @@ export type PoolInfo = {
     stash: string;
     shutdown: boolean;
 };
+export interface AxiosResult<T> {
+    error: boolean;
+    data: Array<T>;
+}

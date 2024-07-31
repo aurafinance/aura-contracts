@@ -2,6 +2,7 @@ import axios from "axios";
 import { BigNumber as BN, BigNumberish, ethers } from "ethers";
 
 import { calculateVeBalPrice, getTokenPrices } from "../utils/balancerApi";
+import { AxiosResult } from "types/common";
 
 const log = console.log;
 
@@ -54,10 +55,6 @@ export interface Incentive {
     maxTokensPerVote?: BN;
     ratio: number;
     periods: number;
-}
-interface AxiosResult<T> {
-    error: boolean;
-    data: Array<T>;
 }
 
 const auraTokenAddress = "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf";
