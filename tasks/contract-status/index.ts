@@ -13,7 +13,7 @@ import { config as arbitrum } from "../deploy/arbitrum-config";
 import { config as optimism } from "../deploy/optimism-config";
 import { config as fraxtal } from "../deploy/fraxtal-config";
 import { chainIds } from "../utils";
-import { blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
+import { blockExplorer, blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 

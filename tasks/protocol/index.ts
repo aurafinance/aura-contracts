@@ -428,7 +428,7 @@ async function addPoolToMainnet(
                     ...{ label: gauge.address, address: gauge.address },
                     ...gaugeChoice,
                     ...defaultTableInfo,
-                    setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain),
+                    setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain) + "",
                 };
                 return setDstChainId(
                     gaugeVoteRewards.address,
