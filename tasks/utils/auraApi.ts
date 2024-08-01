@@ -22,7 +22,7 @@ const subgraphUrls = {
     [chainIds.base]: `${SIDECHAIN_URI}/aura-finance-base/api`,
     [chainIds.zkevm]: `${SIDECHAIN_URI}/aura-finance-zkevm/api`,
     [chainIds.avalanche]: `${SIDECHAIN_URI}/aura-finance-avalanche/api`,
-    [chainIds.fraxtal]: `${SIDECHAIN_URI}/aura-finance-fraxtal/api`,
+    [chainIds.fraxtal]: `https://graph.data.aura.finance/subgraphs/name/aura-finance-fraxtal`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
     const endpoint = subgraphUrls[chainId];
