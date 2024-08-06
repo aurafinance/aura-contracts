@@ -16,10 +16,13 @@ import { KeeperRole } from "../peripheral/KeeperRole.sol";
  *          native fee to be able to add a pool on the destination chain.
  */
 contract L1PoolManagerProxy is LzApp, KeeperRole {
+    /* -------------------------------------------------------------------
+       Storage
+    ------------------------------------------------------------------- */
+
     uint256 public constant NO_EXTRA_GAS = 0;
     // packet type
     uint16 public constant PT_SEND = 0;
-
     /// @dev LayerZero chain ID for this chain
     uint16 public immutable lzChainId;
     /// @dev Gauge controller address
@@ -30,13 +33,15 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
     bool public protectAddPool;
     /// @dev lzChainId => gauge type
     mapping(uint16 => string) public gaugeTypes;
+
     /* -------------------------------------------------------------------
-       Events 
+       Events
     ------------------------------------------------------------------- */
+
     event AddSidechainPool(uint16 indexed dstChainId, address rootGauge, address dstGauge);
 
     /* -------------------------------------------------------------------
-       Constructor 
+       Constructor
     ------------------------------------------------------------------- */
 
     /**
@@ -60,6 +65,10 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
 
     receive() external payable {}
 
+    /* -------------------------------------------------------------------
+       Setter functions
+    ------------------------------------------------------------------- */
+
     /**
      * @notice set if addPool is only callable by operator
      */
@@ -77,49 +86,31 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
         gaugeTypes[_lzChainId] = gaugeType;
     }
 
+    /* -------------------------------------------------------------------
+       Core functions
+    ------------------------------------------------------------------- */
+
     /**
      * @notice Send a message to add a pool on a sidechain.
      * @dev Set adapterParams correctly per dstChainId to provide enough gas to
      * add a pool on the destination chain.
      *
-     * @param _gauge              The root gauge address.
+     * @param _gauges             The root gauge addresses.
      * @param _dstChainId         The LayerZero destination chain ID eg optimism is 111
      * @param _zroPaymentAddress  The LayerZero ZRO payment address
      * @param _adapterParams      The adapter params, very important as default gas limit
      *                             is not enough to add a pool on any sidechain.
      */
-    function addPool(
-        address _gauge,
-        uint16 _dstChainId,
-        address _zroPaymentAddress,
-        bytes memory _adapterParams
-    ) external payable returns (bool) {
-        if (protectAddPool) {
-            require(authorizedKeepers[msg.sender], "!keeper");
-        }
-        address[] memory gauges = new address[](1);
-        gauges[0] = _gauge;
-        return _addPools(gauges, _dstChainId, _zroPaymentAddress, _adapterParams);
-    }
-
     function addPools(
-        address[] calldata _gauges,
-        uint16 _dstChainId,
-        address _zroPaymentAddress,
-        bytes memory _adapterParams
-    ) external payable returns (bool) {
-        if (protectAddPool) {
-            require(authorizedKeepers[msg.sender], "!keeper");
-        }
-        return _addPools(_gauges, _dstChainId, _zroPaymentAddress, _adapterParams);
-    }
-
-    function _addPools(
         address[] memory _gauges,
         uint16 _dstChainId,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) internal returns (bool) {
+    ) external payable returns (bool) {
+        if (protectAddPool) {
+            require(authorizedKeepers[msg.sender], "!keeper");
+        }
+
         _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
         uint256 gaugesLen = _gauges.length;
         address[] memory dstGauges = new address[](gaugesLen);
@@ -136,8 +127,8 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
 
         _lzSend(
             _dstChainId, ///////////// Destination chain (L2 chain)
-            abi.encode(dstGauges), ///////////////// Payload encode
-            payable(msg.sender), // Refund address
+            abi.encode(dstGauges), /// Payload encode
+            payable(msg.sender), ///// Refund address
             _zroPaymentAddress, ////// ZRO payment address
             _adapterParams, ////////// Adapter params
             msg.value //////////////// Native fee
@@ -145,6 +136,10 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
 
         return true;
     }
+
+    /* -------------------------------------------------------------------
+       Internal functions
+    ------------------------------------------------------------------- */
 
     function _checkValidRootGauge(uint16 _dstChainId, address _gauge) internal view {
         //check the destination chain is correct.
