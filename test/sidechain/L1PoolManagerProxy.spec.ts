@@ -129,18 +129,10 @@ describe("L1PoolManagerProxy", () => {
 
         it("should properly store valid arguments", async () => {
             expect(await l1PoolManagerProxy.lzChainId(), "lzChainId").to.eq(L1_CHAIN_ID);
-            expect(await l1PoolManagerProxy.protectAddPool(), "protectAddPool").to.eq(true);
             expect(await l1PoolManagerProxy.owner(), "owner").to.eq(dao.address);
         });
     });
     describe("configuration ", async () => {
-        it("DAO - sets keeper on l1PoolManagerProxy", async () => {
-            //   When  config is set.
-            await l1PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(keeper.address, true);
-            // No events
-            const authorizedKeepers = await l1PoolManagerProxy.authorizedKeepers(keeper.address);
-            expect(authorizedKeepers, "authorizedKeepers").to.be.eq(true);
-        });
         it("DAO - sets setTrustedRemoteAddress on l1PoolManagerProxy", async () => {
             const expectedTrustedRemote = (
                 l2PoolManagerProxy.address + l1PoolManagerProxy.address.slice(2)
@@ -188,22 +180,12 @@ describe("L1PoolManagerProxy", () => {
                 l2PoolManagerProxy.address,
             );
         });
-        it("DAO - setProtectPool on l1PoolManagerProxy", async () => {
-            const expectedprotectAddPool = true;
-            //   When  config is set.
-            await l1PoolManagerProxy.connect(dao.signer).setProtectPool(expectedprotectAddPool);
-
-            const protectAddPool = await l1PoolManagerProxy.protectAddPool();
-            expect(protectAddPool, "protectAddPool").to.be.eq(expectedprotectAddPool);
-        });
     });
 
     describe("addPool", async () => {
         it("from mainnet to sidechain add pool", async () => {
             const { rootGauge, sidechainGauge } = await deploySidechainGauge("mock", 1);
 
-            // Removes protection so anyone can add pools
-            await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
             let tx = await l1PoolManagerProxy
                 .connect(deployer.signer)
                 .addPools([rootGauge.address], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
@@ -219,12 +201,6 @@ describe("L1PoolManagerProxy", () => {
     });
     describe("edge cases", () => {
         describe("configurations", async () => {
-            it("fails to protected pool, caller is not owner", async () => {
-                await expect(
-                    l1PoolManagerProxy.connect(deployer.signer).setProtectPool(false),
-                    "onlyOwner",
-                ).to.be.revertedWith(ERRORS.ONLY_OWNER);
-            });
             it("fails setGaugeType, caller is not owner", async () => {
                 await expect(
                     l1PoolManagerProxy.connect(deployer.signer).setGaugeType(L2_CHAIN_ID, L2_BALANCER_GAUGE_TYPE),
@@ -233,19 +209,6 @@ describe("L1PoolManagerProxy", () => {
             });
         });
         describe("add pool", async () => {
-            it("fails when protected pool is true, caller is not keeper", async () => {
-                await l1PoolManagerProxy.connect(dao.signer).setProtectPool(true);
-                await expect(
-                    l1PoolManagerProxy
-                        .connect(alice.signer)
-                        .addPools([rootGauge0.address], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
-                            value: NATIVE_FEE,
-                            gasLimit: minDstGas,
-                        }),
-                    "!keeper",
-                ).to.be.revertedWith("!keeper");
-                await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
-            });
             it("fails if adapter params is not set", async () => {
                 await expect(
                     l1PoolManagerProxy

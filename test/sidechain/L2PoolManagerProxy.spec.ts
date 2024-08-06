@@ -66,8 +66,6 @@ describe("L2PoolManagerProxy", () => {
         l2PoolManagerProxy = sidechain.l2PoolManagerProxy;
 
         dao = await impersonateAccount(testSetup.l1.multisigs.daoMultisig);
-        await l1PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(dao.address, true);
-        await l1PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(keeper.address, true);
         await l2PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(dao.address, true);
         await l2PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(keeper.address, true);
 
@@ -192,9 +190,6 @@ describe("L2PoolManagerProxy", () => {
     describe("addPool", async () => {
         it("from mainnet to sidechain add pool", async () => {
             const { rootGauge, sidechainGauge } = await deploySidechainGauge("mock", 1);
-
-            // Removes protection so anyone can add pools
-            await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
 
             let tx = await l1PoolManagerProxy
                 .connect(deployer.signer)
