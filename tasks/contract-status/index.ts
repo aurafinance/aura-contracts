@@ -121,6 +121,16 @@ async function checkChain(chainId: SupportedChains) {
             console.log(_("\t\t• not owned")(gray));
         }
 
+        // For L2Coordinator, we must check that l2Coordinator.bridgeDelegate() is not 0x00...00
+        if (contract.address === sideChain.l2Coordinator.address) {
+            const bridgeDelegate = await sideChain.l2Coordinator.bridgeDelegate();
+            if (bridgeDelegate === ZERO_ADDRESS) {
+                console.log(_("\t\t❌ bridgeDelegate is not set")(error));
+            } else {
+                console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+            }
+        }
+
         // checking the verification status on block explorer
         const response = await axios.get(
             `https://${blockExplorerApi[chainId]}/api?module=contract&action=getabi&address=${contract.address}`,
@@ -156,6 +166,7 @@ async function checkChain(chainId: SupportedChains) {
     }
 }
 
+// npx hardhat --config tasks.config.ts contract-status
 task("contract-status").setAction(async () => {
     for (const chainId of supportedChains) {
         if (chainIds.mainnet === chainId) continue;
