@@ -15,7 +15,7 @@ import { KeeperRole } from "../peripheral/KeeperRole.sol";
  *      2.  User most provide a root gauge address and the layer zero chain id, with enought
  *          native fee to be able to add a pool on the destination chain.
  */
-contract L1PoolManagerProxy is LzApp, KeeperRole {
+contract L1PoolManagerProxy is LzApp {
     /* -------------------------------------------------------------------
        Storage
     ------------------------------------------------------------------- */
@@ -29,8 +29,6 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
     address public immutable gaugeController;
     /// @dev Gauge controller address
     address public immutable gaugeCheckpointer;
-    /// @dev Indicates if add pool is protected or not.
-    bool public protectAddPool;
     /// @dev lzChainId => gauge type
     mapping(uint16 => string) public gaugeTypes;
 
@@ -55,10 +53,9 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
         address _lzEndpoint,
         address _gaugeController,
         address _gaugeCheckpointer
-    ) KeeperRole(msg.sender) {
+    ) {
         lzChainId = _lzChainId;
         _initializeLzApp(_lzEndpoint);
-        protectAddPool = true;
         gaugeController = _gaugeController;
         gaugeCheckpointer = _gaugeCheckpointer;
     }
@@ -68,13 +65,6 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
     /* -------------------------------------------------------------------
        Setter functions
     ------------------------------------------------------------------- */
-
-    /**
-     * @notice set if addPool is only callable by operator
-     */
-    function setProtectPool(bool _protectAddPool) external onlyOwner {
-        protectAddPool = _protectAddPool;
-    }
 
     /**
      * @notice Maps layer zero chain id with balancer gauge type.
@@ -107,10 +97,6 @@ contract L1PoolManagerProxy is LzApp, KeeperRole {
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external payable returns (bool) {
-        if (protectAddPool) {
-            require(authorizedKeepers[msg.sender], "!keeper");
-        }
-
         _checkAdapterParams(_dstChainId, PT_SEND, _adapterParams, NO_EXTRA_GAS);
         uint256 gaugesLen = _gauges.length;
         address[] memory dstGauges = new address[](gaugesLen);

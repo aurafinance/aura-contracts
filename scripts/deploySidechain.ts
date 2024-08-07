@@ -319,17 +319,13 @@ export async function deployCanonicalPhase4(
         "transferOwnership",
         [deployerAddress],
     );
-    const l1PoolManagerProxyUpdateAuthorizedKeepers = L1PoolManagerProxy__factory.createInterface().encodeFunctionData(
-        "updateAuthorizedKeepers",
-        [multisigs.defender.l1PoolManagerProxyKeeper, true],
-    );
     const l1PoolManagerProxy = await deployContractWithCreate2<L1PoolManagerProxy, L1PoolManagerProxy__factory>(
         hre,
         create2Factory,
         new L1PoolManagerProxy__factory(signer),
         "L1PoolManagerProxy",
         [canonicalLzChainId, extConfig.lzEndpoint, extConfig.gaugeController, extConfig.gaugeCheckpointer],
-        deployOptionsWithCallbacks([l1PoolManagerProxyUpdateAuthorizedKeepers, l1PoolManagerProxyTransferOwnership]),
+        deployOptionsWithCallbacks([l1PoolManagerProxyTransferOwnership]),
     );
 
     let tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.arbitrum], "Arbitrum");
