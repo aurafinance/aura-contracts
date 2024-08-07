@@ -3,23 +3,34 @@ pragma solidity 0.8.11;
 
 import { NonblockingLzApp } from "../layerzero/lzApp/NonblockingLzApp.sol";
 import { IPoolManagerLite } from "contracts/sidechain/interfaces/IPoolManagerLite.sol";
+import { KeeperRole } from "../peripheral/KeeperRole.sol";
 
 /**
  * @title   L2PoolManagerProxy
  * @author  AuraFinance
  * @dev     Given a root gauge on L1PoolManagerProxy it adds a gauge recipient on PoolManagerLite
  */
-contract L2PoolManagerProxy is NonblockingLzApp {
+contract L2PoolManagerProxy is NonblockingLzApp, KeeperRole {
     /* -------------------------------------------------------------------
-       Storage 
+       Storage
     ------------------------------------------------------------------- */
+
     /// @dev The poolManager address
     address public poolManager;
+    /// @dev Mapping of valid gauges sent from L1
+    mapping(address => bool) public isValidGauge;
 
     /* -------------------------------------------------------------------
-       Events 
+       Events
     ------------------------------------------------------------------- */
+
     event PoolManagerUpdated(address poolManager);
+
+    /* -------------------------------------------------------------------
+       Initialize/Constructor
+    ------------------------------------------------------------------- */
+
+    constructor() KeeperRole(msg.sender) {}
 
     /**
      * Initialize the contract.
@@ -30,6 +41,18 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         _initializeLzApp(_lzEndpoint);
         _setPoolManager(_poolManager);
     }
+
+    /* -------------------------------------------------------------------
+       View functions
+    ------------------------------------------------------------------- */
+
+    function isShutdown() external view returns (bool) {
+        return IPoolManagerLite(poolManager).isShutdown();
+    }
+
+    /* -------------------------------------------------------------------
+       Setter functions
+    ------------------------------------------------------------------- */
 
     function setPoolManager(address _poolManager) external onlyOwner {
         _setPoolManager(_poolManager);
@@ -44,12 +67,17 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         IPoolManagerLite(poolManager).setOperator(_operator);
     }
 
+    /* -------------------------------------------------------------------
+       Core functions
+    ------------------------------------------------------------------- */
+
     /**
      * @notice Adds new pool directly on L2.
      * @param _gauge The gauge address.
      */
-    function addPool(address _gauge) external onlyOwner returns (bool) {
-        return _addPool(_gauge);
+    function addPool(address _gauge) external onlyKeeper returns (bool) {
+        require(isValidGauge[_gauge], "!valid");
+        return IPoolManagerLite(poolManager).addPool(_gauge);
     }
 
     /**
@@ -67,17 +95,13 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         IPoolManagerLite(poolManager).shutdownSystem();
     }
 
-    function _addPool(address _gauge) internal returns (bool) {
-        return IPoolManagerLite(poolManager).addPool(_gauge);
-    }
+    /* -------------------------------------------------------------------
+       Internal functions
+    ------------------------------------------------------------------- */
 
     function _setPoolManager(address _poolManager) internal {
         poolManager = _poolManager;
         emit PoolManagerUpdated(_poolManager);
-    }
-
-    function isShutdown() external view returns (bool) {
-        return IPoolManagerLite(poolManager).isShutdown();
     }
 
     /* -------------------------------------------------------------------
@@ -97,7 +121,7 @@ contract L2PoolManagerProxy is NonblockingLzApp {
         address[] memory gauges = abi.decode(_payload, (address[]));
         uint256 payloadsLen = gauges.length;
         for (uint256 i = 0; i < payloadsLen; i++) {
-            require(_addPool(gauges[i]), "!addPool");
+            isValidGauge[gauges[i]] = true;
         }
     }
 }

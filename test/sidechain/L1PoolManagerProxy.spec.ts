@@ -68,6 +68,9 @@ describe("L1PoolManagerProxy", () => {
         l2PoolManagerProxy = sidechain.l2PoolManagerProxy;
 
         dao = await impersonateAccount(testSetup.l1.multisigs.daoMultisig);
+        await l2PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(dao.address, true);
+        await l2PoolManagerProxy.connect(dao.signer).updateAuthorizedKeepers(keeper.address, true);
+
         gaugeCheckPointer = MockGaugeCheckpointer__factory.connect(
             testSetup.l1.mocks.addresses.gaugeCheckpointer,
             deployer.signer,
@@ -201,7 +204,7 @@ describe("L1PoolManagerProxy", () => {
 
             // Removes protection so anyone can add pools
             await l1PoolManagerProxy.connect(dao.signer).setProtectPool(false);
-            const tx = await l1PoolManagerProxy
+            let tx = await l1PoolManagerProxy
                 .connect(deployer.signer)
                 .addPools([rootGauge.address], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
                     value: NATIVE_FEE,
@@ -210,6 +213,7 @@ describe("L1PoolManagerProxy", () => {
             await expect(tx)
                 .to.emit(l1PoolManagerProxy, "AddSidechainPool")
                 .withArgs(L2_CHAIN_ID, rootGauge.address, sidechainGauge.address);
+            tx = await l2PoolManagerProxy.connect(keeper.signer).addPool(sidechainGauge.address);
             await expect(tx).to.emit(sidechain.booster, "PoolAdded");
         });
     });
@@ -234,7 +238,7 @@ describe("L1PoolManagerProxy", () => {
                 await expect(
                     l1PoolManagerProxy
                         .connect(alice.signer)
-                        .addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
+                        .addPools([rootGauge0.address], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
                             value: NATIVE_FEE,
                             gasLimit: minDstGas,
                         }),
@@ -246,7 +250,7 @@ describe("L1PoolManagerProxy", () => {
                 await expect(
                     l1PoolManagerProxy
                         .connect(keeper.signer)
-                        .addPool(rootGauge0.address, L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
+                        .addPools([rootGauge0.address], L2_CHAIN_ID, ZERO_ADDRESS, "0x"),
                     "!adapterParams",
                 ).to.be.revertedWith("LzApp: invalid adapterParams");
             });
@@ -263,7 +267,7 @@ describe("L1PoolManagerProxy", () => {
             it("fails when dstChainId is not configured", async () => {
                 await l1PoolManagerProxy.connect(dao.signer).setMinDstGas(333, 0, minDstGas);
                 await expect(
-                    l1PoolManagerProxy.addPool(ZERO_ADDRESS, 333, ZERO_ADDRESS, adapterParams, {
+                    l1PoolManagerProxy.addPools([ZERO_ADDRESS], 333, ZERO_ADDRESS, adapterParams, {
                         value: NATIVE_FEE,
                         gasLimit: minDstGas,
                     }),
@@ -272,7 +276,7 @@ describe("L1PoolManagerProxy", () => {
             });
             it("fails when dstChainId and root gauge are not configured on balancer", async () => {
                 await expect(
-                    l1PoolManagerProxy.addPool(ZERO_ADDRESS, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
+                    l1PoolManagerProxy.addPools([ZERO_ADDRESS], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams),
                     "!checkpointer",
                 ).to.be.revertedWith("!checkpointer");
             });
@@ -280,37 +284,12 @@ describe("L1PoolManagerProxy", () => {
                 const { rootGauge } = await deploySidechainGauge("mock", 0);
 
                 await expect(
-                    l1PoolManagerProxy.addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
+                    l1PoolManagerProxy.addPools([rootGauge.address], L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
                         value: NATIVE_FEE,
                         gasLimit: minDstGas,
                     }),
                     "must have weight",
                 ).to.be.revertedWith("must have weight");
-            });
-            it("fails if pool is already added", async () => {
-                const adapterParams = ethers.utils.solidityPack(["uint16", "uint256"], [1, 20_000_000]);
-                const { rootGauge, sidechainGauge } = await deploySidechainGauge("mock02", 2);
-
-                let tx = await l1PoolManagerProxy
-                    .connect(dao.signer)
-                    .addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
-                        value: NATIVE_FEE,
-                        gasLimit: minDstGas,
-                    });
-
-                await expect(tx).to.emit(sidechain.booster, "PoolAdded");
-
-                tx = await l1PoolManagerProxy
-                    .connect(dao.signer)
-                    .addPool(rootGauge.address, L2_CHAIN_ID, ZERO_ADDRESS, adapterParams, {
-                        value: NATIVE_FEE,
-                        gasLimit: minDstGas,
-                    });
-                await expect(tx)
-                    .to.emit(l1PoolManagerProxy, "AddSidechainPool")
-                    .withArgs(L2_CHAIN_ID, rootGauge.address, sidechainGauge.address);
-                await expect(tx).to.emit(sidechain.l2PoolManagerProxy, "MessageFailed");
-                await expect(tx).to.not.emit(sidechain.booster, "PoolAdded");
             });
         });
     });
