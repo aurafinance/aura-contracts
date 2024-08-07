@@ -346,7 +346,10 @@ export async function deployCanonicalPhase4(
     tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.polygon], "Polygon");
     await waitForTx(tx, debug, waitForBlocks);
 
-    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.zkevm], "Zkevm");
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.zkevm], "PolygonZkEvm");
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await l1PoolManagerProxy.setGaugeType(lzChainIds[chainIds.fraxtal], "Fraxtal");
     await waitForTx(tx, debug, waitForBlocks);
 
     return { l1PoolManagerProxy };
@@ -892,14 +895,10 @@ export async function setTrustedRemoteCanonicalPhase4(
     console.log(`\n~~~~~~~~~~~~~~~~~~~~~~~~~~~`);
     console.log(`~~~~ l1PoolManagerProxy.setTrustedRemote(${sidechainLzChainId}, ${remotePath}) ~~~~\n`);
 
-    let tx = await canonical.l1PoolManagerProxy.setTrustedRemote(
+    const tx = await canonical.l1PoolManagerProxy.setTrustedRemote(
         sidechainLzChainId,
         ethers.utils.solidityPack(["address", "address"], remotePath),
     );
-    await waitForTx(tx, debug, waitForBlocks);
-    const msgType = await canonical.l1PoolManagerProxy.PT_SEND();
-
-    tx = await canonical.l1PoolManagerProxy.setMinDstGas(sidechainLzChainId, msgType, 5_500_000); //Min Gas to Add a pool on L2
     await waitForTx(tx, debug, waitForBlocks);
 
     if (transferOwnership) {
@@ -1244,6 +1243,11 @@ export async function deploySidechainPhase4(
         [canonicalChainLzId, canonical.l1PoolManagerProxy.address],
     );
 
+    const l2PoolManagerProxyUpdateAuthorizedKeepers = L2PoolManagerProxy__factory.createInterface().encodeFunctionData(
+        "updateAuthorizedKeepers",
+        [await signer.getAddress(), true],
+    );
+
     const l2PoolManagerProxy = await deployContractWithCreate2<L2PoolManagerProxy, L2PoolManagerProxy__factory>(
         hre,
         create2Factory,
@@ -1253,6 +1257,7 @@ export async function deploySidechainPhase4(
         deployOptionsWithCallbacks([
             l2PoolManagerProxyInitialize,
             l2PoolManagerProxySetTrustedRemoteAddress,
+            l2PoolManagerProxyUpdateAuthorizedKeepers,
             l2PoolManagerProxyTransferOwnership,
         ]),
     );

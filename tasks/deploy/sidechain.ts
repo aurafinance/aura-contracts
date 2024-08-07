@@ -611,7 +611,7 @@ task("deploy:sidechain:config:L1:phase4")
     .addOptionalParam<string>(
         "sidechainids",
         "Remote standard chain ID, separated by ',', eg Eth Base,Optimism is 8453,10",
-        "8453,43114,1101,10,42161,137,100",
+        "8453,43114,1101,10,42161,137,100,252",
     )
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         // NOTICE: This task can only be run for the first deployment, future deployments
