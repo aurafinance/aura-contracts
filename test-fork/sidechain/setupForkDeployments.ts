@@ -76,7 +76,14 @@ export const setupForkDeployment = async (
                       deployer.signer,
                   ),
               }
-            : await deploySimpleBridgeReceiver(hre, canonical, L2_CHAIN_ID, deployer.signer)
+            : await deploySimpleBridgeReceiver(
+                  hre,
+                  canonicalConfig.addresses,
+                  canonical,
+                  L2_CHAIN_ID,
+                  deployer.signer,
+                  "test",
+              )
         : undefined;
     const bridgeDelegateDeployment = { ...bridgeSender, ...bridgeReceiver };
 

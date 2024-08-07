@@ -3,8 +3,7 @@ import { task } from "hardhat/config";
 import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
-import { chainIds } from "../utils";
-import { SidechainConfig } from "types";
+import { BridgeDelegateSender__factory, SidechainConfig } from "../../types";
 import { config as base } from "../deploy/base-config";
 import { config as zkevm } from "../deploy/zkevm-config";
 import { config as gnosis } from "../deploy/gnosis-config";
@@ -12,6 +11,9 @@ import { config as avalanche } from "../deploy/avax-config";
 import { config as polygon } from "../deploy/polygon-config";
 import { config as arbitrum } from "../deploy/arbitrum-config";
 import { config as optimism } from "../deploy/optimism-config";
+import { config as fraxtal } from "../deploy/fraxtal-config";
+import { chainIds } from "../utils";
+import { blockExplorer, blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -37,18 +39,7 @@ const warn = "#ffa012";
 const error = "#ff2600";
 const ok = "#55ff00";
 
-const chainsToCheck = [
-    chainIds.arbitrum,
-    chainIds.optimism,
-    chainIds.polygon,
-    chainIds.gnosis,
-    chainIds.base,
-    chainIds.zkevm,
-    chainIds.avalanche,
-] as const;
-type ChainToCheck = typeof chainsToCheck[number];
-
-const chainConfigs: Record<ChainToCheck, SidechainConfig> = {
+const chainConfigs: Record<SupportedChains, SidechainConfig> = {
     [chainIds.arbitrum]: arbitrum,
     [chainIds.optimism]: optimism,
     [chainIds.polygon]: polygon,
@@ -56,8 +47,9 @@ const chainConfigs: Record<ChainToCheck, SidechainConfig> = {
     [chainIds.base]: base,
     [chainIds.zkevm]: zkevm,
     [chainIds.avalanche]: avalanche,
+    [chainIds.fraxtal]: fraxtal,
 };
-const chainNames: Record<ChainToCheck, string> = {
+const chainNames: Record<SupportedChains, string> = {
     [chainIds.arbitrum]: "🔵 Arbitrum",
     [chainIds.optimism]: "🔴 Optimism",
     [chainIds.polygon]: "🟣 Polygon",
@@ -65,26 +57,10 @@ const chainNames: Record<ChainToCheck, string> = {
     [chainIds.base]: "⚪ Base",
     [chainIds.zkevm]: "🟪 zkEvm",
     [chainIds.avalanche]: "🔺 Avalanche",
+    [chainIds.fraxtal]: "🔳 Fraxtal",
 };
-const blockExplorer: Record<ChainToCheck, string> = {
-    [chainIds.arbitrum]: "arbiscan.io",
-    [chainIds.optimism]: "optimistic.etherscan.io",
-    [chainIds.polygon]: "polygonscan.com",
-    [chainIds.gnosis]: "gnosisscan.io",
-    [chainIds.base]: "basescan.org",
-    [chainIds.zkevm]: "zkevm.polygonscan.com",
-    [chainIds.avalanche]: "snowtrace.io",
-};
-const blockExplorerApi: Record<ChainToCheck, string> = {
-    [chainIds.arbitrum]: "api.arbiscan.io",
-    [chainIds.optimism]: "api-optimistic.etherscan.io",
-    [chainIds.polygon]: "api.polygonscan.com",
-    [chainIds.gnosis]: "api.gnosisscan.io",
-    [chainIds.base]: "api.basescan.org",
-    [chainIds.zkevm]: "api-zkevm.polygonscan.com",
-    [chainIds.avalanche]: "api.routescan.io/v2/network/mainnet/evm/43114/etherscan",
-};
-const providers: Record<ChainToCheck, JsonRpcProvider> = {
+
+const providers: Record<SupportedChains, JsonRpcProvider> = {
     [chainIds.arbitrum]: new JsonRpcProvider(process.env.ARBITRUM_NODE_URL, chainIds.arbitrum),
     [chainIds.optimism]: new JsonRpcProvider(process.env.OPTIMISM_NODE_URL, chainIds.optimism),
     [chainIds.polygon]: new JsonRpcProvider(process.env.POLYGON_NODE_URL, chainIds.polygon),
@@ -92,9 +68,10 @@ const providers: Record<ChainToCheck, JsonRpcProvider> = {
     [chainIds.base]: new JsonRpcProvider(process.env.BASE_NODE_URL, chainIds.base),
     [chainIds.zkevm]: new JsonRpcProvider(process.env.ZKEVM_NODE_URL, chainIds.zkevm),
     [chainIds.avalanche]: new JsonRpcProvider(process.env.AVALANCHE_NODE_URL, chainIds.avalanche),
+    [chainIds.fraxtal]: new JsonRpcProvider(process.env.FRAXTAL_NODE_URL, chainIds.fraxtal),
 };
 
-async function checkChain(chainId: ChainToCheck) {
+async function checkChain(chainId: SupportedChains) {
     console.log(`\n\n${chainNames[chainId]}`);
 
     // initialize provider and needed values
@@ -104,12 +81,12 @@ async function checkChain(chainId: ChainToCheck) {
     // const multiCall = multiCalls[chainId];
     const sideChain = config.getSidechain(provider);
     const view = config.getView(provider);
-    // const childGauge = config.getChildGaugeVoteRewards!(provider);
+    const bridging = config.bridging;
 
     const factories = sideChain.factories;
     delete (sideChain as any)?.factories;
-
-    const contracts = Object.entries({ ...sideChain, ...factories, ...view }).filter(
+    const l2Sender = BridgeDelegateSender__factory.connect(bridging.l2Sender, provider);
+    const contracts = Object.entries({ ...sideChain, ...factories, ...view, l2Sender }).filter(
         ([name, contract]) =>
             // checking that, this item is indeed a contract object
             typeof contract === "object" && name !== "interface" && name !== "provider" && "address" in contract,
@@ -126,7 +103,7 @@ async function checkChain(chainId: ChainToCheck) {
         // checking the ownership
         console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
         const owned = "owner" in contract || "operator" in contract;
-        if (owned && contract.address !== sideChain.keeperMulticall3.address) {
+        if (owned && contract.address) {
             try {
                 const ownerFn = "owner" in contract ? "owner" : "operator";
                 const owner = await (contract as any)[ownerFn]().then((o: string) => o.toLowerCase());
@@ -134,12 +111,24 @@ async function checkChain(chainId: ChainToCheck) {
                 const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
                 if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
                 else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
+                else if (contract.address === sideChain.keeperMulticall3.address)
+                    console.log(_(`\t\t✅ owned by ${owner}`)(ok));
                 else console.log(_(`\t\t❌ owner: ${owner}`)(error));
             } catch {
                 console.log(_("\t\t• unable to get owner")(warn));
             }
         } else {
             console.log(_("\t\t• not owned")(gray));
+        }
+
+        // For L2Coordinator, we must check that l2Coordinator.bridgeDelegate() is not 0x00...00
+        if (contract.address === sideChain.l2Coordinator.address) {
+            const bridgeDelegate = await sideChain.l2Coordinator.bridgeDelegate();
+            if (bridgeDelegate === ZERO_ADDRESS) {
+                console.log(_("\t\t❌ bridgeDelegate is not set")(error));
+            } else {
+                console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+            }
         }
 
         // checking the verification status on block explorer
@@ -177,8 +166,10 @@ async function checkChain(chainId: ChainToCheck) {
     }
 }
 
+// npx hardhat --config tasks.config.ts contract-status
 task("contract-status").setAction(async () => {
-    for (const chainId of chainsToCheck) {
+    for (const chainId of supportedChains) {
+        if (chainIds.mainnet === chainId) continue;
         await checkChain(chainId);
     }
     console.log("\n");

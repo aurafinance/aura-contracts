@@ -40,6 +40,7 @@ import {
     deployPhase4,
     deployPhase6,
     deployPhase8,
+    ExtSystemConfig,
     MultisigConfig,
     Phase2Deployed,
     Phase6Deployed,
@@ -334,9 +335,11 @@ export const deployL2 = async (
     );
     const { bridgeDelegateReceiver } = await deploySimpleBridgeReceiver(
         hre,
+        { create2Factory: create2Factory.address } as unknown as ExtSystemConfig,
         l1.canonical,
         sidechainLzChainId,
         deployer.signer,
+        "test",
     );
     const sbd = { bridgeDelegateSender, bridgeDelegateReceiver };
 

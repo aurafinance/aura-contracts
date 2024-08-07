@@ -102,7 +102,16 @@ task("deploy:sidechain:L1:bridgeReceiver")
 
         const canonical = config.getSidechain(deployer);
 
-        const result = await deploySimpleBridgeReceiver(hre, canonical, sidechainId, deployer, true, tskArgs.wait);
+        const result = await deploySimpleBridgeReceiver(
+            hre,
+            config.addresses,
+            canonical,
+            sidechainId,
+            deployer,
+            tskArgs.sidechainid,
+            debug,
+            tskArgs.wait,
+        );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
@@ -303,7 +312,7 @@ task("deploy:sidechain:L2:bridgeSender:optimism")
             standardBridge,
             crv,
             l1Crv,
-            true,
+            debug,
             tskArgs.wait,
         );
 
@@ -804,8 +813,8 @@ task("deploy:sidechain:L1:view")
     });
 
 task("deploy:sidechain:L2:peripheral", "Deploys sidechain multicaller, claimzap and view")
-    .addParam("salt", "Create2 salt")
     .addParam("wait", "Blocks to wait")
+    .addOptionalParam<string>("salt", "Create 2 Salt")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         const remoteChainId = hre.network.config.chainId;

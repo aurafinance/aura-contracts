@@ -73,6 +73,8 @@ export async function getGaugeSnapshot() {
                 return chainIds.polygon;
             case "ARBITRUM":
                 return chainIds.arbitrum;
+            case "FRAXTAL":
+                return chainIds.fraxtal;
         }
     };
 
@@ -173,6 +175,7 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         chainIds.zkevm,
         chainIds.base,
         chainIds.avalanche,
+        chainIds.fraxtal,
     ];
 
     if (chainOrder.length !== validNetworks.length) {

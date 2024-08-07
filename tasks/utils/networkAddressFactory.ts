@@ -168,4 +168,5 @@ export const chainIds = {
     arbitrumGoerli: 421613,
     polygon: 137,
     gnosis: 100,
+    fraxtal: 252,
 };

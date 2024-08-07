@@ -39,8 +39,8 @@ const multisigs: SidechainMultisigConfig = {
 };
 
 const extConfig: ExtSidechainConfig = {
-    canonicalChainId: 101, // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
-    lzEndpoint: "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7", // https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids#base
+    canonicalChainId: 101, // https://docs.layerzero.network/v1/developers/evm/technical-reference/mainnet/mainnet-addresses
+    lzEndpoint: "0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7", // https://docs.layerzero.network/v1/developers/evm/technical-reference/mainnet/mainnet-addresses#base
     minter: "0x0c5538098EBe88175078972F514C9e101D325D4F",
     token: "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
     create2Factory: "0x53C09096b1dC52e2Ef223b2969a714eE75Da364f",
@@ -86,7 +86,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
 });
 
 export const getView = (signer: Signer | Provider) => ({
-    sidechainView: SidechainView__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", signer),
+    sidechainView: SidechainView__factory.connect("0x609D44450231697227504e7fA6a327421B11BEAA", signer),
 });
 
 export const getChildGaugeVoteRewards = (signer: Signer) => ({

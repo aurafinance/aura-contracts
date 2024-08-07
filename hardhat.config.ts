@@ -93,6 +93,10 @@ const config: HardhatUserConfig = {
             chainId: chainIds.blast,
             url: process.env.NODE_URL || "",
         },
+        fraxtal: {
+            chainId: chainIds.fraxtal,
+            url: process.env.NODE_URL || "",
+        },
         forking: { url: process.env.NODE_URL || "" },
         rinkeby: { url: process.env.NODE_URL || "", gasPrice: 3000000000 },
     },
@@ -135,6 +139,14 @@ const config: HardhatUserConfig = {
                 urls: {
                     apiURL: "https://api.blastscan.io/api",
                     browserURL: "https://blastscan.io",
+                },
+            },
+            {
+                network: "fraxtal",
+                chainId: chainIds.fraxtal,
+                urls: {
+                    apiURL: "https://api.fraxscan.com/api",
+                    browserURL: "https://fraxscan.com",
                 },
             },
         ],

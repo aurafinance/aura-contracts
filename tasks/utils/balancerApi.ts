@@ -38,7 +38,7 @@ export interface TokenPrice {
 const debug = false;
 
 export async function getTokenPrices(tokenAddresses: string[]): Promise<TokenPrice[]> {
-    const endpoint = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-v2";
+    const endpoint = "https://api.studio.thegraph.com/query/75376/balancer-v2/version/latest";
     const query = gql`
         query GetTokenPrice($tokenAddresses: [String!]!) {
             tokens(where: { address_in: $tokenAddresses }) {
@@ -94,7 +94,7 @@ function normalizeChainName(gauge: GaugesDetails): GaugesDetails {
     return gauge;
 }
 export async function getGaugesDetails(gaugeAddresses: string[]): Promise<GaugesDetails[]> {
-    const endpoint = "https://api.thegraph.com/subgraphs/name/balancer-labs/balancer-gauges";
+    const endpoint = "https://api.studio.thegraph.com/proxy/75376/balancer-gauges/version/latest/";
     const query = gql`
         query GetGaugesDetails($gaugeAddresses: [String!]!) {
             gauges(first: 200, where: { address_in: $gaugeAddresses }) {

@@ -203,8 +203,19 @@ function writeSafeTxFile(safeTx: SafeTxFile, fileName: string) {
     }
 }
 
-const gaugeTypesSupported = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Gnosis", "Base", "ZkEvm", "Avalanche"];
+const gaugeTypesSupported = [
+    "Ethereum",
+    "Polygon",
+    "Arbitrum",
+    "Optimism",
+    "Gnosis",
+    "Base",
+    "ZkEvm",
+    "Avalanche",
+    "Fraxtal",
+];
 const opAddress = "0x4200000000000000000000000000000000000042";
+const arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
 /* ---------------------------------------------------------------
      * Helpers 
@@ -269,7 +280,17 @@ async function addPoolToMainnet(
     const mainnetTxPerPool = [];
     const invalidGauges = [];
     const gaugesToProcess = gaugesDetails.filter(gauge => !gauge.rootGauge);
-    const tableInfo = {};
+    const tableInfo: {
+        [id: string]: {
+            addPool: boolean;
+            setRewardMultiplier: boolean;
+            setStashExtraReward: boolean;
+            setIsNoDepositGauge: boolean;
+            setDstChainId: string;
+            label?: string;
+            address?: string;
+        };
+    } = {};
     const defaultTableInfo = {
         addPool: false,
         setRewardMultiplier: false,
@@ -407,7 +428,7 @@ async function addPoolToMainnet(
                     ...{ label: gauge.address, address: gauge.address },
                     ...gaugeChoice,
                     ...defaultTableInfo,
-                    setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain),
+                    setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain) + "",
                 };
                 return setDstChainId(
                     gaugeVoteRewards.address,
@@ -420,30 +441,44 @@ async function addPoolToMainnet(
 
     const transactions = [...mainnetTxPerPool, ...sidechainTxs];
     // Table output
-    const tableData = [
-        [
-            `${chainName} Gauge`,
-            "Address",
-            "addPool",
-            "setRewardMultiplier",
-            "setStashExtraReward",
-            "setIsNoDepositGauge",
-            "setDstChainId",
-        ],
-        ...Object.keys(tableInfo).map(k => {
-            const info = tableInfo[k];
-            return [
-                info.label ?? k,
-                info.address ?? k,
-                formatBool(info.addPool),
-                formatBool(info.setRewardMultiplier),
-                formatBool(info.setStashExtraReward),
-                formatBool(info.setIsNoDepositGauge),
-                formatDstChainId(info.setDstChainId),
-            ];
-        }),
-    ];
-    console.log(table(tableData));
+    const tableInfoOnlyYes = Object.fromEntries(
+        Object.entries(tableInfo).filter(
+            ([, info]) =>
+                info.addPool ||
+                info.setRewardMultiplier ||
+                info.setStashExtraReward ||
+                info.setIsNoDepositGauge ||
+                info.setDstChainId !== "NO",
+        ),
+    );
+    if (Object.keys(tableInfoOnlyYes).length > 0) {
+        const tableData = [
+            [
+                `${chainName} Gauge`,
+                "Address",
+                "addPool",
+                "setRewardMultiplier",
+                "setStashExtraReward",
+                "setIsNoDepositGauge",
+                "setDstChainId",
+            ],
+            ...Object.keys(tableInfoOnlyYes).map(k => {
+                const info = tableInfoOnlyYes[k];
+                return [
+                    info.label ?? k,
+                    info.address ?? k,
+                    formatBool(info.addPool),
+                    formatBool(info.setRewardMultiplier),
+                    formatBool(info.setStashExtraReward),
+                    formatBool(info.setIsNoDepositGauge),
+                    formatDstChainId(info.setDstChainId),
+                ];
+            }),
+        ];
+        console.log(table(tableData));
+    } else {
+        console.log(`${chainName} Gauge : N/A`);
+    }
 
     const safeTx = buildSafeTx({
         chainId: `${chainId}`,
@@ -469,6 +504,7 @@ async function addPoolToSidechain(
     // process.env.BASE_NODE_URL,
     // process.env.ZKEVM_NODE_URL,
     // process.env.AVALANCHE_NODE_URL,
+    // process.env.FRAXTAL_NODE_URL,
     const REMOTE_NODE_URL = `${chainName.toUpperCase()}_NODE_URL`;
     const remoteNodeUrl = process.env[`${REMOTE_NODE_URL}`];
     assert(remoteNodeUrl.length > 0, `${REMOTE_NODE_URL} not set`);
@@ -489,9 +525,31 @@ async function addPoolToSidechain(
     const initialNonce = await jsonProvider.getTransactionCount(factories.proxyFactory.address);
     const allTxPerPool = [];
     const invalidGauges = [];
-    const extraRewards = chainId === chainIds.optimism && voting ? [auraOFT.address, opAddress] : [auraOFT.address];
+    let extraRewards = [];
+    if (voting) {
+        switch (chainId) {
+            case chainIds.optimism:
+                extraRewards = [auraOFT.address, opAddress];
+                break;
+            case chainIds.arbitrum:
+                extraRewards = [auraOFT.address, arbAddress];
+                break;
+            default:
+                extraRewards = [auraOFT.address];
+        }
+    }
+
     let addPools = 0;
-    const tableInfo = {};
+    const tableInfo: {
+        [id: string]: {
+            addPool: boolean;
+            setStashExtraReward: string[];
+            label?: string;
+            address?: string;
+            recipient?: string;
+        };
+    } = {};
+
     const defaultTableInfo = {
         addPool: false,
         setStashExtraReward: [],
@@ -530,8 +588,11 @@ async function addPoolToSidechain(
 
                 for (let j = 0; j < extraRewards.length; j++) {
                     const extraReward = extraRewards.map(t => t.toLowerCase())[j];
-                    if (!currentGaugeRewardTokens.includes(extraReward)) {
-                        // Add missing reward token
+                    // Add missing auraOFT reward token
+                    if (
+                        !currentGaugeRewardTokens.includes(extraReward) &&
+                        extraReward === auraOFT.address.toLowerCase()
+                    ) {
                         txPerPool.push(
                             setStashExtraRewardSidechain(boosterOwner.address, poolInfo.stash, extraRewards[j]),
                         );
@@ -573,20 +634,25 @@ async function addPoolToSidechain(
     }
 
     const transactions = [...allTxPerPool];
-    const tableData = [
-        [`${chainName} Gauge`, "Root address", "Recipient address", "addPool", "setStashExtraReward"],
-        ...Object.keys(tableInfo).map(k => {
-            const info = tableInfo[k];
-            return [
-                info.label,
-                info.address,
-                info.recipient,
-                formatBool(info.addPool),
-                info.setStashExtraReward.join(`\n`),
-            ];
-        }),
-    ];
-    console.log(table(tableData));
+    const tableInfoOnlyYes = Object.fromEntries(
+        Object.entries(tableInfo).filter(([, info]) => info.addPool || info.setStashExtraReward.length > 0),
+    );
+    if (Object.keys(tableInfoOnlyYes).length > 0) {
+        const tableData = [
+            [`${chainName} Gauge`, "Root address", "Recipient address", "addPool", "setStashExtraReward"],
+            ...Object.keys(tableInfoOnlyYes).map(k => {
+                const info = tableInfoOnlyYes[k];
+                return [
+                    info.label,
+                    info.address,
+                    info.recipient,
+                    formatBool(info.addPool),
+                    info.setStashExtraReward.join(`\n`),
+                ];
+            }),
+        ];
+        console.log(table(tableData));
+    }
     const safeTx = buildSafeTx({
         chainId: `${chainId}`,
         name: "Add pool",

@@ -141,7 +141,7 @@ describe("ChildGaugeVoteRewards", () => {
             expect(await childGaugeVoteRewards.stashRewardDistro(), "stashRewardDistro").to.eq(
                 stashRewardDistro.address,
             );
-            expect(await childGaugeVoteRewards.distributor(), "distributor").to.eq(ZERO_ADDRESS);
+            expect(await childGaugeVoteRewards.distributor(), "distributor").to.eq(testSetup.l2.multisigs.defender);
             expect(
                 await childGaugeVoteRewards.getAmountToSendByEpoch(ZERO, ZERO_ADDRESS),
                 "getAmountToSendByEpoch",
