@@ -75,6 +75,14 @@ contract L2PoolManagerProxy is NonblockingLzApp, KeeperRole {
      * @notice Adds new pool directly on L2.
      * @param _gauge The gauge address.
      */
+    function ownerAddPool(address _gauge) external onlyOwner returns (bool) {
+        return IPoolManagerLite(poolManager).addPool(_gauge);
+    }
+
+    /**
+     * @notice Adds new pool directly on L2 checking for a valid gauge
+     * @param _gauge The gauge address.
+     */
     function addPool(address _gauge) external onlyKeeper returns (bool) {
         require(isValidGauge[_gauge], "!valid");
         return IPoolManagerLite(poolManager).addPool(_gauge);
