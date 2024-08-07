@@ -238,8 +238,8 @@ describe("L2PoolManagerProxy", () => {
             });
             it("fails addPool, caller is not keeper", async () => {
                 await expect(
-                    l2PoolManagerProxy.connect(deployer.signer).addPool(DEAD_ADDRESS),
-                    "onlyOwner",
+                    l2PoolManagerProxy.connect(alice.signer).addPool(DEAD_ADDRESS),
+                    "ONLY_KEEPER",
                 ).to.be.revertedWith(ERRORS.ONLY_KEEPER);
             });
             it("fails shutdownSystem, caller is not owner", async () => {

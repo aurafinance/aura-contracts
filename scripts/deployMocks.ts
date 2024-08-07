@@ -121,7 +121,6 @@ async function getMockMultisigs(
         defender: {
             l1CoordinatorDistributor: ZERO_ADDRESS,
             auraBalProxyOFTHarvestor: ZERO_ADDRESS,
-            l1PoolManagerProxyKeeper: ZERO_ADDRESS,
         },
     };
 }
