@@ -37,8 +37,10 @@ import { deployContract, logContracts } from "../utils/deploy-utils";
 import { config as goerliConfig } from "./goerli-config";
 import { config } from "./mainnet-config";
 
+// Configs
 const waitForBlocks = 2;
 const debug = true;
+const SALT = "3333";
 
 function getPoolAddress(utils: any, receipt: ContractReceipt): string {
     const event = receipt.events.find(e => e.topics[0] === utils.keccak256(utils.toUtf8Bytes("PoolCreated(address)")));
@@ -340,11 +342,22 @@ task("deploy:mainnet:keeperMulticall3")
         console.log("KeeperMulticall3:", result.keeperMulticall3.address);
     });
 
-task("deploy:mainnet:poolFeeManagerProxy").setAction(async function (_: TaskArguments, hre) {
-    const deployer = await getSigner(hre);
-    const phase6 = await config.getPhase6(deployer);
-    const phase8 = await config.getPhase8(deployer);
-    const result = await deployPhase9(hre, deployer, { ...phase6, ...phase8 }, config.multisigs, debug, waitForBlocks);
+task("deploy:mainnet:poolFeeManagerProxy")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase6 = await config.getPhase6(deployer);
+        const phase8 = await config.getPhase8(deployer);
+        const result = await deployPhase9(
+            hre,
+            deployer,
+            config.addresses,
+            { ...phase6, ...phase8 },
+            config.multisigs,
+            SALT,
+            debug,
+            tskArgs.wait,
+        );
 
-    logContracts(result as unknown as { [key: string]: { address: string } });
-});
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });

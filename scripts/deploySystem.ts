@@ -2,7 +2,13 @@ import { AssetHelpers } from "@balancer-labs/balancer-js";
 import { BigNumber, BigNumber as BN, ContractReceipt, ContractTransaction, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { Chain, deployContract, waitForTx } from "../tasks/utils";
+import {
+    Chain,
+    create2OptionsWithCallbacks,
+    deployContract,
+    deployContractWithCreate2,
+    waitForTx,
+} from "../tasks/utils";
 import { getChain } from "../tasks/utils/networkAddressFactory";
 import { DEAD_ADDRESS, ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../test-utils/constants";
 import { simpleToExactAmount } from "../test-utils/math";
@@ -43,6 +49,7 @@ import {
     ClaimFeesHelper__factory,
     ConvexMasterChef,
     ConvexMasterChef__factory,
+    Create2Factory__factory,
     CrvDepositor,
     CrvDepositor__factory,
     CrvDepositorWrapper,
@@ -106,6 +113,8 @@ import {
     VoterProxy__factory,
 } from "../types/generated";
 
+const SALT = "berlin";
+
 interface AirdropData {
     merkleRoot: string;
     startDelay: BN;
@@ -152,6 +161,7 @@ interface ExtSystemConfig {
     votingEscrow: string;
     feeDistribution: string;
     gaugeController: string;
+    gaugeCheckpointer?: string;
     voteOwnership?: string;
     voteParameter?: string;
     gauges?: string[];
@@ -1711,20 +1721,27 @@ async function deployPhase8(
 async function deployPhase9(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
+    extConfig: ExtSystemConfig,
     phase8: Phase6Deployed & Phase8Deployed,
     multisigs: MultisigConfig,
+    salt: string = SALT,
     debug = false,
     waitForBlocks = 0,
 ): Promise<Phase9Deployed> {
-    const poolFeeManagerProxy = await deployContract<PoolFeeManagerProxy>(
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+
+    const deployerAddress = await signer.getAddress();
+    const poolFeeManagerProxy = await deployContractWithCreate2<PoolFeeManagerProxy, PoolFeeManagerProxy__factory>(
         hre,
+        create2Factory,
         new PoolFeeManagerProxy__factory(signer),
         "PoolFeeManagerProxy",
-        [phase8.poolManagerV4.address, phase8.booster.address, await signer.getAddress()],
-        {},
-        debug,
-        waitForBlocks,
+        [phase8.poolManagerV4.address, phase8.booster.address, deployerAddress],
+        deployOptionsWithCallbacks([]),
     );
+
     let tx = await poolFeeManagerProxy.setDefaultRewardMultiplier(4000);
     await waitForTx(tx, debug, waitForBlocks);
 

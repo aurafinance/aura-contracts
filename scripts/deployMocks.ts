@@ -3,6 +3,8 @@ import { parseEther } from "ethers/lib/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { deployContract } from "../tasks/utils";
 import {
+    Create2Factory,
+    Create2Factory__factory,
     LZEndpointMock,
     LZEndpointMock__factory,
     MockBalancerPoolToken,
@@ -19,6 +21,8 @@ import {
     MockERC20__factory,
     MockFeeDistributor,
     MockFeeDistributor__factory,
+    MockGaugeCheckpointer,
+    MockGaugeCheckpointer__factory,
     MockVoting,
     MockVoting__factory,
     MockWalletChecker,
@@ -114,6 +118,10 @@ async function getMockMultisigs(
         daoMultisig: await daoSigner.getAddress(),
         sudoMultisig: await daoSigner.getAddress(),
         pauseGuardian: await daoSigner.getAddress(),
+        defender: {
+            l1CoordinatorDistributor: ZERO_ADDRESS,
+            auraBalProxyOFTHarvestor: ZERO_ADDRESS,
+        },
     };
 }
 
@@ -222,7 +230,14 @@ async function deployMocks(
         {},
         false,
     );
-
+    const gaugeCheckpointer = await deployContract<MockGaugeCheckpointer>(
+        hre,
+        new MockGaugeCheckpointer__factory(deployer),
+        "MockGaugeCheckpointer",
+        [],
+        {},
+        false,
+    );
     const gauges: MockCurveGauge[] = [];
 
     for (let i = 0; i < 3; i++) {
@@ -269,6 +284,16 @@ async function deployMocks(
         {},
         debug,
     );
+    const create2Factory = await deployContract<Create2Factory>(
+        hre,
+        new Create2Factory__factory(signer),
+        "Create2Factory",
+        [],
+        {},
+        debug,
+    );
+
+    await create2Factory.updateDeployer(await signer.getAddress(), true);
 
     // -----------------------------
     // 2 Sidechain
@@ -303,6 +328,7 @@ async function deployMocks(
             votingEscrow: votingEscrow.address,
             feeDistribution: feeDistro.address,
             gaugeController: voting.address,
+            gaugeCheckpointer: gaugeCheckpointer.address,
             voteOwnership: voting.address,
             voteParameter: voting.address,
             gauges: gauges.map(g => g.address),
@@ -317,6 +343,7 @@ async function deployMocks(
             },
             balancerPoolId: ZERO_KEY,
             balancerMinOutBps: "9975",
+            create2Factory: create2Factory.address,
             weth: weth.address,
             wethWhale: deployerAddress,
             uniswapRouter: ZERO_ADDRESS,

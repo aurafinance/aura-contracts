@@ -59,7 +59,13 @@ describe("PoolFeeManagerProxy", () => {
         alice = await impersonateAccount(await accounts[5].getAddress());
         l1 = await deployL1(hre, accounts);
         mocks = l1.mocks;
-        const phase9 = await deployPhase9(hre, deployer.signer, { ...l1.phase6, ...l1.phase8 }, l1.multisigs);
+        const phase9 = await deployPhase9(
+            hre,
+            deployer.signer,
+            l1.mocks.addresses,
+            { ...l1.phase6, ...l1.phase8 },
+            l1.multisigs,
+        );
         dao = await impersonateAccount(l1.multisigs.daoMultisig);
 
         booster = l1.phase6.booster;
@@ -237,12 +243,6 @@ describe("PoolFeeManagerProxy", () => {
                 "not auth",
             ).to.be.revertedWith("!auth");
         });
-        it("fails if setPoolManagerProtectPool is not called by operator", async () => {
-            await expect(
-                poolFeeManagerProxy.connect(deployer.signer).setPoolManagerProtectPool(false),
-                "not auth",
-            ).to.be.revertedWith("!auth");
-        });
         it("fails if setOperator is not called by operator", async () => {
             await expect(
                 poolFeeManagerProxy.connect(deployer.signer).setOperator(ZERO_ADDRESS),
@@ -296,10 +296,6 @@ describe("PoolFeeManagerProxy", () => {
         });
     });
     describe("reverts configuration", async () => {
-        it("DAO - sets setPoolManagerProtectPool to true", async () => {
-            await poolFeeManagerProxy.connect(dao.signer).setPoolManagerProtectPool(false);
-            expect(await poolManager.protectAddPool()).to.equal(false);
-        });
         it("DAO - sets PoolManagerV4 operator ", async () => {
             expect(await poolManager.operator()).to.not.equal(dao.address);
 

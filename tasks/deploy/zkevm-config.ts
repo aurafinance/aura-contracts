@@ -14,6 +14,7 @@ import {
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
+    L2PoolManagerProxy__factory,
     PayableMulticall__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
@@ -83,6 +84,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
     boosterHelper: BoosterHelper__factory.connect("0x739B0c838E47A28877cAEF270DF0407FE5C62502", signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect("0x2B6C227b26Bc0AcE74BB12DA86571179c2c8Bc54", signer),
 });
 
 export const getView = (signer: Signer | Provider) => ({

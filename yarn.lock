@@ -21,7 +21,7 @@ __metadata:
     "@ethersproject/bytes": ^5.5.0
     "@ethersproject/hash": ^5.5.0
     "@ethersproject/providers": ^5.5.0
-    "@nomicfoundation/hardhat-verify": ^2.0.5
+    "@nomicfoundation/hardhat-verify": ^2.0.9
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-waffle": ^2.0.1
     "@openzeppelin/contracts-0.8": "npm:@openzeppelin/contracts@4.4.2"
@@ -1891,9 +1891,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomicfoundation/hardhat-verify@npm:^2.0.5":
-  version: 2.0.5
-  resolution: "@nomicfoundation/hardhat-verify@npm:2.0.5"
+"@nomicfoundation/hardhat-verify@npm:^2.0.9":
+  version: 2.0.9
+  resolution: "@nomicfoundation/hardhat-verify@npm:2.0.9"
   dependencies:
     "@ethersproject/abi": ^5.1.2
     "@ethersproject/address": ^5.0.2
@@ -1905,8 +1905,8 @@ __metadata:
     table: ^6.8.0
     undici: ^5.14.0
   peerDependencies:
-    hardhat: ^2.0.4
-  checksum: f64bf0aedd9487177799043d22cc2628868f06b927cc7ad8966169922489b0014af27b38e3a5fcc43fdd8fe9c4dd49d3588e9a724fc317b3ead5fd263e845561
+    hardhat: "*"
+  checksum: c010d5c147fefb23d971969dc7479aac45a0bb8977e86e04c579228ab9683189e7bdebbd7b5f70fe96a10c9d0a2849aab1f10bacad56c925f6255becfd2d585c
   languageName: node
   linkType: hard
 
@@ -5363,11 +5363,11 @@ __metadata:
 
 "convex-platform@file:convex-platform/contracts::locator=%40aurafinance%2Faura-contracts%40workspace%3A.":
   version: 0.0.0
-  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=2a9c15&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
+  resolution: "convex-platform@file:convex-platform/contracts#convex-platform/contracts::hash=506940&locator=%40aurafinance%2Faura-contracts%40workspace%3A."
   dependencies:
     "@openzeppelin/contracts-0.6": "npm:@openzeppelin/contracts@3.4.0"
     "@openzeppelin/contracts-upgradeable-0.6": "npm:@openzeppelin/contracts-upgradeable@3.4.0"
-  checksum: ccf77dce81f4f02c09ae08c6c6939eaf76ff54144fa6db8ccd76c8b7f821b8885537f04fb795dc4378e314e6458ce2438e22a5dc48c18b686393276b2b7d3eb6
+  checksum: 7201d347562e3833939024dadf89836a7f5d95229530320638046172e9b800ae5c3417594f14b5d70ad89c1e12609c1f54f969479575a78655f5d36e062d7834
   languageName: node
   linkType: hard
 

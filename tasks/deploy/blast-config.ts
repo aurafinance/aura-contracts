@@ -13,6 +13,7 @@ import {
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
+    L2PoolManagerProxy__factory,
     PoolManagerLite__factory,
     ProxyFactory__factory,
     RewardFactory__factory,
@@ -66,6 +67,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
     stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, signer),
     boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config: Omit<SidechainConfig, "getView" | "whales" | "bridging"> = {

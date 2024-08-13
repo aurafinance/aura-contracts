@@ -8,10 +8,7 @@ import { IOFT } from "../layerzero/token/oft/IOFT.sol";
 import { IBooster } from "../interfaces/IBooster.sol";
 import { IStashRewardDistro } from "../interfaces/IStashRewardDistro.sol";
 import { AuraMath } from "../utils/AuraMath.sol";
-
-interface IStakelessGauge {
-    function getRecipient() external view returns (address);
-}
+import { IStakelessGauge } from "../interfaces/balancer/IStakelessGauge.sol";
 
 /**
  * @title   GaugeVoteRewards

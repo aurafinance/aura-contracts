@@ -28,6 +28,7 @@ import {
     StashRewardDistro__factory,
     BoosterHelper__factory,
     PayableMulticall__factory,
+    L2PoolManagerProxy__factory,
     AuraLocker__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
@@ -83,6 +84,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect(ZERO_ADDRESS, signer),
     boosterHelper: BoosterHelper__factory.connect(ZERO_ADDRESS, signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
 });
 
 export const config: SidechainConfig = {

@@ -26,6 +26,7 @@ import {
     ChildStashRewardDistro__factory,
     BoosterHelper__factory,
     PayableMulticall__factory,
+    L2PoolManagerProxy__factory,
     AuraLocker__factory,
 } from "../../types";
 import { sidechainNaming } from "./sidechain-naming";
@@ -77,6 +78,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
     boosterHelper: BoosterHelper__factory.connect("0x49589fD9F088C2d3Cd85E97917ED74CF33b1b385", signer),
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
+    l2PoolManagerProxy: L2PoolManagerProxy__factory.connect("0x2B6C227b26Bc0AcE74BB12DA86571179c2c8Bc54", signer),
 });
 
 export const getView = (signer: Signer | Provider) => ({

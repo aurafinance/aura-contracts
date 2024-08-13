@@ -67,7 +67,7 @@ export const create2OptionsWithCallbacks = (
         create2Options: {
             amount: 0,
             salt,
-            callbacks: [...callbacks],
+            callbacks,
         },
         debug,
         waitForBlocks,
