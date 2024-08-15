@@ -26,6 +26,9 @@ import {
     MasterChefRewardHook__factory,
     AuraMerkleDropV2,
     AuraMerkleDropV2__factory,
+    ERC20__factory,
+    AuraVestedEscrowV2,
+    AuraVestedEscrowV2__factory,
 } from "../../types/generated";
 
 task("deploy:mainnet:1").setAction(async function (_: TaskArguments, hre) {
@@ -264,4 +267,43 @@ task("deploy:mainnet:crvDepositorWrapperForwarderV2")
             1,
         );
         logContracts({ crvDepositorWrapperForwarderV2 });
+    });
+
+task("deploy:mainnet:vestedEscrow")
+    .addParam("starttime", "Start time")
+    .addParam("duration", "Duration in seconds")
+    .addParam("rewardtoken", "Token")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (taskArgs: TaskArguments, hre) {
+        const debug = true;
+
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+
+        const endTime = Number(taskArgs.starttime) + Number(taskArgs.duration);
+
+        const vestedEscrow = await deployContract<AuraVestedEscrowV2>(
+            hre,
+            new AuraVestedEscrowV2__factory(deployer),
+            "AuraVestedEscrowV2",
+            [
+                taskArgs.rewardtoken,
+                config.multisigs.vestingMultisig,
+                config.multisigs.vestingMultisig,
+                phase2.cvxLocker.address,
+                taskArgs.starttime,
+                endTime,
+            ],
+            {},
+            debug,
+            taskArgs.wait,
+        );
+
+        const rewardToken = ERC20__factory.connect(taskArgs.rewardtoken, deployer);
+        console.log("Reward token:", await rewardToken.name());
+        console.log("Start time:", new Date(Number(taskArgs.starttime) * 1000).toUTCString());
+        console.log("End time:", new Date(endTime * 1000).toUTCString());
+        console.log("Duration:", Number(taskArgs.duration) / (24 * 60 * 60), "days");
+
+        logContracts({ vestedEscrow });
     });
