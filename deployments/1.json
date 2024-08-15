@@ -64,5 +64,6 @@
     "WardenQuestScheduler": "0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47",
     "gaugeVoteRewards": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
     "stashRewardDistro": "0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1",
-    "Forwarder Handler": "0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1"
+    "Forwarder Handler": "0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1",
+    "vestedEscrow-6": "0xa6bBF685b7EA73878b4FB867A96f1Ca3ED5eB358"
 }
