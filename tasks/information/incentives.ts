@@ -258,15 +258,15 @@ task("info:chef:claim").setAction(async function (taskArgs: TaskArguments, hre: 
 });
 
 task("create:hh:incentives")
-    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 25_500", 25_500, types.int)
+    .addOptionalParam("auraEthAmount", "Amount of aura eth incentive, default is 23460", 23460, types.int)
     .addOptionalParam("auraEthVlRatio", "Vl Aura ratio, default is 0", 0, types.int)
     .addOptionalParam("auraBalVlRatio", "Vl Aura ratio, default is 0", 0, types.int)
     .addOptionalParam("auraEthVeBalRatio", "VeBal ratio, default is 100", 100, types.int)
     .addOptionalParam("auraBalVeBalRatio", "VeBal ratio, default is 100", 100, types.int)
     .addOptionalParam(
         "auraBalwstEthAmount",
-        "Amount of a-55/45 auraBAL/wstETH incentives, default is 6_825",
-        6_825,
+        "Amount of a-55/45 auraBAL/wstETH incentives, default is 6497",
+        6497,
         types.int,
     )
     .setAction(async function (taskArgs: TaskArguments, __hre: HardhatRuntime) {
@@ -275,7 +275,7 @@ task("create:hh:incentives")
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const chefClaimableRewards = (await getChefClaimableRewards(__hre)).valueOf();
-        const maxAuraBalAmount = 43225 < chefClaimableRewards ? 43225 : chefClaimableRewards;
+        const maxAuraBalAmount = 38556 < chefClaimableRewards ? 38556 : chefClaimableRewards;
         const auraBalAmount = BN.from(maxAuraBalAmount - auraBalwstEthAmount);
         const hhAuraProposals = await fetchAuraProposals();
 

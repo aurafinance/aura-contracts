@@ -8,13 +8,14 @@ import { getGaugePid, getGaugeRewardTokens } from "../utils/auraApi";
 import { GaugesDetails, getGaugesDetails } from "../utils/balancerApi";
 
 import { JsonRpcProvider } from "@ethersproject/providers";
+import chalk from "chalk";
 import { Signer, ethers } from "ethers";
 import { table } from "table";
-import { GaugeVoteRewards } from "types";
+import { Booster, BoosterLite, ChildGaugeVoteRewards, GaugeVoteRewards } from "types";
 import { getGaugeChoices } from "../../tasks/snapshot/utils";
 import { canonicalConfigs, lzChainIds, sidechainConfigs } from "../deploy/sidechain-constants";
-import { chainIds, getSigner } from "../utils";
-import chalk from "chalk";
+import { chainIds, chainNames, getJsonProviderByChainName, getSigner, waitForTx } from "../utils";
+export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const debug = false;
 type SafeTxCreation = {
@@ -505,12 +506,8 @@ async function addPoolToSidechain(
     // process.env.ZKEVM_NODE_URL,
     // process.env.AVALANCHE_NODE_URL,
     // process.env.FRAXTAL_NODE_URL,
-    const REMOTE_NODE_URL = `${chainName.toUpperCase()}_NODE_URL`;
-    const remoteNodeUrl = process.env[`${REMOTE_NODE_URL}`];
-    assert(remoteNodeUrl.length > 0, `${REMOTE_NODE_URL} not set`);
-    const jsonProvider = new JsonRpcProvider(remoteNodeUrl);
-    await jsonProvider.ready;
 
+    const jsonProvider = await getJsonProviderByChainName(chainName);
     const fileName = `gnosis_tx_${chainName}-add-pools`;
     const sidechainConfig = sidechainConfigs[chainId];
     assert(sidechainConfig, `Local config for chain ID ${chainId} not found`);
@@ -521,6 +518,7 @@ async function addPoolToSidechain(
 
     const { poolManager, booster, boosterOwner, childGaugeVoteRewards, auraOFT, factories } =
         sidechainConfig.getSidechain(jsonProvider);
+    if (chainIds.avalanche == chainId || chainIds.gnosis == chainId) await sleep(1000);
     const initialPid = (await booster.poolLength()).toNumber();
     const initialNonce = await jsonProvider.getTransactionCount(factories.proxyFactory.address);
     const allTxPerPool = [];
@@ -556,6 +554,7 @@ async function addPoolToSidechain(
     };
 
     for (let index = 0; index < gaugesDetails.length; index++) {
+        if (chainIds.avalanche == chainId || chainIds.gnosis == chainId) await sleep(1000);
         const gauge = gaugesDetails[index];
         const txPerPool = [];
         const gaugeList = getGaugeChoices();
@@ -711,13 +710,17 @@ task("protocol:add-pool")
         for (let i = 0; i < sideChains.length; i++) {
             const sideChainName = sideChains[i];
             const gaugesToProcess = gaugesDetails.filter(gauge => gauge.rootGauge?.chain === sideChainName);
-            const { fileName, safeTx } = await addPoolToSidechain(
-                sideChainName,
-                chainIds[sideChainName.toLowerCase()],
-                gaugesToProcess,
-                tskArgs.voting,
-            );
-            writeSafeTxFile(safeTx, fileName);
+            try {
+                const { fileName, safeTx } = await addPoolToSidechain(
+                    sideChainName,
+                    chainIds[sideChainName.toLowerCase()],
+                    gaugesToProcess,
+                    tskArgs.voting,
+                );
+                writeSafeTxFile(safeTx, fileName);
+            } catch (error) {
+                console.log("error with ", sideChainName);
+            }
         }
     });
 
@@ -751,4 +754,97 @@ task("protocol:gaugeVoter-setIsNoDepositGauge")
         })(transactions);
 
         writeSafeTxFile(safeTx, fileName);
+    });
+
+async function getGaugeVoteRewardsLatestPid(
+    booster: Booster | BoosterLite,
+    gaugeVoteRewards: GaugeVoteRewards | ChildGaugeVoteRewards,
+) {
+    const finalPid = await booster.poolLength();
+    let initialPid = finalPid;
+    // Set pool ids per batch of max 20
+    for (let i = 1; i < 20; i++) {
+        const pid = finalPid.sub(i);
+        const poolInfo = await booster.poolInfo(pid);
+        const poolId = await gaugeVoteRewards.getPoolId(poolInfo.gauge);
+        if (poolId.isSet) break;
+        initialPid = pid;
+    }
+    return { initialPid, finalPid };
+}
+
+const getGaugeVoterContracts = async (hre, chainId: number, signer: Signer) => {
+    const chainName = chainNames[chainId];
+    switch (chainId) {
+        case chainIds.mainnet: {
+            const canonicalConfig = canonicalConfigs[chainId];
+            const { booster } = await canonicalConfig.getPhase6(signer);
+            const { gaugeVoteRewards } = canonicalConfig.getGaugeVoteRewards(signer);
+            return { booster, gaugeVoteRewards };
+        }
+        default: {
+            let signerOrProvider: Signer | JsonRpcProvider = signer;
+            if (hre.network.config.chainId !== chainId) {
+                signerOrProvider = await getJsonProviderByChainName(chainName);
+            }
+            const sidechainConfig = sidechainConfigs[chainId];
+            const sidechain = sidechainConfig.getSidechain(signerOrProvider);
+            const { booster, childGaugeVoteRewards } = sidechain;
+            return { booster, gaugeVoteRewards: childGaugeVoteRewards };
+        }
+    }
+};
+task("protocol:gaugeVoter-getPoolIds")
+    .addOptionalParam("debug", "Debug mode is on ", false, types.boolean)
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        // Only runs on mainnet, sidechain data is gathered via JSON providers
+        // const chainId = chainIds.mainnet;
+
+        const supportedChainIds = [
+            chainIds.mainnet,
+            chainIds.arbitrum,
+            chainIds.avalanche,
+            chainIds.optimism,
+            chainIds.base,
+            chainIds.fraxtal,
+            chainIds.gnosis,
+            chainIds.optimism,
+            chainIds.polygon,
+            chainIds.zkevm,
+        ];
+        const tableInfo = [];
+
+        for (let index = 0; index < supportedChainIds.length; index++) {
+            const chainId = supportedChainIds[index];
+            const chainName = chainNames[chainId];
+            const { booster, gaugeVoteRewards } = await getGaugeVoterContracts(hre, chainId, deployer);
+            const { initialPid, finalPid } = await getGaugeVoteRewardsLatestPid(booster, gaugeVoteRewards);
+            if (initialPid.lt(finalPid)) {
+                tableInfo.push([
+                    chainName,
+                    formatDstChainId(initialPid.toString()),
+                    formatDstChainId(finalPid.toString()),
+                ]);
+            } else if (tskArgs.debug) {
+                tableInfo.push([chainName, formatDstChainId("NO"), formatDstChainId("NO")]);
+            }
+        }
+
+        const tableData = [[`Chain`, "initialPid", "finalPid"], ...tableInfo];
+
+        console.log(table(tableData));
+    });
+
+// yarn task:fork protocol:gaugeVoter-setPoolIds --initial 226 --final 229 --wait 0
+task("protocol:gaugeVoter-setPoolIds")
+    .addParam("initial", "The initial pid")
+    .addParam("final", "The final pid")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const chainId = hre.network.config.chainId;
+        const { gaugeVoteRewards } = await getGaugeVoterContracts(hre, chainId, deployer);
+        const tx = await gaugeVoteRewards.setPoolIds(tskArgs.initial, tskArgs.final);
+        await waitForTx(tx, true, tskArgs.wait);
     });

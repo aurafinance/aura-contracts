@@ -4,12 +4,21 @@ import { DefenderRelayProvider, DefenderRelaySigner } from "defender-relay-clien
 import { BigNumber, Signer, Wallet } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import fetch from "node-fetch";
-import { simpleToExactAmount } from "../../test-utils/math";
 import { Account } from "types";
+import { simpleToExactAmount } from "../../test-utils/math";
 
+import { JsonRpcProvider } from "@ethersproject/providers";
+import assert from "assert";
 import { impersonate } from "../../test-utils/fork";
 import { ethereumAddress, privateKey } from "../../test-utils/regex";
-import { chainIds, getChain, getChainAddress, HardhatRuntime, resolveAddress } from "./networkAddressFactory";
+import {
+    chainIds,
+    chainNames,
+    getChain,
+    getChainAddress,
+    HardhatRuntime,
+    resolveAddress,
+} from "./networkAddressFactory";
 
 let signerInstance: Signer;
 
@@ -123,3 +132,17 @@ export const getSignerAccount = async (hre: HardhatRuntime = {}): Promise<Accoun
         address: await signer.getAddress(),
     };
 };
+
+export async function getJsonProviderByChainId(chainId: number) {
+    const chainName = chainNames[chainId];
+    return getJsonProviderByChainName(chainName);
+}
+
+export async function getJsonProviderByChainName(chainName: string) {
+    const REMOTE_NODE_URL = `${chainName.toUpperCase()}_NODE_URL`;
+    const remoteNodeUrl = process.env[`${REMOTE_NODE_URL}`];
+    assert(remoteNodeUrl.length > 0, `${REMOTE_NODE_URL} not set`);
+    const jsonProvider = new JsonRpcProvider(remoteNodeUrl);
+    await jsonProvider.ready;
+    return jsonProvider;
+}

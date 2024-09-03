@@ -170,3 +170,21 @@ export const chainIds = {
     gnosis: 100,
     fraxtal: 252,
 };
+
+export const chainNames = {
+    10: "optimism",
+    5: "goerli",
+    31337: "hardhat",
+    42: "kovan",
+    1: "mainnet",
+    4: "rinkeby",
+    3: "ropsten",
+    42161: "arbitrum",
+    421613: "arbitrumGoerli",
+    137: "polygon",
+    100: "gnosis",
+    8453: "base",
+    1101: "zkevm",
+    43114: "avalanche",
+    252: "fraxtal",
+} as const;

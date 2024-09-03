@@ -25,7 +25,7 @@ const txMeta = (transactions: Array<any>) => ({
 });
 
 const shutdownPool = (pid: string) => ({
-    to: "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
+    to: "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
     value: "0",
     data: null,
     contractMethod: {
@@ -104,7 +104,7 @@ const updateOperator = (operator: string) => [
 
 const addPools = (gauges: Array<string>) =>
     gauges.map(gauge => ({
-        to: "0x8Dd8cDb1f3d419CCDCbf4388bC05F4a7C8aEBD64",
+        to: "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
         value: "0",
         data: null,
         contractMethod: {

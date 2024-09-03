@@ -398,14 +398,12 @@ const getPhase7 = async (deployer: Signer): Promise<Phase7Deployed> => ({
     masterChefRewardHook: MasterChefRewardHook__factory.connect("0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da", deployer),
     siphonToken: SiphonToken__factory.connect("0xa348a39a98418DD78B242E2fD7B14e18aC080e75", deployer),
     // Other siphon tokens deployed
-    // 0x71061C238Ea7736d3709E801d61e09423E4be4ad
-    // 0xa348a39a98418DD78B242E2fD7B14e18aC080e75
-    // 0xbB7A6Ec509D42177C100273b4cd785816daF8e4f
-    // 0xc9307D63B3709F537D2158F43199a69682Ff0967
-
+    // 0xc9307D63B3709F537D2158F43199a69682Ff0967   -   0x9593062B34DB348d604d972090242106dE7b6560 MasterChefRewardHook -   MC pid 2   -   0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff GnosisSafeProxy  -   Incentives
+    // 0xbB7A6Ec509D42177C100273b4cd785816daF8e4f   -   0x6a29cFd8A5F666A7D69da9437CD4c46616326815 MasterChefRewardHook -   MC pid 3   -   0xF801a238a1Accc7A63b429E8c343B198d51fbbb9 ExtraRewardStashV3 -   pid 19
+    // 0xa348a39a98418DD78B242E2fD7B14e18aC080e75   -   0xB5932c9CfdE9aDDa6D578FA168D7F8D2688b84Da MasterChefRewardHook -   MC pid 4   -   0x7b3307af981F55C8D6cd22350b08C39Ec7Ec481B ExtraRewardStashV3 -   pid 1
+    // 0x71061C238Ea7736d3709E801d61e09423E4be4ad   -   0x9593062B34DB348d604d972090242106dE7b6560 MasterChefRewardHook -   MC pid 5   -   0xebFE79b8f19ACFBbB8A89a8e694Df471a6F461b7 ExtraRewardStashV3 -   pid 101
     // AIP-63
-    // 0xFEDa1CdA61C7F066d19B774599a2DE6e516129E8 // SiphonToken
-    // 0x7253584f04fC34C9979C570a170dc70D00A0ccF8 // ChefForwarder
+    // 0xFEDa1CdA61C7F066d19B774599a2DE6e516129E8   -   0x7253584f04fC34C9979C570a170dc70D00A0ccF8 ChefForwarder -   MC pid 6   -  0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9  GnosisSafeProxy  -   treasuryMultisig
 });
 
 const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
