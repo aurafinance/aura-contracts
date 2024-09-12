@@ -57,7 +57,7 @@ task("snapshot:create")
         const startDate = new Date(
             Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()),
         );
-        const dayCurr = startDate.getDay();
+        const dayCurr = startDate.getUTCDay();
         const dayTarget = 4; // Thursday
         const dayDelta = dayTarget - dayCurr;
         startDate.setDate(startDate.getDate() + dayDelta);
