@@ -94,7 +94,7 @@ function normalizeChainName(gauge: GaugesDetails): GaugesDetails {
     return gauge;
 }
 export async function getGaugesDetails(gaugeAddresses: string[]): Promise<GaugesDetails[]> {
-    const endpoint = "https://api.studio.thegraph.com/proxy/75376/balancer-gauges/version/latest/";
+    const endpoint = "https://api.studio.thegraph.com/query/75376/balancer-gauges/version/latest/";
     const query = gql`
         query GetGaugesDetails($gaugeAddresses: [String!]!) {
             gauges(first: 200, where: { address_in: $gaugeAddresses }) {
