@@ -40,6 +40,8 @@ export const symbolOverrides = {
     "0xa2f8bd6b95a0cb9094206075504cd0ed1cc717be": "Gyroe GHO/USDC (0xa2)",
     "0x80aef246f9926b52622f4e74cdc7acb5c4344ffe": "Gyroe GHO/USDC (0x80)",
     "0xa4daa3498677d655e359b0fc83ebdbd8dbf76a50": "a-ComposableStable StaFi rETH/WETH",
+    "0x9e965252d1b294af358a232933a65bd30645c34c": "a-Gyroe wstETH/GYD (0x9e)",
+    "0xc11442cdbe8901b36aeb7be7f3f95b6a8ade394e": "a-Gyroe wstETH/GYD (0xc1)",
 };
 
 export const priorityGuagesAddresses = [
