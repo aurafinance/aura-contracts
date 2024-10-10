@@ -269,13 +269,15 @@ task("create:hh:incentives")
         6497,
         types.int,
     )
+    .addOptionalParam("vebalmaxtokenspervote", "Max tokens per vote on veBAL market", 0, types.float)
     .setAction(async function (taskArgs: TaskArguments, __hre: HardhatRuntime) {
         const { auraEthAmount, auraEthVlRatio, auraBalVlRatio, auraEthVeBalRatio, auraBalVeBalRatio } = taskArgs;
         const { auraBalwstEthAmount } = taskArgs;
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const chefClaimableRewards = (await getChefClaimableRewards(__hre)).valueOf();
-        const maxAuraBalAmount = 38556 < chefClaimableRewards ? 38556 : chefClaimableRewards;
+        const limitAuraBalAmount = 38556; // Update this value every 6 months as per AIP-63
+        const maxAuraBalAmount = limitAuraBalAmount < chefClaimableRewards ? limitAuraBalAmount : chefClaimableRewards;
         const auraBalAmount = BN.from(maxAuraBalAmount - auraBalwstEthAmount);
         const hhAuraProposals = await fetchAuraProposals();
 
@@ -286,8 +288,11 @@ task("create:hh:incentives")
 
         const conf = await getHiddenHandConf();
 
-        const veBalMaxTokensPerVote = fractionToBN(conf.veBALPrice / conf.auraPrice);
-        console.log(" veBalMaxTokensPerVote:", veBalMaxTokensPerVote.toString());
+        const veBalMaxTokensPerVote =
+            taskArgs.vebalmaxtokenspervote > 0
+                ? taskArgs.veBalMaxTokensPerVote
+                : fractionToBN(conf.veBALPrice / conf.auraPrice);
+
         const incentives: Incentive[] = [
             {
                 title: "1. aura/eth vlAURA",
