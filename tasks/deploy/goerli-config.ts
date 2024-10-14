@@ -6,6 +6,7 @@ import {
     Phase3Deployed,
     Phase6Deployed,
     Phase8Deployed,
+    Phase9Deployed,
     SystemDeployed,
 } from "../../scripts/deploySystem";
 import {
@@ -212,7 +213,9 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
         deployer,
     ),
 });
-
+const getPhase9 = async (__deployer: Signer): Promise<Phase9Deployed> => ({
+    poolFeeManagerProxy: undefined,
+});
 export interface AuraBalVaultDeployed {
     vault: AuraBalVault;
     strategy: AuraBalStrategy;
@@ -256,6 +259,7 @@ export const config = {
     getPhase4,
     getPhase6,
     getPhase8,
+    getPhase9,
     getAuraBalVault,
     getSidechain,
     getCanonicalView,
