@@ -78,6 +78,25 @@ const addPool = (poolManager: string, gauge: string) => ({
         _gauge: gauge,
     },
 });
+const ownerAddPool = (poolManager: string, gauge: string) => ({
+    to: poolManager,
+    value: "0",
+    data: null,
+    contractMethod: {
+        inputs: [
+            {
+                name: "_gauge",
+                type: "address",
+                internalType: "address",
+            },
+        ],
+        name: "ownerAddPool",
+        payable: false,
+    },
+    contractInputsValues: {
+        _gauge: gauge,
+    },
+});
 const setRewardMultiplier = (booster: string, rewardContract: string) => ({
     to: booster,
     value: "0",
@@ -215,8 +234,6 @@ const gaugeTypesSupported = [
     "Avalanche",
     "Fraxtal",
 ];
-const opAddress = "0x4200000000000000000000000000000000000042";
-const arbAddress = "0x912CE59144191C1204E64559FE8253a0e49E6548";
 
 /* ---------------------------------------------------------------
      * Helpers 
@@ -263,7 +280,8 @@ async function addPoolToMainnet(
     const fileName = `gnosis_tx_${chainName}-add-pools`;
     const { cvx } = await canonicalConfig.getPhase2(deployer);
     const { booster, factories } = await canonicalConfig.getPhase6(deployer);
-    const { poolManagerV4, boosterOwnerSecondary } = await canonicalConfig.getPhase8(deployer);
+    const { boosterOwnerSecondary } = await canonicalConfig.getPhase8(deployer);
+    const { poolFeeManagerProxy } = await canonicalConfig.getPhase9(deployer);
     const { gaugeVoteRewards } = canonicalConfig.getGaugeVoteRewards(deployer);
     const gaugeControllerAbi = [
         "function gauges(uint arg0) external view returns(address)",
@@ -380,7 +398,7 @@ async function addPoolToMainnet(
         const rewardContract = getContractAddress({ from: factories.rewardFactory.address, nonce: rewardFactoryNonce });
 
         const txPerPool = [
-            addPool(poolManagerV4.address, gauge.address),
+            addPool(poolFeeManagerProxy.address, gauge.address),
             setRewardMultiplier(booster.address, rewardContract),
             setStashExtraReward(boosterOwnerSecondary.address, pid, cvx.address),
         ];
@@ -516,7 +534,7 @@ async function addPoolToSidechain(
         gaugesDetails.map(gauge => gauge.rootGauge.recipient),
     );
 
-    const { poolManager, booster, boosterOwner, childGaugeVoteRewards, auraOFT, factories } =
+    const { booster, boosterOwner, childGaugeVoteRewards, auraOFT, factories, l2PoolManagerProxy } =
         sidechainConfig.getSidechain(jsonProvider);
     if (chainIds.avalanche == chainId || chainIds.gnosis == chainId) await sleep(1000);
     const initialPid = (await booster.poolLength()).toNumber();
@@ -527,10 +545,10 @@ async function addPoolToSidechain(
     if (voting) {
         switch (chainId) {
             case chainIds.optimism:
-                extraRewards = [auraOFT.address, opAddress];
+                extraRewards = [auraOFT.address];
                 break;
             case chainIds.arbitrum:
-                extraRewards = [auraOFT.address, arbAddress];
+                extraRewards = [auraOFT.address];
                 break;
             default:
                 extraRewards = [auraOFT.address];
@@ -607,7 +625,7 @@ async function addPoolToSidechain(
             }
         } else {
             // verify if it needs to set extra rewards
-            txPerPool.push(addPool(poolManager.address, gauge.rootGauge.recipient));
+            txPerPool.push(ownerAddPool(l2PoolManagerProxy.address, gauge.rootGauge.recipient));
             const nonce = initialNonce + addPools;
             const stashContract = getContractAddress({ from: factories.proxyFactory.address, nonce: nonce });
             for (let j = 0; j < extraRewards.length; j++) {
