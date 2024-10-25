@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x92210213b7685eca71b046724cfee9afd0375b938412ad30e479610caa0a2d4c",
+        "title": "Gauge Weight for Week of 24th October 2024",
+        "start": 1729735200,
+        "end": 1730167200,
+        "snapshot": 21032300
+    },
+    {
         "id": "0x3220c1c5c2a02676e9df058cdd576a474ace75f183616d53bd0f5106aeb20cd5",
         "title": "Gauge Weight for Week of 10th October 2024",
         "start": 1728525600,
