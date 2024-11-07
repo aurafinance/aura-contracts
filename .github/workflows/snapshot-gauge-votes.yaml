@@ -1,0 +1,48 @@
+name: Snapshot Gauge Votes
+
+on:
+    schedule:
+        - cron: "55 9 * * 4" # Runs every Thursday at midnight UTC
+
+jobs:
+    update-snapshot:
+        runs-on: ubuntu-latest
+
+        env:
+            NODE_URL: https://eth.drpc.org
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+
+            - name: Check if it's the second or fourth Thursday
+              id: check-thursday
+              run: |
+                  THURSDAY_NUM=$(($(date +%-d)/7+1))
+                  if [ $THURSDAY_NUM -ne 2 ] && [ $THURSDAY_NUM -ne 4 ]; then
+                    echo "Not the second or fourth Thursday. Exiting."
+                    exit 0
+                  fi
+
+            - name: Create and checkout new branch
+              run: |
+                  git checkout -b feat/vote-gauges
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Generate snapshot
+              run: yarn task snapshot:generate --network mainnet
+
+            - name: Run Prettier
+              run: yarn prettier
+
+            - name: Commit changes
+              run: |
+                  git config --global user.name 'github-actions[bot]'
+                  git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+                  git add .
+                  git commit -m 'feat: snapshot of gauge votes'
+
+            - name: Push changes
+              run: git push origin feat/vote-gauges
