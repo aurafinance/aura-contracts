@@ -2,7 +2,7 @@ name: Snapshot Gauge Votes
 
 on:
     schedule:
-        - cron: "06 10 * * 4" # Runs every Thursday at midnight UTC
+        - cron: "20 10 * * 4" # Runs every Thursday at midnight UTC
 
 jobs:
     update-snapshot:
@@ -34,8 +34,9 @@ jobs:
               run: |
                   git checkout -b feat/vote-gauges
 
-            - name: Install dependencies
-              run: yarn
+            - run: yarn
+            - run: yarn clean
+            - run: yarn compile
 
             - name: Generate snapshot
               run: yarn task snapshot:generate --network mainnet
