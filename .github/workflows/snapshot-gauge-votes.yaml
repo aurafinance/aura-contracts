@@ -13,11 +13,11 @@ jobs:
             NODE_URL: https://eth.drpc.org
 
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   submodules: recursive
                   token: ${{ secrets.ACCESS_TOKEN }}
-            - uses: actions/setup-node@v3
+            - uses: actions/setup-node@v4
               with:
                   node-version: 18
                   cache: "yarn"
@@ -25,9 +25,11 @@ jobs:
             - name: Check if it's the second or fourth Thursday
               id: check-thursday
               run: |
-                  THURSDAY_NUM=$(($(date +%-d)/7+1))
-                  if [ $THURSDAY_NUM -ne 2 ] && [ $THURSDAY_NUM -ne 4 ]; then
-                    echo "Not the second or fourth Thursday. Exiting."
+                  FIRST_THURSDAY=$(date -d '20241107' +'%Y-%m-%d')
+                  CURRENT_DATE=$(date +%Y-%m-%d)
+                  DAYS_DIFF=$(( ($(date -d "$CURRENT_DATE" +%s) - $(date -d "$FIRST_THURSDAY" +%s)) / 86400 ))
+                  if (( DAYS_DIFF % 14 != 0 )); then
+                    echo "Not this Thursday. Exiting."
                     exit 0
                   fi
 
@@ -45,12 +47,18 @@ jobs:
             - name: Run Prettier
               run: yarn prettier
 
-            - name: Commit changes
+            - name: Put current date into a variable
               run: |
-                  git config --global user.name 'github-actions[bot]'
-                  git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-                  git add .
-                  git commit -m 'feat: snapshot of gauge votes'
+                  NOW=$(date +'%d %B %Y')
+                  BRANCH=$(date +'%d-%B-%Y')
+                  echo "NOW=$NOW" >> $GITHUB_ENV
 
-            - name: Push changes
-              run: git push origin feat/vote-gauges
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v3.10.1
+              with:
+                  token: ${{ secrets.ACCESS_TOKEN }}
+                  commit-message: "feat: vote ${{ env.NOW }}"
+                  title: "feat: vote ${{ env.NOW }}"
+                  body: Auto-created Pull Request
+                  branch: "feat/vote-${{ env.NOW }}" # The branch where you commit
+                  base: main # Don't forget to specify the right base branch here
