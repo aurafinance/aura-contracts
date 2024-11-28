@@ -217,6 +217,7 @@ interface MultisigConfig {
     defender?: {
         l1CoordinatorDistributor?: string;
         auraBalProxyOFTHarvestor?: string;
+        keeperMulticall3?: string;
     };
 }
 

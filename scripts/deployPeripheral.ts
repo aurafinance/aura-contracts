@@ -1,31 +1,41 @@
-import { Signer } from "ethers";
+import { Contract, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
-import { deployContract, deployContractWithCreate2 } from "../tasks/utils";
+import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
 import {
     AuraBalStaker,
     AuraBalStaker__factory,
     AuraBalVault,
+    Booster,
+    BoosterHelper,
+    BoosterHelper__factory,
+    BoosterLite,
+    BoosterOwnerLite,
+    BoosterOwnerSecondary,
+    Create2Factory__factory,
     CvxCrvToken,
-    WardenQuestScheduler,
-    WardenQuestScheduler__factory,
+    ExtraRewardStashLiteModule,
+    ExtraRewardStashLiteModule__factory,
+    ExtraRewardStashModule,
+    ExtraRewardStashModule__factory,
+    ExtSidechainConfig,
     FeeScheduler,
     FeeScheduler__factory,
+    GaugeVoteRewards,
+    GaugeVoterModule,
+    GaugeVoterModule__factory,
     KeeperMulticall3,
     KeeperMulticall3__factory,
     PayableMulticall,
     PayableMulticall__factory,
+    SidechainMultisigConfig,
     VeBalGrant,
     VeBalGrant__factory,
-    BoosterHelper,
-    BoosterHelper__factory,
-    Booster,
-    BoosterLite,
-    ExtSidechainConfig,
-    Create2Factory__factory,
+    WardenQuestScheduler,
+    WardenQuestScheduler__factory,
 } from "../types";
-import { ExtSystemConfig } from "./deploySystem";
+import { ExtSystemConfig, MultisigConfig } from "./deploySystem";
 const SALT = "berlin";
 
 export async function deployAuraBalStaker(
@@ -196,4 +206,130 @@ export async function deployBoosterHelper(
     );
 
     return { boosterHelper };
+}
+export async function deployGaugeVoterModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: { gaugeVoter: GaugeVoteRewards },
+    debug = false,
+    waitForBlocks = 0,
+) {
+    const gaugeVoterModule = await deployContract<GaugeVoterModule>(
+        hre,
+        new GaugeVoterModule__factory(signer),
+        "GaugeVoterModule",
+        [await signer.getAddress(), multisigs.daoMultisig, deployment.gaugeVoter.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await gaugeVoterModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await gaugeVoterModule.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { gaugeVoterModule };
+}
+async function deployExtraRewardStashModuleT<C extends Contract>(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    contracts: {
+        boosterOwner: BoosterOwnerLite | BoosterOwnerSecondary;
+        extraRewardStashModuleFactory: ExtraRewardStashModule__factory | ExtraRewardStashLiteModule__factory;
+    },
+    authorizedTokens: string[],
+    name: string,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<C> {
+    const { boosterOwner, extraRewardStashModuleFactory } = contracts;
+    const boosterAddress = await boosterOwner.booster();
+    const extraRewardStashModule = await deployContract<C>(
+        hre,
+        extraRewardStashModuleFactory,
+        name,
+        [await signer.getAddress(), multisigs.daoMultisig, boosterOwner.address, boosterAddress],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await extraRewardStashModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    for (let i = 0; i < authorizedTokens.length; i++) {
+        tx = await extraRewardStashModule.updateAuthorizedTokens(authorizedTokens[i], true);
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+
+    tx = await extraRewardStashModule.transferOwnership(multisigs.daoMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return extraRewardStashModule;
+}
+export async function deployExtraRewardStashModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: { boosterOwnerSecondary: BoosterOwnerSecondary },
+    authorizedTokens: string[],
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ extraRewardStashModule: ExtraRewardStashModule }> {
+    const { boosterOwnerSecondary } = deployment;
+    const contracts = {
+        boosterOwner: boosterOwnerSecondary,
+        extraRewardStashModuleFactory: new ExtraRewardStashModule__factory(signer),
+    };
+    const extraRewardStashModule = await deployExtraRewardStashModuleT<ExtraRewardStashModule>(
+        hre,
+        signer,
+        multisigs,
+        contracts,
+        authorizedTokens,
+        "ExtraRewardStashModule",
+        debug,
+        waitForBlocks,
+    );
+
+    return { extraRewardStashModule };
+}
+
+export async function deployExtraRewardStashLiteModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    sideMultisigs: SidechainMultisigConfig,
+    deployment: { boosterOwnerLite: BoosterOwnerLite; keeperMulticall3: KeeperMulticall3 },
+    authorizedTokens: string[],
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ extraRewardStashModule: ExtraRewardStashLiteModule }> {
+    const { boosterOwnerLite, keeperMulticall3 } = deployment;
+
+    const contracts = {
+        boosterOwner: boosterOwnerLite,
+        extraRewardStashModuleFactory: new ExtraRewardStashLiteModule__factory(signer),
+    };
+    const multisigs = {
+        daoMultisig: sideMultisigs.daoMultisig,
+        defender: {
+            keeperMulticall3: keeperMulticall3.address,
+        },
+    };
+    const extraRewardStashModule = await deployExtraRewardStashModuleT<ExtraRewardStashLiteModule>(
+        hre,
+        signer,
+        multisigs as MultisigConfig,
+        contracts,
+        authorizedTokens,
+        "ExtraRewardStashLiteModule",
+        debug,
+        waitForBlocks,
+    );
+
+    return { extraRewardStashModule };
 }

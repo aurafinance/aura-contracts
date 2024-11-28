@@ -59,7 +59,7 @@ task("info:aura:supply-circulation", "Gets weekly total supply vs total circulat
     const phase2 = await config.getPhase2(signer);
     const blocks: Array<BlockRange> = await dater.getEvery(
         "weeks", // Period, required. Valid value: years, quarters, months, weeks, days, hours, minutes
-        "2024-03-07T07:00:00Z", // Start date, required. 2022-06-09T10:46:00Z <== Aura first Mint
+        "2024-11-14T07:00:00Z", // Start date, required. 2022-06-09T10:46:00Z <== Aura first Mint
         new Date(), // End date, required.
         1, // Duration, optional, integer. By default 1.
         true, // Block after, optional. Search for the nearest block before or after the given date. By default true.

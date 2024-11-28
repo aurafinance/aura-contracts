@@ -196,6 +196,7 @@ const multisigs: MultisigConfig = {
     defender: {
         l1CoordinatorDistributor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
         auraBalProxyOFTHarvestor: "0xcC247CDe79624801169475C9Ba1f716dB3959B8f",
+        keeperMulticall3: "0x817F426B5a79599464488eCCf82c3F54b9330E15",
     },
 };
 
@@ -373,8 +374,8 @@ const getTempBooster = async (deployer: Signer): Promise<TempBooster> =>
 const getPhase6 = async (deployer: Signer): Promise<Phase6Deployed> => ({
     booster: Booster__factory.connect("0xA57b8d98dAE62B26Ec3bcC4a365338157060B234", deployer),
     boosterOwner: BoosterOwner__factory.connect("0x228a142081b456a9fF803d004504955032989f04", deployer),
-    // New version 0x26F470E4b777ea4cD09f550D3E904D707df6763D
-    boosterHelper: BoosterHelper__factory.connect("0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0", deployer),
+    // Old version 0x82bbbC3c7B459913Ae6063858832a6C2c43D0Bd0
+    boosterHelper: BoosterHelper__factory.connect("0x26F470E4b777ea4cD09f550D3E904D707df6763D", deployer),
     feeCollector: ClaimFeesHelper__factory.connect("0xAf824c80aA77Ae7F379DA3Dc05fea0dC1941c200", deployer),
     factories: {
         rewardFactory: RewardFactory__factory.connect("0xBC8d9cAf4B6bf34773976c5707ad1F2778332DcA", deployer),

@@ -89,5 +89,5 @@ export const sidechainConfigs = {
     [chainIds.avalanche]: avaxConfig,
     [chainIds.fraxtal]: fraxtalConfig,
     // For fork mode
-    [chainIds.hardhat]: fraxtalConfig,
+    [chainIds.hardhat]: arbitrumConfig,
 };
