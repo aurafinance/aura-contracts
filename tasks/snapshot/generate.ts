@@ -16,7 +16,7 @@ import { config } from "../deploy/mainnet-config";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { IGaugeController__factory, MockCurveGauge__factory, Multicall3__factory } from "../../types";
 import { removedGauges, validNetworks } from "./constants";
-import { uniqBy } from "lodash";
+import { uniq, uniqBy } from "lodash";
 import { Call3Struct } from "types/generated/Multicall3";
 import { ResultStruct } from "types/generated/KeeperMulticall3";
 
@@ -59,7 +59,7 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
         const batchGauges = sortedGauges.slice(i * maxCalls, i * maxCalls + maxCalls);
         // Get is_killed for each gauge
         const results = await multicall.callStatic.aggregate3(batchGauges.map(encodeFunctionData));
-        const decodedResults = results.map(result => decodeFunctionResult(result));
+        const decodedResults = results.map(decodeFunctionResult);
         for (let j = 0; j < decodedResults.length; j++) {
             const g = batchGauges[j];
             if (decodedResults[j]) continue;
@@ -71,8 +71,9 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
         }
     }
 
-    const formattedGauges = cleanedGauges.map(gaugeFormatRow);
-    saveGaugeChoices(uniqBy(formattedGauges, "address"));
+    const formattedGauges = uniqBy(cleanedGauges.map(gaugeFormatRow), "address");
+    const deduplicateGauges = deduplicateLabels(formattedGauges);
+    saveGaugeChoices(deduplicateGauges);
 });
 
 task("snapshot:validate").setAction(async function (_: TaskArguments, hre: HardhatRuntime) {
@@ -100,3 +101,20 @@ task("snapshot:validate").setAction(async function (_: TaskArguments, hre: Hardh
     }
     console.log(`Validation complete missing ${nCount} gauges`);
 });
+function deduplicateLabels(formattedGauges: { address: string; label: string }[]) {
+    const gaugeChoices = [].concat(...formattedGauges);
+    const choices = gaugeChoices.map((gauge: GaugeChoice, index: number) => ({ label: gauge.label, index }));
+    if (choices.length !== uniq(choices.map(c => c.label)).length) {
+        choices.forEach(choice => {
+            const duplicates = choices.filter(({ label }) => label === choice.label);
+            if (duplicates.length > 1) {
+                console.log("Duplicate:", choice);
+                duplicates.forEach(({ index, label }) => {
+                    gaugeChoices[index].label = `${label} (${gaugeChoices[index].address.slice(0, 4)})`;
+                    console.log("Fixed:", index, gaugeChoices[index].address, gaugeChoices[index].label);
+                });
+            }
+        });
+    }
+    return gaugeChoices;
+}

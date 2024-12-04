@@ -3,7 +3,7 @@ name: Snapshot Gauge Votes
 on:
     workflow_dispatch:
     schedule:
-        - cron: "0 2 * * 4" # Runs every Thursday
+        - cron: "10 2 * * 4" # Runs every Thursday
 
 jobs:
     update-snapshot:
@@ -22,36 +22,15 @@ jobs:
                   node-version: 18
                   cache: "yarn"
 
-            - name: Check if it's the second or fourth Thursday
-              id: check-thursday
-              run: |
-                  FIRST_THURSDAY=$(date -d '20241107' +'%Y-%m-%d')
-                  CURRENT_DATE=$(date +%Y-%m-%d)
-                  DAYS_DIFF=$(( ($(date -d "$CURRENT_DATE" +%s) - $(date -d "$FIRST_THURSDAY" +%s)) / 86400 ))
-                  if (( DAYS_DIFF % 14 != 0 )); then
-                    echo "Not this Thursday. Exiting."
-                    exit 0
-                  fi
-
-            - name: Create and checkout new branch
-              run: |
-                  git checkout -b feat/vote-gauges
-
-            - run: yarn
-            - run: yarn clean
-            - run: yarn compile
-
-            - name: Generate snapshot
-              run: yarn task snapshot:generate --network mainnet
-
-            - name: Run Prettier
-              run: yarn prettier
+            - name: Run snapshot script
+              run: bash ./scripts/automations/snapshot-generate.sh
 
             - name: Put current date into a variable
               run: |
                   NOW=$(date +'%d %B %Y')
                   BRANCH=$(date +'%d-%B-%Y')
                   echo "NOW=$NOW" >> $GITHUB_ENV
+                  echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
             - name: Create Pull Request
               uses: peter-evans/create-pull-request@v3.10.1
@@ -60,5 +39,5 @@ jobs:
                   commit-message: "feat: vote ${{ env.NOW }}"
                   title: "feat: vote ${{ env.NOW }}"
                   body: Auto-created Pull Request
-                  branch: "feat/vote-${{ env.NOW }}" # The branch where you commit
+                  branch: "feat/vote-${{ env.BRANCH }}" # The branch where you commit
                   base: main # Don't forget to specify the right base branch here

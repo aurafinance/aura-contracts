@@ -17,8 +17,10 @@ const readline = createInterface({
 });
 
 task("snapshot:create")
-    .addParam("snapshot", "The block to snapshot")
     .addParam("hub", "test or main config")
+    .addOptionalParam("snapshot", "The block to snapshot")
+    .addFlag("latestblock", "Use the latest block to generate the snapshot")
+    .addFlag("noninteractive", "Do not ask for confirmation")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const config = configs[taskArgs.hub];
 
@@ -37,23 +39,26 @@ task("snapshot:create")
         }
 
         // get gauges
-        console.log("Getting gauges choices");
+        const latestBlock = await await hre.ethers.provider.getBlockNumber();
+        console.log("Getting gauges choices at block", latestBlock);
+
         const gaugeList = getGaugeChoices();
         console.log("Gauge list:");
         gaugeList.forEach((gauge: GaugeChoice, i: number) => console.log(`${i + 1}) ${gauge.label}`));
 
         // create proposal
         console.log("Creating proposal on snapshot");
-        const latestBlock = taskArgs.snapshot;
-        if (!latestBlock) {
-            console.log(`Invalid snapshot provided. Found ${snapshot}`);
-        }
-        const client = new snapshot.Client712(config.hub);
 
+        const snapshotBlock = taskArgs.snapshot ?? (taskArgs.latestblock ? latestBlock : null);
+
+        if (!snapshotBlock) {
+            throw new Error(`Invalid snapshot provided. Found ${snapshotBlock}`);
+        }
+
+        const client = new snapshot.Client712(config.hub);
         const space = config.space;
 
         const localDate = new Date();
-
         const startDate = new Date(
             Date.UTC(localDate.getUTCFullYear(), localDate.getUTCMonth(), localDate.getUTCDate()),
         );
@@ -84,7 +89,7 @@ task("snapshot:create")
             return;
         }
         console.log("End date:", endDate.toUTCString());
-        console.log(`Snapshot: ${latestBlock}`);
+        console.log(`Snapshot: ${snapshotBlock}`);
         console.log(`Space: ${space}`);
         console.log(`Account: ${account}`);
         console.log(`Hub: ${config.hub}`);
@@ -107,65 +112,73 @@ task("snapshot:create")
             console.log("Duplicate labels not allowed");
             return;
         }
+        async function createSnapshotProposal() {
+            try {
+                const start = Math.floor(startDate.getTime() / 1000);
+                const end = Math.floor(endDate.getTime() / 1000);
+                const snapshot = Number(snapshotBlock);
 
-        await new Promise(res => {
-            readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
-                if (answer.toLowerCase() === "y") {
-                    console.log("Submitting to snapshot hub");
-                    try {
-                        const start = Math.floor(startDate.getTime() / 1000);
-                        const end = Math.floor(endDate.getTime() / 1000);
-                        const snapshot = Number(latestBlock);
+                const proposal = {
+                    space,
+                    type: "weighted",
+                    title,
+                    body,
+                    discussion: "",
+                    choices,
+                    start,
+                    end,
+                    snapshot,
+                    network: "1",
+                    strategies: JSON.stringify({}),
+                    plugins: JSON.stringify({}),
+                    metadata: JSON.stringify({}),
+                };
+                console.log("Proposal:", JSON.stringify(proposal));
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const receipt: any = await client.proposal(wallet, account, proposal);
 
-                        const proposal = {
-                            space,
-                            type: "weighted",
-                            title,
-                            body,
-                            discussion: "",
-                            choices,
-                            start,
-                            end,
-                            snapshot,
-                            network: "1",
-                            strategies: JSON.stringify({}),
-                            plugins: JSON.stringify({}),
-                            metadata: JSON.stringify({}),
-                        };
-                        console.log("Proposal:", JSON.stringify(proposal));
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const receipt: any = await client.proposal(wallet, account, proposal);
+                console.log(receipt);
 
-                        console.log(receipt);
+                // Save the proposal receipt to proposal.json file
+                const savedProposalPath = path.resolve(__dirname, "./proposals.json");
+                const saved = fs.readFileSync(savedProposalPath, "utf8");
+                const savedJSON = JSON.parse(saved);
+                const newSaved = [
+                    {
+                        id: receipt.id,
+                        title,
+                        start,
+                        end,
+                        snapshot,
+                    },
+                    ...savedJSON,
+                ];
+                fs.writeFileSync(savedProposalPath, JSON.stringify(newSaved));
 
-                        // Save the proposal receipt to proposal.json file
-                        const savedProposalPath = path.resolve(__dirname, "./proposals.json");
-                        const saved = fs.readFileSync(savedProposalPath, "utf8");
-                        const savedJSON = JSON.parse(saved);
-                        const newSaved = [
-                            {
-                                id: receipt.id,
-                                title,
-                                start,
-                                end,
-                                snapshot,
-                            },
-                            ...savedJSON,
-                        ];
-                        fs.writeFileSync(savedProposalPath, JSON.stringify(newSaved));
+                console.log(receipt);
+            } catch (error) {
+                console.log("Submitting failed");
+                console.log(error);
+            }
+        }
 
-                        console.log(receipt);
-                    } catch (error) {
-                        console.log("Submitting failed");
-                        console.log(error);
+        if (taskArgs.noninteractive) {
+            await createSnapshotProposal();
+            return;
+        } else {
+            await new Promise(res => {
+                readline.question(`Do you want to submit this proposal [y/n]: `, async answer => {
+                    if (answer.toLowerCase() === "y") {
+                        console.log("Submitting to snapshot hub");
+                        await createSnapshotProposal();
+                        readline.close();
+                        res(null);
+                    } else {
+                        console.log("Cancelled");
+                        readline.close();
+                        res(null);
                     }
-                    readline.close();
-                    res(null);
-                } else {
-                    console.log("Cancelled");
-                    readline.close();
-                    res(null);
-                }
+                });
             });
-        });
+        }
     });
