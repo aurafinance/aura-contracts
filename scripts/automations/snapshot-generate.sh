@@ -22,7 +22,7 @@ echo $FIRST_THURSDAY
 echo $CURRENT_DATE
 echo $DAYS_DIFF
 
-if (( DAYS_DIFF % 13 != 0 )); then
+if (( DAYS_DIFF % 14 != 0 )); then
   echo "Not this Thursday. Exiting."
   exit 0
 fi
@@ -37,4 +37,5 @@ if [ $RESULT -ne 0 ]; then
   echo "Failed to generate snapshot"
   exit 1
 fi
+
 yarn prettier
