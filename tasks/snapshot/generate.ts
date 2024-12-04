@@ -16,7 +16,7 @@ import { config } from "../deploy/mainnet-config";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { IGaugeController__factory, MockCurveGauge__factory, Multicall3__factory } from "../../types";
 import { removedGauges, validNetworks } from "./constants";
-import { uniqBy } from "lodash";
+import { uniq, uniqBy } from "lodash";
 import { Call3Struct } from "types/generated/Multicall3";
 import { ResultStruct } from "types/generated/KeeperMulticall3";
 
@@ -72,6 +72,15 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
     }
 
     const formattedGauges = cleanedGauges.map(gaugeFormatRow);
+    const choices = formattedGauges.map((gauge: GaugeChoice) => gauge.label);
+    if (choices.length !== uniq(choices).length) {
+        choices.forEach((choice: string) => {
+            const count = choices.filter((c: string) => c === choice).length;
+            if (count > 1) console.log("Duplicate:", choice);
+        });
+        throw new Error("Duplicate labels not allowed");
+    }
+
     saveGaugeChoices(uniqBy(formattedGauges, "address"));
 });
 
