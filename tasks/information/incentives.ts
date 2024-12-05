@@ -286,12 +286,13 @@ task("create:hh:incentives")
         const auraBalProposal = hhAuraProposals.find(isAuraBalProposal);
         const auraBalwstEthProposal = hhAuraProposals.find(isARBAuraBalwstEthProposal);
 
-        const conf = await getHiddenHandConf();
-
-        const veBalMaxTokensPerVote =
-            taskArgs.vebalmaxtokenspervote > 0
-                ? taskArgs.veBalMaxTokensPerVote
-                : fractionToBN(conf.veBALPrice / conf.auraPrice);
+        let veBalMaxTokensPerVote;
+        if (taskArgs.vebalmaxtokenspervote > 0) {
+            veBalMaxTokensPerVote = fractionToBN(taskArgs.vebalmaxtokenspervote);
+        } else {
+            const conf = await getHiddenHandConf();
+            veBalMaxTokensPerVote = fractionToBN(conf.veBALPrice / conf.auraPrice);
+        }
 
         const incentives: Incentive[] = [
             {
