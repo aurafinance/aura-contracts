@@ -1,0 +1,188 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1733396768160,
+    "meta": {
+        "name": "Incentives",
+        "description": "",
+        "txBuilderVersion": "1.16.0",
+        "createdFromSafeAddress": "0x21AED3a7A1c34Cd88B8A39DbDAE042bEfbf947ff",
+        "createdFromOwnerAddress": "",
+        "checksum": "0x6d8250468836cc9b24a5a2380ec1ceecece70ab3f66eed3e68bf2a4ca05d3d90"
+    },
+    "transactions": [
+        {
+            "to": "0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "token",
+                        "type": "address"
+                    }
+                ],
+                "name": "claim",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "token": "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf"
+            }
+        },
+        {
+            "to": "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "spender",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "approve",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "spender": "0xE00fe722e5bE7ad45b1A16066E431E47Df476CeC",
+                "amount": "62016000000000000000000"
+            }
+        },
+        {
+            "to": "0x45Bc37b18E73A42A4a826357a8348cDC042cCBBc",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "_proposal",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_maxTokensPerVote",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_periods",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "depositBribe",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_proposal": "0xb355f196c7ab330d85a3a392623204f81c8f2d668baaeda4e78f87c9f50bef04",
+                "_token": "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf",
+                "_amount": "23460000000000000000000",
+                "_maxTokensPerVote": "170000000000000000",
+                "_periods": "2"
+            }
+        },
+        {
+            "to": "0x45Bc37b18E73A42A4a826357a8348cDC042cCBBc",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "_proposal",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_maxTokensPerVote",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_periods",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "depositBribe",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_proposal": "0xa2b574c32fbe12ce1e12ebb850253595ef7087671c213241076b924614822a20",
+                "_token": "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf",
+                "_amount": "32059000000000000000000",
+                "_maxTokensPerVote": "170000000000000000",
+                "_periods": "2"
+            }
+        },
+        {
+            "to": "0xcbf242f20d183b4116c22dd5e441b9ae15b0d35a",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "_proposal",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "_token",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_maxTokensPerVote",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_periods",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "depositBribe",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_proposal": "0xffb8d412a5a5581f13e52cab6dee6cd2b5ce26a932d1f8f843e02f2223b5a8f4",
+                "_token": "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf",
+                "_amount": "6497000000000000000000",
+                "_maxTokensPerVote": "0",
+                "_periods": "1"
+            }
+        }
+    ]
+}

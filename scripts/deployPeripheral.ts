@@ -3,16 +3,19 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
 import { deployContract, deployContractWithCreate2, waitForTx } from "../tasks/utils";
+import { simpleToExactAmount } from "../test-utils/math";
 import {
     AuraBalStaker,
     AuraBalStaker__factory,
     AuraBalVault,
+    AuraToken,
     Booster,
     BoosterHelper,
     BoosterHelper__factory,
     BoosterLite,
     BoosterOwnerLite,
     BoosterOwnerSecondary,
+    ChefForwarder,
     Create2Factory__factory,
     CvxCrvToken,
     ExtraRewardStashLiteModule,
@@ -25,11 +28,16 @@ import {
     GaugeVoteRewards,
     GaugeVoterModule,
     GaugeVoterModule__factory,
+    HHChefClaimBriberModule,
+    HHChefClaimBriberModule__factory,
+    HHRewardsClaimForwarderModule,
+    HHRewardsClaimForwarderModule__factory,
     KeeperMulticall3,
     KeeperMulticall3__factory,
     PayableMulticall,
     PayableMulticall__factory,
     SidechainMultisigConfig,
+    StashRewardDistro,
     VeBalGrant,
     VeBalGrant__factory,
     WardenQuestScheduler,
@@ -332,4 +340,111 @@ export async function deployExtraRewardStashLiteModule(
     );
 
     return { extraRewardStashModule };
+}
+
+export async function deployHHRewardsClaimForwarderModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: {
+        cvx: AuraToken;
+        stashRewardDistro: StashRewardDistro;
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ hhRewardsClaimForwarderModule: HHRewardsClaimForwarderModule }> {
+    const { cvx, stashRewardDistro } = deployment;
+    const hiddenHandsRewardDistributorAddress = "0xa9b08B4CeEC1EF29EdEC7F9C94583270337D6416";
+
+    const hhRewardsClaimForwarderModule = await deployContract<HHRewardsClaimForwarderModule>(
+        hre,
+        new HHRewardsClaimForwarderModule__factory(signer),
+        "HHRewardsClaimForwarderModule",
+        [
+            await signer.getAddress(),
+            multisigs.incentivesMultisig,
+            cvx.address,
+            stashRewardDistro.address,
+            hiddenHandsRewardDistributorAddress,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await hhRewardsClaimForwarderModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhRewardsClaimForwarderModule.transferOwnership(multisigs.incentivesMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { hhRewardsClaimForwarderModule };
+}
+
+export async function deployHHChefClaimBriberModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: {
+        cvx: AuraToken;
+        chefForwarder: ChefForwarder;
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ hhChefClaimBriberModule: HHChefClaimBriberModule }> {
+    const { cvx, chefForwarder } = deployment;
+    const hiddenHandsBribeVaultAddress = "0xE00fe722e5bE7ad45b1A16066E431E47Df476CeC";
+    // Proposals
+    // See https://api.hiddenhand.finance/proposal/aura or https://api.hiddenhand.finance/proposal/balancer depending on the market
+    const auraEthVeBALId = "0xb355f196c7ab330d85a3a392623204f81c8f2d668baaeda4e78f87c9f50bef04";
+    const auraBalVeBALId = "0xa2b574c32fbe12ce1e12ebb850253595ef7087671c213241076b924614822a20";
+    const ARBAuraBalwstEthId = "0xffb8d412a5a5581f13e52cab6dee6cd2b5ce26a932d1f8f843e02f2223b5a8f4";
+
+    // Markets
+    const vlAuraIncentiveAddress = "0xcbf242f20d183b4116c22dd5e441b9ae15b0d35a";
+    const veBalIncentiveAddress = "0x45Bc37b18E73A42A4a826357a8348cDC042cCBBc";
+
+    const rewardPerEpoch = simpleToExactAmount(62016); // Based on AIP-63 , update every 6 months
+
+    const hhChefClaimBriberModule = await deployContract<HHChefClaimBriberModule>(
+        hre,
+        new HHChefClaimBriberModule__factory(signer),
+        "HHChefClaimBriberModule",
+        [
+            await signer.getAddress(),
+            multisigs.incentivesMultisig,
+            cvx.address,
+            chefForwarder.address,
+            hiddenHandsBribeVaultAddress,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await hhChefClaimBriberModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.updateAuthorizedProposals(auraEthVeBALId, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.updateAuthorizedProposals(auraBalVeBALId, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.updateAuthorizedProposals(ARBAuraBalwstEthId, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.updateAuthorizedMarkets(vlAuraIncentiveAddress, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.updateAuthorizedMarkets(veBalIncentiveAddress, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.setRewardPerEpoch(rewardPerEpoch);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await hhChefClaimBriberModule.transferOwnership(multisigs.incentivesMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { hhChefClaimBriberModule };
 }
