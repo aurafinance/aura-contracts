@@ -22,6 +22,7 @@ import {
     deployCanonicalPhase4,
     deployCanonicalView,
     deployCreate2Factory,
+    deployExtraRewardStashLiteModule,
     deployKeeperMulticall3,
     deploySidechainAuraLocker,
     deploySidechainClaimZap,
@@ -1200,5 +1201,26 @@ task("deploy:sidechain:L2:vlAura")
             tskArgs.wait,
             SALT,
         );
+        logContracts(result);
+    });
+
+task("deploy:sidechain:extraRewardStashModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const config = sidechainConfigs[hre.network.config.chainId];
+        const contracts = config.getSidechain(deployer);
+        const result = await deployExtraRewardStashLiteModule(
+            hre,
+            deployer,
+            config.extConfig,
+            config.multisigs,
+            contracts,
+            [contracts.auraOFT.address],
+            debug,
+            tskArgs.wait,
+            SALT,
+        );
+
         logContracts(result);
     });

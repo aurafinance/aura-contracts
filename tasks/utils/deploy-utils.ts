@@ -38,6 +38,7 @@ export const deployContract = async <T extends Contract>(
                 (contract.deployTransaction.maxPriorityFeePerGas?.toNumber() || 0) / 1e9
             } Gwei\nmaxFeePerGas ${(contract.deployTransaction.maxFeePerGas?.toNumber() || 0) / 1e9} Gwei`,
         );
+        console.log("constructorArgs", constructorArgs);
     }
 
     const receipt = await contract.deployTransaction.wait(waitForBlocks);
