@@ -18,7 +18,6 @@ import {
     ChefForwarder,
     Create2Factory__factory,
     CvxCrvToken,
-    ExtraRewardStashLiteModule,
     ExtraRewardStashLiteModule__factory,
     ExtraRewardStashModule,
     ExtraRewardStashModule__factory,
@@ -36,7 +35,6 @@ import {
     KeeperMulticall3__factory,
     PayableMulticall,
     PayableMulticall__factory,
-    SidechainMultisigConfig,
     StashRewardDistro,
     VeBalGrant,
     VeBalGrant__factory,
@@ -300,41 +298,6 @@ export async function deployExtraRewardStashModule(
         contracts,
         authorizedTokens,
         "ExtraRewardStashModule",
-        debug,
-        waitForBlocks,
-    );
-
-    return { extraRewardStashModule };
-}
-
-export async function deployExtraRewardStashLiteModule(
-    hre: HardhatRuntimeEnvironment,
-    signer: Signer,
-    sideMultisigs: SidechainMultisigConfig,
-    deployment: { boosterOwnerLite: BoosterOwnerLite; keeperMulticall3: KeeperMulticall3 },
-    authorizedTokens: string[],
-    debug = false,
-    waitForBlocks = 0,
-): Promise<{ extraRewardStashModule: ExtraRewardStashLiteModule }> {
-    const { boosterOwnerLite, keeperMulticall3 } = deployment;
-
-    const contracts = {
-        boosterOwner: boosterOwnerLite,
-        extraRewardStashModuleFactory: new ExtraRewardStashLiteModule__factory(signer),
-    };
-    const multisigs = {
-        daoMultisig: sideMultisigs.daoMultisig,
-        defender: {
-            keeperMulticall3: keeperMulticall3.address,
-        },
-    };
-    const extraRewardStashModule = await deployExtraRewardStashModuleT<ExtraRewardStashLiteModule>(
-        hre,
-        signer,
-        multisigs as MultisigConfig,
-        contracts,
-        authorizedTokens,
-        "ExtraRewardStashLiteModule",
         debug,
         waitForBlocks,
     );
