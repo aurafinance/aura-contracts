@@ -70,6 +70,7 @@ import {
     UniswapRouterHandler,
     L1PoolManagerProxy__factory,
     PoolFeeManagerProxy__factory,
+    ExtraRewardStashModule__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -460,6 +461,13 @@ export const getGaugeVoteRewards = (signer: Signer) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", signer),
 });
 
+const getSafeModules = (signer: Signer) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+});
+
 export const config = {
     chainId: chainIds.mainnet,
     whales,
@@ -483,4 +491,5 @@ export const config = {
     getCanonicalView,
     getAuraMining,
     getGaugeVoteRewards,
+    getSafeModules,
 };
