@@ -23,7 +23,7 @@ import {
     PaladinQuestDarkBoard,
     PaladinQuestWardenScheduler,
 } from "./paladinApi";
-import { buildSafeTx } from "../../tasks/protocol";
+import { buildSafeTx } from "../protocol/safe";
 
 const auraTokenAddress = "0xc0c293ce456ff0ed870add98a0828dd4d2903dbf";
 const chefForwarderAddress = "0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9";

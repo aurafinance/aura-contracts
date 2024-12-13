@@ -56,6 +56,7 @@ import {
     StashRewardDistro__factory,
     UniswapRouterHandler,
     L1PoolManagerProxy__factory,
+    ExtraRewardStashModule__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -247,6 +248,12 @@ export const getGaugeVoteRewards = (signer: Signer) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
+const getSafeModules = (signer: Signer) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x0000000000000000000000000000000000000000",
+        signer,
+    ),
+});
 export const config = {
     chainId: chainIds.goerli,
     addresses,
@@ -264,4 +271,5 @@ export const config = {
     getSidechain,
     getCanonicalView,
     getGaugeVoteRewards,
+    getSafeModules,
 };
