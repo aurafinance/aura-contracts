@@ -39,3 +39,6 @@ if [ $RESULT -ne 0 ]; then
 fi
 
 yarn prettier
+
+NOTIFICATION=$'Snapshot Gauge Votes proposal\r\n\nReview the latest pr at https://github.com/aurafinance/aura-contracts/pulls\r\n@phijfry, @ConwayGlider, @Oxahtle7'
+curl -s --data-urlencode "text=$NOTIFICATION" "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage?chat_id=$TELEGRAM_CHAT_ID" > /dev/null
