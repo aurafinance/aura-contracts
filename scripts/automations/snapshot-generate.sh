@@ -30,7 +30,7 @@ fi
 yarn
 yarn clean
 yarn compile
-yarn task snapshot:generate --network mainnet
+yarn task snapshot:submit --network mainnet
 RESULT=$?
 echo $RESULT
 if [ $RESULT -ne 0 ]; then
