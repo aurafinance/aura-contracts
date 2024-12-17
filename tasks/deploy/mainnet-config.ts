@@ -320,7 +320,7 @@ const getPhase2 = async (deployer: Signer): Promise<Phase2Deployed> => ({
     cvxCrvRewards: BaseRewardPool__factory.connect("0x5e5ea2048475854a5702F5B8468A51Ba1296EFcC", deployer),
     initialCvxCrvStaking: AuraBalRewardPool__factory.connect("0xC47162863a12227E5c3B0860715F9cF721651C0c", deployer),
     crvDepositor: CrvDepositor__factory.connect("0xeAd792B55340Aa20181A80d6a16db6A0ECd1b827", deployer),
-    crvDepositorWrapper: CrvDepositorWrapper__factory.connect("0x68655AD9852a99C87C0934c7290BB62CFa5D4123", deployer),
+    crvDepositorWrapper: CrvDepositorWrapper__factory.connect("0x68655AD9852a99C87C0934c7290BB62CFa5D4123", deployer), // Mints crvCvx and deposits
     poolManager: PoolManagerV3__factory.connect("0xf843F61508Fc17543412DE55B10ED87f4C28DE50", deployer),
     poolManagerProxy: PoolManagerProxy__factory.connect("0x16A04E58a77aB1CE561A37371dFb479a8594947A", deployer),
     poolManagerSecondaryProxy: PoolManagerSecondaryProxy__factory.connect(

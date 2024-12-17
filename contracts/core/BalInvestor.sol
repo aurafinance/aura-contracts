@@ -39,7 +39,7 @@ abstract contract BalInvestor {
         BAL_ETH_POOL_ID = _balETHPoolId;
     }
 
-    function _setApprovals() internal {
+    function _setApprovals() internal virtual {
         IERC20(WETH).safeApprove(address(BALANCER_VAULT), type(uint256).max);
         IERC20(BAL).safeApprove(address(BALANCER_VAULT), type(uint256).max);
     }
@@ -55,7 +55,7 @@ abstract contract BalInvestor {
         return IPriceOracle(BALANCER_POOL_TOKEN).getTimeWeightedAverage(queries)[0];
     }
 
-    function _getMinOut(uint256 amount, uint256 minOutBps) internal view returns (uint256) {
+    function _getMinOut(uint256 amount, uint256 minOutBps) internal view virtual returns (uint256) {
         // Gets the balancer time weighted average price denominated in BAL
         // e.g.  if 1 BAL == 0.4 BPT, bptOraclePrice == 2.5
         uint256 bptOraclePrice = _getBptPrice();
