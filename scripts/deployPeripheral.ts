@@ -338,6 +338,9 @@ export async function deployHHRewardsClaimForwarderModule(
     let tx = await hhRewardsClaimForwarderModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await hhRewardsClaimForwarderModule.setPids([100, 101]);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await hhRewardsClaimForwarderModule.transferOwnership(multisigs.incentivesMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 

@@ -24,6 +24,12 @@ contract HHRewardsClaimForwarderModule is Module, KeeperRole, ReentrancyGuard {
         uint256 amount;
         bytes32[] merkleProof;
     }
+    /* -------------------------------------------------------------------
+       Events 
+    ------------------------------------------------------------------- */
+
+    event SetPids(uint256[] pids);
+    event RewardsClaimed(uint256 cvxClaimed);
 
     /**
      * @notice  Constructor for the GaugeVoterModule
@@ -92,6 +98,7 @@ contract HHRewardsClaimForwarderModule is Module, KeeperRole, ReentrancyGuard {
      */
     function setPids(uint256[] calldata _pids) external onlyOwner {
         pids = _pids;
+        emit SetPids(_pids);
     }
 
     /**
@@ -108,5 +115,6 @@ contract HHRewardsClaimForwarderModule is Module, KeeperRole, ReentrancyGuard {
     {
         cvxClaimed = _claimRewards(_claims);
         _fundPools(cvxClaimed);
+        emit RewardsClaimed(cvxClaimed);
     }
 }

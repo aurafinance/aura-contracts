@@ -11,6 +11,8 @@ import {
     deployFeeScheduler,
     deployVeBalGrant,
     deployExtraRewardStashModule,
+    deployHHRewardsClaimForwarderModule,
+    deployHHChefClaimBriberModule,
 } from "../../scripts/deployPeripheral";
 import { deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
@@ -22,6 +24,7 @@ import {
     AuraMining__factory,
     BoosterHelper,
     BoosterHelper__factory,
+    ChefForwarder__factory,
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
     GaugeMigrator,
@@ -381,4 +384,51 @@ task("deploy:mainnet:extraRewardStashModule")
         );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:mainnet:HHRewardsClaimForwarderModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const phaseGaugeVoter = config.getGaugeVoteRewards(deployer);
+        const contracts = { ...phase2, ...phaseGaugeVoter };
+
+        const result = await deployHHRewardsClaimForwarderModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                cvx: contracts.cvx,
+                stashRewardDistro: contracts.stashRewardDistro,
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
+    });
+task("deploy:mainnet:HHChefClaimBriberModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const contracts = {
+            ...phase2,
+            chefForwarder: ChefForwarder__factory.connect("0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9", deployer),
+        };
+
+        const result = await deployHHChefClaimBriberModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                cvx: contracts.cvx,
+                chefForwarder: contracts.chefForwarder,
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
     });
