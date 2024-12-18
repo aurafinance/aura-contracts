@@ -71,6 +71,8 @@ import {
     L1PoolManagerProxy__factory,
     PoolFeeManagerProxy__factory,
     ExtraRewardStashModule__factory,
+    HHChefClaimBriberModule__factory,
+    HHRewardsClaimForwarderModule__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -464,6 +466,14 @@ export const getGaugeVoteRewards = (signer: Signer) => ({
 const getSafeModules = (signer: Signer) => ({
     extraRewardStashModule: ExtraRewardStashModule__factory.connect(
         "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+    hhRewardsClaimForwarderModule: HHRewardsClaimForwarderModule__factory.connect(
+        "0xb034E7aC8395fb373BBf8cB4C09cc4d4C1D80Aa0",
+        signer,
+    ),
+    hhChefClaimBriberModule: HHChefClaimBriberModule__factory.connect(
+        "0xE2565158E9984FD736002F58e2777260F2dD0F4b",
         signer,
     ),
 });
