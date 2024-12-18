@@ -5,7 +5,6 @@ import { logContracts } from "../utils/deploy-utils";
 import { getSigner } from "../utils";
 import {
     deployCrvDepositorWrapperForwarderV2,
-    deployCrvDepositorWrapperSwapper,
     deployPhase1,
     deployPhase2,
     deployPhase3,
@@ -269,20 +268,6 @@ task("deploy:mainnet:crvDepositorWrapperForwarderV2")
         );
         logContracts({ crvDepositorWrapperForwarderV2 });
     });
-
-task("deploy:mainnet:deployCrvDepositorWrapperSwapper").setAction(async function (taskArgs: TaskArguments, hre) {
-    const deployer = await getSigner(hre);
-    const phase2 = await config.getPhase2(deployer);
-    const { crvDepositorWrapperSwapper } = await deployCrvDepositorWrapperSwapper(
-        hre,
-        deployer,
-        phase2,
-        config.addresses,
-        true,
-        1,
-    );
-    logContracts({ crvDepositorWrapperSwapper });
-});
 
 task("deploy:mainnet:vestedEscrow")
     .addParam("starttime", "Start time")

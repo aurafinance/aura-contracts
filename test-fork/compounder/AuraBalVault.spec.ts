@@ -281,7 +281,7 @@ describe("AuraBalVault", () => {
 
     describe("deploy reward forwarder", () => {
         it("deploy reward forwarder", async () => {
-            const result = await config.getFeeForwarder(deployer.signer);
+            const result = await config.getPostPhases(deployer.signer);
             feeForwarder = result.feeForwarder;
         });
         it.skip("update booster platform to reward forwarder", async () => {

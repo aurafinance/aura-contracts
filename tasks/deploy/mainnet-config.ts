@@ -57,7 +57,6 @@ import {
     BalancerSwapsHandler,
     VirtualBalanceRewardPool,
     VirtualBalanceRewardPool__factory,
-    AuraClaimZapV3,
     AuraClaimZapV3__factory,
     AuraProxyOFT__factory,
     L1Coordinator__factory,
@@ -73,6 +72,7 @@ import {
     ExtraRewardStashModule__factory,
     HHChefClaimBriberModule__factory,
     HHRewardsClaimForwarderModule__factory,
+    CrvDepositorWrapperSwapper__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -420,9 +420,6 @@ const getPhase8 = async (deployer: Signer): Promise<Phase8Deployed> => ({
 const getPhase9 = async (deployer: Signer): Promise<Phase9Deployed> => ({
     poolFeeManagerProxy: PoolFeeManagerProxy__factory.connect("0xD0521C061958324D06b8915FFDAc3DB22C8Bd687", deployer),
 });
-const getFeeForwarder = async (deployer: Signer) => ({
-    feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", deployer),
-});
 
 const getAuraMining = async (deployer: Signer) => ({
     auraMining: AuraMining__factory.connect("0x744Be650cea753de1e69BF6BAd3c98490A855f52", deployer),
@@ -442,9 +439,6 @@ const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> 
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 
-const getAuraClaimZapV3 = async (deployer: Signer): Promise<AuraClaimZapV3> =>
-    AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", deployer);
-
 const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
@@ -461,6 +455,19 @@ export const getCanonicalView = (signer: Signer) => ({
 export const getGaugeVoteRewards = (signer: Signer) => ({
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", signer),
+});
+
+// Add here contracts that are not part of the main system
+export const getPostPhases = (signer: Signer) => ({
+    feeForwarder: FeeForwarder__factory.connect("0xE14360AA496A85FCfe4B75AFD2ec4d95CbA38Fe1", signer),
+    // AuraClaimZapV3  with crvDepositorWrapper that mints crvCvx and deposits
+    auraClaimZapV3: AuraClaimZapV3__factory.connect("0x5b2364fD757E262253423373E4D57C5c011Ad7F4", signer),
+    // AuraClaimZapV4  with crvDepositorWrapperSwapper that swaps crv to crvCvx and deposits
+    auraClaimZapV4: AuraClaimZapV3__factory.connect("0x1Bc4d50d8785587f0d44f4296408e20f592Ae347", signer),
+    crvDepositorWrapperSwapper: CrvDepositorWrapperSwapper__factory.connect(
+        "0x2a2A2e691068CB1f61124c5A865756Dca7F8682f",
+        signer,
+    ),
 });
 
 const getSafeModules = (signer: Signer) => ({
@@ -494,12 +501,11 @@ export const config = {
     getPhase7,
     getPhase8,
     getPhase9,
-    getFeeForwarder,
     getAuraBalVault,
-    getAuraClaimZapV3,
     getSidechain,
     getCanonicalView,
     getAuraMining,
     getGaugeVoteRewards,
+    getPostPhases,
     getSafeModules,
 };
