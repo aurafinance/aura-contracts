@@ -8,5 +8,5 @@ import "./compare";
 
 task("snapshot:submit").setAction(async function (_: TaskArguments, hre: HardhatRuntimeEnvironment) {
     await hre.run("snapshot:generate", {});
-    await hre.run("snapshot:create", { latestblock: true, noninteractive: true });
+    await hre.run("snapshot:create", { hub: "main", latestblock: true, noninteractive: true });
 });
