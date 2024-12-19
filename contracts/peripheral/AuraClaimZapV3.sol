@@ -197,7 +197,7 @@ contract AuraClaimZapV3 {
      * @notice returns a bool if relocking of rewards should occur
      * @param options                Claim options
      */
-    function _callRelockRewards(Options calldata options) internal view returns (bool) {
+    function _callRelockRewards(Options calldata options) internal pure returns (bool) {
         return (options.lockCvxCrv || options.lockCrvDeposit || options.useCompounder || options.lockCvx);
     }
 

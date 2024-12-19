@@ -5,18 +5,25 @@ import { deployMocks, DeployMocksResult, getMockDistro, getMockMultisigs } from 
 import {
     Phase6Deployed,
     SystemDeployed,
+    deployCrvDepositorWrapperSwapper,
     deployPhase1,
     deployPhase2,
     deployPhase3,
     deployPhase4,
 } from "../../scripts/deploySystem";
-import { BN, impersonateAccount, increaseTime, simpleToExactAmount } from "../../test-utils";
+import { anyValue, assertBNClose, BN, impersonateAccount, increaseTime, simpleToExactAmount } from "../../test-utils";
 import { ONE_WEEK, ZERO, ZERO_ADDRESS } from "../../test-utils/constants";
-import { AuraBalVault, BaseRewardPool__factory } from "../../types/generated";
+import {
+    AuraBalVault,
+    BaseRewardPool__factory,
+    CrvDepositorWrapper,
+    CrvDepositorWrapperSwapper,
+} from "../../types/generated";
 import { AuraClaimZapV3, ClaimRewardsAmountsStruct, OptionsStruct } from "../../types/generated/AuraClaimZapV3";
 import { deployVault } from "../../scripts/deployVault";
-import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
+import { deployAuraClaimZapV3Swapper } from "../../scripts/deployAuraClaimZapV3";
 import { Account } from "index";
+import { parseEther } from "ethers/lib/utils";
 
 const defaultOptions: OptionsStruct = {
     claimCvxCrv: false,
@@ -36,6 +43,7 @@ describe("AuraClaimZapV3", () => {
     let phase4: SystemDeployed;
     let alice: Account;
     let vault: AuraBalVault;
+    let crvDepositorWrapper: CrvDepositorWrapperSwapper | CrvDepositorWrapper;
     // Testing contract
     let claimZapV3: AuraClaimZapV3;
     const pid = 0;
@@ -43,9 +51,9 @@ describe("AuraClaimZapV3", () => {
     async function depositIntoBasePoolReward(account: Account, amount: BN) {
         const lock = true;
         const stakeAddress = phase4.cvxCrvRewards.address;
-        const minOut = await phase4.crvDepositorWrapper.connect(account.signer).getMinOut(amount, "10000");
-        await mocks.crv.connect(account.signer).approve(phase4.crvDepositorWrapper.address, amount);
-        await phase4.crvDepositorWrapper.connect(account.signer).deposit(amount, minOut, lock, stakeAddress);
+        const minOut = await crvDepositorWrapper.connect(account.signer).getMinOut(amount, "10000");
+        await mocks.crv.connect(account.signer).approve(crvDepositorWrapper.address, amount);
+        await crvDepositorWrapper.connect(account.signer).deposit(amount, minOut, lock, stakeAddress);
 
         const cvxCrvRewardsBalance = await phase4.cvxCrvRewards.balanceOf(account.address);
 
@@ -104,11 +112,30 @@ describe("AuraClaimZapV3", () => {
 
         // Deploy test contract.
         ({ vault } = await deployVault(testConfig, hre, deployer, DEBUG));
-        ({ claimZapV3 } = await deployAuraClaimZapV3(testConfig, hre, deployer, vault.address, DEBUG));
+        ({ crvDepositorWrapperSwapper: crvDepositorWrapper } = await deployCrvDepositorWrapperSwapper(
+            hre,
+            deployer,
+            phase2,
+            mocks.addresses,
+            DEBUG,
+        ));
+
+        ({ claimZapV3 } = await deployAuraClaimZapV3Swapper(
+            testConfig,
+            hre,
+            deployer,
+            { vault: vault.address, crvDepositorWrapper: crvDepositorWrapper.address },
+            DEBUG,
+        ));
 
         // Send some balance to  prepare the test
         await mocks.crv.transfer(alice.address, simpleToExactAmount(100));
         await mocks.crv.transfer(mocks.balancerVault.address, simpleToExactAmount(100));
+
+        // dirty trick to get some crvCvx balance.
+        const crvDepositorAccount = await impersonateAccount(phase2.crvDepositor.address);
+        const cvxCrvConnected = phase2.cvxCrv.connect(crvDepositorAccount.signer);
+        await cvxCrvConnected.mint(mocks.balancerVault.address, simpleToExactAmount(100));
 
         await phase4.cvxCrv.transfer(alice.address, simpleToExactAmount(10));
         await phase4.cvxCrv.transfer(mocks.balancerVault.address, simpleToExactAmount(10));
@@ -116,6 +143,7 @@ describe("AuraClaimZapV3", () => {
         const operatorAccount = await impersonateAccount(phase4.booster.address);
         await phase4.cvx.connect(operatorAccount.signer).mint(alice.address, simpleToExactAmount(100));
         await mocks.balancerVault.setTokens(phase4.cvxCrv.address, mocks.crv.address);
+        await mocks.crvBpt.setPrice(parseEther("1"));
 
         // Approvals
 
@@ -128,7 +156,7 @@ describe("AuraClaimZapV3", () => {
         expect(await claimZapV3.getName()).to.be.eq("ClaimZap V3.0");
         expect(await claimZapV3.crv()).to.be.eq(mocks.addresses.token);
         expect(await claimZapV3.cvx()).to.be.eq(phase4.cvx.address);
-        expect(await claimZapV3.crvDepositWrapper()).to.be.eq(phase4.crvDepositorWrapper.address);
+        expect(await claimZapV3.crvDepositWrapper()).to.be.eq(crvDepositorWrapper.address);
         expect(await claimZapV3.cvxCrvRewards()).to.be.eq(phase4.cvxCrvRewards.address);
         expect(await claimZapV3.locker()).to.be.eq(phase4.cvxLocker.address);
         expect(await claimZapV3.owner()).to.be.eq(await deployer.getAddress());
@@ -136,7 +164,7 @@ describe("AuraClaimZapV3", () => {
     });
     it("set approval for deposits", async () => {
         await claimZapV3.setApprovals();
-        expect(await mocks.crv.allowance(claimZapV3.address, phase4.crvDepositorWrapper.address)).eq(
+        expect(await mocks.crv.allowance(claimZapV3.address, crvDepositorWrapper.address)).eq(
             ethers.constants.MaxUint256,
         );
         expect(await phase4.cvxCrv.allowance(claimZapV3.address, phase4.cvxCrvRewards.address)).eq(
@@ -155,7 +183,7 @@ describe("AuraClaimZapV3", () => {
         const dataBefore = await snapData(alice);
 
         const options = { ...defaultOptions, claimCvxCrv: true, lockCrvDeposit: true, lockCvxCrv: true, lockCvx: true };
-        const minBptAmountOut = await phase4.crvDepositorWrapper.getMinOut(dataBefore.cvxCrvRewardsEarned, 10000);
+        const minBptAmountOut = await crvDepositorWrapper.getMinOut(dataBefore.cvxCrvRewardsEarned, 10000);
 
         const amounts: ClaimRewardsAmountsStruct = {
             minAmountOut: minBptAmountOut,
@@ -173,14 +201,19 @@ describe("AuraClaimZapV3", () => {
             .withArgs(alice.address, dataBefore.cvxCrvRewardsEarned);
         await expect(tx, "lockCvxCrv: true + useAllWalletFunds: false")
             .to.emit(phase4.cvxCrvRewards, "Staked")
-            .withArgs(alice.address, minBptAmountOut);
+            .withArgs(alice.address, anyValue);
 
         // useAllWalletFunds: false checks , and lock crv, cvx, cvxCrv, no change on balances.
         expect(dataBefore.crvBalance, "crv balance").to.be.eq(dataAfter.crvBalance);
         expect(dataBefore.cvxBalance, "cvx balance").to.be.eq(dataAfter.cvxBalance);
         expect(dataBefore.cvxCrvBalance, "cvxCrv balance").to.be.eq(dataAfter.cvxCrvBalance);
 
-        expect(dataAfter.cvxCrvRewardsBalance).eq(minBptAmountOut.add(cvxCrvRewardsBalance));
+        assertBNClose(
+            dataAfter.cvxCrvRewardsBalance,
+            minBptAmountOut.add(cvxCrvRewardsBalance),
+            simpleToExactAmount(1, 16),
+            "cvxCrvRewards balance",
+        );
     });
     it("claim rewards from cvxCrvStaking and stake crv, cvxCrv with wallet funds", async () => {
         await phase4.booster.earmarkRewards(pid);
@@ -198,7 +231,7 @@ describe("AuraClaimZapV3", () => {
             lockCvx: true,
             useAllWalletFunds: true,
         };
-        const minBptAmountOut = await phase4.crvDepositorWrapper.getMinOut(depositCvxCrvMaxAmount, 10000);
+        const minBptAmountOut = await crvDepositorWrapper.getMinOut(depositCvxCrvMaxAmount, 10000);
 
         const amounts: ClaimRewardsAmountsStruct = {
             minAmountOut: minBptAmountOut,
@@ -206,6 +239,7 @@ describe("AuraClaimZapV3", () => {
             depositCvxMaxAmount: 0,
             depositCvxCrvMaxAmount: depositCvxCrvMaxAmount,
         };
+
         const tx = await claimZapV3.connect(alice.signer).claimRewards([], [], [], [], amounts, options);
 
         const dataAfter = await snapData(alice);

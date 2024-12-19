@@ -13,12 +13,11 @@ interface DeployConfig {
     getPhase4: (deployer: Signer) => Promise<Phase4Deployed>;
     getPhase6: (deployer: Signer) => Promise<Phase6Deployed>;
 }
-
-export async function deployAuraClaimZapV3(
+async function deployAuraClaimZapVN(
     config: DeployConfig,
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
-    vault: string,
+    contractsOverride: { [key: string]: string },
     debug = false,
     waitForBlocks = 0,
 ) {
@@ -34,10 +33,10 @@ export async function deployAuraClaimZapV3(
             addresses.token,
             phase2.cvx.address,
             phase2.cvxCrv.address,
-            phase4.crvDepositorWrapper.address,
+            contractsOverride.crvDepositorWrapper ?? phase4.crvDepositorWrapper.address,
             phase6.cvxCrvRewards.address,
             phase4.cvxLocker.address,
-            vault,
+            contractsOverride.vault,
         ],
         {},
         debug,
@@ -50,4 +49,26 @@ export async function deployAuraClaimZapV3(
     return {
         claimZapV3,
     };
+}
+
+export async function deployAuraClaimZapV3(
+    config: DeployConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    vault: string,
+    debug = false,
+    waitForBlocks = 0,
+) {
+    return deployAuraClaimZapVN(config, hre, signer, { vault }, debug, waitForBlocks);
+}
+
+export async function deployAuraClaimZapV3Swapper(
+    config: DeployConfig,
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    contractsOverride: { vault: string; crvDepositorWrapper: string },
+    debug = false,
+    waitForBlocks = 0,
+) {
+    return deployAuraClaimZapVN(config, hre, signer, contractsOverride, debug, waitForBlocks);
 }

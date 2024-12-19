@@ -38,7 +38,7 @@ describe("FeeScheduler", () => {
         dao = await impersonateAccount(config.multisigs.daoMultisig, true);
 
         strategy = (await config.getAuraBalVault(deployer.signer)).strategy;
-        feeForwarder = (await config.getFeeForwarder(deployer.signer)).feeForwarder;
+        feeForwarder = config.getPostPhases(deployer.signer).feeForwarder;
         bal = ERC20__factory.connect(config.addresses.token, deployer.signer);
 
         const results = await deployFeeScheduler(hre, deployer.signer);
