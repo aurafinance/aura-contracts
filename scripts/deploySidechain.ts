@@ -39,6 +39,8 @@ import {
     ChildGaugeVoteRewards__factory,
     Create2Factory,
     Create2Factory__factory,
+    ExtraRewardStashLiteModule,
+    ExtraRewardStashLiteModule__factory,
     ExtraRewardStashV3,
     ExtraRewardStashV3__factory,
     GaugeVoteRewards,
@@ -1294,4 +1296,44 @@ export async function deploySidechainAuraLocker(
     );
 
     return { cvxLocker };
+}
+
+export async function deployExtraRewardStashLiteModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    extConfig: ExtSidechainConfig,
+    multisigs: SidechainMultisigConfig,
+    sidechain: SidechainPhase1Deployed,
+    authorizedTokens: string[],
+    debug = false,
+    waitForBlocks = 0,
+    salt: string = SALT,
+): Promise<{ extraRewardStashModule: ExtraRewardStashLiteModule }> {
+    const deployOptionsWithCallbacks = (callbacks: string[] = []) =>
+        create2OptionsWithCallbacks(salt, callbacks, debug, waitForBlocks);
+    const create2Factory = Create2Factory__factory.connect(extConfig.create2Factory, signer);
+    const iFactory = ExtraRewardStashLiteModule__factory.createInterface();
+
+    const updateAuthorizedKeepersTxs = iFactory.encodeFunctionData("updateAuthorizedKeepers", [
+        sidechain.keeperMulticall3.address,
+        true,
+    ]);
+    const updateAuthorizedTokensTxs = authorizedTokens.map(tokenAddress =>
+        iFactory.encodeFunctionData("updateAuthorizedTokens", [tokenAddress, true]),
+    );
+    const transferOwnershipTxs = iFactory.encodeFunctionData("transferOwnership", [multisigs.daoMultisig]);
+
+    const extraRewardStashModule = await deployContractWithCreate2<
+        ExtraRewardStashLiteModule,
+        ExtraRewardStashLiteModule__factory
+    >(
+        hre,
+        create2Factory,
+        new ExtraRewardStashLiteModule__factory(signer),
+        "ExtraRewardStashLiteModule",
+        [create2Factory.address, multisigs.daoMultisig, sidechain.boosterOwner.address, sidechain.booster.address],
+        deployOptionsWithCallbacks([updateAuthorizedKeepersTxs, ...updateAuthorizedTokensTxs, transferOwnershipTxs]),
+    );
+
+    return { extraRewardStashModule };
 }

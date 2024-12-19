@@ -65,5 +65,10 @@
     "gaugeVoteRewards": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
     "stashRewardDistro": "0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1",
     "Forwarder Handler": "0x7663FD322021D5b1f36dBf0c97D34cfa039fCCA1",
-    "vestedEscrow-6": "0xa6bBF685b7EA73878b4FB867A96f1Ca3ED5eB358"
+    "vestedEscrow-6": "0xa6bBF685b7EA73878b4FB867A96f1Ca3ED5eB358",
+    "safeModules": {
+        "extraRewardStashModule": "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        "hhRewardsClaimForwarderModule": "0xb034E7aC8395fb373BBf8cB4C09cc4d4C1D80Aa0",
+        "hhChefClaimBriberModule": "0xE2565158E9984FD736002F58e2777260F2dD0F4b"
+    }
 }

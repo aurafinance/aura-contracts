@@ -10,6 +10,9 @@ import {
     deployKeeperMulticall3,
     deployFeeScheduler,
     deployVeBalGrant,
+    deployExtraRewardStashModule,
+    deployHHRewardsClaimForwarderModule,
+    deployHHChefClaimBriberModule,
 } from "../../scripts/deployPeripheral";
 import { deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
@@ -21,6 +24,7 @@ import {
     AuraMining__factory,
     BoosterHelper,
     BoosterHelper__factory,
+    ChefForwarder__factory,
     ClaimFeesHelper,
     ClaimFeesHelper__factory,
     GaugeMigrator,
@@ -360,4 +364,71 @@ task("deploy:mainnet:poolFeeManagerProxy")
         );
 
         logContracts(result as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:mainnet:extraRewardStashModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const phase8 = await config.getPhase8(deployer);
+        const GHO_ADDRESS = "0x40D16FC0246aD3160Ccc09B8D0D3A2cD28aE6C2f";
+        const result = await deployExtraRewardStashModule(
+            hre,
+            deployer,
+            config.multisigs,
+            { boosterOwnerSecondary: phase8.boosterOwnerSecondary },
+            [phase2.cvx.address, GHO_ADDRESS],
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result as unknown as { [key: string]: { address: string } });
+    });
+
+task("deploy:mainnet:HHRewardsClaimForwarderModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const phaseGaugeVoter = config.getGaugeVoteRewards(deployer);
+        const contracts = { ...phase2, ...phaseGaugeVoter };
+
+        const result = await deployHHRewardsClaimForwarderModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                cvx: contracts.cvx,
+                stashRewardDistro: contracts.stashRewardDistro,
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
+    });
+task("deploy:mainnet:HHChefClaimBriberModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const contracts = {
+            ...phase2,
+            chefForwarder: ChefForwarder__factory.connect("0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9", deployer),
+        };
+
+        const result = await deployHHChefClaimBriberModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                cvx: contracts.cvx,
+                chefForwarder: contracts.chefForwarder,
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
     });

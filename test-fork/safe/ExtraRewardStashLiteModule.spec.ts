@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { Signer } from "ethers";
 import hre, { network } from "hardhat";
-import { deployExtraRewardStashLiteModule } from "../../scripts/deployPeripheral";
+import { deployExtraRewardStashLiteModule } from "../../scripts/deploySidechain";
 import { sidechainConfigs } from "../../tasks/deploy/sidechain-constants";
 import { chainIds } from "../../tasks/utils";
 import { advanceBlock, impersonate, ZERO, ZERO_ADDRESS } from "../../test-utils";
@@ -14,7 +14,7 @@ import {
     SidechainPhaseDeployed,
 } from "../../types";
 
-const debug = false;
+const debug = true;
 // This test is only for sidechains , currently it has been tested for arbitrum, if you want to test other sidechains, change the chainId , the block number and GHO_ADDRESS
 describe("ExtraRewardStashLiteModule", () => {
     let daoMultisig: Signer;
@@ -42,7 +42,7 @@ describe("ExtraRewardStashLiteModule", () => {
         await advanceBlock(1);
         expect(process.env.NODE_URL.includes("arb"), "NODE_URL- test for base only").to.be.eq(true);
 
-        deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
+        deployerAddress = "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4";
 
         deployer = await impersonate(deployerAddress, true);
         config = sidechainConfigs[chainId];
@@ -56,8 +56,9 @@ describe("ExtraRewardStashLiteModule", () => {
         ({ extraRewardStashModule } = await deployExtraRewardStashLiteModule(
             hre,
             deployer,
+            config.extConfig,
             config.multisigs,
-            { boosterOwnerLite: contracts.boosterOwner, keeperMulticall3: contracts.keeperMulticall3 },
+            contracts,
             [contracts.auraOFT.address],
             debug,
         ));
