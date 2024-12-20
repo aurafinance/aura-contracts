@@ -58,6 +58,8 @@ import {
     CrvDepositorWrapperForwarder__factory,
     CrvDepositorWrapperForwarderV2,
     CrvDepositorWrapperForwarderV2__factory,
+    CrvDepositorWrapperSwapper,
+    CrvDepositorWrapperSwapper__factory,
     CrvDepositorWrapperWithFee,
     CrvDepositorWrapperWithFee__factory,
     CvxCrvToken,
@@ -1815,6 +1817,31 @@ async function deployCrvDepositorWrapperForwarderV2(
         crvDepositorWrapperForwarderV2,
     };
 }
+async function deployCrvDepositorWrapperSwapper(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    phase2: Phase2Deployed,
+    config: ExtSystemConfig,
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ crvDepositorWrapperSwapper: CrvDepositorWrapperSwapper }> {
+    const { cvxCrv, cvxCrvBpt } = phase2;
+
+    const crvDepositorWrapperSwapper = await deployContract<CrvDepositorWrapperSwapper>(
+        hre,
+        new CrvDepositorWrapperSwapper__factory(signer),
+        "CrvDepositorWrapperSwapper",
+        [config.balancerVault, config.token, config.weth, config.balancerPoolId, cvxCrv.address, cvxCrvBpt.poolId],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    const tx = await crvDepositorWrapperSwapper.setApprovals();
+    await waitForTx(tx, debug, waitForBlocks);
+    return {
+        crvDepositorWrapperSwapper,
+    };
+}
 export {
     DistroList,
     MultisigConfig,
@@ -1833,6 +1860,7 @@ export {
     deployTempBooster,
     deployCrvDepositorWrapperForwarder,
     deployCrvDepositorWrapperForwarderV2,
+    deployCrvDepositorWrapperSwapper,
     deployPhase5,
     Phase5Deployed,
     deployPhase6,

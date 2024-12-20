@@ -102,7 +102,7 @@ describe("AuraClaimZapV3", () => {
 
     it("Deploy Claimzap", async () => {
         //Deploy
-        claimZapV3 = await config.getAuraClaimZapV3(deployer.signer);
+        ({ auraClaimZapV3: claimZapV3 } = config.getPostPhases(deployer.signer));
     });
 
     it("initial configuration is correct", async () => {

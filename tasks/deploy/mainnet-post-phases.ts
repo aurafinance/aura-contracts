@@ -3,7 +3,7 @@ import { BigNumber, ContractReceipt, ethers } from "ethers";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 
-import { deployAuraClaimZapV3 } from "../../scripts/deployAuraClaimZapV3";
+import { deployAuraClaimZapV3, deployAuraClaimZapV3Swapper } from "../../scripts/deployAuraClaimZapV3";
 import {
     deployAuraBalStaker,
     deployWardenQuestScheduler,
@@ -14,7 +14,7 @@ import {
     deployHHRewardsClaimForwarderModule,
     deployHHChefClaimBriberModule,
 } from "../../scripts/deployPeripheral";
-import { deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
+import { deployCrvDepositorWrapperSwapper, deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
 import { deployFeeTokenHandlerV5, deployFeeForwarder, deployVault } from "../../scripts/deployVault";
 import { waitForTx } from "../../tasks/utils";
@@ -431,4 +431,40 @@ task("deploy:mainnet:HHChefClaimBriberModule")
         );
 
         logContracts(result);
+    });
+
+task("deploy:mainnet:deployCrvDepositorWrapperSwapper")
+    .addOptionalParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const { crvDepositorWrapperSwapper } = await deployCrvDepositorWrapperSwapper(
+            hre,
+            deployer,
+            phase2,
+            config.addresses,
+            debug,
+            tskArgs.wait || waitForBlocks,
+        );
+        logContracts({ crvDepositorWrapperSwapper });
+    });
+
+task("deploy:mainnet:deployAuraClaimZapV3Swapper")
+    .addOptionalParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const vault = (await config.getAuraBalVault(deployer)).vault;
+        const contracts = config.getPostPhases(deployer);
+        const { claimZapV3: claimZapV3 } = await deployAuraClaimZapV3Swapper(
+            config,
+            hre,
+            deployer,
+            {
+                vault: vault.address,
+                crvDepositorWrapper: contracts.crvDepositorWrapperSwapper.address,
+            },
+            debug,
+            tskArgs.wait || waitForBlocks,
+        );
+        logContracts({ claimZapV3 });
     });
