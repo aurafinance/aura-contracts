@@ -1,8 +1,8 @@
 import axios from "axios";
-import { BigNumber as BN, BigNumberish, ethers } from "ethers";
+import { BigNumber as BN, BigNumberish } from "ethers";
 
-import { calculateVeBalPrice, getTokenPrices } from "../utils/balancerApi";
 import { AxiosResult } from "types/common";
+import { getTokenPrices } from "../utils/balancerApi";
 
 const log = console.log;
 
