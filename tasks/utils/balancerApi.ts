@@ -59,10 +59,6 @@ export async function getTokenPrices(tokenAddresses: string[]): Promise<TokenPri
     try {
         // Make the GraphQL request
         const response = await request<TokenPricesResult>(endpoint, query, variables);
-        tokenAddresses.forEach((_, i) => {
-            console.log(`Token ${response.tokens[i].symbol}, latestUSDPrice: ${response.tokens[i].latestUSDPrice}`);
-        });
-
         return response.tokens;
     } catch (error) {
         console.error("GraphQL request error:", error);

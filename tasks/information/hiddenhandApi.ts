@@ -104,33 +104,58 @@ export const notFilter = (__: Proposal) => true;
 export const auraOnlyFilter = (p: Proposal) =>
     isAuraBalProposal(p) || isAuraEthProposal(p) || isARBAuraBalwstEthProposal(p);
 
+/**
+ * Get the latests market rounds from https://api.hiddenhand.finance/round/market,
+ * it returns an array of objects with the following structure:
+ *       {
+ *           "timestamp": "1735171200",
+ *           "data": {
+ *               "totalVote": 4958521.586827322,
+ *               "emissionValuePerVote": 0.0599651320020154
+ *           }
+ *       },
+ */
+const getRoundInfo = async (market: string) => {
+    console.log(`fetches hidden hands round info ${market}`);
+    const url = `https://api.hiddenhand.finance/round/${market}`;
+    return (await axios.get(url)).data;
+};
+
 export const getHiddenHandConf = async () => {
     // const prices = await getTokenPricesMock([balTokenAddress, auraTokenAddress]);
+    const balancerRoundInfo = await getRoundInfo("balancer");
+    const auraRoundInfo = await getRoundInfo("aura");
+    const now = Number.parseInt((new Date().getTime() / 1000).toFixed(0));
+    const [balancerRound] = balancerRoundInfo.data;
+    const [auraRound] = auraRoundInfo.data;
+
+    if (balancerRound.timestamp < now) throw new Error("Round timestamp must be in the future.");
+    if (auraRound.timestamp < now) throw new Error("Round timestamp must be in the future.");
+
     const prices = await getTokenPrices([balTokenAddress, auraTokenAddress]);
-    const balPrice = prices.find(tp => tp.address === balTokenAddress).latestUSDPrice;
-    const auraPrice = prices.find(tp => tp.address === auraTokenAddress).latestUSDPrice;
-    const veBALPrice = calculateVeBalPrice(balPrice);
-    const vlAuraPrice = calculateVlAuraPrice(auraPrice);
-    const auraveBALPrice = calculateVotesAmounts(auraPrice, veBALPrice);
-    const auravlAuraPrice = calculateVotesAmounts(auraPrice, vlAuraPrice);
+    const balPrice = Number.parseFloat(
+        prices.find(tp => tp.address === balTokenAddress).latestUSDPrice as unknown as string,
+    );
+    const auraPrice = Number.parseFloat(
+        prices.find(tp => tp.address === auraTokenAddress).latestUSDPrice as unknown as string,
+    );
+    const veBALPrice = Number.parseFloat(balancerRound.data.emissionValuePerVote);
+    const vlAuraPrice = Number.parseFloat(auraRound.data.emissionValuePerVote);
 
     console.log(
-        `Prices: aura [${auraPrice.toString()}], bal [${balPrice.toString()}], veBAL [${veBALPrice.toString()}]`,
+        `Prices: aura [${auraPrice}], bal [${balPrice.toString()}], veBAL [${veBALPrice.toFixed(
+            4,
+        )}], vlAura [${vlAuraPrice.toFixed(4)}]`,
     );
 
     return {
         balPrice,
         auraPrice,
         veBALPrice,
-        auraveBALPrice,
-        auravlAuraPrice,
+        vlAuraPrice,
     };
 };
 
-const calculateVotesAmounts = (baseTokenPrice: number, vlTokenPrice: number) => {
-    const rewardPerVote = ethers.utils.parseEther((vlTokenPrice / baseTokenPrice).toFixed(4)); // 0.0425
-    return rewardPerVote;
-};
 export const calculateVlAuraPrice = (auraPrice: number) => {
     const weeklyEmission = 121929.980212;
     const totalVotes = 7900000;
