@@ -15,6 +15,7 @@ import {
     Booster,
     BoosterLite,
     ChildGaugeVoteRewards,
+    ExtraRewardStashV3__factory,
     GaugeVoteRewards,
     KeeperMulticall3__factory,
     MockVoting__factory,
@@ -190,7 +191,7 @@ async function addPoolToMainnet(
 
             const currentGrt = gaugeRewardTokens.filter(grt => compareAddresses(grt.gauge.id, gauge.address));
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
             ];
 
             const extraRewardsToAdd = extraRewards
@@ -403,7 +404,7 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
                 compareAddresses(grt.gauge.id, gauge.rootGauge.recipient),
             );
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
             ];
 
             for (let j = 0; j < extraRewards.length; j++) {
@@ -477,6 +478,18 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
         createdFromSafeAddress: sidechainConfig.multisigs.daoMultisig,
     })(transactions);
     return { fileName, safeTx };
+}
+
+async function verifyTokenNotAddedToPool(deployer: Signer, stashAddress: string, token: string) {
+    const stash = ExtraRewardStashV3__factory.connect(stashAddress, deployer);
+    const tokenCount = (await stash.tokenCount()).toNumber();
+    for (let j = 0; j < tokenCount; j++) {
+        const tokenAddress = await stash.tokenList(j);
+        if (compareAddresses(tokenAddress, token)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //  yarn task protocol:add-pool  --network mainnet  --voting false --gauges 0xD5417ACb575c799cEB373f85AdF100C7cD84C8c8,
@@ -686,16 +699,30 @@ task("protocol:keeper:l1:addPool")
         const gauges = tskArgs.gauges.split(",") as string[];
         assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
         const canonicalConfig = canonicalConfigs[hre.network.config.chainId];
+        const phase6 = await canonicalConfig.getPhase6(deployer);
         const phase9 = await canonicalConfig.getPhase9(deployer);
+        const gaugeVoter = canonicalConfig.getGaugeVoteRewards(deployer);
         const multicall3 = KeeperMulticall3__factory.connect(PUBLIC_MULTICALL_ADDRESS, deployer);
 
-        const tx = await multicall3.aggregate3(
-            gauges.map(gauge => ({
-                target: phase9.poolFeeManagerProxy.address,
+        const poolLength = (await phase6.booster.poolLength()).toNumber();
+
+        const addPoolTxs = gauges.map(gauge => ({
+            target: phase9.poolFeeManagerProxy.address,
+            allowFailure: false,
+            callData: phase9.poolFeeManagerProxy.interface.encodeFunctionData("addPool", [gauge]),
+        }));
+
+        const tx = await multicall3.aggregate3([
+            ...addPoolTxs,
+            {
+                target: gaugeVoter.gaugeVoteRewards.address,
                 allowFailure: false,
-                callData: phase9.poolFeeManagerProxy.interface.encodeFunctionData("addPool", [gauge]),
-            })),
-        );
+                callData: gaugeVoter.gaugeVoteRewards.interface.encodeFunctionData("setPoolIds", [
+                    poolLength,
+                    poolLength + gauges.length,
+                ]),
+            },
+        ]);
         await waitForTx(tx, true, tskArgs.wait);
     });
 
@@ -709,23 +736,42 @@ task("protocol:keeper:l1:setStashExtraReward")
         const tokens = tskArgs.tokens.split(",") as string[];
         assert(pids.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
         assert(pids.length === tokens.length, `Tokens size is not correct ${tskArgs.tokens}`);
-
         const canonicalConfig = canonicalConfigs[hre.network.config.chainId];
+        const phase6 = await canonicalConfig.getPhase6(deployer);
+
+        const extraRewards = [];
+        // Verify if the pool already handler the token
+        for (let i = 0; i < pids.length; i++) {
+            const pid = pids[i];
+            const token = tokens[i];
+            const poolInfo = await phase6.booster.poolInfo(pid);
+            const tokenNotAdded = await verifyTokenNotAddedToPool(deployer, poolInfo.stash, token);
+            if (tokenNotAdded) {
+                extraRewards.push({ pid, token });
+                console.log(`Token ${token} OK for pool ${pid}`);
+            } else {
+                console.log(`Token ${token} already added to pool ${pid}`);
+            }
+        }
 
         const safeModules = canonicalConfig.getSafeModules(deployer);
         const multicall3 = KeeperMulticall3__factory.connect(
             canonicalConfig.multisigs.defender.keeperMulticall3,
             deployer,
         );
-        console.log(`safeModules.extraRewardStashModule.setStashExtraReward(${pids},${tokens})`);
+        console.log(
+            `safeModules.extraRewardStashModule.setStashExtraReward(${extraRewards.map(t => t.pid)},${extraRewards.map(
+                t => t.token,
+            )})`,
+        );
 
         const tx = await multicall3.aggregate3(
-            pids.map((pid, idx) => ({
+            extraRewards.map(({ pid, token }) => ({
                 target: safeModules.extraRewardStashModule.address,
                 allowFailure: false,
                 callData: safeModules.extraRewardStashModule.interface.encodeFunctionData("setStashExtraReward", [
                     pid,
-                    tokens[idx],
+                    token,
                 ]),
             })),
         );

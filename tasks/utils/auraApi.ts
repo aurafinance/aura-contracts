@@ -9,7 +9,7 @@ type GaugePid = {
 type GaugeRewardToken = {
     id: number;
     gauge: { id: string };
-    rewardData: [{ token: { id: string } }];
+    extraRewards: [{ token: { id: string } }];
 };
 
 const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/36b05229a1f6/1xhub-ltd";
@@ -58,7 +58,7 @@ export async function getGaugeRewardTokens(chainId: number, gaugeAddresses: stri
                 gauge {
                     id
                 }
-                rewardData {
+                extraRewards {
                     token {
                         id
                     }
