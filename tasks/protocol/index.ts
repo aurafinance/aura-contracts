@@ -191,7 +191,7 @@ async function addPoolToMainnet(
 
             const currentGrt = gaugeRewardTokens.filter(grt => compareAddresses(grt.gauge.id, gauge.address));
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
             ];
 
             const extraRewardsToAdd = extraRewards
@@ -404,7 +404,7 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
                 compareAddresses(grt.gauge.id, gauge.rootGauge.recipient),
             );
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
             ];
 
             for (let j = 0; j < extraRewards.length; j++) {
