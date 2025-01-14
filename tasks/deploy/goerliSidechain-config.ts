@@ -30,6 +30,7 @@ import {
     PayableMulticall__factory,
     L2PoolManagerProxy__factory,
     AuraLocker__factory,
+    ExtraRewardStashModule__factory,
 } from "../../types";
 import { config as goerliConfig } from "./goerli-config";
 import { sidechainNaming } from "./sidechain-naming";
@@ -86,6 +87,12 @@ export const getSidechain = (signer: Signer | Provider) => ({
     payableMulticall: PayableMulticall__factory.connect("0xA8eF8Cf01CA6b0B2f89e8226734Ce947353d1Ba3", signer),
     l2PoolManagerProxy: L2PoolManagerProxy__factory.connect(ZERO_ADDRESS, signer),
 });
+const getSafeModules = (signer: Signer | Provider) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+});
 
 export const config: SidechainConfig = {
     chainId: chainIds.goerli,
@@ -95,4 +102,5 @@ export const config: SidechainConfig = {
     extConfig,
     bridging,
     getSidechain,
+    getSafeModules,
 };

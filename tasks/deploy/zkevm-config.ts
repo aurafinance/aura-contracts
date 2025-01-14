@@ -11,6 +11,7 @@ import {
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
     ChildStashRewardDistro__factory,
+    ExtraRewardStashModule__factory,
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
@@ -95,6 +96,12 @@ export const getChildGaugeVoteRewards = (signer: Signer) => ({
     gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: ChildStashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
 });
+const getSafeModules = (signer: Signer | Provider) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+});
 
 export const config: SidechainConfig = {
     chainId: chainIds.zkevm,
@@ -104,5 +111,6 @@ export const config: SidechainConfig = {
     bridging,
     getSidechain,
     getView,
+    getSafeModules,
     whales: {},
 };

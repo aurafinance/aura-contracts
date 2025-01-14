@@ -191,7 +191,7 @@ async function addPoolToMainnet(
 
             const currentGrt = gaugeRewardTokens.filter(grt => compareAddresses(grt.gauge.id, gauge.address));
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
             ];
 
             const extraRewardsToAdd = extraRewards
@@ -404,7 +404,7 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
                 compareAddresses(grt.gauge.id, gauge.rootGauge.recipient),
             );
             const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.extraRewards.map(rd => rd.token.id.toLowerCase())),
+                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
             ];
 
             for (let j = 0; j < extraRewards.length; j++) {
@@ -822,4 +822,54 @@ task("protocol:keeper:l2l2:addPool")
             const tx = await sidechain.l2PoolManagerProxy.addPool(gauge);
             await waitForTx(tx, true, tskArgs.wait);
         }
+    });
+task("protocol:keeper:l2:setStashExtraReward")
+    .addParam("pids", "String with pids to add separated by `,`")
+    .addParam("tokens", "String with tokens to add separated by `,`")
+    .addParam("wait", "Wait for blocks")
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const pids = tskArgs.pids.split(",") as string[];
+        const tokens = tskArgs.tokens.split(",") as string[];
+        assert(pids.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
+        assert(pids.length === tokens.length, `Tokens size is not correct ${tskArgs.tokens}`);
+        const chainId = hre.network.config.chainId;
+        const config = sidechainConfigs[chainId];
+        const sidechain = config.getSidechain(deployer);
+
+        const extraRewards = [];
+        // Verify if the pool already handler the token
+        for (let i = 0; i < pids.length; i++) {
+            const pid = pids[i];
+            const token = tokens[i];
+            const poolInfo = await sidechain.booster.poolInfo(pid);
+            const tokenNotAdded = await verifyTokenNotAddedToPool(deployer, poolInfo.stash, token);
+            if (tokenNotAdded) {
+                extraRewards.push({ pid, token });
+                console.log(`Token ${token} OK for pool ${pid}`);
+            } else {
+                console.log(`Token ${token} already added to pool ${pid}`);
+            }
+        }
+
+        const safeModules = config.getSafeModules(deployer);
+        console.log(sidechain.keeperMulticall3.address, "keeperMulticall3");
+        const multicall3 = KeeperMulticall3__factory.connect(sidechain.keeperMulticall3.address, deployer);
+        console.log(
+            `safeModules.extraRewardStashModule.setStashExtraReward(${extraRewards.map(t => t.pid)},${extraRewards.map(
+                t => t.token,
+            )})`,
+        );
+
+        const tx = await multicall3.aggregate3(
+            extraRewards.map(({ pid, token }) => ({
+                target: safeModules.extraRewardStashModule.address,
+                allowFailure: false,
+                callData: safeModules.extraRewardStashModule.interface.encodeFunctionData("setStashExtraReward", [
+                    pid,
+                    token,
+                ]),
+            })),
+        );
+        await waitForTx(tx, true, tskArgs.wait);
     });

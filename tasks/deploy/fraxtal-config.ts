@@ -11,6 +11,7 @@ import {
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
     ChildStashRewardDistro__factory,
+    ExtraRewardStashModule__factory,
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
@@ -88,6 +89,12 @@ export const getChildGaugeVoteRewards = (signer: Signer) => ({
     gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0xCbdcd817a93E733d48086C7c068c82c5a123DC4e", signer),
     stashRewardDistro: ChildStashRewardDistro__factory.connect("0xb82434C7506B27c226564d6eF6AC9dDCb03E8bd3", signer),
 });
+const getSafeModules = (signer: Signer | Provider) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+});
 
 export const config: SidechainConfig = {
     chainId: chainIds.fraxtal,
@@ -97,5 +104,6 @@ export const config: SidechainConfig = {
     bridging,
     getSidechain,
     getView,
+    getSafeModules,
     whales: {},
 };

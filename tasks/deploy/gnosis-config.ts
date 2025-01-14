@@ -11,6 +11,7 @@ import {
     BoosterOwner__factory,
     ChildGaugeVoteRewards__factory,
     ChildStashRewardDistro__factory,
+    ExtraRewardStashModule__factory,
     ExtSidechainConfig,
     KeeperMulticall3__factory,
     L2Coordinator__factory,
@@ -93,6 +94,12 @@ export const getChildGaugeVoteRewards = (signer: Signer) => ({
     gaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: ChildStashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),
 });
+const getSafeModules = (signer: Signer | Provider) => ({
+    extraRewardStashModule: ExtraRewardStashModule__factory.connect(
+        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        signer,
+    ),
+});
 
 export const config: SidechainConfig = {
     chainId: chainIds.gnosis,
@@ -102,6 +109,7 @@ export const config: SidechainConfig = {
     bridging,
     getSidechain,
     getView,
+    getSafeModules,
     whales: {
         "0x66f33ae36dd80327744207a48122f874634b3ada": extConfig.balancerVault,
         "0xF48f01DCB2CbB3ee1f6AaB0e742c2D3941039d56": "0xf752dd899f87a91370c1c8ac1488aef6be687505",

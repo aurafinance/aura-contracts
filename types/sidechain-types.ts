@@ -7,6 +7,7 @@ import {
     SidechainPhase3Deployed,
     SidechainPhase4Deployed,
 } from "scripts/deploySidechain";
+import { ExtraRewardStashModule } from "./generated";
 
 export interface SidechainNaming {
     auraOftName: string;
@@ -43,6 +44,10 @@ export interface SidechainBridging {
 }
 
 export type SidechainPhaseDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed & SidechainPhase3Deployed& SidechainPhase4Deployed;
+export interface SafeModulesDeployed {
+    extraRewardStashModule: ExtraRewardStashModule;
+}
+
 
 export interface SidechainConfig {
     chainId: number;
@@ -53,4 +58,5 @@ export interface SidechainConfig {
     bridging: SidechainBridging;
     getSidechain?: (s: Signer | Provider) => SidechainPhaseDeployed;
     getView?: (s: Signer | Provider) => SidechainViewDeployed;
+    getSafeModules?: (s: Signer | Provider) => SafeModulesDeployed;
 }

@@ -64,6 +64,7 @@ import { getMockDistro } from "../../scripts/deployMocks";
 import { CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { chainIds } from "../../tasks/utils";
 import { parseEther } from "ethers/lib/utils";
+import { Provider } from "@ethersproject/providers";
 
 const addresses: ExtSystemConfig = {
     authorizerAdapter: "0x5d90225de345ee24d1d2b6f45de90b056f5265a1",
@@ -248,7 +249,7 @@ export const getGaugeVoteRewards = (signer: Signer) => ({
     stashRewardDistro: StashRewardDistro__factory.connect("0x0000000000000000000000000000000000000000", signer),
 });
 
-const getSafeModules = (signer: Signer) => ({
+const getSafeModules = (signer: Signer | Provider) => ({
     extraRewardStashModule: ExtraRewardStashModule__factory.connect(
         "0x0000000000000000000000000000000000000000",
         signer,
