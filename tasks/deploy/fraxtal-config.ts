@@ -91,7 +91,7 @@ export const getChildGaugeVoteRewards = (signer: Signer) => ({
 });
 const getSafeModules = (signer: Signer | Provider) => ({
     extraRewardStashModule: ExtraRewardStashModule__factory.connect(
-        "0x48e529218743E41F6De5B7E8D552E8173707cE81",
+        "0x63e4c1a2c30E0D51A6b03D82c4f3935cF7D28f31",
         signer,
     ),
 });
