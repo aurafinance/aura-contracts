@@ -159,7 +159,6 @@
     { "address": "0x04202b147eae6f5f50cbf72d0b8e9459c57b15e6", "label": "Stable waEthLidowstETH/rstETH" },
     { "address": "0x4b891340b51889f438a03dc0e8aaafb0bc89e7a6", "label": "Stable waEthLidowstETH/waEthLidoWETH" },
     { "address": "0xeec405b834c90b59122bcc2357f27110b2adb4b7", "label": "Stable waEthUSDC/waEthUSDT" },
-    { "address": "0x9fdd52efeb601e4bc78b89c6490505b8ac637e9f", "label": "Stable waEthUSDC/waEthUSDT/Aave Prime GHO" },
     { "address": "0x95d260ac86b58d458187c819f87aad2c7c4203ef", "label": "Stable waEthUSDe/waEthUSDT" },
     { "address": "0x1f3a4c8115629c33a28bf2f97f22d31d256317f6", "label": "Stable waEthWETH/ETHx" },
     { "address": "0x70a1c01902dab7a45dca1098ca76a8314dd8adba", "label": "Stable waEthWETH/osETH" },
@@ -355,5 +354,6 @@
     { "address": "0x5f0a99997ab2acc5097dc5349adf6985761336ac", "label": "f-50/50 sFRAX/sfrxETH" },
     { "address": "0x58e71af9ce4378b79daaf2c4e7be9765c442dfc2", "label": "f-ComposableStable sFRAX/sDAI" },
     { "address": "0xea8ba6b0cb5908a5d803b01ceaea5a6e65d33508", "label": "f-ComposableStable sUSDe/sDAI/sFRAX" },
-    { "address": "0x259371ca8ac5e7f3163704ce58b0da58820173ed", "label": "f-ComposableStable USDe/FRAX" }
+    { "address": "0x259371ca8ac5e7f3163704ce58b0da58820173ed", "label": "f-ComposableStable USDe/FRAX" },
+    { "address": "0x9fdd52efeb601e4bc78b89c6490505b8ac637e9f", "label": "Stable waEthUSDC/waEthUSDT/Aave Prime GHO" }
 ]
