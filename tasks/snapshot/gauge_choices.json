@@ -354,5 +354,6 @@
     { "address": "0x5f0a99997ab2acc5097dc5349adf6985761336ac", "label": "f-50/50 sFRAX/sfrxETH" },
     { "address": "0x58e71af9ce4378b79daaf2c4e7be9765c442dfc2", "label": "f-ComposableStable sFRAX/sDAI" },
     { "address": "0xea8ba6b0cb5908a5d803b01ceaea5a6e65d33508", "label": "f-ComposableStable sUSDe/sDAI/sFRAX" },
-    { "address": "0x259371ca8ac5e7f3163704ce58b0da58820173ed", "label": "f-ComposableStable USDe/FRAX" }
+    { "address": "0x259371ca8ac5e7f3163704ce58b0da58820173ed", "label": "f-ComposableStable USDe/FRAX" },
+    { "address": "0x9fdd52efeb601e4bc78b89c6490505b8ac637e9f", "label": "Stable waEthUSDC/waEthUSDT/Aave Prime GHO" }
 ]
