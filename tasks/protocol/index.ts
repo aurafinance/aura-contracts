@@ -199,12 +199,18 @@ async function addPoolToMainnet(
                 .filter(extraReward => !currentGaugeRewardTokens.includes(extraReward));
 
             for (let j = 0; j < extraRewardsToAdd.length; j++) {
-                keeperTxPerPool.push(extraRewardStashModuleTxBuilder.setStashExtraReward(pid, extraRewards[j]));
-                tableInfo[gauge.address] = {
-                    ...tableInfo[gauge.address],
-                    setStashExtraReward: tableInfo[gauge.address].setStashExtraReward.concat(extraRewards[j]),
-                };
-                log("warn", `${chainName} Gauge ${gauge.address} pid ${pid} missing reward token ${extraRewards[j]}`);
+                const poolInfo = await booster.poolInfo(pid);
+                const tokenAddress = extraRewards[j];
+                // There is a known issue with the graph, the extra rewards are not being indexed for pools with tvl = 0
+                const tokenNotAdded = await verifyTokenNotAddedToPool(deployer, poolInfo.stash, tokenAddress);
+                if (tokenNotAdded) {
+                    keeperTxPerPool.push(extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress));
+                    tableInfo[gauge.address] = {
+                        ...tableInfo[gauge.address],
+                        setStashExtraReward: tableInfo[gauge.address].setStashExtraReward.concat(tokenAddress),
+                    };
+                    log("warn", `${chainName} Gauge ${gauge.address} pid ${pid} missing reward token ${tokenAddress}`);
+                }
             }
 
             continue;

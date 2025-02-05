@@ -40,7 +40,6 @@ task("snapshot:create")
 
         // get gauges
         const latestBlock = await await hre.ethers.provider.getBlockNumber();
-        console.log("Getting gauges choices at block", latestBlock);
 
         const gaugeList = getGaugeChoices();
         console.log("Gauge list:");
@@ -54,6 +53,7 @@ task("snapshot:create")
         if (!snapshotBlock) {
             throw new Error(`Invalid snapshot provided. Found ${snapshotBlock}`);
         }
+        console.log("Getting gauges choices at block", snapshotBlock);
 
         const client = new snapshot.Client712(config.hub);
         const space = config.space;
