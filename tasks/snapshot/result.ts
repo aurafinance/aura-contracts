@@ -1,12 +1,12 @@
 import { table } from "table";
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
-import { request, gql } from "graphql-request";
 import { HardhatRuntime } from "../utils/networkAddressFactory";
 import { getSigner } from "../../tasks/utils";
 import { IGaugeController__factory } from "../../types/generated";
-import { configs } from "./constants";
 import { GaugeChoice, getGaugeChoices, getGaugeSnapshot, parseLabel } from "./utils";
+import { getLatestSnapshotResults, getSnapshotResults, Proposal } from "../utils/snapshotApi";
+import { ONE_WEEK } from "../../test-utils/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface Vote {
@@ -15,32 +15,28 @@ interface Vote {
     voteWeight: number;
     percentage: number;
 }
+const unixTimeStamp = () => Math.floor(Date.now() / 1000);
 
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
-    .addParam("proposal", "The proposal ID of the snapshot")
+    .addOptionalParam("proposal", "The proposal ID of the snapshot")
     .addOptionalParam("debug", "Debug mode", "false")
     .addOptionalParam("format", "Output format: safe | csv, safe by default", "safe")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
-
-        const query = gql`
-            query Proposal($proposal: String!) {
-                proposal(id: $proposal) {
-                    id
-                    scores_total
-                    scores
-                    choices
-                    scores_state
-                }
-            }
-        `;
-
-        console.log("Fetching vote results...");
-        const config = configs.main;
-        const proposalId = taskArgs.proposal;
         const debug = taskArgs.debug === "true";
-        const data = (await request(`${config.hub}/graphql`, query, { proposal: proposalId })) as any;
-        const proposal = data.proposal;
+
+        let proposal: Proposal;
+        if (!taskArgs.proposal) {
+            // If no proposal is provided, get the latest proposal
+            proposal = await getLatestSnapshotResults();
+            if (unixTimeStamp() - proposal.end > ONE_WEEK.toNumber()) {
+                console.log("Proposal is older than ONE week days, skipping...", proposal.end, proposal.id);
+                return;
+            }
+        } else {
+            proposal = await getSnapshotResults(taskArgs.proposal);
+        }
+
         if (proposal.scores_state !== "final" && !debug) {
             console.log("Scores not final");
             console.log("Exiting...");
@@ -50,7 +46,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // ----------------------------------------------------------
         // Get Gauge Weight Votes
         // ----------------------------------------------------------
-        console.log("Parsing vote results...");
+        console.log("Parsing vote results...", proposal.title);
         const gaugeList = getGaugeChoices();
 
         const results: { choice: string; score: number; percentage: number; address: string }[] = [];
