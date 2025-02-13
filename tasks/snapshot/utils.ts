@@ -3,7 +3,7 @@ import * as fs from "fs";
 import request, { gql } from "graphql-request";
 import * as path from "path";
 import { chainIds } from "../../tasks/utils";
-import { networkLabels, priorityGuagesAddresses, symbolOverrides, validNetworks } from "./constants";
+import { networkLabels, priorityGaugesAddresses, symbolOverrides, validNetworks } from "./constants";
 
 export interface Gauge {
     pool: {
@@ -28,9 +28,26 @@ export const compareAddresses = (a: string, b: string): boolean => {
     return a.toLowerCase() === b.toLowerCase();
 };
 
+export interface GaugeDetails {
+    address: string;
+    network: number;
+    isKilled: boolean;
+    addedTimestamp: number;
+    relativeWeightCap: string;
+    pool: {
+        id: string;
+        address: string;
+        poolType: string;
+        symbol: string;
+        tokens: Array<{
+            address: string;
+            weight: string | null;
+            symbol: string;
+        }>;
+    };
+}
 export async function getGaugeSnapshot() {
     const balanceApiUrl = "https://api-v3.balancer.fi/";
-    // const balanceApiUrl = "https://api-v3-workaround.stellate.sh/";
     const query = gql`
         query VeBalGetVotingList {
             veBalGetVotingList {
@@ -79,7 +96,7 @@ export async function getGaugeSnapshot() {
     };
 
     const resp = (await request(balanceApiUrl, query)) as any;
-    const data = resp.veBalGetVotingList.map((row: any) => ({
+    const data: GaugeDetails[] = resp.veBalGetVotingList.map((row: any) => ({
         address: row.gauge.address,
         network: nameToChainId(row.chain),
         isKilled: row.gauge.isKilled,
@@ -118,7 +135,7 @@ export function saveGaugeChoices(gauges: GaugeChoice[]) {
     fs.writeFileSync(path.resolve(__dirname, "./gauge_choices.json"), JSON.stringify(gauges));
 }
 
-export const parseLabel = (gauge: Gauge) => {
+export const parseLabel = (gauge: Gauge): string => {
     if (getAddress(gauge.address) === getAddress("0xb78543e00712C3ABBA10D0852f6E38FDE2AaBA4d")) return "veBAL";
     if (getAddress(gauge.address) === getAddress("0x56124eb16441A1eF12A4CCAeAbDD3421281b795A")) return "veLIT";
     if (getAddress(gauge.address) === getAddress("0x5b79494824Bc256cD663648Ee1Aad251B32693A9")) return "veUSH";
@@ -149,7 +166,7 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         }
 
         // Deal with stable pools
-        if (gauge.pool.tokens[0].weight === "null") {
+        if (gauge.pool.tokens[0].weight === "null" || gauge.pool.tokens[0].weight === null) {
             return gauge;
         }
 
@@ -189,10 +206,11 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         return [...acc, ..._gauges];
     }, []);
 
-    const priorityGuages = priorityGuagesAddresses.map(addr =>
+    const priorityGauges = priorityGaugesAddresses.map(addr =>
         gauges.find(g => g.address.toLowerCase() === addr.toLowerCase()),
     );
-    return [...priorityGuages, ...networkOrder.filter(x => !priorityGuagesAddresses.includes(x.address.toLowerCase()))];
+    const gaugesByNetwork = networkOrder.filter(x => !priorityGaugesAddresses.includes(x.address.toLowerCase()));
+    return [...priorityGauges, ...gaugesByNetwork];
 };
 
 export const ordinalSuffix = (i: number) => {

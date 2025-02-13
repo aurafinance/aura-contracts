@@ -10,6 +10,7 @@ import {
     sortGaugeList,
     compareAddresses,
     GaugeChoice,
+    GaugeDetails,
 } from "./utils";
 import { getSigner } from "../utils";
 import { config } from "../deploy/mainnet-config";
@@ -31,7 +32,7 @@ task("snapshot:generate").setAction(async function (_: TaskArguments, hre: Hardh
     const validNetworkGauges = gaugeSnapshot
         .filter(gaugeFilterNetworks)
         .filter(gaugeFilterPoolType)
-        .filter((gauge: any) => !gauge.isKilled);
+        .filter((gauge: GaugeDetails) => !gauge.isKilled);
 
     const sortedGauges = sortGaugeList(validNetworkGauges);
 
