@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as path from "path";
 import hre from "hardhat";
 import { config } from "../tasks/deploy/mainnet-config";
 import { getSigner } from "../tasks/utils";
@@ -14,24 +16,11 @@ const getGnosisTxTemplate = (rewardContracts: string[]) => ({
         createdFromOwnerAddress: "",
         checksum: "",
     },
-    transactions: [
-        {
-            to: "0xCe96e48A2893C599fe2601Cc1918882e1D001EaD",
-            value: "0",
-            data: null,
-            contractMethod: {
-                inputs: [{ internalType: "address", name: "_voteDelegate", type: "address" }],
-                name: "setVoteDelegate",
-                payable: false,
-            },
-            contractInputsValues: { _voteDelegate: "0x82b5612db33B9CEe01c0440bF8521B8eb98A00D4" },
-        },
-        ...rewardContracts.map(rewardContract => getRewardMultiplier(rewardContract)),
-    ],
+    transactions: [...rewardContracts.map(rewardContract => getRewardMultiplier(rewardContract))],
 });
 
 const getRewardMultiplier = (rewardContract: string) => ({
-    to: "0xA57b8d98dAE62B26Ec3bcC4a365338157060B234",
+    to: "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
     value: "0",
     data: null,
     contractMethod: {
@@ -42,17 +31,17 @@ const getRewardMultiplier = (rewardContract: string) => ({
         name: "setRewardMultiplier",
         payable: false,
     },
-    contractInputsValues: { rewardContract, multiplier: "5000" },
+    contractInputsValues: { rewardContract, multiplier: "0" },
 });
 
-async function main() {
+export async function reduceRewardMultipliers() {
     await hre.network.provider.request({
         method: "hardhat_reset",
         params: [
             {
                 forking: {
                     jsonRpcUrl: process.env.NODE_URL,
-                    blockNumber: 17771600,
+                    blockNumber: 22088244,
                 },
             },
         ],
@@ -62,18 +51,25 @@ async function main() {
     const phase6 = await config.getPhase6(deployer);
 
     const poolLength = await phase6.booster.poolLength();
-    const rewardContracts = await Promise.all(
-        Array(poolLength.toNumber())
-            .fill(0)
-            .map(async (_, i) => {
-                const poolInfo = await phase6.booster.poolInfo(i);
-                return poolInfo.crvRewards;
-            }),
-    );
+    const rewardContracts = (
+        await Promise.all(
+            Array(poolLength.toNumber())
+                .fill(0)
+                .map(async (_, i) => {
+                    const poolInfo = await phase6.booster.poolInfo(i);
+                    console.log(`Pool ${i}: ${poolInfo.crvRewards} shutdown: ${poolInfo.shutdown}`);
+                    if (poolInfo.shutdown) return null;
+                    return { pid: i, crvRewards: poolInfo.crvRewards };
+                }),
+        )
+    )
+        .filter(Boolean)
+        .sort((a, b) => b.pid - a.pid)
+        .map(pool => pool.crvRewards);
 
     const json = getGnosisTxTemplate(rewardContracts);
-
-    console.log(JSON.stringify(json, null, 2));
+    fs.writeFileSync(path.resolve(__dirname, "./gnosis-reduce-reward-multipliers.json"), JSON.stringify(json, null, 2));
 }
 
-main().then(console.log).catch(console.error);
+reduceRewardMultipliers().then(console.log).catch(console.error);
+// npx hardhat run scripts/reduceRewardMultipliers.ts

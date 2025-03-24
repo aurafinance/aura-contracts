@@ -13,7 +13,7 @@ import {
     ZERO_ADDRESS,
 } from "../../test-utils";
 import { Account } from "../../types";
-import { BaseRewardPool, BaseRewardPool__factory, ERC20, L1Coordinator } from "../../types/generated";
+import { AuraToken, BaseRewardPool, BaseRewardPool__factory, ERC20, L1Coordinator } from "../../types/generated";
 import { ERRORS, OwnableBehaviourContext, shouldBehaveLikeOwnable } from "../shared/Ownable.behaviour";
 import {
     CanonicalPhaseDeployed,
@@ -21,6 +21,7 @@ import {
     SideChainTestSetup,
     sidechainTestSetup,
 } from "./sidechainTestSetup";
+import { l1CoordinatorQueryDistributeAura } from "../../test-utils/contracts-calcs";
 
 const NATIVE_FEE = simpleToExactAmount("0.2");
 const L1_CHAIN_ID = 111;
@@ -33,7 +34,7 @@ describe("L1Coordinator", () => {
     let alice: Account;
     let dao: Account;
     let crv: ERC20;
-    let cvx: ERC20;
+    let cvx: AuraToken;
 
     // Testing contract
     let l1Coordinator: L1Coordinator;
@@ -41,6 +42,7 @@ describe("L1Coordinator", () => {
     let sidechain: SidechainDeployed;
     let canonical: CanonicalPhaseDeployed;
     let idSnapShot: number;
+    const rewardMultiplier = 1;
 
     /* -- Declare shared functions -- */
     const setup = async () => {
@@ -338,26 +340,35 @@ describe("L1Coordinator", () => {
         });
         it("DAO can set reward multiplier", async () => {
             expect(await l1Coordinator.rewardMultiplier()).eq(10000);
-            await l1Coordinator.connect(dao.signer).setRewardMultiplier(5000);
-            expect(await l1Coordinator.rewardMultiplier()).eq(5000);
+            await l1Coordinator.connect(dao.signer).setRewardMultiplier(rewardMultiplier);
+            expect(await l1Coordinator.rewardMultiplier()).eq(rewardMultiplier);
         });
         it("distributeAura sends rewards to treasury", async () => {
             await sidechain.booster.connect(alice.signer).earmarkRewards(0, ZERO_ADDRESS, { value: 0 });
             await sidechain.l2Coordinator.connect(alice.signer).notifyFees(ZERO_ADDRESS, { value: NATIVE_FEE });
-            const feeDebt = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
-            expect(feeDebt).gt(0);
+            const feeDebtOf = await l1Coordinator.feeDebtOf(L2_CHAIN_ID);
+            const distributedFeeDebtOf = await l1Coordinator.distributedFeeDebtOf(L2_CHAIN_ID);
+            const feeDebt = feeDebtOf.sub(distributedFeeDebtOf);
 
+            expect(feeDebt).gt(0);
+            const { auraRewardAmount, auraTreasuryAmount } = await l1CoordinatorQueryDistributeAura(
+                { l1Coordinator, booster: testSetup.l1.phase6.booster, cvx },
+                feeDebt,
+            );
             const l2CoordinatorBalanceBefore = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
             const treasuryBalanceBefore = await cvx.balanceOf(testSetup.l1.multisigs.treasuryMultisig);
             await l1Coordinator.distributeAura(L2_CHAIN_ID, ZERO_ADDRESS, ZERO_ADDRESS, [], {
                 value: NATIVE_FEE.mul(2),
             });
+
             const treasuryBalanceAfter = await cvx.balanceOf(testSetup.l1.multisigs.treasuryMultisig);
             const l2CoordinatorBalanceAfter = await sidechain.auraOFT.balanceOf(sidechain.l2Coordinator.address);
 
-            const treasuryAmount = treasuryBalanceAfter.sub(treasuryBalanceBefore);
-            expect(treasuryAmount).gt(0);
-            expect(l2CoordinatorBalanceAfter.sub(l2CoordinatorBalanceBefore)).eq(treasuryAmount);
+            const treasuryBalance = treasuryBalanceAfter.sub(treasuryBalanceBefore);
+            expect(treasuryBalance).eq(auraTreasuryAmount);
+            expect(l2CoordinatorBalanceAfter.sub(l2CoordinatorBalanceBefore), "L2Coordinator Aura Balance").eq(
+                auraRewardAmount,
+            );
         });
         it("reset reward multiplier", async () => {
             await l1Coordinator.connect(dao.signer).setRewardMultiplier(10000);
