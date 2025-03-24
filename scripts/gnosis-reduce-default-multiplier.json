@@ -1,0 +1,53 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1690553733262,
+    "meta": {
+        "name": "Transactions Batch",
+        "description": "",
+        "txBuilderVersion": "1.16.1",
+        "createdFromSafeAddress": "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        "createdFromOwnerAddress": "",
+        "checksum": ""
+    },
+    "transactions": [
+        {
+            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "multiplier",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "setDefaultRewardMultiplier",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "multiplier": "0"
+            }
+        },
+        {
+            "to": "0xaA54f3b282805822419265208e669d12372a3811",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "multiplier",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "setRewardMultiplier",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "multiplier": "1"
+            }
+        }
+    ]
+}
