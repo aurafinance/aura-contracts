@@ -31,6 +31,7 @@ import {
     poolFeeManagerProxyTxsBuilder,
     writeSafeTxFile,
 } from "./safe";
+import { reduceRewardMultipliers } from "../../scripts/reduceRewardMultipliers";
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -879,3 +880,7 @@ task("protocol:keeper:l2:setStashExtraReward")
         );
         await waitForTx(tx, true, tskArgs.wait);
     });
+
+task("protocol:booster:reduceRewardMultiplier").setAction(async function (_: TaskArguments) {
+    await reduceRewardMultipliers();
+});
