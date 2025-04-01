@@ -31,6 +31,7 @@ import {
     poolFeeManagerProxyTxsBuilder,
     writeSafeTxFile,
 } from "./safe";
+import { reduceRewardMultipliers } from "../../scripts/reduceRewardMultipliers";
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -143,9 +144,18 @@ async function addPoolToMainnet(
     const initialPid = (await booster.poolLength()).toNumber();
     console.log(`Initial pid ${initialPid}`);
 
+    // Keeper Txs
+    // - extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress)
+    // - feeManagerProxyTxBuilder.addPool(gauge.address)
+    // - gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid)
     const keeperTxPerPool = [];
+
+    const multisigTxPerPool = [];
+    const missingSetPoolIds: Array<number> = [];
+
     const invalidGauges = [];
     const gaugesToProcess = gaugesDetails.filter(gauge => !gauge.rootGauge); // Only mainnet gauges
+
     const tableInfo: MainnetAddPoolTableInfo = {};
     const defaultTableInfo: MainnetAddPoolTableInfoRecord = {
         pid: 0,
@@ -213,6 +223,12 @@ async function addPoolToMainnet(
                 }
             }
 
+            if (await isDestChainIdNotSet(gaugeVoteRewards)(gauge as GaugesDetails)) {
+                tableInfo[gauge.address].setDstChainId = chainNameToLzChainId("mainnet") + "";
+                log("warn", `Manual ${chainName} Gauge ${gauge.address} setPoolIds with pid ${pid}`);
+                missingSetPoolIds.push(pid);
+            }
+
             continue;
         }
         // Gauge does not exist in the booster
@@ -235,9 +251,11 @@ async function addPoolToMainnet(
         };
         keeperTxPerPool.push(...txPerPool);
     }
+    const lowestPid = Math.min(...[initialPid].concat(...missingSetPoolIds));
     const finalPid = initialPid + gaugesToProcess.length - invalidGauges.length;
-    if (initialPid < finalPid) {
-        keeperTxPerPool.push(gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid));
+
+    if (lowestPid < finalPid) {
+        keeperTxPerPool.push(gaugeVoterTxBuilder.setPoolIds(lowestPid, finalPid));
     }
     if (invalidGauges.length > 0) {
         log("log", `${chainName} ignored gauges ${invalidGauges.length} out of ${gaugesToProcess.length}`);
@@ -245,33 +263,36 @@ async function addPoolToMainnet(
     }
 
     // Mainnet txs of sidechain gauges
-    let multisigTxPerPool = [];
     const sidechainGauges = gaugesDetails.filter(gauge => !!gauge.rootGauge);
     const notDepositGauges = sidechainGauges.filter(gauge => !onlySupportedChains(gauge.rootGauge.chain));
     const depositGauges = sidechainGauges.filter(gauge => onlySupportedChains(gauge.rootGauge.chain));
 
-    multisigTxPerPool = [
-        ...(await asyncFilter<GaugesDetails>(notDepositGauges, isNoDepositGaugeNotSet(gaugeVoteRewards))).map(gauge => {
-            const gaugeChoice = gaugeList.find(gc => compareAddresses(gc.address, gauge.address));
-            tableInfo[gauge.address] = {
-                ...{ label: gauge.address, address: gauge.address },
-                ...gaugeChoice,
-                ...defaultTableInfo,
-                setIsNoDepositGauge: true,
-            };
-            return gaugeVoterTxBuilder.setIsNoDepositGauge(gauge.address);
-        }),
-        ...(await asyncFilter<GaugesDetails>(depositGauges, isDestChainIdNotSet(gaugeVoteRewards))).map(gauge => {
-            const gaugeChoice = gaugeList.find(gc => compareAddresses(gc.address, gauge.address));
-            tableInfo[gauge.address] = {
-                ...{ label: gauge.address, address: gauge.address },
-                ...gaugeChoice,
-                ...defaultTableInfo,
-                setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain) + "",
-            };
-            return gaugeVoterTxBuilder.setDstChainId([gauge.address], chainNameToLzChainId(gauge.rootGauge.chain));
-        }),
-    ];
+    multisigTxPerPool.push(
+        ...[
+            ...(await asyncFilter<GaugesDetails>(notDepositGauges, isNoDepositGaugeNotSet(gaugeVoteRewards))).map(
+                gauge => {
+                    const gaugeChoice = gaugeList.find(gc => compareAddresses(gc.address, gauge.address));
+                    tableInfo[gauge.address] = {
+                        ...{ label: gauge.address, address: gauge.address },
+                        ...gaugeChoice,
+                        ...defaultTableInfo,
+                        setIsNoDepositGauge: true,
+                    };
+                    return gaugeVoterTxBuilder.setIsNoDepositGauge(gauge.address);
+                },
+            ),
+            ...(await asyncFilter<GaugesDetails>(depositGauges, isDestChainIdNotSet(gaugeVoteRewards))).map(gauge => {
+                const gaugeChoice = gaugeList.find(gc => compareAddresses(gc.address, gauge.address));
+                tableInfo[gauge.address] = {
+                    ...{ label: gauge.address, address: gauge.address },
+                    ...gaugeChoice,
+                    ...defaultTableInfo,
+                    setDstChainId: chainNameToLzChainId(gauge.rootGauge.chain) + "",
+                };
+                return gaugeVoterTxBuilder.setDstChainId([gauge.address], chainNameToLzChainId(gauge.rootGauge.chain));
+            }),
+        ],
+    );
 
     const transactions = [...keeperTxPerPool, ...multisigTxPerPool];
     // Table output
@@ -879,3 +900,10 @@ task("protocol:keeper:l2:setStashExtraReward")
         );
         await waitForTx(tx, true, tskArgs.wait);
     });
+
+task("protocol:booster:reduceRewardMultiplier").setAction(async function (
+    _: TaskArguments,
+    hre: HardhatRuntimeEnvironment,
+) {
+    await reduceRewardMultipliers(hre);
+});
