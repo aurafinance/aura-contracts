@@ -1,4 +1,4 @@
-import { BigNumber, Contract, Signer } from "ethers";
+import { Contract, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
@@ -8,6 +8,9 @@ import {
     AuraBalStaker,
     AuraBalStaker__factory,
     AuraBalVault,
+    AuraLocker,
+    AuraLockerModule,
+    AuraLockerModule__factory,
     AuraToken,
     Booster,
     BoosterHelper,
@@ -21,8 +24,6 @@ import {
     ExtraRewardStashLiteModule__factory,
     ExtraRewardStashModule,
     ExtraRewardStashModule__factory,
-    AuraLockerModule,
-    AuraLockerModule__factory,
     ExtSidechainConfig,
     FeeScheduler,
     FeeScheduler__factory,
@@ -42,7 +43,6 @@ import {
     VeBalGrant__factory,
     WardenQuestScheduler,
     WardenQuestScheduler__factory,
-    AuraLocker,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig } from "./deploySystem";
 const SALT = "berlin";
