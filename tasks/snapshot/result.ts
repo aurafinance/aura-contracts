@@ -47,6 +47,7 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // Get Gauge Weight Votes
         // ----------------------------------------------------------
         console.log("Parsing vote results...", proposal.title);
+        console.log("Id ", proposal.id);
         const gaugeList = getGaugeChoices();
 
         const results: { choice: string; score: number; percentage: number; address: string }[] = [];

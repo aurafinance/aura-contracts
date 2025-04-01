@@ -74,7 +74,7 @@ export async function boosterQueryDistributeL2Fees(
     cvxMinted: BigNumber;
 }> {
     // Calculate aura to be sent to treasury
-    const { FEE_DENOMINATOR, REWARD_MULTIPLIER_DENOMINATOR } = immutables.booster;
+    const { FEE_DENOMINATOR } = immutables.booster;
     const { cvx, booster } = contracts;
 
     const lockIncentive = await booster.lockIncentive();

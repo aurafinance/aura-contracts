@@ -192,9 +192,18 @@ async function addPoolToMainnet(
     let previouslyAddedPid = initialPid;
     console.log(`Initial pid ${initialPid}`);
 
+    // Keeper Txs
+    // - extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress)
+    // - feeManagerProxyTxBuilder.addPool(gauge.address)
+    // - gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid)
     const keeperTxPerPool = [];
+
+    const multisigTxPerPool = [];
+    const missingSetPoolIds: Array<number> = [];
+
     const invalidGauges = [];
     const gaugesToProcess = gaugesDetails.filter(gauge => !gauge.rootGauge); // Only mainnet gauges
+
     const tableInfo: MainnetAddPoolTableInfo = {};
     const defaultTableInfo: MainnetAddPoolTableInfoRecord = {
         pid: 0,
@@ -289,6 +298,7 @@ async function addPoolToMainnet(
         };
         keeperTxPerPool.push(...txPerPool);
     }
+    const lowestPid = Math.min(...[initialPid].concat(...missingSetPoolIds));
     const finalPid = initialPid + gaugesToProcess.length - invalidGauges.length;
     previouslyAddedPid = Math.min(previouslyAddedPid, initialPid);
     if (previouslyAddedPid < finalPid) {

@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import hre from "hardhat";
 import { config } from "../tasks/deploy/mainnet-config";
 import { getSigner } from "../tasks/utils";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
