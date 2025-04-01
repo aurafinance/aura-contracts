@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 import { ISafe } from "./ISafe.sol";
-import { Enum } from "./Enum.sol";
 
 /**
  * @author  Aura Finance
@@ -28,7 +27,7 @@ contract Module {
     function _execCallFromModule(address to, bytes memory data) internal virtual returns (bool success) {
         ISafe safe = ISafe(payable(safeWallet));
 
-        success = safe.execTransactionFromModule({ to: to, value: 0, data: data, operation: Enum.Operation.Call });
+        success = safe.execTransactionFromModule({ to: to, value: 0, data: data, operation: ISafe.Operation.Call });
         require(success, "!success");
         return success;
     }

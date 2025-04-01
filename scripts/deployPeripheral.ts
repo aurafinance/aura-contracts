@@ -1,4 +1,4 @@
-import { Contract, Signer } from "ethers";
+import { BigNumber, Contract, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
@@ -21,6 +21,8 @@ import {
     ExtraRewardStashLiteModule__factory,
     ExtraRewardStashModule,
     ExtraRewardStashModule__factory,
+    AuraLockerModule,
+    AuraLockerModule__factory,
     ExtSidechainConfig,
     FeeScheduler,
     FeeScheduler__factory,
@@ -40,6 +42,7 @@ import {
     VeBalGrant__factory,
     WardenQuestScheduler,
     WardenQuestScheduler__factory,
+    AuraLocker,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig } from "./deploySystem";
 const SALT = "berlin";
@@ -413,4 +416,35 @@ export async function deployHHChefClaimBriberModule(
     await waitForTx(tx, debug, waitForBlocks);
 
     return { hhChefClaimBriberModule };
+}
+export async function deployAuraLockerModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: { cvxLocker: AuraLocker },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ auraLockerModule: AuraLockerModule }> {
+    const { cvxLocker } = deployment;
+
+    const auraLockerModule = await deployContract<AuraLockerModule>(
+        hre,
+        new AuraLockerModule__factory(signer),
+        "AuraLockerModule",
+        [await signer.getAddress(), multisigs.treasuryMultisig, cvxLocker.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await auraLockerModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraLockerModule.updateAuthorizedKeepers(multisigs.defender.l1CoordinatorDistributor, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraLockerModule.transferOwnership(multisigs.treasuryMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { auraLockerModule };
 }
