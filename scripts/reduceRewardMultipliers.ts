@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import hre from "hardhat";
 import { config } from "../tasks/deploy/mainnet-config";
 import { getSigner } from "../tasks/utils";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 const getGnosisTxTemplate = (rewardContracts: string[]) => ({
     version: "1.0",
@@ -34,7 +34,7 @@ const getRewardMultiplier = (rewardContract: string) => ({
     contractInputsValues: { rewardContract, multiplier: "0" },
 });
 
-export async function reduceRewardMultipliers() {
+export async function reduceRewardMultipliers(hre: HardhatRuntimeEnvironment) {
     await hre.network.provider.request({
         method: "hardhat_reset",
         params: [
@@ -70,6 +70,3 @@ export async function reduceRewardMultipliers() {
     const json = getGnosisTxTemplate(rewardContracts);
     fs.writeFileSync(path.resolve(__dirname, "./gnosis-reduce-reward-multipliers.json"), JSON.stringify(json, null, 2));
 }
-
-reduceRewardMultipliers().then(console.log).catch(console.error);
-// npx hardhat run scripts/reduceRewardMultipliers.ts
