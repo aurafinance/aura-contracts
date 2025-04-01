@@ -13,6 +13,7 @@ import {
     deployExtraRewardStashModule,
     deployHHRewardsClaimForwarderModule,
     deployHHChefClaimBriberModule,
+    deployAuraLockerModule,
 } from "../../scripts/deployPeripheral";
 import { deployCrvDepositorWrapperSwapper, deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
@@ -426,6 +427,23 @@ task("deploy:mainnet:HHChefClaimBriberModule")
                 cvx: contracts.cvx,
                 chefForwarder: contracts.chefForwarder,
             },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
+    });
+task("deploy:mainnet:AuraLockerModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+
+        const result = await deployAuraLockerModule(
+            hre,
+            deployer,
+            config.multisigs,
+            { cvxLocker: phase2.cvxLocker },
             debug,
             tskArgs.wait,
         );
