@@ -32,6 +32,31 @@
                 "payable": false
             },
             "contractInputsValues": {
+                "rewardContract": "0x5CDa24fE2d80703DBaaB7217eF1Ef8101161e271",
+                "multiplier": "0"
+            }
+        },
+        {
+            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "rewardContract",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "multiplier",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "setRewardMultiplier",
+                "payable": false
+            },
+            "contractInputsValues": {
                 "rewardContract": "0xf88F91F8A7E338174A0e4ab1804fBCf011c92e70",
                 "multiplier": "0"
             }
@@ -557,31 +582,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xd00455D46f1B7d4cfe6F83d9F0Fd8c8377A4E323",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xAddc38cd32ac2c2228399Dfb2665EAF953611c1a",
                 "multiplier": "0"
             }
@@ -707,31 +707,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x3520e29488bb19AFDCC4e2Cf5CB22DF29b7E4148",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x3Db0d3b807CdF9d22c4691503a78582cb96D0653",
                 "multiplier": "0"
             }
@@ -832,57 +807,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x99D9e4D3078f7C9c5b792999749290A54fB87257",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xd761D8A5Fd2b6099b512B98139557b68Cc3df736",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xE9F91Df773104B41aFE2d6d02694fA7AC67E5E96",
                 "multiplier": "0"
             }
         },
@@ -1032,31 +957,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x1c4dC626738968A9BB52223481d0678fFf8893DC",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xdB745558A1b71E5C355aF79c2E54118e753F5c83",
                 "multiplier": "0"
             }
@@ -1083,31 +983,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x01B8209e20B999eE3271A880fA0Ef17cd3eFB1F6",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xeF10bD517448D35b14DE213bEF496422aD2468C4",
                 "multiplier": "0"
             }
         },
@@ -1232,107 +1107,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xb26C62b1152D20C3f348a63FCc7927b45DF9c121",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xcC1C7aaF8ADA3A8c66a3e1C554A1b5ED21691bcF",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x8353839f58B9f44efACBEEdB822157f7C204EFED",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xD9CBC979Ea7d94A8DC65e90fcDb4E2C7aa4f37De",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xA36d3799eA28f4B75653EBF9D91DDA4519578086",
                 "multiplier": "0"
             }
         },
@@ -1407,57 +1182,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xAf7Abaa64dCb57A477f61B09102d2570A38C6Df3",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x6b89Ab92499bF872e53AA92106B8Fb7989496A40",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x89B8cB0d4259cA2B48b4938fd2b13D5274549Bb9",
                 "multiplier": "0"
             }
         },
@@ -1507,57 +1232,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x7633d0bBDe67553C582BF241BF8cb22895610B94",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xf618102462Ff3cf7edbA4c067316F1C3AbdbA193",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x34211820D0Ab85E051214e60fea88Ba944c9BA57",
                 "multiplier": "0"
             }
         },
@@ -1632,31 +1307,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x52D97Fa3481BbFa95Cb48d8af4B1e31756EE1DB8",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x9360F473A533D7f8855C768437dd0c8cAEcCB9e6",
                 "multiplier": "0"
             }
@@ -1683,31 +1333,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x570eA5C8A528E3495EE9883910012BeD598E8814",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xE557658e3D13d074961265756dC2eFB6c903A763",
                 "multiplier": "0"
             }
         },
@@ -1932,82 +1557,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x9703aBC2665d2e3b1b1F105f546850052cB708Cf",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x8355B93489437c6eb0590d7a8EE7b3caf1BA0652",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x61F205f1236c4E6D3f73618BB6250d5A9cC5B8bb",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xF9b6BdC7fbf3B760542ae24cB939872705108399",
                 "multiplier": "0"
             }
         },
@@ -2082,107 +1632,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xaBfB97acbE80739b82679FC3048d1c3A95BAb84b",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x5C37b2235a9616951fE141497DEaE416d23B0915",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x35113146E7f2dF77Fb40606774e0a3F402035Ffb",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xC2E2D76a5e02eA65Ecd3be6c9cd3Fa29022f4548",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x99f424bf87199682b4938337A63f420FBC1af68E",
                 "multiplier": "0"
             }
         },
@@ -2232,82 +1682,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xDC71AFe0F4B04d8780bFdf048378C0c6DfD3a19A",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xBDD6984C3179B099E9D383ee2F44F3A57764BF7d",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x646E272dA2766Bdfd8079643Ffbb30830Fb87303",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x5f56F75C427f8819AEA6eC8e71A46a5C3B2455fB",
                 "multiplier": "0"
             }
         },
@@ -2407,132 +1782,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x5914689F23A3469481D166ca596B0CF609Fb4822",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xFf12b31Ed3b168259051194b8ac98e2b88E16285",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x76Eef7d83C152c14375F216743bFDDb525CBaFa4",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x1F8413FbAb3aC3C578176Aa1422DD7d1eAf371A4",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x032B676d5D55e8ECbAe88ebEE0AA10fB5f72F6CB",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x9305F7B6017c08BB71004A85fd78Adf3E32ce5CE",
                 "multiplier": "0"
             }
         },
@@ -2632,31 +1882,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xf11ec932E168DE2D57ae0C05f9cf8978B0a2A48a",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xFd3AAD58D79C106631bE9f6E1A652d4C5aABdDd2",
                 "multiplier": "0"
             }
@@ -2683,56 +1908,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x77E20717a5a77893D1a94BbebC5f990b957062A7",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xdD1EaF26e5117d4889856f7DD37F05eb5De5e427",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x39e91Def6c54E3AEec73eBfFd6C701D881d36c74",
                 "multiplier": "0"
             }
         },
@@ -2857,81 +2032,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xBf94480CF2c60a0c97993A5f5cFB49648b995d41",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xe39570EF26fB9A562bf26F8c708b7433F65050af",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xD8A39b905F6823Aa46cA293A05Cc5240391a62Dc",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0xA6e54eA1C67396Bde9e92cA462197bE59Af3E875",
                 "multiplier": "0"
             }
@@ -2958,31 +2058,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x82FeB430d9D14eE5E635C41807e03fD8F5FfFDeC",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x6aE80805247fCbA050d73A034A628Ce1b37fB6Ce",
                 "multiplier": "0"
             }
         },
@@ -3082,31 +2157,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0xeE66a8958EBFEEfA209769530b5E05A38762509a",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x158e9aeE324B97b32DA71178D4761C6B18baE02a",
                 "multiplier": "0"
             }
@@ -3133,31 +2183,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xC8415192Ebd4ecaFa1e28e7E05e622eAe376E17f",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xA2e9633e5211a09a580d1B0410D58Ae339196421",
                 "multiplier": "0"
             }
         },
@@ -3257,31 +2282,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x2BDa0C27ac4A322c26727586700D0D42Be3db10E",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x2d9d3e3D0655766Aa801Ae0f6dC925db2DF291A1",
                 "multiplier": "0"
             }
@@ -3308,31 +2308,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x8B227E3D50117E80a02cd0c67Cd6F89A8b7B46d7",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x636024F9Ddef77e625161b2cCF3A2adfbfAd3615",
                 "multiplier": "0"
             }
         },
@@ -3432,81 +2407,6 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "rewardContract": "0x0995a508dF9606f1C6D512a2d6BA875Cf3cE94C3",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xB3ca8D6e938354303F60ec8827429b207e7B60A6",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x0796b22c755787cE662134d40CA29F90caC2D07d",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
                 "rewardContract": "0x08129a472dfb92A1596Bbe31f27c53914a990563",
                 "multiplier": "0"
             }
@@ -3533,81 +2433,6 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x55BFBb2a8De4D7001C5542d19C702433252C904b",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x890bdF60C6566Df09Ce37132DEb652050E5685bD",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0x572aaA3E8dEd899c03781103eB94AfEb7ff151f3",
-                "multiplier": "0"
-            }
-        },
-        {
-            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
-            "value": "0",
-            "data": null,
-            "contractMethod": {
-                "inputs": [
-                    {
-                        "internalType": "address",
-                        "name": "rewardContract",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "multiplier",
-                        "type": "uint256"
-                    }
-                ],
-                "name": "setRewardMultiplier",
-                "payable": false
-            },
-            "contractInputsValues": {
-                "rewardContract": "0xB9D6ED734Ccbdd0b9CadFED712Cf8AC6D0917EcD",
                 "multiplier": "0"
             }
         }
