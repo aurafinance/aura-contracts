@@ -20,6 +20,11 @@
             "gauge": "0x6c34d77a57226f9Df6eC476B20913350832eBfEC",
             "isKilled": true
         },
+        "6": {
+            "pid": 6,
+            "gauge": "0xeF767E740D83d410794519c2F93Db32e44359a5C",
+            "isKilled": true
+        },
         "7": {
             "pid": 7,
             "gauge": "0xae9F2cE52FE89DD78e6F13d5d7b33125aE3dFF8C",
@@ -150,9 +155,19 @@
             "gauge": "0xcF853F14EF6111435Cb39c0C43C66366cc6300F1",
             "isKilled": true
         },
+        "39": {
+            "pid": 39,
+            "gauge": "0x089a2E069700B0f2B16f69A6e02b01818ce22e7d",
+            "isKilled": true
+        },
         "40": {
             "pid": 40,
             "gauge": "0x40F6bE0b26B229C4C3b2C3344e91f8eEe22a62fF",
+            "isKilled": true
+        },
+        "41": {
+            "pid": 41,
+            "gauge": "0x4D0481dF5257d47560F036cFA5580Bc022ee9A91",
             "isKilled": true
         },
         "42": {
@@ -168,6 +183,11 @@
         "46": {
             "pid": 46,
             "gauge": "0x2cFBD7aCC62709396b3C8c7698808384720A0BbF",
+            "isKilled": true
+        },
+        "47": {
+            "pid": 47,
+            "gauge": "0xae30333C4CFFeF017909460384CDD7B073281280",
             "isKilled": true
         },
         "48": {
@@ -205,6 +225,11 @@
             "gauge": "0x7d907D8D66B6CAd285D4349F507EcdfD11FD23D2",
             "isKilled": true
         },
+        "72": {
+            "pid": 72,
+            "gauge": "0xb072496eEf1F88a2Bd1BA93F880c7ed685264EB1",
+            "isKilled": true
+        },
         "73": {
             "pid": 73,
             "gauge": "0x08f3e8A507E51c436f301afc77Fb725486b1307a",
@@ -220,6 +245,16 @@
             "gauge": "0x0CE9489bBD4bfA0Da7b5bb06E4dFa7a5947F76e8",
             "isKilled": true
         },
+        "77": {
+            "pid": 77,
+            "gauge": "0x2dEafe52b0bCb9801d3aaDc0D75c7879cB2E5825",
+            "isKilled": true
+        },
+        "78": {
+            "pid": 78,
+            "gauge": "0x879049Df2744B8D8848985C82275AD4c07379905",
+            "isKilled": true
+        },
         "79": {
             "pid": 79,
             "gauge": "0x9DF04cE9e7e3A2A0b4d3a375aE79e47aB9b0A558",
@@ -228,6 +263,16 @@
         "80": {
             "pid": 80,
             "gauge": "0xFD9D8729a7dBfb8Abd473ce8A0f18326EC713601",
+            "isKilled": true
+        },
+        "81": {
+            "pid": 81,
+            "gauge": "0xB76ed1927F54C76DCdfC311f30dF2277dEAb93eF",
+            "isKilled": true
+        },
+        "83": {
+            "pid": 83,
+            "gauge": "0xdDbDca6213b4a03d8C6fC1419Ef7B0b16B61d363",
             "isKilled": true
         },
         "85": {
@@ -257,6 +302,11 @@
             "gauge": "0x880d9B16398C161098D58F9CE77792eB35a24f88",
             "isKilled": true
         },
+        "4": {
+            "pid": 4,
+            "gauge": "0xA30992B40a0cb4B2Da081ddBd843f9CcE25c2fe3",
+            "isKilled": true
+        },
         "7": {
             "pid": 7,
             "gauge": "0x3390775882d3e8636C0C112A10B34d234F34D7a9",
@@ -282,6 +332,11 @@
             "gauge": "0x0fc7E27E4cB8e6FBCc5996444BE301d26Fc32f1a",
             "isKilled": true
         },
+        "17": {
+            "pid": 17,
+            "gauge": "0x317e0451Da949Ee999aAc2d7Bc063737f5Fe84e5",
+            "isKilled": true
+        },
         "20": {
             "pid": 20,
             "gauge": "0x80aDD8a1BF48AB726b96f19Ae1bF27A39e3C9cbD",
@@ -290,6 +345,16 @@
         "23": {
             "pid": 23,
             "gauge": "0xC9B49E2Ae035De1CFA69B4d524A8B5cfedc1a340",
+            "isKilled": true
+        },
+        "26": {
+            "pid": 26,
+            "gauge": "0x476F2DedF358eB87c4C22DFaf5e511f68e0272e0",
+            "isKilled": true
+        },
+        "27": {
+            "pid": 27,
+            "gauge": "0x48b0a702139cad717f760eBf55C817D545A415ca",
             "isKilled": true
         }
     },
@@ -302,6 +367,11 @@
         "1": {
             "pid": 1,
             "gauge": "0x956074628A64a316086f7125074a8A52d3306321",
+            "isKilled": true
+        },
+        "2": {
+            "pid": 2,
+            "gauge": "0x1F0ee42D005b89814a01f050416b28c3142ac900",
             "isKilled": true
         },
         "3": {
@@ -317,6 +387,11 @@
         "7": {
             "pid": 7,
             "gauge": "0x40B4C2E260f803F868053789bD4A6C7Edd1cdc39",
+            "isKilled": true
+        },
+        "8": {
+            "pid": 8,
+            "gauge": "0xE99A452a65E5bb316febac5dE83A1ca59F6a3A94",
             "isKilled": true
         },
         "9": {
@@ -401,6 +476,16 @@
             "gauge": "0x3547F55B2C0FD4b66Dc6a50e088e10Ce69b89DC1",
             "isKilled": true
         },
+        "10": {
+            "pid": 10,
+            "gauge": "0xaD46e3C1C55241261aFe5751384eEDCf6db6e0a8",
+            "isKilled": true
+        },
+        "11": {
+            "pid": 11,
+            "gauge": "0xd264f4d4Ad98FEf4b198547059C07a8E8bBF2F0E",
+            "isKilled": true
+        },
         "12": {
             "pid": 12,
             "gauge": "0x4489Dc0fF2a43023F2a85eFdc4614D250612dd0d",
@@ -419,6 +504,11 @@
         "16": {
             "pid": 16,
             "gauge": "0xef23C2Ec60A1ea3Ed6a44681Fb72356cB411177e",
+            "isKilled": true
+        },
+        "23": {
+            "pid": 23,
+            "gauge": "0xB079bD76dD9b5F9a8d3954E4250FC25BE0549Ac0",
             "isKilled": true
         },
         "24": {
@@ -467,6 +557,11 @@
             "pid": 12,
             "gauge": "0xf13aabFA433F0E5aC662fD9CD05B1C00802470B8",
             "isKilled": true
+        },
+        "17": {
+            "pid": 17,
+            "gauge": "0xD6A35d58dE5Fe7669Af76b038b9af528580C95b3",
+            "isKilled": true
         }
     },
     "zkevm": {
@@ -475,9 +570,34 @@
             "gauge": "0xEdEa3E93b914E2654F8c7e0C2bb5E6205f9742b0",
             "isKilled": true
         },
+        "1": {
+            "pid": 1,
+            "gauge": "0x2279abf4bdAb8CF29EAe4036262c62dBA6460306",
+            "isKilled": true
+        },
         "2": {
             "pid": 2,
             "gauge": "0x7733650c7aaF2074FD1fCf98f70cbC09138E1Ea5",
+            "isKilled": true
+        },
+        "3": {
+            "pid": 3,
+            "gauge": "0x544BDCE27174EA8Ba829939bd3568efc6A6c9c53",
+            "isKilled": true
+        },
+        "4": {
+            "pid": 4,
+            "gauge": "0x05257970368Efd323aeFfeC95F7e28C806c2e37F",
+            "isKilled": true
+        },
+        "6": {
+            "pid": 6,
+            "gauge": "0xb11C1A66f90CD16c6ae83d503CF2E138B8D8FD42",
+            "isKilled": true
+        },
+        "7": {
+            "pid": 7,
+            "gauge": "0x8dd928a3Aa0274bBA3b42DD9F41756AaF1e78b2f",
             "isKilled": true
         },
         "8": {
@@ -490,6 +610,16 @@
         "1": {
             "pid": 1,
             "gauge": "0x720158c329E6558287c4539b0Ed21742B0B73436",
+            "isKilled": true
+        },
+        "3": {
+            "pid": 3,
+            "gauge": "0x74AbfE305bc0D729f29a2da26C5b7EF0BD1e3A8C",
+            "isKilled": true
+        },
+        "4": {
+            "pid": 4,
+            "gauge": "0x72dD9b41FEc59cf58140cAb9C92CEfC8F212354D",
             "isKilled": true
         }
     },
@@ -575,6 +705,11 @@
             "gauge": "0x6Eb7CdCd15417ABF120FfE404B9b88141Ca952B7",
             "isKilled": true
         },
+        "22": {
+            "pid": 22,
+            "gauge": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF",
+            "isKilled": true
+        },
         "23": {
             "pid": 23,
             "gauge": "0xb0FB3e031224bd449974AB02cae369E81db58Fa6",
@@ -620,6 +755,11 @@
             "gauge": "0x4E3c048BE671852277Ad6ce29Fd5207aA12fabff",
             "isKilled": true
         },
+        "32": {
+            "pid": 32,
+            "gauge": "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
+            "isKilled": true
+        },
         "34": {
             "pid": 34,
             "gauge": "0x5F4d57fd9Ca75625e4B7520c71c02948A48595d0",
@@ -655,6 +795,11 @@
             "gauge": "0x63E3951212cCCAFE3eDC7588FD4D20Ee5e7Ad73f",
             "isKilled": true
         },
+        "42": {
+            "pid": 42,
+            "gauge": "0x777C45BD0a2AF1dA5fe4a532AD6B207D3CEd8b2d",
+            "isKilled": true
+        },
         "43": {
             "pid": 43,
             "gauge": "0xc2D343E2C9498E905F53C818B88eB8064B42D036",
@@ -663,6 +808,11 @@
         "44": {
             "pid": 44,
             "gauge": "0xE7ec5216ff485abffd9d390B82A5D742155f3A6f",
+            "isKilled": true
+        },
+        "45": {
+            "pid": 45,
+            "gauge": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b",
             "isKilled": true
         },
         "46": {
@@ -755,6 +905,16 @@
             "gauge": "0xe9866B9dc2c1213433f614CbB22EdAA0FAFF9a66",
             "isKilled": true
         },
+        "67": {
+            "pid": 67,
+            "gauge": "0x87012b0C3257423fD74a5986F81a0f1954C17a1d",
+            "isKilled": true
+        },
+        "68": {
+            "pid": 68,
+            "gauge": "0x95201B61EF19C867dA0D093DF20021e1a559452c",
+            "isKilled": true
+        },
         "69": {
             "pid": 69,
             "gauge": "0x36365dA262dB3965Ba2E1C4411409Bf22508e0A1",
@@ -810,6 +970,11 @@
             "gauge": "0x454eb2f12242397688DbfdA241487e67ed80507a",
             "isKilled": true
         },
+        "84": {
+            "pid": 84,
+            "gauge": "0xD9cde95eFeD2d426F2741E2c44De9573116B8F07",
+            "isKilled": true
+        },
         "85": {
             "pid": 85,
             "gauge": "0x5f838591A5A8048F0E4C4c7fCca8fD9A25BF0590",
@@ -843,6 +1008,11 @@
         "91": {
             "pid": 91,
             "gauge": "0xEeDEd342aa2Cc1b48ECcAfeB663fdf2c1d166934",
+            "isKilled": true
+        },
+        "92": {
+            "pid": 92,
+            "gauge": "0xC4E72abE8A32Fd7D7BA787e1Ec860ecb8C0B333c",
             "isKilled": true
         },
         "94": {
@@ -905,6 +1075,11 @@
             "gauge": "0xE5f24cD43f77fadF4dB33Dab44EB25774159AC66",
             "isKilled": true
         },
+        "113": {
+            "pid": 113,
+            "gauge": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF",
+            "isKilled": true
+        },
         "114": {
             "pid": 114,
             "gauge": "0x75cAceBb5b4a73a530EdcdFdE7cFfbfea44c026E",
@@ -925,9 +1100,19 @@
             "gauge": "0x63E3951212cCCAFE3eDC7588FD4D20Ee5e7Ad73f",
             "isKilled": true
         },
+        "120": {
+            "pid": 120,
+            "gauge": "0x777C45BD0a2AF1dA5fe4a532AD6B207D3CEd8b2d",
+            "isKilled": true
+        },
         "121": {
             "pid": 121,
             "gauge": "0xc2D343E2C9498E905F53C818B88eB8064B42D036",
+            "isKilled": true
+        },
+        "122": {
+            "pid": 122,
+            "gauge": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b",
             "isKilled": true
         },
         "123": {
@@ -1080,6 +1265,11 @@
             "gauge": "0x276Df166BC23bC6A84Aac1EA48E1acC32264b652",
             "isKilled": true
         },
+        "161": {
+            "pid": 161,
+            "gauge": "0x4D4264aebf65Bb1727bb5438E0b2Aaf86186DA50",
+            "isKilled": true
+        },
         "162": {
             "pid": 162,
             "gauge": "0xdf54d2Dd06F8Be3B0c4FfC157bE54EC9cca91F3C",
@@ -1110,6 +1300,11 @@
             "gauge": "0x4f3F3501F376D93E4E5FD61d4168f871CBf67C97",
             "isKilled": true
         },
+        "169": {
+            "pid": 169,
+            "gauge": "0x3c8502E60eBD1e036E1d3906Fc34e9616218B6e5",
+            "isKilled": true
+        },
         "170": {
             "pid": 170,
             "gauge": "0x70754AB20c63cc65Ea12206CF28342723d731aC6",
@@ -1133,6 +1328,11 @@
         "178": {
             "pid": 178,
             "gauge": "0xAf3c3dab54ca15068D09C67D128344916e177cA9",
+            "isKilled": true
+        },
+        "183": {
+            "pid": 183,
+            "gauge": "0x94981eB72dB7EBcAE91ABd5A810f34B1DBf21108",
             "isKilled": true
         },
         "184": {
@@ -1175,6 +1375,11 @@
             "gauge": "0x21693d09df79D4297A1ED9622Fb1D2E4Eeec5BC5",
             "isKilled": true
         },
+        "201": {
+            "pid": 201,
+            "gauge": "0xCDA1B6704B108dF230d2a36da4C088C6afd6f335",
+            "isKilled": true
+        },
         "202": {
             "pid": 202,
             "gauge": "0xF849D20a927C892Ad2C476a5cc7E2cDbD9BbC18f",
@@ -1183,6 +1388,11 @@
         "203": {
             "pid": 203,
             "gauge": "0xc6b65bc6bF4a5fF4D90fDf7f568cBF8C99419DA1",
+            "isKilled": true
+        },
+        "204": {
+            "pid": 204,
+            "gauge": "0x7d631e72eb15285Da57eeaf40a971724A94ced05",
             "isKilled": true
         },
         "206": {
@@ -1198,6 +1408,16 @@
         "212": {
             "pid": 212,
             "gauge": "0xbF39254fD93C81ac9F0ffd2E721c86C052793353",
+            "isKilled": true
+        },
+        "214": {
+            "pid": 214,
+            "gauge": "0x07b914F3C6031D5499ac5bE828016b115fc68825",
+            "isKilled": true
+        },
+        "215": {
+            "pid": 215,
+            "gauge": "0x6b9dE817875952Cb23d985AbF6fa9ec4b7f66ad5",
             "isKilled": true
         },
         "218": {

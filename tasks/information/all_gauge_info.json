@@ -163,7 +163,7 @@
     },
     "27": {
         "gaugeAddress": "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x942CB1Ed80D3FF8028B3DD726e0E2A9671bc6202"
     },
@@ -703,7 +703,7 @@
     },
     "117": {
         "gaugeAddress": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x46804462f147fF96e9CAFB20cA35A3B2600656DF"
     },
@@ -769,7 +769,7 @@
     },
     "128": {
         "gaugeAddress": "0x777C45BD0a2AF1dA5fe4a532AD6B207D3CEd8b2d",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x777C45BD0a2AF1dA5fe4a532AD6B207D3CEd8b2d"
     },
@@ -997,7 +997,7 @@
     },
     "166": {
         "gaugeAddress": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0xBC02eF87f4E15EF78A571f3B2aDcC726Fee70d8b"
     },
@@ -1135,13 +1135,13 @@
     },
     "189": {
         "gaugeAddress": "0x87012b0C3257423fD74a5986F81a0f1954C17a1d",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x87012b0C3257423fD74a5986F81a0f1954C17a1d"
     },
     "190": {
         "gaugeAddress": "0x95201B61EF19C867dA0D093DF20021e1a559452c",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x95201B61EF19C867dA0D093DF20021e1a559452c"
     },
@@ -1351,7 +1351,7 @@
     },
     "225": {
         "gaugeAddress": "0xD9cde95eFeD2d426F2741E2c44De9573116B8F07",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0xD9cde95eFeD2d426F2741E2c44De9573116B8F07"
     },
@@ -1441,7 +1441,7 @@
     },
     "240": {
         "gaugeAddress": "0xC4E72abE8A32Fd7D7BA787e1Ec860ecb8C0B333c",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0xC4E72abE8A32Fd7D7BA787e1Ec860ecb8C0B333c"
     },
@@ -1543,7 +1543,7 @@
     },
     "257": {
         "gaugeAddress": "0x539D6eDbd16F2F069A06716416C3a6E98cC29DD0",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x1F0ee42D005b89814a01f050416b28c3142ac900"
     },
@@ -1591,7 +1591,7 @@
     },
     "265": {
         "gaugeAddress": "0x0EDF6cDd81BC3471C053341B7D8Dfd1Cb367AD93",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xeF767E740D83d410794519c2F93Db32e44359a5C"
     },
@@ -1681,7 +1681,7 @@
     },
     "280": {
         "gaugeAddress": "0xe603cc3f7Ec38cC6ab1Eef7FdA9Bb599493e9a24",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xE99A452a65E5bb316febac5dE83A1ca59F6a3A94"
     },
@@ -1759,7 +1759,7 @@
     },
     "293": {
         "gaugeAddress": "0x5b79494824Bc256cD663648Ee1Aad251B32693A9",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x1B0aEdcd95ea7E93291C1F13365e4Bd7660bBa92"
     },
@@ -1873,13 +1873,13 @@
     },
     "312": {
         "gaugeAddress": "0xce99399fb4De36056A6831b159572E271360ea40",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x544BDCE27174EA8Ba829939bd3568efc6A6c9c53"
     },
     "313": {
         "gaugeAddress": "0xF7d515DC47d5BD57786494628ed766d6bF31cd39",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x05257970368Efd323aeFfeC95F7e28C806c2e37F"
     },
@@ -1963,7 +1963,7 @@
     },
     "327": {
         "gaugeAddress": "0x1b8C2C972c67f4A5B43C2EbE07E64fCB88ACee87",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xA30992B40a0cb4B2Da081ddBd843f9CcE25c2fe3"
     },
@@ -2347,7 +2347,7 @@
     },
     "391": {
         "gaugeAddress": "0x857E38987a26517263aF091380e6159b92AFaaF1",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xd264f4d4Ad98FEf4b198547059C07a8E8bBF2F0E"
     },
@@ -2359,7 +2359,7 @@
     },
     "393": {
         "gaugeAddress": "0x895E415Ce9936C1dCA0A0859b0eA92e05BC966AE",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xaD46e3C1C55241261aFe5751384eEDCf6db6e0a8"
     },
@@ -2527,7 +2527,7 @@
     },
     "421": {
         "gaugeAddress": "0x4D4264aebf65Bb1727bb5438E0b2Aaf86186DA50",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x4D4264aebf65Bb1727bb5438E0b2Aaf86186DA50"
     },
@@ -2575,7 +2575,7 @@
     },
     "429": {
         "gaugeAddress": "0xB95397A17ACbb5824535ebE69Cd9DCF8fA7aFC50",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x74AbfE305bc0D729f29a2da26C5b7EF0BD1e3A8C"
     },
@@ -2767,7 +2767,7 @@
     },
     "461": {
         "gaugeAddress": "0x2D02Bf5EA195dc09854E18E7d2857A16bF376963",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x089a2E069700B0f2B16f69A6e02b01818ce22e7d"
     },
@@ -2779,7 +2779,7 @@
     },
     "463": {
         "gaugeAddress": "0x255912af1bA318527eDC69b4D56152d8c133288E",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x2279abf4bdAb8CF29EAe4036262c62dBA6460306"
     },
@@ -2827,7 +2827,7 @@
     },
     "471": {
         "gaugeAddress": "0x3c8502E60eBD1e036E1d3906Fc34e9616218B6e5",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x3c8502E60eBD1e036E1d3906Fc34e9616218B6e5"
     },
@@ -2869,7 +2869,7 @@
     },
     "478": {
         "gaugeAddress": "0xCEB17D5C8ef8556ed0424A4bebC35a5d562d96E2",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xB079bD76dD9b5F9a8d3954E4250FC25BE0549Ac0"
     },
@@ -2917,13 +2917,13 @@
     },
     "486": {
         "gaugeAddress": "0x4e15b9184553740f5C822bd3d6169029D302e63e",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x4D0481dF5257d47560F036cFA5580Bc022ee9A91"
     },
     "487": {
         "gaugeAddress": "0x057e7b14DC461f071958e0BbF42b5597564D4e6C",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x317e0451Da949Ee999aAc2d7Bc063737f5Fe84e5"
     },
@@ -3013,7 +3013,7 @@
     },
     "502": {
         "gaugeAddress": "0x94981eB72dB7EBcAE91ABd5A810f34B1DBf21108",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x94981eB72dB7EBcAE91ABd5A810f34B1DBf21108"
     },
@@ -3043,7 +3043,7 @@
     },
     "507": {
         "gaugeAddress": "0x8F44a8Cfb7FE682295Fa663348060533732F437C",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xae30333C4CFFeF017909460384CDD7B073281280"
     },
@@ -3175,7 +3175,7 @@
     },
     "529": {
         "gaugeAddress": "0xCDA1B6704B108dF230d2a36da4C088C6afd6f335",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0xCDA1B6704B108dF230d2a36da4C088C6afd6f335"
     },
@@ -3217,7 +3217,7 @@
     },
     "536": {
         "gaugeAddress": "0x2911d599C3494A416B27c144E4084a6617cA4Ff0",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x72dD9b41FEc59cf58140cAb9C92CEfC8F212354D"
     },
@@ -3229,13 +3229,13 @@
     },
     "538": {
         "gaugeAddress": "0x7d631e72eb15285Da57eeaf40a971724A94ced05",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x7d631e72eb15285Da57eeaf40a971724A94ced05"
     },
     "539": {
         "gaugeAddress": "0xF27B784Aa66D5B27BFfd247e32C000C86511C2B2",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xb11C1A66f90CD16c6ae83d503CF2E138B8D8FD42"
     },
@@ -3343,7 +3343,7 @@
     },
     "557": {
         "gaugeAddress": "0xf21F8CC39f5858cb2eAF5654a863C9b034AE451F",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x8dd928a3Aa0274bBA3b42DD9F41756AaF1e78b2f"
     },
@@ -3529,7 +3529,7 @@
     },
     "588": {
         "gaugeAddress": "0x07b914F3C6031D5499ac5bE828016b115fc68825",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x07b914F3C6031D5499ac5bE828016b115fc68825"
     },
@@ -3571,13 +3571,13 @@
     },
     "595": {
         "gaugeAddress": "0x82bc385C57447188de50Ba8237210cAaA43a0BB3",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xb072496eEf1F88a2Bd1BA93F880c7ed685264EB1"
     },
     "596": {
         "gaugeAddress": "0x6b9dE817875952Cb23d985AbF6fa9ec4b7f66ad5",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": true,
         "recipient": "0x6b9dE817875952Cb23d985AbF6fa9ec4b7f66ad5"
     },
@@ -3589,7 +3589,7 @@
     },
     "598": {
         "gaugeAddress": "0xE3A23a49128Aa55d0705E4F97ac4dc3149dFf729",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x2dEafe52b0bCb9801d3aaDc0D75c7879cB2E5825"
     },
@@ -3721,7 +3721,7 @@
     },
     "620": {
         "gaugeAddress": "0x9eCc698c20219Ea45697d82ca89cD044aEEACF60",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x879049Df2744B8D8848985C82275AD4c07379905"
     },
@@ -3739,7 +3739,7 @@
     },
     "623": {
         "gaugeAddress": "0x24E9A49Ffd2B2189940E802e62f318382fAB395c",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x476F2DedF358eB87c4C22DFaf5e511f68e0272e0"
     },
@@ -3769,19 +3769,19 @@
     },
     "628": {
         "gaugeAddress": "0x00654F788342647A8Aa15f2eb2490e17d222aC85",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xB76ed1927F54C76DCdfC311f30dF2277dEAb93eF"
     },
     "629": {
         "gaugeAddress": "0xAc1305f2C08E961dcEd925b585c3882afCa8C1c5",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0x48b0a702139cad717f760eBf55C817D545A415ca"
     },
     "630": {
         "gaugeAddress": "0x86893f6829dA1296F739F50Ff9d3923453E9b48D",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xdDbDca6213b4a03d8C6fC1419Ef7B0b16B61d363"
     },
@@ -4255,7 +4255,7 @@
     },
     "709": {
         "gaugeAddress": "0x5670e4E5c8C63C350Af2d3cb6B5B1ad19d379947",
-        "isKilled": false,
+        "isKilled": true,
         "isMainnet": false,
         "recipient": "0xD6A35d58dE5Fe7669Af76b038b9af528580C95b3"
     },
@@ -4282,5 +4282,71 @@
         "isKilled": false,
         "isMainnet": false,
         "recipient": "0xf3E7b852390478FAa6D44319bDE4782bf35BF2bD"
+    },
+    "714": {
+        "gaugeAddress": "0x1CCE9d493224A19FcB5f7fBade8478630141CB54",
+        "isKilled": false,
+        "isMainnet": true,
+        "recipient": "0x1CCE9d493224A19FcB5f7fBade8478630141CB54"
+    },
+    "715": {
+        "gaugeAddress": "0x15C61f8bfAb804d8EFAE45781843BB654F619F55",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0x1C81E457d435788C70B7BB71e1eE149f3C6710D3"
+    },
+    "716": {
+        "gaugeAddress": "0x9604a525630E7d9d72d804bDcB678862bab1971c",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0xf63c00BeAd3A6bcB970B55864c8E0BAB9A56Bd47"
+    },
+    "717": {
+        "gaugeAddress": "0x2A42644C1D3e1b4FE6d01Fdbc995Fc402694a49f",
+        "isKilled": false,
+        "isMainnet": true,
+        "recipient": "0x2A42644C1D3e1b4FE6d01Fdbc995Fc402694a49f"
+    },
+    "718": {
+        "gaugeAddress": "0xB1E8ec305b0b29097a117CaFC9721A553533E54C",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0xD8376B72E609A410999398b70218F70ae9B310F5"
+    },
+    "719": {
+        "gaugeAddress": "0x1B7E33186C7e9C337508bB65EA9dc498aB14fcAE",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0xec16621C9bD547d64B93c17B51838Ff173bB6DD1"
+    },
+    "720": {
+        "gaugeAddress": "0x088040aA3e8FDF780829c07f8Cc53fa8a8f07FA9",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0xB4259ce2724Fe85182fEE38AC78b794291FaD997"
+    },
+    "721": {
+        "gaugeAddress": "0x1a965ea559364fb5667985B26899644712c81b18",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0x5802e74ac511eaf7Adf0c7092136Ba60fDE1c3E4"
+    },
+    "722": {
+        "gaugeAddress": "0x72E7d4B2925a33A8F57e4b080EeAC4fa778A5729",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0x946FB8Fcfa21DbDD2152dAC1D39bD30c10679d76"
+    },
+    "723": {
+        "gaugeAddress": "0x5fD7c7883C3AcD8b77f5DE743168107c209FD33D",
+        "isKilled": false,
+        "isMainnet": true,
+        "recipient": "0x5fD7c7883C3AcD8b77f5DE743168107c209FD33D"
+    },
+    "724": {
+        "gaugeAddress": "0x0D3F5D4022279c536a53aaa6bb8c225A0226d168",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0x7Ac2f85069470959f5960B6054479aD46dB4d818"
     }
 }

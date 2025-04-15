@@ -1,7 +1,7 @@
 {
     "version": "1.0",
     "chainId": "1",
-    "createdAt": 1742476666467,
+    "createdAt": 1744707830810,
     "meta": {
         "name": "Shutdown",
         "description": "",
@@ -28,6 +28,44 @@
             },
             "contractInputsValues": {
                 "_pid": "1"
+            }
+        },
+        {
+            "to": "0x2B6C227b26Bc0AcE74BB12DA86571179c2c8Bc54",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_pid",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_pid": "3"
+            }
+        },
+        {
+            "to": "0x2B6C227b26Bc0AcE74BB12DA86571179c2c8Bc54",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_pid",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "shutdownPool",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_pid": "4"
             }
         }
     ]
