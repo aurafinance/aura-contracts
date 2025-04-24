@@ -4348,5 +4348,23 @@
         "isKilled": false,
         "isMainnet": false,
         "recipient": "0x7Ac2f85069470959f5960B6054479aD46dB4d818"
+    },
+    "725": {
+        "gaugeAddress": "0x30FB447441195a5b72A382Ef14c5865C0fc1A9aa",
+        "isKilled": false,
+        "isMainnet": true,
+        "recipient": "0x30FB447441195a5b72A382Ef14c5865C0fc1A9aa"
+    },
+    "726": {
+        "gaugeAddress": "0xFccE9b5C1e8D56D9Fc6Dcbb706aCC51dD03fe9F1",
+        "isKilled": false,
+        "isMainnet": false,
+        "recipient": "0xcA66072Ca2D7C3Af6f44F4D4d29Eb9E088a2df79"
+    },
+    "727": {
+        "gaugeAddress": "0x3b163Ca3875e91c580bDeC0CE9c97d4eF6501f20",
+        "isKilled": false,
+        "isMainnet": true,
+        "recipient": "0x3b163Ca3875e91c580bDeC0CE9c97d4eF6501f20"
     }
 }
