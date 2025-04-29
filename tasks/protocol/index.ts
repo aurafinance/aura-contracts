@@ -2,10 +2,10 @@ import assert from "assert";
 import { getContractAddress } from "ethers/lib/utils";
 import { task, types } from "hardhat/config";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
-import { getGaugePid, getGaugeRewardTokens } from "../utils/auraApi";
+import { GaugeRewardToken, getGaugePid, getGaugeRewardTokens } from "../utils/auraApi";
 import { GaugesDetails, getGaugesDetails } from "../utils/balancerApi";
 
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider, Provider } from "@ethersproject/providers";
 import chalk from "chalk";
 import { ethers, Signer } from "ethers";
 import { table } from "table";
@@ -31,6 +31,7 @@ import {
     poolFeeManagerProxyTxsBuilder,
     writeSafeTxFile,
 } from "./safe";
+import _ from "lodash";
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -112,6 +113,51 @@ const chainNameToLzChainId = (chainName: string) => {
     return lzChainIds[chainIds[chainName.toLowerCase()]];
 };
 
+/**
+ * Determines the extra reward tokens that need to be added to a pool's stash.
+ *
+ * This function compares the provided list of extra rewards with the current reward tokens
+ * associated with a specific gauge. It filters out tokens that are already added and verifies
+ * if the remaining tokens can be added to the pool's stash.
+ *
+ * @param signerOrProvider - The signer instance used to interact with the blockchain.
+ * @param booster - The Booster contract instance used to retrieve pool information.
+ * @param gauge - The gauge details containing information about the gauge and its rewards.
+ * @param pid - The pool ID associated with the stash.
+ * @param extraRewards - An array of extra reward token addresses to be considered for addition.
+ * @param gaugeRewardTokens - An array of reward token data associated with the gauge.
+ * @returns A promise that resolves to an array of token addresses that need to be added to the stash.
+ */
+async function getExtraRewardsToAdd(
+    signerOrProvider: Signer | Provider,
+    booster: Booster | BoosterLite,
+    gauge: GaugesDetails,
+    pid: number,
+    extraRewards: string[],
+    gaugeRewardTokens: GaugeRewardToken[],
+    gaugeAddressPath: string = "address",
+): Promise<string[]> {
+    const setStashExtraRewards = [];
+    const currentGrt = gaugeRewardTokens.filter(grt => compareAddresses(grt.gauge.id, _.get(gauge, gaugeAddressPath)));
+    const currentGaugeRewardTokens = [
+        ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
+    ];
+
+    const extraRewardsToAdd = extraRewards
+        .map(s => s.toLowerCase())
+        .filter(extraReward => !currentGaugeRewardTokens.includes(extraReward));
+
+    const poolInfo = await booster.poolInfo(pid);
+    for (let j = 0; j < extraRewardsToAdd.length; j++) {
+        const tokenAddress = extraRewards[j];
+        const tokenNotAdded = await verifyTokenNotAddedToPool(signerOrProvider, poolInfo.stash, tokenAddress);
+        if (tokenNotAdded) {
+            setStashExtraRewards.push(tokenAddress);
+        }
+    }
+    return setStashExtraRewards;
+}
+
 async function addPoolToMainnet(
     deployer: Signer,
     chainName: string,
@@ -141,6 +187,7 @@ async function addPoolToMainnet(
     const extraRewardStashModuleTxBuilder = extraRewardStashModuleTxsBuilder(extraRewardStashModule.address);
 
     const initialPid = (await booster.poolLength()).toNumber();
+    let previouslyAddedPid = initialPid;
     console.log(`Initial pid ${initialPid}`);
 
     const keeperTxPerPool = [];
@@ -151,8 +198,8 @@ async function addPoolToMainnet(
         pid: 0,
         addPool: false, // keeper
         setStashExtraReward: [], // keeper
-        setIsNoDepositGauge: false, // multisg
-        setDstChainId: "NO", // multisg
+        setIsNoDepositGauge: false, // multisig
+        setDstChainId: "NO", // multisig
     };
     const gaugeList = getGaugeChoices();
     const extraRewards = [cvx.address];
@@ -181,7 +228,7 @@ async function addPoolToMainnet(
         }
         const gaugeExist = await booster.gaugeMap(gauge.address);
 
-        // Gauge already added, verify if extra rewards are set
+        // Gauge already added, verify if extra rewards are set and the poolId is set on gauge voter
         if (gaugeExist) {
             invalidGauges.push(gauge.address);
 
@@ -189,30 +236,35 @@ async function addPoolToMainnet(
             const pid = Number(gaugePids[0].pool.id);
             tableInfo[gauge.address].pid = pid;
 
-            const currentGrt = gaugeRewardTokens.filter(grt => compareAddresses(grt.gauge.id, gauge.address));
-            const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
-            ];
-
-            const extraRewardsToAdd = extraRewards
-                .map(s => s.toLowerCase())
-                .filter(extraReward => !currentGaugeRewardTokens.includes(extraReward));
-
-            for (let j = 0; j < extraRewardsToAdd.length; j++) {
-                const poolInfo = await booster.poolInfo(pid);
-                const tokenAddress = extraRewards[j];
-                // There is a known issue with the graph, the extra rewards are not being indexed for pools with tvl = 0
-                const tokenNotAdded = await verifyTokenNotAddedToPool(deployer, poolInfo.stash, tokenAddress);
-                if (tokenNotAdded) {
-                    keeperTxPerPool.push(extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress));
-                    tableInfo[gauge.address] = {
-                        ...tableInfo[gauge.address],
-                        setStashExtraReward: tableInfo[gauge.address].setStashExtraReward.concat(tokenAddress),
-                    };
-                    log("warn", `${chainName} Gauge ${gauge.address} pid ${pid} missing reward token ${tokenAddress}`);
-                }
+            // Check if  extra rewards need to be added
+            const extraRewardsToAdd = await getExtraRewardsToAdd(
+                deployer,
+                booster,
+                gauge,
+                pid,
+                extraRewards,
+                gaugeRewardTokens,
+            );
+            if (extraRewardsToAdd.length > 0) {
+                tableInfo[gauge.address].setStashExtraReward = extraRewardsToAdd;
+                keeperTxPerPool.push(
+                    extraRewardsToAdd.map(tokenAddress => {
+                        log(
+                            "warn",
+                            `${chainName} Gauge ${gauge.address} pid ${pid} missing reward token ${tokenAddress}`,
+                        );
+                        return extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress);
+                    }),
+                );
             }
 
+            // Check if the poolId is set on gauge voter
+            const getDstChainId = await gaugeVoteRewards.getDstChainId(gauge.address);
+            if (getDstChainId === 0) {
+                previouslyAddedPid = Math.min(previouslyAddedPid, pid);
+
+                console.warn(`${chainName} Gauge ${gauge.address} pid ${pid} was not set on gauge voter`);
+            }
             continue;
         }
         // Gauge does not exist in the booster
@@ -236,8 +288,9 @@ async function addPoolToMainnet(
         keeperTxPerPool.push(...txPerPool);
     }
     const finalPid = initialPid + gaugesToProcess.length - invalidGauges.length;
-    if (initialPid < finalPid) {
-        keeperTxPerPool.push(gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid));
+    previouslyAddedPid = Math.min(previouslyAddedPid, initialPid);
+    if (previouslyAddedPid < finalPid) {
+        keeperTxPerPool.push(gaugeVoterTxBuilder.setPoolIds(previouslyAddedPid, finalPid));
     }
     if (invalidGauges.length > 0) {
         log("log", `${chainName} ignored gauges ${invalidGauges.length} out of ${gaugesToProcess.length}`);
@@ -397,34 +450,37 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
         const gaugeExist = await booster.gaugeMap(gauge.rootGauge.recipient);
         if (gaugeExist) {
             const gaugePids = await getGaugePid(chainId, [gauge.rootGauge.recipient]);
-            const pid = gaugePids[0].pool.id;
+            const pid = Number(gaugePids[0].pool.id);
             const poolInfo = await booster.poolInfo(pid);
             invalidGauges.push(gauge.address);
-            tableInfo[gauge.address].pid = Number(pid);
+            tableInfo[gauge.address].pid = pid;
             log(
                 "warn",
                 `${chainName} Root gauge already added ${gauge.address} recipient ${gauge.rootGauge.recipient} `,
             );
 
-            const currentGrt = gaugeRewardTokens.filter(grt =>
-                compareAddresses(grt.gauge.id, gauge.rootGauge.recipient),
+            // Check if  extra rewards need to be added
+            const extraRewardsToAdd = await getExtraRewardsToAdd(
+                jsonProvider,
+                booster,
+                gauge,
+                pid,
+                extraRewards,
+                gaugeRewardTokens,
+                "rootGauge.recipient",
             );
-            const currentGaugeRewardTokens = [
-                ...currentGrt.flatMap(grt => grt.rewardData.map(rd => rd.token.id.toLowerCase())),
-            ];
 
-            for (let j = 0; j < extraRewards.length; j++) {
-                const extraReward = extraRewards.map(t => t.toLowerCase())[j];
-                if (!currentGaugeRewardTokens.includes(extraReward) && extraReward === auraOFT.address.toLowerCase()) {
-                    txPerPool.push(boosterOwnerLiteTxBuilder.setStashExtraReward(poolInfo.stash, extraRewards[j]));
-                    tableInfo[gauge.address] = {
-                        ...tableInfo[gauge.address],
-                        setStashExtraReward: [...tableInfo[gauge.address].setStashExtraReward, extraRewards[j]],
-                    };
-                    console.warn(
-                        `${chainName} Gauge ${gauge.rootGauge.recipient} pid ${pid} missing reward token ${extraReward}`,
-                    );
-                }
+            if (extraRewardsToAdd.length > 0) {
+                tableInfo[gauge.address].setStashExtraReward = extraRewardsToAdd;
+                txPerPool.push(
+                    extraRewardsToAdd.map(tokenAddress => {
+                        log(
+                            "warn",
+                            `${chainName} Gauge  ${gauge.rootGauge.recipient} pid ${pid} missing reward token ${tokenAddress}`,
+                        );
+                        return boosterOwnerLiteTxBuilder.setStashExtraReward(poolInfo.stash, tokenAddress);
+                    }),
+                );
             }
         } else {
             // verify if it needs to set extra rewards
@@ -486,8 +542,8 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
     return { fileName, safeTx };
 }
 
-async function verifyTokenNotAddedToPool(deployer: Signer, stashAddress: string, token: string) {
-    const stash = ExtraRewardStashV3__factory.connect(stashAddress, deployer);
+async function verifyTokenNotAddedToPool(signerOrProvider: Signer | Provider, stashAddress: string, token: string) {
+    const stash = ExtraRewardStashV3__factory.connect(stashAddress, signerOrProvider);
     const tokenCount = (await stash.tokenCount()).toNumber();
     for (let j = 0; j < tokenCount; j++) {
         const tokenAddress = await stash.tokenList(j);

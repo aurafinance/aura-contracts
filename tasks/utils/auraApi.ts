@@ -6,7 +6,7 @@ type GaugePid = {
         id: string;
     };
 };
-type GaugeRewardToken = {
+export type GaugeRewardToken = {
     id: number;
     gauge: { id: string };
     factoryPoolData: { stash: string };
