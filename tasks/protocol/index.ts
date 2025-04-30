@@ -607,7 +607,7 @@ task("protocol:add-pool")
                 );
                 writeSafeTxFile(safeTx, fileName);
             } catch (error) {
-                console.log("error with ", sideChainName);
+                console.error(`Error processing side chain ${sideChainName}:`, error);
             }
         }
     });
