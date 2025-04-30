@@ -31,6 +31,7 @@ import {
     poolFeeManagerProxyTxsBuilder,
     writeSafeTxFile,
 } from "./safe";
+import { reduceRewardMultipliers } from "../../scripts/reduceRewardMultipliers";
 import _ from "lodash";
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
@@ -262,7 +263,7 @@ async function addPoolToMainnet(
             const getDstChainId = await gaugeVoteRewards.getDstChainId(gauge.address);
             if (getDstChainId === 0) {
                 previouslyAddedPid = Math.min(previouslyAddedPid, pid);
-
+                tableInfo[gauge.address].setDstChainId = chainNameToLzChainId("mainnet") + "";
                 console.warn(`${chainName} Gauge ${gauge.address} pid ${pid} was not set on gauge voter`);
             }
             continue;
@@ -298,12 +299,12 @@ async function addPoolToMainnet(
     }
 
     // Mainnet txs of sidechain gauges
-    let multisigTxPerPool = [];
+    const multisigTxPerPool = [];
     const sidechainGauges = gaugesDetails.filter(gauge => !!gauge.rootGauge);
     const notDepositGauges = sidechainGauges.filter(gauge => !onlySupportedChains(gauge.rootGauge.chain));
     const depositGauges = sidechainGauges.filter(gauge => onlySupportedChains(gauge.rootGauge.chain));
 
-    multisigTxPerPool = [
+    multisigTxPerPool.push(
         ...(await asyncFilter<GaugesDetails>(notDepositGauges, isNoDepositGaugeNotSet(gaugeVoteRewards))).map(gauge => {
             const gaugeChoice = gaugeList.find(gc => compareAddresses(gc.address, gauge.address));
             tableInfo[gauge.address] = {
@@ -324,7 +325,7 @@ async function addPoolToMainnet(
             };
             return gaugeVoterTxBuilder.setDstChainId([gauge.address], chainNameToLzChainId(gauge.rootGauge.chain));
         }),
-    ];
+    );
 
     const transactions = [...keeperTxPerPool, ...multisigTxPerPool];
     // Table output
@@ -935,3 +936,9 @@ task("protocol:keeper:l2:setStashExtraReward")
         );
         await waitForTx(tx, true, tskArgs.wait);
     });
+task("protocol:booster:reduceRewardMultiplier").setAction(async function (
+    _: TaskArguments,
+    hre: HardhatRuntimeEnvironment,
+) {
+    await reduceRewardMultipliers(hre);
+});

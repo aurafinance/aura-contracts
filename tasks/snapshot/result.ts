@@ -127,6 +127,9 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
         // sort votes by lowest delta first
         votes = votes.sort((a, b) => a.voteDelta - b.voteDelta);
         votes = votes.sort(a => (a.voteWeight === 0 ? -1 : 1));
+        const voteWeights = votes.reduce((acc, x) => acc + x.voteWeight, 0);
+        if (voteWeights !== totalVotes)
+            throw new Error(`Vote weights ${voteWeights} do not add up to total votes ${totalVotes}`);
 
         // ----------------------------------------------------------
         // Processing
@@ -149,10 +152,10 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             console.log("\n\nGauge Labels");
             console.log(JSON.stringify(tableData.slice(1).map(x => x[0])));
 
-            console.log("\n\nGauge Addresses");
+            console.log("\n\nGauge Addresses", votes.length);
             console.log(JSON.stringify(votes.map(v => v.gauge.address)));
 
-            console.log("\n\nVote weights");
+            console.log("\n\nVote weights", voteWeights);
             console.log(JSON.stringify(votes.map(v => v.voteWeight)));
         } else {
             console.log(`Order,Gauge,Address,Weight`);
