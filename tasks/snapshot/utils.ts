@@ -167,14 +167,17 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
 
         // Deal with stable pools
         if (gauge.pool.tokens[0].weight === "null" || gauge.pool.tokens[0].weight === null) {
-            return gauge;
+            const tokens = gauge.pool.tokens.sort((a, b) => a.symbol.localeCompare(b.symbol));
+            return { ...gauge, pool: { ...gauge.pool, tokens } };
         }
 
         // Deal with WETH 50/50 pools
         const hasWeth = gauge.pool.tokens.some(token => token.symbol.toUpperCase() === "WETH");
         const is5050 = gauge.pool.tokens.filter(token => token.weight === "0.5").length == 2;
-        if (hasWeth && is5050) {
-            const tokens = gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1));
+        if (is5050) {
+            const tokens = hasWeth
+                ? gauge.pool.tokens.sort(a => (a.symbol === "WETH" ? 1 : -1))
+                : gauge.pool.tokens.sort((a, b) => a.symbol.localeCompare(b.symbol));
             return { ...gauge, pool: { ...gauge.pool, tokens } };
         }
 

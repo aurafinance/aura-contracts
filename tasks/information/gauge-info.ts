@@ -11,7 +11,8 @@ import { Phase6Deployed } from "scripts/deploySystem";
 import { config as mainnetConfig } from "../deploy/mainnet-config";
 import { BoosterLite, BoosterLite__factory } from "../../types";
 
-task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the booster")
+type GaugeInfo = { [key: string]: { [key: string]: { pid: number; gauge: string; isKilled: boolean } } };
+task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges is killed")
     .addParam("safedata", "Generate Safe TX Builder Data")
     .addParam("savelogs", "save logs to file system")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
@@ -19,7 +20,7 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
         const generateSafeData = Boolean(tskArgs.safedata);
         const generateLogs = Boolean(tskArgs.savelogs);
 
-        const info = {};
+        const info: GaugeInfo = {};
         const killed_info = {};
         const killed_but_live_info = {};
         const killed_but_live_lists = {};
@@ -49,94 +50,113 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
          * Gather information related to gauges on balancer
          */
 
-        const gaugControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
+        const gaugeControllerAddress = "0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD";
         const gaugeControllerAbi = [
             "function gauges(uint arg0) external view returns(address)",
             "function n_gauges() external view returns(int128)",
         ];
 
-        const gaugeControllerContract = new ethers.Contract(gaugControllerAddress, gaugeControllerAbi);
+        const gaugeControllerContract = new ethers.Contract(gaugeControllerAddress, gaugeControllerAbi);
 
         const n_gauges = Number(await gaugeControllerContract.connect(deployer).n_gauges());
 
         const all_gauge_info = {};
         const is_gauge_killed = {};
 
-        for (let i = 0; i < n_gauges; i++) {
-            const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
-            const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
-            const isKilled = await gaugeContract.connect(deployer).is_killed();
+        const batchSize = 20; // Adjust batch size as needed
+        for (let batchStart = 0; batchStart < n_gauges; batchStart += batchSize) {
+            const batchEnd = Math.min(batchStart + batchSize, n_gauges);
+            const batchPromises = [];
 
-            let isMainnet = true;
-            let recipient = gaugeAddress;
-            try {
-                recipient = await gaugeContract.connect(deployer).getRecipient();
-                isMainnet = false;
-            } catch (e) {
-                // console.log(e);
+            for (let i = batchStart; i < batchEnd; i++) {
+                batchPromises.push(
+                    (async () => {
+                        const gaugeAddress = await gaugeControllerContract.connect(deployer).gauges(i);
+                        const gaugeContract = new ethers.Contract(gaugeAddress, gaugeInterface);
+                        const isKilled = await gaugeContract.connect(deployer).is_killed();
+
+                        let isMainnet = true;
+                        let recipient = gaugeAddress;
+                        try {
+                            recipient = await gaugeContract.connect(deployer).getRecipient();
+                            isMainnet = false;
+                        } catch (e) {
+                            // console.log(e);
+                        }
+
+                        all_gauge_info[i] = {
+                            gaugeAddress: gaugeAddress,
+                            isKilled: isKilled,
+                            isMainnet: isMainnet,
+                            recipient: recipient,
+                        };
+
+                        is_gauge_killed[recipient] = isKilled;
+
+                        console.log(`Pid ${i}, gauge ${gaugeAddress} killed: ${isKilled}`, n_gauges);
+                    })(),
+                );
             }
 
-            all_gauge_info[i] = {
-                gaugeAddress: gaugeAddress,
-                isKilled: isKilled,
-                isMainnet: isMainnet,
-                recipient: recipient,
-            };
-
-            is_gauge_killed[recipient] = isKilled;
-
-            console.log(i, n_gauges);
+            await Promise.all(batchPromises);
         }
 
         /*
          * Gather information related to sidechain aura pools
          */
 
-        for (let p = 0; p < providers.length; p++) {
-            const customProvider = new ethers.providers.JsonRpcProvider(providers[p]);
-            const name = names[p];
+        await Promise.all(
+            providers.map(async (providerUrl, p) => {
+                const customProvider = new ethers.providers.JsonRpcProvider(providerUrl);
+                const name = names[p];
 
-            const booster: BoosterLite = BoosterLite__factory.connect(boosterLite, customProvider);
+                const booster: BoosterLite = BoosterLite__factory.connect(boosterLite, customProvider);
 
-            const poolLength = await booster.poolLength();
+                const poolLength = await booster.poolLength();
 
-            info[name] = {};
-            killed_info[name] = {};
-            killed_but_live_info[name] = {};
-            killed_but_live_lists[name] = [];
-            try {
-                for (let i = 0; i < Number(poolLength); i++) {
-                    if (name === "gnosis") {
-                        // Avoid  Too many queued requests error
-                        await new Promise(resolve => setTimeout(resolve, 4000));
-                    }
+                info[name] = {};
+                killed_info[name] = {};
+                killed_but_live_info[name] = {};
+                killed_but_live_lists[name] = [];
+                try {
+                    for (let i = 0; i < Number(poolLength); i++) {
+                        if (name === "gnosis") {
+                            // Avoid Too many queued requests error
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                        }
 
-                    console.log(name, i, Number(poolLength));
-                    const poolInfo = await booster.poolInfo(i);
-                    const isKilled = is_gauge_killed[poolInfo.gauge];
+                        const poolInfo = await booster.poolInfo(i);
 
-                    info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+                        const isKilled = is_gauge_killed[poolInfo.gauge];
 
-                    if (isKilled) {
-                        killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+                        console.log(
+                            `${name} Pid ${i}, gauge ${poolInfo.gauge} killed: ${isKilled}`,
+                            poolLength.toString(),
+                        );
 
-                        if (!poolInfo.shutdown) {
-                            killed_but_live_lists[name].push(i);
-                            killed_but_live_info[name][i] = {
-                                pid: i,
-                                gauge: poolInfo.gauge,
-                                isKilled: isKilled,
-                                isShutdown: poolInfo.shutdown,
-                            };
+                        info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                        if (isKilled) {
+                            killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                            if (!poolInfo.shutdown) {
+                                killed_but_live_lists[name].push(i);
+                                killed_but_live_info[name][i] = {
+                                    pid: i,
+                                    gauge: poolInfo.gauge,
+                                    isKilled: isKilled,
+                                    isShutdown: poolInfo.shutdown,
+                                };
+                            }
                         }
                     }
+                } catch (error) {
+                    console.log("--------------", name, "--------------");
+                    console.log(name, "error", error);
+                    console.log("--------------", name, "--------------");
                 }
-            } catch (error) {
-                console.log("--------------", name, "--------------");
-                console.log(name, "error", error);
-                console.log("--------------", name, "--------------");
-            }
-        }
+            }),
+        );
 
         /*
          * Gather information related to mainnet aura pools
@@ -152,32 +172,57 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
         killed_but_live_info[name] = {};
         killed_but_live_lists[name] = [];
 
-        for (let i = 0; i < Number(poolLength); i++) {
-            console.log(name, i, poolLength);
-            const poolInfo = await phase6.booster.poolInfo(i);
+        for (let batchStart = 0; batchStart < Number(poolLength); batchStart += batchSize) {
+            const batchEnd = Math.min(batchStart + batchSize, Number(poolLength));
+            const batchPromises = [];
 
-            const gaugeContract = new ethers.Contract(poolInfo.gauge, gaugeInterface);
-            const isKilled = await gaugeContract.connect(deployer).is_killed();
-            info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+            for (let i = batchStart; i < batchEnd; i++) {
+                batchPromises.push(
+                    (async () => {
+                        const poolInfo = await phase6.booster.poolInfo(i);
 
-            if (isKilled) {
-                killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+                        const gaugeContract = new ethers.Contract(poolInfo.gauge, gaugeInterface);
+                        const isKilled = await gaugeContract.connect(deployer).is_killed();
 
-                if (!poolInfo.shutdown) {
-                    killed_but_live_lists[name].push(i);
-                    killed_but_live_info[name][i] = {
-                        pid: i,
-                        gauge: poolInfo.gauge,
-                        isKilled: isKilled,
-                        isShutdown: poolInfo.shutdown,
-                    };
-                }
+                        console.log(
+                            `${name} Pid ${i}, gauge ${poolInfo.gauge} killed: ${isKilled}`,
+                            poolLength.toString(),
+                        );
+
+                        info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                        if (isKilled) {
+                            killed_info[name][i] = { pid: i, gauge: poolInfo.gauge, isKilled: isKilled };
+
+                            if (!poolInfo.shutdown) {
+                                killed_but_live_lists[name].push(i);
+                                killed_but_live_info[name][i] = {
+                                    pid: i,
+                                    gauge: poolInfo.gauge,
+                                    isKilled: isKilled,
+                                    isShutdown: poolInfo.shutdown,
+                                };
+                            }
+                        }
+                    })(),
+                );
             }
+
+            await Promise.all(batchPromises);
         }
 
-        console.log(info);
-        console.log(killed_info);
-        console.log(killed_but_live_info);
+        // console.log(info);
+        // console.log(killed_info);
+        // console.log(killed_but_live_info);
+
+        // sort info keys alphabetically
+        const sortObjectByKey = object =>
+            Object.keys(object)
+                .sort()
+                .reduce((acc, key) => {
+                    acc[key] = info[key];
+                    return acc;
+                }, {});
 
         /*
          * Generate Safe TX Json
@@ -185,12 +230,18 @@ task("info:gauges:killed-gauges", "Gets the TVL for each pool added to the boost
         if (generateLogs) {
             fs.writeFileSync(
                 path.resolve(__dirname, "./killed_but_live_info.json"),
-                JSON.stringify(killed_but_live_info, null, 4),
+                JSON.stringify(sortObjectByKey(killed_but_live_info), null, 4),
             );
 
-            fs.writeFileSync(path.resolve(__dirname, "./killed_info.json"), JSON.stringify(killed_info, null, 4));
+            fs.writeFileSync(
+                path.resolve(__dirname, "./killed_info.json"),
+                JSON.stringify(sortObjectByKey(killed_info), null, 4),
+            );
 
-            fs.writeFileSync(path.resolve(__dirname, "./all_info.json"), JSON.stringify(info, null, 4));
+            fs.writeFileSync(
+                path.resolve(__dirname, "./all_info.json"),
+                JSON.stringify(sortObjectByKey(info), null, 4),
+            );
 
             fs.writeFileSync(path.resolve(__dirname, "./all_gauge_info.json"), JSON.stringify(all_gauge_info, null, 4));
         }
