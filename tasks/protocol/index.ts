@@ -33,6 +33,7 @@ import {
 } from "./safe";
 import { reduceRewardMultipliers } from "../../scripts/reduceRewardMultipliers";
 import _ from "lodash";
+import { Vote } from "../snapshot/result";
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -338,7 +339,7 @@ async function addPoolToMainnet(
         createdFromSafeAddress: canonicalConfig.multisigs.daoMultisig,
     })(transactions);
 
-    return { fileName, safeTx };
+    return { fileName, safeTx, transactions };
 }
 
 // function that sorts tableInfo by its pid value
@@ -540,7 +541,7 @@ async function addPoolToSidechain(chainName: string, chainId: number, gaugesDeta
         description: "Add pool",
         createdFromSafeAddress: sidechainConfig.multisigs.daoMultisig,
     })(transactions);
-    return { fileName, safeTx };
+    return { fileName, safeTx, transactions };
 }
 
 async function verifyTokenNotAddedToPool(signerOrProvider: Signer | Provider, stashAddress: string, token: string) {
@@ -554,96 +555,6 @@ async function verifyTokenNotAddedToPool(signerOrProvider: Signer | Provider, st
     }
     return true;
 }
-
-//  yarn task protocol:add-pool  --network mainnet  --voting false --gauges 0xD5417ACb575c799cEB373f85AdF100C7cD84C8c8,
-task("protocol:add-pool")
-    .addParam("gauges", "String with gauges to add separated by `,`")
-    .addOptionalParam(
-        "voting",
-        "If it is voting mode, setIsNoDepositGauge, setDstChainId, setExtraRewards",
-        false,
-        types.boolean,
-    )
-    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const deployer = await getSigner(hre);
-        // Only runs on mainnet, sidechain data is gathered via JSON providers
-        const chainId = chainIds.mainnet;
-
-        const gauges: Array<string> = tskArgs.gauges.split(",");
-        assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
-
-        const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
-        if (gaugesDetails.length != gauges.length) {
-            console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
-            const gds = gaugesDetails.map(gd => gd.address.toLowerCase());
-
-            console.warn(
-                `WARNING Gauges are missing ${gauges.map(g => g.toLowerCase()).filter(g => !gds.includes(g))}`,
-            );
-        }
-
-        const gaugesChains = gaugesDetails
-            .map(chainNameFromGaugeDetails)
-            .filter(onlySupportedChains)
-            .reduce(onlyDifferent, "")
-            .split(",")
-            .filter(s => s !== "");
-        // Generate Files
-        if (gaugesChains.includes("Ethereum") || tskArgs.voting) {
-            // Pass all gauges without filter to mainnet, to verify if setIsNoDepositGauge, setDstChainId is needed.
-            const { fileName, safeTx } = await addPoolToMainnet(deployer, "Ethereum", chainId, gaugesDetails);
-            writeSafeTxFile(safeTx, fileName);
-        }
-
-        const sideChains = gaugesChains.filter(chain => chain !== "Ethereum");
-        for (let i = 0; i < sideChains.length; i++) {
-            const sideChainName = sideChains[i];
-            const gaugesToProcess = gaugesDetails.filter(gauge => gauge.rootGauge?.chain === sideChainName);
-            try {
-                const { fileName, safeTx } = await addPoolToSidechain(
-                    sideChainName,
-                    chainIds[sideChainName.toLowerCase()],
-                    gaugesToProcess,
-                );
-                writeSafeTxFile(safeTx, fileName);
-            } catch (error) {
-                console.error(`Error processing side chain ${sideChainName}:`, error);
-            }
-        }
-    });
-
-task("protocol:gaugeVoter-setIsNoDepositGauge")
-    .addParam("gauges", "String with gauges to add separated by `,`")
-    .addOptionalParam("value", "Prepare txs to invoke GaugeVoter.setIsNoDepositGauge(value)", false, types.boolean)
-    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const deployer = await getSigner(hre);
-        // Only runs on mainnet, sidechain data is gathered via JSON providers
-        const chainId = chainIds.mainnet;
-
-        const gauges = tskArgs.gauges.split(",");
-        assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
-
-        const fileName = `gnosis_tx_Ethereum-setIsNoDepositGauge`;
-        const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
-        if (gaugesDetails.length != gauges.length) {
-            console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
-        }
-        const canonicalConfig = canonicalConfigs[chainId];
-        const { gaugeVoteRewards } = canonicalConfig.getGaugeVoteRewards(deployer);
-        const gaugeVoterTxBuilder = gaugeVoterTxsBuilder(gaugeVoteRewards.address);
-
-        const transactions = gaugesDetails.map(gauge =>
-            gaugeVoterTxBuilder.setIsNoDepositGauge(gauge.address, tskArgs.value),
-        );
-        const safeTx = buildSafeTx({
-            chainId: `${chainId}`,
-            name: "setIsNoDepositGauge",
-            description: "setIsNoDepositGauge ",
-            createdFromSafeAddress: canonicalConfig.multisigs.daoMultisig,
-        })(transactions);
-
-        writeSafeTxFile(safeTx, fileName);
-    });
 
 async function getGaugeVoteRewardsLatestPid(
     booster: Booster | BoosterLite,
@@ -683,8 +594,114 @@ const getGaugeVoterContracts = async (hre, chainId: number, signer: Signer) => {
         }
     }
 };
+
+//  yarn task protocol:add-pool  --network mainnet  --voting false --gauges 0xD5417ACb575c799cEB373f85AdF100C7cD84C8c8,
+task("protocol:add-pool")
+    .addParam("gauges", "String with gauges to add separated by `,`")
+    .addOptionalParam(
+        "voting",
+        "If it is voting mode, setIsNoDepositGauge, setDstChainId, setExtraRewards",
+        false,
+        types.boolean,
+    )
+    .addOptionalParam("txsfile", "If true, it saves the txs to a file", true, types.boolean)
+    .setDescription(
+        "Generate tx builder file to add pools to contracts to add pools, set extra rewards, setIsNoDepositGauge, setDstChainId",
+    )
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        const chainId = chainIds.mainnet;
+
+        const gauges: Array<string> = tskArgs.gauges.split(",");
+        assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
+
+        const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
+        if (gaugesDetails.length != gauges.length) {
+            console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
+            const gds = gaugesDetails.map(gd => gd.address.toLowerCase());
+
+            console.warn(
+                `WARNING Gauges are missing ${gauges.map(g => g.toLowerCase()).filter(g => !gds.includes(g))}`,
+            );
+        }
+
+        const txs = {};
+
+        const gaugesChains = gaugesDetails
+            .map(chainNameFromGaugeDetails)
+            .filter(onlySupportedChains)
+            .reduce(onlyDifferent, "")
+            .split(",")
+            .filter(s => s !== "");
+        // Generate Files
+        if (gaugesChains.includes("Ethereum") || tskArgs.voting) {
+            // Pass all gauges without filter to mainnet, to verify if setIsNoDepositGauge, setDstChainId is needed.
+            const { fileName, safeTx, transactions } = await addPoolToMainnet(
+                deployer,
+                "Ethereum",
+                chainId,
+                gaugesDetails,
+            );
+            txs[chainIds.mainnet] = transactions;
+            if (tskArgs.txsfile) writeSafeTxFile(safeTx, fileName);
+        }
+
+        const sideChains = gaugesChains.filter(chain => chain !== "Ethereum");
+        for (let i = 0; i < sideChains.length; i++) {
+            const sideChainName = sideChains[i];
+            const gaugesToProcess = gaugesDetails.filter(gauge => gauge.rootGauge?.chain === sideChainName);
+            try {
+                const { fileName, safeTx, transactions } = await addPoolToSidechain(
+                    sideChainName,
+                    chainIds[sideChainName.toLowerCase()],
+                    gaugesToProcess,
+                );
+                txs[chainIds[sideChainName.toLowerCase()]] = transactions;
+                if (tskArgs.txsfile) writeSafeTxFile(safeTx, fileName);
+            } catch (error) {
+                console.error(`Error processing side chain ${sideChainName}:`, error);
+            }
+        }
+
+        return { chainTransactions: txs };
+    });
+
+task("protocol:gaugeVoter-setIsNoDepositGauge")
+    .addParam("gauges", "String with gauges to add separated by `,`")
+    .addOptionalParam("value", "Prepare txs to invoke GaugeVoter.setIsNoDepositGauge(value)", false, types.boolean)
+    .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
+        const deployer = await getSigner(hre);
+        // Only runs on mainnet, sidechain data is gathered via JSON providers
+        const chainId = chainIds.mainnet;
+
+        const gauges = tskArgs.gauges.split(",");
+        assert(gauges.length > 0, `Gauges size is not correct ${tskArgs.gauges}`);
+
+        const fileName = `gnosis_tx_Ethereum-setIsNoDepositGauge`;
+        const gaugesDetails: Array<GaugesDetails> = await getGaugesDetails(gauges);
+        if (gaugesDetails.length != gauges.length) {
+            console.warn(`WARNING Gauges found ${gaugesDetails.length} out of ${gauges.length}`);
+        }
+        const canonicalConfig = canonicalConfigs[chainId];
+        const { gaugeVoteRewards } = canonicalConfig.getGaugeVoteRewards(deployer);
+        const gaugeVoterTxBuilder = gaugeVoterTxsBuilder(gaugeVoteRewards.address);
+
+        const transactions = gaugesDetails.map(gauge =>
+            gaugeVoterTxBuilder.setIsNoDepositGauge(gauge.address, tskArgs.value),
+        );
+        const safeTx = buildSafeTx({
+            chainId: `${chainId}`,
+            name: "setIsNoDepositGauge",
+            description: "setIsNoDepositGauge ",
+            createdFromSafeAddress: canonicalConfig.multisigs.daoMultisig,
+        })(transactions);
+
+        writeSafeTxFile(safeTx, fileName);
+    });
+
 task("protocol:gaugeVoter-getPoolIds")
     .addOptionalParam("debug", "Debug mode is on ", false, types.boolean)
+    .setDescription("Get the pool latest pool ids not set on the gauge voter")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const deployer = await getSigner(hre);
         // Only runs on mainnet, sidechain data is gathered via JSON providers
@@ -738,6 +755,61 @@ task("protocol:gaugeVoter-setPoolIds")
         await waitForTx(tx, true, tskArgs.wait);
     });
 
+task("protocol:gaugeVoter-voteGaugeWeights-tx").setAction(async function (
+    tskArgs: TaskArguments,
+    hre: HardhatRuntimeEnvironment,
+) {
+    const signer = await getSigner(hre);
+
+    // Get gauge voter votes for the latest snapshot proposal
+    const { votes }: { votes: Vote[] } = await hre.run("snapshot:result", { debug: "false", format: "table" });
+    // Generate the tx builder file with the votes
+    const gauges = votes.map(v => v.gauge.address);
+    const weights = votes.map(v => v.voteWeight);
+
+    const { chainTransactions: transactions } = await hre.run("protocol:add-pool", {
+        gauges: gauges.join(","),
+        voting: true,
+        txsfile: false,
+    });
+    // Generate the tx builder file  per chain
+    // Mainnet includes GaugeVoter configurations, new add pools ,  GaugeVoter voteGaugeWeight
+    const { gaugeVoteRewards } = await getGaugeVoterContracts(hre, chainIds.mainnet, signer);
+    const voteGaugeWeightTxs = gaugeVoterTxsBuilder(gaugeVoteRewards.address).voteGaugeWeight(gauges, weights);
+    const canonicalConfig = canonicalConfigs[chainIds.mainnet];
+    const mainnetTxs = [voteGaugeWeightTxs];
+    // Only if transactions[chainIds.mainnet] is not empty insert it as first element on mainnetTxs
+    if (transactions[chainIds.mainnet] && transactions[chainIds.mainnet].length > 0) {
+        mainnetTxs.unshift(...transactions[chainIds.mainnet]);
+    }
+
+    const safeTx = buildSafeTx({
+        chainId: `${chainIds.mainnet}`,
+        name: "gaugeVoter-voteGaugeWeights",
+        description: "gaugeVoter-voteGaugeWeights",
+        createdFromSafeAddress: canonicalConfig.multisigs.daoMultisig,
+    })(mainnetTxs);
+    writeSafeTxFile(safeTx, `gnosis_tx_gaugeVoter-${chainNames[chainIds.mainnet]}`);
+
+    // Sidechain txs
+    const sidechains = Object.keys(transactions).filter(chainId => chainId !== chainIds.mainnet.toString());
+    for (let i = 0; i < sidechains.length; i++) {
+        const chainId = Number(sidechains[i]);
+        const chainName = chainNames[chainId];
+        const sidechainConfig = sidechainConfigs[chainId];
+        const sideChainTxs = transactions[chainId];
+
+        if (!sideChainTxs || sideChainTxs.length == 0) continue;
+
+        const safeTx = buildSafeTx({
+            chainId: `${chainId}`,
+            name: `Add pools-${chainName}`,
+            description: "Add pools and configure gauge voter",
+            createdFromSafeAddress: sidechainConfig.multisigs.daoMultisig,
+        })(sideChainTxs);
+        writeSafeTxFile(safeTx, `gnosis_tx_gaugeVoter-${chainName}`);
+    }
+});
 task("protocol:keeper:voteForGauge")
     .addParam("gauges", "String with gauges to add separated by `,`")
     .addParam("wait", "Wait for blocks")
