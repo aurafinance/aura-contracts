@@ -1,10 +1,9 @@
 import assert from "assert";
 import { task } from "hardhat/config";
 import { formatEther, parseEther } from "ethers/lib/utils";
-import { JsonRpcProvider } from "@ethersproject/providers";
 import { HardhatRuntimeEnvironment, TaskArguments } from "hardhat/types";
 
-import { getSigner, waitForTx } from "../utils";
+import { chainIds, getJsonProviderByChainId, getSigner, waitForTx } from "../utils";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -25,113 +24,168 @@ import { AuraBalOFT, AuraBalProxyOFT, AuraOFT, AuraProxyOFT } from "../../types"
 import { ethers } from "ethers";
 
 const debug = true;
+type CanonicalSidechain = CanonicalPhase1Deployed & CanonicalPhase2Deployed;
+type SidechainDeployed = SidechainPhase1Deployed & SidechainPhase2Deployed;
+
+const log = (title: string, general?: string[], signer?: string[]) => {
+    console.log("===================");
+    console.log(title);
+    console.log("===================");
+    console.log("");
+    if (general) {
+        console.log("#### General ####");
+        general.forEach(s => console.log(s));
+        console.log("");
+    }
+    if (signer) {
+        console.log("#### Signer ####");
+        signer.forEach(s => console.log(s));
+        console.log("");
+    }
+    console.log("");
+};
+
+async function fetchSidechainDetails(hre: HardhatRuntimeEnvironment, remoteChainId: number, sideChainIds: number[]) {
+    const auraBalOftChainIds = [chainIds.arbitrum, chainIds.base, chainIds.polygon];
+    const deployer = await getSigner(hre);
+    const deployerAddress = await deployer.getAddress();
+    const jsonProvider = await getJsonProviderByChainId(remoteChainId);
+    const canonicalConfig = canonicalConfigs[hre.network.config.chainId];
+    const canonicalLzChainId = lzChainIds[hre.network.config.chainId];
+    assert(canonicalConfig, `Local config for chain ID ${hre.network.config.chainId} not found`);
+    assert(canonicalLzChainId, "Local LZ chain ID not found");
+    assert(canonicalChains.includes(hre.network.config.chainId), "Not canonical chain");
+
+    const sidechainConfig = sidechainConfigs[remoteChainId];
+    assert(sidechainConfig, `Remote config for chain ID ${remoteChainId} not found`);
+
+    const sidechainLzChainId = lzChainIds[remoteChainId];
+    assert(sidechainLzChainId, "Remote LZ chain ID not found");
+
+    /* ---------------------------------------------------------------
+     * Config
+    --------------------------------------------------------------- */
+    log("Config", [
+        `Deployer: ${deployerAddress}`,
+        `Local chain ID: ${hre.network.config.chainId}`,
+        `Remote chain ID: ${remoteChainId}`,
+        `Remote node URL: ${jsonProvider.connection.url}`,
+    ]);
+
+    /* ---------------------------------------------------------------
+     * Local
+    --------------------------------------------------------------- */
+
+    const local: CanonicalSidechain = canonicalConfig.getSidechain(deployer) as CanonicalSidechain;
+    const phase2 = await canonicalConfig.getPhase2(deployer);
+
+    log(
+        "Local",
+        [
+            "AuraOFT address: " + local.auraProxyOFT.address,
+            "AuraBalOFT address: " + local.auraBalProxyOFT.address,
+            "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
+            `Trusted remote address (${sidechainLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
+                sidechainLzChainId,
+            )}`,
+            `Endpoint: ${await local.auraProxyOFT.lzEndpoint()}`,
+        ],
+        [
+            "Lock balance: " + formatEther((await phase2.cvxLocker.balances(deployerAddress)).locked),
+            "AURA balance: " + formatEther(await phase2.cvx.balanceOf(deployerAddress)),
+            "auraBAL balance: " + formatEther(await phase2.cvxCrv.balanceOf(deployerAddress)),
+        ],
+    );
+
+    /* ---------------------------------------------------------------
+     * Remote
+    --------------------------------------------------------------- */
+
+    console.log("Remote chain ID:", remoteChainId);
+
+    const remote = sidechainConfig.getSidechain(jsonProvider) as SidechainDeployed;
+
+    console.log("Remote l2Coordinator address:", remote.l2Coordinator.address);
+    console.log("Remote auraOFT address:", remote.auraOFT.address);
+    console.log("Remote auraBalOFT address:", remote.auraBalOFT.address);
+
+    log(
+        "Remote",
+        [
+            `Coordinator address: ${remote.l2Coordinator.address}`,
+            `Total supply: ${await remote.auraOFT.totalSupply()}`,
+            `Trusted remote address (${canonicalLzChainId}): ${await remote.l2Coordinator.trustedRemoteLookup(
+                canonicalLzChainId,
+            )}`,
+            `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
+            `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
+        ],
+        [
+            `AuraOFT balance: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`,
+            ...(remote.auraBalOFT.address != ZERO_ADDRESS
+                ? [`AuraBalOFT balance: ${formatEther(await remote.auraBalOFT.balanceOf(deployerAddress))}`]
+                : []),
+        ],
+    );
+    /* ---------------------------------------------------------------
+     * Other sidechains
+    --------------------------------------------------------------- */
+    log(
+        `Sidechains ${remoteChainId}`,
+        [
+            ...(await Promise.all(
+                sideChainIds
+                    .filter(chainId => chainId !== remoteChainId)
+                    .map(
+                        async chainId =>
+                            `AuraOFT (${remoteChainId}) Trusted remote (${
+                                lzChainIds[chainId]
+                            }): ${await remote.auraOFT.trustedRemoteLookup(lzChainIds[chainId])}`,
+                    ),
+            )),
+        ],
+        [
+            // Only Base Polygon and Arbitrum have AuraBalOFT
+            ...(remote.auraBalOFT.address != ZERO_ADDRESS
+                ? await Promise.all(
+                      auraBalOftChainIds
+                          .filter(chainId => chainId !== remoteChainId)
+                          .map(
+                              async chainId =>
+                                  `AuraBalOFT (${remoteChainId}) Trusted remote (${
+                                      lzChainIds[chainId]
+                                  }): ${await remote.auraBalOFT.trustedRemoteLookup(lzChainIds[chainId])}`,
+                          ),
+                  )
+                : []),
+        ],
+    );
+}
 
 task("sidechain:aura-oft-info")
-    .addParam("sidechainid", "Remote standard chain ID (can not be eth mainnet)")
+    .addOptionalParam("sidechainid", "Remote standard chain ID (can not be eth mainnet)")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
-        const remoteNodeUrl = process.env.REMOTE_NODE_URL;
-        assert(remoteNodeUrl.length > 0, "REMOTE_NODE_URL not set");
-
-        const deployer = await getSigner(hre);
-        const deployerAddress = await deployer.getAddress();
         const remoteChainId = tskArgs.sidechainid;
+        const sideChainIds = [
+            chainIds.arbitrum,
+            chainIds.avalanche,
+            chainIds.optimism,
+            chainIds.base,
+            chainIds.fraxtal,
+            chainIds.gnosis,
+            chainIds.polygon,
+            chainIds.zkevm,
+        ];
 
-        const canonicalConfig = canonicalConfigs[hre.network.config.chainId];
-        const canonicalLzChainId = lzChainIds[hre.network.config.chainId];
-        assert(canonicalConfig, `Local config for chain ID ${hre.network.config.chainId} not found`);
-        assert(canonicalLzChainId, "Local LZ chain ID not found");
-        assert(canonicalChains.includes(hre.network.config.chainId), "Not canonical chain");
+        const checkChainsIds = remoteChainId && remoteChainId.length > 0 ? [remoteChainId] : sideChainIds;
 
-        const sidechainConfig = sidechainConfigs[remoteChainId];
-        assert(sidechainConfig, `Remote config for chain ID ${remoteChainId} not found`);
-
-        const sidechainLzChainId = lzChainIds[remoteChainId];
-        assert(sidechainLzChainId, "Remote LZ chain ID not found");
-
-        const log = (title: string, general?: string[], signer?: string[]) => {
-            console.log("===================");
-            console.log(title);
-            console.log("===================");
-            console.log("");
-            if (general) {
-                console.log("#### General ####");
-                general.forEach(s => console.log(s));
-                console.log("");
-            }
-            if (signer) {
-                console.log("#### Signer ####");
-                signer.forEach(s => console.log(s));
-                console.log("");
-            }
-            console.log("");
-        };
-
-        /* ---------------------------------------------------------------
-         * Config 
-        --------------------------------------------------------------- */
-
-        log("Config", [
-            `Deployer: ${deployerAddress}`,
-            `Local chain ID: ${hre.network.config.chainId}`,
-            `Remote chain ID: ${remoteChainId}`,
-            `Remote node URL: ${remoteNodeUrl}`,
-        ]);
-
-        /* ---------------------------------------------------------------
-         * Local 
-        --------------------------------------------------------------- */
-
-        const local: CanonicalPhase1Deployed & CanonicalPhase2Deployed = canonicalConfig.getSidechain(deployer) as any;
-        const phase2 = await canonicalConfig.getPhase2(deployer);
-
-        log(
-            "Local",
-            [
-                "AuraOFT address: " + local.auraProxyOFT.address,
-                "AuraBalOFT address: " + local.auraBalProxyOFT.address,
-                "AURA balance of AuraOFT: " + formatEther(await phase2.cvx.balanceOf(local.auraProxyOFT.address)),
-                `Trusted remote address (${sidechainLzChainId}): ${await local.auraProxyOFT.trustedRemoteLookup(
-                    sidechainLzChainId,
-                )}`,
-                `Endpoint: ${await local.auraProxyOFT.lzEndpoint()}`,
-            ],
-            [
-                "Lock balance: " + formatEther((await phase2.cvxLocker.balances(deployerAddress)).locked),
-                "AURA balance: " + formatEther(await phase2.cvx.balanceOf(deployerAddress)),
-                "auraBAL balance: " + formatEther(await phase2.cvxCrv.balanceOf(deployerAddress)),
-            ],
-        );
-
-        /* ---------------------------------------------------------------
-         * Remote 
-        --------------------------------------------------------------- */
-
-        const jsonProvider = new JsonRpcProvider(remoteNodeUrl);
-        console.log("Waiting for provider...");
-        await jsonProvider.ready;
-        console.log("Provider ready!");
-
-        const remoteDeployer = deployer.connect(jsonProvider);
-        const remote: SidechainPhase1Deployed & SidechainPhase2Deployed = sidechainConfig.getSidechain(
-            remoteDeployer,
-        ) as any;
-
-        log(
-            "Remote",
-            [
-                `Coordinator address: ${remote.l2Coordinator.address}`,
-                `Total supply: ${await remote.auraOFT.totalSupply()}`,
-                `Trusted remote address (${canonicalLzChainId}): ${await remote.l2Coordinator.trustedRemoteLookup(
-                    canonicalLzChainId,
-                )}`,
-                `Endpoint AuraOFT: ${await remote.auraOFT.lzEndpoint()}`,
-                `Endpoint l2Coordinator: ${await remote.l2Coordinator.lzEndpoint()}`,
-            ],
-            [
-                `AuraOFT balance: ${formatEther(await remote.auraOFT.balanceOf(deployerAddress))}`,
-                `AuraBalOFT balance: ${formatEther(await remote.auraBalOFT.balanceOf(deployerAddress))}`,
-            ],
-        );
+        // for each chain ID, check if it is a canonical chain
+        for (const chainId of checkChainsIds) {
+            console.log(`---------------------------------------------------------------------------------`);
+            console.log(`------------------- ${chainId} --------------------------------------------------`);
+            console.log(`---------------------------------------------------------------------------------`);
+            await fetchSidechainDetails(hre, chainId, sideChainIds);
+        }
     });
 
 task("sidechain:test:send-aura-oft")
