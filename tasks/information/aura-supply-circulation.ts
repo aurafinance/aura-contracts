@@ -27,6 +27,7 @@ const nonCirculatingAddresses = [
     "0x24346652e0e2aE0CE05c781501fDF4Fe4553fAc6", // AuraVestedEscrow
     "0x45025Ebc38647bcf7Edd2b40CfDaF3fbfE1538F5", // AuraVestedEscrow
     "0x2AE1Ee55dfaDAC71EF5F25f093D2f24Fe58961f1", // AuraVestedEscrow
+    "0xeFc9f1FA4CE75290dEEeeb57a3B75DC79066aC3f", // AuraVestedEscrow
     "0x196bda3808A7Af322AaD6384103C1E6Adb40AFa7", // Ecosystem
     "0x3BC0Cb287f74504347D50fe3aDA6d90214E6F512", // Ecosystem
     "0x54231C588b698dc9B91303C95c85F050DA35189B", // GaugeVoteRewards

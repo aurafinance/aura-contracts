@@ -30,6 +30,7 @@ import {
     AuraVestedEscrowV2,
     AuraVestedEscrowV2__factory,
 } from "../../types/generated";
+import { ContractTransaction } from "ethers";
 
 task("deploy:mainnet:1").setAction(async function (_: TaskArguments, hre) {
     const deployer = await getSigner(hre);
@@ -289,7 +290,7 @@ task("deploy:mainnet:vestedEscrow")
             [
                 taskArgs.rewardtoken,
                 config.multisigs.vestingMultisig,
-                config.multisigs.vestingMultisig,
+                await deployer.getAddress(), // Address to fund the vesting contract
                 phase2.cvxLocker.address,
                 taskArgs.starttime,
                 endTime,
@@ -304,6 +305,25 @@ task("deploy:mainnet:vestedEscrow")
         console.log("Start time:", new Date(Number(taskArgs.starttime) * 1000).toUTCString());
         console.log("End time:", new Date(endTime * 1000).toUTCString());
         console.log("Duration:", Number(taskArgs.duration) / (24 * 60 * 60), "days");
+
+        let tx: ContractTransaction;
+        tx = await rewardToken.approve(vestedEscrow.address, simpleToExactAmount("180000"));
+        await waitForTx(tx, debug, taskArgs.wait);
+
+        // --------------------------------------------------------------------//
+        // ---------------- Add vesting recipients and amounts ----------------//
+        // --------------------------------------------------------------------//
+        const recipients = ["0x"];
+        const amounts = [simpleToExactAmount("1")];
+        tx = await vestedEscrow.fund(recipients, amounts);
+        await waitForTx(tx, debug, taskArgs.wait);
+
+        console.table(
+            recipients.map((recipient, i) => ({
+                recipient,
+                amount: hre.ethers.utils.formatEther(amounts[i]),
+            })),
+        );
 
         logContracts({ vestedEscrow });
     });
