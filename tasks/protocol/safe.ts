@@ -198,10 +198,36 @@ export const gaugeVoterTxsBuilder = (gaugeVoteRewards: string) => {
             _dstChainId: `${dstChainId}`,
         },
     });
+    const voteGaugeWeight = (gauges: string[], weights: number[]) => ({
+        to: gaugeVoteRewards,
+        value: "0",
+        data: null,
+        contractMethod: {
+            inputs: [
+                {
+                    name: "_gauge",
+                    type: "address[]",
+                    internalType: "address[]",
+                },
+                {
+                    name: "_weight",
+                    type: "uint256[]",
+                    internalType: "uint256[]",
+                },
+            ],
+            name: "voteGaugeWeight",
+            payable: false,
+        },
+        contractInputsValues: {
+            _gauge: `[${gauges}]`,
+            _weight: `[${weights}]`,
+        },
+    });
     return {
         setPoolIds,
         setIsNoDepositGauge,
         setDstChainId,
+        voteGaugeWeight,
     };
 };
 export const poolFeeManagerProxyTxsBuilder = (poolManager: string) => {

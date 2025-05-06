@@ -1,0 +1,47 @@
+name: Gauge Voter Transactions
+# This workflow is triggered every Tuesday at 9:00 AM UTC
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: "10 9 * * 2" # Runs every Tuesday
+
+jobs:
+    update-snapshot:
+        runs-on: ubuntu-latest
+
+        env:
+            NODE_URL: https://eth.drpc.org
+            PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+            TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+            TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: recursive
+                  token: ${{ secrets.ACCESS_TOKEN }}
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 18
+                  cache: "yarn"
+
+            - name: Run script to generate gauge voter transactions
+              run: bash ./scripts/automations/gauge-voter-txs.sh
+
+            - name: Put current date into a variable
+              run: |
+                  NOW=$(date +'%d %B %Y')
+                  BRANCH=$(date +'%d-%B-%Y')
+                  echo "NOW=$NOW" >> $GITHUB_ENV
+                  echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v3.10.1
+              with:
+                  token: ${{ secrets.ACCESS_TOKEN }}
+                  commit-message: "chore: gauge voter txs files ${{ env.NOW }}"
+                  title: "chore: vote ${{ env.NOW }}"
+                  body: Auto-created Pull Request
+                  branch: "issue/gauge-voter-${{ env.BRANCH }}" # The branch where you commit
+                  base: main # Don't forget to specify the right base branch here

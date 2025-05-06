@@ -9,7 +9,7 @@ import { getLatestSnapshotResults, getSnapshotResults, Proposal } from "../utils
 import { ONE_WEEK } from "../../test-utils/constants";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface Vote {
+export interface Vote {
     gauge: GaugeChoice;
     voteDelta: number;
     voteWeight: number;
@@ -20,7 +20,7 @@ const unixTimeStamp = () => Math.floor(Date.now() / 1000);
 task("snapshot:result", "Get results for the first proposal that uses non standard labels")
     .addOptionalParam("proposal", "The proposal ID of the snapshot")
     .addOptionalParam("debug", "Debug mode", "false")
-    .addOptionalParam("format", "Output format: safe | csv, safe by default", "safe")
+    .addOptionalParam("format", "Output format: table | csv | silence, table by default", "table")
     .setAction(async function (taskArgs: TaskArguments, hre: HardhatRuntime) {
         const signer = await getSigner(hre);
         const debug = taskArgs.debug === "true";
@@ -132,10 +132,11 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
             throw new Error(`Vote weights ${voteWeights} do not add up to total votes ${totalVotes}`);
 
         // ----------------------------------------------------------
-        // Processing
+        // Print Results
         // ----------------------------------------------------------
-
-        if (taskArgs.format === "safe") {
+        if (taskArgs.format === "silence") {
+            // do nothing
+        } else if (taskArgs.format === "table") {
             console.log("Successful gauge votes");
             const tableData = [
                 ["Gauge", "voteDelta", "percentage", "address", "weight"],
@@ -164,4 +165,6 @@ task("snapshot:result", "Get results for the first proposal that uses non standa
                 console.log(`${i},${vote.gauge.label},${vote.gauge.address},${vote.voteWeight}`);
             }
         }
+
+        return { votes, proposal };
     });
