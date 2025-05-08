@@ -27,7 +27,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "multiplier": "0"
+                "multiplier": "1000"
             }
         },
         {
@@ -46,7 +46,7 @@
                 "payable": false
             },
             "contractInputsValues": {
-                "multiplier": "1"
+                "multiplier": "1000"
             }
         }
     ]

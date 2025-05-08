@@ -198,9 +198,6 @@ async function addPoolToMainnet(
     // - gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid)
     const keeperTxPerPool = [];
 
-    const multisigTxPerPool = [];
-    const missingSetPoolIds: Array<number> = [];
-
     const invalidGauges = [];
     const gaugesToProcess = gaugesDetails.filter(gauge => !gauge.rootGauge); // Only mainnet gauges
 
@@ -298,7 +295,6 @@ async function addPoolToMainnet(
         };
         keeperTxPerPool.push(...txPerPool);
     }
-    const lowestPid = Math.min(...[initialPid].concat(...missingSetPoolIds));
     const finalPid = initialPid + gaugesToProcess.length - invalidGauges.length;
     previouslyAddedPid = Math.min(previouslyAddedPid, initialPid);
     if (previouslyAddedPid < finalPid) {

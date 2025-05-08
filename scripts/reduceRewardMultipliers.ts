@@ -7,7 +7,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 const getGnosisTxTemplate = (rewardContracts: string[]) => ({
     version: "1.0",
     chainId: "1",
-    createdAt: 1690553733262,
+    createdAt: 1746691629000,
     meta: {
         name: "Transactions Batch",
         description: "",
@@ -16,10 +16,10 @@ const getGnosisTxTemplate = (rewardContracts: string[]) => ({
         createdFromOwnerAddress: "",
         checksum: "",
     },
-    transactions: [...rewardContracts.map(rewardContract => getRewardMultiplier(rewardContract))],
+    transactions: [...rewardContracts.map(setRewardMultiplier)],
 });
 
-const getRewardMultiplier = (rewardContract: string) => ({
+const setRewardMultiplier = (rewardContract: string) => ({
     to: "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
     value: "0",
     data: null,
@@ -31,7 +31,7 @@ const getRewardMultiplier = (rewardContract: string) => ({
         name: "setRewardMultiplier",
         payable: false,
     },
-    contractInputsValues: { rewardContract, multiplier: "0" },
+    contractInputsValues: { rewardContract, multiplier: "1000" },
 });
 
 export async function reduceRewardMultipliers(hre: HardhatRuntimeEnvironment) {
@@ -56,6 +56,12 @@ export async function reduceRewardMultipliers(hre: HardhatRuntimeEnvironment) {
         .sort((a, b) => b.pid - a.pid)
         .map(pool => pool.crvRewards);
 
-    const json = getGnosisTxTemplate(rewardContracts);
-    fs.writeFileSync(path.resolve(__dirname, "./gnosis-reduce-reward-multipliers.json"), JSON.stringify(json, null, 2));
+    const BATCH_SIZE = 40; // Define the batch size
+    for (let index = 0; index < rewardContracts.length; index += BATCH_SIZE) {
+        console.log(`Processing batch ${Math.ceil((index + 1) / BATCH_SIZE)}...`, index, index + BATCH_SIZE);
+        const batch = rewardContracts.slice(index, index + BATCH_SIZE);
+        const json = getGnosisTxTemplate(batch);
+        const fileName = `./gnosis-reduce-reward-multipliers-batch-${Math.ceil((index + 1) / BATCH_SIZE)}.json`;
+        fs.writeFileSync(path.resolve(__dirname, fileName), JSON.stringify(json, null, 2));
+    }
 }
