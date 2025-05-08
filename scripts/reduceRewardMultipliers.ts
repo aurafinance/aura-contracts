@@ -31,7 +31,7 @@ const setRewardMultiplier = (rewardContract: string) => ({
         name: "setRewardMultiplier",
         payable: false,
     },
-    contractInputsValues: { rewardContract, multiplier: "1000" },
+    contractInputsValues: { rewardContract, multiplier: "100" },
 });
 
 export async function reduceRewardMultipliers(hre: HardhatRuntimeEnvironment) {

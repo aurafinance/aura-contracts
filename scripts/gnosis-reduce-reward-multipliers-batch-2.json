@@ -33,7 +33,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x35533f3B146633c025B8781d72F0F12F5f73f669",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -58,7 +58,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x07404be4b134bDDCDc6B80a0Ceb6c239DFE003E7",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -83,7 +83,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xD1Bc10ef8b46efA5BC7F49AE8E9E87F2c89736D3",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -108,7 +108,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xdB745558A1b71E5C355aF79c2E54118e753F5c83",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -133,7 +133,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x01B8209e20B999eE3271A880fA0Ef17cd3eFB1F6",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -158,7 +158,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x4B87DCFF2F45535775a9564229119dca5e697A10",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -183,7 +183,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x571a20C14a7c3Ac6d30Ee7D1925940bb0C027696",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -208,7 +208,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x6Ea41486A8f21EED7B20AfDB681b90a5B6C6D029",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -233,7 +233,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x772359B46FaA01cbe08fB0d34907A72F593D0fcE",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -258,7 +258,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x8353839f58B9f44efACBEEdB822157f7C204EFED",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -283,7 +283,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xce98eb8b2Fb98049b3F2dB0A212Ba7ca3Efd63b0",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -308,7 +308,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x4631B77382e4Efde3E5808d6b30A330B91B2376B",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -333,7 +333,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x6b89Ab92499bF872e53AA92106B8Fb7989496A40",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -358,7 +358,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x0d117d31E72b340bCfD39058859313F9d54b2095",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -383,7 +383,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xf618102462Ff3cf7edbA4c067316F1C3AbdbA193",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -408,7 +408,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x95eC73Baa0eCF8159b4EE897D973E41f51978E50",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -433,7 +433,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x8660F02Ca94970C45add17CEDdCC81DD4D90ffED",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -458,7 +458,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x9360F473A533D7f8855C768437dd0c8cAEcCB9e6",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -483,7 +483,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x570eA5C8A528E3495EE9883910012BeD598E8814",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -508,7 +508,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xe771592D172a91fB30b9E80Cf0C2f17697CA60e0",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -533,7 +533,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x07A319A023859BbD49CC9C38ee891c3EA9283Cc5",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -558,7 +558,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x0D00848440D2E2B3C6f288128c1a19C483e78F45",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -583,7 +583,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x098DCC73cd97C2BE5eAC5bD59c50cc034b60C06E",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -608,7 +608,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x5F032f15B4e910252EDaDdB899f7201E89C8cD6b",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -633,7 +633,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x4313428170c09ca81117a95f0418aefE3446d935",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -658,7 +658,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x2C0D60f986cDe7eE59489055aa22A8E49b6825aD",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -683,7 +683,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xE9096FDB508C0160318c11425Ba75924ecFA1D82",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -708,7 +708,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x61F205f1236c4E6D3f73618BB6250d5A9cC5B8bb",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -733,7 +733,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x4D9Af78F548Bb6BE5EaD3dF8314705BF61D72A21",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -758,7 +758,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x8a7FCc2DE6d0de7D1b7cCc4B2B7941810aff7696",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -783,7 +783,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xC2E2D76a5e02eA65Ecd3be6c9cd3Fa29022f4548",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -808,7 +808,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xb3c8cC0f433200C3a92664A5fEa626eD077e9D39",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -833,7 +833,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xBDD6984C3179B099E9D383ee2F44F3A57764BF7d",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -858,7 +858,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x8bd520Bf5d59F959b25EE7b78811142dDe543134",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -883,7 +883,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x2a14dB8D09dB0542f6A371c0cB308A768227D67D",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -908,7 +908,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xf8f18dc9E192A9Bf9347DA0E2107d05D5B67F38e",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -933,7 +933,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0x032B676d5D55e8ECbAe88ebEE0AA10fB5f72F6CB",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -958,7 +958,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xc8FC8aC325d941C31655C62169DD47778129BE63",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -983,7 +983,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xfCCb9288bf2a583b918E4eA810d8a75563404B21",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         },
         {
@@ -1008,7 +1008,7 @@
             },
             "contractInputsValues": {
                 "rewardContract": "0xb139946D2F0E71b38e2c75d03D87C5E16339d2CD",
-                "multiplier": "1000"
+                "multiplier": "100"
             }
         }
     ]
