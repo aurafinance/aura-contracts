@@ -7,9 +7,8 @@ import { Signer } from "ethers";
 import { config } from "../../tasks/deploy/mainnet-config";
 import { Phase2Deployed } from "scripts/deploySystem";
 import { Account } from "types/common";
+import { immutables } from "../../test-utils/contracts-calcs";
 
-const EMISSIONS_MAX_SUPPLY = 50000000;
-const EMISSIONS_INIT_SUPPLY = 50000000;
 const ALCHEMY_API_KEY = process.env.NODE_URL;
 
 describe("AuraMining", () => {
@@ -47,6 +46,7 @@ describe("AuraMining", () => {
 
     describe("converts crv to cvx", async () => {
         it("calculate mints per BAL yearly schedule ", async () => {
+            const { EMISSIONS_MAX_SUPPLY, INIT_MINT_AMOUNT } = immutables.cvx;
             const beforeTotalSupply = await phase2.cvx.totalSupply();
             // Year 1 - BAL emissions
             await expectMint(simpleToExactAmount(4536428.571, 18), simpleToExactAmount(17692071.4269, 18), "Year 1"); // 17.6m
@@ -72,9 +72,7 @@ describe("AuraMining", () => {
             const afterTotalSupply = await phase2.cvx.totalSupply();
 
             expect(beforeTotalSupply, "total supply does change").to.lt(afterTotalSupply);
-            expect(afterTotalSupply, "max supply reached").to.eq(
-                simpleToExactAmount(EMISSIONS_MAX_SUPPLY + EMISSIONS_INIT_SUPPLY),
-            );
+            expect(afterTotalSupply, "max supply reached").to.eq(EMISSIONS_MAX_SUPPLY.add(INIT_MINT_AMOUNT));
         });
     });
 });
