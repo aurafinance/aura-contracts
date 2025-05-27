@@ -1,0 +1,165 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1748337544995,
+    "meta": {
+        "name": "gaugeVoter-voteGaugeWeights",
+        "description": "gaugeVoter-voteGaugeWeights",
+        "txBuilderVersion": "1.16.2",
+        "createdFromSafeAddress": "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        "createdFromOwnerAddress": "",
+        "checksum": ""
+    },
+    "transactions": [
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauges",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_dstChainId",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ],
+                "name": "setDstChainId",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauges": "[0x31ccb4e5005fd37005523e6e3f1d084f9abe25b6]",
+                "_dstChainId": "184"
+            }
+        },
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauges",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_dstChainId",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ],
+                "name": "setDstChainId",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauges": "[0x5b5bad6a124c5f45b4289908ba15ff0047928648]",
+                "_dstChainId": "184"
+            }
+        },
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauges",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_dstChainId",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ],
+                "name": "setDstChainId",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauges": "[0x9604a525630e7d9d72d804bdcb678862bab1971c]",
+                "_dstChainId": "184"
+            }
+        },
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauges",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_dstChainId",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ],
+                "name": "setDstChainId",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauges": "[0xac3b3fff577561c58f126e4f6375f56476dd9fdb]",
+                "_dstChainId": "110"
+            }
+        },
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauges",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_dstChainId",
+                        "type": "uint16",
+                        "internalType": "uint16"
+                    }
+                ],
+                "name": "setDstChainId",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauges": "[0xd606ea6f6d93d90efafc7d21972353fb98205eb8]",
+                "_dstChainId": "111"
+            }
+        },
+        {
+            "to": "0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_gauge",
+                        "type": "address[]",
+                        "internalType": "address[]"
+                    },
+                    {
+                        "name": "_weight",
+                        "type": "uint256[]",
+                        "internalType": "uint256[]"
+                    }
+                ],
+                "name": "voteGaugeWeight",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_gauge": "[0xf8a95653cc7ee59afa2304dcc518c431a15c292c,0x80a423a65a6a630943d9a34b8b78943af00c98cd,0x5f0a99997ab2acc5097dc5349adf6985761336ac,0x259371ca8ac5e7f3163704ce58b0da58820173ed,0x2d1c51eab8b3c2287ba26061c0e339da3b15b955,0xa7165e1e3defe55dada5c4289268d57faba6dad2,0xd43fc9340adbff1c0c28db7a5fb554f736d256fa,0xeb312b0d7795743c3de905bc09c0d62aa180a7a6,0x1cce9d493224a19fcb5f7fbade8478630141cb54,0x2e6cd45581002c894cac692dce4a30632125ef99,0xac08fde28aa2d123b61a5db3074caf72760ffeeb,0x0d1b58fb1fc10f2160178de1eae2d520335ee372,0xd75026f8723b94d9a360a282080492d905c6a558,0xdacd99029b4b94cd04fe364aac370829621c1c64,0x8135d6abfd42707a87a7b94c5cfa3529f9b432ad,0x6a2c2d4502335638d2c2f40f0171253fb2c2db88,0xc219821b1fe1bbe436f62d911f00ef1c8542a8f7,0x9fdd52efeb601e4bc78b89c6490505b8ac637e9f,0xb2fcad9fd42affd0a90a996a1dede4427435e5f8,0xca318253bb460e08ca33fd22574e7f70217130f5,0x183d73da7adc5011ec3c46e33bb50271e59ec976,0x2d42910d826e5500579d121596e98a6eb33c0a1b,0x730a168cf6f501cf302b803ffc57ff3040f378bf,0x8e486dbacb74c00dd31e489da93d99bbebe36cd5,0x9b2defbf22be1ccd63f36dadf69842feb5e7b8df,0x77be4d39598962210b702514219fbca4a6dc77ba,0x7c02ac2bad481dc4e566d3d54359244f381d58dc,0x40b04058ff35fd3164e6cc66c4e6398c1e5e68c8,0xc0b75da8e6f6403804efefde3101b02276c5f8ea,0x175407b4710b5a1cb67a37c76859f17fb2ff6672,0x346f1d4f98f055bb0791465923e27a10f1082912,0x81900935c04a3f7152bd6b0b3b894ac5932c367f,0x6d060a785530cb13795b3c5a43320c462811d43b,0x2041f8a758a0266e1b9272fcd4b1f1c37b67d5da,0xfd151734ffc9a4a55c50fed4b66c15b06bbb390b,0x7f5a5c80ceeb1c91718a71030f67788f3810be98,0x597aebfe41dcc042db206eb888c42560a22c9303,0x87306f713eab296f87ca4519295668fb4bd51f04,0x30fb447441195a5b72a382ef14c5865c0fc1a9aa,0xfcce9b5c1e8d56d9fc6dcbb706acc51dd03fe9f1,0x30cee2f8cb8e53fc587f6b2578241a118188d530,0x93ae6971f03ce890fa4e9274ab441477b84dae5f,0x64fced4684f4b065e6b900c4e99a0cbacc5e5fe1,0xfa2f6be7cf4da6fae6a011a4efc53180c9cf0a1b,0x852580e3e1c0fd35de426c5481670c1772525265,0x5c36197a631649441649028110fa503a3be00162,0x7a59af3a8650edc8ebe6d79162a2aa97f2b98aac,0x2617724db92a8dbd4eba7e24615ba369133ff684,0xb1e8ec305b0b29097a117cafc9721a553533e54c,0x80cd37a62a8a58c4cbf64003410c5ccc4d01519f,0x16289f675ca54312a8fcf99341e7439982888077,0x1b7e33186c7e9c337508bb65ea9dc498ab14fcae,0x3db8e1ffe58ea99939efaef084ca23cc0195b531,0x9b237fa1958e3022464343137738926d38815801,0xf7b0751fea697cf1a541a5f57d11058a8fb794ee,0xf8c85bd74fee26831336b51a90587145391a27ba,0x86c44de72ec88d205e63c2af8d577659319c7a7f,0x5c13c3b72b031b6405046c319b2d840d3c1403c7,0xf99b2f358efec751a9071f30e541ab6c42c25b93,0x58e71af9ce4378b79daaf2c4e7be9765c442dfc2,0xea8ba6b0cb5908a5d803b01ceaea5a6e65d33508,0x9965713498c74aee49cef80b2195461f188f24f8,0x9604a525630e7d9d72d804bdcb678862bab1971c,0xb2a8f0f477aae4d78ea78d85234233285c91bb08,0x1da19f38eb6f2c22199dc0848118b26095c29aed,0x061130d4715fcd4828bfcaf6b1a9b93df5e6e4c9,0x0021e01b9fab840567a8291b864ff783894eabc6,0x4eb7c7fd67b9b2c24d9ff1601ccda5a01bd40c7f,0xd606ea6f6d93d90efafc7d21972353fb98205eb8,0x47c56a900295df5224ec5e6751dc31eb900321d5,0xc859bf9d7b8c557bbd229565124c2c09269f3aef,0x5b5bad6a124c5f45b4289908ba15ff0047928648,0x4b891340b51889f438a03dc0e8aaafb0bc89e7a6,0x79ef6103a513951a3b25743db509e267685726b7,0x15c84754c7445d0df6c613f1490ca07654347c1b,0xac3b3fff577561c58f126e4f6375f56476dd9fdb,0x31ccb4e5005fd37005523e6e3f1d084f9abe25b6,0xa8b309a75f0d64ed632d45a003c68a30e59a1d8b,0x5c0f23a5c1be65fa710d385814a7fd1bda480b1c]",
+                "_weight": "[0,0,0,0,0,0,0,0,0,0,83,95,72,31,189,82,1002,966,44,22,302,26,34,17,104,119,53,92,92,110,92,92,73,92,92,50,50,38,54,54,34,46,46,46,20,18,22,18,22,14,20,70,19,73,191,144,22,66,24,127,127,483,39,88,186,59,233,62,69,72,162,82,152,1402,163,102,132,423,700]"
+            }
+        }
+    ]
+}
