@@ -195,7 +195,6 @@ export const sortGaugeList = (gaugeList: Gauge[]) => {
         chainIds.zkevm,
         chainIds.base,
         chainIds.avalanche,
-        chainIds.fraxtal,
     ];
 
     if (chainOrder.length !== validNetworks.length) {

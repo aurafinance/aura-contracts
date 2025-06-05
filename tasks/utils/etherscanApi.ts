@@ -9,7 +9,6 @@ export const supportedChains = [
     chainIds.base,
     chainIds.zkevm,
     chainIds.avalanche,
-    chainIds.fraxtal,
 ] as const;
 
 export type SupportedChains = typeof supportedChains[number];
