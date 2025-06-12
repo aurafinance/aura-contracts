@@ -237,6 +237,9 @@ export async function deployGaugeVoterModule(
     let tx = await gaugeVoterModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await gaugeVoterModule.updateAuthorizedKeepers(multisigs.defender.l1CoordinatorDistributor, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await gaugeVoterModule.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
