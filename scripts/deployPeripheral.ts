@@ -8,6 +8,9 @@ import {
     AuraBalStaker,
     AuraBalStaker__factory,
     AuraBalVault,
+    AuraLocker,
+    AuraLockerModule,
+    AuraLockerModule__factory,
     AuraToken,
     Booster,
     BoosterHelper,
@@ -234,6 +237,9 @@ export async function deployGaugeVoterModule(
     let tx = await gaugeVoterModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
     await waitForTx(tx, debug, waitForBlocks);
 
+    tx = await gaugeVoterModule.updateAuthorizedKeepers(multisigs.defender.l1CoordinatorDistributor, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
     tx = await gaugeVoterModule.transferOwnership(multisigs.daoMultisig);
     await waitForTx(tx, debug, waitForBlocks);
 
@@ -413,4 +419,35 @@ export async function deployHHChefClaimBriberModule(
     await waitForTx(tx, debug, waitForBlocks);
 
     return { hhChefClaimBriberModule };
+}
+export async function deployAuraLockerModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: { cvxLocker: AuraLocker },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ auraLockerModule: AuraLockerModule }> {
+    const { cvxLocker } = deployment;
+
+    const auraLockerModule = await deployContract<AuraLockerModule>(
+        hre,
+        new AuraLockerModule__factory(signer),
+        "AuraLockerModule",
+        [await signer.getAddress(), multisigs.treasuryMultisig, cvxLocker.address],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await auraLockerModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraLockerModule.updateAuthorizedKeepers(multisigs.defender.l1CoordinatorDistributor, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    tx = await auraLockerModule.transferOwnership(multisigs.treasuryMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { auraLockerModule };
 }

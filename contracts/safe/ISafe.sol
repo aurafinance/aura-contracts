@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
-import { Enum } from "./Enum.sol";
 
 interface ISafe {
+    enum Operation {
+        Call,
+        DelegateCall
+    }
+
     /// @dev Allows a Module to execute a Safe transaction without any further confirmations.
     /// @param to Destination address of module transaction.
     /// @param value Ether value of module transaction.
@@ -12,7 +16,7 @@ interface ISafe {
         address to,
         uint256 value,
         bytes calldata data,
-        Enum.Operation operation
+        Operation operation
     ) external returns (bool success);
 
     /// @dev Returns if an module is enabled
