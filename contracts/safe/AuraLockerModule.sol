@@ -5,6 +5,12 @@ import { Module } from "./Module.sol";
 import { KeeperRole } from "../peripheral/KeeperRole.sol";
 import { AuraLocker } from "../core/AuraLocker.sol";
 
+/**
+ * @title AuraLockerModule
+ * @notice  This module allows a keeper to lock AURA tokens using the AuraLocker contract.
+ * @author  Forked from https://github.com/onchainification/aura_locker_v2/blob/main/src/AuraLockerModule.sol
+ *           - removed Chainlink Keeper integration
+ */
 contract AuraLockerModule is Module, KeeperRole {
     /// @notice AuraLocker contract
     AuraLocker public immutable auraLocker;

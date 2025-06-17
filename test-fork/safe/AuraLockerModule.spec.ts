@@ -27,7 +27,6 @@ describe("AuraLockerModule", () => {
                 },
             ],
         });
-        hre.tracer.enabled = false;
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         deployer = await impersonate(deployerAddress, true);
         treasuryMultisig = await impersonate(config.multisigs.treasuryMultisig, true);

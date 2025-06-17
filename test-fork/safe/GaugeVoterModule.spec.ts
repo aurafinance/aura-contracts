@@ -114,7 +114,6 @@ describe("Gauge Voter Module", () => {
                 },
             ],
         });
-        hre.tracer.enabled = false;
         deployerAddress = "0xA28ea848801da877E1844F954FF388e857d405e5";
         deployer = await impersonate(deployerAddress, true);
         daoMultisig = await impersonate(config.multisigs.daoMultisig, true);
@@ -223,7 +222,6 @@ describe("Gauge Voter Module", () => {
         const authorizedKeepers = await gaugeVoterModule.authorizedKeepers(config.multisigs.defender.keeperMulticall3);
         expect(authorizedKeepers, "authorizedKeepers").to.be.eq(true);
         const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
-        hre.tracer.enabled = true;
         const tx = await gaugeVoterModule.connect(keeper).voteGaugeWeight(gauges, weights);
         await tx.wait();
     });
