@@ -226,10 +226,7 @@ describe("Gauge Voter Module", () => {
         const authorizedKeepers = await gaugeVoterModule.authorizedKeepers(config.multisigs.defender.keeperMulticall3);
         expect(authorizedKeepers, "authorizedKeepers").to.be.eq(true);
         const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
-        hre.tracer.enabled = true;
         const tx = await gaugeVoterModule.connect(keeper).voteGaugeWeight(gauges, weights);
-        const result = await tx.wait();
-        const logs = result.logs;
 
         // For each gauge on the array expect the event VoteForGauge(time, user, gauge, weight)
         for (let i = 0; gauges.length < 1; i++) {
