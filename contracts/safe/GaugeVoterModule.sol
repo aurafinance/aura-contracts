@@ -28,6 +28,9 @@ contract GaugeVoterModule is Module, KeeperRole {
         gaugeVoter = _gaugeVoter;
     }
 
+    /// @dev Custom error for invalid weight
+    error InvalidWeight(uint256 index, uint256 weight);
+
     /**
      * @notice  Call the gaugeVoter.voteGaugeWeight, with a maximum weight of 25 basis points
      * @dev     Only callable by a keeper
@@ -36,12 +39,10 @@ contract GaugeVoterModule is Module, KeeperRole {
      * @return bool for success
      */
     function voteGaugeWeight(address[] calldata _gauge, uint256[] calldata _weight) external onlyKeeper returns (bool) {
-        // Validate inputs
         uint256 weightLen = _weight.length;
         for (uint256 i = 0; i < weightLen; i++) {
-            require(_weight[i] <= MAX_WEIGHT, "Invalid weight");
+            if (_weight[i] > MAX_WEIGHT) revert InvalidWeight(i, _weight[i]);
         }
-
         bytes memory data = abi.encodeWithSignature("voteGaugeWeight(address[],uint256[])", _gauge, _weight);
         return _execCallFromModule(gaugeVoter, data);
     }
@@ -56,9 +57,10 @@ contract GaugeVoterModule is Module, KeeperRole {
         require(gaugesLen == _dstChainIds.length, "!dstChainIds");
         require(gaugesLen > 0, "!gauges");
 
+        address[] memory gauges = new address[](1);
         for (uint256 i = 0; i < gaugesLen; i++) {
-            //  encodeWithSignature does not encode properly inline arrays, so we need a memory temporary array
-            address[] memory gauges = new address[](1);
+            // Note: In Solidity 0.8.x, abi.encodeWithSignature can be used to encode dynamic arrays for external contract calls.
+            // However, in earlier versions, abi.encodeWithSignature did not encode inline arrays correctly, which could cause issues.
             gauges[0] = _gauges[i];
             bytes memory data = abi.encodeWithSignature("setDstChainId(address[],uint16)", gauges, _dstChainIds[i]);
             _execCallFromModule(gaugeVoter, data);
