@@ -14,6 +14,7 @@ import {
     deployHHRewardsClaimForwarderModule,
     deployHHChefClaimBriberModule,
     deployAuraLockerModule,
+    deployGaugeVoterModule,
 } from "../../scripts/deployPeripheral";
 import { deployCrvDepositorWrapperSwapper, deployPhase9, Phase2Deployed } from "../../scripts/deploySystem";
 import { deployUpgrade01 } from "../../scripts/deployUpgrades";
@@ -448,6 +449,21 @@ task("deploy:mainnet:AuraLockerModule")
             tskArgs.wait,
         );
 
+        logContracts(result);
+    });
+task("deploy:mainnet:GaugeVoterModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase = config.getGaugeVoteRewards(deployer);
+        const result = await deployGaugeVoterModule(
+            hre,
+            deployer,
+            config.multisigs,
+            { gaugeVoter: phase.gaugeVoteRewards },
+            debug,
+            tskArgs.wait,
+        );
         logContracts(result);
     });
 
