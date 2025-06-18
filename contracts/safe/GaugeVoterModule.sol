@@ -59,8 +59,8 @@ contract GaugeVoterModule is Module, KeeperRole {
 
         address[] memory gauges = new address[](1);
         for (uint256 i = 0; i < gaugesLen; i++) {
-            // Note: In Solidity 0.8.x, abi.encodeWithSignature can be used to encode dynamic arrays for external contract calls.
-            // However, in earlier versions, abi.encodeWithSignature did not encode inline arrays correctly, which could cause issues.
+            // Note: In Solidity 0.8.x, abi.encodeWithSignature can be used to encode dynamic arrays for external calls.
+            // However, in earlier versions, abi.encodeWithSignature did not encode inline arrays correctly.
             gauges[0] = _gauges[i];
             bytes memory data = abi.encodeWithSignature("setDstChainId(address[],uint16)", gauges, _dstChainIds[i]);
             _execCallFromModule(gaugeVoter, data);
