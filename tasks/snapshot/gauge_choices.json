@@ -87,11 +87,13 @@
     { "address": "0x79ef6103a513951a3b25743db509e267685726b7", "label": "MetaStable rETH/WETH" },
     { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted PAXG/WBTC/USDC" },
     { "address": "0x6c0a4550c575c917435f228d36939125a437a98b", "label": "Stable Aave Core pyUSD/Aave Prime GHO" },
+    { "address": "0xac681deb529b49b5a563fbf0dcccb95d5bb7cdb0", "label": "Stable Aave Prime GHO/iUSD" },
     { "address": "0x52d28dff7759ca78978954ebabf87481bd5cf8f0", "label": "Stable Aave Prime GHO/USDf" },
     { "address": "0x9fdd52efeb601e4bc78b89c6490505b8ac637e9f", "label": "Stable Aave Prime GHO/waEthUSDC/waEthUSDT" },
     { "address": "0x9798995a042973d9705a4f0fea691a4541d13b43", "label": "Stable Aave Prime GHO/WUSDN" },
     { "address": "0x7a59af3a8650edc8ebe6d79162a2aa97f2b98aac", "label": "Stable AURA/kaiAURA" },
     { "address": "0x3d45d7d8eea466829292430d5cb5c2a44b3b0502", "label": "Stable baoBTC/tBTC" },
+    { "address": "0x5a099e2c2a41a5a0ad99e4971c711400eeef34db", "label": "Stable BOLD/WUSDN" },
     { "address": "0x5bbaed1fadc08c5fb3e4ae3c8848777e2da77103", "label": "Stable csUSDC/csUSDL" },
     { "address": "0xd0f4829f6ccb2df530445519d8d84d1e715f6391", "label": "Stable DVstETH/waEthLidowstETH" },
     { "address": "0x1f3a4c8115629c33a28bf2f97f22d31d256317f6", "label": "Stable ETHx/waEthWETH" },
@@ -211,6 +213,7 @@
     { "address": "0xdacd99029b4b94cd04fe364aac370829621c1c64", "label": "o-MetaStable rETH/WETH" },
     { "address": "0xd606ea6f6d93d90efafc7d21972353fb98205eb8", "label": "o-Stable rETH/waOptWETH" },
     { "address": "0x6ddedcdb545e04927b2aba21778a790a3318e3cb", "label": "o-Stable sfrxETH/waOptrETH/waOptwstETH" },
+    { "address": "0x2fb78cd279fd613891fdac2681444ad3541c31b2", "label": "o-Stable waOptWETH/wrsETH" },
     { "address": "0x64fced4684f4b065e6b900c4e99a0cbacc5e5fe1", "label": "g-50/25/25 wstETH/AURA/BAL" },
     { "address": "0xc61e7e858b5a60122607f5c7df223a53b01a1389", "label": "g-50/50 COW/GNO" },
     { "address": "0x93ae6971f03ce890fa4e9274ab441477b84dae5f", "label": "g-50/50 COW/wstETH" },
@@ -266,9 +269,5 @@
     { "address": "0xa7165e1e3defe55dada5c4289268d57faba6dad2", "label": "av-Stable esavUSD-3/eUSDt-3" },
     { "address": "0x5c13c3b72b031b6405046c319b2d840d3c1403c7", "label": "av-Stable ggAVAX/waAvaSAVAX/waAvaWAVAX" },
     { "address": "0x219b3a4a2d2351582277a87048995034ca7e9aef", "label": "av-Stable savUSD/sdeUSD/upAUSD" },
-    { "address": "0xb2a8f0f477aae4d78ea78d85234233285c91bb08", "label": "av-Stable waAvaAUSD/waAvaUSDC/waAvaUSDT" },
-    { "address": "0x5f0a99997ab2acc5097dc5349adf6985761336ac", "label": "f-50/50 sfrxETH/sfrxUSD" },
-    { "address": "0x259371ca8ac5e7f3163704ce58b0da58820173ed", "label": "f-ComposableStable frxUSD/USDe" },
-    { "address": "0x58e71af9ce4378b79daaf2c4e7be9765c442dfc2", "label": "f-ComposableStable sDAI/sfrxUSD" },
-    { "address": "0xea8ba6b0cb5908a5d803b01ceaea5a6e65d33508", "label": "f-ComposableStable sDAI/sfrxUSD/sUSDe" }
+    { "address": "0xb2a8f0f477aae4d78ea78d85234233285c91bb08", "label": "av-Stable waAvaAUSD/waAvaUSDC/waAvaUSDT" }
 ]
