@@ -32,7 +32,7 @@ contract HHRewardsClaimForwarderModule is Module, KeeperRole, ReentrancyGuard {
     event RewardsClaimed(uint256 cvxClaimed);
 
     /**
-     * @notice  Constructor for the GaugeVoterModule
+     * @notice  Constructor for the HHRewardsClaimForwarderModule
      * @param _owner        Owner of the contract
      * @param _safeWallet   Address of the Safe
      * @param _cvx       Address of the cvx token
