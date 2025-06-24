@@ -40,7 +40,6 @@ describe("FeeToken (USDC) Handler V5", () => {
                 },
             ],
         });
-        hre.tracer.enabled = false;
         deployerAddress = "0x30019eB135532bDdF2Da17659101cc000C73c8e4";
         dao = await impersonateAccount(config.multisigs.daoMultisig);
         deployer = await impersonateAccount(deployerAddress);
