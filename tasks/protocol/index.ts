@@ -192,9 +192,15 @@ async function addPoolToMainnet(
     let previouslyAddedPid = initialPid;
     console.log(`Initial pid ${initialPid}`);
 
+    // Keeper Txs
+    // - extraRewardStashModuleTxBuilder.setStashExtraReward(pid, tokenAddress)
+    // - feeManagerProxyTxBuilder.addPool(gauge.address)
+    // - gaugeVoterTxBuilder.setPoolIds(initialPid, finalPid)
     const keeperTxPerPool = [];
+
     const invalidGauges = [];
     const gaugesToProcess = gaugesDetails.filter(gauge => !gauge.rootGauge); // Only mainnet gauges
+
     const tableInfo: MainnetAddPoolTableInfo = {};
     const defaultTableInfo: MainnetAddPoolTableInfoRecord = {
         pid: 0,
