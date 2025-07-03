@@ -85,7 +85,7 @@
     { "address": "0x655a2b240151b4fab06dfb2b6329ef72647f89dd", "label": "Gyroe wstETH/cbETH (0x65)" },
     { "address": "0xf2c203a264dc05942cfbaea16f712b2106c2fb02", "label": "Gyroe wstETH/ynETH" },
     { "address": "0x79ef6103a513951a3b25743db509e267685726b7", "label": "MetaStable rETH/WETH" },
-    { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted PAXG/WBTC/USDC" },
+    { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted WBTC/USDC/PAXG" },
     { "address": "0x6c0a4550c575c917435f228d36939125a437a98b", "label": "Stable Aave Core pyUSD/Aave Prime GHO" },
     { "address": "0xac681deb529b49b5a563fbf0dcccb95d5bb7cdb0", "label": "Stable Aave Prime GHO/iUSD" },
     { "address": "0x52d28dff7759ca78978954ebabf87481bd5cf8f0", "label": "Stable Aave Prime GHO/USDf" },
@@ -108,6 +108,7 @@
     { "address": "0x49cfd5afd2a05a1894a2ae50036a42dd8eba9a3b", "label": "Stable RPL/xRPL" },
     { "address": "0x04202b147eae6f5f50cbf72d0b8e9459c57b15e6", "label": "Stable rstETH/waEthLidowstETH" },
     { "address": "0xf6a9bbb5d9733fa6f77120683636061bc26e7e85", "label": "Stable sDAI/ShezUSD" },
+    { "address": "0xb1efe3b01d5cf28bd923de3e5a567621588f435a", "label": "Stable siUSD/sUSDe" },
     { "address": "0x5fd7c7883c3acd8b77f5de743168107c209fd33d", "label": "Stable slpUSDC/waEthUSDC" },
     { "address": "0x8f1e24671e90bb3e43adaedf79a5c6e42ed74f72", "label": "Stable steakUSDQ/steakUSDR/steakUSDTlite" },
     { "address": "0x2a42644c1d3e1b4fe6d01fdbc995fc402694a49f", "label": "Stable sUSDX/USDX/waEthUSDT" },
@@ -269,5 +270,6 @@
     { "address": "0xa7165e1e3defe55dada5c4289268d57faba6dad2", "label": "av-Stable esavUSD-3/eUSDt-3" },
     { "address": "0x5c13c3b72b031b6405046c319b2d840d3c1403c7", "label": "av-Stable ggAVAX/waAvaSAVAX/waAvaWAVAX" },
     { "address": "0x219b3a4a2d2351582277a87048995034ca7e9aef", "label": "av-Stable savUSD/sdeUSD/upAUSD" },
-    { "address": "0xb2a8f0f477aae4d78ea78d85234233285c91bb08", "label": "av-Stable waAvaAUSD/waAvaUSDC/waAvaUSDT" }
+    { "address": "0xb2a8f0f477aae4d78ea78d85234233285c91bb08", "label": "av-Stable waAvaAUSD/waAvaUSDC/waAvaUSDT" },
+    { "address": "0xd3ea1345352047bd039bac9d4177c883e06d449d", "label": "av-Stable waAvaGHO/waAvaUSDC/waAvaUSDT" }
 ]

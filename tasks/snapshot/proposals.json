@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x85a5d415300cef5e0aa342de6390891b56508f43571ac8408d47f8e070b43ee6",
+        "title": "Gauge Weight for Week of 3rd July 2025",
+        "start": 1751508000,
+        "end": 1751940000,
+        "snapshot": 22835807
+    },
+    {
         "id": "0x2145ff12c6e4c24779daf79d6a9a9aba97dd7b2d39f21c6104d4d4f506b1253d",
         "title": "Gauge Weight for Week of 19th June 2025",
         "start": 1750298400,
