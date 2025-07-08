@@ -713,7 +713,6 @@ task("protocol:gaugeVoter-getPoolIds")
             chainIds.avalanche,
             chainIds.optimism,
             chainIds.base,
-            chainIds.fraxtal,
             chainIds.gnosis,
             chainIds.optimism,
             chainIds.polygon,
