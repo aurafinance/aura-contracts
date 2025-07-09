@@ -1,10 +1,9 @@
-name: Gauge Voter Transactions
-# This workflow is triggered every Tuesday at 9:00 AM UTC
+name: Snapshot Gauge Votes - PR Review
 
 on:
     workflow_dispatch:
     schedule:
-        - cron: "10 9 * * 2" # Runs every Tuesday
+        - cron: "10 2 * * 4" # Runs every Thursday
 
 jobs:
     update-snapshot:
@@ -26,8 +25,8 @@ jobs:
                   node-version: 18
                   cache: "yarn"
 
-            - name: Run script to generate gauge voter transactions
-              run: bash ./scripts/automations/gauge-voter-txs.sh
+            - name: Run snapshot script
+              run: bash ./scripts/automations/snapshot-generate.sh
 
             - name: Put current date into a variable
               run: |
@@ -40,8 +39,8 @@ jobs:
               uses: peter-evans/create-pull-request@v3.10.1
               with:
                   token: ${{ secrets.ACCESS_TOKEN }}
-                  commit-message: "chore: gauge voter txs files ${{ env.NOW }}"
-                  title: "chore: vote ${{ env.NOW }}"
+                  commit-message: "feat: vote ${{ env.NOW }}"
+                  title: "feat: vote ${{ env.NOW }}"
                   body: Auto-created Pull Request
-                  branch: "issue/gauge-voter-${{ env.BRANCH }}" # The branch where you commit
+                  branch: "feat/vote-${{ env.BRANCH }}" # The branch where you commit
                   base: main # Don't forget to specify the right base branch here
