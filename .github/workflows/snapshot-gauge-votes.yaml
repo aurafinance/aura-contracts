@@ -39,7 +39,7 @@ jobs:
                   else
                     echo "Changes detected, committing and pushing"
                     git add .
-                    git commit -m "ci: vote $(date +'%d %B %Y')"
+                    git commit -m "ci: vote $(date +'%d %B %Y') [skip ci]"
                     git push origin main
                   fi
               env:
