@@ -28,12 +28,19 @@ jobs:
             - name: Run snapshot script
               run: bash ./scripts/automations/snapshot-generate.sh
 
-            - name: Commit and Push Changes
+            - name: Check for changes and commit
               run: |
                   git config --global user.name "0xahtle7"
                   git config --global user.email "0xahtle7@users.noreply.github.com"
-                  git add .
-                  git commit -m "ci: vote $(date +'%d %B %Y')"
-                  git push origin main
+
+                  # Check if there are any changes
+                  if git diff --quiet && git diff --cached --quiet; then
+                    echo "No changes detected, skipping commit"
+                  else
+                    echo "Changes detected, committing and pushing"
+                    git add .
+                    git commit -m "ci: vote $(date +'%d %B %Y')"
+                    git push origin main
+                  fi
               env:
                   GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
