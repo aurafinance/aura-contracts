@@ -3,7 +3,7 @@ name: Snapshot Gauge Votes
 on:
     workflow_dispatch:
     schedule:
-        - cron: "10 10 * * 4" # Runs every Thursday
+        - cron: "10 12 * * 4" # Runs every Thursday
 
 jobs:
     update-snapshot:
