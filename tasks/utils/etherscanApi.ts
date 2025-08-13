@@ -7,9 +7,9 @@ export const supportedChains = [
     chainIds.polygon,
     chainIds.gnosis,
     chainIds.base,
-    chainIds.zkevm,
     chainIds.avalanche,
-    chainIds.fraxtal,
+    // chainIds.zkevm,
+    // chainIds.fraxtal,
 ] as const;
 
 export type SupportedChains = typeof supportedChains[number];
