@@ -3,7 +3,12 @@ import { task, types } from "hardhat/config";
 import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
-import { BridgeDelegateSender__factory, SidechainConfig, SidechainPhaseDeployed } from "../../types";
+import {
+    BridgeDelegateSender__factory,
+    KeeperMulticall3__factory,
+    SidechainConfig,
+    SidechainPhaseDeployed,
+} from "../../types";
 import { config as base } from "../deploy/base-config";
 import { config as zkevm } from "../deploy/zkevm-config";
 import { config as gnosis } from "../deploy/gnosis-config";
@@ -12,6 +17,8 @@ import { config as polygon } from "../deploy/polygon-config";
 import { config as arbitrum } from "../deploy/arbitrum-config";
 import { config as optimism } from "../deploy/optimism-config";
 import { config as fraxtal } from "../deploy/fraxtal-config";
+import { config as mainnet } from "../deploy/mainnet-config";
+
 import { chainIds } from "../utils";
 import { blockExplorer, blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
 import { compareAddresses } from "../snapshot/utils";
@@ -66,6 +73,7 @@ const chainNames: Record<SupportedChains, string> = {
     [chainIds.zkevm]: "🟪 zkEvm",
     [chainIds.avalanche]: "🔺 Avalanche",
     [chainIds.fraxtal]: "🔳 Fraxtal",
+    [chainIds.mainnet]: "⚫ Mainnet",
 };
 
 const providers: Record<SupportedChains, JsonRpcProvider> = {
@@ -77,10 +85,15 @@ const providers: Record<SupportedChains, JsonRpcProvider> = {
     [chainIds.zkevm]: new JsonRpcProvider(process.env.ZKEVM_NODE_URL, chainIds.zkevm),
     [chainIds.avalanche]: new JsonRpcProvider(process.env.AVALANCHE_NODE_URL, chainIds.avalanche),
     [chainIds.fraxtal]: new JsonRpcProvider(process.env.FRAXTAL_NODE_URL, chainIds.fraxtal),
+    [chainIds.mainnet]: new JsonRpcProvider(process.env.MAINNET_NODE_URL, chainIds.mainnet),
 };
 
 const isOwnable = (contract: BaseContract) => "owner" in contract || "operator" in contract;
-const isKeeperRole = (contract: BaseContract) => "authorizedKeepers" in contract || "authorizedHarvesters" in contract;
+const isKeeperRole = (contract: BaseContract) =>
+    "authorizedKeepers" in contract ||
+    "authorizedHarvesters" in contract ||
+    "distributors" in contract ||
+    "distributor" in contract;
 async function setTimeoutForChain(chainId: number) {
     if (chainNames[chainId] === "gnosis") {
         // Avoid Too many queued requests error
@@ -127,19 +140,20 @@ async function checkContractOwnership(
     contract: BaseContract,
     multisig: string,
     contracts: [string, BaseContract][],
-    sideChain: SidechainPhaseDeployed,
+    noCheckContracts: string[] = [],
 ) {
     const ownerProperty = "owner" in contract ? "owner" : "operator";
     try {
         const owner = await (await contract[ownerProperty]()).toLowerCase();
-        // const owner = await (contract as any)[ownerProperty]().then((o: string) => o.toLowerCase());
-
         const isMultisig = owner === multisig;
-        const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
+        const ownerContract = contracts.find(([, c]) => compareAddresses(c.address, owner));
         if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
         else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
-        else if (contract.address === sideChain.keeperMulticall3.address) {
+        else if (noCheckContracts.some(addr => compareAddresses(contract.address, addr))) {
+            // If the contract is keeper multicall the ownership is ok  not be an issue
             console.log(_(`\t\t✅ owned by ${owner}`)(ok));
+        } else {
+            console.log(_(`\t\t❌ not owned by multisig ${owner}`)(error));
         }
     } catch (error) {
         console.log(_(`\t\t• unable to get owner ${ownerProperty}`)(warn));
@@ -149,43 +163,82 @@ async function checkContractOwnership(
 async function checkContractKeeperRole(
     contract: BaseContract,
     authorizedKeeper: string,
-    sideChain: SidechainPhaseDeployed,
+    keeperMulticall3Address: string,
 ) {
     // Get contract name
     const dedicatedMsgSender = "0x9b8e2E8892ea40A8D1167bbBa2F221D68060BFeF";
-    const isKeeperMulticall = compareAddresses(contract.address, sideChain.keeperMulticall3.address);
+    const isKeeperMulticall = compareAddresses(contract.address, keeperMulticall3Address);
     const authorizedKeeperAddress = isKeeperMulticall ? dedicatedMsgSender : authorizedKeeper;
-    const keeperProperty = "authorizedKeepers" in contract ? "authorizedKeepers" : "authorizedHarvesters";
+    const keeperProperties = ["authorizedKeepers", "authorizedHarvesters", "distributors", "distributor"];
+    const keeperProperty = keeperProperties.find(prop => prop in contract);
+
+    if (!keeperProperty) {
+        console.log(_("\t\t• no keeper role property found")(warn));
+        return;
+    }
     try {
         if (!authorizedKeeper) console.log(_(`\t\t❌ keeper not configured`)(error));
 
-        // const isAuthorizedKeeper = await (contract[keeperProperty](authorizedKeeper));
+        if (keeperProperty === "distributor") {
+            const distributor = await await contract[keeperProperty]();
+            if (compareAddresses(distributor, authorizedKeeperAddress)) {
+                console.log(_(`\t\t✅ keeper authorized ${authorizedKeeperAddress}`)(ok));
+            } else {
+                console.log(_(`\t\t❌ keeper not authorized ${authorizedKeeperAddress}`)(error));
+            }
+            return;
+        }
+
         const isAuthorizedKeeper = await await contract[keeperProperty](authorizedKeeperAddress);
 
         if (isAuthorizedKeeper) console.log(_(`\t\t✅ keeper authorized ${authorizedKeeperAddress}`)(ok));
-        else
-            console.log(_(`\t\t❌ keeper not authorized ${authorizedKeeperAddress} ${authorizedKeeperAddress}`)(error));
+        else console.log(_(`\t\t❌ keeper not authorized ${authorizedKeeperAddress}`)(error));
     } catch (error) {
         console.log(_(`\t\t• unable to get keeper ${keeperProperty}`)(warn));
         console.error(error);
     }
 }
 
-async function checkChain(chainId: SupportedChains, options: CheckOptions) {
+async function checkChain(chainId: number, options: CheckOptions) {
     console.log(`\n\n${chainNames[chainId]}`);
 
     // initialize provider and needed values
     const provider = providers[chainId];
-    const config = chainConfigs[chainId];
+    const isMainnet = chainId === chainIds.mainnet;
+    const config = isMainnet ? mainnet : chainConfigs[chainId as SupportedChains];
     const multisig = config.multisigs.daoMultisig.toLowerCase();
     const sideChain = config.getSidechain(provider);
-    const view = config.getView(provider);
-    const bridging = config.bridging;
+    const safeModules = config.getSafeModules(provider);
 
-    const factories = sideChain.factories;
-    delete (sideChain as any)?.factories;
-    const l2Sender = BridgeDelegateSender__factory.connect(bridging.l2Sender, provider);
-    const contracts = Object.entries({ ...sideChain, ...factories, ...view, l2Sender }).filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let contractEntries: Record<string, any> = { ...sideChain, ...safeModules };
+    let keeperMulticallAddress: string | undefined;
+    let noCheckContracts: string[] = [];
+
+    if (isMainnet) {
+        const mainnetConfig = config as typeof mainnet;
+        keeperMulticallAddress = mainnetConfig.multisigs.defender?.keeperMulticall3?.toLowerCase();
+        const vault = await mainnetConfig.getAuraBalVault(provider);
+        const keeperMulticall3 = KeeperMulticall3__factory.connect(
+            "0x817F426B5a79599464488eCCf82c3F54b9330E15",
+            provider,
+        );
+        contractEntries = { ...contractEntries, ...vault, keeperMulticall3 };
+        noCheckContracts = [keeperMulticallAddress].filter(Boolean) as string[];
+    } else {
+        const sidechainConfig = config as SidechainConfig;
+        const view = sidechainConfig.getView(provider);
+        const bridging = sidechainConfig.bridging;
+        const sidechainPhase = sideChain as SidechainPhaseDeployed;
+        const factories = sidechainPhase.factories;
+        delete (sidechainPhase as SidechainPhaseDeployed)?.factories;
+        const l2Sender = BridgeDelegateSender__factory.connect(bridging.l2Sender, provider);
+        contractEntries = { ...contractEntries, ...factories, ...view, l2Sender };
+        keeperMulticallAddress = sidechainConfig.multisigs.defender?.toLowerCase();
+        noCheckContracts = [sidechainPhase.keeperMulticall3.address];
+    }
+
+    const contracts = Object.entries(contractEntries).filter(
         ([name, contract]) =>
             // checking that, this item is indeed a contract object
             typeof contract === "object" && name !== "interface" && name !== "provider" && "address" in contract,
@@ -204,22 +257,30 @@ async function checkChain(chainId: SupportedChains, options: CheckOptions) {
             console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
             const owned = isOwnable(contract);
             if (owned && contract.address && options.ownership) {
-                await checkContractOwnership(contract, multisig, contracts, sideChain);
+                await checkContractOwnership(contract, multisig, contracts, noCheckContracts);
             } else {
                 console.log(_("\t\t• not owned")(gray));
             }
 
             if (isKeeperRole(contract) && contract.address && options.keeper) {
-                await checkContractKeeperRole(contract, config.multisigs.defender?.toLowerCase(), sideChain);
+                const sidechainPhase = sideChain as SidechainPhaseDeployed;
+                await checkContractKeeperRole(
+                    contract,
+                    keeperMulticallAddress,
+                    isMainnet ? keeperMulticallAddress : sidechainPhase.keeperMulticall3.address,
+                );
             }
 
             // For L2Coordinator, we must check that l2Coordinator.bridgeDelegate() is not 0x00...00
-            if (contract.address === sideChain.l2Coordinator.address) {
-                const bridgeDelegate = await sideChain.l2Coordinator.bridgeDelegate();
-                if (bridgeDelegate === ZERO_ADDRESS) {
-                    console.log(_("\t\t❌ bridgeDelegate is not set")(error));
-                } else {
-                    console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+            if (!isMainnet) {
+                const sidechainPhase = sideChain as SidechainPhaseDeployed;
+                if (contract.address === sidechainPhase.l2Coordinator.address) {
+                    const bridgeDelegate = await sidechainPhase.l2Coordinator.bridgeDelegate();
+                    if (bridgeDelegate === ZERO_ADDRESS) {
+                        console.log(_("\t\t❌ bridgeDelegate is not set")(error));
+                    } else {
+                        console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+                    }
                 }
             }
 
@@ -253,9 +314,10 @@ task("contract-status")
             verified: tskArgs.verified,
             tagged: tskArgs.tagged,
         };
-        for (const chainId of supportedChains) {
-            if (chainIds.mainnet === chainId) continue;
+        for (const chainId of [...supportedChains, chainIds.mainnet]) {
             await checkChain(chainId, options);
         }
+        // Mainnet
+        // AuraBalVault Multicall
         console.log("\n");
     });

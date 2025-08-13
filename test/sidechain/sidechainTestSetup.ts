@@ -12,6 +12,7 @@ import {
     CanonicalPhase2Deployed,
     CanonicalPhase3Deployed,
     CanonicalPhase4Deployed,
+    deployCanonicalAuraDistributor,
     deployCanonicalPhase1,
     deployCanonicalPhase2,
     deployCanonicalPhase3,
@@ -51,6 +52,7 @@ import { simpleToExactAmount, ZERO_ADDRESS } from "../../test-utils";
 import { impersonateAccount } from "../../test-utils/fork";
 import {
     Account,
+    AuraDistributor,
     Create2Factory__factory,
     IGaugeController__factory,
     LZEndpointMock__factory,
@@ -67,7 +69,7 @@ export type SidechainDeployed = SidechainPhase1Deployed &
 export type CanonicalPhaseDeployed = CanonicalPhase1Deployed &
     CanonicalPhase2Deployed &
     CanonicalPhase3Deployed &
-    CanonicalPhase4Deployed;
+    CanonicalPhase4Deployed & { auraDistributor: AuraDistributor };
 export interface L1TestSetup {
     mocks: DeployMocksResult;
     multisigs: MultisigConfig;
@@ -194,6 +196,15 @@ export const deployL1 = async (
         debug,
         waitForBlocks,
     );
+    const canonicalPhase5 = await deployCanonicalAuraDistributor(
+        hre,
+        deployer.signer,
+        l1Mocks.addresses,
+        l1Multisigs,
+        canonicalPhase1,
+        debug,
+        waitForBlocks,
+    );
 
     // Simulate current state of deployment
     await canonicalPhase4.l1PoolManagerProxy.transferOwnership(l1Multisigs.daoMultisig);
@@ -203,7 +214,13 @@ export const deployL1 = async (
     await phase6.poolManagerSecondaryProxy.connect(dao.signer).setOperator(phase8.poolManagerV4.address);
     await phase6.poolManagerSecondaryProxy.connect(dao.signer).setOwner(phase8.poolManagerV4.address);
 
-    const canonical = { ...canonicalPhase1, ...canonicalPhase2, ...canonicalPhase3, ...canonicalPhase4 };
+    const canonical = {
+        ...canonicalPhase1,
+        ...canonicalPhase2,
+        ...canonicalPhase3,
+        ...canonicalPhase4,
+        ...canonicalPhase5,
+    };
 
     return { mocks: l1Mocks, multisigs: l1Multisigs, phase2, phase6, phase8, vaultDeployment, canonical };
 };

@@ -57,6 +57,7 @@ import {
     UniswapRouterHandler,
     L1PoolManagerProxy__factory,
     ExtraRewardStashModule__factory,
+    AuraDistributor__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { ZERO_ADDRESS } from "../../test-utils/constants";
@@ -239,6 +240,7 @@ const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
     stashRewardDistro: StashRewardDistro__factory.connect(ZERO_ADDRESS, deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect(ZERO_ADDRESS, deployer),
     l1PoolManagerProxy: L1PoolManagerProxy__factory.connect(ZERO_ADDRESS, deployer),
+    auraDistributor: AuraDistributor__factory.connect(ZERO_ADDRESS, deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
