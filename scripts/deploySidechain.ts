@@ -109,7 +109,7 @@ export interface CanonicalPhase4Deployed {
 export type CanonicalPhaseDeployed = CanonicalPhase1Deployed &
     CanonicalPhase2Deployed &
     CanonicalPhase3Deployed &
-    CanonicalPhase4Deployed;
+    CanonicalPhase4Deployed & { auraDistributor: AuraDistributor };
 
 interface Factories {
     rewardFactory: RewardFactory;

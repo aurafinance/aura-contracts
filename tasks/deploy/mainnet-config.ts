@@ -75,6 +75,7 @@ import {
     CrvDepositorWrapperSwapper__factory,
     AuraLockerModule__factory,
     GaugeVoterModule__factory,
+    AuraDistributor__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -82,6 +83,7 @@ import { ONE_WEEK, ZERO_ADDRESS, ZERO_KEY } from "../../test-utils/constants";
 import { CanonicalPhaseDeployed } from "../../scripts/deploySidechain";
 import { parseEther } from "ethers/lib/utils";
 import { chainIds } from "../../tasks/utils";
+import { Provider } from "@ethersproject/providers";
 
 const addresses: ExtSystemConfig = {
     token: "0xba100000625a3754423978a60c9317c58a424e3D",
@@ -434,20 +436,21 @@ export interface AuraBalVaultDeployed {
     auraRewards: VirtualBalanceRewardPool;
 }
 
-const getAuraBalVault = async (deployer: Signer): Promise<AuraBalVaultDeployed> => ({
+const getAuraBalVault = async (deployer: Signer | Provider): Promise<AuraBalVaultDeployed> => ({
     vault: AuraBalVault__factory.connect("0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6", deployer),
     strategy: AuraBalStrategy__factory.connect("0x7372EcE4C18bEABc19981A53b557be90dcBd2b66", deployer),
     feeTokenHandler: UniswapRouterHandler__factory.connect("0x2C2ae4c9f6d3aA9069a5779838F06CAE52Ea76EC", deployer),
     auraRewards: VirtualBalanceRewardPool__factory.connect("0xAc16927429c5c7Af63dD75BC9d8a58c63FfD0147", deployer),
 });
 
-const getSidechain = (deployer: Signer): CanonicalPhaseDeployed => ({
+const getSidechain = (deployer: Signer | Provider): CanonicalPhaseDeployed => ({
     auraProxyOFT: AuraProxyOFT__factory.connect("0xB401f0cff9F05d10699c0e2c88a81dD923c1FFFf", deployer),
     l1Coordinator: L1Coordinator__factory.connect("0xaA54f3b282805822419265208e669d12372a3811", deployer),
     auraBalProxyOFT: AuraBalProxyOFT__factory.connect("0xdF9080B6BfE4630a97A0655C0016E0e9B43a7C68", deployer),
     gaugeVoteRewards: GaugeVoteRewards__factory.connect("0x26094f9A6a498c1FCCd8Ff65829F55FB8BD72A4E", deployer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xD3a5b62A89e3F5cC61e29f5b7549C83564F998F1", deployer),
     l1PoolManagerProxy: L1PoolManagerProxy__factory.connect("0x54F2DEc216DFFB9174eDb0d53910bADA5227A14d", deployer),
+    auraDistributor: AuraDistributor__factory.connect("0x96D15D08538A17A03B0210FD1626D5f42bdba9a4", deployer),
 });
 
 export const getCanonicalView = (signer: Signer) => ({
@@ -472,7 +475,7 @@ export const getPostPhases = (signer: Signer) => ({
     ),
 });
 
-const getSafeModules = (signer: Signer) => ({
+const getSafeModules = (signer: Signer | Provider) => ({
     extraRewardStashModule: ExtraRewardStashModule__factory.connect(
         "0x48e529218743E41F6De5B7E8D552E8173707cE81",
         signer,
