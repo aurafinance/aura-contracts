@@ -1,9 +1,9 @@
 import axios from "axios";
-import { task } from "hardhat/config";
+import { task, types } from "hardhat/config";
 import { BaseContract } from "ethers";
 import { JsonRpcProvider } from "@ethersproject/providers";
 
-import { BridgeDelegateSender__factory, SidechainConfig } from "../../types";
+import { BridgeDelegateSender__factory, SidechainConfig, SidechainPhaseDeployed } from "../../types";
 import { config as base } from "../deploy/base-config";
 import { config as zkevm } from "../deploy/zkevm-config";
 import { config as gnosis } from "../deploy/gnosis-config";
@@ -14,6 +14,14 @@ import { config as optimism } from "../deploy/optimism-config";
 import { config as fraxtal } from "../deploy/fraxtal-config";
 import { chainIds } from "../utils";
 import { blockExplorer, blockExplorerApi, supportedChains, SupportedChains } from "../utils/etherscanApi";
+import { compareAddresses } from "../snapshot/utils";
+
+type CheckOptions = {
+    ownership: boolean;
+    keeper: boolean;
+    verified: boolean;
+    tagged: boolean;
+};
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -71,14 +79,105 @@ const providers: Record<SupportedChains, JsonRpcProvider> = {
     [chainIds.fraxtal]: new JsonRpcProvider(process.env.FRAXTAL_NODE_URL, chainIds.fraxtal),
 };
 
-async function checkChain(chainId: SupportedChains) {
+const isOwnable = (contract: BaseContract) => "owner" in contract || "operator" in contract;
+const isKeeperRole = (contract: BaseContract) => "authorizedKeepers" in contract || "authorizedHarvesters" in contract;
+async function setTimeoutForChain(chainId: number) {
+    if (chainNames[chainId] === "gnosis") {
+        // Avoid Too many queued requests error
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    } else {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+}
+
+async function checkContractTagging(chainId: number, contract: BaseContract) {
+    const response2 = await axios.get(`https://${blockExplorer[chainId]}/address/${contract.address}`, {
+        responseType: "document",
+        headers: {
+            // faking browser user agent: some explorers prevent scraping by checking user agent
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+        },
+    });
+    const result2 = response2.data as string;
+    if (result2.includes("https://aura.finance")) {
+        console.log(_("\t\t✅ tagged on block explorer")(ok));
+    } else {
+        console.log(_("\t\t❌ not tagged on block explorer")(error));
+    }
+}
+
+async function checkContractVerification(chainId: number, contract: BaseContract) {
+    const response = await axios.get(
+        `https://${blockExplorerApi[chainId]}/api?module=contract&action=getabi&address=${contract.address}`,
+    );
+    const result = response.data;
+    if (
+        result.result === "Max rate limit reached, please use API Key for higher rate limit" ||
+        response.status !== 200
+    ) {
+        console.log(_("\t\t• unable to check verification status, rate limit reached")(warn));
+    } else if (result.result === "Contract source code not verified") {
+        console.log(_("\t\t❌ not verified on block explorer")(error));
+    } else {
+        console.log(_("\t\t✅ verified on block explorer")(ok));
+    }
+}
+
+async function checkContractOwnership(
+    contract: BaseContract,
+    multisig: string,
+    contracts: [string, BaseContract][],
+    sideChain: SidechainPhaseDeployed,
+) {
+    const ownerProperty = "owner" in contract ? "owner" : "operator";
+    try {
+        const owner = await (await contract[ownerProperty]()).toLowerCase();
+        // const owner = await (contract as any)[ownerProperty]().then((o: string) => o.toLowerCase());
+
+        const isMultisig = owner === multisig;
+        const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
+        if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
+        else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
+        else if (contract.address === sideChain.keeperMulticall3.address) {
+            console.log(_(`\t\t✅ owned by ${owner}`)(ok));
+        }
+    } catch (error) {
+        console.log(_(`\t\t• unable to get owner ${ownerProperty}`)(warn));
+        console.error(error);
+    }
+}
+async function checkContractKeeperRole(
+    contract: BaseContract,
+    authorizedKeeper: string,
+    sideChain: SidechainPhaseDeployed,
+) {
+    // Get contract name
+    const dedicatedMsgSender = "0x9b8e2E8892ea40A8D1167bbBa2F221D68060BFeF";
+    const isKeeperMulticall = compareAddresses(contract.address, sideChain.keeperMulticall3.address);
+    const authorizedKeeperAddress = isKeeperMulticall ? dedicatedMsgSender : authorizedKeeper;
+    const keeperProperty = "authorizedKeepers" in contract ? "authorizedKeepers" : "authorizedHarvesters";
+    try {
+        if (!authorizedKeeper) console.log(_(`\t\t❌ keeper not configured`)(error));
+
+        // const isAuthorizedKeeper = await (contract[keeperProperty](authorizedKeeper));
+        const isAuthorizedKeeper = await await contract[keeperProperty](authorizedKeeperAddress);
+
+        if (isAuthorizedKeeper) console.log(_(`\t\t✅ keeper authorized ${authorizedKeeperAddress}`)(ok));
+        else
+            console.log(_(`\t\t❌ keeper not authorized ${authorizedKeeperAddress} ${authorizedKeeperAddress}`)(error));
+    } catch (error) {
+        console.log(_(`\t\t• unable to get keeper ${keeperProperty}`)(warn));
+        console.error(error);
+    }
+}
+
+async function checkChain(chainId: SupportedChains, options: CheckOptions) {
     console.log(`\n\n${chainNames[chainId]}`);
 
     // initialize provider and needed values
     const provider = providers[chainId];
     const config = chainConfigs[chainId];
     const multisig = config.multisigs.daoMultisig.toLowerCase();
-    // const multiCall = multiCalls[chainId];
     const sideChain = config.getSidechain(provider);
     const view = config.getView(provider);
     const bridging = config.bridging;
@@ -94,83 +193,69 @@ async function checkChain(chainId: SupportedChains) {
 
     // main loop, for each contracts
     for (const [name, contract] of contracts) {
-        // checking if the contract is deployed, i.e. address is not 0x00...00
-        if (contract.address === ZERO_ADDRESS) {
-            console.log(`\t• ${name} ${_("not deployed")(warn)}`);
-            continue;
-        }
-
-        // checking the ownership
-        console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
-        const owned = "owner" in contract || "operator" in contract;
-        if (owned && contract.address) {
-            try {
-                const ownerFn = "owner" in contract ? "owner" : "operator";
-                const owner = await (contract as any)[ownerFn]().then((o: string) => o.toLowerCase());
-                const isMultisig = owner === multisig;
-                const ownerContract = contracts.find(([, c]) => c.address.toLowerCase() === owner);
-                if (isMultisig) console.log(_("\t\t✅ owned by multisig")(ok));
-                else if (ownerContract) console.log(_(`\t\t✅ owned by ${ownerContract[0]}`)(ok));
-                else if (contract.address === sideChain.keeperMulticall3.address)
-                    console.log(_(`\t\t✅ owned by ${owner}`)(ok));
-                else console.log(_(`\t\t❌ owner: ${owner}`)(error));
-            } catch {
-                console.log(_("\t\t• unable to get owner")(warn));
+        try {
+            // checking if the contract is deployed, i.e. address is not 0x00...00
+            if (contract.address === ZERO_ADDRESS) {
+                console.log(`\t• ${name} ${_("not deployed")(warn)}`);
+                continue;
             }
-        } else {
-            console.log(_("\t\t• not owned")(gray));
-        }
 
-        // For L2Coordinator, we must check that l2Coordinator.bridgeDelegate() is not 0x00...00
-        if (contract.address === sideChain.l2Coordinator.address) {
-            const bridgeDelegate = await sideChain.l2Coordinator.bridgeDelegate();
-            if (bridgeDelegate === ZERO_ADDRESS) {
-                console.log(_("\t\t❌ bridgeDelegate is not set")(error));
+            // checking the ownership
+            console.log(`\t• ${name} ${_(`(${contract.address})`)(gray)}`);
+            const owned = isOwnable(contract);
+            if (owned && contract.address && options.ownership) {
+                await checkContractOwnership(contract, multisig, contracts, sideChain);
             } else {
-                console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+                console.log(_("\t\t• not owned")(gray));
             }
-        }
 
-        // checking the verification status on block explorer
-        const response = await axios.get(
-            `https://${blockExplorerApi[chainId]}/api?module=contract&action=getabi&address=${contract.address}`,
-        );
-        const result = response.data;
-        if (
-            result.result === "Max rate limit reached, please use API Key for higher rate limit" ||
-            response.status !== 200
-        ) {
-            console.log(_("\t\t• unable to check verification status, rate limit reached")(warn));
-        } else if (result.result === "Contract source code not verified") {
-            console.log(_("\t\t❌ not verified on block explorer")(error));
-        } else {
-            console.log(_("\t\t✅ verified on block explorer")(ok));
-        }
+            if (isKeeperRole(contract) && contract.address && options.keeper) {
+                await checkContractKeeperRole(contract, config.multisigs.defender?.toLowerCase(), sideChain);
+            }
 
-        // checking contract tag on block explorer
-        const response2 = await axios.get(`https://${blockExplorer[chainId]}/address/${contract.address}`, {
-            responseType: "document",
-            headers: {
-                // faking browser user agent: some explorers prevent scraping by checking user agent
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
-            },
-        });
-        const result2 = response2.data as string;
-        if (result2.includes("https://aura.finance")) {
-            console.log(_("\t\t✅ tagged on block explorer")(ok));
-        } else {
-            console.log(_("\t\t❌ not tagged on block explorer")(error));
-        }
+            // For L2Coordinator, we must check that l2Coordinator.bridgeDelegate() is not 0x00...00
+            if (contract.address === sideChain.l2Coordinator.address) {
+                const bridgeDelegate = await sideChain.l2Coordinator.bridgeDelegate();
+                if (bridgeDelegate === ZERO_ADDRESS) {
+                    console.log(_("\t\t❌ bridgeDelegate is not set")(error));
+                } else {
+                    console.log(_("\t\t✅ bridgeDelegate is set")(ok));
+                }
+            }
 
-        await new Promise(resolve => setTimeout(resolve, 5_000)); // sleep 5 seconds to avoid being rate limited
+            // checking the verification status on block explorer
+            if (options.verified) {
+                await checkContractVerification(chainId, contract);
+                await setTimeoutForChain(chainId);
+            }
+            // checking contract tag on block explorer
+            if (options.tagged) {
+                await checkContractTagging(chainId, contract);
+                await setTimeoutForChain(chainId);
+            }
+        } catch {
+            console.error(`Error checking ${chainNames[chainId]} ${name}`);
+            await new Promise(resolve => setTimeout(resolve, 5_000)); // sleep 5 seconds to avoid being rate limited
+        }
     }
 }
 
 // npx hardhat --config tasks.config.ts contract-status
-task("contract-status").setAction(async () => {
-    for (const chainId of supportedChains) {
-        if (chainIds.mainnet === chainId) continue;
-        await checkChain(chainId);
-    }
-    console.log("\n");
-});
+task("contract-status")
+    .addOptionalParam("ownership", "Check ownership status", true, types.boolean)
+    .addOptionalParam("keeper", "Check authorized keeper status", true, types.boolean)
+    .addOptionalParam("verified", "Check verified status", false, types.boolean)
+    .addOptionalParam("tagged", "Check tagged status", false, types.boolean)
+    .setAction(async tskArgs => {
+        const options: CheckOptions = {
+            ownership: tskArgs.ownership,
+            keeper: tskArgs.keeper,
+            verified: tskArgs.verified,
+            tagged: tskArgs.tagged,
+        };
+        for (const chainId of supportedChains) {
+            if (chainIds.mainnet === chainId) continue;
+            await checkChain(chainId, options);
+        }
+        console.log("\n");
+    });

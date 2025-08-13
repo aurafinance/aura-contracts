@@ -37,7 +37,7 @@ import { sidechainNaming } from "./sidechain-naming";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
     pauseGuardian: "0xD86CEB76e9430D3bDE90ded79c82Ae62bc66d68b",
-    defender: "0xFC3F4e28D914dA71447d94829C48b1248c7C0b46",
+    defender: "0x5C97f09506d60B90a817EB547ea4F03Ae990E798",
 };
 
 const extConfig: ExtSidechainConfig = {

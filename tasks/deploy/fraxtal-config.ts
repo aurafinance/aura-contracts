@@ -37,7 +37,7 @@ import { Provider } from "@ethersproject/providers";
 const multisigs: SidechainMultisigConfig = {
     daoMultisig: "0x49Bd2Af2d8CF5D607c9580446A1373F55e7BB07f",
     pauseGuardian: "0x49Bd2Af2d8CF5D607c9580446A1373F55e7BB07f",
-    defender: "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4",
+    defender: "0x5a739082832Ff535413ceBFb2468b8d6B9F22C68",
 };
 
 const extConfig: ExtSidechainConfig = {
