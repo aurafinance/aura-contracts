@@ -20,8 +20,18 @@ function evaluateExpiredLocks(
     let hasExpiredLocks = false;
     let relockAmount = BN.from(0);
     const len = lockedBalances.lockData.length;
+    if (lockedBalances.unlockable.gt(0)) {
+        // console.log(`Checking at ${now} lock unlockable ${lockedBalances.unlockable}`);
+        return { hasExpiredLocks: true, relockAmount: lockedBalances.unlockable };
+    }
+
     for (let i = 0; i < len; i++) {
         const relockTime = BN.from(lockedBalances.lockData[i].unlockTime).sub(ONE_WEEK);
+        // console.log(
+        //     `Checking at ${now} lock ${i}: unlockTime ${
+        //         lockedBalances.lockData[i].unlockTime
+        //     } relockTime ${relockTime} eval ${now.gt(relockTime)}`,
+        // );
         if (now.gt(relockTime)) {
             hasExpiredLocks = true;
             relockAmount = relockAmount.add(lockedBalances.lockData[i].amount);
@@ -88,6 +98,13 @@ describe("AuraLockerModule", () => {
             expect(expectedLockedBalances.unlockable, "unlockable ").to.be.eq(lockedBalances.unlockable);
             expect(expectedLockedBalances.locked, "locked ").to.be.eq(lockedBalances.locked);
         });
+        it("processExpiredLocks fails if there is nothing to lock", async () => {
+            const hasExpiredLocks = await auraLockerModule.hasExpiredLocks();
+            expect(hasExpiredLocks, "hasExpiredLocks").to.be.eq(false);
+
+            const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
+            await expect(auraLockerModule.connect(keeper).processExpiredLocks()).to.be.revertedWith("NothingToLock");
+        });
 
         it("hasExpiredLocks", async () => {
             //  first relock should happens on 20 August 2025
@@ -103,23 +120,43 @@ describe("AuraLockerModule", () => {
             expect(relockAmount, "relockAmount").to.be.gt(ZERO);
         });
 
-        it("processExpiredLocks fails if there is nothing to lock", async () => {
-            const hasExpiredLocks = await auraLockerModule.hasExpiredLocks();
-            expect(hasExpiredLocks, "hasExpiredLocks").to.be.eq(false);
-
-            const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
-            await expect(auraLockerModule.connect(keeper).processExpiredLocks()).to.be.revertedWith("NothingToLock");
-        });
-
-        it("only keeper can execute processExpiredLocks", async () => {
+        it("only keeper can execute processExpiredLocks 1 week before expiration", async () => {
             const auraLocker = contracts.cvxLocker;
 
             const now = await getTimestamp();
+
+            expect(await auraLockerModule.hasExpiredLocks(), "hasExpiredLocks").to.be.eq(true);
+
+            const lockedBalances = await auraLockerModule.lockedBalances();
+            expect(lockedBalances.unlockable, "unlockable").to.be.eq(ZERO);
+
+            const { relockAmount } = evaluateExpiredLocks(lockedBalances, now);
+
+            const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
+            const tx = await auraLockerModule.connect(keeper).processExpiredLocks();
+
+            await expect(tx)
+                .emit(auraLocker, "Withdrawn")
+                .withArgs(config.multisigs.treasuryMultisig, relockAmount, true);
+            await expect(tx)
+                .emit(auraLocker, "Staked")
+                .withArgs(config.multisigs.treasuryMultisig, relockAmount, relockAmount);
+        });
+        it("only keeper can execute processExpiredLocks after expiration", async () => {
+            const relockTime = new Date("2025-10-09T02:00:00Z").getTime() / 1000;
+
+            await increaseTimeTo(relockTime);
+
+            const auraLocker = contracts.cvxLocker;
+
+            const now = await getTimestamp();
+
             expect(await auraLockerModule.hasExpiredLocks(), "hasExpiredLocks").to.be.eq(true);
 
             const lockedBalances = await auraLockerModule.lockedBalances();
 
             const { relockAmount } = evaluateExpiredLocks(lockedBalances, now);
+            expect(lockedBalances.unlockable, "unlockable").to.be.gt(ZERO);
 
             const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
             const tx = await auraLockerModule.connect(keeper).processExpiredLocks();

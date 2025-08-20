@@ -49,13 +49,20 @@ contract AuraLockerModule is Module, KeeperRole {
     /// @notice Check if AURA holding can be re-locked, this can be done 1 week before unlocked time.
     /// @return requiresLocking True if there is a need to lock AURA tokens
     function hasExpiredLocks() external view returns (bool requiresLocking) {
-        (, , , AuraLocker.LockedBalance[] memory lockData) = this.lockedBalances();
-        uint256 len = lockData.length;
-        uint256 timestamp = block.timestamp;
-        for (uint256 i = 0; i < len; i++) {
-            if (timestamp >= lockData[i].unlockTime - 1 weeks) {
-                requiresLocking = true;
-                break;
+        (, uint256 unlockable, , AuraLocker.LockedBalance[] memory lockData) = this.lockedBalances();
+
+        // If there are already expired locks
+        if (unlockable > 0) {
+            requiresLocking = true;
+        } else {
+            // Check for any locks that will expire soon to avoid locking gaps.
+            uint256 len = lockData.length;
+            uint256 timestamp = block.timestamp;
+            for (uint256 i = 0; i < len; i++) {
+                if (timestamp >= lockData[i].unlockTime - 1 weeks) {
+                    requiresLocking = true;
+                    break;
+                }
             }
         }
     }
