@@ -4,8 +4,31 @@ import hre, { network } from "hardhat";
 import { deployAuraLockerModule } from "../../scripts/deployPeripheral";
 import { Phase2Deployed } from "../../scripts/deploySystem";
 import { config } from "../../tasks/deploy/mainnet-config";
-import { impersonate, increaseTime, increaseTimeTo, ONE_DAY } from "../../test-utils";
+import { BN, getTimestamp, impersonate, increaseTimeTo, ONE_WEEK, ZERO } from "../../test-utils";
 import { AuraLockerModule, ISafe, ISafe__factory } from "../../types";
+import { LockedBalanceStructOutput } from "../../types/generated/AuraLockerModule";
+
+function evaluateExpiredLocks(
+    lockedBalances: [BN, BN, BN, LockedBalanceStructOutput[]] & {
+        total: BN;
+        unlockable: BN;
+        locked: BN;
+        lockData: LockedBalanceStructOutput[];
+    },
+    now: BN,
+) {
+    let hasExpiredLocks = false;
+    let relockAmount = BN.from(0);
+    const len = lockedBalances.lockData.length;
+    for (let i = 0; i < len; i++) {
+        const relockTime = BN.from(lockedBalances.lockData[i].unlockTime).sub(ONE_WEEK);
+        if (now.gt(relockTime)) {
+            hasExpiredLocks = true;
+            relockAmount = relockAmount.add(lockedBalances.lockData[i].amount);
+        }
+    }
+    return { hasExpiredLocks, relockAmount };
+}
 
 describe("AuraLockerModule", () => {
     let treasuryMultisig: Signer;
@@ -22,7 +45,7 @@ describe("AuraLockerModule", () => {
                 {
                     forking: {
                         jsonRpcUrl: process.env.NODE_URL,
-                        blockNumber: 22167715,
+                        blockNumber: 23100000, // Aug-09-2025
                     },
                 },
             ],
@@ -67,14 +90,17 @@ describe("AuraLockerModule", () => {
         });
 
         it("hasExpiredLocks", async () => {
-            const lockedBalances = await auraLockerModule.lockedBalances();
-            const hasExpiredLocks = await auraLockerModule.hasExpiredLocks();
+            //  first relock should happens on 20 August 2025
+            const relockTime = new Date("2025-08-20T16:00:00Z").getTime() / 1000;
 
-            if (lockedBalances.unlockable.gt(0)) {
-                expect(hasExpiredLocks, "hasExpiredLocks").to.be.eq(true);
-            } else {
-                expect(hasExpiredLocks, "hasExpiredLocks").to.be.eq(false);
-            }
+            await increaseTimeTo(relockTime);
+
+            const lockedBalances = await auraLockerModule.lockedBalances();
+            const canRelockExpiredLocks = await auraLockerModule.hasExpiredLocks();
+            const now = await getTimestamp();
+            const { hasExpiredLocks, relockAmount } = evaluateExpiredLocks(lockedBalances, now);
+            expect(hasExpiredLocks, "canRelockExpiredLocks").to.be.eq(canRelockExpiredLocks);
+            expect(relockAmount, "relockAmount").to.be.gt(ZERO);
         });
 
         it("processExpiredLocks fails if there is nothing to lock", async () => {
@@ -86,28 +112,24 @@ describe("AuraLockerModule", () => {
         });
 
         it("only keeper can execute processExpiredLocks", async () => {
-            //  first relock should happens on 05 Jun 2025
             const auraLocker = contracts.cvxLocker;
-            const relockTime = new Date("2025-06-04T00:00:00Z").getTime() / 1000;
 
-            await increaseTimeTo(relockTime);
-            expect(await auraLockerModule.hasExpiredLocks(), "hasExpiredLocks").to.be.eq(false);
-
-            //  Increase one day, when the relock time is reached, the hasExpiredLocks should be true
-            await increaseTime(ONE_DAY);
+            const now = await getTimestamp();
             expect(await auraLockerModule.hasExpiredLocks(), "hasExpiredLocks").to.be.eq(true);
 
-            const balances = await auraLockerModule.lockedBalances();
+            const lockedBalances = await auraLockerModule.lockedBalances();
+
+            const { relockAmount } = evaluateExpiredLocks(lockedBalances, now);
 
             const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
             const tx = await auraLockerModule.connect(keeper).processExpiredLocks();
 
             await expect(tx)
                 .emit(auraLocker, "Withdrawn")
-                .withArgs(config.multisigs.treasuryMultisig, balances.unlockable, true);
+                .withArgs(config.multisigs.treasuryMultisig, relockAmount, true);
             await expect(tx)
                 .emit(auraLocker, "Staked")
-                .withArgs(config.multisigs.treasuryMultisig, balances.unlockable, balances.unlockable);
+                .withArgs(config.multisigs.treasuryMultisig, relockAmount, relockAmount);
         });
     });
 });

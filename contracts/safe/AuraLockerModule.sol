@@ -46,11 +46,18 @@ contract AuraLockerModule is Module, KeeperRole {
         return auraLocker.lockedBalances(address(safeWallet));
     }
 
-    /// @notice Check if AURA holding are unlocked
+    /// @notice Check if AURA holding can be re-locked, this can be done 1 week before unlocked time.
     /// @return requiresLocking True if there is a need to lock AURA tokens
     function hasExpiredLocks() external view returns (bool requiresLocking) {
-        (, uint256 unlockable, , ) = this.lockedBalances();
-        requiresLocking = unlockable > 0;
+        (, , , AuraLocker.LockedBalance[] memory lockData) = this.lockedBalances();
+        uint256 len = lockData.length;
+        uint256 timestamp = block.timestamp;
+        for (uint256 i = 0; i < len; i++) {
+            if (timestamp >= lockData[i].unlockTime - 1 weeks) {
+                requiresLocking = true;
+                break;
+            }
+        }
     }
 
     /// @notice Re-lock expired AURA tokens
