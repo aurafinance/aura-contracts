@@ -21,17 +21,11 @@ function evaluateExpiredLocks(
     let relockAmount = BN.from(0);
     const len = lockedBalances.lockData.length;
     if (lockedBalances.unlockable.gt(0)) {
-        // console.log(`Checking at ${now} lock unlockable ${lockedBalances.unlockable}`);
         return { hasExpiredLocks: true, relockAmount: lockedBalances.unlockable };
     }
 
     for (let i = 0; i < len; i++) {
         const relockTime = BN.from(lockedBalances.lockData[i].unlockTime).sub(ONE_WEEK);
-        // console.log(
-        //     `Checking at ${now} lock ${i}: unlockTime ${
-        //         lockedBalances.lockData[i].unlockTime
-        //     } relockTime ${relockTime} eval ${now.gt(relockTime)}`,
-        // );
         if (now.gt(relockTime)) {
             hasExpiredLocks = true;
             relockAmount = relockAmount.add(lockedBalances.lockData[i].amount);

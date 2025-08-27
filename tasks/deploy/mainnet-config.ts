@@ -488,7 +488,7 @@ const getSafeModules = (signer: Signer | Provider) => ({
         "0xE2565158E9984FD736002F58e2777260F2dD0F4b",
         signer,
     ),
-    auraLockerModule: AuraLockerModule__factory.connect("0xbcfd07b87c27656031A1b25FFFEDe7F9b955009a", signer),
+    auraLockerModule: AuraLockerModule__factory.connect("0x568f3DF1b63Af874E0F981831d0C4a6186C0DD73", signer),
     gaugeVoterModule: GaugeVoterModule__factory.connect("0x2b5Ac82C5e934407514768CE3e399d9c18381621", signer),
 });
 
