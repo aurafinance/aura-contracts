@@ -85,15 +85,15 @@ const providers: Record<SupportedChains, JsonRpcProvider> = {
     [chainIds.zkevm]: new JsonRpcProvider(process.env.ZKEVM_NODE_URL, chainIds.zkevm),
     [chainIds.avalanche]: new JsonRpcProvider(process.env.AVALANCHE_NODE_URL, chainIds.avalanche),
     [chainIds.fraxtal]: new JsonRpcProvider(process.env.FRAXTAL_NODE_URL, chainIds.fraxtal),
-    [chainIds.mainnet]: new JsonRpcProvider(process.env.MAINNET_NODE_URL, chainIds.mainnet),
+    [chainIds.mainnet]: new JsonRpcProvider(process.env.NODE_URL, chainIds.mainnet),
 };
 
 const isOwnable = (contract: BaseContract) => "owner" in contract || "operator" in contract;
-const isKeeperRole = (contract: BaseContract) =>
-    "authorizedKeepers" in contract ||
-    "authorizedHarvesters" in contract ||
-    "distributors" in contract ||
-    "distributor" in contract;
+
+const KEEPER_ROLE_PROPERTIES = ["authorizedKeepers", "authorizedHarvesters", "distributors", "distributor"];
+
+const isKeeperRole = (contract: BaseContract) => KEEPER_ROLE_PROPERTIES.some(prop => prop in contract);
+
 async function setTimeoutForChain(chainId: number) {
     if (chainNames[chainId] === "gnosis") {
         // Avoid Too many queued requests error
@@ -165,12 +165,15 @@ async function checkContractKeeperRole(
     authorizedKeeper: string,
     keeperMulticall3Address: string,
 ) {
-    // Get contract name
+    // Keepers addresses the same in all chains.
+    // dedicatedMsgSender = Gelato sender
+    // devKeepers = Whitelisted core contributors.
     const dedicatedMsgSender = "0x9b8e2E8892ea40A8D1167bbBa2F221D68060BFeF";
+    const devKeepers = ["0x30019eB135532bDdF2Da17659101cc000C73c8e4", "0x5452E6ABbC7bCB9e0907A3f8f24434CbaF438bA4"];
+
     const isKeeperMulticall = compareAddresses(contract.address, keeperMulticall3Address);
     const authorizedKeeperAddress = isKeeperMulticall ? dedicatedMsgSender : authorizedKeeper;
-    const keeperProperties = ["authorizedKeepers", "authorizedHarvesters", "distributors", "distributor"];
-    const keeperProperty = keeperProperties.find(prop => prop in contract);
+    const keeperProperty = KEEPER_ROLE_PROPERTIES.find(prop => prop in contract);
 
     if (!keeperProperty) {
         console.log(_("\t\t• no keeper role property found")(warn));
@@ -189,10 +192,15 @@ async function checkContractKeeperRole(
             return;
         }
 
-        const isAuthorizedKeeper = await await contract[keeperProperty](authorizedKeeperAddress);
-
-        if (isAuthorizedKeeper) console.log(_(`\t\t✅ keeper authorized ${authorizedKeeperAddress}`)(ok));
-        else console.log(_(`\t\t❌ keeper not authorized ${authorizedKeeperAddress}`)(error));
+        const allKeepers = compareAddresses(contract.address, keeperMulticall3Address)
+            ? [authorizedKeeperAddress, ...devKeepers]
+            : [authorizedKeeperAddress];
+        // for each dev keeper
+        for (const keeperAddress of allKeepers) {
+            const isAuthorizedKeeper = await await contract[keeperProperty](keeperAddress);
+            if (isAuthorizedKeeper) console.log(_(`\t\t✅ keeper authorized ${keeperAddress}`)(ok));
+            else console.log(_(`\t\t❌ keeper not authorized ${keeperAddress}`)(error));
+        }
     } catch (error) {
         console.log(_(`\t\t• unable to get keeper ${keeperProperty}`)(warn));
         console.error(error);
