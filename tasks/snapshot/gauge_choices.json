@@ -70,6 +70,7 @@
     { "address": "0xf2c203a264dc05942cfbaea16f712b2106c2fb02", "label": "Gyroe wstETH/ynETH" },
     { "address": "0x79ef6103a513951a3b25743db509e267685726b7", "label": "MetaStable rETH/WETH" },
     { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted PAXG/USDC/WBTC" },
+    { "address": "0x6ba97c44aecf7cc15b05947c172a6d797ce96693", "label": "Reclamm AAVE/WETH" },
     { "address": "0x6c0a4550c575c917435f228d36939125a437a98b", "label": "Stable Aave Core pyUSD/Aave Prime GHO" },
     { "address": "0xac681deb529b49b5a563fbf0dcccb95d5bb7cdb0", "label": "Stable Aave Prime GHO/iUSD" },
     { "address": "0x52d28dff7759ca78978954ebabf87481bd5cf8f0", "label": "Stable Aave Prime GHO/USDf" },
@@ -134,6 +135,7 @@
     { "address": "0x38f1e186cc7609d236aa2161e2ca622b5bc4ef8b", "label": "a-Gyroe WETH/WOETH" },
     { "address": "0x9e965252d1b294af358a232933a65bd30645c34c", "label": "a-Gyroe wstETH/GYD (0x9e)" },
     { "address": "0xc11442cdbe8901b36aeb7be7f3f95b6a8ade394e", "label": "a-Gyroe wstETH/GYD (0xc1)" },
+    { "address": "0x3c982431ffde3447a2086495631d1af27bd5686d", "label": "a-Reclamm AAVE/WETH" },
     { "address": "0x088040aa3e8fdf780829c07f8cc53fa8a8f07fa9", "label": "a-Stable eBTC/waArbWBTC" },
     { "address": "0x7f49d37d0da53a4899bc0ba916f59ec9d4e6d1e2", "label": "a-Stable EURe/waArbUSDCn" },
     { "address": "0x15c61f8bfab804d8efae45781843bb654f619f55", "label": "a-Stable fWETH/waArbwstETH" },
@@ -234,6 +236,7 @@
     { "address": "0xa7165e1e3defe55dada5c4289268d57faba6dad2", "label": "av-Stable esavUSD-3/eUSDt-3" },
     { "address": "0x5c13c3b72b031b6405046c319b2d840d3c1403c7", "label": "av-Stable ggAVAX/waAvaSAVAX/waAvaWAVAX" },
     { "address": "0x219b3a4a2d2351582277a87048995034ca7e9aef", "label": "av-Stable savUSD/sdeUSD/upAUSD" },
+    { "address": "0xf53b66d40d166eb8f6e33ba2cd4af35c81a4c6c2", "label": "av-Stable tAVAX/waAvaSAVAX" },
     { "address": "0xb2a8f0f477aae4d78ea78d85234233285c91bb08", "label": "av-Stable waAvaAUSD/waAvaUSDC/waAvaUSDT" },
     { "address": "0xd3ea1345352047bd039bac9d4177c883e06d449d", "label": "av-Stable waAvaGHO/waAvaUSDC/waAvaUSDT" }
 ]
