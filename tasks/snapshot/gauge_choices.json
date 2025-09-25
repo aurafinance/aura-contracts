@@ -205,6 +205,7 @@
     { "address": "0xfd151734ffc9a4a55c50fed4b66c15b06bbb390b", "label": "g-Stable waGnoWETH/waGnowstETH" },
     { "address": "0xab973781729714cf85849c00a015615997325985", "label": "z-Gyroe GYD/USDT" },
     { "address": "0x156cc29c8dfa80821ed240c3ca4ba85103e10f2b", "label": "b-50/50 tBTC/USDbC" },
+    { "address": "0x5faa5dbe07e4473819d22bb6f5d8179817305d71", "label": "b-70/30 FYNI/waBasUSDC" },
     { "address": "0x5b5bad6a124c5f45b4289908ba15ff0047928648", "label": "b-80/20 IMO/WETH" },
     { "address": "0xfcce9b5c1e8d56d9fc6dcbb706acc51dd03fe9f1", "label": "b-80/20 PRL/WETH" },
     { "address": "0x67313e858fb87cc4b30ad56b6b461d7450738950", "label": "b-ComposableStable axlBAL/BAL" },
