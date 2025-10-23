@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x15918ee2f2db77192f1e5227ce03b2fc455cb60f09627e74c76722e32c844908",
+        "title": "Gauge Weight for Week of 23rd October 2025",
+        "start": 1761184800,
+        "end": 1761616800,
+        "snapshot": 23639862
+    },
+    {
         "id": "0x159dc97c174bde704c452368b5eb75b04abc1e6ce2d3adf08d0185856a86437d",
         "title": "Gauge Weight for Week of 9th October 2025",
         "start": 1759975200,
