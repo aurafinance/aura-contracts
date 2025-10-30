@@ -76,6 +76,7 @@ import {
     AuraLockerModule__factory,
     GaugeVoterModule__factory,
     AuraDistributor__factory,
+    AuraMinterOwner__factory,
 } from "../../types/generated";
 import { Signer } from "ethers";
 import { simpleToExactAmount } from "../../test-utils/math";
@@ -427,6 +428,7 @@ const getPhase9 = async (deployer: Signer): Promise<Phase9Deployed> => ({
 
 const getAuraMining = async (deployer: Signer) => ({
     auraMining: AuraMining__factory.connect("0x744Be650cea753de1e69BF6BAd3c98490A855f52", deployer),
+    auraMinterOwner: AuraMinterOwner__factory.connect(ZERO_ADDRESS, deployer),
 });
 
 export interface AuraBalVaultDeployed {
