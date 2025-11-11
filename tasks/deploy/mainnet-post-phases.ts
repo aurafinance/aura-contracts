@@ -24,6 +24,8 @@ import { simpleToExactAmount } from "../../test-utils/math";
 import {
     AuraMining,
     AuraMining__factory,
+    AuraMinterOwner,
+    AuraMinterOwner__factory,
     BoosterHelper,
     BoosterHelper__factory,
     ChefForwarder__factory,
@@ -159,7 +161,22 @@ task("deploy:mainnet:auraMining").setAction(async function (_: TaskArguments, hr
     );
     console.log("update auraMining address to:", auraMining.address);
 });
+task("deploy:mainnet:auraMinterOwner").setAction(async function (_: TaskArguments, hre) {
+    const deployer = await getSigner(hre);
+    const { getPhase2, multisigs } = config;
 
+    const phase2: Phase2Deployed = await getPhase2(deployer);
+    const auraMinterOwner = await deployContract<AuraMinterOwner>(
+        hre,
+        new AuraMinterOwner__factory(deployer),
+        "AuraMinterOwner",
+        [phase2.minter.address, multisigs.daoMultisig],
+        {},
+        debug,
+        waitForBlocks,
+    );
+    console.log("update auraMinterOwner address to:", auraMinterOwner.address);
+});
 task("deploy:vault")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
