@@ -7,21 +7,17 @@ import { AuraMinter } from "./AuraMinter.sol";
 /**
  * @title   AuraMinterOwner
  * @notice  Wraps the AuraMinter mint function and protects from inflation with a cap
- *          of 3 million AURA per year for 3 years (9 million total cap).
+ *          of 3 million AURA per 52-week epoch.
  * @dev     This contract provides an additional layer of protection over the AuraMinter
- *          by implementing yearly minting caps and a total cap. Ownership initially
- *          owned by the DAO. The contract tracks epochs starting from when the
- *          AuraMinter's inflation protection time expires.
+ *          by implementing yearly minting caps. Ownership initially owned by the DAO.
+ *          The contract tracks epochs starting from when the AuraMinter's inflation
+ *          protection time expires.
  * @author  AuraFinance
  */
 contract AuraMinterOwner is Ownable {
     /// @notice The AuraMinter contract that this contract wraps
     /// @dev This contract calls the mint function on the AuraMinter
     AuraMinter public immutable auraMinter;
-
-    /// @notice Maximum total AURA that can be minted through this contract (9 million with 18 decimals)
-    /// @dev This represents the absolute cap across all epochs (3 years * 3M per year)
-    uint256 public constant MAX_TOTAL_CAP = 9_000_000 * 1e18;
 
     /// @notice Maximum AURA that can be minted per epoch/year (3 million with 18 decimals)
     /// @dev Each epoch allows up to 3 million AURA to be minted
@@ -34,6 +30,10 @@ contract AuraMinterOwner is Ownable {
     /// @notice Total amount of AURA minted through this contract across all epochs
     /// @dev Tracks cumulative minting to enforce MAX_TOTAL_CAP
     uint256 public totalMinted;
+
+    /// @notice Mapping of epoch number to total amount minted in that epoch
+    /// @dev Tracks per-epoch minting to enforce EPOCH_CAP per period (no carryover)
+    mapping(uint256 => uint256) public mintedByEpoch;
 
     /* -------------------------------------------------------------------
        Events 
@@ -80,8 +80,8 @@ contract AuraMinterOwner is Ownable {
     ------------------------------------------------------------------- */
 
     /**
-     * @notice Mints AURA tokens with epoch-based and total caps
-     * @dev Only the owner can mint. Enforces yearly epoch caps and total lifetime cap.
+     * @notice Mints AURA tokens with epoch-based caps only
+     * @dev Only the owner can mint. Enforces yearly epoch caps (no carryover).
      *      Minting is only allowed after the AuraMinter's inflation protection period ends.
      * @param _to Address to receive the minted tokens
      * @param _amount Amount of AURA tokens to mint (in wei, 18 decimals)
@@ -92,13 +92,13 @@ contract AuraMinterOwner is Ownable {
         require(block.timestamp >= auraMinter.inflationProtectionTime(), "Inflation protection active");
 
         uint256 currentEpoch = _getCurrentEpoch();
-        uint256 currentEpochCap = currentEpoch * EPOCH_CAP;
-        uint256 totalAfterMinted = totalMinted + _amount;
+        uint256 currentEpochMinted = mintedByEpoch[currentEpoch];
+        uint256 amountMintedAfter = currentEpochMinted + _amount;
 
-        require(totalAfterMinted <= currentEpochCap, "Exceeds epoch cap");
-        require(totalAfterMinted <= MAX_TOTAL_CAP, "Exceeds max cap");
+        require(amountMintedAfter <= EPOCH_CAP, "Exceeds epoch cap");
 
-        totalMinted = totalAfterMinted;
+        totalMinted += _amount;
+        mintedByEpoch[currentEpoch] = amountMintedAfter;
         auraMinter.mint(_to, _amount);
 
         emit AuraMinted(_to, _amount, currentEpoch);
@@ -110,17 +110,16 @@ contract AuraMinterOwner is Ownable {
 
     /**
      * @notice Returns the amount of AURA tokens that can currently be minted
-     * @dev Calculates mintable amount based on current epoch cap and total minted
-     * @return mintable The amount of AURA tokens that can still be minted
+     * @dev Calculates mintable amount based on current epoch cap only (no carryover, no total cap)
+     * @return mintable The amount of AURA tokens that can still be minted in current epoch
      */
     function getMintable() external view returns (uint256 mintable) {
-        uint256 currentEpochCap = _getCurrentEpoch() * EPOCH_CAP;
-        if (currentEpochCap == 0) {
+        uint256 currentEpoch = _getCurrentEpoch();
+        if (currentEpoch == 0) {
             mintable = 0;
-        } else if (currentEpochCap > MAX_TOTAL_CAP) {
-            mintable = MAX_TOTAL_CAP - totalMinted;
         } else {
-            mintable = currentEpochCap - totalMinted;
+            uint256 currentEpochMinted = mintedByEpoch[currentEpoch];
+            mintable = EPOCH_CAP - currentEpochMinted;
         }
     }
 

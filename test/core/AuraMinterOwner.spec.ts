@@ -27,7 +27,6 @@ describe("AuraMinterOwner", () => {
     let auraToken: AuraToken;
 
     const EPOCH_CAP = simpleToExactAmount(3_000_000); // 3M AURA
-    const MAX_TOTAL_CAP = simpleToExactAmount(9_000_000); // 9M AURA
     const EPOCH_DURATION = ONE_WEEK.mul(52); // 52 weeks
 
     let idSnapShot: number;
@@ -111,13 +110,11 @@ describe("AuraMinterOwner", () => {
             expect(await auraMinterOwner.auraMinter()).to.equal(auraMinter.address);
             expect(await auraMinterOwner.owner()).to.equal(daoAddress);
             expect(await auraMinterOwner.totalMinted()).to.equal(0);
-            expect(await auraMinterOwner.MAX_TOTAL_CAP()).to.equal(MAX_TOTAL_CAP);
             expect(await auraMinterOwner.EPOCH_CAP()).to.equal(EPOCH_CAP);
             expect(await auraMinterOwner.EPOCH_DURATION()).to.equal(EPOCH_DURATION);
         });
 
         it("should have correct constants", async () => {
-            expect(await auraMinterOwner.MAX_TOTAL_CAP()).to.equal(simpleToExactAmount(9_000_000));
             expect(await auraMinterOwner.EPOCH_CAP()).to.equal(simpleToExactAmount(3_000_000));
             expect(await auraMinterOwner.EPOCH_DURATION()).to.equal(ONE_WEEK.mul(52));
         });
@@ -230,33 +227,37 @@ describe("AuraMinterOwner", () => {
             await increaseTime(EPOCH_DURATION);
 
             const mintable = await auraMinterOwner.getMintable();
-            const totalMinted = await auraMinterOwner.totalMinted();
-            expect(mintable).to.equal(EPOCH_CAP.mul(2).sub(totalMinted)); // 6M total available
+            expect(mintable).to.equal(EPOCH_CAP); // 3M available per epoch (no carryover)
         });
 
-        it("should return max mintable when current epoch cap exceeds max total cap", async () => {
-            // Move to epoch 4 (would allow 12M total, but max is 9M)
+        it("should return epoch cap in future epochs (no total cap)", async () => {
+            // Move to epoch 4 (no total cap limit anymore)
             await increaseTime(EPOCH_DURATION.mul(3));
 
-            // Testing that mintable can be done after 3 years, but the max cap is still enforce
+            // Should be able to mint full epoch cap regardless of how many epochs have passed
             const mintable = await auraMinterOwner.getMintable();
-            const totalMinted = await auraMinterOwner.totalMinted();
-            expect(mintable, "mintable").to.equal(EPOCH_CAP.mul(3).sub(totalMinted)); // 9M max total available
+            expect(mintable, "mintable").to.equal(EPOCH_CAP);
         });
 
         it("should handle partial minting across epochs correctly", async () => {
-            // Mint 2M in epoch 1
+            // Try to mint more than epoch cap (should fail)
             const mintAmount = simpleToExactAmount(3_100_000);
             expect(mintAmount).to.be.gt(EPOCH_CAP);
-            // Even if the amount is gt than epoch cap it should be able to mint becuase previous epoch there was no mint.
-            await auraMinterOwner.connect(dao).mint(aliceAddress, mintAmount);
+
+            // Should not be able to mint more than epoch cap
+            await expect(auraMinterOwner.connect(dao).mint(aliceAddress, mintAmount)).to.be.revertedWith(
+                "Exceeds epoch cap",
+            );
+
+            // Mint 2M in epoch 1 instead
+            await auraMinterOwner.connect(dao).mint(aliceAddress, simpleToExactAmount(2_000_000));
 
             // Move to epoch 2
             await increaseTime(EPOCH_DURATION);
 
-            // Should be able to mint 4M more (6M total allowed - 2M already minted)
+            // Should be able to mint full 3M in epoch 2 (no carryover)
             const mintable = await auraMinterOwner.getMintable();
-            expect(mintable).to.equal(simpleToExactAmount(2_900_000));
+            expect(mintable).to.equal(EPOCH_CAP); // Full epoch cap available
         });
     });
 
@@ -358,7 +359,7 @@ describe("AuraMinterOwner", () => {
                 const currentTime = await getTimestamp();
                 await increaseTime(inflationProtectionTime.sub(currentTime).add(1));
             });
-            it("should allow minting up to max total cap", async () => {
+            it("should allow unlimited epochs with 3M per epoch", async () => {
                 // Mint in epoch 1
                 await auraMinterOwner.connect(dao).mint(aliceAddress, EPOCH_CAP);
 
@@ -376,12 +377,12 @@ describe("AuraMinterOwner", () => {
                     "Exceeds epoch cap",
                 );
 
-                expect(await auraMinterOwner.totalMinted()).to.equal(MAX_TOTAL_CAP);
+                expect(await auraMinterOwner.totalMinted()).to.equal(EPOCH_CAP.mul(3));
 
-                // Move to epoch 4
-                // should revert when exceeding max total cap
+                // Move to epoch 4 - should still allow minting (no total cap)
                 await increaseTime(EPOCH_DURATION);
-                await expect(auraMinterOwner.connect(dao).mint(aliceAddress, 1)).to.be.revertedWith("Exceeds max cap");
+                await auraMinterOwner.connect(dao).mint(aliceAddress, EPOCH_CAP);
+                expect(await auraMinterOwner.totalMinted()).to.equal(EPOCH_CAP.mul(4));
             });
         });
 
@@ -506,12 +507,12 @@ describe("AuraMinterOwner", () => {
             // Move to epoch 2
             await increaseTime(EPOCH_DURATION);
 
-            // Should be able to mint 4.5M more (6M total - 1.5M already minted)
+            // Should be able to mint full 3M in epoch 2 (no carryover)
             const mintable = await auraMinterOwner.getMintable();
-            expect(mintable).to.equal(simpleToExactAmount(4_500_000));
+            expect(mintable).to.equal(EPOCH_CAP);
 
-            await auraMinterOwner.connect(dao).mint(aliceAddress, simpleToExactAmount(4_500_000));
-            expect(await auraMinterOwner.totalMinted()).to.equal(simpleToExactAmount(6_000_000));
+            await auraMinterOwner.connect(dao).mint(aliceAddress, EPOCH_CAP);
+            expect(await auraMinterOwner.totalMinted()).to.equal(simpleToExactAmount(1_500_000).add(EPOCH_CAP));
         });
 
         it("should handle the transition from epoch 3 to 4 correctly", async () => {
@@ -527,11 +528,12 @@ describe("AuraMinterOwner", () => {
             // Move to epoch 4
             await increaseTime(EPOCH_DURATION);
 
-            // Should not be able to mint anything (would exceed MAX_TOTAL_CAP)
+            // Should be able to mint full epoch cap in epoch 4 (no total cap)
             const mintable = await auraMinterOwner.getMintable();
-            expect(mintable).to.equal(0);
+            expect(mintable).to.equal(EPOCH_CAP);
 
-            await expect(auraMinterOwner.connect(dao).mint(aliceAddress, 1)).to.be.revertedWith("Exceeds max cap");
+            await auraMinterOwner.connect(dao).mint(aliceAddress, EPOCH_CAP);
+            expect(await auraMinterOwner.totalMinted()).to.equal(EPOCH_CAP.mul(4));
         });
 
         it("should handle multiple small mints across epochs", async () => {
@@ -563,9 +565,9 @@ describe("AuraMinterOwner", () => {
             const futureEpoch = await auraMinterOwner.getCurrentEpoch();
             expect(futureEpoch).to.equal(10);
 
-            // Mintable should be 0 (epoch 10 * 3M = 30M > 9M max cap)
+            // Mintable should be 3M for current epoch (per-epoch limit, no carryover)
             const mintable = await auraMinterOwner.getMintable();
-            expect(mintable).to.equal(await auraMinterOwner.MAX_TOTAL_CAP());
+            expect(mintable).to.equal(EPOCH_CAP);
         });
     });
 });
