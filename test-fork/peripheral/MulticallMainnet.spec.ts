@@ -20,7 +20,7 @@ import {
     KeeperMulticall3,
 } from "../../types/generated";
 
-const ALCHEMY_API_KEY = process.env.NODE_URL;
+const RPC_URL = process.env.NODE_URL;
 
 describe("KeeperMulticall3 - Mainnet", () => {
     let deployer: Account;
@@ -40,7 +40,7 @@ describe("KeeperMulticall3 - Mainnet", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
+                        jsonRpcUrl: RPC_URL,
                         blockNumber: 17669300,
                     },
                 },

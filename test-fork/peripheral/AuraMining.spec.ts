@@ -10,7 +10,7 @@ import { Account } from "types/common";
 
 const EMISSIONS_MAX_SUPPLY = 50000000;
 const EMISSIONS_INIT_SUPPLY = 50000000;
-const ALCHEMY_API_KEY = process.env.NODE_URL;
+const RPC_URL = process.env.NODE_URL;
 
 describe("AuraMining", () => {
     let cvxMining: AuraMining;
@@ -25,7 +25,7 @@ describe("AuraMining", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
+                        jsonRpcUrl: RPC_URL,
                         blockNumber: 14932390,
                     },
                 },
