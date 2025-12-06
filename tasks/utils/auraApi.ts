@@ -13,16 +13,16 @@ export type GaugeRewardToken = {
     rewardData: [{ token: { id: string } }];
 };
 
-const SIDECHAIN_URI = "https://subgraph.satsuma-prod.com/36b05229a1f6/1xhub-ltd";
+const SUBGRAPH_URI = "https://api.subgraph.ormilabs.com/api/public/396b336b-4ed7-469f-a8f4-468e1e26e9a8/subgraphs";
 const subgraphUrls = {
-    [chainIds.mainnet]: `${SIDECHAIN_URI}/aura-finance-mainnet/api`,
-    [chainIds.arbitrum]: `${SIDECHAIN_URI}/aura-finance-arbitrum/api`,
-    [chainIds.gnosis]: `${SIDECHAIN_URI}/aura-finance-gnosis/api`,
-    [chainIds.optimism]: `${SIDECHAIN_URI}/aura-finance-optimism/api`,
-    [chainIds.polygon]: `${SIDECHAIN_URI}/aura-finance-polygon/api`,
-    [chainIds.base]: `${SIDECHAIN_URI}/aura-finance-base/api`,
-    [chainIds.zkevm]: `${SIDECHAIN_URI}/aura-finance-zkevm/api`,
-    [chainIds.avalanche]: `${SIDECHAIN_URI}/aura-finance-avalanche/api`,
+    [chainIds.mainnet]: `${SUBGRAPH_URI}/aura-finance-mainnet/v0.0.1/`,
+    [chainIds.arbitrum]: `${SUBGRAPH_URI}/aura-finance-arbitrum/v0.0.1/`,
+    [chainIds.gnosis]: "https://subgraph.satsuma-prod.com/36b05229a1f6/1xhub-ltd/aura-finance-gnosis/api",
+    [chainIds.optimism]: `${SUBGRAPH_URI}/aura-finance-optimism/v0.0.1/`,
+    [chainIds.polygon]: `${SUBGRAPH_URI}/aura-finance-polygon/v0.0.1/`,
+    [chainIds.base]: `${SUBGRAPH_URI}/aura-finance-base/v0.0.1/`,
+    [chainIds.zkevm]: `${SUBGRAPH_URI}/aura-finance-zkevm/v0.0.1/`,
+    [chainIds.avalanche]: `${SUBGRAPH_URI}/aura-finance-avalanche/v0.0.1/`,
     [chainIds.fraxtal]: `https://graph.data.aura.finance/subgraphs/name/aura-finance-fraxtal`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
