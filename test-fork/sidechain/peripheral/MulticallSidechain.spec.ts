@@ -16,7 +16,7 @@ import {
     KeeperMulticall3,
 } from "../../../types/generated";
 
-const ALCHEMY_API_KEY = process.env.NODE_URL;
+const RPC_URL = process.env.NODE_URL;
 const relayerAddress = "0xFC3F4e28D914dA71447d94829C48b1248c7C0b46";
 describe("Multichain - Sidechain", () => {
     let deployer: Account;
@@ -31,7 +31,7 @@ describe("Multichain - Sidechain", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
+                        jsonRpcUrl: RPC_URL,
                         blockNumber: 103380000,
                     },
                 },

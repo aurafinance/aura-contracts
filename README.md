@@ -109,7 +109,7 @@ This runs a local node on your system, that can be used with Metamask, etc.
 Run a local fork:
 
 ```
-npx hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/<API_KEY> --port <PORT>
+npx hardhat node --fork https://ethereum-mainnet.core.chainstack.com/<API_KEY> --port <PORT>
 ```
 
 Once you stake or lock CVX you may want to progress timestamps to check rewards stuff
