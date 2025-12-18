@@ -8,7 +8,7 @@ import { Signer } from "ethers";
 
 const debug = false;
 
-const ALCHEMY_API_KEY = process.env.NODE_URL;
+const RPC_URL = process.env.NODE_URL;
 
 const BALWhale = "0xff052381092420b7f24cc97fded9c0c17b2cbbb9";
 
@@ -25,7 +25,7 @@ describe("TestBalEth", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
+                        jsonRpcUrl: RPC_URL,
                         blockNumber: 14370000,
                     },
                 },

@@ -18,7 +18,7 @@ import {
     PayableMulticall__factory,
 } from "../../../types/generated";
 
-const ALCHEMY_API_KEY = process.env.NODE_URL;
+const RPC_URL = process.env.NODE_URL;
 const relayerAddress = "0x64Cf0ad5e089488cDD0cab98b545f890b0939479"; //base defender
 
 const encodeEarmarkRewards = (pid: number) =>
@@ -37,7 +37,7 @@ describe("Multichain - Sidechain", () => {
             params: [
                 {
                     forking: {
-                        jsonRpcUrl: ALCHEMY_API_KEY,
+                        jsonRpcUrl: RPC_URL,
                         blockNumber: 7541000, // BASE - Block
                     },
                 },
