@@ -1,5 +1,12 @@
 [
     {
+        "id": "0xc00d490d3c8254a98ecd4ef9ca95d8f76b88a0a7367798c69e4a24b5b42a66f3",
+        "title": "Gauge Weight for Week of 18th December 2025",
+        "start": 1766023200,
+        "end": 1766455200,
+        "snapshot": 24039151
+    },
+    {
         "id": "0x5b1776e583411d4b62a8d0c69c38fd6db5f46b14878b8eb60bdeea47236c31fc",
         "title": "Gauge Weight for Week of 4th December 2025",
         "start": 1764813600,
