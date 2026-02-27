@@ -1,5 +1,12 @@
 [
     {
+        "id": "0x36f02c9e93f21c51cc52c7a2facac1762e4ac05227347ebf5e18918dfcbc7ec7",
+        "title": "Gauge Weight for Week of 26th February 2026",
+        "start": 1772071200,
+        "end": 1772503200,
+        "snapshot": 24538000
+    },
+    {
         "id": "0x41ce79eee2c532f7b889ff65db57b481d49f1e5c19e29f9a16092fc067872513",
         "title": "Gauge Weight for Week of 12th February 2026",
         "start": 1770861600,
