@@ -13,6 +13,7 @@ import {
     deployExtraRewardStashModule,
     deployHHRewardsClaimForwarderModule,
     deployHHChefClaimBriberModule,
+    deployChefForwarderClaimerModule,
     deployAuraLockerModule,
     deployGaugeVoterModule,
     deployStakeDaoCampaignModule,
@@ -332,9 +333,8 @@ task("deploy:mainnet:wardenQuestScheduler")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const result = await deployWardenQuestScheduler(hre, deployer, debug, tskArgs.wait);
-        const keeperAddress = "0xcc247cde79624801169475c9ba1f716db3959b8f";
 
-        await result.wardenQuestScheduler.updateAuthorizedKeepers(keeperAddress, true);
+        await result.wardenQuestScheduler.updateAuthorizedKeepers(config.multisigs.defender.keeperMulticall3, true);
         await result.wardenQuestScheduler.updateAuthorizedKeepers(config.multisigs.incentivesMultisig, true);
         await result.wardenQuestScheduler.transferOwnership(config.multisigs.incentivesMultisig);
 
@@ -469,53 +469,6 @@ task("deploy:mainnet:GaugeVoterModule")
         logContracts(result);
     });
 
-task("deploy:mainnet:StakeDaoCampaignModule")
-    .addParam("wait", "How many blocks to wait")
-    .addOptionalParam(
-        "campaignRemoteManager",
-        "StakeDAO campaign remote manager address",
-        "0x53ad4Cd1f1e52DD02aA9fc4A8250A1B74f351Ca2",
-    )
-    .setAction(async function (tskArgs: TaskArguments, hre) {
-        const deployer = await getSigner(hre);
-        const phase2 = await config.getPhase2(deployer);
-
-        const campaignManager = "0x327db4c2e4918920533a05f0f6aa9edfb717bb41";
-        // Values based on AIP-63, can be updated if needed
-        const result = await deployStakeDaoCampaignModule(
-            hre,
-            deployer,
-            config.multisigs,
-            {
-                campaignRemoteManager: tskArgs.campaignRemoteManager,
-                rewardToken: phase2.cvx.address,
-                votemarket: config.addresses.stakeDaoVoteMarket,
-                campaignManager,
-                gaugeConfigs: [
-                    {
-                        gauge: INCENTIVE_GAUGES.AURA_WETH_50_50.gauge,
-                        chainId: INCENTIVE_GAUGES.AURA_WETH_50_50.chainId,
-                        maxTotalRewardAmount: ethers.utils.parseEther("18269"),
-                    },
-                    {
-                        gauge: INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.gauge,
-                        chainId: INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.chainId,
-                        maxTotalRewardAmount: ethers.utils.parseEther("25831"),
-                    },
-                    {
-                        gauge: INCENTIVE_GAUGES.ARB_AURABAL_WSTETH_55_45.gauge,
-                        chainId: INCENTIVE_GAUGES.ARB_AURABAL_WSTETH_55_45.chainId,
-                        maxTotalRewardAmount: ethers.utils.parseEther("5235"),
-                    },
-                ],
-            },
-            debug,
-            tskArgs.wait,
-        );
-
-        logContracts(result);
-    });
-
 task("deploy:mainnet:deployCrvDepositorWrapperSwapper")
     .addOptionalParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
@@ -550,4 +503,71 @@ task("deploy:mainnet:deployAuraClaimZapV3Swapper")
             tskArgs.wait || waitForBlocks,
         );
         logContracts({ claimZapV3 });
+    });
+task("deploy:mainnet:ChefForwarderClaimerModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+        const contracts = {
+            ...phase2,
+            chefForwarder: ChefForwarder__factory.connect("0x57d23f0f101cBd25A05Fc56Fd07dE32bCBb622e9", deployer),
+        };
+
+        const result = await deployChefForwarderClaimerModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                cvx: contracts.cvx,
+                chefForwarder: contracts.chefForwarder,
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
+    });
+
+task("deploy:mainnet:StakeDaoCampaignModule")
+    .addParam("wait", "How many blocks to wait")
+    .setAction(async function (tskArgs: TaskArguments, hre) {
+        const deployer = await getSigner(hre);
+        const phase2 = await config.getPhase2(deployer);
+
+        const campaignManager = "0x327db4c2e4918920533a05f0f6aa9edfb717bb41"; // aura eao
+        const campaignRemoteManager = "0x53ad4Cd1f1e52DD02aA9fc4A8250A1B74f351Ca2";
+        // Values based on AIP-63, can be updated if needed
+        const result = await deployStakeDaoCampaignModule(
+            hre,
+            deployer,
+            config.multisigs,
+            {
+                campaignRemoteManager: campaignRemoteManager,
+                rewardToken: phase2.cvx.address,
+                votemarket: config.addresses.stakeDaoVoteMarket,
+                campaignManager,
+                gaugeConfigs: [
+                    {
+                        gauge: INCENTIVE_GAUGES.AURA_WETH_50_50.gauge,
+                        chainId: INCENTIVE_GAUGES.AURA_WETH_50_50.chainId,
+                        maxTotalRewardAmount: ethers.utils.parseEther("18269"),
+                    },
+                    {
+                        gauge: INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.gauge,
+                        chainId: INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.chainId,
+                        maxTotalRewardAmount: ethers.utils.parseEther("25831"),
+                    },
+                    {
+                        gauge: INCENTIVE_GAUGES.ARB_AURABAL_WSTETH_55_45.gauge,
+                        chainId: INCENTIVE_GAUGES.ARB_AURABAL_WSTETH_55_45.chainId,
+                        maxTotalRewardAmount: ethers.utils.parseEther("5235"),
+                    },
+                ],
+            },
+            debug,
+            tskArgs.wait,
+        );
+
+        logContracts(result);
     });

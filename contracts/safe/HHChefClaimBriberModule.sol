@@ -1,26 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
-import { IERC20 } from "@openzeppelin/contracts-0.8/token/ERC20/IERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts-0.8/security/ReentrancyGuard.sol";
-import { KeeperRole } from "../peripheral/KeeperRole.sol";
-import { Module } from "./Module.sol";
+import { ChefForwarderClaimerModule } from "./ChefForwarderClaimerModule.sol";
 
 /**Ø
  * @author  Aura Finance
  * @notice  This module allows a keeper to claim from chef forwarder and deposit bribes into authorized proposals
  */
-contract HHChefClaimBriberModule is Module, KeeperRole, ReentrancyGuard {
+contract HHChefClaimBriberModule is ChefForwarderClaimerModule, ReentrancyGuard {
     /// @dev Epoch duration
     uint256 public constant EPOCH_DURATION = 2 weeks;
 
-    /// @notice The cvx token address
-    address public immutable cvx;
-
     /// @notice The Hidden Hand bribe vault address
     address public immutable bribeVault;
-
-    /// @notice The chefForwarder addresses
-    address public immutable chefForwarder;
 
     /// @dev How much total reward per epoch
     uint256 public rewardPerEpoch;
@@ -64,9 +56,7 @@ contract HHChefClaimBriberModule is Module, KeeperRole, ReentrancyGuard {
         address _cvx,
         address _chefForwarder,
         address _bribeVault
-    ) KeeperRole(_owner) Module(_safeWallet) {
-        cvx = _cvx;
-        chefForwarder = _chefForwarder;
+    ) ChefForwarderClaimerModule(_owner, _safeWallet, _cvx, _chefForwarder) {
         bribeVault = _bribeVault;
     }
 
@@ -114,27 +104,9 @@ contract HHChefClaimBriberModule is Module, KeeperRole, ReentrancyGuard {
         return block.timestamp / EPOCH_DURATION;
     }
 
-    /**
-     * @notice  Claim from chef forwarder
-     * @return cvxClaimed  The amount of CVX claimed
-     */
-    function _claimFromChefForwarder() private returns (uint256 cvxClaimed) {
-        uint256 cvxInitialBalance = IERC20(cvx).balanceOf(address(safeWallet));
-        _execCallFromModule(chefForwarder, abi.encodeWithSignature("claim(address)", cvx));
-        cvxClaimed = IERC20(cvx).balanceOf(address(safeWallet)) - cvxInitialBalance;
-    }
-
     /* -------------------------------------------------------------------
        Keeper 
     ------------------------------------------------------------------- */
-    /**
-     * @notice  Claim from chef forwarder.
-     * @dev     Only callable by a keeper
-     */
-    function claimFromChef() external onlyKeeper {
-        _claimFromChefForwarder();
-    }
-
     /**
      * @notice  Claim from the vesting streams and deposit bribes
      * @dev     Only callable by a keeper, the total amount can not be greater than the

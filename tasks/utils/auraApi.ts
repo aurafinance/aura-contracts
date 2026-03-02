@@ -14,7 +14,7 @@ export type GaugeRewardToken = {
 };
 
 const SUBGRAPH_URI = "https://api.subgraph.ormilabs.com/api/public/396b336b-4ed7-469f-a8f4-468e1e26e9a8/subgraphs";
-const subgraphUrls = {
+const SUBGRAPH_URLS = {
     [chainIds.mainnet]: `${SUBGRAPH_URI}/aura-finance-mainnet/v0.0.1/`,
     [chainIds.arbitrum]: `${SUBGRAPH_URI}/aura-finance-arbitrum/v0.0.1/`,
     [chainIds.gnosis]: `${SUBGRAPH_URI}/aura-finance-gnosis/v0.0.4/`,
@@ -26,7 +26,7 @@ const subgraphUrls = {
     [chainIds.fraxtal]: `https://graph.data.aura.finance/subgraphs/name/aura-finance-fraxtal`,
 };
 export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Promise<GaugePid[]> {
-    const endpoint = subgraphUrls[chainId];
+    const endpoint = SUBGRAPH_URLS[chainId];
     const query = gql`
         query GetGaugePid($gaugeAddresses: [String!]!) {
             gauges(where: { id_in: $gaugeAddresses }) {
@@ -45,13 +45,13 @@ export async function getGaugePid(chainId: number, gaugeAddresses: string[]): Pr
         const response = await request<{ gauges: Array<GaugePid> }>(endpoint, query, variables);
         return response.gauges;
     } catch (error) {
-        console.error("GraphQL request error:", error);
-        return [];
+        console.error("GraphQL request error:", endpoint, error);
+        throw error;
     }
 }
 
 export async function getGaugeRewardTokens(chainId: number, gaugeAddresses: string[]): Promise<GaugeRewardToken[]> {
-    const endpoint = subgraphUrls[chainId];
+    const endpoint = SUBGRAPH_URLS[chainId];
     const query = gql`
         query getGaugeRewardTokens($gaugeAddresses: [String!]!) {
             pools(where: { gauge_in: $gaugeAddresses }) {
