@@ -15,6 +15,7 @@ import {
     IDarkQuestBoard,
 } from "../../types/generated";
 import { config } from "../../tasks/deploy/mainnet-config";
+import { INCENTIVE_GAUGES } from "../../tasks/information/incentiveGauges";
 import { deployWardenQuestScheduler } from "../../scripts/deployPeripheral";
 
 const debug = false;
@@ -36,7 +37,7 @@ describe("WardenQuestScheduler", () => {
     let createQuestEpoch = ZERO;
     const questAuraWeth = {
         stash: "0xDD8AB2eAf5487faB70c36F6997AFb1D5D743E516",
-        gauge: "0x275dF57d2B23d53e20322b4bb71Bf1dCb21D0A00",
+        gauge: INCENTIVE_GAUGES.AURA_WETH_50_50.gauge,
         pid: 100,
         objective: "518349574900000000000000",
         rewardPerVote: "37100000000000000",
@@ -46,7 +47,7 @@ describe("WardenQuestScheduler", () => {
     };
     const questAuraBal = {
         stash: "0xebFE79b8f19ACFBbB8A89a8e694Df471a6F461b7",
-        gauge: "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242",
+        gauge: INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.gauge,
         pid: 101,
         objective: "622019489900000000000000",
         rewardPerVote: "37100000000000000",
