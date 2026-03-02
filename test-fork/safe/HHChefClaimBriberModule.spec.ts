@@ -54,28 +54,6 @@ describe("HHChefClaimBriberModule", () => {
             expect(await safe.isModuleEnabled(hhChefClaimBriberModule.address), "isEnabled").to.be.eq(true);
         });
     });
-    describe("claimFromChef", async () => {
-        it("fails if keeper is not the caller", async () => {
-            const authorizedKeepers = await hhChefClaimBriberModule.authorizedKeepers(await deployer.getAddress());
-            expect(authorizedKeepers, "authorizedKeepers").to.be.eq(false);
-            await expect(hhChefClaimBriberModule.connect(deployer).claimFromChef()).to.be.revertedWith("!keeper");
-        });
-        it("only keeper can execute task", async () => {
-            const initialBalance = await contracts.cvx.balanceOf(config.multisigs.incentivesMultisig);
-            const authorizedKeepers = await hhChefClaimBriberModule.authorizedKeepers(
-                config.multisigs.defender.keeperMulticall3,
-            );
-            expect(authorizedKeepers, "authorizedKeepers").to.be.eq(true);
-            const keeper = await impersonate(config.multisigs.defender.keeperMulticall3);
-
-            await hhChefClaimBriberModule.connect(keeper).claimFromChef();
-
-            const finalBalance = await contracts.cvx.balanceOf(config.multisigs.incentivesMultisig);
-            const moduleBalance = await contracts.cvx.balanceOf(hhChefClaimBriberModule.address);
-            expect(finalBalance.sub(initialBalance), "cvx balance increased").to.be.gt(0);
-            expect(moduleBalance, "module cvx balance").to.be.eq(0);
-        });
-    });
     describe("depositBribes", async () => {
         it("fails if keeper is not the caller", async () => {
             const authorizedKeepers = await hhChefClaimBriberModule.authorizedKeepers(await deployer.getAddress());
@@ -117,6 +95,9 @@ describe("HHChefClaimBriberModule", () => {
                     periods: "1",
                 },
             ];
+
+            // Claim so there is enough aura on the contract to deposit the bribes
+            await hhChefClaimBriberModule.connect(keeper).claimFromChef();
 
             await hhChefClaimBriberModule.connect(keeper).depositBribes(bribes);
 

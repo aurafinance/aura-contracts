@@ -16,6 +16,7 @@ import {
     isAuraBalProposal,
     isAuraEthProposal,
 } from "./hiddenhandApi";
+import { INCENTIVE_GAUGES } from "./incentiveGauges";
 import {
     buildPaladinQuest,
     getPaladinConf,
@@ -39,8 +40,8 @@ const scale = BN.from(10).pow(18);
 const fractionToBN = (fraction: number) => scale.mul((fraction * 1000).toString().split(".")[0]).div(1000);
 
 // Paladin
-const auraBalStableGaugeAddress = "0x0312AA8D0BA4a1969Fddb382235870bF55f7f242";
-const aura50Eth50GaugeAddress = "0x275dF57d2B23d53e20322b4bb71Bf1dCb21D0A00";
+const auraBalStableGaugeAddress = INCENTIVE_GAUGES.AURABAL_BAL_WETH_STABLE.gauge;
+const aura50Eth50GaugeAddress = INCENTIVE_GAUGES.AURA_WETH_50_50.gauge;
 const wardenQuestSchedulerAddress = "0x3FCB0Cc19C41E9D2DB3b9764032CD457bAA2fb47";
 
 // -------------------------------------------------------- //

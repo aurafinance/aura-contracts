@@ -197,6 +197,7 @@ interface ExtSystemConfig {
         auraInflowLimit: BigNumber;
     };
     darkQuestBoard?: string;
+    stakeDaoVoteMarket?: string;
 }
 
 interface NamingConfig {
