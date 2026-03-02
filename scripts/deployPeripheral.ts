@@ -1,4 +1,4 @@
-import { Contract, Signer } from "ethers";
+import { BigNumberish, Contract, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 import { config } from "../tasks/deploy/mainnet-config";
@@ -38,6 +38,8 @@ import {
     KeeperMulticall3__factory,
     PayableMulticall,
     PayableMulticall__factory,
+    StakeDaoCampaignModule,
+    StakeDaoCampaignModule__factory,
     StashRewardDistro,
     VeBalGrant,
     VeBalGrant__factory,
@@ -245,6 +247,58 @@ export async function deployGaugeVoterModule(
 
     return { gaugeVoterModule };
 }
+
+export async function deployStakeDaoCampaignModule(
+    hre: HardhatRuntimeEnvironment,
+    signer: Signer,
+    multisigs: MultisigConfig,
+    deployment: {
+        campaignRemoteManager: string;
+        rewardToken: string;
+        votemarket: string;
+        campaignManager: string;
+        gaugeConfigs: { gauge: string; chainId: number; maxTotalRewardAmount: BigNumberish }[];
+    },
+    debug = false,
+    waitForBlocks = 0,
+): Promise<{ stakeDaoCampaignModule: StakeDaoCampaignModule }> {
+    const { campaignRemoteManager, rewardToken, votemarket, campaignManager, gaugeConfigs } = deployment;
+
+    const stakeDaoCampaignModule = await deployContract<StakeDaoCampaignModule>(
+        hre,
+        new StakeDaoCampaignModule__factory(signer),
+        "StakeDaoCampaignModule",
+        [
+            await signer.getAddress(),
+            multisigs.incentivesMultisig,
+            campaignRemoteManager,
+            rewardToken,
+            votemarket,
+            campaignManager,
+        ],
+        {},
+        debug,
+        waitForBlocks,
+    );
+
+    let tx = await stakeDaoCampaignModule.updateAuthorizedKeepers(multisigs.defender.keeperMulticall3, true);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    for (const gaugeConfig of gaugeConfigs) {
+        tx = await stakeDaoCampaignModule.setGaugeConfig(
+            gaugeConfig.gauge,
+            gaugeConfig.chainId,
+            gaugeConfig.maxTotalRewardAmount,
+        );
+        await waitForTx(tx, debug, waitForBlocks);
+    }
+
+    tx = await stakeDaoCampaignModule.transferOwnership(multisigs.incentivesMultisig);
+    await waitForTx(tx, debug, waitForBlocks);
+
+    return { stakeDaoCampaignModule };
+}
+
 async function deployExtraRewardStashModuleT<C extends Contract>(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,

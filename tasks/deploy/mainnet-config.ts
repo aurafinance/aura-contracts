@@ -186,6 +186,7 @@ const addresses: ExtSystemConfig = {
         auraInflowLimit: parseEther("250000"),
     },
     darkQuestBoard: "0x609FB23b9EA7CB3eDaF56DB5dAF07C8E94C155De",
+    stakeDaoVoteMarket: "0xdd2fad5606cd8ec0c3b93eb4f9849572b598f4c7",
 };
 
 const whales = {
