@@ -29,7 +29,7 @@
     { "address": "0x9c1a157cf8b242f67b3c950eda9a30b320bde9cd", "label": "Gyroe USDC/GYD (0x9c)" },
     { "address": "0xfc7d964f1676831d8105506b1f0c3b3e2b55c467", "label": "Gyroe USDT/GYD (0xfc)" },
     { "address": "0xf2c203a264dc05942cfbaea16f712b2106c2fb02", "label": "Gyroe wstETH/ynETH" },
-    { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted WBTC/USDC/PAXG" },
+    { "address": "0x093e02dec0b5a40c03d84ecda6058ad91436923f", "label": "QuantAmmWeighted PAXG/WBTC/USDC" },
     { "address": "0x6ba97c44aecf7cc15b05947c172a6d797ce96693", "label": "Reclamm AAVE/WETH" },
     { "address": "0x6c0a4550c575c917435f228d36939125a437a98b", "label": "Stable Aave Core pyUSD/Aave Prime GHO" },
     { "address": "0xac681deb529b49b5a563fbf0dcccb95d5bb7cdb0", "label": "Stable Aave Prime GHO/iUSD" },
