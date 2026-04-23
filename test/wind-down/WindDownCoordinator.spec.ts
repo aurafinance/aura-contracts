@@ -279,7 +279,7 @@ describe("WindDownCoordinator", () => {
         it("reverts when still UNSTARTED (before unlockAndWithdraw)", async () => {
             // Warp past both time gates so the only failure is the stage check.
             await increaseTimeTo(auraExpiry.add(1));
-            await expect(coordinator.connect(owner).splitAndFinalize([treasuryUsdc.address])).to.revertedWith("!stage");
+            await expect(coordinator.connect(owner).splitAndFinalize()).to.revertedWith("!stage");
         });
 
         describe("after unlockAndWithdraw", () => {
@@ -290,24 +290,13 @@ describe("WindDownCoordinator", () => {
 
             it("reverts if caller is not owner", async () => {
                 await increaseTimeTo(auraExpiry.add(1));
-                await expect(coordinator.connect(outsider).splitAndFinalize([treasuryUsdc.address])).to.revertedWith(
-                    "!owner",
-                );
+                await expect(coordinator.connect(outsider).splitAndFinalize()).to.revertedWith("!owner");
             });
 
             it("reverts if AuraRedemption.expiry has not passed", async () => {
                 // Stage is WITHDRAWN; block.timestamp is > unlockTime but still < auraExpiry.
                 expect(await getTimestamp()).lt(auraExpiry);
-                await expect(coordinator.connect(owner).splitAndFinalize([treasuryUsdc.address])).to.revertedWith(
-                    "!expired",
-                );
-            });
-
-            it("reverts if residuals include the BPT", async () => {
-                await increaseTimeTo(auraExpiry.add(1));
-                await expect(coordinator.connect(owner).splitAndFinalize([crvBpt.address])).to.revertedWith(
-                    "bpt in residuals",
-                );
+                await expect(coordinator.connect(owner).splitAndFinalize()).to.revertedWith("!expired");
             });
 
             it("sweeps residuals, splits BPT per bps, finalizes, transitions FINALIZED", async () => {
@@ -316,7 +305,7 @@ describe("WindDownCoordinator", () => {
                 const expectedAuraBalShare = totalBpt.mul(AURABAL_BPS).div(BPS_DENOMINATOR);
                 const expectedRAuraShare = totalBpt.sub(expectedAuraBalShare);
 
-                const tx = await coordinator.connect(owner).splitAndFinalize([treasuryUsdc.address]);
+                const tx = await coordinator.connect(owner).splitAndFinalize();
 
                 // Residuals flowed from A into B (minus what the Stage 0 redeem already took).
                 const redeemedSlice = TREASURY_USDC_FUND.mul(STAGE0_REDEEM_AMOUNT).div(REDEEMABLE_AURA_SUPPLY);
@@ -344,8 +333,8 @@ describe("WindDownCoordinator", () => {
 
             it("reverts on a second splitAndFinalize call", async () => {
                 await increaseTimeTo(auraExpiry.add(1));
-                await coordinator.connect(owner).splitAndFinalize([treasuryUsdc.address]);
-                await expect(coordinator.connect(owner).splitAndFinalize([])).to.revertedWith("!stage");
+                await coordinator.connect(owner).splitAndFinalize();
+                await expect(coordinator.connect(owner).splitAndFinalize()).to.revertedWith("!stage");
             });
         });
     });

@@ -20,6 +20,10 @@ interface IVotingEscrow {
 interface IAuraRedemption {
     function expiry() external view returns (uint256);
 
+    function redeemableTokensLength() external view returns (uint256);
+
+    function redeemableTokens(uint256 _index) external view returns (address);
+
     function sweep(address _token, address _to) external;
 
     function setOwner(address _owner) external;
@@ -69,7 +73,7 @@ contract WindDownCoordinator is ReentrancyGuard {
     address public owner;
 
     event Withdrawn(uint256 bptAmount);
-    event SplitAndFinalized(uint256 auraBalBpt, uint256 rAuraBpt, address[] residualTokens);
+    event SplitAndFinalized(uint256 auraBalBpt, uint256 rAuraBpt, address[] residuals);
     event Executed(address indexed target, uint256 value, bytes data, bytes result);
     event OwnerSet(address indexed newOwner);
 
@@ -128,17 +132,20 @@ contract WindDownCoordinator is ReentrancyGuard {
 
     /**
      * @notice Sweep residual treasury tokens from AuraRedemption into
-     *         RAuraRedemption, split the BPT 90/10 into the two stage-2
-     *         contracts, and finalize both. `_residualTokens` must not
-     *         include crvBpt.
+     *         RAuraRedemption, split the BPT by `auraBalBps` into the two
+     *         stage-2 contracts, and finalize both. The residual token set
+     *         is read directly from `AuraRedemption.redeemableTokens`, so
+     *         the caller does not supply it.
      */
-    function splitAndFinalize(address[] calldata _residualTokens) external onlyOwner nonReentrant {
+    function splitAndFinalize() external onlyOwner nonReentrant {
         require(stage == Stage.WITHDRAWN, "!stage");
         require(block.timestamp >= auraRedemption.expiry(), "!expired");
 
-        for (uint256 i = 0; i < _residualTokens.length; i++) {
-            address t = _residualTokens[i];
-            require(t != address(crvBpt), "bpt in residuals");
+        uint256 residualsLen = auraRedemption.redeemableTokensLength();
+        address[] memory residuals = new address[](residualsLen);
+        for (uint256 i = 0; i < residualsLen; i++) {
+            address t = auraRedemption.redeemableTokens(i);
+            residuals[i] = t;
             auraRedemption.sweep(t, address(rAuraRedemption));
         }
 
@@ -158,15 +165,15 @@ contract WindDownCoordinator is ReentrancyGuard {
         auraBalTokens[0] = address(crvBpt);
         auraBalRedemption.finalize(auraBalTokens);
 
-        address[] memory rAuraTokens = new address[](_residualTokens.length + 1);
+        address[] memory rAuraTokens = new address[](residualsLen + 1);
         rAuraTokens[0] = address(crvBpt);
-        for (uint256 i = 0; i < _residualTokens.length; i++) {
-            rAuraTokens[i + 1] = _residualTokens[i];
+        for (uint256 i = 0; i < residualsLen; i++) {
+            rAuraTokens[i + 1] = residuals[i];
         }
         rAuraRedemption.finalize(rAuraTokens);
 
         stage = Stage.FINALIZED;
-        emit SplitAndFinalized(auraBalShare, rAuraShare, _residualTokens);
+        emit SplitAndFinalized(auraBalShare, rAuraShare, residuals);
     }
 
     /**
