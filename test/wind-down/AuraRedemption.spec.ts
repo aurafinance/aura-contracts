@@ -209,7 +209,7 @@ describe("AuraRedemption (Contract A)", () => {
 
             const event = rcpt.events?.find(e => e.event === "Redeemed");
             expect(event!.args!.user).eq(aliceAddress);
-            expect(event!.args!.auraBurned).eq(amount);
+            expect(event!.args!.burned).eq(amount);
             expect(event!.args!.payouts.map((x: BigNumber) => x.toString())).to.deep.eq([
                 expBal.toString(),
                 expWeth.toString(),

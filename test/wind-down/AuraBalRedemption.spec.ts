@@ -135,7 +135,7 @@ describe("AuraBalRedemption (Contract C)", () => {
             expect(await contract.redeemableTokenAllocation(weth.address)).eq(STAGE2_WETH);
 
             const event = rcpt.events?.find(e => e.event === "Finalized");
-            expect(event!.args!.snapshotSupply).eq(AURABAL_SUPPLY);
+            expect(event!.args!.denominator).eq(AURABAL_SUPPLY);
         });
         it("cannot finalize twice", async () => {
             await contract.connect(owner).finalize([bal.address]);
@@ -174,7 +174,7 @@ describe("AuraBalRedemption (Contract C)", () => {
 
             const event = rcpt.events?.find(e => e.event === "Redeemed");
             expect(event!.args!.user).eq(aliceAddress);
-            expect(event!.args!.auraBalBurned).eq(ALICE_AURABAL);
+            expect(event!.args!.burned).eq(ALICE_AURABAL);
         });
         it("un-redeemed auraBAL leaves proportional dust", async () => {
             // Only alice redeems → 10%. Remaining 90% is dust until sweep.

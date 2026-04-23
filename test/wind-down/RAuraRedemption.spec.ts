@@ -182,7 +182,7 @@ describe("RAuraRedemption (Contract B)", () => {
             expect(await contract.redeemableTokenAllocation(weth.address)).eq(STAGE2_WETH);
 
             const event = rcpt.events?.find(e => e.event === "Finalized");
-            expect(event!.args!.snapshotSupply).eq(expectedSupply);
+            expect(event!.args!.denominator).eq(expectedSupply);
             expect(event!.args!.tokens).to.deep.eq([bal.address, weth.address]);
         });
         it("cannot finalize twice", async () => {
@@ -228,7 +228,7 @@ describe("RAuraRedemption (Contract B)", () => {
 
             const event = rcpt.events?.find(e => e.event === "Redeemed");
             expect(event!.args!.user).eq(aliceAddress);
-            expect(event!.args!.rAuraBurned).eq(ALICE_REDEEM);
+            expect(event!.args!.burned).eq(ALICE_REDEEM);
         });
         it("both holders redeeming together drain basket (minus rounding dust)", async () => {
             await auraRedemption.connect(alice).approve(contract.address, ALICE_REDEEM);
