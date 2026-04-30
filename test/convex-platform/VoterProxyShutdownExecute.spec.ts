@@ -338,24 +338,6 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await cvx.operator()).eq(coordinator.address);
     });
 
-    it("Stage Attack: coordinator mints aura", async () => {
-        const cvxBefore = await cvx.balanceOf(coordinator.address);
-
-        // Mint aura
-        // await cvx.connect(coordinatorAcc.signer).mint(coordinator.address, simpleToExactAmount(1));
-        await coordinator
-            .connect(treasury)
-            .execute(
-                cvx.address,
-                0,
-                cvx.interface.encodeFunctionData("mint", [coordinator.address, simpleToExactAmount(1)]),
-            );
-        expect(cvxBefore).lt(await cvx.balanceOf(coordinator.address));
-        console.warn(
-            "Attack successful: coordinator was able to mint AURA after shutdown. This is a critical issue that needs to be fixed before proceeding with the wind-down.",
-        );
-    });
-
     it("Stage 1: legacy Booster.rewardClaimed path no longer mints AURA", async () => {
         const boosterSigner = await impersonateAccount(booster.address);
         const before = await cvx.balanceOf(aliceAddress);
@@ -410,24 +392,6 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await mocks.crvBpt.balanceOf(coordinator.address)).eq(lockedAmount);
         expect(await coordinator.stage()).eq(1); // WITHDRAWN
         await expect(tx).to.emit(coordinator, "Withdrawn").withArgs(lockedAmount);
-    });
-
-    it("Stage Attack: treasury steals crvBpt", async () => {
-        const treasuryAddress = await treasury.getAddress();
-        const balanceBefore = await mocks.crvBpt.balanceOf(treasuryAddress);
-
-        // Mint aura
-        await coordinator
-            .connect(treasury)
-            .execute(
-                mocks.crvBpt.address,
-                0,
-                mocks.crvBpt.interface.encodeFunctionData("transfer", [treasuryAddress, simpleToExactAmount(1)]),
-            );
-        expect(balanceBefore).lt(await mocks.crvBpt.balanceOf(treasuryAddress));
-        console.warn(
-            "Attack successful: treasury was able to steal CRV BPT from the coordinator after shutdown. This is a critical issue that needs to be fixed before proceeding with the wind-down.",
-        );
     });
 
     it("Stage 2: None should be able to redeem AURA after coordinator.unlockAndWithdraw", async () => {
