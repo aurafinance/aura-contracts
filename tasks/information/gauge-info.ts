@@ -249,18 +249,18 @@ function generateJsonReports(
     all_gauge_info: AllGaugeInfo,
 ) {
     fs.writeFileSync(
-        path.resolve(__dirname, "./killed_but_live_info.json"),
+        path.resolve(__dirname, "./output/killed_but_live_info.json"),
         JSON.stringify(sortObjectByKey(killed_but_live_info), null, 4),
     );
 
     fs.writeFileSync(
-        path.resolve(__dirname, "./killed_info.json"),
+        path.resolve(__dirname, "./output/killed_info.json"),
         JSON.stringify(sortObjectByKey(killed_info), null, 4),
     );
 
-    fs.writeFileSync(path.resolve(__dirname, "./all_info.json"), JSON.stringify(sortObjectByKey(info), null, 4));
+    fs.writeFileSync(path.resolve(__dirname, "./output/all_info.json"), JSON.stringify(sortObjectByKey(info), null, 4));
 
-    fs.writeFileSync(path.resolve(__dirname, "./all_gauge_info.json"), JSON.stringify(all_gauge_info, null, 4));
+    fs.writeFileSync(path.resolve(__dirname, "./output/all_gauge_info.json"), JSON.stringify(all_gauge_info, null, 4));
 }
 
 /**
@@ -268,19 +268,19 @@ function generateJsonReports(
  * @param shutdownTransactions Array of shutdown transactions
  * @param networkName Name of the network
  */
-function writeShutdownTransactionsToFile(shutdownTransactions: Array<ShutdownPoolTx>, networkName: string) {
+function writeShutdownPoolsTransactionsToFile(shutdownTransactions: Array<ShutdownPoolTx>, networkName: string) {
     const batchSize = 15;
     for (let i = 0; i < shutdownTransactions.length; i += batchSize) {
         const batch = shutdownTransactions.slice(i, i + batchSize);
         const shutdownTransaction = createTxMeta(batch);
         const batchFileName =
             batch.length === shutdownTransactions.length
-                ? `${networkName}_shutdown.json`
-                : `${networkName}_shutdown_batch_${Math.floor(i / batchSize) + 1}.json`;
+                ? `${networkName}_shutdown_pool.json`
+                : `${networkName}_shutdown_pool_batch_${Math.floor(i / batchSize) + 1}.json`;
         console.log(`Writing ${batchFileName} with ${batch.length} transactions`);
         if (batch.length > 0) {
             fs.writeFileSync(
-                path.resolve(__dirname, "./" + batchFileName),
+                path.resolve(__dirname, "./output/" + batchFileName),
                 JSON.stringify(shutdownTransaction, null, 4),
             );
         }
@@ -412,20 +412,21 @@ async function collectBalancerGaugeInfo(deployer: ethers.Signer): Promise<{
  * Collects pool information for a specific sidechain network
  * @param providerUrl RPC URL for the network
  * @param networkName Name of the network
- * @param is_gauge_killed Mapping of gauge addresses to killed status
+ * @param is_gauge_killed Mapping of gauge addresses to killed status, if forceKill is true this argument is ignored.
  * @returns Network-specific pool information
  */
-async function collectSidechainPoolInfo(
+export async function collectSidechainPoolKilledInfo(
     providerUrl: string,
     networkName: NetworkName,
     is_gauge_killed: IsGaugeKilled,
+    forceKill = false,
 ): Promise<{
     info: { [key: string]: PoolInfo };
     killed_info: { [key: string]: PoolInfo };
     killed_but_live_info: { [key: string]: PoolInfo & { isShutdown: boolean } };
     killed_but_live_lists: number[];
 }> {
-    console.log(`🔗 Processing sidechain: ${networkName}`);
+    console.log(`🔗 Processing sidechain: ${networkName} forceKill: ${forceKill}`);
 
     const customProvider = new ethers.providers.JsonRpcProvider(providerUrl);
     const booster: BoosterLite = BoosterLite__factory.connect(BOOSTER_LITE_ADDRESS, customProvider);
@@ -462,7 +463,7 @@ async function collectSidechainPoolInfo(
         // Process results
         for (let i = 0; i < poolInfoResults.length; i++) {
             const poolInfo = poolInfoResults[i];
-            const isKilled = is_gauge_killed[poolInfo.gauge];
+            const isKilled = forceKill || is_gauge_killed[poolInfo.gauge];
 
             console.log(`${networkName} Pid ${i}, gauge ${poolInfo.gauge} killed: ${isKilled}`);
 
@@ -496,13 +497,16 @@ async function collectSidechainPoolInfo(
  * @param deployer Signer for mainnet interactions
  * @returns Mainnet pool information
  */
-async function collectMainnetPoolInfo(deployer: ethers.Signer): Promise<{
+export async function collectMainnetPoolKilledInfo(
+    deployer: ethers.Signer,
+    forceKill = false,
+): Promise<{
     info: { [key: string]: PoolInfo };
     killed_info: { [key: string]: PoolInfo };
     killed_but_live_info: { [key: string]: PoolInfo & { isShutdown: boolean } };
     killed_but_live_lists: number[];
 }> {
-    console.log("🏠 Processing mainnet pools...");
+    console.log(`🏠 Processing mainnet pools forceKill: ${forceKill}`);
 
     const phase6: Phase6Deployed = await mainnetConfig.getPhase6(deployer);
     const poolLength = await phase6.booster.poolLength();
@@ -535,27 +539,31 @@ async function collectMainnetPoolInfo(deployer: ethers.Signer): Promise<{
     );
 
     // Step 2: Batch all gauge is_killed calls
-    const gaugeKilledCalls = [];
-    const mainnetGaugeIface = new ethers.utils.Interface(GAUGE_INTERFACE);
+    let gaugeKilledResults: boolean[];
+    if (!forceKill) {
+        const gaugeKilledCalls = [];
+        const mainnetGaugeIface = new ethers.utils.Interface(GAUGE_INTERFACE);
 
-    for (let i = 0; i < poolInfoResults.length; i++) {
-        const poolInfo = poolInfoResults[i];
-        gaugeKilledCalls.push({
-            target: poolInfo.gauge,
-            callData: mainnetGaugeIface.encodeFunctionData("is_killed", []),
-            poolIndex: i,
-        });
+        for (let i = 0; i < poolInfoResults.length; i++) {
+            const poolInfo = poolInfoResults[i];
+            gaugeKilledCalls.push({
+                target: poolInfo.gauge,
+                callData: mainnetGaugeIface.encodeFunctionData("is_killed", []),
+                poolIndex: i,
+            });
+        }
+
+        gaugeKilledResults = await batchMulticalls(
+            gaugeKilledCalls,
+            (returnData: string) => {
+                return mainnetGaugeIface.decodeFunctionResult("is_killed", returnData)[0];
+            },
+            deployer.provider!,
+            DEFAULT_BATCH_SIZE,
+        );
+    } else {
+        gaugeKilledResults = poolInfoResults.map(_ => true);
     }
-
-    const gaugeKilledResults = await batchMulticalls(
-        gaugeKilledCalls,
-        (returnData: string) => {
-            return mainnetGaugeIface.decodeFunctionResult("is_killed", returnData)[0];
-        },
-        deployer.provider!,
-        DEFAULT_BATCH_SIZE,
-    );
-
     // Process results
     for (let i = 0; i < poolInfoResults.length; i++) {
         const poolInfo = poolInfoResults[i];
@@ -591,23 +599,33 @@ async function collectMainnetPoolInfo(deployer: ethers.Signer): Promise<{
 task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges is killed")
     .addParam("safedata", "Generate Safe TX Builder Data")
     .addParam("savelogs", "save logs to file system")
+    .addParam("forcekill", "Kill gauges even if they are alive")
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const startTime = Date.now();
         const deployer = await getSigner(hre);
         const generateSafeData = Boolean(tskArgs.safedata);
         const generateLogs = Boolean(tskArgs.savelogs);
+        const forceKill = Boolean(tskArgs.forcekill);
 
-        console.log("🚀 Starting optimized gauge info collection...");
+        console.log(`safedata: ${generateSafeData}, savelogs: ${generateLogs}, forcekill: ${forceKill}`);
 
         const info: GaugeInfo = {};
         const killed_info: KilledInfo = {};
         const killed_but_live_info: KilledButLiveInfo = {};
         const killed_but_live_lists: KilledButLiveLists = {};
 
+        let all_gauge_info: AllGaugeInfo;
+        let is_gauge_killed: IsGaugeKilled;
+
         // ========================================================================
         // STEP 1: Collect Balancer Gauge Information
         // ========================================================================
-        const { all_gauge_info, is_gauge_killed } = await collectBalancerGaugeInfo(deployer);
+        if (!forceKill) {
+            ({ all_gauge_info, is_gauge_killed } = await collectBalancerGaugeInfo(deployer));
+        } else {
+            all_gauge_info = {};
+            is_gauge_killed = {};
+        }
 
         // ========================================================================
         // STEP 2: Process All Sidechain Networks
@@ -620,7 +638,12 @@ task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges 
                 }
 
                 const networkName = NETWORK_NAMES[index];
-                const result = await collectSidechainPoolInfo(providerUrl, networkName, is_gauge_killed);
+                const result = await collectSidechainPoolKilledInfo(
+                    providerUrl,
+                    networkName,
+                    is_gauge_killed,
+                    forceKill,
+                );
 
                 info[networkName] = result.info;
                 killed_info[networkName] = result.killed_info;
@@ -632,7 +655,7 @@ task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges 
         // ========================================================================
         // STEP 3: Process Mainnet
         // ========================================================================
-        const mainnetResult = await collectMainnetPoolInfo(deployer);
+        const mainnetResult = await collectMainnetPoolKilledInfo(deployer, forceKill);
         const networkName = "mainnet";
 
         info[networkName] = mainnetResult.info;
@@ -660,9 +683,9 @@ task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges 
                     const shutdownTransactions: Array<ShutdownPoolTx> = poolsToKill.map(pool =>
                         buildShutdownPoolTx(poolManager, pool.toString()),
                     );
-                    writeShutdownTransactionsToFile(shutdownTransactions, network);
+                    writeShutdownPoolsTransactionsToFile(shutdownTransactions, network);
                 } else {
-                    console.log(`ℹ️  No pools to shutdown for ${network}`);
+                    console.log(`No pools to shutdown for ${network}`);
                 }
             }
         }
@@ -672,8 +695,7 @@ task("info:gauges:killed-gauges", "Generates txs to shutdown pools which gauges 
         // ========================================================================
         const endTime = Date.now();
         const executionTime = (endTime - startTime) / 1000;
-        console.log(`🎉 Optimization complete! Total execution time: ${executionTime.toFixed(2)}s`);
-        console.log(`📊 Processed gauges across ${NETWORK_NAMES.length + 1} networks using multicall batching`);
+        console.log(`Total execution time: ${executionTime.toFixed(2)}s`);
 
         // Summary statistics
         const totalKilledButLive = Object.values(killed_but_live_lists).reduce(
