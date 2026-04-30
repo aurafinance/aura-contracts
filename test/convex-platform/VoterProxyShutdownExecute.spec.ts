@@ -27,7 +27,7 @@ import { deployContract } from "../../tasks/utils";
 import { simpleToExactAmount } from "../../test-utils/math";
 import { getTimestamp, increaseTimeTo } from "../../test-utils/time";
 import { impersonateAccount } from "../../test-utils/fork";
-import { ZERO } from "../../test-utils/constants";
+import { ONE_DAY, ONE_YEAR, ZERO } from "../../test-utils/constants";
 
 const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const TREASURY_ADDRESS = "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9";
@@ -44,12 +44,14 @@ const expectWithinTolerance = (actual: BigNumber, expected: BigNumber, tolerance
 describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     let accounts: Signer[];
     let deployer: Signer;
-    let deployerAddress: string;
     let daoMultisig: Signer;
+    let deployerAddress: string;
     let alice: Signer;
     let aliceAddress: string;
     let bob: Signer;
     let bobAddress: string;
+    let sleepy: Signer;
+    let sleepyAddress: string;
     let treasury: Signer;
     let outsider: Signer;
 
@@ -76,11 +78,14 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
 
     const REDEEMABLE_AURA_SUPPLY = simpleToExactAmount(10_000_000);
     const ALICE_AURA = simpleToExactAmount(1_000_000); // 10%
-    const BOB_AURA = simpleToExactAmount(500_000); //  5%
-    const ALICE_AURABAL = simpleToExactAmount(100_000);
-    const BOB_AURABAL = simpleToExactAmount(50_000);
+    const BOB_AURA = simpleToExactAmount(400_000); //  4%
+    const SLEEPY_AURA = simpleToExactAmount(100_000); //  1%
 
-    const SWEEP_DELAY = 60 * 60 * 24 * 365;
+    const ALICE_AURABAL = simpleToExactAmount(100_000);
+    const BOB_AURABAL = simpleToExactAmount(49_000);
+    const SLEEPY_AURABAL = simpleToExactAmount(1_000);
+
+    const SWEEP_DELAY = ONE_YEAR;
     let auraExpiry: BigNumber;
 
     before(async () => {
@@ -89,10 +94,12 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         alice = accounts[5];
         bob = accounts[6];
         outsider = accounts[7];
+        sleepy = accounts[8];
 
         deployerAddress = await deployer.getAddress();
         aliceAddress = await alice.getAddress();
         bobAddress = await bob.getAddress();
+        sleepyAddress = await sleepy.getAddress();
 
         mocks = await deployMocks(hre, deployer);
         const multisigs = await getMockMultisigs(accounts[1], accounts[2], accounts[3]);
@@ -128,10 +135,12 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         const boosterSigner = await impersonateAccount(booster.address);
         await cvx.connect(boosterSigner.signer).mint(aliceAddress, ALICE_AURA);
         await cvx.connect(boosterSigner.signer).mint(bobAddress, BOB_AURA);
+        await cvx.connect(boosterSigner.signer).mint(sleepyAddress, SLEEPY_AURA);
 
         const depositorSigner = await impersonateAccount(crvDepositor.address);
         await cvxCrv.connect(depositorSigner.signer).mint(aliceAddress, ALICE_AURABAL);
         await cvxCrv.connect(depositorSigner.signer).mint(bobAddress, BOB_AURABAL);
+        await cvxCrv.connect(depositorSigner.signer).mint(sleepyAddress, SLEEPY_AURABAL);
 
         treasuryUsdc = await deployContract<MockERC20>(
             hre,
@@ -157,7 +166,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
 
     it("Stage 0: deploys AuraRedemption (owner = treasury)", async () => {
         const now = await getTimestamp();
-        auraExpiry = now.add(60 * 60 * 24 * 100); // 100 days
+        auraExpiry = now.add(ONE_DAY.mul(100)); // 100 days
 
         auraRedemption = await deployContract<AuraRedemption>(
             hre,
@@ -208,6 +217,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 0: alice redeems her AURA", async () => {
+        const burntAuraBefore = await cvx.balanceOf(BURN_ADDRESS);
         await cvx.connect(alice).approve(auraRedemption.address, ALICE_AURA);
         await auraRedemption.connect(alice).redeem(ALICE_AURA);
 
@@ -216,19 +226,39 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await treasuryUsdc.balanceOf(aliceAddress)).eq(expectedUsdc);
         expect(await treasuryWeth.balanceOf(aliceAddress)).eq(expectedWeth);
         expect(await auraRedemption.balanceOf(aliceAddress)).eq(ALICE_AURA);
-        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(ALICE_AURA);
+        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(burntAuraBefore.add(ALICE_AURA));
     });
 
-    it("Stage 0: bob redeems his AURA", async () => {
-        await cvx.connect(bob).approve(auraRedemption.address, BOB_AURA);
-        await auraRedemption.connect(bob).redeem(BOB_AURA);
+    it("Stage 0: bob redeems his AURA 1/2", async () => {
+        const burntAuraBefore = await cvx.balanceOf(BURN_ADDRESS);
+        await cvx.connect(bob).approve(auraRedemption.address, BOB_AURA.div(2));
+        await auraRedemption.connect(bob).redeem(BOB_AURA.div(2));
+
+        const expectedUsdc = TREASURY_USDC_FUND.mul(BOB_AURA.div(2)).div(REDEEMABLE_AURA_SUPPLY);
+        expect(await treasuryUsdc.balanceOf(bobAddress)).eq(expectedUsdc);
+        expect(await auraRedemption.balanceOf(bobAddress)).eq(BOB_AURA.div(2));
+        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(burntAuraBefore.add(BOB_AURA.div(2)));
+    });
+    it("Stage 0: bob redeems his AURA 2/2", async () => {
+        const burntAuraBefore = await cvx.balanceOf(BURN_ADDRESS);
+        await cvx.connect(bob).approve(auraRedemption.address, BOB_AURA.div(2));
+        await auraRedemption.connect(bob).redeem(BOB_AURA.div(2));
 
         const expectedUsdc = TREASURY_USDC_FUND.mul(BOB_AURA).div(REDEEMABLE_AURA_SUPPLY);
         expect(await treasuryUsdc.balanceOf(bobAddress)).eq(expectedUsdc);
         expect(await auraRedemption.balanceOf(bobAddress)).eq(BOB_AURA);
-        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(ALICE_AURA.add(BOB_AURA));
+        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(burntAuraBefore.add(BOB_AURA.div(2)));
     });
+    it("Stage 0: sleepy redeems his AURA 1/2", async () => {
+        const burntAuraBefore = await cvx.balanceOf(BURN_ADDRESS);
+        await cvx.connect(sleepy).approve(auraRedemption.address, SLEEPY_AURA.div(2));
+        await auraRedemption.connect(sleepy).redeem(SLEEPY_AURA.div(2));
 
+        const expectedUsdc = TREASURY_USDC_FUND.mul(SLEEPY_AURA.div(2)).div(REDEEMABLE_AURA_SUPPLY);
+        expect(await treasuryUsdc.balanceOf(sleepyAddress)).eq(expectedUsdc);
+        expect(await auraRedemption.balanceOf(sleepyAddress)).eq(SLEEPY_AURA.div(2));
+        expect(await cvx.balanceOf(BURN_ADDRESS)).eq(burntAuraBefore.add(SLEEPY_AURA.div(2)));
+    });
     // ──────────────────────────────────────────────────────────────────────
     // Stage 1 — shutdown, deploy coordinator, hand over ownership, setOperator
     // ──────────────────────────────────────────────────────────────────────
@@ -240,9 +270,23 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     it("Stage 1: shuts down every pool, the pool manager, and the Booster", async () => {
         const poolLength = await booster.poolLength();
         for (let i = 0; i < Number(poolLength.toString()); i++) {
+            // ⚠️ Deployed Version is different setup ⚠️
+            // PoolManager.operator => PoolManagerSecondaryProxy
+            // PoolManagerSecondaryProxy.operator => PoolManagerV4
+            // PoolManagerV4.operator => PoolFeeManagerProxy
+            // PoolFeeManagerProxy.operator => daoMultisig
+            // PoolFeeManagerProxy.shutdownPool(), should check if it is not already shutdown.
+            const pooolInfo = await booster.poolInfo(i);
+            if (pooolInfo.shutdown == true) throw new Error(`Pool ${i} is already shutdown`);
             await poolManager.connect(daoMultisig).shutdownPool(i);
         }
+        // ⚠️ Deployed Version is different setup ⚠️
+        // PoolFeeManagerProxy.operator => daoMultisig
         await poolManagerSecondaryProxy.connect(daoMultisig).shutdownSystem();
+
+        // ⚠️ Deployed Version is different setup ⚠️
+        // boosterOwner.owner => BoosterOwnerSecondary
+        // BoosterOwnerSecondary.owner => daoMultisig
         await boosterOwner.connect(daoMultisig).shutdownSystem();
 
         expect(await booster.isShutdown()).eq(true);
@@ -294,6 +338,24 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await cvx.operator()).eq(coordinator.address);
     });
 
+    it("Stage Attack: coordinator mints aura", async () => {
+        const cvxBefore = await cvx.balanceOf(coordinator.address);
+
+        // Mint aura
+        // await cvx.connect(coordinatorAcc.signer).mint(coordinator.address, simpleToExactAmount(1));
+        await coordinator
+            .connect(treasury)
+            .execute(
+                cvx.address,
+                0,
+                cvx.interface.encodeFunctionData("mint", [coordinator.address, simpleToExactAmount(1)]),
+            );
+        expect(cvxBefore).lt(await cvx.balanceOf(coordinator.address));
+        console.warn(
+            "Attack successful: coordinator was able to mint AURA after shutdown. This is a critical issue that needs to be fixed before proceeding with the wind-down.",
+        );
+    });
+
     it("Stage 1: legacy Booster.rewardClaimed path no longer mints AURA", async () => {
         const boosterSigner = await impersonateAccount(booster.address);
         const before = await cvx.balanceOf(aliceAddress);
@@ -310,6 +372,10 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
             rewardContracts.push(pool.crvRewards);
         }
         for (const addr of rewardContracts) {
+            // ⚠️ Deployed Version is different setup ⚠️
+            // booster.feeManager => PoolFeeManagerProxy
+            // PoolFeeManagerProxy.operator => daoMultisig
+            // PoolFeeManagerProxy.connect(daoMultisig).setRewardMultiplier(addr, 0 )
             await booster.connect(daoMultisig).setRewardMultiplier(addr, 0);
             expect(await booster.getRewardMultipliers(addr)).eq(ZERO);
         }
@@ -324,7 +390,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 2 pre: splitAndFinalize reverts before unlockAndWithdraw", async () => {
-        await expect(coordinator.connect(treasury).splitAndFinalize([])).to.revertedWith("!stage");
+        await expect(coordinator.connect(treasury).splitAndFinalize()).to.revertedWith("!stage");
     });
 
     it("Stage 2: warps past AuraRedemption.expiry and the veBAL unlock", async () => {
@@ -337,12 +403,37 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         const lockedAmount = await mocks.votingEscrow.balanceOf(voterProxy.address);
 
         // Permissionless — called by outsider, not treasury.
-        await coordinator.connect(outsider).unlockAndWithdraw();
+        const tx = await coordinator.connect(outsider).unlockAndWithdraw();
 
         expect(await mocks.votingEscrow.balanceOf(voterProxy.address)).eq(ZERO);
         expect(await mocks.crvBpt.balanceOf(voterProxy.address)).eq(ZERO);
         expect(await mocks.crvBpt.balanceOf(coordinator.address)).eq(lockedAmount);
         expect(await coordinator.stage()).eq(1); // WITHDRAWN
+        await expect(tx).to.emit(coordinator, "Withdrawn").withArgs(lockedAmount);
+    });
+
+    it("Stage Attack: treasury steals crvBpt", async () => {
+        const treasuryAddress = await treasury.getAddress();
+        const balanceBefore = await mocks.crvBpt.balanceOf(treasuryAddress);
+
+        // Mint aura
+        await coordinator
+            .connect(treasury)
+            .execute(
+                mocks.crvBpt.address,
+                0,
+                mocks.crvBpt.interface.encodeFunctionData("transfer", [treasuryAddress, simpleToExactAmount(1)]),
+            );
+        expect(balanceBefore).lt(await mocks.crvBpt.balanceOf(treasuryAddress));
+        console.warn(
+            "Attack successful: treasury was able to steal CRV BPT from the coordinator after shutdown. This is a critical issue that needs to be fixed before proceeding with the wind-down.",
+        );
+    });
+
+    it("Stage 2: None should be able to redeem AURA after coordinator.unlockAndWithdraw", async () => {
+        const sleepyAura = await cvx.balanceOf(sleepyAddress);
+        await cvx.connect(sleepy).approve(auraRedemption.address, sleepyAura);
+        await expect(auraRedemption.connect(sleepy).redeem(sleepyAura)).to.revertedWith("expired");
     });
 
     it("Stage 2: cannot unlockAndWithdraw twice", async () => {
@@ -350,9 +441,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 2 pre: splitAndFinalize reverts if non-owner calls", async () => {
-        await expect(
-            coordinator.connect(outsider).splitAndFinalize([treasuryUsdc.address, treasuryWeth.address]),
-        ).to.revertedWith("!owner");
+        await expect(coordinator.connect(outsider).splitAndFinalize()).to.revertedWith("!owner");
     });
 
     it("Stage 2: treasury calls splitAndFinalize — sweeps residuals, splits BPT 90/10, finalizes B and C", async () => {
@@ -365,7 +454,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         const expectedAuraBalShare = totalBpt.mul(AURABAL_BPS).div(BPS_DENOMINATOR);
         const expectedRAuraShare = totalBpt.sub(expectedAuraBalShare);
 
-        await coordinator.connect(treasury).splitAndFinalize([treasuryUsdc.address, treasuryWeth.address]);
+        const tx = await coordinator.connect(treasury).splitAndFinalize();
 
         // Residuals flowed from A into B.
         expect(await treasuryUsdc.balanceOf(auraRedemption.address)).eq(ZERO);
@@ -380,7 +469,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         // Both finalized; snapshots recorded.
         expect(await rAuraRedemption.finalized()).eq(true);
         expect(await auraBalRedemption.finalized()).eq(true);
-        expect(await rAuraRedemption.REDEEMABLE_RAURA_SUPPLY()).eq(ALICE_AURA.add(BOB_AURA));
+        expect(await rAuraRedemption.REDEEMABLE_RAURA_SUPPLY()).eq(ALICE_AURA.add(BOB_AURA).add(SLEEPY_AURA.div(2)));
         expect(await auraBalRedemption.REDEEMABLE_AURABAL_SUPPLY()).eq(await cvxCrv.totalSupply());
 
         // Allocations match balances at finalize.
@@ -390,10 +479,14 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await auraBalRedemption.redeemableTokenAllocation(mocks.crvBpt.address)).eq(expectedAuraBalShare);
 
         expect(await coordinator.stage()).eq(2); // FINALIZED
+
+        await expect(tx).to.emit(rAuraRedemption, "Finalized");
+        await expect(tx).to.emit(auraBalRedemption, "Finalized");
+        await expect(tx).to.emit(coordinator, "SplitAndFinalized");
     });
 
     it("Stage 2: cannot splitAndFinalize twice", async () => {
-        await expect(coordinator.connect(treasury).splitAndFinalize([])).to.revertedWith("!stage");
+        await expect(coordinator.connect(treasury).splitAndFinalize()).to.revertedWith("!stage");
     });
 
     it("Stage 2: alice redeems rAURA for her slice of BPT + residuals", async () => {
