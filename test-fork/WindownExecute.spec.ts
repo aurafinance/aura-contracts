@@ -18,11 +18,12 @@ import {
     MockBalancerPoolToken,
     MockBalancerPoolToken__factory,
     MockCurveVoteEscrow__factory,
+    AuraLocker,
 } from "../types/generated";
 import { simpleToExactAmount } from "../test-utils/math";
 import { getTimestamp, increaseTime, increaseTimeTo } from "../test-utils/time";
 import { impersonateAccount } from "../test-utils/fork";
-import { ONE_DAY, ONE_YEAR, ZERO } from "../test-utils/constants";
+import { ONE_DAY, ZERO } from "../test-utils/constants";
 import hre, { ethers, network } from "hardhat";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
 import { deployWindowPhase1, deployWindowPhase2 } from "../scripts/deployWindown";
@@ -81,6 +82,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     let booster: Booster;
     let boosterOwnerSecondary: BoosterOwnerSecondary;
     let poolFeeManagerProxy: PoolFeeManagerProxy;
+    let cvxLocker: AuraLocker;
 
     let mocks: { votingEscrow: MockCurveVoteEscrow; crvBpt: MockBalancerPoolToken };
 
@@ -109,7 +111,6 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     const BOB_AURABAL = simpleToExactAmount(49_000);
     const SLEEPY_AURABAL = simpleToExactAmount(1_000);
 
-    const SWEEP_DELAY = ONE_YEAR;
     let auraExpiry: BigNumber;
 
     before(async () => {
@@ -152,6 +153,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         booster = contracts.booster;
         boosterOwnerSecondary = contracts.boosterOwnerSecondary;
         poolFeeManagerProxy = contracts.poolFeeManagerProxy;
+        cvxLocker = contracts.cvxLocker;
 
         expect(booster.address).eq("0xA57b8d98dAE62B26Ec3bcC4a365338157060B234");
 
@@ -343,7 +345,37 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
 
         expect(await booster.isShutdown()).eq(true);
     });
+    it("Stage 1: shuts down aura locker", async () => {
+        // Given a user locks aura before shutdown
+        const auraBalanceBefore = await cvx.balanceOf(sleepyAddress);
+        expect(auraBalanceBefore).gt(ZERO);
 
+        // Lock for two weeks to test that the user can process expired locks immediately after shutdown (no time-lock after shutdown)
+        await cvx.connect(sleepy).approve(cvxLocker.address, SLEEPY_AURA);
+        await cvxLocker.connect(sleepy).lock(sleepyAddress, SLEEPY_AURA.div(2));
+
+        await increaseTime(ONE_DAY.mul(7));
+
+        await cvxLocker.connect(sleepy).lock(sleepyAddress, SLEEPY_AURA.div(2));
+
+        const auraBalanceAfter = await cvx.balanceOf(sleepyAddress);
+
+        expect(auraBalanceAfter).eq(auraBalanceBefore.sub(SLEEPY_AURA));
+
+        // When the aura locker is shut down
+        await cvxLocker.connect(daoMultisig).shutdown();
+        expect(await cvxLocker.isShutdown()).eq(true);
+
+        // Then the user should be able to process expired locks immediately and get their tokens back (no time-lock after shutdown)
+        await cvxLocker.connect(sleepy).processExpiredLocks(false);
+
+        expect(await cvx.balanceOf(sleepyAddress)).eq(auraBalanceBefore);
+
+        // And new locks should be disallowed
+        await cvx.connect(sleepy).approve(cvxLocker.address, SLEEPY_AURA);
+        await expect(cvxLocker.connect(sleepy).lock(sleepyAddress, SLEEPY_AURA)).to.revertedWith("shutdown");
+        expect(await cvx.balanceOf(sleepyAddress)).eq(auraBalanceBefore);
+    });
     it("Stage 1: deploys WindDownCoordinator (daoMultisig = owner)", async () => {
         const windownPhase2 = await deployWindowPhase2(
             hre,
@@ -416,7 +448,6 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 2: warps past AuraRedemption.expiry and the veBAL unlock", async () => {
-        // const unlockTime = await mocks.votingEscrow.lockTimes(voterProxy.address);
         const locked = await mocks.votingEscrow.locked(voterProxy.address);
         const unlockTime = locked[1];
         const target = unlockTime.gt(auraExpiry) ? unlockTime : auraExpiry;
@@ -425,11 +456,11 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
 
     it("Stage 2: coordinator.unlockAndWithdraw pulls BPT out of the escrow (permissionless)", async () => {
         const locked = await mocks.votingEscrow.locked(voterProxy.address);
-        console.log(
-            `Locked BPT: ${ethers.utils.formatUnits(locked[0], 18)}, unlock time: ${new Date(
-                locked[1].toNumber() * 1000,
-            ).toISOString()}`,
-        );
+        // console.log(
+        //     `Locked BPT: ${ethers.utils.formatUnits(locked[0], 18)}, unlock time: ${new Date(
+        //         locked[1].toNumber() * 1000,
+        //     ).toISOString()}`,
+        // );
         const lockedAmount = locked[0];
         // Permissionless — called by outsider, not treasury.
         const tx = await coordinator.connect(outsider).unlockAndWithdraw();
