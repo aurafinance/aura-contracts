@@ -1,0 +1,37 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1777616891213,
+    "meta": {
+        "name": "Transactions Batch",
+        "description": "",
+        "txBuilderVersion": "2.0.1",
+        "createdFromSafeAddress": "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        "createdFromOwnerAddress": "",
+        "checksum": "0xe4186a263c19d1579cfab56c230ba96dec925f69e71b9dd6606e18236fcbf578"
+    },
+    "transactions": [
+        {
+            "to": "0x2B6C227b26Bc0AcE74BB12DA86571179c2c8Bc54",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [],
+                "name": "shutdownSystem",
+                "payable": false
+            },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0x04798C9B4546d90A97F687188d346D170298703c",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [],
+                "name": "shutdownSystem",
+                "payable": false
+            },
+            "contractInputsValues": null
+        }
+    ]
+}

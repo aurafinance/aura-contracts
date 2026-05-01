@@ -1,0 +1,86 @@
+{
+    "version": "1.0",
+    "chainId": "1",
+    "createdAt": 1777616891213,
+    "meta": {
+        "name": "Transactions Batch",
+        "description": "",
+        "txBuilderVersion": "2.0.1",
+        "createdFromSafeAddress": "0x5feA4413E3Cc5Cf3A29a49dB41ac0c24850417a0",
+        "createdFromOwnerAddress": "",
+        "checksum": "0xe4186a263c19d1579cfab56c230ba96dec925f69e71b9dd6606e18236fcbf578"
+    },
+    "transactions": [
+        {
+            "to": "0xD0521C061958324D06b8915FFDAc3DB22C8Bd687",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [],
+                "name": "shutdownSystem",
+                "payable": false
+            },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xCe96e48A2893C599fe2601Cc1918882e1D001EaD",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [],
+                "name": "shutdownSystem",
+                "payable": false
+            },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xeAd792B55340Aa20181A80d6a16db6A0ECd1b827",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_cooldown",
+                        "type": "bool",
+                        "internalType": "bool"
+                    }
+                ],
+                "name": "setCooldown",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_cooldown": "true"
+            }
+        },
+        {
+            "to": "0x3Fa73f1E5d8A792C80F426fc8F84FBF7Ce9bBCAC",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [],
+                "name": "shutdown",
+                "payable": false
+            },
+            "contractInputsValues": null
+        },
+        {
+            "to": "0xfAA2eD111B4F580fCb85C48E6DC6782Dc5FCD7a6",
+            "value": "0",
+            "data": null,
+            "contractMethod": {
+                "inputs": [
+                    {
+                        "name": "_penalty",
+                        "type": "uint256",
+                        "internalType": "uint256"
+                    }
+                ],
+                "name": "setWithdrawalPenalty",
+                "payable": false
+            },
+            "contractInputsValues": {
+                "_penalty": "0"
+            }
+        }
+    ]
+}
