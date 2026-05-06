@@ -31,14 +31,19 @@ async function getAuraBalAddress(chainId: number, signer: ethers.Signer): Promis
     return addr === ZERO_ADDRESS ? undefined : addr;
 }
 
-function getAuraAddress(chainId: number): string | undefined {
+async function getAuraAddress(chainId: number, signer: ethers.Signer): Promise<string | undefined> {
     if (chainId === chainIds.mainnet) {
-        const canonicalConfig = canonicalConfigs[chainIds.mainnet] as { addresses?: { token?: string } } | undefined;
-        return canonicalConfig?.addresses?.token;
+        const canonicalConfig = canonicalConfigs[chainIds.mainnet];
+        if (!canonicalConfig) return undefined;
+        const phase2 = await canonicalConfig.getPhase2(signer);
+        return phase2.cvx.address;
     }
 
     const sidechainConfig = sidechainConfigs[chainId];
-    return sidechainConfig?.extConfig?.token;
+    if (!sidechainConfig) return undefined;
+    const sidechain = sidechainConfig.getSidechain(signer);
+    const addr = sidechain.auraOFT.address;
+    return addr === ZERO_ADDRESS ? undefined : addr;
 }
 
 type Category = "lock" | "pools" | "vaults";
@@ -583,7 +588,7 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                     }
 
                     const signer = await getSigner(hre);
-                    const auraAddress = getAuraAddress(chain.chainId);
+                    const auraAddress = await getAuraAddress(chain.chainId, signer);
                     const vaultCalls = parseVaultCalls(vaultsSnapshot, auraAddress);
                     const callBatches = chunk(vaultCalls, batchSize);
                     const payloads = buildVaultMulticallPayloads(vaultCalls, batchSize);
