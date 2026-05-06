@@ -5,7 +5,7 @@ import { simpleToExactAmount } from "../../test-utils/math";
 import { getSigner } from "../utils";
 import { logContracts } from "../utils/deploy-utils";
 import { config } from "../deploy/mainnet-config";
-import { deployWindowPhase1, deployWindowPhase2, getWindownPhase1 } from "../../scripts/deployWindown";
+import "./claimRewards";
 
 // Configs
 const debug = true;
@@ -14,6 +14,7 @@ const DEFAULT_REDEEMABLE_AURA_SUPPLY = simpleToExactAmount(10_000_000);
 task("deploy:windowPhase1")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
+        const { deployWindowPhase1 } = await import("../../scripts/deployWindown");
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
 
@@ -33,6 +34,7 @@ task("deploy:windowPhase1")
 task("deploy:windowPhase2")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
+        const { deployWindowPhase2, getWindownPhase1 } = await import("../../scripts/deployWindown");
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
         const { auraRedemption, rAuraRedemption, auraBalRedemption } = await getWindownPhase1(deployer);
