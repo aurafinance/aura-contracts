@@ -1,7 +1,7 @@
 import { BigNumber, Signer } from "ethers";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 
-import { deployContract } from "../tasks/utils";
+import { deployContract, verifyEtherscan } from "../tasks/utils";
 import {
     AuraBalRedemption,
     AuraBalRedemption__factory,
@@ -16,7 +16,6 @@ import {
     WindDownCoordinator__factory,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig } from "./deploySystem";
-import { getTimestamp } from "../test-utils/time";
 import { ONE_DAY, ONE_YEAR, ZERO_ADDRESS } from "../test-utils/constants";
 interface WindownPhase1Deployed {
     auraRedemption: AuraRedemption;
@@ -39,37 +38,54 @@ export async function deployWindowPhase1(
     waitForBlocks = 0,
 ): Promise<WindownPhase1Deployed> {
     const { cvx, cvxCrv } = deployment;
-    const now = await getTimestamp();
+    const latest = await hre.ethers.provider.getBlock("latest");
+    const now = BigNumber.from(latest.timestamp);
     const auraExpiry = now.add(ONE_DAY.mul(100));
     const SWEEP_DELAY = ONE_YEAR;
 
+    const auraRedemptionArgs = [
+        "Redeemed AURA",
+        "rAURA",
+        cvx.address,
+        config.redeemableAuraSupply,
+        auraExpiry,
+        multisigs.daoMultisig,
+    ];
     const auraRedemption = await deployContract<AuraRedemption>(
         hre,
         new AuraRedemption__factory(signer),
         "AuraRedemption",
-        ["Redeemed AURA", "rAURA", cvx.address, config.redeemableAuraSupply, auraExpiry, multisigs.daoMultisig],
+        auraRedemptionArgs,
         {},
         debug,
         waitForBlocks,
     );
+    await verifyEtherscan(hre, { address: auraRedemption.address, constructorArguments: auraRedemptionArgs });
+
+    const rAuraRedemptionArgs = [auraRedemption.address, SWEEP_DELAY, multisigs.daoMultisig];
     const rAuraRedemption = await deployContract<RAuraRedemption>(
         hre,
         new RAuraRedemption__factory(signer),
         "RAuraRedemption",
-        [auraRedemption.address, SWEEP_DELAY, multisigs.daoMultisig],
+        rAuraRedemptionArgs,
         {},
         debug,
         waitForBlocks,
     );
+    await verifyEtherscan(hre, { address: rAuraRedemption.address, constructorArguments: rAuraRedemptionArgs });
+
+    const auraBalRedemptionArgs = [cvxCrv.address, SWEEP_DELAY, multisigs.daoMultisig];
     const auraBalRedemption = await deployContract<AuraBalRedemption>(
         hre,
         new AuraBalRedemption__factory(signer),
         "AuraBalRedemption",
-        [cvxCrv.address, SWEEP_DELAY, multisigs.daoMultisig],
+        auraBalRedemptionArgs,
         {},
         debug,
         waitForBlocks,
     );
+    await verifyEtherscan(hre, { address: auraBalRedemption.address, constructorArguments: auraBalRedemptionArgs });
+
     return { auraRedemption, rAuraRedemption, auraBalRedemption };
 }
 export async function deployWindowPhase2(
@@ -83,24 +99,26 @@ export async function deployWindowPhase2(
 ): Promise<WindownPhase2Deployed> {
     const AURABAL_BPS = 9000; // 90% of BPT goes to auraBAL holders, 10% to rAURA.
     const { voterProxy, auraRedemption, rAuraRedemption, auraBalRedemption } = deployment;
+    const coordinatorArgs = [
+        voterProxy.address,
+        extSystem.votingEscrow,
+        extSystem.tokenBpt,
+        auraRedemption.address,
+        rAuraRedemption.address,
+        auraBalRedemption.address,
+        AURABAL_BPS,
+        multisigs.daoMultisig,
+    ];
     const coordinator = await deployContract<WindDownCoordinator>(
         hre,
         new WindDownCoordinator__factory(signer),
         "WindDownCoordinator",
-        [
-            voterProxy.address,
-            extSystem.votingEscrow,
-            extSystem.tokenBpt,
-            auraRedemption.address,
-            rAuraRedemption.address,
-            auraBalRedemption.address,
-            AURABAL_BPS,
-            multisigs.daoMultisig,
-        ],
+        coordinatorArgs,
         {},
         debug,
         waitForBlocks,
     );
+    await verifyEtherscan(hre, { address: coordinator.address, constructorArguments: coordinatorArgs });
     return { coordinator };
 }
 
