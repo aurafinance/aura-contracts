@@ -61,6 +61,7 @@ task("deploy:windown")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
+        const { deployWindowPhase2, deployWindowPhase1 } = await import("../../scripts/deployWindown");
 
         const phase1 = await deployWindowPhase1(
             hre,
