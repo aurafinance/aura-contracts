@@ -23,7 +23,7 @@
             "contractInputsValues": null
         },
         {
-            "to": "0x3af95Ba5C362075Bb28E5A2A42D7Cd1e201A1b66",
+            "to": "0x0f0Ddad80025adf6C5Ca45905237e5ca12B755fc",
             "value": "0",
             "data": null,
             "contractMethod": {
@@ -34,23 +34,15 @@
             "contractInputsValues": null
         },
         {
-            "to": "0x4EA9317D90b61fc28C418C247ad0CA8939Bbb0e9",
+            "to": "0x9e1f4190f1a8Fe0cD57421533deCB57F9980922e",
             "value": "0",
             "data": null,
             "contractMethod": {
-                "inputs": [
-                    {
-                        "name": "_penalty",
-                        "type": "uint256",
-                        "internalType": "uint256"
-                    }
-                ],
-                "name": "setWithdrawalPenalty",
+                "inputs": [],
+                "name": "shutdown",
                 "payable": false
             },
-            "contractInputsValues": {
-                "_penalty": "0"
-            }
+            "contractInputsValues": null
         }
     ]
 }

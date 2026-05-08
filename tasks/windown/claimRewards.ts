@@ -15,7 +15,7 @@ const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const DEAD_ADDRESS = "0x000000000000000000000000000000000000dead";
-const txDebug = false;
+const txDebug = true;
 
 async function getAuraBalAddress(chainId: number, signer: ethers.Signer): Promise<string | undefined> {
     if (chainId === chainIds.mainnet) {
@@ -30,7 +30,6 @@ async function getAuraBalAddress(chainId: number, signer: ethers.Signer): Promis
     const addr = sidechain.auraBalOFT.address;
     return addr === ZERO_ADDRESS ? undefined : addr;
 }
-
 async function getAuraAddress(chainId: number, signer: ethers.Signer): Promise<string | undefined> {
     if (chainId === chainIds.mainnet) {
         const canonicalConfig = canonicalConfigs[chainIds.mainnet];
@@ -45,7 +44,19 @@ async function getAuraAddress(chainId: number, signer: ethers.Signer): Promise<s
     const addr = sidechain.auraOFT.address;
     return addr === ZERO_ADDRESS ? undefined : addr;
 }
-
+async function getVaultAuraRewardAddress(chainId: number, signer: ethers.Signer): Promise<string | undefined> {
+    if (chainId === chainIds.mainnet) {
+        const canonicalConfig = canonicalConfigs[chainIds.mainnet];
+        if (!canonicalConfig) return undefined;
+        const phase = await canonicalConfig.getAuraBalVault(signer);
+        return phase.auraRewards.address;
+    }
+    const sidechainConfig = sidechainConfigs[chainId];
+    if (!sidechainConfig) return undefined;
+    const sidechain = sidechainConfig.getSidechain(signer);
+    const addr = sidechain.auraBalVaultAuraRewards.address;
+    return addr === ZERO_ADDRESS ? undefined : addr;
+}
 type Category = "lock" | "pools" | "vaults";
 type PrefaceCategory = "AuraLock" | "Pools" | "Vaults";
 
@@ -135,10 +146,6 @@ const CATEGORY_LABELS: Record<Category, PrefaceCategory> = {
     pools: "Pools",
     vaults: "Vaults",
 };
-
-function parseBool(value: string): boolean {
-    return ["1", "true", "yes", "y"].includes(value.toLowerCase());
-}
 
 function toCategory(categoryArg: string): Category | "all" {
     const lowered = categoryArg.toLowerCase();
@@ -277,7 +284,9 @@ function parseLockCalls(lockSnapshot: LockSnapshot): LockerCallDescriptor[] {
     for (const [user, lockData] of Object.entries(lockSnapshot)) {
         const claimableRewards = (lockData.rewards || []).filter(reward => {
             try {
-                return ethers.BigNumber.from(reward.earned).gt(0);
+                // Mainnet: 1 AURA min threshold
+                return ethers.BigNumber.from(reward.earned).gte("1000000000000000000");
+                // return ethers.BigNumber.from(reward.earned).gte("1");
             } catch {
                 return false;
             }
@@ -305,21 +314,7 @@ function parseLockCalls(lockSnapshot: LockSnapshot): LockerCallDescriptor[] {
     return calls;
 }
 
-function buildMulticallPayloads(calls: LockerCallDescriptor[], batchSize: number): string[] {
-    const multicallIface = Multicall3__factory.createInterface();
-    const callBatches = chunk(calls, batchSize);
-
-    return callBatches.map(batch => {
-        const aggregateCalls: Call3Struct[] = batch.map(call => ({
-            target: call.lockerAddress,
-            allowFailure: true,
-            callData: call.callData,
-        }));
-        return multicallIface.encodeFunctionData("aggregate3", [aggregateCalls]);
-    });
-}
-
-function parseVaultCalls(vaultsSnapshot: VaultsSnapshot, auraAddress?: string): VaultCallDescriptor[] {
+function parseVaultCalls(vaultsSnapshot: VaultsSnapshot, auraAddress: string, chainId: number): VaultCallDescriptor[] {
     const vaultIface = new ethers.utils.Interface(["function getReward(address)"]);
     const calls: VaultCallDescriptor[] = [];
 
@@ -331,7 +326,11 @@ function parseVaultCalls(vaultsSnapshot: VaultsSnapshot, auraAddress?: string): 
 
         const claimableRewards = (vaultData.rewards || []).filter(reward => {
             try {
-                return ethers.BigNumber.from(reward.earned).gt(0);
+                if (chainId === chainIds.mainnet) {
+                    return ethers.BigNumber.from(reward.earned).gte("1000000000000000000");
+                } else {
+                    return ethers.BigNumber.from(reward.earned).gt(0);
+                }
             } catch {
                 return false;
             }
@@ -349,7 +348,7 @@ function parseVaultCalls(vaultsSnapshot: VaultsSnapshot, auraAddress?: string): 
             const formattedAmount = formatRewardAmount(reward.earned, reward.token.decimals);
             if (txDebug) {
                 console.log(
-                    `  user ${user} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
+                    `  User ${user} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
                 );
             }
         }
@@ -365,21 +364,7 @@ function parseVaultCalls(vaultsSnapshot: VaultsSnapshot, auraAddress?: string): 
     return calls;
 }
 
-function buildVaultMulticallPayloads(calls: VaultCallDescriptor[], batchSize: number): string[] {
-    const multicallIface = Multicall3__factory.createInterface();
-    const callBatches = chunk(calls, batchSize);
-
-    return callBatches.map(batch => {
-        const aggregateCalls: Call3Struct[] = batch.map(call => ({
-            target: call.vaultAddress,
-            allowFailure: true,
-            callData: call.callData,
-        }));
-        return multicallIface.encodeFunctionData("aggregate3", [aggregateCalls]);
-    });
-}
-
-function parsePoolCalls(poolsSnapshot: PoolsSnapshot): PoolCallDescriptor[] {
+function parsePoolCalls(poolsSnapshot: PoolsSnapshot, chainId: number): PoolCallDescriptor[] {
     const poolIface = new ethers.utils.Interface(["function getReward(address,bool)"]);
     const calls: PoolCallDescriptor[] = [];
 
@@ -392,7 +377,12 @@ function parsePoolCalls(poolsSnapshot: PoolsSnapshot): PoolCallDescriptor[] {
         for (const pool of pools || []) {
             const claimableRewards = (pool.rewards || []).filter(reward => {
                 try {
-                    return ethers.BigNumber.from(reward.earned).gt(0);
+                    // Avoid dust claims on some chains by requiring a minimum threshold of 1 AURA, but on other chains where rewards are typically smaller, allow any non-zero amount
+                    if (chainId === chainIds.arbitrum || chainId === chainIds.polygon || chainId === chainIds.mainnet) {
+                        return ethers.BigNumber.from(reward.earned).gte("1000000000000000000");
+                    } else {
+                        return ethers.BigNumber.from(reward.earned).gt(0);
+                    }
                 } catch {
                     return false;
                 }
@@ -405,7 +395,7 @@ function parsePoolCalls(poolsSnapshot: PoolsSnapshot): PoolCallDescriptor[] {
                 const formattedAmount = formatRewardAmount(reward.earned, reward.token.decimals);
                 if (txDebug) {
                     console.log(
-                        `  user ${user} pool ${pool.poolAddress} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
+                        `  User ${user} pool ${pool.poolAddress} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
                     );
                 }
             }
@@ -424,36 +414,30 @@ function parsePoolCalls(poolsSnapshot: PoolsSnapshot): PoolCallDescriptor[] {
     return calls;
 }
 
-function buildPoolMulticallPayloads(calls: PoolCallDescriptor[], batchSize: number): string[] {
-    const multicallIface = Multicall3__factory.createInterface();
-    const callBatches = chunk(calls, batchSize);
-
-    return callBatches.map(batch => {
-        const aggregateCalls: Call3Struct[] = batch.map(call => ({
-            target: call.poolAddress,
-            allowFailure: true,
-            callData: call.callData,
-        }));
-        return multicallIface.encodeFunctionData("aggregate3", [aggregateCalls]);
-    });
-}
-
-// # yarn task:fork windown:claimrewards --wait 0 --category lock  --chainid 1 --batchsize 30 --save true
-// # yarn task:fork windown:claimrewards --wait 0 --category vaults --chainid 1 --batchsize 30 --save true
-// # yarn task:fork windown:claimrewards --wait 0 --category pools --chainid 1 --batchsize 10 --save true
+// # yarn task:fork windown:claimrewards --wait 0 --category lock  --chainid 1 --batchsize 30
+// # yarn task:fork windown:claimrewards --wait 0 --category vaults --chainid 1 --batchsize 30
+// # yarn task:fork windown:claimrewards --wait 0 --category pools --chainid 1 --batchsize 10
 
 task("windown:claimrewards", "Builds category preface data from withdraw snapshots")
     .addOptionalParam("category", "Category to process: lock, pools, vaults, all", "all")
     .addOptionalParam("chainid", "Chain ID to process, or all", "all")
     .addOptionalParam("batchsize", "Max calls per multicall batch", 50, types.int)
-    .addOptionalParam("save", "Write multicall payload files for AuraLock", "true")
     .addParam("wait", "How many blocks to wait for transaction confirmation", 1, types.int)
     .setAction(async function (tskArgs: TaskArguments, hre: HardhatRuntimeEnvironment) {
         const categoryScope = toCategory(String(tskArgs.category));
         const chainScope = toChainScope(String(tskArgs.chainid));
-        const saveOutput = parseBool(String(tskArgs.save));
         const batchSize = Number(tskArgs.batchsize);
         const waitForBlocks = Number(tskArgs.wait);
+
+        const feeEnvSummary = {
+            MAX_FEE_PER_GAS: process.env.MAX_FEE_PER_GAS?.trim() || "unset",
+            GAS_PRICE: process.env.GAS_PRICE?.trim() || "unset",
+            MAX_PRIORITY_FEE_PER_GAS: process.env.MAX_PRIORITY_FEE_PER_GAS?.trim() || "unset",
+            MAX_FEE_PER_GAS_CAP_GWEI: process.env.MAX_FEE_PER_GAS_CAP_GWEI?.trim() || "unset",
+            MAX_PRIORITY_FEE_PER_GAS_CAP_GWEI: process.env.MAX_PRIORITY_FEE_PER_GAS_CAP_GWEI?.trim() || "unset",
+            GAS_PRICE_CAP_GWEI: process.env.GAS_PRICE_CAP_GWEI?.trim() || "unset",
+        };
+        console.log("Fee env overrides/caps:", feeEnvSummary);
 
         if (!Number.isInteger(batchSize) || batchSize <= 0) {
             throw new Error(`Invalid batchsize: ${tskArgs.batchsize}. Must be a positive integer.`);
@@ -467,17 +451,12 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
             throw new Error(`No supported chains matched chainid=${tskArgs.chainid}`);
         }
 
-        const outputDir = path.resolve(__dirname, "./withdrawSnapshots/output");
-        if (saveOutput && !fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-        }
-
         console.log(
             `Preface configuration: categories=${categories.join(",")}, chains=${selectedChains
                 .map(chain => `${chain.name}:${chain.chainId}`)
-                .join(",")}, batchSize=${batchSize}, save=${saveOutput}`,
+                .join(",")}, batchSize=${batchSize}`,
         );
-
+        const signer = await getSigner(hre);
         for (const category of categories) {
             console.log(`\nCategory ${CATEGORY_LABELS[category]} (${category})`);
 
@@ -497,12 +476,10 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         continue;
                     }
 
-                    const signer = await getSigner(hre);
                     const auraBalAddress = await getAuraBalAddress(chain.chainId, signer);
 
                     const lockCalls = parseLockCalls(lockSnapshot);
                     const callBatches = chunk(lockCalls, batchSize);
-                    const payloads = buildMulticallPayloads(lockCalls, batchSize);
 
                     console.log(
                         `- ${chain.name} (${chain.chainId}): users=${
@@ -515,7 +492,7 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                             const symbol = getRewardSymbol(reward.token, auraBalAddress);
                             const formattedAmount = formatRewardAmount(reward.earned, reward.token.decimals);
                             console.log(
-                                `  user ${lockCall.user} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
+                                `  User ${lockCall.user} has ${formattedAmount} (${reward.earned}) of token ${reward.token.address} (${symbol})`,
                             );
                         }
                     }
@@ -532,7 +509,10 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         call => ({ target: call.lockerAddress, callData: call.callData }),
                         waitForBlocks,
                     );
-
+                    console.log(
+                        `  executed ${txHashes.length} multicalls with total gas used: ${totalGasUsed.toString()}`,
+                    );
+                    console.log(`  individual tx hashes: ${txHashes.join(", ")}`);
                     const rewardTotals = aggregateRewardTotals(lockCalls, auraBalAddress);
                     logRewardSummary(
                         chain,
@@ -541,41 +521,6 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         totalGasUsed,
                         rewardTotals,
                     );
-
-                    if (saveOutput) {
-                        const filePath = path.resolve(outputDir, `preface-lock-${chain.chainId}.json`);
-                        const serializableBatches = callBatches.map((batchCalls, index) => ({
-                            batch: index + 1,
-                            callCount: batchCalls.length,
-                            multicallTarget: MULTICALL3_ADDRESS,
-                            multicallData: payloads[index],
-                            txHash: txHashes[index],
-                            calls: batchCalls.map(call => ({
-                                user: call.user,
-                                lockerAddress: call.lockerAddress,
-                                rewards: call.rewards,
-                            })),
-                        }));
-
-                        fs.writeFileSync(
-                            filePath,
-                            JSON.stringify(
-                                {
-                                    category: "AuraLock",
-                                    chainId: chain.chainId,
-                                    chainName: chain.name,
-                                    totalUsers: Object.keys(lockSnapshot).length,
-                                    claimableUsers: lockCalls.length,
-                                    maxBatchSize: batchSize,
-                                    batches: serializableBatches,
-                                },
-                                null,
-                                4,
-                            ),
-                        );
-
-                        console.log(`  saved ${filePath}`);
-                    }
 
                     continue;
                 }
@@ -587,11 +532,10 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         continue;
                     }
 
-                    const signer = await getSigner(hre);
                     const auraAddress = await getAuraAddress(chain.chainId, signer);
-                    const vaultCalls = parseVaultCalls(vaultsSnapshot, auraAddress);
+                    const vaultAuraRewardAddress = await getVaultAuraRewardAddress(chain.chainId, signer);
+                    const vaultCalls = parseVaultCalls(vaultsSnapshot, auraAddress, chain.chainId);
                     const callBatches = chunk(vaultCalls, batchSize);
-                    const payloads = buildVaultMulticallPayloads(vaultCalls, batchSize);
 
                     console.log(
                         `- ${chain.name} (${chain.chainId}): users=${
@@ -608,9 +552,13 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                     const { txHashes, totalGasUsed } = await executeBatchedMulticalls(
                         multicall3,
                         callBatches,
-                        call => ({ target: call.vaultAddress, callData: call.callData }),
+                        call => ({ target: vaultAuraRewardAddress, callData: call.callData }),
                         waitForBlocks,
                     );
+                    console.log(
+                        `  executed ${txHashes.length} multicalls with total gas used: ${totalGasUsed.toString()}`,
+                    );
+                    console.log(`  individual tx hashes: ${txHashes.join(", ")}`);
 
                     const rewardTotals = aggregateRewardTotals(vaultCalls);
                     logRewardSummary(
@@ -620,41 +568,6 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         totalGasUsed,
                         rewardTotals,
                     );
-
-                    if (saveOutput) {
-                        const filePath = path.resolve(outputDir, `preface-vaults-${chain.chainId}.json`);
-                        const serializableBatches = callBatches.map((batchCalls, index) => ({
-                            batch: index + 1,
-                            callCount: batchCalls.length,
-                            multicallTarget: MULTICALL3_ADDRESS,
-                            multicallData: payloads[index],
-                            txHash: txHashes[index],
-                            calls: batchCalls.map(call => ({
-                                user: call.user,
-                                vaultAddress: call.vaultAddress,
-                                rewards: call.rewards,
-                            })),
-                        }));
-
-                        fs.writeFileSync(
-                            filePath,
-                            JSON.stringify(
-                                {
-                                    category: "Vaults",
-                                    chainId: chain.chainId,
-                                    chainName: chain.name,
-                                    totalUsers: Object.keys(vaultsSnapshot).length,
-                                    claimableUsers: vaultCalls.length,
-                                    maxBatchSize: batchSize,
-                                    batches: serializableBatches,
-                                },
-                                null,
-                                4,
-                            ),
-                        );
-
-                        console.log(`  saved ${filePath}`);
-                    }
 
                     continue;
                 }
@@ -666,10 +579,8 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         continue;
                     }
 
-                    const signer = await getSigner(hre);
-                    const poolCalls = parsePoolCalls(poolsSnapshot);
+                    const poolCalls = parsePoolCalls(poolsSnapshot, chain.chainId);
                     const callBatches = chunk(poolCalls, batchSize);
-                    const payloads = buildPoolMulticallPayloads(poolCalls, batchSize);
 
                     const claimableUsers = new Set(poolCalls.map(call => call.user.toLowerCase()));
                     console.log(
@@ -693,6 +604,11 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         waitForBlocks,
                     );
 
+                    console.log(
+                        `  executed ${txHashes.length} multicalls with total gas used: ${totalGasUsed.toString()}`,
+                    );
+                    console.log(`  individual tx hashes: ${txHashes.join(", ")}`);
+
                     const rewardTotals = aggregateRewardTotals(poolCalls);
                     logRewardSummary(
                         chain,
@@ -702,44 +618,6 @@ task("windown:claimrewards", "Builds category preface data from withdraw snapsho
                         rewardTotals,
                         [`  claimable pools         : ${poolCalls.length}`],
                     );
-
-                    if (saveOutput) {
-                        const filePath = path.resolve(outputDir, `preface-pools-${chain.chainId}.json`);
-                        const serializableBatches = callBatches.map((batchCalls, index) => ({
-                            batch: index + 1,
-                            callCount: batchCalls.length,
-                            multicallTarget: MULTICALL3_ADDRESS,
-                            multicallData: payloads[index],
-                            txHash: txHashes[index],
-                            calls: batchCalls.map(call => ({
-                                user: call.user,
-                                poolId: call.poolId,
-                                poolName: call.poolName,
-                                poolAddress: call.poolAddress,
-                                rewards: call.rewards,
-                            })),
-                        }));
-
-                        fs.writeFileSync(
-                            filePath,
-                            JSON.stringify(
-                                {
-                                    category: "Pools",
-                                    chainId: chain.chainId,
-                                    chainName: chain.name,
-                                    totalUsers: Object.keys(poolsSnapshot).length,
-                                    claimableUsers: claimableUsers.size,
-                                    claimablePools: poolCalls.length,
-                                    maxBatchSize: batchSize,
-                                    batches: serializableBatches,
-                                },
-                                null,
-                                4,
-                            ),
-                        );
-
-                        console.log(`  saved ${filePath}`);
-                    }
 
                     continue;
                 }

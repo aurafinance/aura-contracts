@@ -1,10 +1,10 @@
 {
-    "0x2c02ff63318c7ae1c8be6825495b365da6335ca8": [
+    "0x268374fe438751d4472d5239ab1067085d662d00": [
         {
             "poolId": "0",
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
-            "staked": "7539918638377498",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -12,7 +12,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "1012701603578718"
+                    "earned": "3590064221456829423"
                 },
                 {
                     "token": {
@@ -20,25 +20,41 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "848238863157534"
+                    "earned": "2986933432252082079"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "15918789684144428124"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1622039691773657266"
                 }
             ]
+        }
+    ],
+    "0x2c02ff63318c7ae1c8be6825495b365da6335ca8": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "7539918638377498",
+            "rewards": []
         },
         {
             "poolId": "2",
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "9536844127416704",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "253479451206902"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x394e32cc123fd3305ff07f3676287748b73ce402": [
@@ -47,24 +63,7 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "782164013050646202",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "145958303634020306"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "122254675123855408"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x3e0d095709805ecf749a40d50e6d9779f91265d8": [
@@ -73,32 +72,7 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "84970666062715667969",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "38484728191434858127"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "32234808333145837166"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "11961059701646490816"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x670244012e14e807170b79d28038bee6608dbdc9": [
@@ -107,24 +81,7 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "35981705910639589083",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "10454065235211470954"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "8756325041013128070"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x69b4c310bd16914d556e8689ebb1e7c517a0cd58": [
@@ -136,12 +93,12 @@
             "rewards": []
         }
     ],
-    "0x74e142df816c376bd35d7ae02914fc8168fcd45f": [
+    "0x72160e898c373f251d708274b2a4fa1426e2147d": [
         {
             "poolId": "0",
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
-            "staked": "823452150396857657441005431",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -149,7 +106,118 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "307046367483529"
+                    "earned": "75840130612711"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "192112687851722"
+                }
+            ]
+        }
+    ],
+    "0x74e142df816c376bd35d7ae02914fc8168fcd45f": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "823452150396857657441005431",
+            "rewards": []
+        }
+    ],
+    "0x8e13649613b774ab67d1c1edfc22a2202270fd81": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "358101587747621"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "805678831435808"
+                }
+            ]
+        }
+    ],
+    "0x8f4a0d2e82bc4f1cf19dffef2afb35581899d5ac": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "148925271806225"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "377246637428807"
+                }
+            ]
+        }
+    ],
+    "0x979139e0ae28049ebb83c4171ad90689da5358b5": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "5430876277102961"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4518489062549663"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "5975241173710639316"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1614672660337976349"
                 }
             ]
         }
@@ -160,6 +228,15 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "64937773607544656498861410152",
+            "rewards": []
+        }
+    ],
+    "0xb1f881f47bab744e7283851bc090baa626df931d": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -167,7 +244,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "1016892351491835865"
+                    "earned": "59170591179574171"
                 },
                 {
                     "token": {
@@ -175,7 +252,104 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "851749033609561720"
+                    "earned": "49229931861405710"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "158861251925958675913"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "66012914024707031874"
+                }
+            ]
+        },
+        {
+            "poolId": "1",
+            "poolName": "yyAVAX-WAVAX-BPT",
+            "poolAddress": "0x37dbe894995a3406d9386f0d0d48103bbeaa22e3",
+            "staked": "100000000000000000",
+            "rewards": []
+        },
+        {
+            "poolId": "2",
+            "poolName": "ggAVAX-WAVAX-BPT",
+            "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "64992613305720668"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "54073854270359595"
+                },
+                {
+                    "token": {
+                        "address": "0x69260b9483f9871ca57f81a90d91e2f96c2cd11d",
+                        "symbol": "GGP",
+                        "decimals": 18
+                    },
+                    "earned": "123127221595815556"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "121737588290878414080"
+                }
+            ]
+        }
+    ],
+    "0xcf77d12b089635e45bcffcd4b5c27537aa5094c5": [
+        {
+            "poolId": "0",
+            "poolName": "sAVAX-WAVAX-BPT",
+            "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "61233565065614"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "85887364570577708"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1908783213723469"
                 }
             ]
         }
@@ -186,48 +360,14 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "2140976105778352771",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "229348666353430066"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "192102442937633023"
-                }
-            ]
+            "rewards": []
         },
         {
             "poolId": "2",
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "1871949946015157445",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "6986638019016873"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "5852008004728532"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0xf62b2e3c421c76f1063f65f45c30540393243762": [
@@ -236,24 +376,7 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "70201613404662876805",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "103787338064082727"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "86932274362475692"
-                }
-            ]
+            "rewards": []
         },
         {
             "poolId": "11",
@@ -267,7 +390,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "109961410491877402762"
+                    "earned": "150595134717333489"
                 },
                 {
                     "token": {
@@ -275,7 +398,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "92103677427996512553"
+                    "earned": "125295152084821462"
                 }
             ]
         }
@@ -286,6 +409,67 @@
             "poolName": "sAVAX-WAVAX-BPT",
             "poolAddress": "0x9d74f2f6cc894529a3f26ffdfc587aa0313920bb",
             "staked": "28868085149053601742",
+            "rewards": []
+        }
+    ],
+    "0x179bee1dd7e29d6e94c28a2adec9748f276d0cdb": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "597338869089822"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "2266078094091"
+                }
+            ]
+        }
+    ],
+    "0x2023255c91bd57d1aff6cad90b64c0362ef559db": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1973946299093970"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "7488406824691"
+                }
+            ]
+        }
+    ],
+    "0x3c2b806f0905a1f406410c1a2607a319a4235b68": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -293,7 +477,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "8387932081414811989"
+                    "earned": "266310050208487496"
                 },
                 {
                     "token": {
@@ -301,7 +485,15 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "7025731911393046521"
+                    "earned": "221569961773461596"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "87747945189562547"
                 }
             ]
         }
@@ -312,32 +504,7 @@
             "poolName": "Aave GHO/USDT/USDC",
             "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
             "staked": "5280621588001586290941",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "157040950026770557513"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "131537499742423018972"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "44245479379341063431"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x522ef3326114969790a7dc3dc644892fa806b8e8": [
@@ -346,32 +513,7 @@
             "poolName": "Aave GHO/USDT/USDC",
             "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
             "staked": "972914329085685402",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "10475660580400300"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "8774413302143291"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2176484494824589"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x5772a27baf3a1c875b0a3d77a8577daa89c050aa": [
@@ -380,6 +522,15 @@
             "poolName": "Aave GHO/USDT/USDC",
             "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
             "staked": "92936331197586057761",
+            "rewards": []
+        }
+    ],
+    "0x719a143654a0c4621f49fa77077800ef3f5c3b40": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -387,7 +538,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "1879538380851566067"
+                    "earned": "82783137558367227"
                 },
                 {
                     "token": {
@@ -395,7 +546,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "1574301347801271737"
+                    "earned": "68875570448561532"
                 },
                 {
                     "token": {
@@ -403,15 +554,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "2246321469107625003"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "15328273402205345"
+                    "earned": "29375030229857704"
                 }
             ]
         }
@@ -422,6 +565,15 @@
             "poolName": "Aave GHO/USDT/USDC",
             "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
             "staked": "4978297784315356451451",
+            "rewards": []
+        }
+    ],
+    "0x9334c8cc7be78ce539fe0c7374fbc69cd95ff209": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -429,7 +581,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "17707053800154128712"
+                    "earned": "119491412043651"
                 },
                 {
                     "token": {
@@ -437,26 +589,111 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "14831428263009098208"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2150486476514947020"
+                    "earned": "39287424546481"
                 }
             ]
         }
     ],
-    "0xb1f881f47bab744e7283851bc090baa626df931d": [
+    "0x9a71503d9780c42651c2778650610dd98148510c": [
         {
-            "poolId": "1",
-            "poolName": "yyAVAX-WAVAX-BPT",
-            "poolAddress": "0x37dbe894995a3406d9386f0d0d48103bbeaa22e3",
-            "staked": "100000000000000000",
-            "rewards": []
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2647229125035473"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2202494632029513"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "10665928579677894"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "399807961307749"
+                }
+            ]
+        }
+    ],
+    "0x9e765d105688761ba0c138b6ecfaac31e5ab0f97": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "137657206120371232"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "114530795492148864"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "26237801346815015"
+                }
+            ]
+        }
+    ],
+    "0xc48befdfd5b11cb12b1fd0e5b86f729178c7d689": [
+        {
+            "poolId": "10",
+            "poolName": "Aave GHO/USDT/USDC",
+            "poolAddress": "0x7037358a6f2c1d9e5cc9b4a29e7415a7060dadcc",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "6774978413314"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "22545061436294"
+                }
+            ]
         }
     ],
     "0x431faacf250af42c7d4e9c250720d3f1caf9ffa2": [
@@ -472,7 +709,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "24924421492175319061"
+                    "earned": "390222525051399621"
                 },
                 {
                     "token": {
@@ -480,7 +717,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "20876695441846047245"
+                    "earned": "324665140842764484"
                 }
             ]
         }
@@ -498,7 +735,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "258596382885979101251"
+                    "earned": "452267363672397881"
                 },
                 {
                     "token": {
@@ -506,7 +743,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "216600330305296095207"
+                    "earned": "376286446575435036"
                 }
             ]
         }
@@ -524,7 +761,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "87218623934546024969"
+                    "earned": "120184368924560974"
                 },
                 {
                     "token": {
@@ -532,7 +769,25 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "73054319407575750514"
+                    "earned": "99993394945234730"
+                }
+            ]
+        }
+    ],
+    "0x9acf6a469ed9cc94cbb13a4f055f396ec2b88fa2": [
+        {
+            "poolId": "11",
+            "poolName": "Aave wAVAX/BTC.b",
+            "poolAddress": "0x95087cb12c6535cb94c7e8a9bd615f27c96cbea7",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "98460627197687"
                 }
             ]
         }
@@ -543,40 +798,7 @@
             "poolName": "tAVAX-waAvaSAVAX",
             "poolAddress": "0xefd6de2dcca6cc0c5848f6a50fa7efa15bfde735",
             "staked": "70672888494600223278",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "15016007428435426102"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "12577407822057512902"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "31418036664561655239"
-                },
-                {
-                    "token": {
-                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
-                        "symbol": "QI",
-                        "decimals": 18
-                    },
-                    "earned": "6323280876166378560745"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x01e0b21888d74901670aca0c8f3321bfad14e2f2": [
@@ -585,6 +807,13 @@
             "poolName": "tAVAX-waAvaSAVAX",
             "poolAddress": "0xefd6de2dcca6cc0c5848f6a50fa7efa15bfde735",
             "staked": "123265188242150864989",
+            "rewards": []
+        },
+        {
+            "poolId": "8",
+            "poolName": "aWAVAX-aSAVAX-ggAVAX",
+            "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -592,7 +821,25 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "8508904523564146246"
+                    "earned": "19355463116326"
+                }
+            ]
+        }
+    ],
+    "0x617af12053fbba06e3ad4879ac40abf22a754fa6": [
+        {
+            "poolId": "12",
+            "poolName": "tAVAX-waAvaSAVAX",
+            "poolAddress": "0xefd6de2dcca6cc0c5848f6a50fa7efa15bfde735",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2808122559785217"
                 },
                 {
                     "token": {
@@ -600,7 +847,99 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "7127058428937328895"
+                    "earned": "2336357969741300"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "21264288240972331"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "2412188668389824013"
+                }
+            ]
+        }
+    ],
+    "0xd9d65529363abd29c9c3016c106fcb97be982140": [
+        {
+            "poolId": "12",
+            "poolName": "tAVAX-waAvaSAVAX",
+            "poolAddress": "0xefd6de2dcca6cc0c5848f6a50fa7efa15bfde735",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "796329067046366"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "662545783782576"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1898788489601626"
+                },
+                {
+                    "token": {
+                        "address": "0x8729438eb15e2c8b576fcc6aecda6a148776c0f5",
+                        "symbol": "QI",
+                        "decimals": 18
+                    },
+                    "earned": "647410907518800709"
+                }
+            ]
+        }
+    ],
+    "0x31bbab9da20a2d0eb65c187c45f440af4d2bb65f": [
+        {
+            "poolId": "2",
+            "poolName": "ggAVAX-WAVAX-BPT",
+            "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1437373401085756"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1195894669703348"
+                },
+                {
+                    "token": {
+                        "address": "0x69260b9483f9871ca57f81a90d91e2f96c2cd11d",
+                        "symbol": "GGP",
+                        "decimals": 18
+                    },
+                    "earned": "414024706246832"
                 }
             ]
         }
@@ -611,120 +950,21 @@
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "2401859933819637977",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "510235912403660931"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "427373600229306395"
-                },
-                {
-                    "token": {
-                        "address": "0x69260b9483f9871ca57f81a90d91e2f96c2cd11d",
-                        "symbol": "GGP",
-                        "decimals": 18
-                    },
-                    "earned": "280981038876352115"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "207403374520240620"
-                }
-            ]
+            "rewards": []
         },
         {
             "poolId": "7",
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "18040136795108801774",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "625754932914404298"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "524132331809105040"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "3151264527523646123"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "12630274992071593"
-                }
-            ]
+            "rewards": []
         },
         {
             "poolId": "8",
             "poolName": "aWAVAX-aSAVAX-ggAVAX",
             "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
             "staked": "914671180758179119",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "52181748406864382"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "43707432465589606"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "891831738299717169"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "14906986548234330"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x66dccfc4f70b9eabe7a1df14ed256fa71b711215": [
@@ -733,6 +973,15 @@
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "1951179816842449710",
+            "rewards": []
+        }
+    ],
+    "0x6ec5134394e1a4ab47552433ea7a61ca1a4c10c9": [
+        {
+            "poolId": "2",
+            "poolName": "ggAVAX-WAVAX-BPT",
+            "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -740,15 +989,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "342553594584359447"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "286922890823859472"
+                    "earned": "401985214913463"
                 },
                 {
                     "token": {
@@ -756,15 +997,7 @@
                         "symbol": "GGP",
                         "decimals": 18
                     },
-                    "earned": "195804364354137782"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "168486626805648561"
+                    "earned": "115788848182604"
                 }
             ]
         }
@@ -775,6 +1008,15 @@
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "15474485457856483804",
+            "rewards": []
+        }
+    ],
+    "0x85b004e16dc276bd5be0c413830caabcf836e3d9": [
+        {
+            "poolId": "2",
+            "poolName": "ggAVAX-WAVAX-BPT",
+            "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -782,15 +1024,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "2690732103733981063"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2253757210087582538"
+                    "earned": "1798096120182"
                 },
                 {
                     "token": {
@@ -798,7 +1032,33 @@
                         "symbol": "GGP",
                         "decimals": 18
                     },
-                    "earned": "749337981272999919"
+                    "earned": "35291439902812"
+                }
+            ]
+        }
+    ],
+    "0x8be77092bb7cb74c8c584d11f1d7250c2fafd537": [
+        {
+            "poolId": "2",
+            "poolName": "ggAVAX-WAVAX-BPT",
+            "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "8815719833221"
+                },
+                {
+                    "token": {
+                        "address": "0x69260b9483f9871ca57f81a90d91e2f96c2cd11d",
+                        "symbol": "GGP",
+                        "decimals": 18
+                    },
+                    "earned": "1244966024362"
                 },
                 {
                     "token": {
@@ -806,7 +1066,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "1336239660661591414"
+                    "earned": "107698481336877"
                 }
             ]
         }
@@ -817,24 +1077,7 @@
             "poolName": "ggAVAX-WAVAX-BPT",
             "poolAddress": "0x3d8ab1cacb7616fef2707d641820d3f7dfcff814",
             "staked": "576921409335325189306",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "10052957620572944038"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "8420357302991897926"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x2fb8209885da9e1bc1da9e5357eb8e736d951aee": [
@@ -852,24 +1095,7 @@
             "poolName": "AFCC",
             "poolAddress": "0xd8bca37d933389559144d99e3cb2b5161b6a6d31",
             "staked": "84933876212457294424",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "56376577882707"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "18999440802623"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x4ce268f49ef0726d602a8b0f22fcc543aa23bb51": [
@@ -878,40 +1104,7 @@
             "poolName": "AFCC",
             "poolAddress": "0xd8bca37d933389559144d99e3cb2b5161b6a6d31",
             "staked": "14604601182075851449546",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "60471369666110752"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "50650819232334365"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "12563690069454971"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "73268409977471756"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x714d8b5874b3a6a69f289f4e857f4c9670074296": [
@@ -932,12 +1125,12 @@
             "rewards": []
         }
     ],
-    "0x88584bf01c1512fa1a6d43c904a36c11afededa9": [
+    "0x4d1c1f7ac7c9aa590799914eff8d7f45e2bb7ddc": [
         {
             "poolId": "6",
             "poolName": "Aave USDT/USDC/AUSD",
             "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
-            "staked": "594891495665128657849",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -945,7 +1138,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "4296391655747520369"
+                    "earned": "5249182847027"
                 },
                 {
                     "token": {
@@ -953,15 +1146,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "3598657650854123060"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "18612467209125906843"
+                    "earned": "24571633168450"
                 },
                 {
                     "token": {
@@ -969,7 +1154,196 @@
                         "symbol": "WAVAX",
                         "decimals": 18
                     },
-                    "earned": "487285962082030340"
+                    "earned": "1555231749595"
+                }
+            ]
+        }
+    ],
+    "0x67ee3f790ab82379dbf2589a5cb20e738ff54ff1": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "11813064566060"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "205274299533987"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "14907432976200"
+                }
+            ]
+        }
+    ],
+    "0x6c317f00c1f9fd6fed594e4012bdb4f1ea798450": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "152165635512988"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1313055556215901"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "22336962594261"
+                }
+            ]
+        }
+    ],
+    "0x7bf0b5969cd2c7755dee079bdc12f976e9449b13": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "235112257602801"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1341644178067504"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "79820178591572"
+                }
+            ]
+        }
+    ],
+    "0x88584bf01c1512fa1a6d43c904a36c11afededa9": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "594891495665128657849",
+            "rewards": []
+        }
+    ],
+    "0x97692e7106427c259a5b78f75ff68ff5152cf4ca": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "11045883575336168"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "9190175134679691"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "33165443232631753"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "138551651386686"
+                }
+            ]
+        }
+    ],
+    "0xb1de052516ea29daf6d86775732bcd5b580b6058": [
+        {
+            "poolId": "6",
+            "poolName": "Aave USDT/USDC/AUSD",
+            "poolAddress": "0x380589ffdabbf3fcbb0007773d066a351af87052",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "6700314638231686811"
+                }
+            ]
+        }
+    ],
+    "0x03e454f9f25cf543363a3c84fedc2be3be95d36e": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "153836484682"
                 }
             ]
         }
@@ -980,6 +1354,15 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "19152545922828803426",
+            "rewards": []
+        }
+    ],
+    "0x0bdb63eac2f47d08a5e5fe6867a84986ea6d93a2": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -987,15 +1370,41 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "2029942891068698"
+                    "earned": "96351629530209"
                 },
                 {
                     "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
                         "decimals": 18
                     },
-                    "earned": "1700280165559141"
+                    "earned": "35709622577022"
+                }
+            ]
+        }
+    ],
+    "0x1723e4d5daac7d6761941237d9a70b200424af41": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "215698782584425"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "78971476903204"
                 }
             ]
         }
@@ -1006,6 +1415,15 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "68730735540396552476",
+            "rewards": []
+        }
+    ],
+    "0x27ce87b944e744eb415168d4da672a2135c4b06e": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -1013,7 +1431,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "2290391895429517340"
+                    "earned": "1322480762476910"
                 },
                 {
                     "token": {
@@ -1021,15 +1439,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "1918432251611763723"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "5884319266410081212"
+                    "earned": "1100303994380788"
                 },
                 {
                     "token": {
@@ -1037,7 +1447,93 @@
                         "symbol": "WAVAX",
                         "decimals": 18
                     },
-                    "earned": "8340636399501298"
+                    "earned": "526240431971565"
+                }
+            ]
+        }
+    ],
+    "0x27d475c8279fe603647a976cf55b657b0cef8070": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "74272145166842"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "20148673841335"
+                }
+            ]
+        }
+    ],
+    "0x3063d161518a19fff591247ead5a99063436827f": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "187254236651848"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1302603115812331"
+                }
+            ]
+        }
+    ],
+    "0x32262c7d0d76975b77c852eb0c928bf438c826f0": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "559129259494108"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "465195543899097"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7867787559213209"
                 }
             ]
         }
@@ -1048,40 +1544,7 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "92521857625930411586",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "3110029135009420617"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2604960403483890708"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "7921174495103790594"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "23673602346738606"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0x6c98064cd84c09c827fb76e772dbb805f54aa564": [
@@ -1090,6 +1553,15 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "4032226061933413254390",
+            "rewards": []
+        }
+    ],
+    "0x7a98ee0aad508e65d4d4a9cf6183d729f6cae98f": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -1097,7 +1569,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "15989456337810876430"
+                    "earned": "5067116994922"
                 },
                 {
                     "token": {
@@ -1105,7 +1577,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "13392768628550390097"
+                    "earned": "119571156285945"
                 }
             ]
         }
@@ -1116,6 +1588,15 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "27478911547476441730",
+            "rewards": []
+        }
+    ],
+    "0xb8ecfc13524386f021af3e305298f87a3ef53f6b": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -1123,7 +1604,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "914996435449033638"
+                    "earned": "1434394383909508"
                 },
                 {
                     "token": {
@@ -1131,15 +1612,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "766401014332110574"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2352581961584826695"
+                    "earned": "1193416127412710"
                 },
                 {
                     "token": {
@@ -1147,7 +1620,67 @@
                         "symbol": "WAVAX",
                         "decimals": 18
                     },
-                    "earned": "3176132868426715"
+                    "earned": "570773006022943"
+                }
+            ]
+        }
+    ],
+    "0xc1ea3db638495d90bb778863ff5c2aaccfbbf421": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "22114633441219931"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "18399375023094982"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "8096593050276238"
+                }
+            ]
+        }
+    ],
+    "0xdf6bba6fb5d05f87752af907215a40ffbd1170a8": [
+        {
+            "poolId": "7",
+            "poolName": "Surge eK3 savUSD-USDT",
+            "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "22686124651880348"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "18874855710364449"
                 }
             ]
         }
@@ -1158,6 +1691,15 @@
             "poolName": "Surge eK3 savUSD-USDT",
             "poolAddress": "0x93f473ba79b23d41dd6e308e62cd0789c872946d",
             "staked": "9620000000000000000",
+            "rewards": []
+        }
+    ],
+    "0x33b40352ae34d56041d048dc60b1670821a89308": [
+        {
+            "poolId": "8",
+            "poolName": "aWAVAX-aSAVAX-ggAVAX",
+            "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -1165,23 +1707,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "307716491417036036"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "257743333210909383"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "662761402790022759"
+                    "earned": "425850779950387"
                 }
             ]
         }
@@ -1195,12 +1721,12 @@
             "rewards": []
         }
     ],
-    "0xa55b524dbdd2d7080faadae7807cba904ef8a827": [
+    "0x64688f4adc3f72cdb44d07e4879c724cd7025696": [
         {
             "poolId": "8",
             "poolName": "aWAVAX-aSAVAX-ggAVAX",
             "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
-            "staked": "694449736911599744",
+            "staked": "0",
             "rewards": [
                 {
                     "token": {
@@ -1208,7 +1734,7 @@
                         "symbol": "BAL",
                         "decimals": 18
                     },
-                    "earned": "21187866541008832"
+                    "earned": "33184375651"
                 },
                 {
                     "token": {
@@ -1216,7 +1742,7 @@
                         "symbol": "AURA",
                         "decimals": 18
                     },
-                    "earned": "17746957014748997"
+                    "earned": "1453575654453"
                 },
                 {
                     "token": {
@@ -1224,9 +1750,44 @@
                         "symbol": "WAVAX",
                         "decimals": 18
                     },
-                    "earned": "6104276398381276"
+                    "earned": "12085082900"
                 }
             ]
+        }
+    ],
+    "0x9cfa57032bdfea6e2877827d7071a36d50088599": [
+        {
+            "poolId": "8",
+            "poolName": "aWAVAX-aSAVAX-ggAVAX",
+            "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
+            "staked": "0",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3175792637870"
+                },
+                {
+                    "token": {
+                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+                        "symbol": "WAVAX",
+                        "decimals": 18
+                    },
+                    "earned": "736385236053"
+                }
+            ]
+        }
+    ],
+    "0xa55b524dbdd2d7080faadae7807cba904ef8a827": [
+        {
+            "poolId": "8",
+            "poolName": "aWAVAX-aSAVAX-ggAVAX",
+            "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
+            "staked": "694449736911599744",
+            "rewards": []
         }
     ],
     "0xb409d1ab907a45c1be87743cfdb2b2c3c48d1ff7": [
@@ -1235,40 +1796,7 @@
             "poolName": "aWAVAX-aSAVAX-ggAVAX",
             "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
             "staked": "54366373754595653357",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "2967068249055206367"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "2485216365408640852"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "11373722335712108728"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "824032430710997464"
-                }
-            ]
+            "rewards": []
         }
     ],
     "0xe5cee5bcae68e056a3658617b3fd3a21478fc41d": [
@@ -1277,40 +1805,7 @@
             "poolName": "aWAVAX-aSAVAX-ggAVAX",
             "poolAddress": "0x916182c3f65a33245e82b06ea285d9d1e94ede73",
             "staked": "1932870492924397468",
-            "rewards": [
-                {
-                    "token": {
-                        "address": "0xe15bcb9e0ea69e6ab9fa080c4c4a5632896298c3",
-                        "symbol": "BAL",
-                        "decimals": 18
-                    },
-                    "earned": "101438832673785713"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "84965166247562913"
-                },
-                {
-                    "token": {
-                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
-                        "symbol": "AURA",
-                        "decimals": 18
-                    },
-                    "earned": "310212337788813401"
-                },
-                {
-                    "token": {
-                        "address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-                        "symbol": "WAVAX",
-                        "decimals": 18
-                    },
-                    "earned": "27961712703738825"
-                }
-            ]
+            "rewards": []
         }
     ]
 }
