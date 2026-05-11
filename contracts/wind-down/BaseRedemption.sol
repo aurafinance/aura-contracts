@@ -110,7 +110,9 @@ abstract contract BaseRedemption is ReentrancyGuard {
         _requireCanSweep();
         require(_to != address(0), "!to");
         uint256 bal = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).safeTransfer(_to, bal);
+        if (bal > 0) {
+            IERC20(_token).safeTransfer(_to, bal);
+        }
         emit Swept(_token, _to, bal);
     }
 

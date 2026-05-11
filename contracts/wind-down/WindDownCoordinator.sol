@@ -98,7 +98,7 @@ contract WindDownCoordinator is ReentrancyGuard {
         require(_auraRedemption != address(0), "!auraRedemption");
         require(_rAuraRedemption != address(0), "!rAuraRedemption");
         require(_auraBalRedemption != address(0), "!auraBalRedemption");
-        require(_auraBalBps <= BPS_DENOMINATOR, "!bps");
+        require(_auraBalBps > 0 && _auraBalBps < BPS_DENOMINATOR, "!bps");
         require(_owner != address(0), "!owner");
 
         voterProxy = IVoterProxy(_voterProxy);
@@ -113,10 +113,10 @@ contract WindDownCoordinator is ReentrancyGuard {
 
     /**
      * @notice Withdraw the BPT from the veBAL lock via the VoterProxy and
-     *         pull it into this contract. Permissionless — the VotingEscrow
-     *         reverts on its own if the lock has not expired.
+     *         pull it into this contract. The VotingEscrow reverts on its
+     *         own if the lock has not expired.
      */
-    function unlockAndWithdraw() external nonReentrant {
+    function unlockAndWithdraw() external onlyOwner nonReentrant {
         require(stage == Stage.UNSTARTED, "!stage");
 
         voterProxy.execute(address(votingEscrow), 0, abi.encodeWithSelector(IVotingEscrow.withdraw.selector));
@@ -133,9 +133,9 @@ contract WindDownCoordinator is ReentrancyGuard {
     /**
      * @notice Sweep residual treasury tokens from AuraRedemption into
      *         RAuraRedemption, split the BPT by `auraBalBps` into the two
-     *         stage-2 contracts, and finalize both. The residual token set
-     *         is read directly from `AuraRedemption.redeemableTokens`, so
-     *         the caller does not supply it.
+     *         stage-2 contracts, and finalize both. The coordinator filters
+     *         the Stage-2 token lists down to tokens with a positive live
+     *         balance so fully claimed residuals do not brick finalization.
      */
     function splitAndFinalize() external onlyOwner nonReentrant {
         require(stage == Stage.WITHDRAWN, "!stage");
@@ -143,10 +143,14 @@ contract WindDownCoordinator is ReentrancyGuard {
 
         uint256 residualsLen = auraRedemption.redeemableTokensLength();
         address[] memory residuals = new address[](residualsLen);
+        uint256 residualCount;
         for (uint256 i = 0; i < residualsLen; i++) {
             address t = auraRedemption.redeemableTokens(i);
-            residuals[i] = t;
             auraRedemption.sweep(t, address(rAuraRedemption));
+            if (IERC20(t).balanceOf(address(rAuraRedemption)) > 0) {
+                residuals[residualCount] = t;
+                residualCount++;
+            }
         }
 
         uint256 total = crvBpt.balanceOf(address(this));
@@ -165,15 +169,20 @@ contract WindDownCoordinator is ReentrancyGuard {
         auraBalTokens[0] = address(crvBpt);
         auraBalRedemption.finalize(auraBalTokens);
 
-        address[] memory rAuraTokens = new address[](residualsLen + 1);
+        address[] memory rAuraTokens = new address[](residualCount + 1);
         rAuraTokens[0] = address(crvBpt);
-        for (uint256 i = 0; i < residualsLen; i++) {
+        for (uint256 i = 0; i < residualCount; i++) {
             rAuraTokens[i + 1] = residuals[i];
         }
         rAuraRedemption.finalize(rAuraTokens);
 
+        address[] memory emittedResiduals = new address[](residualCount);
+        for (uint256 i = 0; i < residualCount; i++) {
+            emittedResiduals[i] = residuals[i];
+        }
+
         stage = Stage.FINALIZED;
-        emit SplitAndFinalized(auraBalShare, rAuraShare, residuals);
+        emit SplitAndFinalized(auraBalShare, rAuraShare, emittedResiduals);
     }
 
     /**

@@ -219,8 +219,11 @@ describe("WindDownCoordinator", () => {
             expect(deployCoordinator({ rAura: ZERO_ADDRESS })).to.revertedWith("!rAuraRedemption"));
         it("reverts on zero auraBalRedemption", async () =>
             expect(deployCoordinator({ auraBal: ZERO_ADDRESS })).to.revertedWith("!auraBalRedemption"));
+        it("reverts on zero bps", async () => expect(deployCoordinator({ bps: 0 })).to.revertedWith("!bps"));
         it("reverts on bps > denominator", async () =>
             expect(deployCoordinator({ bps: BPS_DENOMINATOR + 1 })).to.revertedWith("!bps"));
+        it("reverts on bps == denominator", async () =>
+            expect(deployCoordinator({ bps: BPS_DENOMINATOR })).to.revertedWith("!bps"));
         it("reverts on zero owner", async () =>
             expect(deployCoordinator({ owner: ZERO_ADDRESS })).to.revertedWith("!owner"));
 
@@ -235,24 +238,24 @@ describe("WindDownCoordinator", () => {
             expect(await coordinator.owner()).eq(ownerAddress);
             expect(await coordinator.stage()).eq(0); // UNSTARTED
         });
-
-        it("accepts auraBalBps == BPS_DENOMINATOR (all BPT to auraBAL)", async () => {
-            const c = await deployCoordinator({ bps: BPS_DENOMINATOR });
-            expect(await c.auraBalBps()).eq(BPS_DENOMINATOR);
-        });
     });
 
     // ─────────────────────────── unlockAndWithdraw ───────────────────────────
 
     describe("unlockAndWithdraw", () => {
-        it("reverts before the lock unlock time (escrow revert → !success)", async () => {
-            await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!success");
+        it("reverts if caller is not owner", async () => {
+            await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!owner");
             expect(await coordinator.stage()).eq(0);
         });
 
-        it("is permissionless: any caller transitions to WITHDRAWN and pulls BPT", async () => {
+        it("owner surfaces the escrow revert before the lock unlock time", async () => {
+            await expect(coordinator.connect(owner).unlockAndWithdraw()).to.revertedWith("!success");
+            expect(await coordinator.stage()).eq(0);
+        });
+
+        it("only owner transitions to WITHDRAWN and pulls BPT", async () => {
             await increaseTimeTo(unlockTime.add(1));
-            await coordinator.connect(outsider).unlockAndWithdraw();
+            await coordinator.connect(owner).unlockAndWithdraw();
 
             expect(await crvBpt.balanceOf(voterProxy.address)).eq(ZERO);
             expect(await crvBpt.balanceOf(coordinator.address)).eq(LOCK_AMOUNT);
@@ -262,14 +265,14 @@ describe("WindDownCoordinator", () => {
 
         it("emits Withdrawn with the BPT amount", async () => {
             await increaseTimeTo(unlockTime.add(1));
-            const tx = await coordinator.connect(outsider).unlockAndWithdraw();
+            const tx = await coordinator.connect(owner).unlockAndWithdraw();
             await expect(tx).to.emit(coordinator, "Withdrawn").withArgs(LOCK_AMOUNT);
         });
 
         it("reverts on stage when called twice", async () => {
             await increaseTimeTo(unlockTime.add(1));
-            await coordinator.connect(outsider).unlockAndWithdraw();
-            await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!stage");
+            await coordinator.connect(owner).unlockAndWithdraw();
+            await expect(coordinator.connect(owner).unlockAndWithdraw()).to.revertedWith("!stage");
         });
     });
 
@@ -285,7 +288,7 @@ describe("WindDownCoordinator", () => {
         describe("after unlockAndWithdraw", () => {
             beforeEach(async () => {
                 await increaseTimeTo(unlockTime.add(1));
-                await coordinator.connect(outsider).unlockAndWithdraw();
+                await coordinator.connect(owner).unlockAndWithdraw();
             });
 
             it("reverts if caller is not owner", async () => {
@@ -329,6 +332,28 @@ describe("WindDownCoordinator", () => {
                 await expect(tx)
                     .to.emit(coordinator, "SplitAndFinalized")
                     .withArgs(expectedAuraBalShare, expectedRAuraShare, [treasuryUsdc.address]);
+            });
+
+            it("filters fully redeemed residual tokens out of Stage 2 finalization", async () => {
+                const remainingRedeem = REDEEMABLE_AURA_SUPPLY.sub(STAGE0_REDEEM_AMOUNT);
+                await aura.approve(auraRedemption.address, remainingRedeem);
+                await auraRedemption.redeem(remainingRedeem);
+                expect(await treasuryUsdc.balanceOf(auraRedemption.address)).eq(ZERO);
+
+                await increaseTimeTo(auraExpiry.add(1));
+                const totalBpt = await crvBpt.balanceOf(coordinator.address);
+                const expectedAuraBalShare = totalBpt.mul(AURABAL_BPS).div(BPS_DENOMINATOR);
+                const expectedRAuraShare = totalBpt.sub(expectedAuraBalShare);
+
+                const tx = await coordinator.connect(owner).splitAndFinalize();
+
+                expect(await treasuryUsdc.balanceOf(rAuraRedemption.address)).eq(ZERO);
+                expect(await rAuraRedemption.redeemableTokensLength()).eq(1);
+                expect(await rAuraRedemption.redeemableTokens(0)).eq(crvBpt.address);
+                expect(await rAuraRedemption.redeemableTokenAllocation(treasuryUsdc.address)).eq(ZERO);
+                await expect(tx)
+                    .to.emit(coordinator, "SplitAndFinalized")
+                    .withArgs(expectedAuraBalShare, expectedRAuraShare, []);
             });
 
             it("reverts on a second splitAndFinalize call", async () => {
