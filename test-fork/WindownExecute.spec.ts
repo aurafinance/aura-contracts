@@ -26,7 +26,7 @@ import { impersonateAccount } from "../test-utils/fork";
 import { ONE_DAY, ZERO } from "../test-utils/constants";
 import hre, { ethers, network } from "hardhat";
 import { config as mainnetConfig } from "../tasks/deploy/mainnet-config";
-import { deployWindowPhase1, deployWindowPhase2 } from "../scripts/deployWindown";
+import { deployWinddownPhase1, deployWinddownPhase2 } from "../scripts/deployWindown";
 
 const BURN_ADDRESS = "0x000000000000000000000000000000000000dEaD";
 const TREASURY_ADDRESS = "0xfc78f8e1Af80A3bF5A1783BB59eD2d1b10f78cA9";
@@ -188,7 +188,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     it("Stage 0: deploys redemption contracts (owner = dao)", async () => {
         const now = await getTimestamp();
         auraExpiry = now.add(ONE_DAY.mul(100)); // 100 days
-        const windownPhase1 = await deployWindowPhase1(
+        const windownPhase1 = await deployWinddownPhase1(
             hre,
             deployer,
             mainnetConfig.multisigs,
@@ -377,7 +377,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         expect(await cvx.balanceOf(sleepyAddress)).eq(auraBalanceBefore);
     });
     it("Stage 1: deploys WindDownCoordinator (daoMultisig = owner)", async () => {
-        const windownPhase2 = await deployWindowPhase2(
+        const windownPhase2 = await deployWinddownPhase2(
             hre,
             deployer,
             mainnetConfig.addresses,
@@ -434,13 +434,21 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
             expect(await booster.getRewardMultipliers(addr)).eq(ZERO);
         }
     });
+    it("Stage 1: daoOperator starts CrvDepositor cooldown to freeze new auraBAL minting", async () => {
+        expect(await crvDepositor.daoOperator()).eq(await daoMultisig.getAddress());
+        expect(await crvDepositor.cooldown()).eq(false);
+
+        await crvDepositor.connect(daoMultisig).setCooldown(true);
+
+        expect(await crvDepositor.cooldown()).eq(true);
+    });
 
     // ──────────────────────────────────────────────────────────────────────
     // Stage 2 — coordinator.unlockAndWithdraw + splitAndFinalize, users redeem
     // ──────────────────────────────────────────────────────────────────────
 
-    it("Stage 2 pre: coordinator.unlockAndWithdraw reverts before lock expires", async () => {
-        await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!success");
+    it("Stage 2 pre: owner-facing unlockAndWithdraw surfaces the escrow revert before lock expires", async () => {
+        await expect(coordinator.connect(daoMultisig).unlockAndWithdraw()).to.revertedWith("!success");
     });
 
     it("Stage 2 pre: splitAndFinalize reverts before unlockAndWithdraw", async () => {
@@ -454,7 +462,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         await increaseTimeTo(target.add(1));
     });
 
-    it("Stage 2: coordinator.unlockAndWithdraw pulls BPT out of the escrow (permissionless)", async () => {
+    it("Stage 2: daoMultisig unlockAndWithdraw pulls BPT out of the escrow", async () => {
         const locked = await mocks.votingEscrow.locked(voterProxy.address);
         // console.log(
         //     `Locked BPT: ${ethers.utils.formatUnits(locked[0], 18)}, unlock time: ${new Date(
@@ -462,8 +470,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         //     ).toISOString()}`,
         // );
         const lockedAmount = locked[0];
-        // Permissionless — called by outsider, not treasury.
-        const tx = await coordinator.connect(outsider).unlockAndWithdraw();
+        const tx = await coordinator.connect(daoMultisig).unlockAndWithdraw();
 
         expect(await mocks.votingEscrow.balanceOf(voterProxy.address)).eq(ZERO);
         expect(await mocks.crvBpt.balanceOf(voterProxy.address)).eq(ZERO);
@@ -479,7 +486,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 2: cannot unlockAndWithdraw twice", async () => {
-        await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!stage");
+        await expect(coordinator.connect(daoMultisig).unlockAndWithdraw()).to.revertedWith("!stage");
     });
 
     it("Stage 2 pre: splitAndFinalize reverts if non-owner calls", async () => {

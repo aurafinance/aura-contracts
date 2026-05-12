@@ -7,4 +7,4 @@ import "./shutdown";
 import "./sidechain";
 import "./gauge-voter";
 import "./contract-status";
-import "./windown";
+import "./winddown";

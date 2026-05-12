@@ -11,14 +11,14 @@ import "./claimRewards";
 const debug = true;
 const DEFAULT_REDEEMABLE_AURA_SUPPLY = simpleToExactAmount(10_000_000);
 
-task("deploy:windowPhase1")
+task("deploy:winddownPhase1")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
-        const { deployWindowPhase1 } = await import("../../scripts/deployWindown");
+        const { deployWinddownPhase1 } = await import("../../scripts/deployWindown");
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
 
-        const result = await deployWindowPhase1(
+        const result = await deployWinddownPhase1(
             hre,
             deployer,
             config.multisigs,
@@ -31,15 +31,15 @@ task("deploy:windowPhase1")
         logContracts(result as unknown as { [key: string]: { address: string } });
     });
 
-task("deploy:windowPhase2")
+task("deploy:winddownPhase2")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
-        const { deployWindowPhase2, getWindownPhase1 } = await import("../../scripts/deployWindown");
+        const { deployWinddownPhase2, getWinddownPhase1 } = await import("../../scripts/deployWindown");
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
-        const { auraRedemption, rAuraRedemption, auraBalRedemption } = await getWindownPhase1(deployer);
+        const { auraRedemption, rAuraRedemption, auraBalRedemption } = await getWinddownPhase1(deployer);
 
-        const result = await deployWindowPhase2(
+        const result = await deployWinddownPhase2(
             hre,
             deployer,
             config.addresses,
@@ -56,14 +56,14 @@ task("deploy:windowPhase2")
 // The owner-only handoff (fund + finalize AuraRedemption, transfer redemption
 // ownership to the coordinator) is intentionally NOT scripted here — those run
 // from the DAO multisig as a separate Safe tx batch.
-task("deploy:windown")
+task("deploy:winddown")
     .addParam("wait", "How many blocks to wait")
     .setAction(async function (tskArgs: TaskArguments, hre) {
         const deployer = await getSigner(hre);
         const phase2 = await config.getPhase2(deployer);
-        const { deployWindowPhase2, deployWindowPhase1 } = await import("../../scripts/deployWindown");
+        const { deployWinddownPhase2, deployWinddownPhase1 } = await import("../../scripts/deployWindown");
 
-        const phase1 = await deployWindowPhase1(
+        const phase1 = await deployWinddownPhase1(
             hre,
             deployer,
             config.multisigs,
@@ -73,7 +73,7 @@ task("deploy:windown")
             tskArgs.wait,
         );
 
-        const phase2Result = await deployWindowPhase2(
+        const phase2Result = await deployWinddownPhase2(
             hre,
             deployer,
             config.addresses,

@@ -414,11 +414,11 @@ function parsePoolCalls(poolsSnapshot: PoolsSnapshot, chainId: number): PoolCall
     return calls;
 }
 
-// # yarn task:fork windown:claimrewards --wait 0 --category lock  --chainid 1 --batchsize 30
-// # yarn task:fork windown:claimrewards --wait 0 --category vaults --chainid 1 --batchsize 30
-// # yarn task:fork windown:claimrewards --wait 0 --category pools --chainid 1 --batchsize 10
+// # yarn task:fork winddown:claimrewards --wait 0 --category lock  --chainid 1 --batchsize 30
+// # yarn task:fork winddown:claimrewards --wait 0 --category vaults --chainid 1 --batchsize 30
+// # yarn task:fork winddown:claimrewards --wait 0 --category pools --chainid 1 --batchsize 10
 
-task("windown:claimrewards", "Builds category preface data from withdraw snapshots")
+task("winddown:claimrewards", "Builds category preface data from withdraw snapshots")
     .addOptionalParam("category", "Category to process: lock, pools, vaults, all", "all")
     .addOptionalParam("chainid", "Chain ID to process, or all", "all")
     .addOptionalParam("batchsize", "Max calls per multicall batch", 50, types.int)

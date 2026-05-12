@@ -16,17 +16,17 @@ import {
     WindDownCoordinator__factory,
 } from "../types";
 import { ExtSystemConfig, MultisigConfig } from "./deploySystem";
-import { ONE_DAY, ONE_YEAR, ZERO_ADDRESS } from "../test-utils/constants";
-interface WindownPhase1Deployed {
+import { ONE_YEAR, ZERO_ADDRESS } from "../test-utils/constants";
+interface WinddownPhase1Deployed {
     auraRedemption: AuraRedemption;
     rAuraRedemption: RAuraRedemption;
     auraBalRedemption: AuraBalRedemption;
 }
-interface WindownPhase2Deployed {
+interface WinddownPhase2Deployed {
     coordinator: WindDownCoordinator;
 }
 
-export async function deployWindowPhase1(
+export async function deployWinddownPhase1(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     multisigs: MultisigConfig,
@@ -36,11 +36,11 @@ export async function deployWindowPhase1(
     },
     debug = false,
     waitForBlocks = 0,
-): Promise<WindownPhase1Deployed> {
+): Promise<WinddownPhase1Deployed> {
     const { cvx, cvxCrv } = deployment;
     const latest = await hre.ethers.provider.getBlock("latest");
     const now = BigNumber.from(latest.timestamp);
-    const auraExpiry = now.add(ONE_DAY.mul(100));
+    const auraExpiry = now.add(ONE_YEAR);
     const SWEEP_DELAY = ONE_YEAR;
 
     const auraRedemptionArgs = [
@@ -88,15 +88,15 @@ export async function deployWindowPhase1(
 
     return { auraRedemption, rAuraRedemption, auraBalRedemption };
 }
-export async function deployWindowPhase2(
+export async function deployWinddownPhase2(
     hre: HardhatRuntimeEnvironment,
     signer: Signer,
     extSystem: ExtSystemConfig,
     multisigs: MultisigConfig,
-    deployment: WindownPhase1Deployed & { voterProxy: VoterProxy },
+    deployment: WinddownPhase1Deployed & { voterProxy: VoterProxy },
     debug = false,
     waitForBlocks = 0,
-): Promise<WindownPhase2Deployed> {
+): Promise<WinddownPhase2Deployed> {
     const AURABAL_BPS = 9000; // 90% of BPT goes to auraBAL holders, 10% to rAURA.
     const { voterProxy, auraRedemption, rAuraRedemption, auraBalRedemption } = deployment;
     const coordinatorArgs = [
@@ -122,7 +122,7 @@ export async function deployWindowPhase2(
     return { coordinator };
 }
 
-export async function getWindownPhase1(signer: Signer): Promise<WindownPhase1Deployed> {
+export async function getWinddownPhase1(signer: Signer): Promise<WinddownPhase1Deployed> {
     return {
         auraRedemption: AuraRedemption__factory.connect(ZERO_ADDRESS, signer),
         rAuraRedemption: RAuraRedemption__factory.connect(ZERO_ADDRESS, signer),
