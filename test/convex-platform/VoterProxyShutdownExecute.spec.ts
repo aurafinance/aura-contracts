@@ -362,13 +362,21 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
             expect(await booster.getRewardMultipliers(addr)).eq(ZERO);
         }
     });
+    it("Stage 1: daoOperator starts CrvDepositor cooldown to freeze new auraBAL minting", async () => {
+        expect(await crvDepositor.daoOperator()).eq(await daoMultisig.getAddress());
+        expect(await crvDepositor.cooldown()).eq(false);
+
+        await crvDepositor.connect(daoMultisig).setCooldown(true);
+
+        expect(await crvDepositor.cooldown()).eq(true);
+    });
 
     // ──────────────────────────────────────────────────────────────────────
     // Stage 2 — coordinator.unlockAndWithdraw + splitAndFinalize, users redeem
     // ──────────────────────────────────────────────────────────────────────
 
-    it("Stage 2 pre: coordinator.unlockAndWithdraw reverts before lock expires", async () => {
-        await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!success");
+    it("Stage 2 pre: owner-facing unlockAndWithdraw surfaces the escrow revert before lock expires", async () => {
+        await expect(coordinator.connect(treasury).unlockAndWithdraw()).to.revertedWith("!success");
     });
 
     it("Stage 2 pre: splitAndFinalize reverts before unlockAndWithdraw", async () => {
@@ -381,11 +389,10 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
         await increaseTimeTo(target.add(1));
     });
 
-    it("Stage 2: coordinator.unlockAndWithdraw pulls BPT out of the escrow (permissionless)", async () => {
+    it("Stage 2: treasury unlockAndWithdraw pulls BPT out of the escrow", async () => {
         const lockedAmount = await mocks.votingEscrow.balanceOf(voterProxy.address);
 
-        // Permissionless — called by outsider, not treasury.
-        const tx = await coordinator.connect(outsider).unlockAndWithdraw();
+        const tx = await coordinator.connect(treasury).unlockAndWithdraw();
 
         expect(await mocks.votingEscrow.balanceOf(voterProxy.address)).eq(ZERO);
         expect(await mocks.crvBpt.balanceOf(voterProxy.address)).eq(ZERO);
@@ -401,7 +408,7 @@ describe("Full wind-down (Stages 0 / 1 / 2)", () => {
     });
 
     it("Stage 2: cannot unlockAndWithdraw twice", async () => {
-        await expect(coordinator.connect(outsider).unlockAndWithdraw()).to.revertedWith("!stage");
+        await expect(coordinator.connect(treasury).unlockAndWithdraw()).to.revertedWith("!stage");
     });
 
     it("Stage 2 pre: splitAndFinalize reverts if non-owner calls", async () => {
