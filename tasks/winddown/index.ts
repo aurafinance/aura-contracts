@@ -9,7 +9,7 @@ import "./claimRewards";
 
 // Configs
 const debug = true;
-const DEFAULT_REDEEMABLE_AURA_SUPPLY = simpleToExactAmount(10_000_000);
+const DEFAULT_REDEEMABLE_AURA_SUPPLY = simpleToExactAmount(71_568_926);
 
 task("deploy:winddownPhase1")
     .addParam("wait", "How many blocks to wait")
