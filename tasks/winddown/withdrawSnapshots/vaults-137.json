@@ -1,0 +1,268 @@
+{
+    "0x067f715e70225d0adeb92db6b705a071a2246a7e": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "0",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "330712704972614743820"
+            }
+        ]
+    },
+    "0x2a742ecf920869b1f461af771404e865e0194cf3": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "10000000000000",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "19367670088"
+            }
+        ]
+    },
+    "0x30019eb135532bddf2da17659101cc000c73c8e4": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "1998457875609375441",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "4366599588696534"
+            }
+        ]
+    },
+    "0x330eedec07e830320b6e283befb03ba127b1a9c1": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "26852570207682991233",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "58672451121122490"
+            }
+        ]
+    },
+    "0x345d047de6fef34d6217ded8de15bb3300e536f1": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "0",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "327801401401512929"
+            }
+        ]
+    },
+    "0x36cc7b13029b5dee4034745fb4f24034f3f2ffc6": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "21803179276795930565441",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "47639609933386016675"
+            }
+        ]
+    },
+    "0x424d5011484dd4abf2e52a5406bf225b1f50023b": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "1408913146945954173433",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "3078453463067071091"
+            }
+        ]
+    },
+    "0x4285be4024a011351fcbaa417455f5ba3690fc7b": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "2201613344901053684225",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "4810491151024310575"
+            }
+        ]
+    },
+    "0x43e49750a2ac66dce8d35bb4be8cbd458dc91736": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "27757927762356525013",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "60650643393329024"
+            }
+        ]
+    },
+    "0x69be08e37274f9d321e00c7e19cc0e96fbb70d23": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "1767477177425429522281",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "3861910331046151914"
+            }
+        ]
+    },
+    "0x7734c638ce876eaa3aed06153b940501f2024d43": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "0",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "841775118829720494829"
+            }
+        ]
+    },
+    "0x77bd9d86aaa4137ba6f187d95ef81526d4576e09": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "69639296888018628748",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "152160788005408902"
+            }
+        ]
+    },
+    "0x922339aacfa3eb3e7d9f990f8aa25f8518902bba": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "6482717434283548225827",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "14164637457543013779"
+            }
+        ]
+    },
+    "0xa6fbeaac65de6d6fc900d95932d9320aad9128f0": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "18379511145582461668918",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "40158947950940359622"
+            }
+        ]
+    },
+    "0xb587526953ad321c1ab2ea26f7311d2aa1a98a4a": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "0",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "3334508549774234"
+            }
+        ]
+    },
+    "0xeeb80de3d580ebe3353f4e20e092529fd05242ab": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "146713646858527586594",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "320567052149282609"
+            }
+        ]
+    },
+    "0xef3ede96a9ec62046d42c0725c5d994c1fbcf70e": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "14082089923089735996",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "30769148960621095"
+            }
+        ]
+    },
+    "0xf2267eea216037d29e4e7206183cab1640706117": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "76379107658747422",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "147928535876480"
+            }
+        ]
+    },
+    "0xf5db697a5ad188fddc9258fff2206253932a467d": {
+        "vaultAddress": "0x4ea9317d90b61fc28c418c247ad0ca8939bbb0e9",
+        "balance": "0",
+        "rewards": [
+            {
+                "token": {
+                    "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                    "symbol": "AURA",
+                    "decimals": 18
+                },
+                "earned": "91080292974096"
+            }
+        ]
+    }
+}

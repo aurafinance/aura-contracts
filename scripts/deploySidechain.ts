@@ -75,6 +75,7 @@ import {
     StashRewardDistro__factory,
     TokenFactory,
     TokenFactory__factory,
+    VirtualBalanceRewardPool,
     VirtualRewardFactory,
     VirtualRewardFactory__factory,
     VoterProxyLite,
@@ -134,6 +135,7 @@ export interface SidechainPhase2Deployed {
     virtualRewardFactory: VirtualRewardFactory;
     auraBalVault: AuraBalVault;
     auraBalStrategy: SimpleStrategy;
+    auraBalVaultAuraRewards?: VirtualBalanceRewardPool;
 }
 export interface SidechainPhase3Deployed {
     stashRewardDistro: StashRewardDistro;

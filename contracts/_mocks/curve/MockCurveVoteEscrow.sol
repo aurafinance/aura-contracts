@@ -49,6 +49,10 @@ contract MockCurveVoteEscrow is ERC20("MockVE", "MockVE") {
         _mint(msg.sender, amount);
     }
 
+    function locked(address account) external view returns (uint256, uint256) {
+        return (lockAmounts[account], lockTimes[account]);
+    }
+
     function locked__end(address account) external view returns (uint256) {
         return lockTimes[account];
     }

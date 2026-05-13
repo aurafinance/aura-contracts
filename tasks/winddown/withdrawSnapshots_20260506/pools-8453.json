@@ -1,0 +1,4399 @@
+{
+    "0x30019eb135532bddf2da17659101cc000c73c8e4": [
+        {
+            "poolId": "0",
+            "poolName": "GOLD/BAL/USDC",
+            "poolAddress": "0x6c03c044c307ecde1d4cbbffb6327bdef07edfcf",
+            "staked": "1620655390184643046",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1009449521767562496"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "845514919432510346"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "64266160869470377"
+                }
+            ]
+        },
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "845333969278864959",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3304337621247173266"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2767713191556632327"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "187365909987138090"
+                }
+            ]
+        },
+        {
+            "poolId": "2",
+            "poolName": "USDC/USDbC/axlUSDC",
+            "poolAddress": "0x28d50e8e46b0b36e9e0eed32496d0740aeaf7557",
+            "staked": "4993088867483561887",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "36659012605240658"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "30705588958149574"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "638147554529860184"
+                }
+            ]
+        }
+    ],
+    "0x31cd90c2788f3e390d2bb72871f5ad3f1a4b22a1": [
+        {
+            "poolId": "0",
+            "poolName": "GOLD/BAL/USDC",
+            "poolAddress": "0x6c03c044c307ecde1d4cbbffb6327bdef07edfcf",
+            "staked": "17431052707610290074",
+            "rewards": []
+        }
+    ],
+    "0xa9e14c1df751dc3e710fcb3a92019667ae7fcf2d": [
+        {
+            "poolId": "0",
+            "poolName": "GOLD/BAL/USDC",
+            "poolAddress": "0x6c03c044c307ecde1d4cbbffb6327bdef07edfcf",
+            "staked": "137687709033095",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "77029351462632"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2767577699794"
+                }
+            ]
+        },
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "70745926131355",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "250848467091101"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "8302038787405"
+                }
+            ]
+        },
+        {
+            "poolId": "2",
+            "poolName": "USDC/USDbC/axlUSDC",
+            "poolAddress": "0x28d50e8e46b0b36e9e0eed32496d0740aeaf7557",
+            "staked": "901799450134170",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "5629618738728"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "113493342701058"
+                }
+            ]
+        },
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "841413936817",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "10276284859207"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3396826949827"
+                }
+            ]
+        }
+    ],
+    "0xc6b37e25b34eb349f664a23f1b3666c797410577": [
+        {
+            "poolId": "0",
+            "poolName": "GOLD/BAL/USDC",
+            "poolAddress": "0x6c03c044c307ecde1d4cbbffb6327bdef07edfcf",
+            "staked": "13673742728620539320",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "216933197989586"
+                }
+            ]
+        },
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "4877959347857594230",
+            "rewards": []
+        }
+    ],
+    "0x204fecc8072f150b3efc5a80b5b92b1ddbdc1f28": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "53097680082797087",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "121883370688427853"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "102089511288627169"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "6231016026988750"
+                }
+            ]
+        }
+    ],
+    "0x26df6d19dbe0794b4356fbfa343b596014a974fd": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "354318155710553",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "537904271070841"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "450548617448936"
+                }
+            ]
+        }
+    ],
+    "0x38686d946607d1f01fb6ad9e57dc1e2bd14821a8": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "7305295345980271",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "9424210263114323"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7893718516384556"
+                }
+            ]
+        }
+    ],
+    "0x442cd7da5c1151efbfef296573e7a7085f9c5df0": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "1784435903573112",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3686842016077194"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3088098872666257"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "141880682180440"
+                }
+            ]
+        }
+    ],
+    "0x45a7e421427c944ebd25aeffc1c77a36bbaf217a": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "18914359533914691",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "27372547382738810"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "22927245687782027"
+                }
+            ]
+        }
+    ],
+    "0x52eacc0efbd89bbf6018cbead6113c32f105863b": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "11671219011370228",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "37137317510385033"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "31106217146698503"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1369618269591878"
+                }
+            ]
+        }
+    ],
+    "0xbb627d6ab1b5f4a09dd215a90f3cdc107b2ddb93": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "490702069216873382",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "735297895771036079"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "615885517497819819"
+                }
+            ]
+        }
+    ],
+    "0xbec40498ff3c9dac24d2fb271ff87444b2d7ff94": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "1433053496853134",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3057634925370257"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2561075013490127"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "146382396475851"
+                }
+            ]
+        }
+    ],
+    "0xc1fc064c2ef5f8186c8467296764008c2e84f12b": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "1337873333136789",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4609789791147373"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3861159929065039"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "156999518017681"
+                }
+            ]
+        }
+    ],
+    "0xe4960a1b58513f02166e850ffcd5d3ba565bfcf6": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "2067548297104825192",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4884719203819474338"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4091440805119191705"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "242626919966082553"
+                }
+            ]
+        }
+    ],
+    "0xf2fc1738a95828803558299275388abdb8c95ad7": [
+        {
+            "poolId": "1",
+            "poolName": "50GOLD/25WETH/25USDC",
+            "poolAddress": "0xee374580bff150be6b955954ac3b9899d890cb57",
+            "staked": "6914966563107434",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "12873886195508182"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "10783167077357653"
+                }
+            ]
+        }
+    ],
+    "0x6ca62edc6d09e48f470d55d6ed527c4abada45d6": [
+        {
+            "poolId": "11",
+            "poolName": "ECLP-AURA-USDC",
+            "poolAddress": "0xff860c4d5ba79a523b4cfffda059844ddcbd966e",
+            "staked": "1000000000000000000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "241935171173816561"
+                }
+            ]
+        }
+    ],
+    "0x90097a6284cbac7677e3385b8adfb134a8acfc8f": [
+        {
+            "poolId": "12",
+            "poolName": "33WETH-33KABOSUCHAN-33DOG",
+            "poolAddress": "0x4ad8a737f59a4400fbbe849eba9d560f10980827",
+            "staked": "101798676511261914202571",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "41877218657457183867"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "35076358347486137206"
+                }
+            ]
+        }
+    ],
+    "0x9112d5ef36ad4507fb8052809292d91d2eb656c6": [
+        {
+            "poolId": "13",
+            "poolName": "ECLP-cbETH-wstETH",
+            "poolAddress": "0x588ee7ad6dc38176df272d0e723bee6161938036",
+            "staked": "30333046026124362",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2802274146272119"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2347184824917526"
+                }
+            ]
+        }
+    ],
+    "0x5585b92fc0112ff2365e1ab887b0d70182ff4e02": [
+        {
+            "poolId": "14",
+            "poolName": "ECLP-WETH-USDC",
+            "poolAddress": "0x636fca3adc5d614e15f5c5a574ffd2caee578126",
+            "staked": "15219330993617770359",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "38388767848884586"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "32154431950225729"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "24467582085025926"
+                }
+            ]
+        }
+    ],
+    "0x70ee94eebf253b4d92905c5d49ff090908b710b2": [
+        {
+            "poolId": "14",
+            "poolName": "ECLP-WETH-USDC",
+            "poolAddress": "0x636fca3adc5d614e15f5c5a574ffd2caee578126",
+            "staked": "200000000000000000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "995683053937935"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "833984125978414"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1527380724169104"
+                }
+            ]
+        }
+    ],
+    "0xbbfd9b7e92707a2414231bbb70f1d024bad679e7": [
+        {
+            "poolId": "14",
+            "poolName": "ECLP-WETH-USDC",
+            "poolAddress": "0x636fca3adc5d614e15f5c5a574ffd2caee578126",
+            "staked": "2726463246237963383",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3373928426720312"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2826002450220933"
+                }
+            ]
+        }
+    ],
+    "0xd2557f6eb5559ab39180c8f76b59b33a5401eb00": [
+        {
+            "poolId": "14",
+            "poolName": "ECLP-WETH-USDC",
+            "poolAddress": "0x636fca3adc5d614e15f5c5a574ffd2caee578126",
+            "staked": "109584157032508241",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "738498258403312"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "618566141238614"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1243657125480524"
+                }
+            ]
+        }
+    ],
+    "0xff7690b1963171db50ce9a1e3ac58cf25c8dfb4c": [
+        {
+            "poolId": "15",
+            "poolName": "Aave wstETH-wETH",
+            "poolAddress": "0xb52f3a2ec6b2373671b592d0849db466d32120b7",
+            "staked": "2464951818067151",
+            "rewards": []
+        }
+    ],
+    "0x145e305a6e8979cbefcb75993f7ae5270856c1d2": [
+        {
+            "poolId": "16",
+            "poolName": "Aave wstETH-ezETH",
+            "poolAddress": "0x9adf24fa7ac9b1bc5a89232e18f2cf5fa9bd8b72",
+            "staked": "980994118722947",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "6956462361621820"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5826732874094436"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7894636647826180"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "460877819934544"
+                }
+            ]
+        }
+    ],
+    "0x4c374f295e1eacb048affb2567786697c6885619": [
+        {
+            "poolId": "16",
+            "poolName": "Aave wstETH-ezETH",
+            "poolAddress": "0x9adf24fa7ac9b1bc5a89232e18f2cf5fa9bd8b72",
+            "staked": "9842421133431706",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "82165062016378994"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "68821455944919045"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "123310527562719794"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "152576835709532222"
+                }
+            ]
+        }
+    ],
+    "0x28d424ca841f4f1d08d76d491f3a221783c85581": [
+        {
+            "poolId": "18",
+            "poolName": "20WETH-80IMO",
+            "poolAddress": "0x0ec191f765c0a1611ab3a4cdb839a66d2033e476",
+            "staked": "1985806456275113",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1903211825140948"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1594130224738058"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "526488211995920"
+                }
+            ]
+        }
+    ],
+    "0xb1c6bcd66322e1d21ac1bd71ffc6b570a1e67b80": [
+        {
+            "poolId": "18",
+            "poolName": "20WETH-80IMO",
+            "poolAddress": "0x0ec191f765c0a1611ab3a4cdb839a66d2033e476",
+            "staked": "9755490891726070399",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "17225551541261380084"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "14428121970960531958"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "12794203363273259309"
+                }
+            ]
+        }
+    ],
+    "0x10b795ed913c579c300451b1dc2f19e6d94f49b6": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "1051731738519761111270",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "8417320021647878355"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7050347250132262910"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "8121433836261426530"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "19962158176238250715"
+                }
+            ]
+        }
+    ],
+    "0x1850b44453a43573690a300cacd0a74a8a4285ac": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "3098134362306779865209",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3418912486860778002"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2863681098994587654"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2221189220430807184"
+                }
+            ]
+        }
+    ],
+    "0x1cc96b151b8d94447c3b8aadd40f3ca6c8e3a640": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "1",
+            "rewards": []
+        }
+    ],
+    "0x26a5f379b0338b61a90b4615c89bec326c8559b0": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "3714788516309721582619",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4681563754373608628"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3921277800663334586"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3976565971607213252"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "992925385889208556"
+                }
+            ]
+        }
+    ],
+    "0x2b5560f15310f8ecb9342512e9df71ca4d352c88": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "2327119858368325730173",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3817954624954418502"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3197918793861820937"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3884401403800079753"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "4658937163503319012"
+                }
+            ]
+        }
+    ],
+    "0x2be46588ef39403ddfdbb5cfb0a484eaa5fe32d9": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "2913088003917583364220",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "883471957139303486"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "739996111299880599"
+                }
+            ]
+        }
+    ],
+    "0x2d9a6e7d9e515e7c943d32da9f184ea6588fd48e": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "97604830244672701256",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "364525977439365762"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "305326958703212762"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "226360483786579766"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "595585386110271488"
+                }
+            ]
+        }
+    ],
+    "0x35aced1bc4ecb98167396bec45aba6644c2abcf6": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "270938458296431055",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2101744031513259"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1760420800795505"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1995054308568525"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "4811408789480610"
+                }
+            ]
+        }
+    ],
+    "0x3615305ed9518a1042e23d1c1fe8b72a5c3a6e97": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "13405000081188613604",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "141698306848306715"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "118686501816141704"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "144332609438182400"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "542657564810524163"
+                }
+            ]
+        }
+    ],
+    "0x381ca315b02fb90d12a1147d7f1ea1d8bbfa96d9": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "103199961803704839",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "172582083404411"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "174191705716324"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "221526469909287"
+                }
+            ]
+        }
+    ],
+    "0x3f239c83f7f22fbcdcf4e22768ec85fcce72683d": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "57685457493054660747",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "227086876906388264"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "190207968096790809"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "152116104939267762"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "374734163236572258"
+                }
+            ]
+        }
+    ],
+    "0x5d9afbcbb812a86123f5ef86c4c3bb9862b7a195": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "964264037646865164604",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "6325020970924350555"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5297837565246236024"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5912300098516061279"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "13071927006969362339"
+                }
+            ]
+        },
+        {
+            "poolId": "28",
+            "poolName": "USDp-USDC",
+            "poolAddress": "0xe4a6160c6095c245c6322c80b4a903ddf578544f",
+            "staked": "1002754124581081483054",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "184099711488335035487"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "154201918342629425723"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "231654836316689624827"
+                }
+            ]
+        }
+    ],
+    "0x5dac3bb3944b4522abdd3d84f51f67cd1af4489e": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "3915711169843880696904",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "9434472783142039115"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7902314403159771962"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "8016364520986824959"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "18436626513668092129"
+                }
+            ]
+        }
+    ],
+    "0x66004ff0a199a81c3c2f3c0536b5091a46422fcd": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "897254147890418143781",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "409687994058371656"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "343154663823292098"
+                }
+            ]
+        }
+    ],
+    "0x68433e461df3f7fc5d73e914f7a404a205a221f6": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "3609951668662899869000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "29146981334600255322"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "24413511565861173857"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "28387270577069084024"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "70565110283825759253"
+                }
+            ]
+        }
+    ],
+    "0x7004635f0588b7b8b427056d9cab29307f358579": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "4783272238336925780731",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "5850169100581078889"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4900101638646711677"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4696718766326385103"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "551028141518780702"
+                }
+            ]
+        }
+    ],
+    "0x7b861609f4f5977997a6478b09d81a7256d6c748": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "380000000000000000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3553395000787115"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2976323652659287"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3618987972905852"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "11393605858536232"
+                }
+            ]
+        }
+    ],
+    "0x7f6579a877136d1eb6b417743c035560446dc092": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "932135994822336318526883",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "24356154001998023323"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "20400714592073544335"
+                }
+            ]
+        }
+    ],
+    "0x7fe4b2632f5ae6d930677d662af26bc0a06672b3": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "801580325290018849953685",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "468779181020329741194"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "392649442022628191224"
+                }
+            ]
+        }
+    ],
+    "0x86ee2f6cd8f449148021261343697dc3f4910652": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "10344163107217482417258",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "31563097225716780016"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "26437250236260374941"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "22682026820177463231"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "60838547568537573378"
+                }
+            ]
+        }
+    ],
+    "0x8faa70efb0184fe21f08addccabeaa12ee7f6adc": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "90626815151824503259",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "886877803757860265"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "742848848427583757"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "881863883374576223"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "2940785172508097665"
+                }
+            ]
+        }
+    ],
+    "0x99212fef5cec45b4808a6e38b10daf27ffd059e8": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "44773102205211258",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "485722846819746"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "503331929293134"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "2228411507140280"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "4960251461076"
+                }
+            ]
+        }
+    ],
+    "0xaabd5fbcb8ad62d4fbbb02a2e9769a9f2ee7e883": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "27061069040094084465876",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "31330936586829190890"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "26242792485128130289"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "22391681610027925028"
+                }
+            ]
+        }
+    ],
+    "0xabfe00f81c2b9734c2fecec3f1996e18611ce658": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "234884425704686856865",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2610015496005854948"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2186148979454504104"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3048748227390095548"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "14451537604751304682"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "69198134725498024"
+                }
+            ]
+        }
+    ],
+    "0xb05251a5a1b0fcfefe5f94530f4372cf45196361": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "49654974980012423087",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "546598583366750504"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "457830973427990222"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "568240084903226267"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "2888517565851598856"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "12742533515662939"
+                }
+            ]
+        }
+    ],
+    "0xb52ab3e36c65c7863b71383eadb385bfeec7d6bf": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "5533369652265903852106",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "23737136814415682671"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "19882225795754575805"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "18714568870847598029"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "41262722624194789555"
+                }
+            ]
+        }
+    ],
+    "0xbbf15e008535cb93a7e2168038dc316c56faf791": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "13262768629619499506572",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "23283384148125514771"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "19502162562469931172"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "22341996750036023537"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "26136088100369811668"
+                }
+            ]
+        }
+    ],
+    "0xbd68bee689e6cf41f1c3a4839f0c627600e086be": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "33087205689514546196",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "162208324476249428"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "135865692581306520"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "127329590479065871"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "294868706786707993"
+                }
+            ]
+        }
+    ],
+    "0xc268d31cad28a782c4373090e99ff80e1abfcd58": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "99527157398106066",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1109969821354473"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "929710722366506"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1380497947031030"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "6420867794819874"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "29321201803047"
+                }
+            ]
+        }
+    ],
+    "0xc84196b6d3ed6f744e4f3cdba6936adcb183f789": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "3917904404986902564",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "8933997869289592"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7483116615316962"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7727246884269785"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "15887808037595667"
+                }
+            ]
+        }
+    ],
+    "0xcafd432b7ecafff352d92fcb81c60380d437e99d": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "10201928131069625122",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "45706834641634754"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "38284044695833269"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "36364813294067204"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "80896602754686407"
+                }
+            ]
+        }
+    ],
+    "0xd4f1e3fc845b9bee2e88494047650040643a8c51": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "344303637316720357637663",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "246403627095941829686"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "206387678055560876544"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "34693598813700387350"
+                }
+            ]
+        }
+    ],
+    "0xdd62115f601daebccfdd2aeed834513d8dc2f4e2": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "1536805660461331524422140",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3676045682015691825744"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3079055863256343473242"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3129595932444115358899"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "7104159163753315660314"
+                }
+            ]
+        }
+    ],
+    "0xe431f7736784d033f7c981efa591e13affdb0408": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "10",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4742834742632"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1384158927842"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "33791534330454"
+                }
+            ]
+        }
+    ],
+    "0xea8ed2c56bb6db1c5b3e31706e211e5b5b2fa5cf": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "55420622003709822497",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "97302752959659435"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "81500785879010742"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "96112019227865682"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "122659494560096718"
+                }
+            ]
+        }
+    ],
+    "0xff65e0b82b9e7564272cd9a7164c2aeaaf0090d0": [
+        {
+            "poolId": "19",
+            "poolName": "Aave USDC-Aave GHO",
+            "poolAddress": "0x28a002a98f4da7a7b541b5e4d7a42e0f64e4aef1",
+            "staked": "997988450414575910348",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "10805997876950926101"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "9051103821734095702"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "11184936112947657268"
+                },
+                {
+                    "token": {
+                        "address": "0x6bb7a212910682dcfdbd5bcbb3e28fb4e8da10ee",
+                        "symbol": "GHO",
+                        "decimals": 18
+                    },
+                    "earned": "48666013355581280810"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "76956637614183434"
+                }
+            ]
+        }
+    ],
+    "0x173fc2b1bca8077fd1e2e18b62e1bb7eb5a08cfa": [
+        {
+            "poolId": "2",
+            "poolName": "USDC/USDbC/axlUSDC",
+            "poolAddress": "0x28d50e8e46b0b36e9e0eed32496d0740aeaf7557",
+            "staked": "1095365628209941845",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "6351941465120559"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5320386171184980"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "137854050151500030"
+                }
+            ]
+        }
+    ],
+    "0xa98c51c0198243153025f06bc70a81d46714a68a": [
+        {
+            "poolId": "2",
+            "poolName": "USDC/USDbC/axlUSDC",
+            "poolAddress": "0x28d50e8e46b0b36e9e0eed32496d0740aeaf7557",
+            "staked": "1192731874337204109",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "6650619212128240"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5570558652078613"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "150107795413368274"
+                }
+            ]
+        }
+    ],
+    "0xecb67cd890c7d05ad875a5887f85ccc1581e7df0": [
+        {
+            "poolId": "2",
+            "poolName": "USDC/USDbC/axlUSDC",
+            "poolAddress": "0x28d50e8e46b0b36e9e0eed32496d0740aeaf7557",
+            "staked": "2448605415296409333",
+            "rewards": []
+        }
+    ],
+    "0x50bb0645afa4c94331cd19b4abdd82924d12a74d": [
+        {
+            "poolId": "20",
+            "poolName": "Surge Aave wstETH-fWETH",
+            "poolAddress": "0xdaa3a99bbb8e39f855d19c8927fd806c6c72c18c",
+            "staked": "942190362094482056",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4878275733391191"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4086043754288461"
+                }
+            ]
+        }
+    ],
+    "0x8db2c543f9ff27d4b3b0b6382ebb8e14b79e86c1": [
+        {
+            "poolId": "20",
+            "poolName": "Surge Aave wstETH-fWETH",
+            "poolAddress": "0xdaa3a99bbb8e39f855d19c8927fd806c6c72c18c",
+            "staked": "6529474524873398",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "88337591368767122"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "73991566530479341"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "313983981893849984"
+                },
+                {
+                    "token": {
+                        "address": "0x994ac01750047b9d35431a7ae4ed312ee955e030",
+                        "symbol": "axlOP",
+                        "decimals": 18
+                    },
+                    "earned": "77168503818197235"
+                }
+            ]
+        }
+    ],
+    "0xd85267f4825a50d372322aa15e6f9b00481d04cd": [
+        {
+            "poolId": "21",
+            "poolName": "Aave GHO-USR",
+            "poolAddress": "0xceb18af9afe6c3f348b22991f4191c7e1b31652e",
+            "staked": "5667746795841885198571",
+            "rewards": []
+        }
+    ],
+    "0x1fa1ac90a768baa92e9e267fc192a8e547a58f27": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "97111444057749975499",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "503304998379369651"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "421568266642560019"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "204969940328441919"
+                }
+            ]
+        },
+        {
+            "poolId": "25",
+            "poolName": "BTF:BMACRO",
+            "poolAddress": "0xf82c101ffb502386fb31729ed48f7f750f1fc7a7",
+            "staked": "4416627822825793",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "44821254358341997228"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "37542282650547256878"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "34007248146557863307"
+                }
+            ]
+        }
+    ],
+    "0x6acdd33048424cfb34071561474c32b8d5695af0": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "1052810001470157804",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "9564821613814192"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "8011494583730767"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "7070648340511601"
+                }
+            ]
+        }
+    ],
+    "0x777194cd11e03bc32e2f4fde62e4fc291b371178": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "1561493490614605360348",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "13545374110200578821"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "11345605354704004820"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "9713816312699000791"
+                }
+            ]
+        }
+    ],
+    "0x7f79d10ffd6a1838a90fbe098c86b35a1227493f": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "9851434300499299398164",
+            "rewards": []
+        }
+    ],
+    "0x8cc3cc65dda389e13736d8965e927fb345101276": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "5538819302364415292947",
+            "rewards": []
+        }
+    ],
+    "0xc73f98c8f5f0e55d3488e3aea307f662aebb3084": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "85423717887834",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "631138426792"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "371228888429"
+                }
+            ]
+        }
+    ],
+    "0xd6cbbde496dfb63d5a611c65b5457b3b61c4a54b": [
+        {
+            "poolId": "22",
+            "poolName": "Surge Aave EURC-GHO",
+            "poolAddress": "0x954b2826d3c39f414c2da27f577dc1aba9de49f1",
+            "staked": "2092672705393038029",
+            "rewards": []
+        }
+    ],
+    "0x2fc74276522cb6e8b7541bd590d969119fc15a61": [
+        {
+            "poolId": "23",
+            "poolName": "80PRL-20WETH",
+            "poolAddress": "0xf4de8adde6850f6fc7ba446aa1ea040a5d967b72",
+            "staked": "469983268498699362020000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "2504226790673715206191"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2097540359868303856705"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3289258118622983389422"
+                }
+            ]
+        }
+    ],
+    "0x08f2fa7e38f58bd146a44331ee72b0c1ab3d3711": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "29950851198",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "43570382274"
+                }
+            ]
+        }
+    ],
+    "0x2c66f5d94a1e51484414722cfa324d9232529fee": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "47565594692044126",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4131258773725866733"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3460342348872785975"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4543003762236888287"
+                }
+            ]
+        }
+    ],
+    "0x5f620f8f25996417870229bfcd2a081e9db70025": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "2270870368710",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "176145854759462"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "191021415501949"
+                }
+            ]
+        }
+    ],
+    "0x6a1a3ecd04df0ff2d7cb25584052cdd173fc609b": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "76437481365719425",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3221326958776047051"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2698183460670817009"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2445809274665024730"
+                }
+            ]
+        }
+    ],
+    "0x8c55b4f1a6d5834f1c677866b613f8593e7f5b5d": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "58342236763461770",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "5066909917122428101"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4244043746581745777"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "5571809278764857772"
+                }
+            ]
+        }
+    ],
+    "0xc8bdb57afa96e05dbe9d00a93bf6863dff634d59": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "572297219683132445",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "463128291919046178"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "387916257311393078"
+                }
+            ]
+        }
+    ],
+    "0xc9c17b24a3e97783c018ee20259502341ce09732": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "161885495373730747",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "12692113759804275886"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "10630914485212061482"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "13776706980981383588"
+                }
+            ]
+        }
+    ],
+    "0xd74d5644879e78feb95f13d25eb9875701bbfb9a": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "28179374220599656030",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1857870206791128161212"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1556152085208248947830"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1517803945288310929885"
+                }
+            ]
+        }
+    ],
+    "0xe4e05c7bcb1a9ea734a8507eec4bb584eaa5d35f": [
+        {
+            "poolId": "24",
+            "poolName": "Balancer rETH-Aave wETH",
+            "poolAddress": "0xd717e7ba0cf28ce05ee981b3f4154f4f0032b0c9",
+            "staked": "5771052482832490",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "410555989938424551"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "343881697172424403"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "439984003837942448"
+                }
+            ]
+        }
+    ],
+    "0x119030ad7e6fea8f694782898038da2e768cf6bf": [
+        {
+            "poolId": "25",
+            "poolName": "BTF:BMACRO",
+            "poolAddress": "0xf82c101ffb502386fb31729ed48f7f750f1fc7a7",
+            "staked": "2563600484908974",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "28719754864764981695"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "24055666674727148667"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "25630475935591180454"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "13339"
+                }
+            ]
+        }
+    ],
+    "0xbdaca39ea91f9b8ff0f9ab743e9cc2871b56847a": [
+        {
+            "poolId": "25",
+            "poolName": "BTF:BMACRO",
+            "poolAddress": "0xf82c101ffb502386fb31729ed48f7f750f1fc7a7",
+            "staked": "50952273406721",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "536658905719012589"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "449505499430244944"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "428498983881334218"
+                }
+            ]
+        }
+    ],
+    "0x83f6255d5278dcfc3c41546f95540d71126bb72e": [
+        {
+            "poolId": "26",
+            "poolName": "30waBasUSDC-70FYNI",
+            "poolAddress": "0x220c410d5407298930e2f7ea6e9d2798e600f4e0",
+            "staked": "327525290968917610720",
+            "rewards": []
+        }
+    ],
+    "0xee548801862f71d4d25776a4bb6ea5bd27f84303": [
+        {
+            "poolId": "26",
+            "poolName": "30waBasUSDC-70FYNI",
+            "poolAddress": "0x220c410d5407298930e2f7ea6e9d2798e600f4e0",
+            "staked": "179313790054145085020326",
+            "rewards": []
+        }
+    ],
+    "0x402904e954aebee2e78b7b09595393cf05571333": [
+        {
+            "poolId": "27",
+            "poolName": "USDp-frxUSD",
+            "poolAddress": "0x868d843bb82fb77509c70b517e5b0ba4a730a6c0",
+            "staked": "2999238382919442140842",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "52761501416539669916"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "44193033586493627521"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "27558172651836926993"
+                }
+            ]
+        }
+    ],
+    "0xb70d29decca758bb72cd2967a989782f3acad3e6": [
+        {
+            "poolId": "27",
+            "poolName": "USDp-frxUSD",
+            "poolAddress": "0x868d843bb82fb77509c70b517e5b0ba4a730a6c0",
+            "staked": "48622224045089083264991",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3811626598459996584298"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3192618438870093139008"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3809944871275887986360"
+                }
+            ]
+        },
+        {
+            "poolId": "28",
+            "poolName": "USDp-USDC",
+            "poolAddress": "0xe4a6160c6095c245c6322c80b4a903ddf578544f",
+            "staked": "64582926342684042558474",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4126384537970847180174"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3456259689004381598113"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4252223650170348938665"
+                }
+            ]
+        }
+    ],
+    "0xc4b0b3419a8ade61f2c29297fda3e2460621ba8a": [
+        {
+            "poolId": "27",
+            "poolName": "USDp-frxUSD",
+            "poolAddress": "0x868d843bb82fb77509c70b517e5b0ba4a730a6c0",
+            "staked": "2999043932403833182",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "293472431368897366"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "245812508514588433"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "301262226111597866"
+                }
+            ]
+        }
+    ],
+    "0xa37e451aa56285a43bac8cde0b45f8959cfca5bd": [
+        {
+            "poolId": "28",
+            "poolName": "USDp-USDC",
+            "poolAddress": "0xe4a6160c6095c245c6322c80b4a903ddf578544f",
+            "staked": "595302241441762419686",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4293373567543852844"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3596129700174731142"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1045265089195914367"
+                }
+            ]
+        }
+    ],
+    "0xd160e23f487529b8c24c7a1059feb05c38dc2cec": [
+        {
+            "poolId": "28",
+            "poolName": "USDp-USDC",
+            "poolAddress": "0xe4a6160c6095c245c6322c80b4a903ddf578544f",
+            "staked": "5981836354161423849",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "503662577003656248"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "421867774498262473"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "531267783523428944"
+                }
+            ]
+        }
+    ],
+    "0xf848750ed936a54aee7154617b684321ddaa745e": [
+        {
+            "poolId": "28",
+            "poolName": "USDp-USDC",
+            "poolAddress": "0xe4a6160c6095c245c6322c80b4a903ddf578544f",
+            "staked": "199284445651927548773",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "40382913563976276941"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "33824728401186529565"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "51123211100170480020"
+                }
+            ]
+        }
+    ],
+    "0x22c31f4ce88124c3024df91ba02eae587fd4d8c8": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "14028021578547",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "36366517150645"
+                }
+            ]
+        }
+    ],
+    "0x298e3ba94930136602d86df6be590738016b0cd8": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "98257451892",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "107257862814"
+                }
+            ]
+        }
+    ],
+    "0x2bdab311dfb2831cb11affaccfcc21c470e867d5": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "123632594268321",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "127050423104098"
+                }
+            ]
+        }
+    ],
+    "0x3541a78cfcccae9f6c429cbee08164b7204eaf97": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "37177748791498",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "40583241299648"
+                }
+            ]
+        }
+    ],
+    "0x413789dce71e1318e89c8350c78cc37fc1913866": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "9305952293469",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "9636295665863"
+                }
+            ]
+        }
+    ],
+    "0x52cd15c6d1ca9f1aa9f2b990b5b35e20a8843f84": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "26419530849814",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "11155736989714"
+                }
+            ]
+        }
+    ],
+    "0x6f6890eac431cbce2e8eaba31744e749e6341180": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "11162217325354",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "75687842815800"
+                }
+            ]
+        }
+    ],
+    "0xba95334cedccce2b0318fd00ae01b139e1a77865": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "792180204874",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "883618226814"
+                }
+            ]
+        }
+    ],
+    "0xd671f0e34ae8b059fc9aad944fa0d9d93f22f54b": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "2237177163260",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3595168781900"
+                }
+            ]
+        }
+    ],
+    "0xf521b9ad091d161221ef4209d5bf10dad837953f": [
+        {
+            "poolId": "3",
+            "poolName": "cbETH/WETH",
+            "poolAddress": "0x8db6a97aeea09f37b45c9703c3542087151aadd5",
+            "staked": "39440977584694",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "43053782502821"
+                }
+            ]
+        }
+    ],
+    "0xc89499797617c924834d9ec6ed6dc812dde2e877": [
+        {
+            "poolId": "6",
+            "poolName": " 50tBTC-50WETH",
+            "poolAddress": "0x331a1213953e324955b2a121079d8ffd08eae9fd",
+            "staked": "324335174152",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "64565490560291"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "83710122577997"
+                }
+            ]
+        }
+    ],
+    "0x04bee613690e98a1959f236c38abaa5f2439b14a": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "9932323128510501",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "671842002103877392"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "562734860962207703"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "897914192665968136"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "38801"
+                }
+            ]
+        }
+    ],
+    "0x0951eabb9825bcecf5d9e1cd63374a854d38cb8c": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "5745",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "79906"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "83989"
+                }
+            ]
+        }
+    ],
+    "0x16a4ec779ec71f9019ff79cbdd082a078c9ea06a": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "17610459328061812044",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "289718427654604406288"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "242668155003496650706"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "275399292803100105308"
+                }
+            ]
+        }
+    ],
+    "0x1b35fcb58f5e1e2a42ff8e66ddf5646966abf08c": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "616118741350356",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "45774182216460390"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "38340455024507222"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "55699130512374011"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "2406"
+                }
+            ]
+        }
+    ],
+    "0x1c64546acfce2cd965f11e7d306e59da42ceeef1": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "423453340679062",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "360900906820955"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "385271852886534"
+                }
+            ]
+        }
+    ],
+    "0x2773fe816db9bc0fe9a4668cb659b58a4460e865": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "756695487251725031525",
+            "rewards": []
+        }
+    ],
+    "0x4b1348f328838a3139bf8ce89d46b10e63f2cdf8": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "174549107619660389569186087",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "4170017803681116"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3492806912363302"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3045924692494440"
+                }
+            ]
+        }
+    ],
+    "0x696fcb5f6ec2f3c34fb75fd6d2ae85a6e3ad8b33": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "3476762191590275",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "250462156405879544"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "209787102205564706"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "314310567221901195"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "13582"
+                }
+            ]
+        }
+    ],
+    "0x6c98064cd84c09c827fb76e772dbb805f54aa564": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "1422986759857527865509910690061",
+            "rewards": []
+        }
+    ],
+    "0x6cd44eacebc82b2e365f8fa464a142ea9fe8f9ab": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "315129343538729",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "139710237024332"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "123507905492424"
+                }
+            ]
+        }
+    ],
+    "0x72ad498ac5edd64aeab4ab366ebeaf5dadbd0336": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "98598668499089917",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3139590252948653325"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2629720795869792024"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3998095640143150091"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "385155"
+                }
+            ]
+        }
+    ],
+    "0x74e142df816c376bd35d7ae02914fc8168fcd45f": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "26207727491072893321867363919",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "89813882111906"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "41067508978511"
+                }
+            ]
+        }
+    ],
+    "0x7c058a4b54ada57939f31b52edb4d8f9957087ce": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "11885920098257580",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "704129872833771776"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "589779181485567239"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "879876491834082204"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "46433"
+                }
+            ]
+        }
+    ],
+    "0x7ec9572e8717a05425f8415c41cffca23e3044ce": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "243801216485304",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "131957231267491"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "125942423423954"
+                }
+            ]
+        }
+    ],
+    "0x90d73b7e76da8ebfc7f8486d49ec805b8e9103fb": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "24806824842786",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "1610002346129692"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "1348537965118230"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2207548194804647"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "96"
+                }
+            ]
+        }
+    ],
+    "0xa261e27900908cbe77aa9e2e341b7f2e1c1f2f55": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "19526064394289",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "263333514117313"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "281200353340535"
+                }
+            ]
+        }
+    ],
+    "0xa752cbef7a302f722031e343dff08ed0639e8d80": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "4924266987974",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "315608172116476"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "435000712426924"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "19"
+                }
+            ]
+        }
+    ],
+    "0xba2287415914814a1ae78395c84c9ec5ae0fdba5": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "1000000000000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "21480899816585"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "23821105395706"
+                }
+            ]
+        }
+    ],
+    "0xbf04aacd22a1aa1f6337370496f5ef5972ed71c9": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "7885640180315855",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "295468705081362791"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "247484587376149473"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "367983213823789558"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "30806"
+                }
+            ]
+        }
+    ],
+    "0xc12cc45e4689e41f1f9e743e896e2bf4915361f7": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "500000000000",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "10466536190048"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "11126728793970"
+                }
+            ]
+        }
+    ],
+    "0xc475171569e9ae4a6bc9ca2df7fc6be32f5778cb": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "9855638290439510",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "356537785932025916"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "298636049496664907"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "449492669714980193"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "38502"
+                }
+            ]
+        }
+    ],
+    "0xd24e39f8671f2eafe305835d6d9ce6af3b106c44": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "4910511649842105",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "138021865577412472"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "115607114607640686"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "172398883703922487"
+                }
+            ]
+        }
+    ],
+    "0xe5c3c8105d5dfcdd43b3b72b249c54b55a8a7e20": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "65010216140195",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "3886554705193071"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "3255378221069716"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "4887586388259221"
+                },
+                {
+                    "token": {
+                        "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+                        "symbol": "USDC",
+                        "decimals": 6
+                    },
+                    "earned": "253"
+                }
+            ]
+        }
+    ],
+    "0xeb2ec8abef59ac83204ff17993bff76c5785acbe": [
+        {
+            "poolId": "7",
+            "poolName": "rETH-WETH-BPT",
+            "poolAddress": "0xccac11368bdd522fc4dd23f98897712391ab1e00",
+            "staked": "24674732025057",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "678776821020634"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "568543465286882"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "850184199368276"
+                }
+            ]
+        },
+        {
+            "poolId": "9",
+            "poolName": "weETH/wETH",
+            "poolAddress": "0x26e72914767ba0bb27350fa485a3698475072bba",
+            "staked": "24519439219501",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "44514250147022"
+                }
+            ]
+        }
+    ],
+    "0x0430839c7f1def52ca429aa2a494988181b28d6b": [
+        {
+            "poolId": "9",
+            "poolName": "weETH/wETH",
+            "poolAddress": "0x26e72914767ba0bb27350fa485a3698475072bba",
+            "staked": "593841978295929646",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "9590136661001468996"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "8032698467254830430"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "2285743410532156931"
+                }
+            ]
+        }
+    ],
+    "0xb8590368124e77402e55299611a93a63346190e6": [
+        {
+            "poolId": "9",
+            "poolName": "weETH/wETH",
+            "poolAddress": "0x26e72914767ba0bb27350fa485a3698475072bba",
+            "staked": "9920465751980759359",
+            "rewards": [
+                {
+                    "token": {
+                        "address": "0x4158734d47fc9692176b5085e0f52ee0da5d47f1",
+                        "symbol": "BAL",
+                        "decimals": 18
+                    },
+                    "earned": "108322047144286064585"
+                },
+                {
+                    "token": {
+                        "address": "0x1509706a6c66ca549ff0cb464de88231ddbe213b",
+                        "symbol": "AURA",
+                        "decimals": 18
+                    },
+                    "earned": "90730546688054007696"
+                }
+            ]
+        }
+    ]
+}

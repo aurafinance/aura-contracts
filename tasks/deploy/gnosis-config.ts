@@ -28,6 +28,7 @@ import {
     StashFactoryV2__factory,
     StashRewardDistro__factory,
     TokenFactory__factory,
+    VirtualBalanceRewardPool__factory,
     VirtualRewardFactory__factory,
     VoterProxyLite__factory,
 } from "../../types";
@@ -78,6 +79,7 @@ export const getSidechain = (signer: Signer | Provider) => ({
     virtualRewardFactory: VirtualRewardFactory__factory.connect(ZERO_ADDRESS, signer),
     auraBalVault: AuraBalVault__factory.connect(ZERO_ADDRESS, signer),
     auraBalStrategy: SimpleStrategy__factory.connect(ZERO_ADDRESS, signer),
+    auraBalVaultAuraRewards: VirtualBalanceRewardPool__factory.connect(ZERO_ADDRESS, signer),
     cvxLocker: AuraLocker__factory.connect(ZERO_ADDRESS, signer),
     childGaugeVoteRewards: ChildGaugeVoteRewards__factory.connect("0x2863582272A424234FcE76d97099AcBd432acC01", signer),
     stashRewardDistro: StashRewardDistro__factory.connect("0xcA85e2cE206b48ee28A87b0a06f9519ABE627451", signer),

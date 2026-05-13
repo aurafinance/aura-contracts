@@ -21,7 +21,7 @@ __metadata:
     "@ethersproject/bytes": ^5.5.0
     "@ethersproject/hash": ^5.5.0
     "@ethersproject/providers": ^5.5.0
-    "@nomicfoundation/hardhat-verify": ^2.0.9
+    "@nomicfoundation/hardhat-verify": ^2.1.3
     "@nomiclabs/hardhat-ethers": ^2.0.2
     "@nomiclabs/hardhat-waffle": ^2.0.1
     "@openzeppelin/contracts-0.8": "npm:@openzeppelin/contracts@4.4.2"
@@ -1876,22 +1876,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nomicfoundation/hardhat-verify@npm:^2.0.9":
-  version: 2.0.9
-  resolution: "@nomicfoundation/hardhat-verify@npm:2.0.9"
+"@nomicfoundation/hardhat-verify@npm:^2.1.3":
+  version: 2.1.3
+  resolution: "@nomicfoundation/hardhat-verify@npm:2.1.3"
   dependencies:
     "@ethersproject/abi": ^5.1.2
     "@ethersproject/address": ^5.0.2
     cbor: ^8.1.0
-    chalk: ^2.4.2
     debug: ^4.1.1
     lodash.clonedeep: ^4.5.0
+    picocolors: ^1.1.0
     semver: ^6.3.0
     table: ^6.8.0
     undici: ^5.14.0
   peerDependencies:
-    hardhat: "*"
-  checksum: c010d5c147fefb23d971969dc7479aac45a0bb8977e86e04c579228ab9683189e7bdebbd7b5f70fe96a10c9d0a2849aab1f10bacad56c925f6255becfd2d585c
+    hardhat: ^2.26.0
+  checksum: b0d8fbdd5522e8c3817e8a2e7538afe8bfb3f27317169871ef30abc51247afbfb52316c84d9dda6e7e796603b55da659432f6bcc52e2708f6fc89d4348a2dddc
   languageName: node
   linkType: hard
 
