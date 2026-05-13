@@ -145,3 +145,10 @@ yarn task timeTravel --duration 69420 --network forking
 
 -   StashToken contracts are not ERC20 compliant. `convex-platform/contracts/contracts/StashToken.sol` it is designed to interact only with VirtualBalanceRewardPool and ExtraRewardStashV3.
     Any `extraRewards` is distributed by a VirtualBalanceRewardPool, which is linked to a StashToken, the StashToken wraps the `extraReward` as a `baseToken`.
+
+## Wind Down Contracts
+
+auraRedemption: `0x928966752dc0cc0D7babe343Fc2937BA13a5120c`
+rAuraRedemption: `0xC44D3604A332B71E2e6a87A714614A505eE88bC8`
+auraBalRedemption: `0x2aa497D6c6cC0CCE9a49eA70b0701092A10A1f9C`
+coordinator: `0x9d53F0d2eceBC84E9114259f6084d01FB46150Dc`
